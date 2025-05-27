@@ -35,7 +35,7 @@ export function StatsScreen({
         <table className="min-w-full divide-y divide-slate-600">
           <thead className="bg-slate-800">
             <tr>
-              {['Player', 'Started', 'G', 'D', 'A', 'Field Time', 'Sub Time', 'Goalie Time'].map(header => (
+              {['Player', 'Started', 'M', 'B', 'A', 'Field Time', 'Sub Time', 'Goalie Time'].map(header => (
                 <th key={header} scope="col" className="px-3 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
                   {header}
                 </th>
@@ -47,9 +47,9 @@ export function StatsScreen({
               <tr key={player.id}>
                 <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{player.name}</td>
                 <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">
-                  {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'G' :
-                      player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'F' :
-                          player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'S' : '-'}
+                  {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
+                      player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
+                          player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-'}
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{player.stats.periodsAsGoalie}</td>
                 <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{player.stats.periodsAsDefender}</td>
