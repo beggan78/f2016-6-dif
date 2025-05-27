@@ -229,10 +229,176 @@ function App() {
     setSubTimerSeconds(0);
   }, [periodGoalieIds, periodDurationMinutes, selectedSquadPlayers, allPlayers, selectedSquadIds]);
 
+  const generateBalancedFormationForPeriod3 = (currentGoalieId, prevGoalieId, prevFormation, playerStats, squad) => {
+    let outfielders = squad.filter(p => p.id !== currentGoalieId);
+    
+    // Get cumulative stats for all outfielders (excluding current goalie)
+    const outfieldersWithStats = outfielders.map(p => {
+      const pStats = playerStats.find(s => s.id === p.id);
+      return {
+        ...p,
+        periodsAsDefender: pStats?.stats.periodsAsDefender || 0,
+        periodsAsAttacker: pStats?.stats.periodsAsAttacker || 0,
+        periodsAsGoalie: pStats?.stats.periodsAsGoalie || 0,
+        totalOutfieldTime: pStats?.stats.timeOnFieldSeconds || 0
+      };
+    });
+
+    // Rule 1: Identify players who need position balancing
+    const playersNeedingDefender = outfieldersWithStats.filter(p => 
+      p.periodsAsGoalie < 2 && p.periodsAsDefender === 0 && p.periodsAsAttacker > 0
+    );
+    const playersNeedingAttacker = outfieldersWithStats.filter(p => 
+      p.periodsAsGoalie < 2 && p.periodsAsAttacker === 0 && p.periodsAsDefender > 0
+    );
+
+
+    // Start with forced position assignments for Rule 1
+    let forcedDefenders = [...playersNeedingDefender];
+    let forcedAttackers = [...playersNeedingAttacker];
+    
+    // Remove forced players from general pool
+    let remainingPlayers = outfieldersWithStats.filter(p => 
+      !forcedDefenders.some(fd => fd.id === p.id) && 
+      !forcedAttackers.some(fa => fa.id === p.id)
+    );
+
+    // Apply Rule 3: Previous period role swapping for remaining players
+    if (prevFormation) {
+      remainingPlayers.forEach(p => {
+        // Find what role this player had in previous period
+        let prevRole = null;
+        if (prevFormation.leftPair.defender === p.id || prevFormation.rightPair.defender === p.id || prevFormation.subPair.defender === p.id) {
+          prevRole = 'defender';
+        } else if (prevFormation.leftPair.attacker === p.id || prevFormation.rightPair.attacker === p.id || prevFormation.subPair.attacker === p.id) {
+          prevRole = 'attacker';
+        }
+        
+        // Recommend opposite role for period 3
+        if (prevRole === 'defender') {
+          p.recommendedRole = 'attacker';
+        } else if (prevRole === 'attacker') {
+          p.recommendedRole = 'defender';
+        } else {
+          // For players who haven't played both positions, determine by Rule 1 fallback
+          if (p.periodsAsDefender === 0 && p.periodsAsAttacker > 0) {
+            p.recommendedRole = 'defender';
+          } else if (p.periodsAsAttacker === 0 && p.periodsAsDefender > 0) {
+            p.recommendedRole = 'attacker';
+          } else if (p.periodsAsDefender > 0 && p.periodsAsAttacker > 0) {
+            // Both positions played, use first period rule
+            // Need to check what they played in period 1 - look at game log for period 1
+            p.recommendedRole = 'defender'; // Default fallback
+          }
+        }
+      });
+    }
+
+    // Try to form pairs respecting Rule 2 (keep pairs intact when possible)
+    let finalPairs = [];
+    let usedPlayerIds = new Set();
+
+    // Add forced players to appropriate roles first
+    while (forcedDefenders.length > 0 && forcedAttackers.length > 0) {
+      const defender = forcedDefenders.pop();
+      const attacker = forcedAttackers.pop();
+      finalPairs.push({ defender: defender.id, attacker: attacker.id });
+      usedPlayerIds.add(defender.id);
+      usedPlayerIds.add(attacker.id);
+    }
+
+    // Handle remaining forced players by pairing with remaining players
+    if (forcedDefenders.length > 0) {
+      forcedDefenders.forEach(defender => {
+        const availableAttacker = remainingPlayers.find(p => !usedPlayerIds.has(p.id));
+        if (availableAttacker) {
+          finalPairs.push({ defender: defender.id, attacker: availableAttacker.id });
+          usedPlayerIds.add(defender.id);
+          usedPlayerIds.add(availableAttacker.id);
+        }
+      });
+    }
+
+    if (forcedAttackers.length > 0) {
+      forcedAttackers.forEach(attacker => {
+        const availableDefender = remainingPlayers.find(p => !usedPlayerIds.has(p.id));
+        if (availableDefender) {
+          finalPairs.push({ defender: availableDefender.id, attacker: attacker.id });
+          usedPlayerIds.add(availableDefender.id);
+          usedPlayerIds.add(attacker.id);
+        }
+      });
+    }
+
+    // Pair remaining players based on recommended roles
+    const unpairedPlayers = remainingPlayers.filter(p => !usedPlayerIds.has(p.id));
+    
+    while (unpairedPlayers.length >= 2) {
+      const player1 = unpairedPlayers.shift();
+      let player2 = null;
+      
+      // Try to find a complementary partner
+      if (player1.recommendedRole === 'defender') {
+        player2 = unpairedPlayers.find(p => p.recommendedRole === 'attacker') || unpairedPlayers[0];
+        finalPairs.push({ defender: player1.id, attacker: player2.id });
+      } else if (player1.recommendedRole === 'attacker') {
+        player2 = unpairedPlayers.find(p => p.recommendedRole === 'defender') || unpairedPlayers[0];
+        finalPairs.push({ defender: player2.id, attacker: player1.id });
+      } else {
+        player2 = unpairedPlayers[0];
+        finalPairs.push({ defender: player1.id, attacker: player2.id });
+      }
+      
+      if (player2) {
+        unpairedPlayers.splice(unpairedPlayers.indexOf(player2), 1);
+      }
+    }
+
+    // Ensure we have exactly 3 pairs
+    while (finalPairs.length < 3) {
+      finalPairs.push({ defender: null, attacker: null });
+    }
+    if (finalPairs.length > 3) {
+      finalPairs = finalPairs.slice(0, 3);
+    }
+
+    // Determine substitute pair (player with most outfield time)
+    const recommendedSubPair = finalPairs.find(pair => {
+      if (!pair.defender || !pair.attacker) return false;
+      const defenderStats = outfieldersWithStats.find(p => p.id === pair.defender);
+      const attackerStats = outfieldersWithStats.find(p => p.id === pair.attacker);
+      return defenderStats && attackerStats && 
+             (defenderStats.totalOutfieldTime > 0 || attackerStats.totalOutfieldTime > 0);
+    }) || finalPairs[0];
+
+    const nonSubPairs = finalPairs.filter(p => p !== recommendedSubPair);
+    
+    // Determine first to rotate off (pair with player who has most outfield time among non-subs)
+    const firstToRotateOffPair = nonSubPairs.find(pair => {
+      if (!pair.defender || !pair.attacker) return false;
+      const defenderStats = outfieldersWithStats.find(p => p.id === pair.defender);
+      const attackerStats = outfieldersWithStats.find(p => p.id === pair.attacker);
+      return defenderStats && attackerStats;
+    }) || nonSubPairs[0];
+
+    const firstToSubDesignation = firstToRotateOffPair === nonSubPairs[0] ? 'leftPair' : 'rightPair';
+
+    return {
+      recommendedLeft: nonSubPairs[0] || { defender: null, attacker: null },
+      recommendedRight: nonSubPairs[1] || { defender: null, attacker: null },
+      recommendedSubs: recommendedSubPair,
+      firstToSubRec: firstToSubDesignation
+    };
+  };
 
   const generateRecommendedFormation = (currentPeriodNum, currentGoalieId, prevGoalieId, prevFormation, playerStats, squad) => {
     let outfielders = squad.filter(p => p.id !== currentGoalieId);
     let potentialPairs = [];
+
+    // For period 3, apply position balancing rules
+    if (currentPeriodNum === 3) {
+      return generateBalancedFormationForPeriod3(currentGoalieId, prevGoalieId, prevFormation, playerStats, squad);
+    }
 
     // 1. Handle goalie changes and pair integrity
     const exGoalie = prevGoalieId ? squad.find(p => p.id === prevGoalieId) : null;

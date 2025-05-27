@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bfba9709-aeda-4358-ab5c-7d5640316fe4" name="Changes" comment="Fix recommendations for 2nd period">
+    <list default="true" id="bfba9709-aeda-4358-ab5c-7d5640316fe4" name="Changes" comment="Count time in seconds">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.js" afterDir="false" />
     </list>
@@ -115,7 +115,7 @@
       <workItem from="1748289911242" duration="1608000" />
       <workItem from="1748291666689" duration="15000" />
       <workItem from="1748292011235" duration="3350000" />
-      <workItem from="1748295377401" duration="7661000" />
+      <workItem from="1748295377401" duration="9804000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />
@@ -149,7 +149,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748377280407</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Count time in seconds">
+      <option name="closed" value="true" />
+      <created>1748377927405</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1748377927405</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -171,7 +179,8 @@
     <MESSAGE value="Initial commit" />
     <MESSAGE value="Initial prompt" />
     <MESSAGE value="Fix recommendations for 2nd period" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix recommendations for 2nd period" />
+    <MESSAGE value="Count time in seconds" />
+    <option name="LAST_COMMIT_MESSAGE" value="Count time in seconds" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
