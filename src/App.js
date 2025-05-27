@@ -168,7 +168,13 @@ function App() {
   };
 
   const preparePeriod = useCallback((periodNum) => {
+    preparePeriodWithGameLog(periodNum, gameLog);
+  }, [periodGoalieIds, periodDurationMinutes, selectedSquadPlayers, gameLog, allPlayers, selectedSquadIds]);
+
+  const preparePeriodWithGameLog = useCallback((periodNum, gameLogToUse) => {
+
     const currentGoalieId = periodGoalieIds[periodNum];
+
     setPeriodFormation(prev => ({
       ...prev,
       goalie: currentGoalieId,
@@ -178,8 +184,8 @@ function App() {
     }));
 
     // Recommendation logic for P2/P3
-    if (periodNum > 1 && gameLog.length > 0) {
-      const lastPeriodLog = gameLog[gameLog.length - 1];
+    if (periodNum > 1 && gameLogToUse.length > 0) {
+      const lastPeriodLog = gameLogToUse[gameLogToUse.length - 1];
       const playersWithLastPeriodStats = lastPeriodLog.finalStatsSnapshotForAllPlayers;
       const outfielders = selectedSquadPlayers.filter(p => p.id !== currentGoalieId);
 
@@ -221,7 +227,7 @@ function App() {
 
     setMatchTimerSeconds(periodDurationMinutes * 60);
     setSubTimerSeconds(0);
-  }, [periodGoalieIds, periodDurationMinutes, selectedSquadPlayers, gameLog, allPlayers, selectedSquadIds]);
+  }, [periodGoalieIds, periodDurationMinutes, selectedSquadPlayers, allPlayers, selectedSquadIds]);
 
 
   const generateRecommendedFormation = (currentPeriodNum, currentGoalieId, prevGoalieId, prevFormation, playerStats, squad) => {
@@ -474,8 +480,9 @@ function App() {
 
     const currentTimeEpoch = Date.now();
     const playerIdsInPeriod = selectedSquadPlayers.map(p => p.id);
-    // Final time update for all players in the period
-    setAllPlayers(prevPlayers => prevPlayers.map(p => {
+
+    // Calculate updated stats
+    const updatedPlayersWithFinalStats = allPlayers.map(p => {
       if (playerIdsInPeriod.includes(p.id)) {
         const stats = { ...p.stats };
         const timeInFinalStint = currentTimeEpoch - stats.lastStintStartTimeEpoch;
@@ -496,29 +503,31 @@ function App() {
         return { ...p, stats };
       }
       return p;
-    }));
-
-    // Log period data (important: use a snapshot of allPlayers for this log entry)
-    setGameLog(prevLog => {
-      const currentPlayersSnapshot = allPlayers.map(p => ({
-        id: p.id,
-        name: p.name,
-        stats: JSON.parse(JSON.stringify(p.stats)) // Deep copy of stats for the log
-      }));
-      return [
-        ...prevLog,
-        {
-          periodNumber: currentPeriodNumber,
-          formation: JSON.parse(JSON.stringify(periodFormation)),
-          finalStatsSnapshotForAllPlayers: currentPlayersSnapshot,
-        }
-      ];
     });
 
+    // Update player stats
+    setAllPlayers(updatedPlayersWithFinalStats);
+
+    // Calculate the updated gameLog first
+    const currentPlayersSnapshot = updatedPlayersWithFinalStats.map(p => ({
+      id: p.id,
+      name: p.name,
+      stats: JSON.parse(JSON.stringify(p.stats)) // Deep copy of stats for the log
+    }));
+
+    const newGameLogEntry = {
+      periodNumber: currentPeriodNumber,
+      formation: JSON.parse(JSON.stringify(periodFormation)),
+      finalStatsSnapshotForAllPlayers: currentPlayersSnapshot,
+    };
+    
+    const updatedGameLog = [...gameLog, newGameLogEntry];
+
+    setGameLog(updatedGameLog);
 
     if (currentPeriodNumber < numPeriods) {
       setCurrentPeriodNumber(prev => prev + 1);
-      preparePeriod(currentPeriodNumber + 1);
+      preparePeriodWithGameLog(currentPeriodNumber + 1, updatedGameLog);
       setView('periodSetup');
     } else {
       setView('stats');
