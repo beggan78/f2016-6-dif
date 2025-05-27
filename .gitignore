@@ -1,5 +1,5 @@
 # IDE - IntelliJ IDEA / WebStorm
-.idea/
+.idea
 
 # dependencies
 /node_modules
