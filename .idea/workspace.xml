@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bfba9709-aeda-4358-ab5c-7d5640316fe4" name="Changes" comment="Initial prompt">
+    <list default="true" id="bfba9709-aeda-4358-ab5c-7d5640316fe4" name="Changes" comment="Fix recommendations for 2nd period">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.js" afterDir="false" />
     </list>
@@ -69,7 +69,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_interpreter_path": "node",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable",
+    "settings.editor.selected.configurable": "preferences.keymap",
     "ts.external.directory.path": "/Users/niclasberggren/Applications/IntelliJ IDEA Ultimate.app/Contents/plugins/javascript-plugin/jsLanguageServicesImpl/external",
     "vue.rearranger.settings.migration": "true"
   }
@@ -115,7 +115,7 @@
       <workItem from="1748289911242" duration="1608000" />
       <workItem from="1748291666689" duration="15000" />
       <workItem from="1748292011235" duration="3350000" />
-      <workItem from="1748295377401" duration="6798000" />
+      <workItem from="1748295377401" duration="7661000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />
@@ -141,7 +141,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748372474790</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Fix recommendations for 2nd period">
+      <option name="closed" value="true" />
+      <created>1748377280407</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1748377280407</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -162,7 +170,8 @@
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <MESSAGE value="Initial commit" />
     <MESSAGE value="Initial prompt" />
-    <option name="LAST_COMMIT_MESSAGE" value="Initial prompt" />
+    <MESSAGE value="Fix recommendations for 2nd period" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix recommendations for 2nd period" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

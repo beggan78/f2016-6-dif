@@ -84,7 +84,7 @@ function App() {
     setAllPlayers(prevPlayers => prevPlayers.map(p => {
       if (playerIds.includes(p.id)) {
         const stats = { ...p.stats };
-        const timeInPreviousStint = currentTimeEpoch - stats.lastStintStartTimeEpoch;
+        const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
 
         if (stats.currentPeriodStatus === 'on_field') {
           stats.timeOnFieldSeconds += timeInPreviousStint;
@@ -485,7 +485,7 @@ function App() {
     const updatedPlayersWithFinalStats = allPlayers.map(p => {
       if (playerIdsInPeriod.includes(p.id)) {
         const stats = { ...p.stats };
-        const timeInFinalStint = currentTimeEpoch - stats.lastStintStartTimeEpoch;
+        const timeInFinalStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
 
         if (stats.currentPeriodStatus === 'on_field') {
           stats.timeOnFieldSeconds += timeInFinalStint;
