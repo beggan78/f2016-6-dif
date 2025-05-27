@@ -35,7 +35,7 @@ export function useTimers(periodDurationMinutes) {
       if (matchTimerIntervalId) clearInterval(matchTimerIntervalId);
       if (subTimerIntervalId) clearInterval(subTimerIntervalId);
     };
-  }, [isPeriodActive, matchTimerIntervalId, subTimerIntervalId]);
+  }, [isPeriodActive]);
 
   // Update timer when period duration changes
   useEffect(() => {
