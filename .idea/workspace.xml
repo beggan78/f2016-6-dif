@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bfba9709-aeda-4358-ab5c-7d5640316fe4" name="Changes" comment="Count time in seconds">
+    <list default="true" id="bfba9709-aeda-4358-ab5c-7d5640316fe4" name="Changes" comment="Balance formations">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.js" afterDir="false" />
     </list>
@@ -115,7 +115,7 @@
       <workItem from="1748289911242" duration="1608000" />
       <workItem from="1748291666689" duration="15000" />
       <workItem from="1748292011235" duration="3350000" />
-      <workItem from="1748295377401" duration="9804000" />
+      <workItem from="1748295377401" duration="10733000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />
@@ -157,7 +157,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748377927405</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Balance formations">
+      <option name="closed" value="true" />
+      <created>1748379940624</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1748379940624</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -180,7 +188,8 @@
     <MESSAGE value="Initial prompt" />
     <MESSAGE value="Fix recommendations for 2nd period" />
     <MESSAGE value="Count time in seconds" />
-    <option name="LAST_COMMIT_MESSAGE" value="Count time in seconds" />
+    <MESSAGE value="Balance formations" />
+    <option name="LAST_COMMIT_MESSAGE" value="Balance formations" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
