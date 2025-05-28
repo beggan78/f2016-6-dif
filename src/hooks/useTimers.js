@@ -5,53 +5,79 @@ export function useTimers(periodDurationMinutes) {
   const [matchTimerSeconds, setMatchTimerSeconds] = useState(periodDurationMinutes * 60);
   const [subTimerSeconds, setSubTimerSeconds] = useState(0);
   const [isPeriodActive, setIsPeriodActive] = useState(false);
-  const [matchTimerIntervalId, setMatchTimerIntervalId] = useState(null);
-  const [subTimerIntervalId, setSubTimerIntervalId] = useState(null);
+  const [periodStartTime, setPeriodStartTime] = useState(null);
+  const [lastSubTime, setLastSubTime] = useState(null);
+  const [updateIntervalId, setUpdateIntervalId] = useState(null);
 
   // Timer Effects
   useEffect(() => {
-    if (isPeriodActive) {
-      const mInterval = setInterval(() => {
-        setMatchTimerSeconds(prev => {
-          if (prev <= 1) {
-            clearInterval(mInterval);
-            // Optionally auto-end period or alert, but prompt says manual end
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      setMatchTimerIntervalId(mInterval);
-
-      const sInterval = setInterval(() => {
-        setSubTimerSeconds(prev => prev + 1);
-      }, 1000);
-      setSubTimerIntervalId(sInterval);
+    if (isPeriodActive && periodStartTime) {
+      const updateTimers = () => {
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - periodStartTime) / 1000);
+        const remainingSeconds = Math.max(0, (periodDurationMinutes * 60) - elapsedSeconds);
+        
+        setMatchTimerSeconds(remainingSeconds);
+        
+        if (lastSubTime) {
+          const subElapsedSeconds = Math.floor((now - lastSubTime) / 1000);
+          setSubTimerSeconds(subElapsedSeconds);
+        }
+      };
+      
+      // Update immediately
+      updateTimers();
+      
+      // Then update every second
+      const interval = setInterval(updateTimers, 1000);
+      setUpdateIntervalId(interval);
+      
+      // Handle page visibility changes to force updates when coming back
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          updateTimers();
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     } else {
-      if (matchTimerIntervalId) clearInterval(matchTimerIntervalId);
-      if (subTimerIntervalId) clearInterval(subTimerIntervalId);
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        setUpdateIntervalId(null);
+      }
     }
-    return () => {
-      if (matchTimerIntervalId) clearInterval(matchTimerIntervalId);
-      if (subTimerIntervalId) clearInterval(subTimerIntervalId);
-    };
-  }, [isPeriodActive]);
+  }, [isPeriodActive, periodStartTime, lastSubTime, periodDurationMinutes, updateIntervalId]);
 
   // Update timer when period duration changes
   useEffect(() => {
-    setMatchTimerSeconds(periodDurationMinutes * 60);
-  }, [periodDurationMinutes]);
+    if (!isPeriodActive) {
+      setMatchTimerSeconds(periodDurationMinutes * 60);
+    }
+  }, [periodDurationMinutes, isPeriodActive]);
 
   const resetSubTimer = () => {
+    setLastSubTime(Date.now());
     setSubTimerSeconds(0);
   };
 
   const startTimers = () => {
+    const now = Date.now();
+    setPeriodStartTime(now);
+    setLastSubTime(now);
     setIsPeriodActive(true);
   };
 
   const stopTimers = () => {
     setIsPeriodActive(false);
+    if (updateIntervalId) {
+      clearInterval(updateIntervalId);
+      setUpdateIntervalId(null);
+    }
   };
 
   return {
@@ -64,5 +90,7 @@ export function useTimers(periodDurationMinutes) {
     resetSubTimer,
     startTimers,
     stopTimers,
+    periodStartTime,
+    lastSubTime,
   };
 }
