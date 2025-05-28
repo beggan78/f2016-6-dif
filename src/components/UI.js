@@ -9,7 +9,7 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="w-full appearance-none bg-slate-600 border border-slate-500 text-slate-100 py-2 px-3 pr-8 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+        className="w-full appearance-none bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map(opt => (
@@ -29,9 +29,9 @@ export function Button({ onClick, children, Icon, variant = 'primary', size = 'm
   const baseStyle = "font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-150 ease-in-out flex items-center justify-center space-x-2";
 
   const sizeStyles = {
-    sm: "px-2.5 py-1.5 text-xs",
-    md: "px-4 py-2 text-sm",
-    lg: "px-6 py-3 text-base"
+    sm: "px-2 py-1 text-xs",
+    md: "px-3 py-1.5 text-sm",
+    lg: "px-4 py-2 text-base"
   };
 
   const variantStyles = {

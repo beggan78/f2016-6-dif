@@ -88,15 +88,15 @@ export function PeriodSetupScreen({
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-sky-300 flex items-center">
+    <div className="space-y-3">
+      <h2 className="text-xl font-semibold text-sky-300 flex items-center">
         <Users className="mr-2 h-6 w-6" />Period {currentPeriodNumber} Team Selection
       </h2>
 
-      <div className="p-4 bg-slate-700 rounded-md">
-        <h3 className="text-lg font-medium text-sky-200 mb-2">Goalie for Period {currentPeriodNumber}</h3>
+      <div className="p-2 bg-slate-700 rounded-md">
+        <h3 className="text-sm font-medium text-sky-200 mb-1">Goalie for Period {currentPeriodNumber}</h3>
         {goalieForPeriod ? (
-          <div className="flex items-center justify-between p-2 bg-sky-600 rounded-md">
+          <div className="flex items-center justify-between p-1 bg-sky-600 rounded-md">
             <span className="text-white">{goalieForPeriod.name}</span>
             <Button onClick={() => handleGoalieChangeForCurrentPeriod(null)} size="sm" variant="secondary" Icon={Edit3}>Change</Button>
           </div>
@@ -151,10 +151,10 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
   const attackerOptions = getAvailableOptions(pairKey, 'attacker');
 
   return (
-    <div className="p-4 bg-slate-700 rounded-md space-y-3">
-      <h3 className="text-lg font-medium text-sky-200">{title}</h3>
+    <div className="p-2 bg-slate-700 rounded-md space-y-1.5">
+      <h3 className="text-sm font-medium text-sky-200">{title}</h3>
       <div>
-        <label className="block text-sm font-medium text-sky-200 mb-1">Defender</label>
+        <label className="block text-xs font-medium text-sky-200 mb-0.5">Defender</label>
         <Select
           value={pair.defender || ""}
           onChange={e => onPlayerAssign(pairKey, 'defender', e.target.value)}
@@ -163,7 +163,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-sky-200 mb-1">Attacker</label>
+        <label className="block text-xs font-medium text-sky-200 mb-0.5">Attacker</label>
         <Select
           value={pair.attacker || ""}
           onChange={e => onPlayerAssign(pairKey, 'attacker', e.target.value)}

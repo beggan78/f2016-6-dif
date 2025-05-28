@@ -35,7 +35,7 @@ export function StatsScreen({
         <table className="min-w-full divide-y divide-slate-600">
           <thead className="bg-slate-800">
             <tr>
-              {['Player', 'Started', 'M', 'B', 'A', 'Field Time', 'Sub Time', 'Goalie Time'].map(header => (
+              {['Player', 'Started', 'M', 'B', 'A', 'Field Time'].map(header => (
                 <th key={header} scope="col" className="px-3 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
                   {header}
                 </th>
@@ -55,8 +55,6 @@ export function StatsScreen({
                 <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{player.stats.periodsAsDefender}</td>
                 <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{player.stats.periodsAsAttacker}</td>
                 <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeOnFieldSeconds)}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsSubSeconds)}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsGoalieSeconds)}</td>
               </tr>
             ))}
           </tbody>

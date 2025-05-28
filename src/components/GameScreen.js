@@ -38,8 +38,8 @@ export function GameScreen({
     }
 
     return (
-      <div className={`p-4 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor}`}>
-        <h3 className="text-lg font-semibold mb-2 flex items-center justify-between">
+      <div className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor}`}>
+        <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
           {pairName}
           <div>
             {isNextOff && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
@@ -53,33 +53,33 @@ export function GameScreen({
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber} In Progress</h2>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber} In Progress</h2>
 
       {/* Timers */}
       <div className="grid grid-cols-2 gap-4 text-center">
-        <div className="p-4 bg-slate-700 rounded-lg">
+        <div className="p-3 bg-slate-700 rounded-lg">
           <p className="text-sm text-sky-200 mb-1">Match Clock</p>
-          <p className="text-4xl font-mono text-sky-400">{formatTime(matchTimerSeconds)}</p>
+          <p className="text-3xl font-mono text-sky-400">{formatTime(matchTimerSeconds)}</p>
         </div>
-        <div className="p-4 bg-slate-700 rounded-lg">
+        <div className="p-3 bg-slate-700 rounded-lg">
           <p className="text-sm text-sky-200 mb-1">Substitution Timer</p>
-          <p className="text-4xl font-mono text-emerald-400">{formatTime(subTimerSeconds)}</p>
+          <p className="text-3xl font-mono text-emerald-400">{formatTime(subTimerSeconds)}</p>
         </div>
       </div>
 
       {/* Field & Subs Visualization */}
-      <div className="p-1 bg-slate-700 rounded-lg">
-        <p className="text-center my-2 text-sky-200">Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span></p>
+      <div className="p-2 bg-slate-700 rounded-lg">
+        <p className="text-center my-1 text-sky-200">Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span></p>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {renderPair('leftPair', 'Left Pair (Field)')}
         {renderPair('rightPair', 'Right Pair (Field)')}
         {renderPair('subPair', 'Substitutes')}
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-6">
+      <div className="flex flex-col sm:flex-row gap-3 mt-4">
         <Button onClick={handleSubstitution} Icon={RotateCcw} className="flex-1">
           SUB NOW
         </Button>
