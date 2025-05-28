@@ -18,9 +18,13 @@ export function PeriodSetupScreen({
 }) {
   const goalieForPeriod = allPlayers.find(p => p.id === periodFormation.goalie);
 
-  const getPlayerLabelWithTime = (player) => {
-    const outfieldTime = formatTime(player.stats.timeOnFieldSeconds);
-    return `${player.name} - ${outfieldTime}`;
+  const getPlayerLabel = (player) => {
+    // Only show accumulated time for periods 2 and 3
+    if (currentPeriodNumber > 1) {
+      const outfieldTime = formatTime(player.stats.timeOnFieldSeconds);
+      return `${player.name} - ${outfieldTime}`;
+    }
+    return player.name;
   };
 
   const handlePlayerAssignment = (pairKey, role, playerId) => {
@@ -100,7 +104,7 @@ export function PeriodSetupScreen({
           <Select
             value={periodFormation.goalie || ""}
             onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
-            options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabelWithTime(p) }))}
+            options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
             placeholder="Select Goalie for this Period"
           />
         )}
@@ -114,7 +118,7 @@ export function PeriodSetupScreen({
             pair={periodFormation.leftPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
-            getPlayerLabelWithTime={getPlayerLabelWithTime}
+            getPlayerLabel={getPlayerLabel}
           />
           <PairSelectionCard
             title="Right Pair (On Field)"
@@ -122,7 +126,7 @@ export function PeriodSetupScreen({
             pair={periodFormation.rightPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
-            getPlayerLabelWithTime={getPlayerLabelWithTime}
+            getPlayerLabel={getPlayerLabel}
           />
           <PairSelectionCard
             title="Substitute Pair"
@@ -130,7 +134,7 @@ export function PeriodSetupScreen({
             pair={periodFormation.subPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
-            getPlayerLabelWithTime={getPlayerLabelWithTime}
+            getPlayerLabel={getPlayerLabel}
           />
         </>
       )}
@@ -142,7 +146,7 @@ export function PeriodSetupScreen({
   );
 }
 
-export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAvailableOptions, getPlayerLabelWithTime }) {
+export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAvailableOptions, getPlayerLabel }) {
   const defenderOptions = getAvailableOptions(pairKey, 'defender');
   const attackerOptions = getAvailableOptions(pairKey, 'attacker');
 
@@ -154,7 +158,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         <Select
           value={pair.defender || ""}
           onChange={e => onPlayerAssign(pairKey, 'defender', e.target.value)}
-          options={defenderOptions.map(p => ({ value: p.id, label: getPlayerLabelWithTime(p) }))}
+          options={defenderOptions.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
           placeholder="Select Defender"
         />
       </div>
@@ -163,7 +167,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         <Select
           value={pair.attacker || ""}
           onChange={e => onPlayerAssign(pairKey, 'attacker', e.target.value)}
-          options={attackerOptions.map(p => ({ value: p.id, label: getPlayerLabelWithTime(p) }))}
+          options={attackerOptions.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
           placeholder="Select Attacker"
         />
       </div>
