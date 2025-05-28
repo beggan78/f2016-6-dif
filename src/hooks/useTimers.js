@@ -51,7 +51,7 @@ export function useTimers(periodDurationMinutes) {
         setUpdateIntervalId(null);
       }
     }
-  }, [isPeriodActive, periodStartTime, lastSubTime, periodDurationMinutes, updateIntervalId]);
+  }, [isPeriodActive, periodStartTime, lastSubTime, periodDurationMinutes]);
 
   // Update timer when period duration changes
   useEffect(() => {
