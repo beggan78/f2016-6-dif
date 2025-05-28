@@ -110,7 +110,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
       <header className="w-full max-w-2xl text-center mb-4">
-        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F2016-6 Game App</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Game App</h1>
       </header>
       <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
         {renderView()}

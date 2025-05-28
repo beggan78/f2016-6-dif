@@ -1,4 +1,4 @@
-#### DIF F2016-6 Game App
+#### DIF F16-6 Game App
 
 I need a mobile-first webapp for my soccer team that I'm coaching. Every game is played in 3 periods. Every period is 15 minutes long. The whole team has 14 players but for one and the same game 7 players are elected.
 These are the players on the team:
