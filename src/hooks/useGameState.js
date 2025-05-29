@@ -120,6 +120,12 @@ export function useGameState() {
 
         if (stats.currentPeriodStatus === 'on_field') {
           stats.timeOnFieldSeconds += timeInPreviousStint;
+          // Track role-specific time for new points system
+          if (stats.currentPeriodRole === 'Defender') {
+            stats.timeAsDefenderSeconds += timeInPreviousStint;
+          } else if (stats.currentPeriodRole === 'Attacker') {
+            stats.timeAsAttackerSeconds += timeInPreviousStint;
+          }
         } else if (stats.currentPeriodStatus === 'substitute') {
           stats.timeAsSubSeconds += timeInPreviousStint;
         } else if (stats.currentPeriodStatus === 'goalie') {
@@ -447,6 +453,12 @@ export function useGameState() {
 
         if (stats.currentPeriodStatus === 'on_field') {
           stats.timeOnFieldSeconds += timeInFinalStint;
+          // Track role-specific time for new points system
+          if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) {
+            stats.timeAsDefenderSeconds += timeInFinalStint;
+          } else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) {
+            stats.timeAsAttackerSeconds += timeInFinalStint;
+          }
         } else if (stats.currentPeriodStatus === 'substitute') {
           stats.timeAsSubSeconds += timeInFinalStint;
         } else if (stats.currentPeriodStatus === 'goalie') {

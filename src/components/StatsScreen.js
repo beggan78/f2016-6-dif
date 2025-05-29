@@ -1,7 +1,7 @@
 import React from 'react';
 import { ListChecks, PlusCircle } from 'lucide-react';
 import { Button } from './UI';
-import { PLAYER_ROLES } from '../utils/gameLogic';
+import { PLAYER_ROLES, calculateRolePoints } from '../utils/gameLogic';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -17,6 +17,10 @@ export function StatsScreen({
   clearTimerState
 }) {
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
+
+  const formatPoints = (points) => {
+    return points % 1 === 0 ? points.toString() : points.toFixed(1);
+  };
 
   const handleNewGame = () => {
     // Reset global state for a new game configuration and clear localStorage
@@ -47,22 +51,35 @@ export function StatsScreen({
             </tr>
           </thead>
           <tbody className="bg-slate-700 divide-y divide-slate-600">
-            {squadForStats.map(player => (
-              <tr key={player.id}>
-                <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{player.name}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">
-                  {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
-                      player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
-                          player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-'}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{player.stats.periodsAsGoalie}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{player.stats.periodsAsDefender}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{player.stats.periodsAsAttacker}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeOnFieldSeconds)}</td>
-              </tr>
-            ))}
+            {squadForStats.map(player => {
+              const { goaliePoints, defenderPoints, attackerPoints } = calculateRolePoints(player);
+              return (
+                <tr key={player.id}>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{player.name}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">
+                    {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
+                        player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
+                            player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-'}
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(goaliePoints)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(defenderPoints)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(attackerPoints)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeOnFieldSeconds)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+      </div>
+
+      <div className="text-sm text-slate-400 bg-slate-800 p-3 rounded-lg">
+        <p className="font-medium text-sky-200 mb-2">Points System:</p>
+        <ul className="space-y-1">
+          <li>• Each player gets exactly 3 points total</li>
+          <li>• 1 point per period as goalie (M)</li>
+          <li>• Remaining points split between defender (B) and attacker (A) based on time played</li>
+          <li>• Points awarded in 0.5 increments</li>
+        </ul>
       </div>
 
       <Button onClick={handleNewGame} Icon={PlusCircle}>
