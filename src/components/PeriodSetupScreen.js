@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Users, Play, Edit3 } from 'lucide-react';
 import { Select, Button } from './UI';
 import { formatTime } from '../utils/timeCalculations';
@@ -16,6 +16,10 @@ export function PeriodSetupScreen({
   setPeriodGoalieIds, 
   numPeriods 
 }) {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const goalieForPeriod = allPlayers.find(p => p.id === periodFormation.goalie);
 
   const getPlayerLabel = (player) => {
