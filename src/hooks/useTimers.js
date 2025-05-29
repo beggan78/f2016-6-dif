@@ -58,7 +58,7 @@ export function useTimers(periodDurationMinutes) {
       const updateTimers = () => {
         const now = Date.now();
         const elapsedSeconds = Math.floor((now - periodStartTime) / 1000);
-        const remainingSeconds = Math.max(0, (periodDurationMinutes * 60) - elapsedSeconds);
+        const remainingSeconds = (periodDurationMinutes * 60) - elapsedSeconds;
         
         setMatchTimerSeconds(remainingSeconds);
         

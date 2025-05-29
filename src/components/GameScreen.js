@@ -60,7 +60,9 @@ export function GameScreen({
       <div className="grid grid-cols-2 gap-4 text-center">
         <div className="p-3 bg-slate-700 rounded-lg">
           <p className="text-sm text-sky-200 mb-1">Match Clock</p>
-          <p className="text-3xl font-mono text-sky-400">{formatTime(matchTimerSeconds)}</p>
+          <p className={`text-3xl font-mono ${matchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
+            {matchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(matchTimerSeconds))}
+          </p>
         </div>
         <div className="p-3 bg-slate-700 rounded-lg">
           <p className="text-sm text-sky-200 mb-1">Substitution Timer</p>
@@ -73,8 +75,8 @@ export function GameScreen({
         <p className="text-center my-1 text-sky-200">Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span></p>
       </div>
       <div className="space-y-3">
-        {renderPair('leftPair', 'Left Pair (Field)')}
-        {renderPair('rightPair', 'Right Pair (Field)')}
+        {renderPair('leftPair', 'Left')}
+        {renderPair('rightPair', 'Right')}
         {renderPair('subPair', 'Substitutes')}
       </div>
 
