@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { formatTime } from './utils/timeCalculations';
@@ -7,11 +7,15 @@ import { ConfigurationScreen } from './components/ConfigurationScreen';
 import { PeriodSetupScreen } from './components/PeriodSetupScreen';
 import { GameScreen } from './components/GameScreen';
 import { StatsScreen } from './components/StatsScreen';
+import { ConfirmationModal } from './components/UI';
 
 // Main App Component
 function App() {
   const gameState = useGameState();
   const timers = useTimers(gameState.periodDurationMinutes);
+  
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
 
   const selectedSquadPlayers = useMemo(() => {
     return gameState.allPlayers.filter(p => gameState.selectedSquadIds.includes(p.id));
@@ -44,17 +48,24 @@ function App() {
         ? `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
         : `${remainingSeconds} seconds`;
       
-      const confirmed = window.confirm(
-        `There are still ${timeString} remaining in this period. Are you sure you want to end the period early?`
-      );
-      
-      if (!confirmed) {
-        return; // Don't end the period
-      }
+      setConfirmModalData({ timeString });
+      setShowConfirmModal(true);
+      return;
     }
     
+    // Proceed with ending the period
     timers.stopTimers();
     gameState.handleEndPeriod();
+  };
+
+  const handleConfirmEndPeriod = () => {
+    setShowConfirmModal(false);
+    timers.stopTimers();
+    gameState.handleEndPeriod();
+  };
+
+  const handleCancelEndPeriod = () => {
+    setShowConfirmModal(false);
   };
 
   // Render logic
@@ -138,6 +149,14 @@ function App() {
       <footer className="mt-8 text-center text-sm text-slate-500">
         <p>&copy; {new Date().getFullYear()} Coach App by Codewizard.</p>
       </footer>
+      
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onConfirm={handleConfirmEndPeriod}
+        onCancel={handleCancelEndPeriod}
+        title="End Period Early?"
+        message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
+      />
     </div>
   );
 }
