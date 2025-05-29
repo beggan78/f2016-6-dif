@@ -35,6 +35,24 @@ function App() {
   };
 
   const handleEndPeriod = () => {
+    // Check if period is ending more than 1 minute early
+    const remainingMinutes = Math.floor(timers.matchTimerSeconds / 60);
+    const remainingSeconds = timers.matchTimerSeconds % 60;
+    
+    if (timers.matchTimerSeconds > 60) { // More than 1 minute remaining
+      const timeString = remainingMinutes > 0 
+        ? `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
+        : `${remainingSeconds} seconds`;
+      
+      const confirmed = window.confirm(
+        `There are still ${timeString} remaining in this period. Are you sure you want to end the period early?`
+      );
+      
+      if (!confirmed) {
+        return; // Don't end the period
+      }
+    }
+    
     timers.stopTimers();
     gameState.handleEndPeriod();
   };
