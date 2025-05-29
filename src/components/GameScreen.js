@@ -13,16 +13,79 @@ export function GameScreen({
   handleEndPeriod, 
   nextPhysicalPairToSubOut,
   nextPlayerToSubOut,
-  selectedSquadPlayers
+  nextPlayerIdToSubOut,
+  selectedSquadPlayers,
+  setNextPhysicalPairToSubOut,
+  setNextPlayerToSubOut
 }) {
   const teamSize = selectedSquadPlayers?.length || 7;
   const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
+
+  // Click and hold logic for changing next substitution target
+  const handlePairLongPress = (pairKey) => {
+    if (pairKey === 'leftPair' || pairKey === 'rightPair') {
+      console.log('Setting next pair to sub out:', pairKey);
+      setNextPhysicalPairToSubOut(pairKey);
+    }
+  };
+
+  const handlePlayerLongPress = (position) => {
+    if (['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].includes(position)) {
+      console.log('Setting next player to sub out:', position);
+      setNextPlayerToSubOut(position);
+    }
+  };
+
+  // Hook for handling long press and double click
+  const useLongPressAndDoubleClick = (callback, ms = 1000) => {
+    const [startLongPress, setStartLongPress] = React.useState(false);
+    const callbackRef = React.useRef(callback);
+
+    // Update callback ref when callback changes
+    React.useEffect(() => {
+      callbackRef.current = callback;
+    }, [callback]);
+
+    React.useEffect(() => {
+      let timerId;
+      if (startLongPress) {
+        timerId = setTimeout(() => {
+          callbackRef.current();
+        }, ms);
+      } else {
+        clearTimeout(timerId);
+      }
+
+      return () => {
+        clearTimeout(timerId);
+      };
+    }, [ms, startLongPress]);
+
+    return {
+      onMouseDown: () => setStartLongPress(true),
+      onMouseUp: () => setStartLongPress(false),
+      onMouseLeave: () => setStartLongPress(false),
+      onTouchStart: () => setStartLongPress(true),
+      onTouchEnd: () => setStartLongPress(false),
+      onDoubleClick: () => callbackRef.current(),
+    };
+  };
+
+  // Create long press and double click handlers for each pair and individual position
+  const leftPairEvents = useLongPressAndDoubleClick(() => handlePairLongPress('leftPair'));
+  const rightPairEvents = useLongPressAndDoubleClick(() => handlePairLongPress('rightPair'));
+  
+  const leftDefenderEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftDefender'));
+  const rightDefenderEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightDefender'));
+  const leftAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftAttacker'));
+  const rightAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightAttacker'));
 
   const renderPair = (pairKey, pairName) => {
     const pairData = periodFormation[pairKey];
     if (!pairData) return null;
     const isNextOff = pairKey === nextPhysicalPairToSubOut && pairKey !== 'subPair';
     const isNextOn = pairKey === 'subPair';
+    const canBeSelected = pairKey === 'leftPair' || pairKey === 'rightPair';
 
     let bgColor = 'bg-slate-700'; // Default for subs or if logic is off
     let textColor = 'text-slate-300';
@@ -40,8 +103,15 @@ export function GameScreen({
       borderColor = 'border-emerald-500';
     }
 
+    let longPressEvents = {};
+    if (pairKey === 'leftPair') longPressEvents = leftPairEvents;
+    else if (pairKey === 'rightPair') longPressEvents = rightPairEvents;
+
     return (
-      <div className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor}`}>
+      <div 
+        className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
+        {...longPressEvents}
+      >
         <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
           {pairName}
           <div>
@@ -51,6 +121,9 @@ export function GameScreen({
         </h3>
         <p><Shield className="inline h-4 w-4 mr-1" /> D: {getPlayerName(pairData.defender)}</p>
         <p><Zap className="inline h-4 w-4 mr-1" /> A: {getPlayerName(pairData.attacker)}</p>
+        {canBeSelected && (
+          <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
+        )}
       </div>
     );
   };
@@ -59,8 +132,9 @@ export function GameScreen({
     const playerId = periodFormation[position];
     if (!playerId) return null;
     
-    const isNextOff = position === nextPlayerToSubOut;
+    const isNextOff = teamSize === 6 ? playerId === nextPlayerIdToSubOut : position === nextPlayerToSubOut;
     const isNextOn = position === 'substitute';
+    const canBeSelected = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].includes(position);
 
     let bgColor = 'bg-slate-700'; // Default for substitute
     let textColor = 'text-slate-300';
@@ -78,8 +152,17 @@ export function GameScreen({
       borderColor = 'border-emerald-500';
     }
 
+    let longPressEvents = {};
+    if (position === 'leftDefender') longPressEvents = leftDefenderEvents;
+    else if (position === 'rightDefender') longPressEvents = rightDefenderEvents;
+    else if (position === 'leftAttacker') longPressEvents = leftAttackerEvents;
+    else if (position === 'rightAttacker') longPressEvents = rightAttackerEvents;
+
     return (
-      <div className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor}`}>
+      <div 
+        className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
+        {...longPressEvents}
+      >
         <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
           {positionName}
           <div>
@@ -88,6 +171,9 @@ export function GameScreen({
           </div>
         </h3>
         <p>{icon} {getPlayerName(playerId)}</p>
+        {canBeSelected && (
+          <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
+        )}
       </div>
     );
   };

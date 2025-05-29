@@ -49,7 +49,9 @@ export function useGameState() {
           substitute: null,
         },
         nextPhysicalPairToSubOut: saved.nextPhysicalPairToSubOut || 'leftPair',
-        nextPlayerToSubOut: saved.nextPlayerToSubOut || 'leftDefender', // For 6-player mode
+        nextPlayerToSubOut: saved.nextPlayerToSubOut || 'leftDefender', // For 6-player mode (legacy)
+        nextPlayerIdToSubOut: saved.nextPlayerIdToSubOut || null, // New: track actual player ID
+        rotationQueue: saved.rotationQueue || [], // Queue of player IDs for 6-player rotation
         gameLog: saved.gameLog || [],
       };
     }
@@ -74,7 +76,9 @@ export function useGameState() {
         substitute: null,
       },
       nextPhysicalPairToSubOut: 'leftPair',
-      nextPlayerToSubOut: 'leftDefender', // For 6-player mode
+      nextPlayerToSubOut: 'leftDefender', // For 6-player mode (legacy)
+      nextPlayerIdToSubOut: null, // New: track actual player ID
+      rotationQueue: [], // Queue of player IDs for 6-player rotation
       gameLog: [],
     };
   };
@@ -91,6 +95,8 @@ export function useGameState() {
   const [periodFormation, setPeriodFormation] = useState(initialState.periodFormation);
   const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
   const [nextPlayerToSubOut, setNextPlayerToSubOut] = useState(initialState.nextPlayerToSubOut);
+  const [nextPlayerIdToSubOut, setNextPlayerIdToSubOut] = useState(initialState.nextPlayerIdToSubOut);
+  const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
 
   // Save state to localStorage whenever it changes - NOTE: Critical for refresh persistence
@@ -106,10 +112,12 @@ export function useGameState() {
       periodFormation,
       nextPhysicalPairToSubOut,
       nextPlayerToSubOut,
+      nextPlayerIdToSubOut,
+      rotationQueue,
       gameLog,
     };
     saveToStorage(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, gameLog]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, rotationQueue, gameLog]);
 
   // Player Stat Update Logic
   const updatePlayerTimeStats = useCallback((playerIds, newStatus, currentTimeEpoch) => {
@@ -232,6 +240,11 @@ export function useGameState() {
           (pos === 'rightAttacker' && playingPlayers[3]?.id === secondMostTimePlayer.id)
         );
         setNextPlayerToSubOut(playerPosition || 'leftDefender');
+        setNextPlayerIdToSubOut(secondMostTimePlayer?.id || null);
+        
+        // Initialize rotation queue for 6-player mode
+        const initialQueue = outfieldersWithStats.map(p => p.id);
+        setRotationQueue(initialQueue);
       }
 
     } else {
@@ -369,6 +382,17 @@ export function useGameState() {
       return p;
     }));
 
+    // Initialize nextPlayerIdToSubOut and rotation queue for 6-player mode
+    if (teamSize === 6 && nextPlayerToSubOut) {
+      const initialPlayerToSubOut = periodFormation[nextPlayerToSubOut];
+      setNextPlayerIdToSubOut(initialPlayerToSubOut);
+      
+      // Initialize rotation queue with all outfield players
+      const outfieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
+      const initialQueue = outfieldPositions.map(pos => periodFormation[pos]).filter(Boolean);
+      setRotationQueue(initialQueue);
+    }
+
     setView('game');
   };
 
@@ -409,10 +433,14 @@ export function useGameState() {
 
       setNextPhysicalPairToSubOut(pairToSubOutKey === 'leftPair' ? 'rightPair' : 'leftPair');
     } else if (teamSize === 6) {
-      // 6-player substitution logic (individual round-robin)
-      const playerToSubOutKey = nextPlayerToSubOut;
-      const playerGoingOffId = periodFormation[playerToSubOutKey];
+      // 6-player substitution logic (player-based round-robin)
+      const playerGoingOffId = nextPlayerIdToSubOut;
       const playerComingOnId = periodFormation.substitute;
+      
+      // Find which position the outgoing player is currently in
+      const playerToSubOutKey = Object.keys(periodFormation).find(key => 
+        periodFormation[key] === playerGoingOffId && key !== 'substitute' && key !== 'goalie'
+      );
 
       updatePlayerTimeStats([playerGoingOffId], 'substitute', currentTimeEpoch);
       updatePlayerTimeStats([playerComingOnId], 'on_field', currentTimeEpoch);
@@ -432,11 +460,25 @@ export function useGameState() {
         return p;
       }));
 
-      // Round-robin to next position
-      const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
-      const currentIndex = positions.indexOf(playerToSubOutKey);
-      const nextIndex = (currentIndex + 1) % positions.length;
-      setNextPlayerToSubOut(positions[nextIndex]);
+      // Update rotation queue after substitution
+      const updatedQueue = [...rotationQueue];
+      const currentPlayerIndex = updatedQueue.indexOf(playerGoingOffId);
+      
+      // Remove the player who just went off from current position
+      updatedQueue.splice(currentPlayerIndex, 1);
+      // Add them to the end of the queue
+      updatedQueue.push(playerGoingOffId);
+      
+      // Next player is now at the front of the queue
+      const nextPlayerToSubOutId = updatedQueue[0];
+      
+      setRotationQueue(updatedQueue);
+      setNextPlayerIdToSubOut(nextPlayerToSubOutId);
+      
+      // Update legacy position tracking for compatibility
+      const outfieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+      const nextPlayerPosition = outfieldPositions.find(pos => periodFormation[pos] === nextPlayerToSubOutId);
+      setNextPlayerToSubOut(nextPlayerPosition || 'leftDefender');
     }
   };
 
@@ -526,6 +568,48 @@ export function useGameState() {
     }
   };
 
+  // Enhanced setters for manual selection - rotation logic already handles sequence correctly
+  const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
+    console.log('Manually setting next pair to substitute:', newPairKey);
+    setNextPhysicalPairToSubOut(newPairKey);
+    // The existing rotation logic in handleSubstitution will continue from this selection
+  }, []);
+
+  const setNextPlayerToSubOutWithRotation = useCallback((newPosition) => {
+    console.log('Manually setting next player to substitute:', newPosition);
+    setNextPlayerToSubOut(newPosition);
+    
+    // For 6-player mode, reorder the rotation queue
+    if (periodFormation && periodFormation[newPosition] && rotationQueue.length > 0) {
+      const selectedPlayerId = periodFormation[newPosition];
+      const originalNextPlayerId = nextPlayerIdToSubOut;
+      
+      console.log('Reordering queue - selected:', selectedPlayerId, 'was next:', originalNextPlayerId);
+      
+      // Reorder queue: remove selected player and insert before originally next player
+      const newQueue = [...rotationQueue];
+      const selectedIndex = newQueue.indexOf(selectedPlayerId);
+      const originalNextIndex = newQueue.indexOf(originalNextPlayerId);
+      
+      if (selectedIndex !== -1 && originalNextIndex !== -1 && selectedIndex !== originalNextIndex) {
+        // Remove selected player from current position
+        newQueue.splice(selectedIndex, 1);
+        
+        // Find new position of originally next player (index may have shifted)
+        const adjustedNextIndex = newQueue.indexOf(originalNextPlayerId);
+        
+        // Insert selected player before originally next player
+        newQueue.splice(adjustedNextIndex, 0, selectedPlayerId);
+        
+        setRotationQueue(newQueue);
+        console.log('New queue order:', newQueue);
+      }
+      
+      setNextPlayerIdToSubOut(selectedPlayerId);
+      console.log('Set next player ID to substitute:', selectedPlayerId);
+    }
+  }, [periodFormation, rotationQueue, nextPlayerIdToSubOut]);
+
   return {
     // State
     allPlayers,
@@ -545,9 +629,13 @@ export function useGameState() {
     periodFormation,
     setPeriodFormation,
     nextPhysicalPairToSubOut,
-    setNextPhysicalPairToSubOut,
+    setNextPhysicalPairToSubOut: setNextPhysicalPairToSubOutWithRotation,
     nextPlayerToSubOut,
-    setNextPlayerToSubOut,
+    setNextPlayerToSubOut: setNextPlayerToSubOutWithRotation,
+    nextPlayerIdToSubOut,
+    setNextPlayerIdToSubOut,
+    rotationQueue,
+    setRotationQueue,
     gameLog,
     setGameLog,
     

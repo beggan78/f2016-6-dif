@@ -36,7 +36,7 @@ export function StatsScreen({
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold text-sky-300 flex items-center">
-        <ListChecks className="mr-2 h-6 w-6" />Game Over - Statistics
+        <ListChecks className="mr-2 h-6 w-6" />Game Finished - Statistics
       </h2>
 
       <div className="overflow-x-auto bg-slate-700 rounded-lg p-1">

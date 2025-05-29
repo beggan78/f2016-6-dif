@@ -155,7 +155,10 @@ function App() {
             handleEndPeriod={handleEndPeriod}
             nextPhysicalPairToSubOut={gameState.nextPhysicalPairToSubOut}
             nextPlayerToSubOut={gameState.nextPlayerToSubOut}
+            nextPlayerIdToSubOut={gameState.nextPlayerIdToSubOut}
             selectedSquadPlayers={selectedSquadPlayers}
+            setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
+            setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
           />
         );
       case 'stats':
