@@ -8,6 +8,7 @@ import { PeriodSetupScreen } from './components/PeriodSetupScreen';
 import { GameScreen } from './components/GameScreen';
 import { StatsScreen } from './components/StatsScreen';
 import { ConfirmationModal } from './components/UI';
+import { HamburgerMenu } from './components/HamburgerMenu';
 
 // Main App Component
 function App() {
@@ -66,6 +67,23 @@ function App() {
 
   const handleCancelEndPeriod = () => {
     setShowConfirmModal(false);
+  };
+
+  const handleRestartMatch = () => {
+    gameState.setView('config');
+    gameState.setCurrentPeriodNumber(1);
+    gameState.setGameLog([]);
+    gameState.setAllPlayers(initializePlayers(initialRoster));
+    gameState.setSelectedSquadIds([]);
+    gameState.setPeriodGoalieIds({});
+    gameState.setPeriodFormation({
+      goalie: null,
+      leftPair: { defender: null, attacker: null },
+      rightPair: { defender: null, attacker: null },
+      subPair: { defender: null, attacker: null },
+    });
+    gameState.clearStoredState();
+    timers.clearTimerState();
   };
 
   // Render logic
@@ -140,7 +158,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
-      <header className="w-full max-w-2xl text-center mb-4">
+      <header className="w-full max-w-2xl relative text-center mb-4">
+        <div className="absolute top-0 right-0">
+          <HamburgerMenu onRestartMatch={handleRestartMatch} />
+        </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
       </header>
       <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
