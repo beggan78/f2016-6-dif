@@ -9,6 +9,7 @@ import { GameScreen } from './components/GameScreen';
 import { StatsScreen } from './components/StatsScreen';
 import { ConfirmationModal } from './components/UI';
 import { HamburgerMenu } from './components/HamburgerMenu';
+import { AddPlayerModal } from './components/AddPlayerModal';
 
 // Main App Component
 function App() {
@@ -17,6 +18,7 @@ function App() {
   
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
   const selectedSquadPlayers = useMemo(() => {
     return gameState.allPlayers.filter(p => gameState.selectedSquadIds.includes(p.id));
@@ -84,6 +86,19 @@ function App() {
     });
     gameState.clearStoredState();
     timers.clearTimerState();
+  };
+
+  const handleAddPlayer = () => {
+    setShowAddPlayerModal(true);
+  };
+
+  const handleAddPlayerConfirm = (playerName) => {
+    gameState.addTemporaryPlayer(playerName);
+    setShowAddPlayerModal(false);
+  };
+
+  const handleAddPlayerCancel = () => {
+    setShowAddPlayerModal(false);
   };
 
   // Render logic
@@ -160,7 +175,11 @@ function App() {
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
       <header className="w-full max-w-2xl relative text-center mb-4">
         <div className="absolute top-0 right-0">
-          <HamburgerMenu onRestartMatch={handleRestartMatch} />
+          <HamburgerMenu 
+            onRestartMatch={handleRestartMatch} 
+            onAddPlayer={handleAddPlayer}
+            currentView={gameState.view}
+          />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
       </header>
@@ -177,6 +196,12 @@ function App() {
         onCancel={handleCancelEndPeriod}
         title="End Period Early?"
         message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
+      />
+      
+      <AddPlayerModal
+        isOpen={showAddPlayerModal}
+        onClose={handleAddPlayerCancel}
+        onAddPlayer={handleAddPlayerConfirm}
       />
     </div>
   );

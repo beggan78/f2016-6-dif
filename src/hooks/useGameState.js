@@ -357,6 +357,19 @@ export function useGameState() {
     }
   };
 
+  // Add temporary player
+  const addTemporaryPlayer = useCallback((playerName) => {
+    const newPlayerId = `temp_${Date.now()}`;
+    const newPlayer = {
+      id: newPlayerId,
+      name: playerName,
+      stats: initializePlayers([playerName])[0].stats
+    };
+    
+    setAllPlayers(prev => [...prev, newPlayer]);
+    setSelectedSquadIds(prev => [...prev, newPlayerId]);
+  }, []);
+
   // Clear stored state - useful for starting fresh
   const clearStoredState = () => {
     try {
@@ -397,6 +410,7 @@ export function useGameState() {
     handleSubstitution,
     handleEndPeriod,
     updatePlayerTimeStats,
+    addTemporaryPlayer,
     clearStoredState,
   };
 }
