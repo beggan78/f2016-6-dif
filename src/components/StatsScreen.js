@@ -12,13 +12,17 @@ export function StatsScreen({
   setPeriodGoalieIds, 
   setGameLog,
   initializePlayers,
-  initialRoster
+  initialRoster,
+  clearStoredState,
+  clearTimerState
 }) {
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
 
   const handleNewGame = () => {
-    // Reset global state for a new game configuration
-    setAllPlayers(prev => initializePlayers(initialRoster)); // Full reset of all player stats
+    // Reset global state for a new game configuration and clear localStorage
+    clearStoredState(); // Clear localStorage state
+    clearTimerState(); // Clear timer localStorage state
+    setAllPlayers(initializePlayers(initialRoster)); // Full reset of all player stats
     setSelectedSquadIds([]);
     setPeriodGoalieIds({});
     setGameLog([]);

@@ -1,12 +1,55 @@
 import { useState, useEffect } from 'react';
 
+// localStorage utilities for timers - NOTE: Essential for preventing timer loss on page refresh
+const TIMER_STORAGE_KEY = 'dif-coach-timer-state';
+
+const loadTimerState = () => {
+  try {
+    const saved = localStorage.getItem(TIMER_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    console.warn('Failed to load timer state from localStorage:', error);
+    return null;
+  }
+};
+
+const saveTimerState = (state) => {
+  try {
+    localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn('Failed to save timer state to localStorage:', error);
+  }
+};
+
 export function useTimers(periodDurationMinutes) {
-  // Timers
-  const [matchTimerSeconds, setMatchTimerSeconds] = useState(periodDurationMinutes * 60);
-  const [subTimerSeconds, setSubTimerSeconds] = useState(0);
-  const [isPeriodActive, setIsPeriodActive] = useState(false);
-  const [periodStartTime, setPeriodStartTime] = useState(null);
-  const [lastSubTime, setLastSubTime] = useState(null);
+  // Initialize timer state from localStorage or defaults
+  const initializeTimerState = () => {
+    const saved = loadTimerState();
+    if (saved) {
+      return {
+        matchTimerSeconds: saved.matchTimerSeconds ?? (periodDurationMinutes * 60),
+        subTimerSeconds: saved.subTimerSeconds ?? 0,
+        isPeriodActive: saved.isPeriodActive ?? false,
+        periodStartTime: saved.periodStartTime ?? null,
+        lastSubTime: saved.lastSubTime ?? null,
+      };
+    }
+    return {
+      matchTimerSeconds: periodDurationMinutes * 60,
+      subTimerSeconds: 0,
+      isPeriodActive: false,
+      periodStartTime: null,
+      lastSubTime: null,
+    };
+  };
+
+  const initialTimerState = initializeTimerState();
+  
+  const [matchTimerSeconds, setMatchTimerSeconds] = useState(initialTimerState.matchTimerSeconds);
+  const [subTimerSeconds, setSubTimerSeconds] = useState(initialTimerState.subTimerSeconds);
+  const [isPeriodActive, setIsPeriodActive] = useState(initialTimerState.isPeriodActive);
+  const [periodStartTime, setPeriodStartTime] = useState(initialTimerState.periodStartTime);
+  const [lastSubTime, setLastSubTime] = useState(initialTimerState.lastSubTime);
   const [updateIntervalId, setUpdateIntervalId] = useState(null);
 
   // Timer Effects
@@ -51,7 +94,8 @@ export function useTimers(periodDurationMinutes) {
         setUpdateIntervalId(null);
       }
     }
-  }, [isPeriodActive, periodStartTime, lastSubTime, periodDurationMinutes, updateIntervalId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPeriodActive, periodStartTime, lastSubTime, periodDurationMinutes]); // NOTE: updateIntervalId removed from deps to prevent infinite loop
 
   // Update timer when period duration changes
   useEffect(() => {
@@ -59,6 +103,18 @@ export function useTimers(periodDurationMinutes) {
       setMatchTimerSeconds(periodDurationMinutes * 60);
     }
   }, [periodDurationMinutes, isPeriodActive]);
+
+  // Save timer state to localStorage whenever it changes - NOTE: Critical for refresh persistence
+  useEffect(() => {
+    const currentTimerState = {
+      matchTimerSeconds,
+      subTimerSeconds,
+      isPeriodActive,
+      periodStartTime,
+      lastSubTime,
+    };
+    saveTimerState(currentTimerState);
+  }, [matchTimerSeconds, subTimerSeconds, isPeriodActive, periodStartTime, lastSubTime]);
 
   const resetSubTimer = () => {
     setLastSubTime(Date.now());
@@ -80,6 +136,15 @@ export function useTimers(periodDurationMinutes) {
     }
   };
 
+  // Clear stored timer state - useful for starting fresh
+  const clearTimerState = () => {
+    try {
+      localStorage.removeItem(TIMER_STORAGE_KEY);
+    } catch (error) {
+      console.warn('Failed to clear timer state:', error);
+    }
+  };
+
   return {
     matchTimerSeconds,
     setMatchTimerSeconds,
@@ -92,5 +157,6 @@ export function useTimers(periodDurationMinutes) {
     stopTimers,
     periodStartTime,
     lastSubTime,
+    clearTimerState,
   };
 }

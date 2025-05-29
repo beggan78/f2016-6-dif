@@ -1,29 +1,99 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers, initialRoster, PLAYER_ROLES } from '../utils/gameLogic';
 import { generateRecommendedFormation } from '../utils/formationGenerator';
 
+// localStorage utilities - NOTE: Essential for preventing state loss on page refresh
+const STORAGE_KEY = 'dif-coach-game-state';
+
+const loadFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    console.warn('Failed to load game state from localStorage:', error);
+    return null;
+  }
+};
+
+const saveToStorage = (state) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn('Failed to save game state to localStorage:', error);
+  }
+};
+
 export function useGameState() {
-  const [allPlayers, setAllPlayers] = useState(() => initializePlayers(initialRoster));
-  const [view, setView] = useState('config'); // 'config', 'periodSetup', 'game', 'stats'
+  // Initialize state from localStorage or defaults
+  const initializeState = () => {
+    const saved = loadFromStorage();
+    if (saved) {
+      return {
+        allPlayers: saved.allPlayers || initializePlayers(initialRoster),
+        view: saved.view || 'config',
+        selectedSquadIds: saved.selectedSquadIds || [],
+        numPeriods: saved.numPeriods || 3,
+        periodDurationMinutes: saved.periodDurationMinutes || 15,
+        periodGoalieIds: saved.periodGoalieIds || {},
+        currentPeriodNumber: saved.currentPeriodNumber || 1,
+        periodFormation: saved.periodFormation || {
+          goalie: null,
+          leftPair: { defender: null, attacker: null },
+          rightPair: { defender: null, attacker: null },
+          subPair: { defender: null, attacker: null },
+        },
+        nextPhysicalPairToSubOut: saved.nextPhysicalPairToSubOut || 'leftPair',
+        gameLog: saved.gameLog || [],
+      };
+    }
+    return {
+      allPlayers: initializePlayers(initialRoster),
+      view: 'config',
+      selectedSquadIds: [],
+      numPeriods: 3,
+      periodDurationMinutes: 15,
+      periodGoalieIds: {},
+      currentPeriodNumber: 1,
+      periodFormation: {
+        goalie: null,
+        leftPair: { defender: null, attacker: null },
+        rightPair: { defender: null, attacker: null },
+        subPair: { defender: null, attacker: null },
+      },
+      nextPhysicalPairToSubOut: 'leftPair',
+      gameLog: [],
+    };
+  };
 
-  // Game Settings
-  const [selectedSquadIds, setSelectedSquadIds] = useState([]);
-  const [numPeriods, setNumPeriods] = useState(3);
-  const [periodDurationMinutes, setPeriodDurationMinutes] = useState(15);
-  const [periodGoalieIds, setPeriodGoalieIds] = useState({}); // {1: playerId, 2: playerId, ...}
+  const initialState = initializeState();
+  
+  const [allPlayers, setAllPlayers] = useState(initialState.allPlayers);
+  const [view, setView] = useState(initialState.view);
+  const [selectedSquadIds, setSelectedSquadIds] = useState(initialState.selectedSquadIds);
+  const [numPeriods, setNumPeriods] = useState(initialState.numPeriods);
+  const [periodDurationMinutes, setPeriodDurationMinutes] = useState(initialState.periodDurationMinutes);
+  const [periodGoalieIds, setPeriodGoalieIds] = useState(initialState.periodGoalieIds);
+  const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
+  const [periodFormation, setPeriodFormation] = useState(initialState.periodFormation);
+  const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
+  const [gameLog, setGameLog] = useState(initialState.gameLog);
 
-  // Period State
-  const [currentPeriodNumber, setCurrentPeriodNumber] = useState(1);
-  const [periodFormation, setPeriodFormation] = useState({ // Player IDs
-    goalie: null,
-    leftPair: { defender: null, attacker: null },
-    rightPair: { defender: null, attacker: null },
-    subPair: { defender: null, attacker: null },
-  });
-  const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState('leftPair'); // 'leftPair' or 'rightPair'
-
-  // Game Log for stats and recommendations
-  const [gameLog, setGameLog] = useState([]); // [{ periodNumber, formation, finalStatsSnapshotForAllPlayers }]
+  // Save state to localStorage whenever it changes - NOTE: Critical for refresh persistence
+  useEffect(() => {
+    const currentState = {
+      allPlayers,
+      view,
+      selectedSquadIds,
+      numPeriods,
+      periodDurationMinutes,
+      periodGoalieIds,
+      currentPeriodNumber,
+      periodFormation,
+      nextPhysicalPairToSubOut,
+      gameLog,
+    };
+    saveToStorage(currentState);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, gameLog]);
 
   // Player Stat Update Logic
   const updatePlayerTimeStats = useCallback((playerIds, newStatus, currentTimeEpoch) => {
@@ -287,6 +357,15 @@ export function useGameState() {
     }
   };
 
+  // Clear stored state - useful for starting fresh
+  const clearStoredState = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.warn('Failed to clear stored state:', error);
+    }
+  };
+
   return {
     // State
     allPlayers,
@@ -318,5 +397,6 @@ export function useGameState() {
     handleSubstitution,
     handleEndPeriod,
     updatePlayerTimeStats,
+    clearStoredState,
   };
 }
