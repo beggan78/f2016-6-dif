@@ -11,8 +11,11 @@ export function GameScreen({
   formatTime, 
   handleSubstitution, 
   handleEndPeriod, 
-  nextPhysicalPairToSubOut 
+  nextPhysicalPairToSubOut,
+  nextPlayerToSubOut,
+  selectedSquadPlayers
 }) {
+  const teamSize = selectedSquadPlayers?.length || 7;
   const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
 
   const renderPair = (pairKey, pairName) => {
@@ -52,6 +55,43 @@ export function GameScreen({
     );
   };
 
+  const renderIndividualPosition = (position, positionName, icon) => {
+    const playerId = periodFormation[position];
+    if (!playerId) return null;
+    
+    const isNextOff = position === nextPlayerToSubOut;
+    const isNextOn = position === 'substitute';
+
+    let bgColor = 'bg-slate-700'; // Default for substitute
+    let textColor = 'text-slate-300';
+    let borderColor = 'border-transparent';
+
+    if (position !== 'substitute') { // On field
+      bgColor = 'bg-sky-700';
+      textColor = 'text-sky-100';
+    }
+
+    if (isNextOff) {
+      borderColor = 'border-rose-500';
+    }
+    if (isNextOn) {
+      borderColor = 'border-emerald-500';
+    }
+
+    return (
+      <div className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor}`}>
+        <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
+          {positionName}
+          <div>
+            {isNextOff && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
+            {isNextOn && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+          </div>
+        </h3>
+        <p>{icon} {getPlayerName(playerId)}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber} In Progress</h2>
@@ -74,11 +114,24 @@ export function GameScreen({
       <div className="p-2 bg-slate-700 rounded-lg">
         <p className="text-center my-1 text-sky-200">Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span></p>
       </div>
-      <div className="space-y-3">
-        {renderPair('leftPair', 'Left')}
-        {renderPair('rightPair', 'Right')}
-        {renderPair('subPair', 'Substitutes')}
-      </div>
+      
+      {teamSize === 7 && (
+        <div className="space-y-3">
+          {renderPair('leftPair', 'Left')}
+          {renderPair('rightPair', 'Right')}
+          {renderPair('subPair', 'Substitutes')}
+        </div>
+      )}
+
+      {teamSize === 6 && (
+        <div className="space-y-3">
+          {renderIndividualPosition('leftDefender', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />)}
+          {renderIndividualPosition('rightDefender', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />)}
+          {renderIndividualPosition('leftAttacker', 'Left Attacker', <Zap className="inline h-4 w-4 mr-1" />)}
+          {renderIndividualPosition('rightAttacker', 'Right Attacker', <Zap className="inline h-4 w-4 mr-1" />)}
+          {renderIndividualPosition('substitute', 'Substitute', <RotateCcw className="inline h-4 w-4 mr-1" />)}
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 mt-4">

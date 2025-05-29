@@ -83,6 +83,12 @@ function App() {
       leftPair: { defender: null, attacker: null },
       rightPair: { defender: null, attacker: null },
       subPair: { defender: null, attacker: null },
+      // 6-player formation structure
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null,
+      substitute: null,
     });
     gameState.clearStoredState();
     timers.clearTimerState();
@@ -148,6 +154,8 @@ function App() {
             handleSubstitution={handleSubstitution}
             handleEndPeriod={handleEndPeriod}
             nextPhysicalPairToSubOut={gameState.nextPhysicalPairToSubOut}
+            nextPlayerToSubOut={gameState.nextPlayerToSubOut}
+            selectedSquadPlayers={selectedSquadPlayers}
           />
         );
       case 'stats':

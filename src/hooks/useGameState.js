@@ -41,8 +41,15 @@ export function useGameState() {
           leftPair: { defender: null, attacker: null },
           rightPair: { defender: null, attacker: null },
           subPair: { defender: null, attacker: null },
+          // 6-player formation structure
+          leftDefender: null,
+          rightDefender: null,
+          leftAttacker: null,
+          rightAttacker: null,
+          substitute: null,
         },
         nextPhysicalPairToSubOut: saved.nextPhysicalPairToSubOut || 'leftPair',
+        nextPlayerToSubOut: saved.nextPlayerToSubOut || 'leftDefender', // For 6-player mode
         gameLog: saved.gameLog || [],
       };
     }
@@ -59,8 +66,15 @@ export function useGameState() {
         leftPair: { defender: null, attacker: null },
         rightPair: { defender: null, attacker: null },
         subPair: { defender: null, attacker: null },
+        // 6-player formation structure
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute: null,
       },
       nextPhysicalPairToSubOut: 'leftPair',
+      nextPlayerToSubOut: 'leftDefender', // For 6-player mode
       gameLog: [],
     };
   };
@@ -76,6 +90,7 @@ export function useGameState() {
   const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
   const [periodFormation, setPeriodFormation] = useState(initialState.periodFormation);
   const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
+  const [nextPlayerToSubOut, setNextPlayerToSubOut] = useState(initialState.nextPlayerToSubOut);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
 
   // Save state to localStorage whenever it changes - NOTE: Critical for refresh persistence
@@ -90,10 +105,11 @@ export function useGameState() {
       currentPeriodNumber,
       periodFormation,
       nextPhysicalPairToSubOut,
+      nextPlayerToSubOut,
       gameLog,
     };
     saveToStorage(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, gameLog]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, gameLog]);
 
   // Player Stat Update Logic
   const updatePlayerTimeStats = useCallback((playerIds, newStatus, currentTimeEpoch) => {
@@ -132,31 +148,85 @@ export function useGameState() {
       leftPair: { defender: null, attacker: null },
       rightPair: { defender: null, attacker: null },
       subPair: { defender: null, attacker: null },
+      // 6-player formation structure
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null,
+      substitute: null,
     }));
 
     // Recommendation logic for P2/P3
     if (periodNum > 1 && gameLogToUse.length > 0) {
       const lastPeriodLog = gameLogToUse[gameLogToUse.length - 1];
       const playersWithLastPeriodStats = lastPeriodLog.finalStatsSnapshotForAllPlayers;
+      const teamSize = selectedSquadIds.length;
 
+      if (teamSize === 7) {
+        // 7-player formation generation
+        const { recommendedLeft, recommendedRight, recommendedSubs, firstToSubRec } = generateRecommendedFormation(
+            periodNum,
+            currentGoalieId,
+            periodGoalieIds[periodNum - 1] || null, // Previous goalie
+            lastPeriodLog.formation, // Previous period's formation
+            playersWithLastPeriodStats,
+            selectedSquadIds.map(id => allPlayers.find(p=>p.id === id)) // Pass full player objects
+        );
 
-      // Auto-generate pairs and roles based on recommendations
-      const { recommendedLeft, recommendedRight, recommendedSubs, firstToSubRec } = generateRecommendedFormation(
-          periodNum,
-          currentGoalieId,
-          periodGoalieIds[periodNum - 1] || null, // Previous goalie
-          lastPeriodLog.formation, // Previous period's formation
-          playersWithLastPeriodStats,
-          selectedSquadIds.map(id => allPlayers.find(p=>p.id === id)) // Pass full player objects
-      );
+        setPeriodFormation({
+          goalie: currentGoalieId,
+          leftPair: recommendedLeft,
+          rightPair: recommendedRight,
+          subPair: recommendedSubs,
+          // 6-player formation structure
+          leftDefender: null,
+          rightDefender: null,
+          leftAttacker: null,
+          rightAttacker: null,
+          substitute: null,
+        });
+        setNextPhysicalPairToSubOut(firstToSubRec); // 'leftPair' or 'rightPair'
+      } else if (teamSize === 6) {
+        // 6-player formation generation - recommend player with most time as substitute
+        const outfielders = selectedSquadIds.filter(id => id !== currentGoalieId);
+        const outfieldersWithStats = outfielders.map(id => {
+          const player = allPlayers.find(p => p.id === id);
+          const stats = playersWithLastPeriodStats.find(s => s.id === id);
+          return {
+            id,
+            name: player.name,
+            totalOutfieldTime: stats?.stats.timeOnFieldSeconds || 0
+          };
+        }).sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
 
-      setPeriodFormation({
-        goalie: currentGoalieId,
-        leftPair: recommendedLeft,
-        rightPair: recommendedRight,
-        subPair: recommendedSubs,
-      });
-      setNextPhysicalPairToSubOut(firstToSubRec); // 'leftPair' or 'rightPair'
+        // Most time player becomes substitute, others fill positions
+        const substituteId = outfieldersWithStats[0].id;
+        const playingPlayers = outfieldersWithStats.slice(1);
+
+        setPeriodFormation({
+          goalie: currentGoalieId,
+          leftPair: { defender: null, attacker: null },
+          rightPair: { defender: null, attacker: null },
+          subPair: { defender: null, attacker: null },
+          // 6-player formation structure
+          leftDefender: playingPlayers[0]?.id || null,
+          rightDefender: playingPlayers[1]?.id || null,
+          leftAttacker: playingPlayers[2]?.id || null,
+          rightAttacker: playingPlayers[3]?.id || null,
+          substitute: substituteId,
+        });
+        
+        // Recommend first substitution for player with second most time
+        const secondMostTimePlayer = outfieldersWithStats[1];
+        const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+        const playerPosition = positions.find(pos => 
+          (pos === 'leftDefender' && playingPlayers[0]?.id === secondMostTimePlayer.id) ||
+          (pos === 'rightDefender' && playingPlayers[1]?.id === secondMostTimePlayer.id) ||
+          (pos === 'leftAttacker' && playingPlayers[2]?.id === secondMostTimePlayer.id) ||
+          (pos === 'rightAttacker' && playingPlayers[3]?.id === secondMostTimePlayer.id)
+        );
+        setNextPlayerToSubOut(playerPosition || 'leftDefender');
+      }
 
     } else {
       // For P1, or if recommendations fail, reset pairs (user fills manually)
@@ -175,8 +245,8 @@ export function useGameState() {
   }, [preparePeriodWithGameLog, gameLog]);
 
   const handleStartPeriodSetup = () => {
-    if (selectedSquadIds.length !== 7) {
-      alert("Please select exactly 7 players for the squad."); // Replace with modal
+    if (selectedSquadIds.length !== 7 && selectedSquadIds.length !== 6) {
+      alert("Please select exactly 6 or 7 players for the squad."); // Replace with modal
       return;
     }
     const goaliesAssigned = Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean);
@@ -203,16 +273,33 @@ export function useGameState() {
   };
 
   const handleStartGame = () => {
-    // Validate formation
-    const allOutfieldersInFormation = [
-      periodFormation.leftPair.defender, periodFormation.leftPair.attacker,
-      periodFormation.rightPair.defender, periodFormation.rightPair.attacker,
-      periodFormation.subPair.defender, periodFormation.subPair.attacker,
-    ].filter(Boolean);
+    // Validate formation based on team size
+    const teamSize = selectedSquadIds.length;
+    
+    if (teamSize === 7) {
+      // 7-player validation (pairs)
+      const allOutfieldersInFormation = [
+        periodFormation.leftPair.defender, periodFormation.leftPair.attacker,
+        periodFormation.rightPair.defender, periodFormation.rightPair.attacker,
+        periodFormation.subPair.defender, periodFormation.subPair.attacker,
+      ].filter(Boolean);
 
-    if (new Set(allOutfieldersInFormation).size !== 6 || !periodFormation.goalie) {
-      alert("Please complete the team formation with 1 goalie and 6 unique outfield players in pairs."); // Replace with modal
-      return;
+      if (new Set(allOutfieldersInFormation).size !== 6 || !periodFormation.goalie) {
+        alert("Please complete the team formation with 1 goalie and 6 unique outfield players in pairs."); // Replace with modal
+        return;
+      }
+    } else if (teamSize === 6) {
+      // 6-player validation (individual positions)
+      const allOutfieldersInFormation = [
+        periodFormation.leftDefender, periodFormation.rightDefender,
+        periodFormation.leftAttacker, periodFormation.rightAttacker,
+        periodFormation.substitute,
+      ].filter(Boolean);
+
+      if (new Set(allOutfieldersInFormation).size !== 5 || !periodFormation.goalie) {
+        alert("Please complete the team formation with 1 goalie and 5 unique outfield players."); // Replace with modal
+        return;
+      }
     }
 
     const currentTimeEpoch = Date.now();
@@ -225,18 +312,34 @@ export function useGameState() {
       if (p.id === periodFormation.goalie) {
         role = PLAYER_ROLES.GOALIE;
         status = 'goalie';
-      } else if (p.id === periodFormation.leftPair.defender) {
-        role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'leftPair';
-      } else if (p.id === periodFormation.leftPair.attacker) {
-        role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'leftPair';
-      } else if (p.id === periodFormation.rightPair.defender) {
-        role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'rightPair';
-      } else if (p.id === periodFormation.rightPair.attacker) {
-        role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'rightPair';
-      } else if (p.id === periodFormation.subPair.defender) {
-        role = PLAYER_ROLES.DEFENDER; status = 'substitute'; pairKey = 'subPair';
-      } else if (p.id === periodFormation.subPair.attacker) {
-        role = PLAYER_ROLES.ATTACKER; status = 'substitute'; pairKey = 'subPair';
+      } else if (teamSize === 7) {
+        // 7-player logic (pairs)
+        if (p.id === periodFormation.leftPair.defender) {
+          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'leftPair';
+        } else if (p.id === periodFormation.leftPair.attacker) {
+          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'leftPair';
+        } else if (p.id === periodFormation.rightPair.defender) {
+          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'rightPair';
+        } else if (p.id === periodFormation.rightPair.attacker) {
+          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'rightPair';
+        } else if (p.id === periodFormation.subPair.defender) {
+          role = PLAYER_ROLES.DEFENDER; status = 'substitute'; pairKey = 'subPair';
+        } else if (p.id === periodFormation.subPair.attacker) {
+          role = PLAYER_ROLES.ATTACKER; status = 'substitute'; pairKey = 'subPair';
+        }
+      } else if (teamSize === 6) {
+        // 6-player logic (individual positions)
+        if (p.id === periodFormation.leftDefender) {
+          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'leftDefender';
+        } else if (p.id === periodFormation.rightDefender) {
+          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'rightDefender';
+        } else if (p.id === periodFormation.leftAttacker) {
+          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'leftAttacker';
+        } else if (p.id === periodFormation.rightAttacker) {
+          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'rightAttacker';
+        } else if (p.id === periodFormation.substitute) {
+          role = PLAYER_ROLES.SUBSTITUTE; status = 'substitute'; pairKey = 'substitute';
+        }
       }
 
       if (selectedSquadIds.includes(p.id)) {
@@ -264,39 +367,71 @@ export function useGameState() {
   };
 
   const handleSubstitution = () => {
-    const pairToSubOutKey = nextPhysicalPairToSubOut;
-    const pairToSubInKey = 'subPair';
-
-    const pairGettingSubbed = periodFormation[pairToSubOutKey];
-    const pairComingIn = periodFormation[pairToSubInKey];
-
-    const playersGoingOffIds = [pairGettingSubbed.defender, pairGettingSubbed.attacker].filter(Boolean);
-    const playersComingOnIds = [pairComingIn.defender, pairComingIn.attacker].filter(Boolean);
-
     const currentTimeEpoch = Date.now();
-    updatePlayerTimeStats(playersGoingOffIds, 'substitute', currentTimeEpoch);
-    updatePlayerTimeStats(playersComingOnIds, 'on_field', currentTimeEpoch);
+    const teamSize = selectedSquadIds.length;
 
-    // Swap player IDs in formation
-    setPeriodFormation(prev => {
-      const newFormation = JSON.parse(JSON.stringify(prev)); // Deep copy
-      // The players from subPair take the roles of the pair they replace on field
-      // The players from on-field pair become the new subPair, keeping their D/A assignment
-      newFormation[pairToSubOutKey].defender = pairComingIn.defender;
-      newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
-      newFormation[pairToSubInKey].defender = pairGettingSubbed.defender;
-      newFormation[pairToSubInKey].attacker = pairGettingSubbed.attacker;
-      return newFormation;
-    });
+    if (teamSize === 7) {
+      // 7-player substitution logic (pairs)
+      const pairToSubOutKey = nextPhysicalPairToSubOut;
+      const pairToSubInKey = 'subPair';
 
-    // Update player's currentPairKey
-    setAllPlayers(prev => prev.map(p => {
-      if (playersGoingOffIds.includes(p.id)) return {...p, stats: {...p.stats, currentPairKey: pairToSubInKey}};
-      if (playersComingOnIds.includes(p.id)) return {...p, stats: {...p.stats, currentPairKey: pairToSubOutKey}};
-      return p;
-    }));
+      const pairGettingSubbed = periodFormation[pairToSubOutKey];
+      const pairComingIn = periodFormation[pairToSubInKey];
 
-    setNextPhysicalPairToSubOut(pairToSubOutKey === 'leftPair' ? 'rightPair' : 'leftPair');
+      const playersGoingOffIds = [pairGettingSubbed.defender, pairGettingSubbed.attacker].filter(Boolean);
+      const playersComingOnIds = [pairComingIn.defender, pairComingIn.attacker].filter(Boolean);
+
+      updatePlayerTimeStats(playersGoingOffIds, 'substitute', currentTimeEpoch);
+      updatePlayerTimeStats(playersComingOnIds, 'on_field', currentTimeEpoch);
+
+      // Swap player IDs in formation
+      setPeriodFormation(prev => {
+        const newFormation = JSON.parse(JSON.stringify(prev)); // Deep copy
+        newFormation[pairToSubOutKey].defender = pairComingIn.defender;
+        newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
+        newFormation[pairToSubInKey].defender = pairGettingSubbed.defender;
+        newFormation[pairToSubInKey].attacker = pairGettingSubbed.attacker;
+        return newFormation;
+      });
+
+      // Update player's currentPairKey
+      setAllPlayers(prev => prev.map(p => {
+        if (playersGoingOffIds.includes(p.id)) return {...p, stats: {...p.stats, currentPairKey: pairToSubInKey}};
+        if (playersComingOnIds.includes(p.id)) return {...p, stats: {...p.stats, currentPairKey: pairToSubOutKey}};
+        return p;
+      }));
+
+      setNextPhysicalPairToSubOut(pairToSubOutKey === 'leftPair' ? 'rightPair' : 'leftPair');
+    } else if (teamSize === 6) {
+      // 6-player substitution logic (individual round-robin)
+      const playerToSubOutKey = nextPlayerToSubOut;
+      const playerGoingOffId = periodFormation[playerToSubOutKey];
+      const playerComingOnId = periodFormation.substitute;
+
+      updatePlayerTimeStats([playerGoingOffId], 'substitute', currentTimeEpoch);
+      updatePlayerTimeStats([playerComingOnId], 'on_field', currentTimeEpoch);
+
+      // Swap player IDs in formation
+      setPeriodFormation(prev => {
+        const newFormation = JSON.parse(JSON.stringify(prev));
+        newFormation[playerToSubOutKey] = playerComingOnId;
+        newFormation.substitute = playerGoingOffId;
+        return newFormation;
+      });
+
+      // Update player's currentPairKey
+      setAllPlayers(prev => prev.map(p => {
+        if (p.id === playerGoingOffId) return {...p, stats: {...p.stats, currentPairKey: 'substitute'}};
+        if (p.id === playerComingOnId) return {...p, stats: {...p.stats, currentPairKey: playerToSubOutKey}};
+        return p;
+      }));
+
+      // Round-robin to next position
+      const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+      const currentIndex = positions.indexOf(playerToSubOutKey);
+      const nextIndex = (currentIndex + 1) % positions.length;
+      setNextPlayerToSubOut(positions[nextIndex]);
+    }
   };
 
   const handleEndPeriod = () => {
@@ -399,6 +534,8 @@ export function useGameState() {
     setPeriodFormation,
     nextPhysicalPairToSubOut,
     setNextPhysicalPairToSubOut,
+    nextPlayerToSubOut,
+    setNextPlayerToSubOut,
     gameLog,
     setGameLog,
     

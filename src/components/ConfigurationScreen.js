@@ -34,7 +34,7 @@ export function ConfigurationScreen({
 
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
-        <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad ({selectedSquadIds.length}/7 Players)</h3>
+        <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad ({selectedSquadIds.length}/6-7 Players)</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {allPlayers.map(player => (
             <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
@@ -64,7 +64,7 @@ export function ConfigurationScreen({
       </div>
 
       {/* Goalie Assignment */}
-      {selectedSquadIds.length === 7 && (
+      {(selectedSquadIds.length === 6 || selectedSquadIds.length === 7) && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">
@@ -86,7 +86,7 @@ export function ConfigurationScreen({
 
       <Button 
         onClick={handleStartPeriodSetup} 
-        disabled={selectedSquadIds.length !== 7 || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
+        disabled={(selectedSquadIds.length !== 6 && selectedSquadIds.length !== 7) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
         Icon={Play}
       >
         Proceed to Period Setup

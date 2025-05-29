@@ -16,6 +16,7 @@ export function PeriodSetupScreen({
   setPeriodGoalieIds, 
   numPeriods 
 }) {
+  const teamSize = selectedSquadPlayers.length;
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -55,6 +56,26 @@ export function PeriodSetupScreen({
     }));
   };
 
+  const handleIndividualPlayerAssignment = (position, playerId) => {
+    // Ensure player is not already assigned elsewhere in 6-player formation
+    const otherAssignments = [];
+    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
+      if (pos !== position && periodFormation[pos]) {
+        otherAssignments.push(periodFormation[pos]);
+      }
+    });
+
+    if (playerId && otherAssignments.includes(playerId)) {
+      alert(`${allPlayers.find(p=>p.id === playerId)?.name || 'Player'} is already assigned. Choose a different player.`);
+      return;
+    }
+
+    setPeriodFormation(prev => ({
+      ...prev,
+      [position]: playerId
+    }));
+  };
+
   const getAvailableForSelect = (currentPairKey, currentRole) => {
     const assignedElsewhereIds = new Set();
     ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
@@ -82,13 +103,33 @@ export function PeriodSetupScreen({
     }));
   };
 
+  const getAvailableForIndividualSelect = (currentPosition) => {
+    const assignedElsewhereIds = new Set();
+    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
+      if (pos !== currentPosition && periodFormation[pos]) {
+        assignedElsewhereIds.add(periodFormation[pos]);
+      }
+    });
+    return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
+  };
+
   const isFormationComplete = () => {
-    const outfielders = [
-      periodFormation.leftPair.defender, periodFormation.leftPair.attacker,
-      periodFormation.rightPair.defender, periodFormation.rightPair.attacker,
-      periodFormation.subPair.defender, periodFormation.subPair.attacker
-    ].filter(Boolean);
-    return periodFormation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
+    if (teamSize === 7) {
+      const outfielders = [
+        periodFormation.leftPair.defender, periodFormation.leftPair.attacker,
+        periodFormation.rightPair.defender, periodFormation.rightPair.attacker,
+        periodFormation.subPair.defender, periodFormation.subPair.attacker
+      ].filter(Boolean);
+      return periodFormation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
+    } else if (teamSize === 6) {
+      const outfielders = [
+        periodFormation.leftDefender, periodFormation.rightDefender,
+        periodFormation.leftAttacker, periodFormation.rightAttacker,
+        periodFormation.substitute
+      ].filter(Boolean);
+      return periodFormation.goalie && outfielders.length === 5 && new Set(outfielders).size === 5;
+    }
+    return false;
   };
 
   return (
@@ -114,7 +155,7 @@ export function PeriodSetupScreen({
         )}
       </div>
 
-      {periodFormation.goalie && (
+      {periodFormation.goalie && teamSize === 7 && (
         <>
           <PairSelectionCard
             title="Left Pair (On Field)"
@@ -138,6 +179,51 @@ export function PeriodSetupScreen({
             pair={periodFormation.subPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
+            getPlayerLabel={getPlayerLabel}
+          />
+        </>
+      )}
+
+      {periodFormation.goalie && teamSize === 6 && (
+        <>
+          <IndividualPositionCard
+            title="Left Defender"
+            position="leftDefender"
+            playerId={periodFormation.leftDefender}
+            onPlayerAssign={handleIndividualPlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Right Defender"
+            position="rightDefender"
+            playerId={periodFormation.rightDefender}
+            onPlayerAssign={handleIndividualPlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Left Attacker"
+            position="leftAttacker"
+            playerId={periodFormation.leftAttacker}
+            onPlayerAssign={handleIndividualPlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Right Attacker"
+            position="rightAttacker"
+            playerId={periodFormation.rightAttacker}
+            onPlayerAssign={handleIndividualPlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Substitute"
+            position="substitute"
+            playerId={periodFormation.substitute}
+            onPlayerAssign={handleIndividualPlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
             getPlayerLabel={getPlayerLabel}
           />
         </>
@@ -175,6 +261,22 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
           placeholder="Select Attacker"
         />
       </div>
+    </div>
+  );
+}
+
+export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, getPlayerLabel }) {
+  const availableOptions = getAvailableOptions(position);
+
+  return (
+    <div className="p-2 bg-slate-700 rounded-md">
+      <h3 className="text-sm font-medium text-sky-200 mb-1.5">{title}</h3>
+      <Select
+        value={playerId || ""}
+        onChange={e => onPlayerAssign(position, e.target.value)}
+        options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
+        placeholder={`Select ${title}`}
+      />
     </div>
   );
 }
