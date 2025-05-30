@@ -256,9 +256,18 @@ export function useGameState() {
         setNextPlayerToSubOut(playerPosition || 'leftDefender');
         setNextPlayerIdToSubOut(secondMostTimePlayer?.id || null);
         
-        // Initialize rotation queue for 6-player mode
-        const initialQueue = outfieldersWithStats.map(p => p.id);
-        setRotationQueue(initialQueue);
+        // Initialize rotation queue for 6-player mode with desired substitution order
+        // Order players by position preference: Left Defender -> Left Attacker -> Right Defender -> Right Attacker -> Substitute
+        const positionOrder = ['leftDefender', 'leftAttacker', 'rightDefender', 'rightAttacker', 'substitute'];
+        const orderedQueue = positionOrder.map(pos => {
+          if (pos === 'leftDefender') return playingPlayers[0]?.id;
+          if (pos === 'leftAttacker') return playingPlayers[2]?.id;
+          if (pos === 'rightDefender') return playingPlayers[1]?.id;
+          if (pos === 'rightAttacker') return playingPlayers[3]?.id;
+          if (pos === 'substitute') return substituteId;
+          return null;
+        }).filter(Boolean);
+        setRotationQueue(orderedQueue);
       }
 
     } else {
@@ -401,8 +410,8 @@ export function useGameState() {
       const initialPlayerToSubOut = periodFormation[nextPlayerToSubOut];
       setNextPlayerIdToSubOut(initialPlayerToSubOut);
       
-      // Initialize rotation queue with all outfield players
-      const outfieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
+      // Initialize rotation queue with desired substitution order: Left Defender -> Left Attacker -> Right Defender -> Right Attacker -> Substitute
+      const outfieldPositions = ['leftDefender', 'leftAttacker', 'rightDefender', 'rightAttacker', 'substitute'];
       const initialQueue = outfieldPositions.map(pos => periodFormation[pos]).filter(Boolean);
       setRotationQueue(initialQueue);
     }
