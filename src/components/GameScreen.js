@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Shield, Zap, RotateCcw, Square } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock } from 'lucide-react';
 import { Button } from './UI';
 
 export function GameScreen({ 
@@ -166,20 +166,20 @@ export function GameScreen({
               const stats = getPlayerTimeStats(pairData.defender);
               return (
                 <div className="text-right text-sm">
-                  <span>Played: <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
-                  <span className="ml-3">A-D: <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+                  <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
+                  <span className="ml-6"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
                 </div>
               );
             })()}
           </div>
           <div className="flex items-center justify-between">
-            <div><Zap className="inline h-4 w-4 mr-1" /> A: {getPlayerName(pairData.attacker)}</div>
+            <div><Sword className="inline h-4 w-4 mr-1" /> A: {getPlayerName(pairData.attacker)}</div>
             {pairData.attacker && (() => {
               const stats = getPlayerTimeStats(pairData.attacker);
               return (
                 <div className="text-right text-sm">
-                  <span>Played: <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
-                  <span className="ml-3">A-D: <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+                  <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
+                  <span className="ml-6"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
                 </div>
               );
             })()}
@@ -240,8 +240,8 @@ export function GameScreen({
             const stats = getPlayerTimeStats(playerId);
             return (
               <div className="text-right text-sm">
-                <span>Played: <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
-                <span className="ml-3">A-D: <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+                <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
+                <span className="ml-3"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
               </div>
             );
           })()}
@@ -289,8 +289,8 @@ export function GameScreen({
         <div className="space-y-3">
           {renderIndividualPosition('leftDefender', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />)}
           {renderIndividualPosition('rightDefender', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />)}
-          {renderIndividualPosition('leftAttacker', 'Left Attacker', <Zap className="inline h-4 w-4 mr-1" />)}
-          {renderIndividualPosition('rightAttacker', 'Right Attacker', <Zap className="inline h-4 w-4 mr-1" />)}
+          {renderIndividualPosition('leftAttacker', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />)}
+          {renderIndividualPosition('rightAttacker', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />)}
           {renderIndividualPosition('substitute', 'Substitute', <RotateCcw className="inline h-4 w-4 mr-1" />)}
         </div>
       )}
