@@ -21,6 +21,46 @@ export function GameScreen({
   const teamSize = selectedSquadPlayers?.length || 7;
   const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
 
+  // Calculate player time statistics
+  const getPlayerTimeStats = (playerId) => {
+    const player = allPlayers.find(p => p.id === playerId);
+    if (!player) return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
+    
+    const stats = player.stats;
+    const currentTime = Date.now();
+    
+    // Calculate current stint time if player is active
+    let currentStintTime = 0;
+    if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'on_field') {
+      currentStintTime = Math.round((currentTime - stats.lastStintStartTimeEpoch) / 1000);
+    }
+    
+    // Total outfield time includes completed time plus current stint if on field
+    const totalOutfieldTime = stats.timeOnFieldSeconds + currentStintTime;
+    
+    // Calculate attacker-defender difference with current stint
+    let attackerTime = stats.timeAsAttackerSeconds;
+    let defenderTime = stats.timeAsDefenderSeconds;
+    
+    if (stats.currentPeriodStatus === 'on_field' && stats.currentPeriodRole) {
+      if (stats.currentPeriodRole === 'Attacker') {
+        attackerTime += currentStintTime;
+      } else if (stats.currentPeriodRole === 'Defender') {
+        defenderTime += currentStintTime;
+      }
+    }
+    
+    const attackDefenderDiff = attackerTime - defenderTime;
+    
+    return { totalOutfieldTime, attackDefenderDiff };
+  };
+
+  const formatTimeDifference = (diffSeconds) => {
+    const sign = diffSeconds >= 0 ? '+' : '-';
+    const absSeconds = Math.abs(diffSeconds);
+    return sign + formatTime(absSeconds);
+  };
+
   // Click and hold logic for changing next substitution target
   const handlePairLongPress = (pairKey) => {
     if (pairKey === 'leftPair' || pairKey === 'rightPair') {
@@ -119,8 +159,32 @@ export function GameScreen({
             {isNextOn && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
           </div>
         </h3>
-        <p><Shield className="inline h-4 w-4 mr-1" /> D: {getPlayerName(pairData.defender)}</p>
-        <p><Zap className="inline h-4 w-4 mr-1" /> A: {getPlayerName(pairData.attacker)}</p>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <div><Shield className="inline h-4 w-4 mr-1" /> D: {getPlayerName(pairData.defender)}</div>
+            {pairData.defender && (() => {
+              const stats = getPlayerTimeStats(pairData.defender);
+              return (
+                <div className="text-right text-sm">
+                  <span>Played: <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
+                  <span className="ml-3">A-D: <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+                </div>
+              );
+            })()}
+          </div>
+          <div className="flex items-center justify-between">
+            <div><Zap className="inline h-4 w-4 mr-1" /> A: {getPlayerName(pairData.attacker)}</div>
+            {pairData.attacker && (() => {
+              const stats = getPlayerTimeStats(pairData.attacker);
+              return (
+                <div className="text-right text-sm">
+                  <span>Played: <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
+                  <span className="ml-3">A-D: <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
         {canBeSelected && (
           <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
         )}
@@ -170,7 +234,18 @@ export function GameScreen({
             {isNextOn && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
           </div>
         </h3>
-        <p>{icon} {getPlayerName(playerId)}</p>
+        <div className="flex items-center justify-between">
+          <div>{icon} {getPlayerName(playerId)}</div>
+          {playerId && (() => {
+            const stats = getPlayerTimeStats(playerId);
+            return (
+              <div className="text-right text-sm">
+                <span>Played: <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
+                <span className="ml-3">A-D: <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+              </div>
+            );
+          })()}
+        </div>
         {canBeSelected && (
           <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
         )}
@@ -195,6 +270,7 @@ export function GameScreen({
           <p className="text-3xl font-mono text-emerald-400">{formatTime(subTimerSeconds)}</p>
         </div>
       </div>
+
 
       {/* Field & Subs Visualization */}
       <div className="p-2 bg-slate-700 rounded-lg">
