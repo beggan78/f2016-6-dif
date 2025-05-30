@@ -1,5 +1,5 @@
-import React from 'react';
-import { ListChecks, PlusCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ListChecks, PlusCircle, Copy } from 'lucide-react';
 import { Button } from './UI';
 import { PLAYER_ROLES, calculateRolePoints } from '../utils/gameLogic';
 
@@ -16,10 +16,38 @@ export function StatsScreen({
   clearStoredState,
   clearTimerState
 }) {
+  const [copySuccess, setCopySuccess] = useState(false);
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
 
   const formatPoints = (points) => {
     return points % 1 === 0 ? points.toString() : points.toFixed(1);
+  };
+
+  const copyStatsToClipboard = async () => {
+    const statsText = generateStatsText();
+    try {
+      await navigator.clipboard.writeText(statsText);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy stats to clipboard:', err);
+    }
+  };
+
+  const generateStatsText = () => {
+    let text = "Player\t\tStarted\tM\tB\tA\tField Time\n";
+    text += "------\t\t-------\t-\t-\t-\t----------\n";
+    
+    squadForStats.forEach(player => {
+      const { goaliePoints, defenderPoints, attackerPoints } = calculateRolePoints(player);
+      const startedAs = player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
+                       player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
+                       player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-';
+      
+      text += `${player.name}\t\t${startedAs}\t${formatPoints(goaliePoints)}\t${formatPoints(defenderPoints)}\t${formatPoints(attackerPoints)}\t${formatTime(player.stats.timeOnFieldSeconds)}\n`;
+    });
+    
+    return text;
   };
 
   const handleNewGame = () => {
@@ -80,6 +108,17 @@ export function StatsScreen({
           <li>• Remaining points split between defender (B) and attacker (A) based on time played</li>
           <li>• Points awarded in 0.5 increments</li>
         </ul>
+      </div>
+
+      <div className="flex gap-3 items-center">
+        <Button onClick={copyStatsToClipboard} Icon={Copy}>
+          Copy Statistics
+        </Button>
+        {copySuccess && (
+          <span className="text-green-400 text-sm font-medium">
+            ✓ Statistics copied to clipboard!
+          </span>
+        )}
       </div>
 
       <Button onClick={handleNewGame} Icon={PlusCircle}>
