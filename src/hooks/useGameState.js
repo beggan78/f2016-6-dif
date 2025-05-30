@@ -153,6 +153,20 @@ export function useGameState() {
     }));
   }, []);
 
+  // Helper function to determine role from position
+  const getPositionRole = (position) => {
+    if (position === 'leftDefender' || position === 'rightDefender') {
+      return PLAYER_ROLES.DEFENDER;
+    } else if (position === 'leftAttacker' || position === 'rightAttacker') {
+      return PLAYER_ROLES.ATTACKER;
+    } else if (position === 'substitute') {
+      return PLAYER_ROLES.SUBSTITUTE;
+    } else if (position === 'goalie') {
+      return PLAYER_ROLES.GOALIE;
+    }
+    return null;
+  };
+
   const preparePeriodWithGameLog = useCallback((periodNum, gameLogToUse) => {
     const currentGoalieId = periodGoalieIds[periodNum];
 
@@ -453,10 +467,15 @@ export function useGameState() {
         return newFormation;
       });
 
-      // Update player's currentPairKey
+      // Update player's currentPairKey and currentPeriodRole
       setAllPlayers(prev => prev.map(p => {
-        if (p.id === playerGoingOffId) return {...p, stats: {...p.stats, currentPairKey: 'substitute'}};
-        if (p.id === playerComingOnId) return {...p, stats: {...p.stats, currentPairKey: playerToSubOutKey}};
+        if (p.id === playerGoingOffId) {
+          return {...p, stats: {...p.stats, currentPairKey: 'substitute', currentPeriodRole: PLAYER_ROLES.SUBSTITUTE}};
+        }
+        if (p.id === playerComingOnId) {
+          const newRole = getPositionRole(playerToSubOutKey);
+          return {...p, stats: {...p.stats, currentPairKey: playerToSubOutKey, currentPeriodRole: newRole}};
+        }
         return p;
       }));
 
