@@ -23,11 +23,20 @@ export function PeriodSetupScreen({
 
   const goalieForPeriod = allPlayers.find(p => p.id === periodFormation.goalie);
 
+  const formatTimeDifference = (diffSeconds) => {
+    const sign = diffSeconds >= 0 ? '+' : '-';
+    const absSeconds = Math.abs(diffSeconds);
+    return sign + formatTime(absSeconds);
+  };
+
   const getPlayerLabel = (player) => {
     // Only show accumulated time for periods 2 and 3
     if (currentPeriodNumber > 1) {
       const outfieldTime = formatTime(player.stats.timeOnFieldSeconds);
-      return `${player.name} - ${outfieldTime}`;
+      const attackDefenderDiff = player.stats.timeAsAttackerSeconds - player.stats.timeAsDefenderSeconds;
+      const diffFormatted = formatTimeDifference(attackDefenderDiff);
+      
+      return `${player.name} - ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
     }
     return player.name;
   };
