@@ -53,7 +53,7 @@ export function Button({ onClick, children, Icon, variant = 'primary', size = 'm
   );
 }
 
-export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message }) {
+export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message, confirmText = "Confirm", cancelText = "Cancel" }) {
   if (!isOpen) return null;
 
   return (
@@ -66,10 +66,38 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message 
           <p className="text-slate-200 mb-6">{message}</p>
           <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
             <Button onClick={onCancel} variant="secondary" className="sm:order-1">
-              Cancel
+              {cancelText}
             </Button>
             <Button onClick={onConfirm} variant="danger" className="sm:order-2">
-              End Period
+              {confirmText}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SubstitutionModal({ isOpen, onSetNext, onSubNow, onCancel, playerName }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">Substitution Options</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
+          <div className="flex flex-col gap-3">
+            <Button onClick={onCancel} variant="secondary">
+              Cancel
+            </Button>
+            <Button onClick={onSetNext} variant="primary">
+              Set next sub: {playerName}
+            </Button>
+            <Button onClick={onSubNow} variant="danger">
+              Substitute {playerName} now
             </Button>
           </div>
         </div>

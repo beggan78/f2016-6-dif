@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock } from 'lucide-react';
-import { Button } from './UI';
+import { Button, SubstitutionModal } from './UI';
 
 export function GameScreen({ 
   currentPeriodNumber, 
@@ -20,6 +20,25 @@ export function GameScreen({
 }) {
   const teamSize = selectedSquadPlayers?.length || 7;
   const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
+  
+  // State for substitution confirmation modal
+  const [confirmationModal, setConfirmationModal] = React.useState({
+    isOpen: false,
+    type: null, // 'pair' or 'player'
+    target: null, // pairKey or position
+    playerName: ''
+  });
+  
+  // State to track if we should substitute immediately after setting next sub
+  const [shouldSubstituteNow, setShouldSubstituteNow] = React.useState(false);
+  
+  // Effect to trigger substitution after state update
+  React.useEffect(() => {
+    if (shouldSubstituteNow) {
+      handleSubstitution();
+      setShouldSubstituteNow(false);
+    }
+  }, [shouldSubstituteNow, nextPhysicalPairToSubOut, nextPlayerToSubOut, handleSubstitution]);
 
   // Calculate player time statistics
   const getPlayerTimeStats = (playerId) => {
@@ -64,16 +83,55 @@ export function GameScreen({
   // Click and hold logic for changing next substitution target
   const handlePairLongPress = (pairKey) => {
     if (pairKey === 'leftPair' || pairKey === 'rightPair') {
-      console.log('Setting next pair to sub out:', pairKey);
-      setNextPhysicalPairToSubOut(pairKey);
+      const pairData = periodFormation[pairKey];
+      const defenderName = getPlayerName(pairData?.defender);
+      const attackerName = getPlayerName(pairData?.attacker);
+      setConfirmationModal({
+        isOpen: true,
+        type: 'pair',
+        target: pairKey,
+        playerName: `${defenderName} & ${attackerName}`
+      });
     }
   };
 
   const handlePlayerLongPress = (position) => {
     if (['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].includes(position)) {
-      console.log('Setting next player to sub out:', position);
-      setNextPlayerToSubOut(position);
+      const playerId = periodFormation[position];
+      const playerName = getPlayerName(playerId);
+      setConfirmationModal({
+        isOpen: true,
+        type: 'player',
+        target: position,
+        playerName: playerName
+      });
     }
+  };
+
+  // Handle substitution modal actions
+  const handleSetNextSubstitution = () => {
+    if (confirmationModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(confirmationModal.target);
+    } else if (confirmationModal.type === 'player') {
+      setNextPlayerToSubOut(confirmationModal.target);
+    }
+    setConfirmationModal({ isOpen: false, type: null, target: null, playerName: '' });
+  };
+
+  const handleSubstituteNow = () => {
+    // First set as next substitution
+    if (confirmationModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(confirmationModal.target);
+    } else if (confirmationModal.type === 'player') {
+      setNextPlayerToSubOut(confirmationModal.target);
+    }
+    // Set flag to trigger substitution after state update
+    setShouldSubstituteNow(true);
+    setConfirmationModal({ isOpen: false, type: null, target: null, playerName: '' });
+  };
+
+  const handleCancelSubstitution = () => {
+    setConfirmationModal({ isOpen: false, type: null, target: null, playerName: '' });
   };
 
   // Hook for handling long press and double click
@@ -107,7 +165,6 @@ export function GameScreen({
       onMouseLeave: () => setStartLongPress(false),
       onTouchStart: () => setStartLongPress(true),
       onTouchEnd: () => setStartLongPress(false),
-      onDoubleClick: () => callbackRef.current(),
     };
   };
 
@@ -304,6 +361,15 @@ export function GameScreen({
           End Period
         </Button>
       </div>
+
+      {/* Substitution Options Modal */}
+      <SubstitutionModal
+        isOpen={confirmationModal.isOpen}
+        onSetNext={handleSetNextSubstitution}
+        onSubNow={handleSubstituteNow}
+        onCancel={handleCancelSubstitution}
+        playerName={confirmationModal.playerName}
+      />
     </div>
   );
 }
