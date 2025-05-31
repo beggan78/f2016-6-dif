@@ -35,8 +35,8 @@ export function StatsScreen({
   };
 
   const generateStatsText = () => {
-    let text = "Spelare\t\tStart\tM\tB\tA\tUtespelare\n";
-    text += "------\t\t-------\t-\t-\t-\t----------\n";
+    let text = "Spelare\t\tStart\tM\tB\tA\tUte\tBack\tFw\tMv\n";
+    text += "------\t\t-------\t-\t-\t-\t----------\t----\t--\t--\n";
     
     squadForStats.forEach(player => {
       const { goaliePoints, defenderPoints, attackerPoints } = calculateRolePoints(player);
@@ -44,7 +44,7 @@ export function StatsScreen({
                        player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
                        player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-';
       
-      text += `${player.name}\t\t${startedAs}\t${formatPoints(goaliePoints)}\t${formatPoints(defenderPoints)}\t${formatPoints(attackerPoints)}\t${formatTime(player.stats.timeOnFieldSeconds)}\n`;
+      text += `${player.name}\t\t${startedAs}\t${formatPoints(goaliePoints)}\t${formatPoints(defenderPoints)}\t${formatPoints(attackerPoints)}\t${formatTime(player.stats.timeOnFieldSeconds)}\t${formatTime(player.stats.timeAsDefenderSeconds)}\t${formatTime(player.stats.timeAsAttackerSeconds)}\t${formatTime(player.stats.timeAsGoalieSeconds)}\n`;
     });
     
     return text;
@@ -71,7 +71,7 @@ export function StatsScreen({
         <table className="min-w-full divide-y divide-slate-600">
           <thead className="bg-slate-800">
             <tr>
-              {['Spelare', 'Start', 'M', 'B', 'A', 'Utespelare'].map(header => (
+              {['Spelare', 'Start', 'M', 'B', 'A', 'Ute', 'Back', 'Fw', 'Mv'].map(header => (
                 <th key={header} scope="col" className="px-3 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
                   {header}
                 </th>
@@ -93,6 +93,9 @@ export function StatsScreen({
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(defenderPoints)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(attackerPoints)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeOnFieldSeconds)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsDefenderSeconds)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsAttackerSeconds)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsGoalieSeconds)}</td>
                 </tr>
               );
             })}
