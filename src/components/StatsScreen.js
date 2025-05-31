@@ -71,7 +71,7 @@ export function StatsScreen({
         <table className="min-w-full divide-y divide-slate-600">
           <thead className="bg-slate-800">
             <tr>
-              {['Player', 'Started', 'M', 'B', 'A', 'Field Time'].map(header => (
+              {['Spelare', 'Start', 'M', 'B', 'A', 'Utespelare'].map(header => (
                 <th key={header} scope="col" className="px-3 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
                   {header}
                 </th>
