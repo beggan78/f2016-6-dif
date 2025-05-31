@@ -42,7 +42,36 @@ export function PeriodSetupScreen({
   };
 
   const handlePlayerAssignment = (pairKey, role, playerId) => {
-    // Ensure player is not already assigned elsewhere in this period's outfield formation
+    // If formation is complete, allow player switching
+    if (isFormationComplete() && playerId) {
+      // Find where the selected player is currently assigned
+      let currentPlayerPosition = null;
+      ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
+        if (periodFormation[pk]?.defender === playerId) {
+          currentPlayerPosition = { pairKey: pk, role: 'defender' };
+        } else if (periodFormation[pk]?.attacker === playerId) {
+          currentPlayerPosition = { pairKey: pk, role: 'attacker' };
+        }
+      });
+
+      if (currentPlayerPosition) {
+        // Get the player currently in the target position
+        const currentPlayerInTargetPosition = periodFormation[pairKey]?.[role];
+        
+        // Swap the players
+        setPeriodFormation(prev => ({
+          ...prev,
+          [pairKey]: { ...prev[pairKey], [role]: playerId },
+          [currentPlayerPosition.pairKey]: { 
+            ...prev[currentPlayerPosition.pairKey], 
+            [currentPlayerPosition.role]: currentPlayerInTargetPosition 
+          }
+        }));
+        return;
+      }
+    }
+
+    // Original logic for incomplete formation
     const otherAssignments = [];
     ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
       if (pk !== pairKey) {
@@ -66,7 +95,31 @@ export function PeriodSetupScreen({
   };
 
   const handleIndividualPlayerAssignment = (position, playerId) => {
-    // Ensure player is not already assigned elsewhere in 6-player formation
+    // If formation is complete, allow player switching
+    if (isFormationComplete() && playerId) {
+      // Find where the selected player is currently assigned
+      let currentPlayerPosition = null;
+      ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
+        if (periodFormation[pos] === playerId) {
+          currentPlayerPosition = pos;
+        }
+      });
+
+      if (currentPlayerPosition) {
+        // Get the player currently in the target position
+        const currentPlayerInTargetPosition = periodFormation[position];
+        
+        // Swap the players
+        setPeriodFormation(prev => ({
+          ...prev,
+          [position]: playerId,
+          [currentPlayerPosition]: currentPlayerInTargetPosition
+        }));
+        return;
+      }
+    }
+
+    // Original logic for incomplete formation
     const otherAssignments = [];
     ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
       if (pos !== position && periodFormation[pos]) {
@@ -86,6 +139,12 @@ export function PeriodSetupScreen({
   };
 
   const getAvailableForSelect = (currentPairKey, currentRole) => {
+    // If formation is complete, show all players except goalie
+    if (isFormationComplete()) {
+      return availableForPairing;
+    }
+
+    // Original logic for incomplete formation
     const assignedElsewhereIds = new Set();
     ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
       const pair = periodFormation[pk];
@@ -113,6 +172,12 @@ export function PeriodSetupScreen({
   };
 
   const getAvailableForIndividualSelect = (currentPosition) => {
+    // If formation is complete, show all players except goalie
+    if (isFormationComplete()) {
+      return availableForPairing;
+    }
+
+    // Original logic for incomplete formation
     const assignedElsewhereIds = new Set();
     ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
       if (pos !== currentPosition && periodFormation[pos]) {
