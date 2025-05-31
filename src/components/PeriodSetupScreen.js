@@ -248,7 +248,7 @@ export function PeriodSetupScreen({
             getPlayerLabel={getPlayerLabel}
           />
           <PairSelectionCard
-            title="Substitute"
+            title="Substitutes"
             pairKey="subPair"
             pair={periodFormation.subPair}
             onPlayerAssign={handlePlayerAssignment}
@@ -314,11 +314,16 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
   const defenderOptions = getAvailableOptions(pairKey, 'defender');
   const attackerOptions = getAvailableOptions(pairKey, 'attacker');
 
+  // Use same colors as GameScreen: sky for on-field, slate for substitutes
+  const isSubstitute = pairKey === 'subPair';
+  const bgColor = isSubstitute ? 'bg-slate-700' : 'bg-sky-700';
+  const headerColor = isSubstitute ? 'text-slate-200' : 'text-sky-200';
+
   return (
-    <div className="p-2 bg-slate-700 rounded-md space-y-1.5">
-      <h3 className="text-sm font-medium text-sky-200">{title}</h3>
+    <div className={`p-2 ${bgColor} rounded-md space-y-1.5`}>
+      <h3 className={`text-sm font-medium ${headerColor}`}>{title}</h3>
       <div>
-        <label className="block text-xs font-medium text-sky-200 mb-0.5">Defender</label>
+        <label className={`block text-xs font-medium ${headerColor} mb-0.5`}>Defender</label>
         <Select
           value={pair.defender || ""}
           onChange={e => onPlayerAssign(pairKey, 'defender', e.target.value)}
@@ -327,7 +332,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         />
       </div>
       <div>
-        <label className="block text-xs font-medium text-sky-200 mb-0.5">Attacker</label>
+        <label className={`block text-xs font-medium ${headerColor} mb-0.5`}>Attacker</label>
         <Select
           value={pair.attacker || ""}
           onChange={e => onPlayerAssign(pairKey, 'attacker', e.target.value)}
@@ -342,9 +347,14 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
 export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, getPlayerLabel }) {
   const availableOptions = getAvailableOptions(position);
 
+  // Use same colors as GameScreen: sky for on-field, slate for substitutes
+  const isSubstitute = position === 'substitute';
+  const bgColor = isSubstitute ? 'bg-slate-700' : 'bg-sky-700';
+  const headerColor = isSubstitute ? 'text-slate-200' : 'text-sky-200';
+
   return (
-    <div className="p-2 bg-slate-700 rounded-md">
-      <h3 className="text-sm font-medium text-sky-200 mb-1.5">{title}</h3>
+    <div className={`p-2 ${bgColor} rounded-md`}>
+      <h3 className={`text-sm font-medium ${headerColor} mb-1.5`}>{title}</h3>
       <Select
         value={playerId || ""}
         onChange={e => onPlayerAssign(position, e.target.value)}
