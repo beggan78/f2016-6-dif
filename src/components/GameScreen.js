@@ -62,15 +62,22 @@ export function GameScreen({
     }
     
     if (nextOffIndex !== -1 && subIndex !== -1) {
-      // Calculate distance between boxes with more accurate measurements
+      // Calculate distance between boxes with mode-specific measurements
       // p-3 = 24px padding (12px top + 12px bottom)
       // border-2 = 4px border (2px top + 2px bottom) 
       // space-y-3 = 12px gap between boxes
-      // Content area: Header (text-base + mb-1.5) ~24px + 2 stat rows ~40px = 64px content
-      // Total box height: 24px padding + 4px border + 64px content = 92px
-      // Plus gap: 92px + 12px = 104px per box position
-      // Adding extra margin for safety: 108px
-      const boxHeight = 108; // More accurate height including gap and safety margin
+      
+      let contentHeight;
+      if (teamSize === 7) {
+        // 7-player pairs: Header ~24px + space-y-1 with 2 player rows ~50px + optional text ~16px = 90px
+        contentHeight = 90;
+      } else {
+        // 6-player individual: Header ~24px + 1 player row ~24px + optional text ~16px = 64px  
+        contentHeight = 64;
+      }
+      
+      // Total box height: 24px padding + 4px border + content
+      const boxHeight = 24 + 4 + contentHeight + 12; // +12 for gap
       const distanceBetween = Math.abs(subIndex - nextOffIndex) * boxHeight;
       
       return {
