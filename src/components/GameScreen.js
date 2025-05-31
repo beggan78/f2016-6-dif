@@ -32,13 +32,55 @@ export function GameScreen({
   // State to track if we should substitute immediately after setting next sub
   const [shouldSubstituteNow, setShouldSubstituteNow] = React.useState(false);
   
+  // State to track recently substituted players for visual effect
+  const [recentlySubstitutedPlayers, setRecentlySubstitutedPlayers] = React.useState(new Set());
+  
+  // State to track if we should hide the "next off" indicator during glow effect
+  const [hideNextOffIndicator, setHideNextOffIndicator] = React.useState(false);
+  
+  // Enhanced substitution handler that tracks newly entering players
+  const handleSubstitutionWithHighlight = React.useCallback(() => {
+    const teamSize = selectedSquadPlayers?.length || 7;
+    let playersComingOnIds = [];
+    
+    if (teamSize === 7) {
+      // 7-player logic - get players coming from sub pair
+      const pairComingIn = periodFormation.subPair;
+      playersComingOnIds = [pairComingIn?.defender, pairComingIn?.attacker].filter(Boolean);
+    } else if (teamSize === 6) {
+      // 6-player logic - get player coming from substitute position
+      playersComingOnIds = [periodFormation.substitute].filter(Boolean);
+    }
+    
+    // Set the players who are coming on field for highlighting
+    setRecentlySubstitutedPlayers(new Set(playersComingOnIds));
+    
+    // Hide the "next off" indicator during the glow effect
+    setHideNextOffIndicator(true);
+    
+    // Perform the actual substitution
+    handleSubstitution();
+  }, [handleSubstitution, periodFormation, selectedSquadPlayers]);
+
   // Effect to trigger substitution after state update
   React.useEffect(() => {
     if (shouldSubstituteNow) {
-      handleSubstitution();
+      handleSubstitutionWithHighlight();
       setShouldSubstituteNow(false);
     }
-  }, [shouldSubstituteNow, nextPhysicalPairToSubOut, nextPlayerToSubOut, handleSubstitution]);
+  }, [shouldSubstituteNow, nextPhysicalPairToSubOut, nextPlayerToSubOut, handleSubstitutionWithHighlight]);
+
+  // Effect to clear recently substituted players highlight after 3 seconds
+  React.useEffect(() => {
+    if (recentlySubstitutedPlayers.size > 0) {
+      const timer = setTimeout(() => {
+        setRecentlySubstitutedPlayers(new Set());
+        setHideNextOffIndicator(false); // Show "next off" indicator again
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [recentlySubstitutedPlayers]);
 
   // Calculate player time statistics
   const getPlayerTimeStats = (playerId) => {
@@ -184,20 +226,31 @@ export function GameScreen({
     const isNextOn = pairKey === 'subPair';
     const canBeSelected = pairKey === 'leftPair' || pairKey === 'rightPair';
 
+    // Check if any player in this pair was recently substituted
+    const hasRecentlySubstitutedPlayer = (pairData.defender && recentlySubstitutedPlayers.has(pairData.defender)) ||
+                                        (pairData.attacker && recentlySubstitutedPlayers.has(pairData.attacker));
+
     let bgColor = 'bg-slate-700'; // Default for subs or if logic is off
     let textColor = 'text-slate-300';
     let borderColor = 'border-transparent';
+    let glowClass = '';
 
     if (pairKey === 'leftPair' || pairKey === 'rightPair') { // On field
       bgColor = 'bg-sky-700';
       textColor = 'text-sky-100';
     }
 
-    if (isNextOff) {
+    if (isNextOff && !hideNextOffIndicator) {
       borderColor = 'border-rose-500';
     }
     if (isNextOn) {
       borderColor = 'border-emerald-500';
+    }
+
+    // Add glow effect for recently substituted players
+    if (hasRecentlySubstitutedPlayer) {
+      glowClass = 'animate-pulse shadow-lg shadow-amber-400/50 border-amber-400';
+      borderColor = 'border-amber-400';
     }
 
     let longPressEvents = {};
@@ -206,13 +259,13 @@ export function GameScreen({
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
+        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
         {...longPressEvents}
       >
         <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
           {pairName}
           <div>
-            {isNextOff && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
+            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
             {isNextOn && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
           </div>
         </h3>
@@ -257,20 +310,30 @@ export function GameScreen({
     const isNextOn = position === 'substitute';
     const canBeSelected = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].includes(position);
 
+    // Check if this player was recently substituted
+    const isRecentlySubstituted = recentlySubstitutedPlayers.has(playerId);
+
     let bgColor = 'bg-slate-700'; // Default for substitute
     let textColor = 'text-slate-300';
     let borderColor = 'border-transparent';
+    let glowClass = '';
 
     if (position !== 'substitute') { // On field
       bgColor = 'bg-sky-700';
       textColor = 'text-sky-100';
     }
 
-    if (isNextOff) {
+    if (isNextOff && !hideNextOffIndicator) {
       borderColor = 'border-rose-500';
     }
     if (isNextOn) {
       borderColor = 'border-emerald-500';
+    }
+
+    // Add glow effect for recently substituted players
+    if (isRecentlySubstituted) {
+      glowClass = 'animate-pulse shadow-lg shadow-amber-400/50 border-amber-400';
+      borderColor = 'border-amber-400';
     }
 
     let longPressEvents = {};
@@ -281,13 +344,13 @@ export function GameScreen({
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all border-2 ${borderColor} ${bgColor} ${textColor} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
+        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
         {...longPressEvents}
       >
         <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
           {positionName}
           <div>
-            {isNextOff && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
+            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
             {isNextOn && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
           </div>
         </h3>
@@ -354,7 +417,7 @@ export function GameScreen({
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 mt-4">
-        <Button onClick={handleSubstitution} Icon={RotateCcw} className="flex-1">
+        <Button onClick={handleSubstitutionWithHighlight} Icon={RotateCcw} className="flex-1">
           SUB NOW
         </Button>
         <Button onClick={handleEndPeriod} Icon={Square} variant="danger" className="flex-1">
