@@ -243,7 +243,7 @@ export function GameScreen({
     if (isNextOff && !hideNextOffIndicator) {
       borderColor = 'border-rose-500';
     }
-    if (isNextOn) {
+    if (isNextOn && !hideNextOffIndicator) {
       borderColor = 'border-emerald-500';
     }
 
@@ -266,7 +266,7 @@ export function GameScreen({
           {pairName}
           <div>
             {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
-            {isNextOn && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
           </div>
         </h3>
         <div className="space-y-1">
@@ -326,7 +326,7 @@ export function GameScreen({
     if (isNextOff && !hideNextOffIndicator) {
       borderColor = 'border-rose-500';
     }
-    if (isNextOn) {
+    if (isNextOn && !hideNextOffIndicator) {
       borderColor = 'border-emerald-500';
     }
 
@@ -351,7 +351,7 @@ export function GameScreen({
           {positionName}
           <div>
             {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
-            {isNextOn && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
           </div>
         </h3>
         <div className="flex items-center justify-between">
