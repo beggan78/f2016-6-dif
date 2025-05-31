@@ -35,7 +35,7 @@ export function StatsScreen({
   };
 
   const generateStatsText = () => {
-    let text = "Player\t\tStarted\tM\tB\tA\tField Time\n";
+    let text = "Spelare\t\tStart\tM\tB\tA\tUtespelare\n";
     text += "------\t\t-------\t-\t-\t-\t----------\n";
     
     squadForStats.forEach(player => {
