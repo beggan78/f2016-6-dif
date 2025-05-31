@@ -167,7 +167,7 @@ export function PeriodSetupScreen({
       {periodFormation.goalie && teamSize === 7 && (
         <>
           <PairSelectionCard
-            title="Left Pair (On Field)"
+            title="Left"
             pairKey="leftPair"
             pair={periodFormation.leftPair}
             onPlayerAssign={handlePlayerAssignment}
@@ -175,7 +175,7 @@ export function PeriodSetupScreen({
             getPlayerLabel={getPlayerLabel}
           />
           <PairSelectionCard
-            title="Right Pair (On Field)"
+            title="Right"
             pairKey="rightPair"
             pair={periodFormation.rightPair}
             onPlayerAssign={handlePlayerAssignment}
@@ -183,7 +183,7 @@ export function PeriodSetupScreen({
             getPlayerLabel={getPlayerLabel}
           />
           <PairSelectionCard
-            title="Substitute Pair"
+            title="Substitute"
             pairKey="subPair"
             pair={periodFormation.subPair}
             onPlayerAssign={handlePlayerAssignment}
