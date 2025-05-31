@@ -38,7 +38,51 @@ export function GameScreen({
   // State to track if we should hide the "next off" indicator during glow effect
   const [hideNextOffIndicator, setHideNextOffIndicator] = React.useState(false);
   
-  // Enhanced substitution handler that tracks newly entering players
+  // State to track box switching animation
+  const [isAnimating, setIsAnimating] = React.useState(false);
+  const [animationPhase, setAnimationPhase] = React.useState('idle'); // 'idle', 'switching', 'completing'
+  const [animationDistances, setAnimationDistances] = React.useState({ nextOffToSub: 0, subToNextOff: 0 });
+  
+  // Calculate positions for box switching animation
+  const calculateAnimationDistances = React.useCallback(() => {
+    const teamSize = selectedSquadPlayers?.length || 7;
+    let nextOffIndex = -1;
+    let subIndex = -1;
+    
+    if (teamSize === 7) {
+      // For 7-player mode, find indices of next off pair and sub pair
+      const pairs = ['leftPair', 'rightPair', 'subPair'];
+      nextOffIndex = pairs.indexOf(nextPhysicalPairToSubOut);
+      subIndex = pairs.indexOf('subPair');
+    } else if (teamSize === 6) {
+      // For 6-player mode, find indices of next off position and substitute
+      const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
+      nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
+      subIndex = positions.indexOf('substitute');
+    }
+    
+    if (nextOffIndex !== -1 && subIndex !== -1) {
+      // Calculate distance between boxes with more accurate measurements
+      // p-3 = 24px padding (12px top + 12px bottom)
+      // border-2 = 4px border (2px top + 2px bottom) 
+      // space-y-3 = 12px gap between boxes
+      // Content area: Header (text-base + mb-1.5) ~24px + 2 stat rows ~40px = 64px content
+      // Total box height: 24px padding + 4px border + 64px content = 92px
+      // Plus gap: 92px + 12px = 104px per box position
+      // Adding extra margin for safety: 108px
+      const boxHeight = 108; // More accurate height including gap and safety margin
+      const distanceBetween = Math.abs(subIndex - nextOffIndex) * boxHeight;
+      
+      return {
+        nextOffToSub: subIndex > nextOffIndex ? distanceBetween : -distanceBetween,
+        subToNextOff: nextOffIndex > subIndex ? distanceBetween : -distanceBetween
+      };
+    }
+    
+    return { nextOffToSub: 0, subToNextOff: 0 };
+  }, [selectedSquadPlayers, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation]);
+
+  // Enhanced substitution handler with animation and highlighting
   const handleSubstitutionWithHighlight = React.useCallback(() => {
     const teamSize = selectedSquadPlayers?.length || 7;
     let playersComingOnIds = [];
@@ -52,15 +96,35 @@ export function GameScreen({
       playersComingOnIds = [periodFormation.substitute].filter(Boolean);
     }
     
-    // Set the players who are coming on field for highlighting
-    setRecentlySubstitutedPlayers(new Set(playersComingOnIds));
+    // Calculate animation distances
+    const distances = calculateAnimationDistances();
+    setAnimationDistances(distances);
     
-    // Hide the "next off" indicator during the glow effect
+    // Start the animation sequence
+    setIsAnimating(true);
+    setAnimationPhase('switching');
     setHideNextOffIndicator(true);
     
-    // Perform the actual substitution
-    handleSubstitution();
-  }, [handleSubstitution, periodFormation, selectedSquadPlayers]);
+    // After animation completes (1 second), perform substitution and start glow
+    setTimeout(() => {
+      // Perform the actual substitution
+      handleSubstitution();
+      
+      // Set the players who are coming on field for highlighting
+      setRecentlySubstitutedPlayers(new Set(playersComingOnIds));
+      
+      // End animation
+      setIsAnimating(false);
+      setAnimationPhase('completing');
+      
+      // After glow effect completes (3 more seconds), reset everything
+      setTimeout(() => {
+        setAnimationPhase('idle');
+        setHideNextOffIndicator(false);
+        setRecentlySubstitutedPlayers(new Set());
+      }, 3000);
+    }, 1000);
+  }, [handleSubstitution, periodFormation, selectedSquadPlayers, calculateAnimationDistances]);
 
   // Effect to trigger substitution after state update
   React.useEffect(() => {
@@ -70,17 +134,7 @@ export function GameScreen({
     }
   }, [shouldSubstituteNow, nextPhysicalPairToSubOut, nextPlayerToSubOut, handleSubstitutionWithHighlight]);
 
-  // Effect to clear recently substituted players highlight after 3 seconds
-  React.useEffect(() => {
-    if (recentlySubstitutedPlayers.size > 0) {
-      const timer = setTimeout(() => {
-        setRecentlySubstitutedPlayers(new Set());
-        setHideNextOffIndicator(false); // Show "next off" indicator again
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [recentlySubstitutedPlayers]);
+  // Note: Timeout logic is now handled in handleSubstitutionWithHighlight
 
   // Calculate player time statistics
   const getPlayerTimeStats = (playerId) => {
@@ -219,7 +273,7 @@ export function GameScreen({
   const leftAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftAttacker'));
   const rightAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightAttacker'));
 
-  const renderPair = (pairKey, pairName) => {
+  const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
     if (!pairData) return null;
     const isNextOff = pairKey === nextPhysicalPairToSubOut && pairKey !== 'subPair';
@@ -229,6 +283,27 @@ export function GameScreen({
     // Check if any player in this pair was recently substituted
     const hasRecentlySubstitutedPlayer = (pairData.defender && recentlySubstitutedPlayers.has(pairData.defender)) ||
                                         (pairData.attacker && recentlySubstitutedPlayers.has(pairData.attacker));
+
+    // Animation logic for switching positions
+    let animationClass = '';
+    let zIndexClass = '';
+    let styleProps = {};
+    
+    if (isAnimating && animationPhase === 'switching') {
+      if (isNextOff) {
+        animationClass = 'animate-dynamic-down';
+        zIndexClass = 'z-10'; // Lower z-index when going down
+        styleProps = {
+          '--move-distance': `${animationDistances.nextOffToSub}px`
+        };
+      } else if (isNextOn) {
+        animationClass = 'animate-dynamic-up';
+        zIndexClass = 'z-20'; // Higher z-index when coming up
+        styleProps = {
+          '--move-distance': `${animationDistances.subToNextOff}px`
+        };
+      }
+    }
 
     let bgColor = 'bg-slate-700'; // Default for subs or if logic is off
     let textColor = 'text-slate-300';
@@ -259,7 +334,8 @@ export function GameScreen({
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
+        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
+        style={styleProps}
         {...longPressEvents}
       >
         <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
@@ -302,7 +378,7 @@ export function GameScreen({
     );
   };
 
-  const renderIndividualPosition = (position, positionName, icon) => {
+  const renderIndividualPosition = (position, positionName, icon, renderIndex) => {
     const playerId = periodFormation[position];
     if (!playerId) return null;
     
@@ -312,6 +388,27 @@ export function GameScreen({
 
     // Check if this player was recently substituted
     const isRecentlySubstituted = recentlySubstitutedPlayers.has(playerId);
+
+    // Animation logic for switching positions
+    let animationClass = '';
+    let zIndexClass = '';
+    let styleProps = {};
+    
+    if (isAnimating && animationPhase === 'switching') {
+      if (isNextOff) {
+        animationClass = 'animate-dynamic-down';
+        zIndexClass = 'z-10'; // Lower z-index when going down
+        styleProps = {
+          '--move-distance': `${animationDistances.nextOffToSub}px`
+        };
+      } else if (isNextOn) {
+        animationClass = 'animate-dynamic-up';
+        zIndexClass = 'z-20'; // Higher z-index when coming up
+        styleProps = {
+          '--move-distance': `${animationDistances.subToNextOff}px`
+        };
+      }
+    }
 
     let bgColor = 'bg-slate-700'; // Default for substitute
     let textColor = 'text-slate-300';
@@ -344,7 +441,8 @@ export function GameScreen({
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${canBeSelected ? 'cursor-pointer select-none' : ''}`}
+        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
+        style={styleProps}
         {...longPressEvents}
       >
         <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
@@ -399,19 +497,19 @@ export function GameScreen({
       
       {teamSize === 7 && (
         <div className="space-y-3">
-          {renderPair('leftPair', 'Left')}
-          {renderPair('rightPair', 'Right')}
-          {renderPair('subPair', 'Substitutes')}
+          {renderPair('leftPair', 'Left', 0)}
+          {renderPair('rightPair', 'Right', 1)}
+          {renderPair('subPair', 'Substitutes', 2)}
         </div>
       )}
 
       {teamSize === 6 && (
         <div className="space-y-3">
-          {renderIndividualPosition('leftDefender', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />)}
-          {renderIndividualPosition('rightDefender', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />)}
-          {renderIndividualPosition('leftAttacker', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />)}
-          {renderIndividualPosition('rightAttacker', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />)}
-          {renderIndividualPosition('substitute', 'Substitute', <RotateCcw className="inline h-4 w-4 mr-1" />)}
+          {renderIndividualPosition('leftDefender', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />, 0)}
+          {renderIndividualPosition('rightDefender', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />, 1)}
+          {renderIndividualPosition('leftAttacker', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />, 2)}
+          {renderIndividualPosition('rightAttacker', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />, 3)}
+          {renderIndividualPosition('substitute', 'Substitute', <RotateCcw className="inline h-4 w-4 mr-1" />, 4)}
         </div>
       )}
 

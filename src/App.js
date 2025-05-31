@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import './App.css';
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { formatTime } from './utils/timeCalculations';
