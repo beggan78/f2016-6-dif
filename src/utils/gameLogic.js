@@ -8,6 +8,11 @@ export const PLAYER_ROLES = {
 
 export const PERIOD_OPTIONS = [1, 2, 3];
 export const DURATION_OPTIONS = [10, 15, 20, 25, 30];
+export const FORMATION_TYPES = {
+  PAIRS_7: 'pairs_7',
+  INDIVIDUAL_6: 'individual_6', 
+  INDIVIDUAL_7: 'individual_7'
+};
 
 export const initialRoster = [
   "Alma", "Ebba", "Elise", "Filippa", "Fiona", "Ines", "Isabelle",

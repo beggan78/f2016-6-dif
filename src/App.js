@@ -123,6 +123,8 @@ function App() {
             setPeriodDurationMinutes={gameState.setPeriodDurationMinutes}
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
+            formationType={gameState.formationType}
+            setFormationType={gameState.setFormationType}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
             selectedSquadPlayers={selectedSquadPlayers}
           />
@@ -141,6 +143,7 @@ function App() {
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             numPeriods={gameState.numPeriods}
+            formationType={gameState.formationType}
           />
         );
       case 'game':
@@ -157,9 +160,11 @@ function App() {
             nextPhysicalPairToSubOut={gameState.nextPhysicalPairToSubOut}
             nextPlayerToSubOut={gameState.nextPlayerToSubOut}
             nextPlayerIdToSubOut={gameState.nextPlayerIdToSubOut}
+            nextNextPlayerIdToSubOut={gameState.nextNextPlayerIdToSubOut}
             selectedSquadPlayers={selectedSquadPlayers}
             setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
+            formationType={gameState.formationType}
           />
         );
       case 'stats':

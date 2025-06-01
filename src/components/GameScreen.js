@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock } from 'lucide-react';
 import { Button, SubstitutionModal } from './UI';
+import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function GameScreen({ 
   currentPeriodNumber, 
@@ -14,12 +15,18 @@ export function GameScreen({
   nextPhysicalPairToSubOut,
   nextPlayerToSubOut,
   nextPlayerIdToSubOut,
+  nextNextPlayerIdToSubOut,
   selectedSquadPlayers,
   setNextPhysicalPairToSubOut,
-  setNextPlayerToSubOut
+  setNextPlayerToSubOut,
+  formationType
 }) {
-  const teamSize = selectedSquadPlayers?.length || 7;
   const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
+  
+  // Determine which formation mode we're using
+  const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
+  const isIndividual6Mode = formationType === FORMATION_TYPES.INDIVIDUAL_6;
+  const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
   
   // State for substitution confirmation modal
   const [confirmationModal, setConfirmationModal] = React.useState({
@@ -45,20 +52,24 @@ export function GameScreen({
   
   // Calculate positions for box switching animation
   const calculateAnimationDistances = React.useCallback(() => {
-    const teamSize = selectedSquadPlayers?.length || 7;
     let nextOffIndex = -1;
     let subIndex = -1;
     
-    if (teamSize === 7) {
-      // For 7-player mode, find indices of next off pair and sub pair
+    if (isPairsMode) {
+      // For 7-player pairs mode, find indices of next off pair and sub pair
       const pairs = ['leftPair', 'rightPair', 'subPair'];
       nextOffIndex = pairs.indexOf(nextPhysicalPairToSubOut);
       subIndex = pairs.indexOf('subPair');
-    } else if (teamSize === 6) {
+    } else if (isIndividual6Mode) {
       // For 6-player mode, find indices of next off position and substitute
       const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
       nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
       subIndex = positions.indexOf('substitute');
+    } else if (isIndividual7Mode) {
+      // For 7-player individual mode, find indices of next off position and substitute
+      const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+      nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
+      subIndex = positions.indexOf('substitute7_1'); // First substitute is the one coming in
     }
     
     if (nextOffIndex !== -1 && subIndex !== -1) {
@@ -68,11 +79,11 @@ export function GameScreen({
       // space-y-3 = 12px gap between boxes
       
       let contentHeight;
-      if (teamSize === 7) {
+      if (isPairsMode) {
         // 7-player pairs: Header ~24px + space-y-1 with 2 player rows ~50px + optional text ~16px = 90px
         contentHeight = 90;
       } else {
-        // 6-player individual: Header ~24px + 1 player row ~24px + optional text ~16px = 64px  
+        // 6-player or 7-player individual: Header ~24px + 1 player row ~24px + optional text ~16px = 64px  
         contentHeight = 64;
       }
       
@@ -87,20 +98,22 @@ export function GameScreen({
     }
     
     return { nextOffToSub: 0, subToNextOff: 0 };
-  }, [selectedSquadPlayers, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation]);
+  }, [isPairsMode, isIndividual6Mode, isIndividual7Mode, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation]);
 
   // Enhanced substitution handler with animation and highlighting
   const handleSubstitutionWithHighlight = React.useCallback(() => {
-    const teamSize = selectedSquadPlayers?.length || 7;
     let playersComingOnIds = [];
     
-    if (teamSize === 7) {
-      // 7-player logic - get players coming from sub pair
+    if (isPairsMode) {
+      // 7-player pairs logic - get players coming from sub pair
       const pairComingIn = periodFormation.subPair;
       playersComingOnIds = [pairComingIn?.defender, pairComingIn?.attacker].filter(Boolean);
-    } else if (teamSize === 6) {
+    } else if (isIndividual6Mode) {
       // 6-player logic - get player coming from substitute position
       playersComingOnIds = [periodFormation.substitute].filter(Boolean);
+    } else if (isIndividual7Mode) {
+      // 7-player individual logic - get player coming from first substitute position
+      playersComingOnIds = [periodFormation.substitute7_1].filter(Boolean);
     }
     
     // Calculate animation distances
@@ -124,14 +137,14 @@ export function GameScreen({
       setIsAnimating(false);
       setAnimationPhase('completing');
       
-      // After glow effect completes (3 more seconds), reset everything
+      // After glow effect completes (1.5 more seconds), reset everything
       setTimeout(() => {
         setAnimationPhase('idle');
         setHideNextOffIndicator(false);
         setRecentlySubstitutedPlayers(new Set());
-      }, 3000);
+      }, 1500);
     }, 1000);
-  }, [handleSubstitution, periodFormation, selectedSquadPlayers, calculateAnimationDistances]);
+  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, calculateAnimationDistances]);
 
   // Effect to trigger substitution after state update
   React.useEffect(() => {
@@ -199,7 +212,12 @@ export function GameScreen({
   };
 
   const handlePlayerLongPress = (position) => {
-    if (['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].includes(position)) {
+    const validPositions = [
+      'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', // 6-player mode
+      'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7' // 7-player individual mode
+    ];
+    
+    if (validPositions.includes(position)) {
       const playerId = periodFormation[position];
       const playerName = getPlayerName(playerId);
       setConfirmationModal({
@@ -275,10 +293,17 @@ export function GameScreen({
   const leftPairEvents = useLongPressAndDoubleClick(() => handlePairLongPress('leftPair'));
   const rightPairEvents = useLongPressAndDoubleClick(() => handlePairLongPress('rightPair'));
   
+  // 6-player individual mode events
   const leftDefenderEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftDefender'));
   const rightDefenderEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightDefender'));
   const leftAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftAttacker'));
   const rightAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightAttacker'));
+  
+  // 7-player individual mode events
+  const leftDefender7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftDefender7'));
+  const rightDefender7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightDefender7'));
+  const leftAttacker7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftAttacker7'));
+  const rightAttacker7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightAttacker7'));
 
   const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
@@ -389,9 +414,12 @@ export function GameScreen({
     const playerId = periodFormation[position];
     if (!playerId) return null;
     
-    const isNextOff = teamSize === 6 ? playerId === nextPlayerIdToSubOut : position === nextPlayerToSubOut;
-    const isNextOn = position === 'substitute';
-    const canBeSelected = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].includes(position);
+    const isNextOff = playerId === nextPlayerIdToSubOut;
+    const isNextOn = position === 'substitute' || position === 'substitute7_1';
+    const canBeSelected = [
+      'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', // 6-player mode
+      'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7' // 7-player individual mode
+    ].includes(position);
 
     // Check if this player was recently substituted
     const isRecentlySubstituted = recentlySubstitutedPlayers.has(playerId);
@@ -445,6 +473,10 @@ export function GameScreen({
     else if (position === 'rightDefender') longPressEvents = rightDefenderEvents;
     else if (position === 'leftAttacker') longPressEvents = leftAttackerEvents;
     else if (position === 'rightAttacker') longPressEvents = rightAttackerEvents;
+    else if (position === 'leftDefender7') longPressEvents = leftDefender7Events;
+    else if (position === 'rightDefender7') longPressEvents = rightDefender7Events;
+    else if (position === 'leftAttacker7') longPressEvents = leftAttacker7Events;
+    else if (position === 'rightAttacker7') longPressEvents = rightAttacker7Events;
 
     return (
       <div 
@@ -457,6 +489,114 @@ export function GameScreen({
           <div>
             {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
             {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+          </div>
+        </h3>
+        <div className="flex items-center justify-between">
+          <div>{icon} {getPlayerName(playerId)}</div>
+          {playerId && (() => {
+            const stats = getPlayerTimeStats(playerId);
+            return (
+              <div className="text-right text-sm">
+                <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
+                <span className="ml-3"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+              </div>
+            );
+          })()}
+        </div>
+        {canBeSelected && (
+          <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
+        )}
+      </div>
+    );
+  };
+
+  // Special render function for 7-player individual mode with dual substitution indicators
+  const renderIndividual7Position = (position, positionName, icon, renderIndex, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut) => {
+    const playerId = periodFormation[position];
+    if (!playerId) return null;
+    
+    const isNextOff = playerId === nextPlayerIdToSubOut;
+    const isNextNextOff = playerId === nextNextPlayerIdToSubOut;
+    const isNextOn = position === 'substitute7_1';
+    const isNextNextOn = position === 'substitute7_2';
+    const canBeSelected = [
+      'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'
+    ].includes(position);
+
+    // Check if this player was recently substituted
+    const isRecentlySubstituted = recentlySubstitutedPlayers.has(playerId);
+
+    // Animation logic for switching positions
+    let animationClass = '';
+    let zIndexClass = '';
+    let styleProps = {};
+    
+    if (isAnimating && animationPhase === 'switching') {
+      if (isNextOff) {
+        animationClass = 'animate-dynamic-down';
+        zIndexClass = 'z-10';
+        styleProps = {
+          '--move-distance': `${animationDistances.nextOffToSub}px`
+        };
+      } else if (isNextOn) {
+        animationClass = 'animate-dynamic-up';
+        zIndexClass = 'z-20';
+        styleProps = {
+          '--move-distance': `${animationDistances.subToNextOff}px`
+        };
+      }
+    }
+
+    let bgColor = 'bg-slate-700'; // Default for substitute
+    let textColor = 'text-slate-300';
+    let borderColor = 'border-transparent';
+    let glowClass = '';
+
+    if (!position.includes('substitute')) { // On field
+      bgColor = 'bg-sky-700';
+      textColor = 'text-sky-100';
+    }
+
+    // Visual indicators for next and next-next
+    if (isNextOff && !hideNextOffIndicator) {
+      borderColor = 'border-rose-500';
+    } else if (isNextNextOff && !hideNextOffIndicator) {
+      borderColor = 'border-rose-200'; // More dimmed red for next-next off
+    }
+    
+    if (isNextOn && !hideNextOffIndicator) {
+      borderColor = 'border-emerald-500';
+    } else if (isNextNextOn && !hideNextOffIndicator) {
+      borderColor = 'border-emerald-200'; // More dimmed green for next-next on
+    }
+
+    // Add glow effect for recently substituted players
+    if (isRecentlySubstituted) {
+      glowClass = 'animate-pulse shadow-lg shadow-amber-400/50 border-amber-400';
+      borderColor = 'border-amber-400';
+    }
+
+    let longPressEvents = {};
+    if (position === 'leftDefender7') longPressEvents = leftDefender7Events;
+    else if (position === 'rightDefender7') longPressEvents = rightDefender7Events;
+    else if (position === 'leftAttacker7') longPressEvents = leftAttacker7Events;
+    else if (position === 'rightAttacker7') longPressEvents = rightAttacker7Events;
+
+    return (
+      <div 
+        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
+        style={styleProps}
+        {...longPressEvents}
+      >
+        <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
+          {positionName}
+          <div className="flex space-x-1">
+            {/* Primary indicators (full opacity) */}
+            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
+            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+            {/* Secondary indicators (very dimmed) */}
+            {isNextNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-4 w-4 text-rose-200 opacity-40 inline-block" />}
+            {isNextNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-4 w-4 text-emerald-200 opacity-40 inline-block" />}
           </div>
         </h3>
         <div className="flex items-center justify-between">
@@ -502,7 +642,7 @@ export function GameScreen({
         <p className="text-center my-1 text-sky-200">Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span></p>
       </div>
       
-      {teamSize === 7 && (
+      {isPairsMode && (
         <div className="space-y-3">
           {renderPair('leftPair', 'Left', 0)}
           {renderPair('rightPair', 'Right', 1)}
@@ -510,13 +650,24 @@ export function GameScreen({
         </div>
       )}
 
-      {teamSize === 6 && (
+      {isIndividual6Mode && (
         <div className="space-y-3">
           {renderIndividualPosition('leftDefender', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />, 0)}
           {renderIndividualPosition('rightDefender', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />, 1)}
           {renderIndividualPosition('leftAttacker', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />, 2)}
           {renderIndividualPosition('rightAttacker', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />, 3)}
           {renderIndividualPosition('substitute', 'Substitute', <RotateCcw className="inline h-4 w-4 mr-1" />, 4)}
+        </div>
+      )}
+
+      {isIndividual7Mode && (
+        <div className="space-y-3">
+          {renderIndividual7Position('leftDefender7', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />, 0, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('rightDefender7', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />, 1, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('leftAttacker7', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />, 2, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('rightAttacker7', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />, 3, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('substitute7_1', 'Substitute (Next)', <RotateCcw className="inline h-4 w-4 mr-1" />, 4, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('substitute7_2', 'Substitute (Next-Next)', <RotateCcw className="inline h-4 w-4 mr-1" />, 5, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
         </div>
       )}
 

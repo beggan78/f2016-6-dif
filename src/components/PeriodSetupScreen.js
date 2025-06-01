@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Users, Play, Edit3 } from 'lucide-react';
 import { Select, Button } from './UI';
 import { formatTime } from '../utils/timeCalculations';
+import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
@@ -14,9 +15,16 @@ export function PeriodSetupScreen({
   selectedSquadPlayers, 
   periodGoalieIds, 
   setPeriodGoalieIds, 
-  numPeriods 
+  numPeriods,
+  formationType 
 }) {
   const teamSize = selectedSquadPlayers.length;
+  
+  // Determine formation mode
+  const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
+  const isIndividual6Mode = formationType === FORMATION_TYPES.INDIVIDUAL_6;
+  const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
+  
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -138,6 +146,50 @@ export function PeriodSetupScreen({
     }));
   };
 
+  const handleIndividual7PlayerAssignment = (position, playerId) => {
+    // If formation is complete, allow player switching
+    if (isFormationComplete() && playerId) {
+      // Find where the selected player is currently assigned
+      let currentPlayerPosition = null;
+      ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].forEach(pos => {
+        if (periodFormation[pos] === playerId) {
+          currentPlayerPosition = pos;
+        }
+      });
+
+      if (currentPlayerPosition) {
+        // Get the player currently in the target position
+        const currentPlayerInTargetPosition = periodFormation[position];
+        
+        // Swap the players
+        setPeriodFormation(prev => ({
+          ...prev,
+          [position]: playerId,
+          [currentPlayerPosition]: currentPlayerInTargetPosition
+        }));
+        return;
+      }
+    }
+
+    // Original logic for incomplete formation
+    const otherAssignments = [];
+    ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].forEach(pos => {
+      if (pos !== position && periodFormation[pos]) {
+        otherAssignments.push(periodFormation[pos]);
+      }
+    });
+
+    if (playerId && otherAssignments.includes(playerId)) {
+      alert(`${allPlayers.find(p=>p.id === playerId)?.name || 'Player'} is already assigned. Choose a different player.`);
+      return;
+    }
+
+    setPeriodFormation(prev => ({
+      ...prev,
+      [position]: playerId
+    }));
+  };
+
   const getAvailableForSelect = (currentPairKey, currentRole) => {
     // If formation is complete, show all players except goalie
     if (isFormationComplete()) {
@@ -187,21 +239,44 @@ export function PeriodSetupScreen({
     return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
   };
 
+  const getAvailableForIndividual7Select = (currentPosition) => {
+    // If formation is complete, show all players except goalie
+    if (isFormationComplete()) {
+      return availableForPairing;
+    }
+
+    // Original logic for incomplete formation
+    const assignedElsewhereIds = new Set();
+    ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].forEach(pos => {
+      if (pos !== currentPosition && periodFormation[pos]) {
+        assignedElsewhereIds.add(periodFormation[pos]);
+      }
+    });
+    return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
+  };
+
   const isFormationComplete = () => {
-    if (teamSize === 7) {
+    if (isPairsMode) {
       const outfielders = [
         periodFormation.leftPair.defender, periodFormation.leftPair.attacker,
         periodFormation.rightPair.defender, periodFormation.rightPair.attacker,
         periodFormation.subPair.defender, periodFormation.subPair.attacker
       ].filter(Boolean);
       return periodFormation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
-    } else if (teamSize === 6) {
+    } else if (isIndividual6Mode) {
       const outfielders = [
         periodFormation.leftDefender, periodFormation.rightDefender,
         periodFormation.leftAttacker, periodFormation.rightAttacker,
         periodFormation.substitute
       ].filter(Boolean);
       return periodFormation.goalie && outfielders.length === 5 && new Set(outfielders).size === 5;
+    } else if (isIndividual7Mode) {
+      const outfielders = [
+        periodFormation.leftDefender7, periodFormation.rightDefender7,
+        periodFormation.leftAttacker7, periodFormation.rightAttacker7,
+        periodFormation.substitute7_1, periodFormation.substitute7_2
+      ].filter(Boolean);
+      return periodFormation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
     }
     return false;
   };
@@ -229,7 +304,7 @@ export function PeriodSetupScreen({
         )}
       </div>
 
-      {periodFormation.goalie && teamSize === 7 && (
+      {periodFormation.goalie && isPairsMode && (
         <>
           <PairSelectionCard
             title="Left"
@@ -258,7 +333,7 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {periodFormation.goalie && teamSize === 6 && (
+      {periodFormation.goalie && isIndividual6Mode && (
         <>
           <IndividualPositionCard
             title="Left Defender"
@@ -298,6 +373,59 @@ export function PeriodSetupScreen({
             playerId={periodFormation.substitute}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
+            getPlayerLabel={getPlayerLabel}
+          />
+        </>
+      )}
+
+      {periodFormation.goalie && isIndividual7Mode && (
+        <>
+          <IndividualPositionCard
+            title="Left Defender"
+            position="leftDefender7"
+            playerId={periodFormation.leftDefender7}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividual7Select}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Right Defender"
+            position="rightDefender7"
+            playerId={periodFormation.rightDefender7}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividual7Select}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Left Attacker"
+            position="leftAttacker7"
+            playerId={periodFormation.leftAttacker7}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividual7Select}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Right Attacker"
+            position="rightAttacker7"
+            playerId={periodFormation.rightAttacker7}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividual7Select}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Substitute (Next)"
+            position="substitute7_1"
+            playerId={periodFormation.substitute7_1}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividual7Select}
+            getPlayerLabel={getPlayerLabel}
+          />
+          <IndividualPositionCard
+            title="Substitute (Next-Next)"
+            position="substitute7_2"
+            playerId={periodFormation.substitute7_2}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividual7Select}
             getPlayerLabel={getPlayerLabel}
           />
         </>
@@ -348,7 +476,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
   const availableOptions = getAvailableOptions(position);
 
   // Use same colors as GameScreen: sky for on-field, slate for substitutes
-  const isSubstitute = position === 'substitute';
+  const isSubstitute = position === 'substitute' || position === 'substitute7_1' || position === 'substitute7_2';
   const bgColor = isSubstitute ? 'bg-slate-700' : 'bg-sky-700';
   const headerColor = isSubstitute ? 'text-slate-200' : 'text-sky-200';
 

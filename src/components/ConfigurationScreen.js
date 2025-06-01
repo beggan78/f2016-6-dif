@@ -1,7 +1,7 @@
     import React from 'react';
 import { Settings, Play } from 'lucide-react';
 import { Select, Button } from './UI';
-import { PERIOD_OPTIONS, DURATION_OPTIONS } from '../utils/gameLogic';
+import { PERIOD_OPTIONS, DURATION_OPTIONS, FORMATION_TYPES } from '../utils/gameLogic';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -13,13 +13,24 @@ export function ConfigurationScreen({
   setPeriodDurationMinutes, 
   periodGoalieIds, 
   setPeriodGoalieIds, 
+  formationType,
+  setFormationType,
   handleStartPeriodSetup, 
   selectedSquadPlayers 
 }) {
   const togglePlayerSelection = (playerId) => {
-    setSelectedSquadIds(prev =>
-      prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId]
-    );
+    setSelectedSquadIds(prev => {
+      const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
+      
+      // Auto-set formation type based on squad size
+      if (newIds.length === 6) {
+        setFormationType(FORMATION_TYPES.INDIVIDUAL_6);
+      } else if (newIds.length === 7 && formationType === FORMATION_TYPES.INDIVIDUAL_6) {
+        setFormationType(FORMATION_TYPES.PAIRS_7); // Default to pairs for 7-player
+      }
+      
+      return newIds;
+    });
   };
 
   const handleGoalieChange = (period, playerId) => {
@@ -62,6 +73,43 @@ export function ConfigurationScreen({
           <Select value={periodDurationMinutes} onChange={e => setPeriodDurationMinutes(Number(e.target.value))} options={DURATION_OPTIONS} id="periodDuration" />
         </div>
       </div>
+
+      {/* Formation Type Selection */}
+      {selectedSquadIds.length === 7 && (
+        <div className="p-3 bg-slate-700 rounded-md">
+          <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="formationType"
+                value={FORMATION_TYPES.PAIRS_7}
+                checked={formationType === FORMATION_TYPES.PAIRS_7}
+                onChange={e => setFormationType(e.target.value)}
+                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+              />
+              <div>
+                <span className="text-sky-100 font-medium">Pairs</span>
+                <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
+              </div>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="formationType"
+                value={FORMATION_TYPES.INDIVIDUAL_7}
+                checked={formationType === FORMATION_TYPES.INDIVIDUAL_7}
+                onChange={e => setFormationType(e.target.value)}
+                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+              />
+              <div>
+                <span className="text-sky-100 font-medium">Individual</span>
+                <p className="text-xs text-slate-400">Individual positions with 2 substitutes. Dual next/next-next visual indicators.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* Goalie Assignment */}
       {(selectedSquadIds.length === 6 || selectedSquadIds.length === 7) && (
