@@ -4,15 +4,16 @@ A mobile-first web application designed for coaching youth soccer teams. This ap
 
 ## Overview
 
-DIF F16-6 Coach is built specifically for managing a soccer team of 14 players where 6-7 players are selected for each game. The app supports both 6-player and 7-player squad configurations, with intelligent rotation systems to ensure fair playing time distribution.
+DIF F16-6 Coach is built specifically for managing a soccer team of 14 players where 6-7 players are selected for each game. The app supports three distinct formation types: 7-player pairs, 6-player individual, and 7-player individual modes, each with intelligent rotation systems to ensure fair playing time distribution.
 
 ### Key Features
 
 - **Smart Player Selection**: Choose 6 or 7 players from your 14-player roster for each game
-- **Flexible Team Formation**: Supports both pair-based (7 players) and individual position-based (6 players) formations
+- **Three Formation Types**: Supports pair-based (7 players), 6-player individual, and 7-player individual formations
 - **Real-time Game Management**: Dual timers track match time and substitution intervals
 - **Automated Substitution Planning**: AI-powered recommendations for optimal player rotations
 - **Fair Time Distribution**: Comprehensive time tracking ensures equitable playing opportunities
+- **Advanced Visual Indicators**: Dual-layer substitution indicators for complex rotation patterns
 - **Mobile-Optimized**: Touch-friendly interface designed for sideline use
 - **Persistent State**: Game state is preserved through browser refreshes
 
@@ -37,6 +38,13 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
 - Individual player substitutions
 - Intelligent rotation queue management
 
+#### 7-Player Mode (Individual)
+- Players assigned to individual positions without pairs
+- Positions: Left Defender, Right Defender, Left Attacker, Right Attacker, Substitute (Next), Substitute (Next-Next)
+- Dual substitution system with two substitute players
+- Advanced visual indicators showing both immediate and upcoming substitutions
+- Round-robin rotation through all 6 outfield positions
+
 ## App Workflow
 
 ### 1. Game Configuration
@@ -56,13 +64,62 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
   - Blue boxes show players currently on field
   - Green arrows indicate players ready to enter
   - Red arrows show players scheduled to exit
-- **Quick Substitution**: One-tap substitution with visual feedback
+  - **7-Player Individual Mode**: Dual-layer indicators with opacity differentiation
+    - Full opacity arrows for immediate next substitutions
+    - Semi-transparent arrows for next-next substitutions
+    - Color-coded borders (strong for immediate, subtle for upcoming)
+- **Quick Substitution**: One-tap substitution with smooth animations and glow effects
 
 ### 4. Statistics & Analysis
 - Comprehensive playing time tracking
 - Points-based role distribution system
+- Attacker vs Defender time balance tracking
 - Exportable statistics
 - Historical game data
+
+## 7-Player Individual Mode (Detailed)
+
+### Formation Structure
+The 7-player individual mode provides maximum flexibility for player rotation while maintaining fair playing time:
+
+- **4 Field Players**: Left Defender, Right Defender, Left Attacker, Right Attacker
+- **2 Substitutes**: First Substitute (Next) and Second Substitute (Next-Next)
+- **1 Goalie**: Rotates by period
+
+### Dual Substitution System
+Unlike traditional single-substitute systems, the 7-player individual mode features a sophisticated dual-substitute rotation:
+
+1. **Primary Substitution Queue**: First substitute is ready to enter immediately
+2. **Secondary Substitution Queue**: Second substitute is prepared for the next rotation
+3. **Automatic Rotation**: When a substitution occurs:
+   - Player coming off → becomes Second Substitute (Next-Next)
+   - First Substitute → enters the field in the departing player's position
+   - Second Substitute → moves up to become First Substitute (Next)
+
+### Visual Indicator System
+The interface provides clear visual cues for complex rotation planning:
+
+#### Immediate Indicators (Full Opacity)
+- **Green Arrow (↑)**: Player ready to enter field immediately
+- **Red Arrow (↓)**: Player scheduled to come off next
+- **Strong Borders**: Rose-500 (off) / Emerald-500 (on)
+
+#### Next-Next Indicators (40% Opacity)
+- **Dimmed Green Arrow**: Second substitute waiting
+- **Dimmed Red Arrow**: Player to come off after next substitution
+- **Subtle Borders**: Rose-200 (off) / Emerald-200 (on)
+
+### Player Selection Logic
+- **For 7-Player Squads**: Formation type defaults to Pairs mode but can be switched to Individual
+- **Period Setup**: Shows individual position cards instead of pair assignments
+- **Smart Filtering**: Only unassigned players appear in dropdowns until formation is complete
+- **Easy Swapping**: Once complete, all players available for position swapping
+
+### Time Tracking Benefits
+- **Precise Role Tracking**: Individual positions allow granular attacker vs defender time balance
+- **Fair Distribution**: All 6 outfield players rotate through all positions
+- **Statistical Analysis**: Detailed breakdown of time spent in each role
+- **Intelligent Recommendations**: AI suggests formations based on accumulated time data
 
 ## Technology Stack
 
