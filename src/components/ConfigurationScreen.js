@@ -1,7 +1,7 @@
     import React from 'react';
 import { Settings, Play } from 'lucide-react';
 import { Select, Button } from './UI';
-import { PERIOD_OPTIONS, DURATION_OPTIONS, FORMATION_TYPES } from '../utils/gameLogic';
+import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS, FORMATION_TYPES } from '../utils/gameLogic';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -15,6 +15,8 @@ export function ConfigurationScreen({
   setPeriodGoalieIds, 
   formationType,
   setFormationType,
+  alertMinutes,
+  setAlertMinutes,
   handleStartPeriodSetup, 
   selectedSquadPlayers 
 }) {
@@ -63,7 +65,7 @@ export function ConfigurationScreen({
       </div>
 
       {/* Game Settings */}
-      <div className="p-3 bg-slate-700 rounded-md grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="p-3 bg-slate-700 rounded-md grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label htmlFor="numPeriods" className="block text-sm font-medium text-sky-200 mb-1">Number of Periods</label>
           <Select value={numPeriods} onChange={e => setNumPeriods(Number(e.target.value))} options={PERIOD_OPTIONS} id="numPeriods" />
@@ -71,6 +73,10 @@ export function ConfigurationScreen({
         <div>
           <label htmlFor="periodDuration" className="block text-sm font-medium text-sky-200 mb-1">Period Duration (minutes)</label>
           <Select value={periodDurationMinutes} onChange={e => setPeriodDurationMinutes(Number(e.target.value))} options={DURATION_OPTIONS} id="periodDuration" />
+        </div>
+        <div>
+          <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">Alert - minutes after substitution</label>
+          <Select value={alertMinutes} onChange={e => setAlertMinutes(Number(e.target.value))} options={ALERT_OPTIONS} id="alertMinutes" />
         </div>
       </div>
 

@@ -125,6 +125,8 @@ function App() {
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             formationType={gameState.formationType}
             setFormationType={gameState.setFormationType}
+            alertMinutes={gameState.alertMinutes}
+            setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
             selectedSquadPlayers={selectedSquadPlayers}
           />
@@ -165,6 +167,7 @@ function App() {
             setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             formationType={gameState.formationType}
+            alertMinutes={gameState.alertMinutes}
           />
         );
       case 'stats':

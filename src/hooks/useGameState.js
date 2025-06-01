@@ -36,6 +36,7 @@ export function useGameState() {
         periodDurationMinutes: saved.periodDurationMinutes || 15,
         periodGoalieIds: saved.periodGoalieIds || {},
         formationType: saved.formationType || FORMATION_TYPES.PAIRS_7, // Default to pairs mode
+        alertMinutes: saved.alertMinutes || 2,
         currentPeriodNumber: saved.currentPeriodNumber || 1,
         periodFormation: saved.periodFormation || {
           goalie: null,
@@ -72,6 +73,7 @@ export function useGameState() {
       periodDurationMinutes: 15,
       periodGoalieIds: {},
       formationType: FORMATION_TYPES.PAIRS_7, // Default to pairs mode
+      alertMinutes: 2,
       currentPeriodNumber: 1,
       periodFormation: {
         goalie: null,
@@ -103,6 +105,7 @@ export function useGameState() {
   const [periodDurationMinutes, setPeriodDurationMinutes] = useState(initialState.periodDurationMinutes);
   const [periodGoalieIds, setPeriodGoalieIds] = useState(initialState.periodGoalieIds);
   const [formationType, setFormationType] = useState(initialState.formationType);
+  const [alertMinutes, setAlertMinutes] = useState(initialState.alertMinutes);
   const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
   const [periodFormation, setPeriodFormation] = useState(initialState.periodFormation);
   const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
@@ -111,6 +114,59 @@ export function useGameState() {
   const [nextNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut] = useState(initialState.nextNextPlayerIdToSubOut);
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
+
+  // Wake lock and alert management
+  const [wakeLock, setWakeLock] = useState(null);
+  const [lastSubstitutionTime, setLastSubstitutionTime] = useState(null);
+  const [alertTimer, setAlertTimer] = useState(null);
+
+  // Wake lock helper functions
+  const requestWakeLock = useCallback(async () => {
+    if ('wakeLock' in navigator && !wakeLock) {
+      try {
+        const newWakeLock = await navigator.wakeLock.request('screen');
+        setWakeLock(newWakeLock);
+        console.log('Wake lock acquired');
+      } catch (err) {
+        console.warn('Wake lock request failed:', err);
+      }
+    }
+  }, [wakeLock]);
+
+  const releaseWakeLock = useCallback(async () => {
+    if (wakeLock) {
+      try {
+        await wakeLock.release();
+        setWakeLock(null);
+        console.log('Wake lock released');
+      } catch (err) {
+        console.warn('Wake lock release failed:', err);
+      }
+    }
+  }, [wakeLock]);
+
+  // Alert timer helper functions
+  const clearAlertTimer = useCallback(() => {
+    if (alertTimer) {
+      clearTimeout(alertTimer);
+      setAlertTimer(null);
+    }
+  }, [alertTimer]);
+
+  const startAlertTimer = useCallback(() => {
+    if (alertMinutes > 0) {
+      clearAlertTimer();
+      const timeoutMs = alertMinutes * 60 * 1000;
+      const newTimer = setTimeout(() => {
+        if ('vibrate' in navigator) {
+          navigator.vibrate([1000, 200, 1000]);
+        }
+        console.log('Substitution alert triggered');
+      }, timeoutMs);
+      setAlertTimer(newTimer);
+      setLastSubstitutionTime(Date.now());
+    }
+  }, [alertMinutes, clearAlertTimer]);
 
   // Save state to localStorage whenever it changes - NOTE: Critical for refresh persistence
   useEffect(() => {
@@ -122,6 +178,7 @@ export function useGameState() {
       periodDurationMinutes,
       periodGoalieIds,
       formationType,
+      alertMinutes,
       currentPeriodNumber,
       periodFormation,
       nextPhysicalPairToSubOut,
@@ -132,7 +189,7 @@ export function useGameState() {
       gameLog,
     };
     saveToStorage(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, formationType, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, formationType, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog]);
 
   // Player Stat Update Logic
   const updatePlayerTimeStats = useCallback((playerIds, newStatus, currentTimeEpoch) => {
@@ -570,6 +627,10 @@ export function useGameState() {
   const handleSubstitution = () => {
     const currentTimeEpoch = Date.now();
 
+    // Request wake lock and start alert timer
+    requestWakeLock();
+    startAlertTimer();
+
     if (formationType === FORMATION_TYPES.PAIRS_7) {
       // 7-player pairs substitution logic
       const pairToSubOutKey = nextPhysicalPairToSubOut;
@@ -840,6 +901,9 @@ export function useGameState() {
       preparePeriodWithGameLog(currentPeriodNumber + 1, updatedGameLog);
       setView('periodSetup');
     } else {
+      // Release wake lock when game ends
+      clearAlertTimer();
+      releaseWakeLock();
       setView('stats');
     }
   };
@@ -924,6 +988,8 @@ export function useGameState() {
     setPeriodGoalieIds,
     formationType,
     setFormationType,
+    alertMinutes,
+    setAlertMinutes,
     currentPeriodNumber,
     setCurrentPeriodNumber,
     periodFormation,

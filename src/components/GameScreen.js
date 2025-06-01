@@ -19,7 +19,8 @@ export function GameScreen({
   selectedSquadPlayers,
   setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
-  formationType
+  formationType,
+  alertMinutes
 }) {
   const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
   
@@ -632,7 +633,9 @@ export function GameScreen({
         </div>
         <div className="p-3 bg-slate-700 rounded-lg">
           <p className="text-sm text-sky-200 mb-1">Substitution Timer</p>
-          <p className="text-3xl font-mono text-emerald-400">{formatTime(subTimerSeconds)}</p>
+          <p className={`text-3xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
+            {formatTime(subTimerSeconds)}
+          </p>
         </div>
       </div>
 
