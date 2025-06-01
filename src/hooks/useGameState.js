@@ -117,7 +117,6 @@ export function useGameState() {
 
   // Wake lock and alert management
   const [wakeLock, setWakeLock] = useState(null);
-  const [lastSubstitutionTime, setLastSubstitutionTime] = useState(null);
   const [alertTimer, setAlertTimer] = useState(null);
 
   // Wake lock helper functions
@@ -164,7 +163,6 @@ export function useGameState() {
         console.log('Substitution alert triggered');
       }, timeoutMs);
       setAlertTimer(newTimer);
-      setLastSubstitutionTime(Date.now());
     }
   }, [alertMinutes, clearAlertTimer]);
 
@@ -441,7 +439,7 @@ export function useGameState() {
         setNextPlayerToSubOut('leftDefender7');
       }
     }
-  }, [periodGoalieIds, selectedSquadIds, allPlayers]);
+  }, [periodGoalieIds, selectedSquadIds, allPlayers, formationType]);
 
   const preparePeriod = useCallback((periodNum) => {
     preparePeriodWithGameLog(periodNum, gameLog);

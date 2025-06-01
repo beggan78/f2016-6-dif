@@ -18,8 +18,6 @@ export function PeriodSetupScreen({
   numPeriods,
   formationType 
 }) {
-  const teamSize = selectedSquadPlayers.length;
-  
   // Determine formation mode
   const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
   const isIndividual6Mode = formationType === FORMATION_TYPES.INDIVIDUAL_6;
