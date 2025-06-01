@@ -932,9 +932,6 @@ export function useGameState() {
   const splitPairs = useCallback(() => {
     if (formationType !== FORMATION_TYPES.PAIRS_7) return;
     
-    // Convert from pairs to individual 7-player formation
-    const currentTimeEpoch = Date.now();
-    
     setPeriodFormation(prev => {
       const newFormation = {
         goalie: prev.goalie,
@@ -1009,13 +1006,10 @@ export function useGameState() {
     setNextPlayerIdToSubOut(currentQueue[0] || null);
     setNextNextPlayerIdToSubOut(currentQueue[1] || null);
     setNextPlayerToSubOut('leftDefender7');
-  }, [formationType, periodFormation, selectedSquadIds]);
+  }, [formationType, selectedSquadIds, periodFormation.leftPair, periodFormation.rightPair, periodFormation.subPair, periodFormation.substitute7_1, periodFormation.substitute7_2]);
 
   const formPairs = useCallback(() => {
     if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) return;
-    
-    // Convert from individual to pairs 7-player formation
-    const currentTimeEpoch = Date.now();
     
     setPeriodFormation(prev => {
       const newFormation = {
@@ -1074,7 +1068,7 @@ export function useGameState() {
     setNextPlayerIdToSubOut(null);
     setNextNextPlayerIdToSubOut(null);
     setNextPlayerToSubOut(null);
-  }, [formationType, periodFormation, selectedSquadIds]);
+  }, [formationType, selectedSquadIds]);
 
   // Enhanced setters for manual selection - rotation logic already handles sequence correctly
   const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
