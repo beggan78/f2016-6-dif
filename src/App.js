@@ -199,6 +199,9 @@ function App() {
             onRestartMatch={handleRestartMatch} 
             onAddPlayer={handleAddPlayer}
             currentView={gameState.view}
+            formationType={gameState.formationType}
+            onSplitPairs={gameState.splitPairs}
+            onFormPairs={gameState.formPairs}
           />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>

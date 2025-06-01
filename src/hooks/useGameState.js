@@ -928,6 +928,154 @@ export function useGameState() {
     }
   };
 
+  // Formation type switching functions
+  const splitPairs = useCallback(() => {
+    if (formationType !== FORMATION_TYPES.PAIRS_7) return;
+    
+    // Convert from pairs to individual 7-player formation
+    const currentTimeEpoch = Date.now();
+    
+    setPeriodFormation(prev => {
+      const newFormation = {
+        goalie: prev.goalie,
+        leftPair: { defender: null, attacker: null },
+        rightPair: { defender: null, attacker: null },
+        subPair: { defender: null, attacker: null },
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute: null,
+        leftDefender7: prev.leftPair.defender,
+        rightDefender7: prev.rightPair.defender,
+        leftAttacker7: prev.leftPair.attacker,
+        rightAttacker7: prev.rightPair.attacker,
+        substitute7_1: prev.subPair.defender,
+        substitute7_2: prev.subPair.attacker,
+      };
+      return newFormation;
+    });
+
+    // Update player stats - change currentPairKey to individual positions
+    setAllPlayers(prev => prev.map(p => {
+      if (!selectedSquadIds.includes(p.id)) return p;
+      
+      const stats = { ...p.stats };
+      
+      // Map pair keys to individual keys
+      if (stats.currentPairKey === 'leftPair') {
+        if (p.id === periodFormation.leftPair.defender) {
+          stats.currentPairKey = 'leftDefender7';
+        } else if (p.id === periodFormation.leftPair.attacker) {
+          stats.currentPairKey = 'leftAttacker7';
+        }
+      } else if (stats.currentPairKey === 'rightPair') {
+        if (p.id === periodFormation.rightPair.defender) {
+          stats.currentPairKey = 'rightDefender7';
+        } else if (p.id === periodFormation.rightPair.attacker) {
+          stats.currentPairKey = 'rightAttacker7';
+        }
+      } else if (stats.currentPairKey === 'subPair') {
+        if (p.id === periodFormation.subPair.defender) {
+          stats.currentPairKey = 'substitute7_1';
+        } else if (p.id === periodFormation.subPair.attacker) {
+          stats.currentPairKey = 'substitute7_2';
+        }
+      }
+      
+      return { ...p, stats };
+    }));
+
+    // Update formation type
+    setFormationType(FORMATION_TYPES.INDIVIDUAL_7);
+    
+    // Update next player tracking for individual mode
+    const firstSubId = periodFormation.substitute7_1 || periodFormation.subPair.defender;
+    const secondSubId = periodFormation.substitute7_2 || periodFormation.subPair.attacker;
+    
+    // Set up rotation queue for 7-player individual mode
+    const positions = ['leftDefender7', 'leftAttacker7', 'rightDefender7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+    const currentQueue = positions.map(pos => {
+      if (pos === 'leftDefender7') return periodFormation.leftPair?.defender;
+      if (pos === 'leftAttacker7') return periodFormation.leftPair?.attacker;
+      if (pos === 'rightDefender7') return periodFormation.rightPair?.defender;
+      if (pos === 'rightAttacker7') return periodFormation.rightPair?.attacker;
+      if (pos === 'substitute7_1') return firstSubId;
+      if (pos === 'substitute7_2') return secondSubId;
+      return null;
+    }).filter(Boolean);
+    
+    setRotationQueue(currentQueue);
+    setNextPlayerIdToSubOut(currentQueue[0] || null);
+    setNextNextPlayerIdToSubOut(currentQueue[1] || null);
+    setNextPlayerToSubOut('leftDefender7');
+  }, [formationType, periodFormation, selectedSquadIds]);
+
+  const formPairs = useCallback(() => {
+    if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) return;
+    
+    // Convert from individual to pairs 7-player formation
+    const currentTimeEpoch = Date.now();
+    
+    setPeriodFormation(prev => {
+      const newFormation = {
+        goalie: prev.goalie,
+        leftPair: { 
+          defender: prev.leftDefender7, 
+          attacker: prev.leftAttacker7 
+        },
+        rightPair: { 
+          defender: prev.rightDefender7, 
+          attacker: prev.rightAttacker7 
+        },
+        subPair: { 
+          defender: prev.substitute7_1, 
+          attacker: prev.substitute7_2 
+        },
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute: null,
+        leftDefender7: null,
+        rightDefender7: null,
+        leftAttacker7: null,
+        rightAttacker7: null,
+        substitute7_1: null,
+        substitute7_2: null,
+      };
+      return newFormation;
+    });
+
+    // Update player stats - change currentPairKey to pair keys
+    setAllPlayers(prev => prev.map(p => {
+      if (!selectedSquadIds.includes(p.id)) return p;
+      
+      const stats = { ...p.stats };
+      
+      // Map individual keys to pair keys
+      if (stats.currentPairKey === 'leftDefender7' || stats.currentPairKey === 'leftAttacker7') {
+        stats.currentPairKey = 'leftPair';
+      } else if (stats.currentPairKey === 'rightDefender7' || stats.currentPairKey === 'rightAttacker7') {
+        stats.currentPairKey = 'rightPair';
+      } else if (stats.currentPairKey === 'substitute7_1' || stats.currentPairKey === 'substitute7_2') {
+        stats.currentPairKey = 'subPair';
+      }
+      
+      return { ...p, stats };
+    }));
+
+    // Update formation type
+    setFormationType(FORMATION_TYPES.PAIRS_7);
+    
+    // Update next pair tracking for pairs mode
+    setNextPhysicalPairToSubOut('leftPair');
+    setRotationQueue([]);
+    setNextPlayerIdToSubOut(null);
+    setNextNextPlayerIdToSubOut(null);
+    setNextPlayerToSubOut(null);
+  }, [formationType, periodFormation, selectedSquadIds]);
+
   // Enhanced setters for manual selection - rotation logic already handles sequence correctly
   const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
     console.log('Manually setting next pair to substitute:', newPairKey);
@@ -1014,5 +1162,7 @@ export function useGameState() {
     updatePlayerTimeStats,
     addTemporaryPlayer,
     clearStoredState,
+    splitPairs,
+    formPairs,
   };
 }

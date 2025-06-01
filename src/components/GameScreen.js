@@ -621,7 +621,7 @@ export function GameScreen({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber} In Progress</h2>
+      <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber}</h2>
 
       {/* Timers */}
       <div className="grid grid-cols-2 gap-4 text-center">

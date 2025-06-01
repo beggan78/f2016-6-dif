@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, formationType, onSplitPairs, onFormPairs }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -17,7 +17,19 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView }) {
     onAddPlayer();
   };
 
+  const handleSplitPairs = () => {
+    setIsOpen(false);
+    onSplitPairs();
+  };
+
+  const handleFormPairs = () => {
+    setIsOpen(false);
+    onFormPairs();
+  };
+
   const isConfigScreen = currentView === 'config';
+  const isGameScreen = currentView === 'game';
+  const showFormationOptions = isGameScreen && (formationType === 'pairs_7' || formationType === 'individual_7');
 
   return (
     <div className="relative">
@@ -61,11 +73,27 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView }) {
               >
                 Add Player
               </button>
+              {showFormationOptions && formationType === 'pairs_7' && (
+                <button
+                  onClick={handleSplitPairs}
+                  className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                >
+                  Split Pairs
+                </button>
+              )}
+              {showFormationOptions && formationType === 'individual_7' && (
+                <button
+                  onClick={handleFormPairs}
+                  className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                >
+                  Form Pairs
+                </button>
+              )}
               <button
                 onClick={handleRestartMatch}
                 className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
               >
-                Restart Match
+                New Game
               </button>
             </div>
           </div>
