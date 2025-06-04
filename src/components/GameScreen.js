@@ -952,8 +952,14 @@ export function GameScreen({
           {renderIndividual7Position('rightDefender7', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />, 1, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
           {renderIndividual7Position('leftAttacker7', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />, 2, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
           {renderIndividual7Position('rightAttacker7', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />, 3, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
-          {renderIndividual7Position('substitute7_1', 'Substitute (Next)', <RotateCcw className="inline h-4 w-4 mr-1" />, 4, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
-          {renderIndividual7Position('substitute7_2', 'Substitute (Next-Next)', <RotateCcw className="inline h-4 w-4 mr-1" />, 5, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('substitute7_1', (() => {
+            const player = allPlayers.find(p => p.id === periodFormation.substitute7_1);
+            return player?.stats.isInactive ? 'Inactive' : 'Substitute';
+          })(), <RotateCcw className="inline h-4 w-4 mr-1" />, 4, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('substitute7_2', (() => {
+            const player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
+            return player?.stats.isInactive ? 'Inactive' : 'Substitute';
+          })(), <RotateCcw className="inline h-4 w-4 mr-1" />, 5, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
         </div>
       )}
 
