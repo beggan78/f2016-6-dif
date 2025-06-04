@@ -749,9 +749,10 @@ export function GameScreen({
             styleProps = {
               '--move-distance': `${animationDistances.fieldToSub2}px`
             };
-          } else if (position === 'substitute7_2' && !isInactive) {
-            // substitute7_2 moves up to substitute7_1 position (only if not inactive)
-            // Inactive players never move, even during inactivation of the other player
+          } else if (position === 'substitute7_2' && (!isInactive || (isInactive && animationDistances.sub2ToSub1 !== 0))) {
+            // substitute7_2 moves up to substitute7_1 position
+            // Normal case: only if not inactive
+            // Special case: if inactive but sub2ToSub1 distance is set, this is a reactivation animation where the inactive player should move
             animationClass = 'animate-dynamic-up';
             zIndexClass = 'z-20';
             styleProps = {
