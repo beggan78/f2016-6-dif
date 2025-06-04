@@ -378,11 +378,12 @@ export function GameScreen({
         setAnimationPhase('switching');
         setHideNextOffIndicator(true);
         
-        // Perform state change after animation starts (small delay)
-        togglePlayerInactive(inactiveModal.playerId, null, 100);
-        
-        // End animation after it completes
+        // After animation completes (1 second), perform state change
         setTimeout(() => {
+          // Perform the actual state change
+          togglePlayerInactive(inactiveModal.playerId);
+          
+          // End animation
           setIsAnimating(false);
           setAnimationPhase('idle');
           setHideNextOffIndicator(false);
@@ -397,44 +398,48 @@ export function GameScreen({
 
   const handleActivatePlayer = () => {
     if (inactiveModal.playerId) {
-      // Create animation callback for reactivation
-      const animationCallback = (willBeInactive, currentPosition) => {
-        if (!willBeInactive && currentPosition === 'substitute7_2') { 
-          // Player at substitute7_2 is being activated - they will swap to substitute7_1
-          // Calculate animation: substitute7_2 goes up to substitute7_1, substitute7_1 goes down to substitute7_2
-          
-          const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-          const sub1Index = positions.indexOf('substitute7_1');
-          const sub2Index = positions.indexOf('substitute7_2');
-          
-          // Calculate the distance between substitute positions
-          const contentHeight = 64; // Individual position height
-          const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
-          const distanceBetween = Math.abs(sub2Index - sub1Index) * boxHeight;
-          
-          setAnimationDistances({ 
-            fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
-            sub1ToField: 0,  // Not used in reactivation
-            sub2ToSub1: -distanceBetween,  // substitute7_2 moves up to substitute7_1
-            nextOffToSub: distanceBetween,  // For backwards compatibility
-            subToNextOff: -distanceBetween  // For backwards compatibility
-          });
-          
-          // Start the animation sequence
-          setIsAnimating(true);
-          setAnimationPhase('switching');
-          setHideNextOffIndicator(true);
-          
-          // End animation after it completes
-          setTimeout(() => {
-            setIsAnimating(false);
-            setAnimationPhase('idle');
-            setHideNextOffIndicator(false);
-          }, 1000);
-        }
-      };
+      // Check if this will trigger an animation (substitute7_2 being reactivated)
+      const playerToActivate = allPlayers.find(p => p.id === inactiveModal.playerId);
+      const willTriggerAnimation = playerToActivate && playerToActivate.stats.isInactive && playerToActivate.stats.currentPairKey === 'substitute7_2';
       
-      togglePlayerInactive(inactiveModal.playerId, animationCallback);
+      if (willTriggerAnimation) {
+        // For reactivation of substitute7_2, start animation first, then perform state change
+        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+        const sub1Index = positions.indexOf('substitute7_1');
+        const sub2Index = positions.indexOf('substitute7_2');
+        
+        // Calculate the distance between substitute positions
+        const contentHeight = 64; // Individual position height
+        const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
+        const distanceBetween = Math.abs(sub2Index - sub1Index) * boxHeight;
+        
+        setAnimationDistances({ 
+          fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
+          sub1ToField: 0,  // Not used in reactivation
+          sub2ToSub1: -distanceBetween,  // substitute7_2 moves up to substitute7_1
+          nextOffToSub: distanceBetween,  // For backwards compatibility
+          subToNextOff: -distanceBetween  // For backwards compatibility
+        });
+        
+        // Start the animation sequence
+        setIsAnimating(true);
+        setAnimationPhase('switching');
+        setHideNextOffIndicator(true);
+        
+        // After animation completes (1 second), perform state change
+        setTimeout(() => {
+          // Perform the actual state change
+          togglePlayerInactive(inactiveModal.playerId);
+          
+          // End animation
+          setIsAnimating(false);
+          setAnimationPhase('idle');
+          setHideNextOffIndicator(false);
+        }, 1000);
+      } else {
+        // No animation needed, perform state change immediately
+        togglePlayerInactive(inactiveModal.playerId);
+      }
     }
     setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
   };
