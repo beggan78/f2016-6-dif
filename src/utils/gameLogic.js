@@ -98,5 +98,6 @@ export const initializePlayers = (roster) => roster.map((name, index) => ({
     currentPeriodStatus: null, // 'on_field', 'substitute', 'goalie'
     lastStintStartTimeEpoch: 0, // For calculating duration of current stint
     currentPairKey: null, // 'leftPair', 'rightPair', 'subPair'
+    isInactive: false, // For 7-player individual mode - temporarily removes player from rotation
   }
 }));

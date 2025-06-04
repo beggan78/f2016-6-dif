@@ -749,6 +749,17 @@ export function useGameState() {
       const playerGoingOffId = nextPlayerIdToSubOut;
       const playerComingOnId = periodFormation.substitute7_1; // First substitute comes in
       
+      // CRITICAL SAFETY CHECK: substitute7_1 should NEVER be inactive when substituting
+      const substitute7_1Player = allPlayers.find(p => p.id === playerComingOnId);
+      if (substitute7_1Player?.stats.isInactive) {
+        console.error('ERROR: substitute7_1 is inactive but was selected for substitution! This should never happen.');
+        return; // Abort substitution to prevent invalid state
+      }
+      
+      // Check if substitute7_2 is inactive - this is crucial for proper rotation
+      const substitute7_2Player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
+      const isSubstitute7_2Inactive = substitute7_2Player?.stats.isInactive || false;
+      
       // Find which position the outgoing player is currently in
       const playerToSubOutKey = Object.keys(periodFormation).find(key => 
         periodFormation[key] === playerGoingOffId && !key.includes('substitute') && key !== 'goalie'
@@ -757,7 +768,7 @@ export function useGameState() {
       // Determine the new role for the player coming on
       const newRole = getPositionRole(playerToSubOutKey);
       
-      // Update time stats and roles in one operation
+      // Update time stats and roles based on whether substitute7_2 is inactive
       setAllPlayers(prev => prev.map(p => {
         if (p.id === playerGoingOffId) {
           const stats = { ...p.stats };
@@ -773,9 +784,13 @@ export function useGameState() {
             }
           }
 
+          // If substitute7_2 is inactive, outgoing player becomes substitute7_1 (next to go in)
+          // If substitute7_2 is active, outgoing player goes to substitute7_2 as normal
+          const newPairKey = isSubstitute7_2Inactive ? 'substitute7_1' : 'substitute7_2';
+          
           return {...p, stats: {
             ...stats, 
-            currentPairKey: 'substitute7_2', 
+            currentPairKey: newPairKey, 
             currentPeriodRole: PLAYER_ROLES.SUBSTITUTE,
             currentPeriodStatus: 'substitute',
             lastStintStartTimeEpoch: currentTimeEpoch
@@ -797,22 +812,33 @@ export function useGameState() {
             lastStintStartTimeEpoch: currentTimeEpoch
           }};
         }
-        if (p.id === periodFormation.substitute7_2) { // Player moving from substitute7_2 to substitute7_1
+        // CRITICAL: Only move substitute7_2 to substitute7_1 if they are NOT inactive
+        if (p.id === periodFormation.substitute7_2 && !isSubstitute7_2Inactive) {
           return {...p, stats: {...p.stats, currentPairKey: 'substitute7_1', currentPeriodRole: PLAYER_ROLES.SUBSTITUTE}};
         }
+        // Inactive players never change position - they stay where they are
         return p;
       }));
 
-      // Swap player IDs in formation - substitute7_1 comes in, substitute7_2 moves to substitute7_1, outgoing player goes to substitute7_2
+      // Update formation based on whether substitute7_2 is inactive
       setPeriodFormation(prev => {
         const newFormation = JSON.parse(JSON.stringify(prev));
         newFormation[playerToSubOutKey] = playerComingOnId; // substitute7_1 takes the field position
-        newFormation.substitute7_1 = prev.substitute7_2; // substitute7_2 moves to next position
-        newFormation.substitute7_2 = playerGoingOffId; // outgoing player goes to next-next position
+        
+        if (isSubstitute7_2Inactive) {
+          // If substitute7_2 is inactive, they stay put and outgoing player becomes substitute7_1
+          newFormation.substitute7_1 = playerGoingOffId;
+          // substitute7_2 stays the same (inactive player doesn't move)
+        } else {
+          // Normal rotation: substitute7_2 moves to substitute7_1, outgoing player goes to substitute7_2
+          newFormation.substitute7_1 = prev.substitute7_2; 
+          newFormation.substitute7_2 = playerGoingOffId;
+        }
+        
         return newFormation;
       });
 
-      // Update rotation queue after substitution
+      // Update rotation queue after substitution - exclude inactive players from active rotation
       const updatedQueue = [...rotationQueue];
       const currentPlayerIndex = updatedQueue.indexOf(playerGoingOffId);
       
@@ -821,15 +847,22 @@ export function useGameState() {
       // Add them to the end of the queue
       updatedQueue.push(playerGoingOffId);
       
-      // Next player is now at the front of the queue
-      const nextPlayerToSubOutId = updatedQueue[0];
+      // Find next active player (skip inactive players) - this is critical
+      const activeQueue = updatedQueue.filter(id => {
+        const player = allPlayers.find(p => p.id === id);
+        return player && !player.stats.isInactive;
+      });
+      
+      const nextPlayerToSubOutId = activeQueue[0] || null;
       
       setRotationQueue(updatedQueue);
       setNextPlayerIdToSubOut(nextPlayerToSubOutId);
       
-      // Set next-next player (second in queue) for 7-player individual mode
-      if (updatedQueue.length >= 2) {
-        setNextNextPlayerIdToSubOut(updatedQueue[1]);
+      // Set next-next player (second active player in queue) for 7-player individual mode
+      if (activeQueue.length >= 2) {
+        setNextNextPlayerIdToSubOut(activeQueue[1]);
+      } else {
+        setNextNextPlayerIdToSubOut(null);
       }
       
       // Update legacy position tracking for compatibility
@@ -1112,6 +1145,162 @@ export function useGameState() {
     }
   }, [periodFormation, rotationQueue, nextPlayerIdToSubOut]);
 
+  // Player inactivation/activation functions for 7-player individual mode
+  const togglePlayerInactive = useCallback((playerId, animationCallback = null) => {
+    if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) return;
+
+    const player = allPlayers.find(p => p.id === playerId);
+    if (!player) return;
+
+    const currentlyInactive = player.stats.isInactive;
+    const isSubstitute = player.stats.currentPairKey === 'substitute7_1' || player.stats.currentPairKey === 'substitute7_2';
+    
+    // Only allow inactivating/activating substitute players
+    if (!isSubstitute) return;
+
+    // CRITICAL SAFETY CHECK: Prevent having both substitutes inactive
+    if (!currentlyInactive) { // Player is about to be inactivated
+      const substitute7_1Id = periodFormation.substitute7_1;
+      const substitute7_2Id = periodFormation.substitute7_2;
+      const otherSubstituteId = playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
+      const otherSubstitute = allPlayers.find(p => p.id === otherSubstituteId);
+      
+      if (otherSubstitute?.stats.isInactive) {
+        console.warn('Cannot inactivate player: would result in both substitutes being inactive');
+        return; // Prevent both substitutes from being inactive
+      }
+    }
+
+    // Call animation callback if provided (for UI animations)
+    if (animationCallback) {
+      animationCallback(!currentlyInactive, player.stats.currentPairKey);
+    }
+
+    // We'll update the inactive state along with position changes below to avoid race conditions
+
+    // Update rotation queue and positions
+    if (currentlyInactive) {
+      // Player is being activated - they become the next player to go in (substitute7_1)
+      const updatedQueue = rotationQueue.filter(id => id !== playerId);
+      const newQueue = [playerId, ...updatedQueue];
+      
+      // Get current substitute positions
+      const currentSub7_1Id = periodFormation.substitute7_1;
+      const currentSub7_2Id = periodFormation.substitute7_2;
+      
+      // The reactivated player should become substitute7_1 (next to go in)
+      // The current substitute7_1 (if active) should move to substitute7_2
+      // If the reactivated player was substitute7_2, swap with substitute7_1
+      
+      if (playerId === currentSub7_1Id) {
+        // Reactivated player is already in substitute7_1 position - just activate them
+        setAllPlayers(prev => prev.map(p => {
+          if (p.id === playerId) {
+            return { ...p, stats: { ...p.stats, isInactive: false } };
+          }
+          return p;
+        }));
+        
+        // nextPlayerIdToSubOut should remain pointing to the current active field player
+        // Find the next active player for substitute7_2 position
+        const activeQueue = newQueue.filter(id => {
+          const queuePlayer = allPlayers.find(p => p.id === id);
+          return queuePlayer && !queuePlayer.stats.isInactive && id !== playerId;
+        });
+        if (activeQueue.length >= 1) {
+          setNextNextPlayerIdToSubOut(activeQueue[0]);
+        }
+        // Don't change nextPlayerIdToSubOut - it should still point to the field player
+      } else if (playerId === currentSub7_2Id) {
+        // Reactivated player is in substitute7_2 - swap with substitute7_1
+        setPeriodFormation(prev => ({
+          ...prev,
+          substitute7_1: playerId,
+          substitute7_2: currentSub7_1Id
+        }));
+        
+        // Update player positions and inactive state in one operation
+        setAllPlayers(prev => prev.map(p => {
+          if (p.id === playerId) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1', isInactive: false } };
+          }
+          if (p.id === currentSub7_1Id) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+          }
+          return p;
+        }));
+        
+        // nextPlayerIdToSubOut should still point to the current field player who's next to come off
+        setNextNextPlayerIdToSubOut(currentSub7_1Id);
+        // Don't change nextPlayerIdToSubOut - it should still point to the field player
+      }
+      
+      setRotationQueue(newQueue);
+    } else {
+      // Player is being inactivated - remove from rotation queue
+      const updatedQueue = rotationQueue.filter(id => id !== playerId);
+      setRotationQueue(updatedQueue);
+      
+      // Update next player tracking if the inactivated player was next
+      if (playerId === nextPlayerIdToSubOut && updatedQueue.length > 0) {
+        const activePlayerIds = updatedQueue.filter(id => {
+          const queuePlayer = allPlayers.find(p => p.id === id);
+          return queuePlayer && !queuePlayer.stats.isInactive;
+        });
+        if (activePlayerIds.length > 0) {
+          setNextPlayerIdToSubOut(activePlayerIds[0]);
+          if (activePlayerIds.length >= 2) {
+            setNextNextPlayerIdToSubOut(activePlayerIds[1]);
+          }
+        }
+      } else if (playerId === nextNextPlayerIdToSubOut) {
+        const activePlayerIds = updatedQueue.filter(id => {
+          const queuePlayer = allPlayers.find(p => p.id === id);
+          return queuePlayer && !queuePlayer.stats.isInactive;
+        });
+        if (activePlayerIds.length >= 2) {
+          setNextNextPlayerIdToSubOut(activePlayerIds[1]);
+        }
+      }
+      
+      // Move inactive player to substitute7_2 position if they were substitute7_1
+      if (player.stats.currentPairKey === 'substitute7_1' && periodFormation.substitute7_2) {
+        // Swap positions - substitute7_2 becomes substitute7_1, inactive player goes to substitute7_2
+        const otherSubId = periodFormation.substitute7_2;
+        
+        setPeriodFormation(prev => ({
+          ...prev,
+          substitute7_1: otherSubId,
+          substitute7_2: playerId
+        }));
+        
+        setAllPlayers(prev => prev.map(p => {
+          if (p.id === playerId) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2', isInactive: true } };
+          }
+          if (p.id === otherSubId) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+          }
+          return p;
+        }));
+      } else {
+        // Just mark player as inactive without changing position
+        setAllPlayers(prev => prev.map(p => {
+          if (p.id === playerId) {
+            return { ...p, stats: { ...p.stats, isInactive: true } };
+          }
+          return p;
+        }));
+      }
+    }
+  }, [formationType, allPlayers, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, periodFormation]);
+
+  // Helper function to get inactive players for animation purposes
+  const getInactivePlayerPosition = useCallback((playerId) => {
+    const player = allPlayers.find(p => p.id === playerId);
+    return player?.stats.currentPairKey;
+  }, [allPlayers]);
+
   return {
     // State
     allPlayers,
@@ -1158,5 +1347,7 @@ export function useGameState() {
     clearStoredState,
     splitPairs,
     formPairs,
+    togglePlayerInactive,
+    getInactivePlayerPosition,
   };
 }

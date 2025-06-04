@@ -105,3 +105,34 @@ export function SubstitutionModal({ isOpen, onSetNext, onSubNow, onCancel, playe
     </div>
   );
 }
+
+export function PlayerInactiveModal({ isOpen, onInactivate, onActivate, onCancel, playerName, isCurrentlyInactive }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">Player Status</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
+          <div className="flex flex-col gap-3">
+            <Button onClick={onCancel} variant="secondary">
+              Cancel
+            </Button>
+            {isCurrentlyInactive ? (
+              <Button onClick={onActivate} variant="primary">
+                Put {playerName} back into rotation
+              </Button>
+            ) : (
+              <Button onClick={onInactivate} variant="danger">
+                Take {playerName} out of rotation
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

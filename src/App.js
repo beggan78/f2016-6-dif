@@ -168,6 +168,7 @@ function App() {
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             formationType={gameState.formationType}
             alertMinutes={gameState.alertMinutes}
+            togglePlayerInactive={gameState.togglePlayerInactive}
           />
         );
       case 'stats':

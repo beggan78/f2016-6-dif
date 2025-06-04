@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock } from 'lucide-react';
-import { Button, SubstitutionModal } from './UI';
+import { Button, SubstitutionModal, PlayerInactiveModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function GameScreen({ 
@@ -20,7 +20,8 @@ export function GameScreen({
   setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
   formationType,
-  alertMinutes
+  alertMinutes,
+  togglePlayerInactive
 }) {
   const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
   
@@ -35,6 +36,14 @@ export function GameScreen({
     type: null, // 'pair' or 'player'
     target: null, // pairKey or position
     playerName: ''
+  });
+  
+  // State for player inactive modal (7-player individual mode only)
+  const [inactiveModal, setInactiveModal] = React.useState({
+    isOpen: false,
+    playerId: null,
+    playerName: '',
+    isCurrentlyInactive: false
   });
   
   // State to track if we should substitute immediately after setting next sub
@@ -101,6 +110,51 @@ export function GameScreen({
     return { nextOffToSub: 0, subToNextOff: 0 };
   }, [isPairsMode, isIndividual6Mode, isIndividual7Mode, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation]);
 
+  // Calculate animation distances specifically for 7-player individual mode
+  const calculate7PlayerAnimationDistances = React.useCallback(() => {
+    const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+    
+    // Find the index of the field player who's coming off
+    const fieldPlayerIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
+    const sub1Index = positions.indexOf('substitute7_1');
+    const sub2Index = positions.indexOf('substitute7_2');
+    
+    if (fieldPlayerIndex !== -1) {
+      // Calculate distances based on position indices
+      const contentHeight = 64; // Individual position height
+      const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
+      
+      // Distance from field player to substitute7_2 (where field player goes)
+      const fieldToSub2Distance = Math.abs(sub2Index - fieldPlayerIndex) * boxHeight;
+      const fieldToSub2Direction = sub2Index > fieldPlayerIndex ? fieldToSub2Distance : -fieldToSub2Distance;
+      
+      // Distance from substitute7_1 to field position (where sub7_1 goes)
+      const sub1ToFieldDistance = Math.abs(fieldPlayerIndex - sub1Index) * boxHeight;
+      const sub1ToFieldDirection = fieldPlayerIndex < sub1Index ? -sub1ToFieldDistance : sub1ToFieldDistance;
+      
+      // Distance from substitute7_2 to substitute7_1 (where sub7_2 goes)
+      const sub2ToSub1Distance = Math.abs(sub1Index - sub2Index) * boxHeight;
+      const sub2ToSub1Direction = sub1Index < sub2Index ? -sub2ToSub1Distance : sub2ToSub1Distance;
+      
+      return {
+        fieldToSub2: fieldToSub2Direction,
+        sub1ToField: sub1ToFieldDirection,
+        sub2ToSub1: sub2ToSub1Direction,
+        // Keep these for backwards compatibility
+        nextOffToSub: fieldToSub2Direction,
+        subToNextOff: sub1ToFieldDirection
+      };
+    }
+    
+    return { 
+      fieldToSub2: 0, 
+      sub1ToField: 0, 
+      sub2ToSub1: 0,
+      nextOffToSub: 0, 
+      subToNextOff: 0 
+    };
+  }, [nextPlayerIdToSubOut, periodFormation]);
+
   // Enhanced substitution handler with animation and highlighting
   const handleSubstitutionWithHighlight = React.useCallback(() => {
     let playersComingOnIds = [];
@@ -118,7 +172,13 @@ export function GameScreen({
     }
     
     // Calculate animation distances
-    const distances = calculateAnimationDistances();
+    let distances;
+    if (isIndividual7Mode) {
+      // Special calculation for 7-player individual mode
+      distances = calculate7PlayerAnimationDistances();
+    } else {
+      distances = calculateAnimationDistances();
+    }
     setAnimationDistances(distances);
     
     // Start the animation sequence
@@ -145,7 +205,7 @@ export function GameScreen({
         setRecentlySubstitutedPlayers(new Set());
       }, 1500);
     }, 1000);
-  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, calculateAnimationDistances]);
+  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, calculateAnimationDistances, calculate7PlayerAnimationDistances]);
 
   // Effect to trigger substitution after state update
   React.useEffect(() => {
@@ -230,6 +290,23 @@ export function GameScreen({
     }
   };
 
+  const handleSubstituteLongPress = (position) => {
+    // Only for 7-player individual mode substitute players
+    if (!isIndividual7Mode || (position !== 'substitute7_1' && position !== 'substitute7_2')) return;
+    
+    const playerId = periodFormation[position];
+    const playerName = getPlayerName(playerId);
+    const player = allPlayers.find(p => p.id === playerId);
+    const isCurrentlyInactive = player?.stats.isInactive || false;
+    
+    setInactiveModal({
+      isOpen: true,
+      playerId: playerId,
+      playerName: playerName,
+      isCurrentlyInactive: isCurrentlyInactive
+    });
+  };
+
   // Handle substitution modal actions
   const handleSetNextSubstitution = () => {
     if (confirmationModal.type === 'pair') {
@@ -254,6 +331,77 @@ export function GameScreen({
 
   const handleCancelSubstitution = () => {
     setConfirmationModal({ isOpen: false, type: null, target: null, playerName: '' });
+  };
+
+  // Handle inactive modal actions
+  const handleInactivatePlayer = () => {
+    if (inactiveModal.playerId) {
+      // Check if this would result in both substitutes being inactive
+      const player = allPlayers.find(p => p.id === inactiveModal.playerId);
+      if (player && !player.stats.isInactive) {
+        const substitute7_1Id = periodFormation.substitute7_1;
+        const substitute7_2Id = periodFormation.substitute7_2;
+        const otherSubstituteId = inactiveModal.playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
+        const otherSubstitute = allPlayers.find(p => p.id === otherSubstituteId);
+        
+        if (otherSubstitute?.stats.isInactive) {
+          alert('Cannot inactivate this player as it would result in both substitutes being inactive.');
+          setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+          return;
+        }
+      }
+      
+      togglePlayerInactive(inactiveModal.playerId);
+    }
+    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+  };
+
+  const handleActivatePlayer = () => {
+    if (inactiveModal.playerId) {
+      // Create animation callback for reactivation
+      const animationCallback = (willBeInactive, currentPosition) => {
+        if (!willBeInactive && currentPosition === 'substitute7_2') { 
+          // Player at substitute7_2 is being activated - they will swap to substitute7_1
+          // Calculate animation: substitute7_2 goes up to substitute7_1, substitute7_1 goes down to substitute7_2
+          
+          const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+          const sub1Index = positions.indexOf('substitute7_1');
+          const sub2Index = positions.indexOf('substitute7_2');
+          
+          // Calculate the distance between substitute positions
+          const contentHeight = 64; // Individual position height
+          const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
+          const distanceBetween = Math.abs(sub2Index - sub1Index) * boxHeight;
+          
+          setAnimationDistances({ 
+            fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
+            sub1ToField: 0,  // Not used in reactivation
+            sub2ToSub1: -distanceBetween,  // substitute7_2 moves up to substitute7_1
+            nextOffToSub: distanceBetween,  // For backwards compatibility
+            subToNextOff: -distanceBetween  // For backwards compatibility
+          });
+          
+          // Start the animation sequence
+          setIsAnimating(true);
+          setAnimationPhase('switching');
+          setHideNextOffIndicator(true);
+          
+          // End animation after it completes
+          setTimeout(() => {
+            setIsAnimating(false);
+            setAnimationPhase('idle');
+            setHideNextOffIndicator(false);
+          }, 1000);
+        }
+      };
+      
+      togglePlayerInactive(inactiveModal.playerId, animationCallback);
+    }
+    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+  };
+
+  const handleCancelInactive = () => {
+    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
   };
 
   // Hook for handling long press and double click
@@ -305,6 +453,10 @@ export function GameScreen({
   const rightDefender7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightDefender7'));
   const leftAttacker7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftAttacker7'));
   const rightAttacker7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightAttacker7'));
+  
+  // 7-player individual mode substitute events
+  const substitute7_1Events = useLongPressAndDoubleClick(() => handleSubstituteLongPress('substitute7_1'));
+  const substitute7_2Events = useLongPressAndDoubleClick(() => handleSubstituteLongPress('substitute7_2'));
 
   const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
@@ -516,10 +668,14 @@ export function GameScreen({
     const playerId = periodFormation[position];
     if (!playerId) return null;
     
-    const isNextOff = playerId === nextPlayerIdToSubOut;
-    const isNextNextOff = playerId === nextNextPlayerIdToSubOut;
-    const isNextOn = position === 'substitute7_1';
-    const isNextNextOn = position === 'substitute7_2';
+    const player = allPlayers.find(p => p.id === playerId);
+    const isInactive = player?.stats.isInactive || false;
+    const isSubstitute = position.includes('substitute');
+    
+    const isNextOff = playerId === nextPlayerIdToSubOut && !position.includes('substitute');
+    const isNextNextOff = playerId === nextNextPlayerIdToSubOut && !position.includes('substitute');
+    const isNextOn = position === 'substitute7_1' && !isInactive;
+    const isNextNextOn = position === 'substitute7_2' && !isInactive;
     const canBeSelected = [
       'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'
     ].includes(position);
@@ -533,18 +689,71 @@ export function GameScreen({
     let styleProps = {};
     
     if (isAnimating && animationPhase === 'switching') {
-      if (isNextOff) {
-        animationClass = 'animate-dynamic-down';
-        zIndexClass = 'z-10';
-        styleProps = {
-          '--move-distance': `${animationDistances.nextOffToSub}px`
-        };
-      } else if (isNextOn) {
-        animationClass = 'animate-dynamic-up';
-        zIndexClass = 'z-20';
-        styleProps = {
-          '--move-distance': `${animationDistances.subToNextOff}px`
-        };
+      if (isIndividual7Mode) {
+        // Check if this is a reactivation animation (only substitute positions move)
+        const isReactivationAnimation = animationDistances.sub1ToField === 0;
+        
+        if (isReactivationAnimation) {
+          // Reactivation animation: only substitute positions swap
+          // CRITICAL: Inactive players never move during animations
+          if (position === 'substitute7_1' && !isInactive) {
+            // substitute7_1 moves down to substitute7_2 position (only if not inactive)
+            animationClass = 'animate-dynamic-down';
+            zIndexClass = 'z-10';
+            styleProps = {
+              '--move-distance': `${animationDistances.fieldToSub2}px`
+            };
+          } else if (position === 'substitute7_2' && !isInactive) {
+            // substitute7_2 moves up to substitute7_1 position (only if not inactive)
+            animationClass = 'animate-dynamic-up';
+            zIndexClass = 'z-20';
+            styleProps = {
+              '--move-distance': `${animationDistances.sub2ToSub1}px`
+            };
+          }
+          // If player is inactive, they get no animation (stay completely still)
+        } else {
+          // Normal substitution animation
+          // CRITICAL: Inactive players never move during animations
+          if (isNextOff && !isInactive) {
+            // Field player going off - moves down to substitute7_2 position
+            animationClass = 'animate-dynamic-down';
+            zIndexClass = 'z-10';
+            styleProps = {
+              '--move-distance': `${animationDistances.fieldToSub2}px`
+            };
+          } else if (position === 'substitute7_1' && !isInactive) {
+            // substitute7_1 moves up to field position (only if not inactive)
+            animationClass = 'animate-dynamic-up';
+            zIndexClass = 'z-20';
+            styleProps = {
+              '--move-distance': `${animationDistances.sub1ToField}px`
+            };
+          } else if (position === 'substitute7_2' && !isInactive) {
+            // substitute7_2 moves up to substitute7_1 position (only if not inactive)
+            animationClass = 'animate-dynamic-up';
+            zIndexClass = 'z-15';
+            styleProps = {
+              '--move-distance': `${animationDistances.sub2ToSub1}px`
+            };
+          }
+          // If player is inactive, they get no animation (stay completely still)
+        }
+      } else {
+        // Original logic for other modes
+        if (isNextOff) {
+          animationClass = 'animate-dynamic-down';
+          zIndexClass = 'z-10';
+          styleProps = {
+            '--move-distance': `${animationDistances.nextOffToSub}px`
+          };
+        } else if (isNextOn) {
+          animationClass = 'animate-dynamic-up';
+          zIndexClass = 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.subToNextOff}px`
+          };
+        }
       }
     }
 
@@ -558,21 +767,28 @@ export function GameScreen({
       textColor = 'text-sky-100';
     }
 
-    // Visual indicators for next and next-next
-    if (isNextOff && !hideNextOffIndicator) {
-      borderColor = 'border-rose-500';
-    } else if (isNextNextOff && !hideNextOffIndicator) {
-      borderColor = 'border-rose-200'; // More dimmed red for next-next off
-    }
-    
-    if (isNextOn && !hideNextOffIndicator) {
-      borderColor = 'border-emerald-500';
-    } else if (isNextNextOn && !hideNextOffIndicator) {
-      borderColor = 'border-emerald-200'; // More dimmed green for next-next on
+    // Visual styling for inactive players
+    if (isInactive) {
+      bgColor = 'bg-slate-800'; // Darker background for inactive
+      textColor = 'text-slate-500'; // Dimmed text for inactive
+      borderColor = 'border-slate-600'; // Subtle border for inactive
+    } else {
+      // Visual indicators for next and next-next (only for active players)
+      if (isNextOff && !hideNextOffIndicator) {
+        borderColor = 'border-rose-500';
+      } else if (isNextNextOff && !hideNextOffIndicator) {
+        borderColor = 'border-rose-200'; // More dimmed red for next-next off
+      }
+      
+      if (isNextOn && !hideNextOffIndicator) {
+        borderColor = 'border-emerald-500';
+      } else if (isNextNextOn && !hideNextOffIndicator) {
+        borderColor = 'border-emerald-200'; // More dimmed green for next-next on
+      }
     }
 
     // Add glow effect for recently substituted players
-    if (isRecentlySubstituted) {
+    if (isRecentlySubstituted && !isInactive) {
       glowClass = 'animate-pulse shadow-lg shadow-amber-400/50 border-amber-400';
       borderColor = 'border-amber-400';
     }
@@ -582,22 +798,24 @@ export function GameScreen({
     else if (position === 'rightDefender7') longPressEvents = rightDefender7Events;
     else if (position === 'leftAttacker7') longPressEvents = leftAttacker7Events;
     else if (position === 'rightAttacker7') longPressEvents = rightAttacker7Events;
+    else if (position === 'substitute7_1') longPressEvents = substitute7_1Events;
+    else if (position === 'substitute7_2') longPressEvents = substitute7_2Events;
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
+        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected || isSubstitute ? 'cursor-pointer select-none' : ''} relative`}
         style={styleProps}
         {...longPressEvents}
       >
         <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
-          {positionName}
+          {positionName} {isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
           <div className="flex space-x-1">
-            {/* Primary indicators (full opacity) */}
-            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
-            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
-            {/* Secondary indicators (very dimmed) */}
-            {isNextNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-4 w-4 text-rose-200 opacity-40 inline-block" />}
-            {isNextNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-4 w-4 text-emerald-200 opacity-40 inline-block" />}
+            {/* Primary indicators (full opacity) - only show for active players */}
+            {!isInactive && isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
+            {!isInactive && isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+            {/* Secondary indicators (very dimmed) - only show for active players */}
+            {!isInactive && isNextNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-4 w-4 text-rose-200 opacity-40 inline-block" />}
+            {!isInactive && isNextNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-4 w-4 text-emerald-200 opacity-40 inline-block" />}
           </div>
         </h3>
         <div className="flex items-center justify-between">
@@ -614,6 +832,9 @@ export function GameScreen({
         </div>
         {canBeSelected && (
           <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
+        )}
+        {isSubstitute && (
+          <p className="text-xs text-slate-400 mt-1">Hold to {isInactive ? 'activate' : 'inactivate'}</p>
         )}
       </div>
     );
@@ -691,6 +912,16 @@ export function GameScreen({
         onSubNow={handleSubstituteNow}
         onCancel={handleCancelSubstitution}
         playerName={confirmationModal.playerName}
+      />
+
+      {/* Player Inactive Modal */}
+      <PlayerInactiveModal
+        isOpen={inactiveModal.isOpen}
+        onInactivate={handleInactivatePlayer}
+        onActivate={handleActivatePlayer}
+        onCancel={handleCancelInactive}
+        playerName={inactiveModal.playerName}
+        isCurrentlyInactive={inactiveModal.isCurrentlyInactive}
       />
     </div>
   );
