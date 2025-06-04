@@ -337,8 +337,8 @@ export function GameScreen({
   const handleInactivatePlayer = () => {
     if (inactiveModal.playerId) {
       // Check if this would result in both substitutes being inactive
-      const player = allPlayers.find(p => p.id === inactiveModal.playerId);
-      if (player && !player.stats.isInactive) {
+      const playerToInactivate = allPlayers.find(p => p.id === inactiveModal.playerId);
+      if (playerToInactivate && !playerToInactivate.stats.isInactive) {
         const substitute7_1Id = periodFormation.substitute7_1;
         const substitute7_2Id = periodFormation.substitute7_2;
         const otherSubstituteId = inactiveModal.playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
@@ -351,7 +351,46 @@ export function GameScreen({
         }
       }
       
-      togglePlayerInactive(inactiveModal.playerId);
+      // Check if this will trigger an animation (substitute7_1 being inactivated)
+      const willTriggerAnimation = playerToInactivate && !playerToInactivate.stats.isInactive && playerToInactivate.stats.currentPairKey === 'substitute7_1';
+      
+      if (willTriggerAnimation) {
+        // For inactivation of substitute7_1, start animation first, then perform state change
+        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+        const sub1Index = positions.indexOf('substitute7_1');
+        const sub2Index = positions.indexOf('substitute7_2');
+        
+        // Calculate the distance between substitute positions
+        const contentHeight = 64; // Individual position height
+        const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
+        const distanceBetween = Math.abs(sub2Index - sub1Index) * boxHeight;
+        
+        setAnimationDistances({ 
+          fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
+          sub1ToField: 0,  // Not used in inactivation
+          sub2ToSub1: -distanceBetween,  // substitute7_2 moves up to substitute7_1
+          nextOffToSub: distanceBetween,  // For backwards compatibility
+          subToNextOff: -distanceBetween  // For backwards compatibility
+        });
+        
+        // Start the animation sequence
+        setIsAnimating(true);
+        setAnimationPhase('switching');
+        setHideNextOffIndicator(true);
+        
+        // Perform state change after animation starts (small delay)
+        togglePlayerInactive(inactiveModal.playerId, null, 100);
+        
+        // End animation after it completes
+        setTimeout(() => {
+          setIsAnimating(false);
+          setAnimationPhase('idle');
+          setHideNextOffIndicator(false);
+        }, 1000);
+      } else {
+        // No animation needed, perform state change immediately
+        togglePlayerInactive(inactiveModal.playerId);
+      }
     }
     setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
   };
@@ -690,14 +729,16 @@ export function GameScreen({
     
     if (isAnimating && animationPhase === 'switching') {
       if (isIndividual7Mode) {
-        // Check if this is a reactivation animation (only substitute positions move)
-        const isReactivationAnimation = animationDistances.sub1ToField === 0;
+        // Check if this is a reactivation/inactivation animation (only substitute positions move)
+        const isSubstituteSwapAnimation = animationDistances.sub1ToField === 0;
         
-        if (isReactivationAnimation) {
-          // Reactivation animation: only substitute positions swap
-          // CRITICAL: Inactive players never move during animations
-          if (position === 'substitute7_1' && !isInactive) {
-            // substitute7_1 moves down to substitute7_2 position (only if not inactive)
+        if (isSubstituteSwapAnimation) {
+          // Reactivation or inactivation animation: only substitute positions swap
+          // For inactivation: the player being inactivated moves, but becomes inactive after animation
+          // For reactivation: only active players move
+          if (position === 'substitute7_1') {
+            // substitute7_1 moves down to substitute7_2 position
+            // This happens during both inactivation (player becomes inactive) and reactivation (active player moves down)
             animationClass = 'animate-dynamic-down';
             zIndexClass = 'z-10';
             styleProps = {
@@ -705,6 +746,7 @@ export function GameScreen({
             };
           } else if (position === 'substitute7_2' && !isInactive) {
             // substitute7_2 moves up to substitute7_1 position (only if not inactive)
+            // Inactive players never move, even during inactivation of the other player
             animationClass = 'animate-dynamic-up';
             zIndexClass = 'z-20';
             styleProps = {
@@ -715,13 +757,27 @@ export function GameScreen({
         } else {
           // Normal substitution animation
           // CRITICAL: Inactive players never move during animations
+          
+          // Check if substitute7_2 is inactive to determine where field player should go
+          const substitute7_2Player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
+          const isSubstitute7_2Inactive = substitute7_2Player?.stats.isInactive || false;
+          
           if (isNextOff && !isInactive) {
-            // Field player going off - moves down to substitute7_2 position
+            // Field player going off - destination depends on whether substitute7_2 is inactive
             animationClass = 'animate-dynamic-down';
             zIndexClass = 'z-10';
-            styleProps = {
-              '--move-distance': `${animationDistances.fieldToSub2}px`
-            };
+            if (isSubstitute7_2Inactive) {
+              // If substitute7_2 is inactive, field player goes to substitute7_1 position
+              // Use negative sub1ToField distance (field to sub1 instead of sub1 to field)
+              styleProps = {
+                '--move-distance': `${-animationDistances.sub1ToField}px`
+              };
+            } else {
+              // Normal case: field player goes to substitute7_2 position
+              styleProps = {
+                '--move-distance': `${animationDistances.fieldToSub2}px`
+              };
+            }
           } else if (position === 'substitute7_1' && !isInactive) {
             // substitute7_1 moves up to field position (only if not inactive)
             animationClass = 'animate-dynamic-up';
