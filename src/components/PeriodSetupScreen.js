@@ -434,7 +434,7 @@ export function PeriodSetupScreen({
         Start Period {currentPeriodNumber}
       </Button>
       
-      <Button onClick={() => setView('config')} variant="secondary" Icon={ArrowLeft}>
+      <Button onClick={() => setView('config')} Icon={ArrowLeft}>
         Back to Configuration
       </Button>
     </div>
