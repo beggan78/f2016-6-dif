@@ -146,6 +146,7 @@ function App() {
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             numPeriods={gameState.numPeriods}
             formationType={gameState.formationType}
+            setView={gameState.setView}
           />
         );
       case 'game':

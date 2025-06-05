@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Users, Play, Edit3 } from 'lucide-react';
+import { Users, Play, Edit3, ArrowLeft } from 'lucide-react';
 import { Select, Button } from './UI';
 import { formatTime } from '../utils/timeCalculations';
 import { FORMATION_TYPES } from '../utils/gameLogic';
@@ -16,7 +16,8 @@ export function PeriodSetupScreen({
   periodGoalieIds, 
   setPeriodGoalieIds, 
   numPeriods,
-  formationType 
+  formationType,
+  setView 
 }) {
   // Determine formation mode
   const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
@@ -431,6 +432,10 @@ export function PeriodSetupScreen({
 
       <Button onClick={handleStartGame} disabled={!isFormationComplete()} Icon={Play}>
         Start Period {currentPeriodNumber}
+      </Button>
+      
+      <Button onClick={() => setView('config')} variant="secondary" Icon={ArrowLeft}>
+        Back to Configuration
       </Button>
     </div>
   );
