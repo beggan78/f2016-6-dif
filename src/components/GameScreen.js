@@ -65,151 +65,135 @@ export function GameScreen({
   const [animationPhase, setAnimationPhase] = React.useState('idle'); // 'idle', 'switching', 'completing'
   const [animationDistances, setAnimationDistances] = React.useState({ nextOffToSub: 0, subToNextOff: 0 });
   
-  // Calculate positions for box switching animation
-  const calculateAnimationDistances = React.useCallback(() => {
-    let nextOffIndex = -1;
-    let subIndex = -1;
-    
-    if (isPairsMode) {
-      // For 7-player pairs mode, find indices of next off pair and sub pair
-      const pairs = ['leftPair', 'rightPair', 'subPair'];
-      nextOffIndex = pairs.indexOf(nextPhysicalPairToSubOut);
-      subIndex = pairs.indexOf('subPair');
-    } else if (isIndividual6Mode) {
-      // For 6-player mode, find indices of next off position and substitute
-      const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
-      nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
-      subIndex = positions.indexOf('substitute');
-    } else if (isIndividual7Mode) {
-      // For 7-player individual mode, find indices of next off position and substitute
-      const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-      nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
-      subIndex = positions.indexOf('substitute7_1'); // First substitute is the one coming in
-    }
-    
-    if (nextOffIndex !== -1 && subIndex !== -1) {
-      // Calculate distance between boxes with mode-specific measurements
-      // p-3 = 24px padding (12px top + 12px bottom)
-      // border-2 = 4px border (2px top + 2px bottom) 
-      // space-y-3 = 12px gap between boxes
-      
-      let contentHeight;
-      if (isPairsMode) {
-        // 7-player pairs: Header ~24px + space-y-1 with 2 player rows ~50px + optional text ~16px = 90px
-        contentHeight = 90;
-      } else {
-        // 6-player or 7-player individual: Header ~24px + 1 player row ~24px + optional text ~16px = 64px  
-        contentHeight = 64;
+  // Animation system abstraction
+  const createAnimationCalculator = React.useCallback(() => {
+    // Updated measurements for compact design - let's be more generous to account for all spacing
+    const MEASUREMENTS = {
+      padding: 16, // p-2 = 8px top + 8px bottom = 16px total
+      border: 4,   // border-2 = 2px top + 2px bottom = 4px total
+      gap: 0,      // space-y-2 = 8px between elements
+      contentHeight: {
+        // Being more generous with content heights to account for line heights, margins, etc.
+        pairs: 84,      // Was 76, increased to account for all text spacing
+        individual: 76  // Was 68, increased to account for all text spacing
       }
-      
-      // Total box height: 24px padding + 4px border + content
-      const boxHeight = 24 + 4 + contentHeight + 12; // +12 for gap
-      const distanceBetween = Math.abs(subIndex - nextOffIndex) * boxHeight;
-      
-      return {
-        nextOffToSub: subIndex > nextOffIndex ? distanceBetween : -distanceBetween,
-        subToNextOff: nextOffIndex > subIndex ? distanceBetween : -distanceBetween
-      };
-    }
-    
-    return { nextOffToSub: 0, subToNextOff: 0 };
-  }, [isPairsMode, isIndividual6Mode, isIndividual7Mode, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation]);
-
-  // Calculate animation distances for position switching between two players
-  const calculatePositionSwitchDistances = React.useCallback((player1Id, player2Id) => {
-    const player1 = allPlayers.find(p => p.id === player1Id);
-    const player2 = allPlayers.find(p => p.id === player2Id);
-    
-    if (!player1 || !player2) return { player1Distance: 0, player2Distance: 0 };
-    
-    const player1Position = player1.stats.currentPairKey;
-    const player2Position = player2.stats.currentPairKey;
-    
-    let player1Index = -1;
-    let player2Index = -1;
-    
-    if (isPairsMode) {
-      // For 7-player pairs mode, find indices
-      const pairs = ['leftPair', 'rightPair', 'subPair'];
-      player1Index = pairs.indexOf(player1Position);
-      player2Index = pairs.indexOf(player2Position);
-    } else if (isIndividual6Mode) {
-      // For 6-player mode, find indices
-      const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
-      player1Index = positions.indexOf(player1Position);
-      player2Index = positions.indexOf(player2Position);
-    } else if (isIndividual7Mode) {
-      // For 7-player individual mode, find indices
-      const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-      player1Index = positions.indexOf(player1Position);
-      player2Index = positions.indexOf(player2Position);
-    }
-    
-    if (player1Index !== -1 && player2Index !== -1) {
-      // Calculate distance between positions
-      let contentHeight;
-      if (isPairsMode) {
-        contentHeight = 90; // 7-player pairs: larger content
-      } else {
-        contentHeight = 64; // Individual modes: smaller content
-      }
-      
-      const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
-      const distanceBetween = Math.abs(player2Index - player1Index) * boxHeight;
-      
-      return {
-        player1Distance: player2Index > player1Index ? distanceBetween : -distanceBetween,
-        player2Distance: player1Index > player2Index ? distanceBetween : -distanceBetween
-      };
-    }
-    
-    return { player1Distance: 0, player2Distance: 0 };
-  }, [allPlayers, isPairsMode, isIndividual6Mode, isIndividual7Mode]);
-
-  // Calculate animation distances specifically for 7-player individual mode
-  const calculate7PlayerAnimationDistances = React.useCallback(() => {
-    const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-    
-    // Find the index of the field player who's coming off
-    const fieldPlayerIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
-    const sub1Index = positions.indexOf('substitute7_1');
-    const sub2Index = positions.indexOf('substitute7_2');
-    
-    if (fieldPlayerIndex !== -1) {
-      // Calculate distances based on position indices
-      const contentHeight = 64; // Individual position height
-      const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
-      
-      // Distance from field player to substitute7_2 (where field player goes)
-      const fieldToSub2Distance = Math.abs(sub2Index - fieldPlayerIndex) * boxHeight;
-      const fieldToSub2Direction = sub2Index > fieldPlayerIndex ? fieldToSub2Distance : -fieldToSub2Distance;
-      
-      // Distance from substitute7_1 to field position (where sub7_1 goes)
-      const sub1ToFieldDistance = Math.abs(fieldPlayerIndex - sub1Index) * boxHeight;
-      const sub1ToFieldDirection = fieldPlayerIndex < sub1Index ? -sub1ToFieldDistance : sub1ToFieldDistance;
-      
-      // Distance from substitute7_2 to substitute7_1 (where sub7_2 goes)
-      const sub2ToSub1Distance = Math.abs(sub1Index - sub2Index) * boxHeight;
-      const sub2ToSub1Direction = sub1Index < sub2Index ? -sub2ToSub1Distance : sub2ToSub1Distance;
-      
-      return {
-        fieldToSub2: fieldToSub2Direction,
-        sub1ToField: sub1ToFieldDirection,
-        sub2ToSub1: sub2ToSub1Direction,
-        // Keep these for backwards compatibility
-        nextOffToSub: fieldToSub2Direction,
-        subToNextOff: sub1ToFieldDirection
-      };
-    }
-    
-    return { 
-      fieldToSub2: 0, 
-      sub1ToField: 0, 
-      sub2ToSub1: 0,
-      nextOffToSub: 0, 
-      subToNextOff: 0 
     };
-  }, [nextPlayerIdToSubOut, periodFormation]);
+
+    const getBoxHeight = (mode) => {
+      const contentHeight = mode === 'pairs' ? MEASUREMENTS.contentHeight.pairs : MEASUREMENTS.contentHeight.individual;
+      // Total height = padding + border + content + gap to next element
+      return MEASUREMENTS.padding + MEASUREMENTS.border + contentHeight + MEASUREMENTS.gap;
+    };
+
+    const getPositionIndex = (position, mode) => {
+      const positionArrays = {
+        pairs: ['leftPair', 'rightPair', 'subPair'],
+        individual6: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
+        individual7: ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2']
+      };
+      
+      const positions = positionArrays[mode] || [];
+      return positions.indexOf(position);
+    };
+
+    const calculateDistance = (fromIndex, toIndex, mode) => {
+      if (fromIndex === -1 || toIndex === -1) return 0;
+      const boxHeight = getBoxHeight(mode);
+      const distance = Math.abs(toIndex - fromIndex) * boxHeight;
+      return toIndex > fromIndex ? distance : -distance;
+    };
+
+    return {
+      // Expose helper methods
+      getPositionIndex,
+      calculateDistance,
+      getBoxHeight,
+
+      // Calculate substitution animation distances
+      calculateSubstitutionDistances: () => {
+        let nextOffIndex = -1;
+        let subIndex = -1;
+        let mode = 'individual';
+        
+        if (isPairsMode) {
+          mode = 'pairs';
+          nextOffIndex = getPositionIndex(nextPhysicalPairToSubOut, 'pairs');
+          subIndex = getPositionIndex('subPair', 'pairs');
+        } else if (isIndividual6Mode) {
+          mode = 'individual';
+          const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
+          nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
+          subIndex = getPositionIndex('substitute', 'individual6');
+        } else if (isIndividual7Mode) {
+          mode = 'individual';
+          const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+          nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
+          subIndex = getPositionIndex('substitute7_1', 'individual7');
+        }
+        
+        return {
+          nextOffToSub: calculateDistance(nextOffIndex, subIndex, mode),
+          subToNextOff: calculateDistance(subIndex, nextOffIndex, mode)
+        };
+      },
+
+      // Calculate position switch animation distances
+      calculatePositionSwitchDistances: (player1Id, player2Id) => {
+        const player1 = allPlayers.find(p => p.id === player1Id);
+        const player2 = allPlayers.find(p => p.id === player2Id);
+        
+        if (!player1 || !player2) return { player1Distance: 0, player2Distance: 0 };
+        
+        const player1Position = player1.stats.currentPairKey;
+        const player2Position = player2.stats.currentPairKey;
+        
+        let mode = 'individual';
+        let modeKey = 'individual6';
+        
+        if (isPairsMode) {
+          mode = 'pairs';
+          modeKey = 'pairs';
+        } else if (isIndividual7Mode) {
+          modeKey = 'individual7';
+        }
+        
+        const player1Index = getPositionIndex(player1Position, modeKey);
+        const player2Index = getPositionIndex(player2Position, modeKey);
+        
+        return {
+          player1Distance: calculateDistance(player1Index, player2Index, mode),
+          player2Distance: calculateDistance(player2Index, player1Index, mode)
+        };
+      },
+
+      // Calculate 7-player individual mode specific distances
+      calculate7PlayerDistances: () => {
+        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+        const fieldPlayerIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
+        const sub1Index = getPositionIndex('substitute7_1', 'individual7');
+        const sub2Index = getPositionIndex('substitute7_2', 'individual7');
+        
+        if (fieldPlayerIndex === -1) {
+          return { fieldToSub2: 0, sub1ToField: 0, sub2ToSub1: 0, nextOffToSub: 0, subToNextOff: 0 };
+        }
+        
+        const fieldToSub2 = calculateDistance(fieldPlayerIndex, sub2Index, 'individual');
+        const sub1ToField = calculateDistance(sub1Index, fieldPlayerIndex, 'individual');
+        const sub2ToSub1 = calculateDistance(sub2Index, sub1Index, 'individual');
+        
+        return {
+          fieldToSub2,
+          sub1ToField,
+          sub2ToSub1,
+          nextOffToSub: fieldToSub2,
+          subToNextOff: sub1ToField
+        };
+      }
+    };
+  }, [isPairsMode, isIndividual6Mode, isIndividual7Mode, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation, allPlayers]);
+
+  // Create calculator instance
+  const animationCalculator = createAnimationCalculator();
 
   // Enhanced substitution handler with animation and highlighting
   const handleSubstitutionWithHighlight = React.useCallback(() => {
@@ -227,13 +211,12 @@ export function GameScreen({
       playersComingOnIds = [periodFormation.substitute7_1].filter(Boolean);
     }
     
-    // Calculate animation distances
+    // Calculate animation distances using the new abstraction
     let distances;
     if (isIndividual7Mode) {
-      // Special calculation for 7-player individual mode
-      distances = calculate7PlayerAnimationDistances();
+      distances = animationCalculator.calculate7PlayerDistances();
     } else {
-      distances = calculateAnimationDistances();
+      distances = animationCalculator.calculateSubstitutionDistances();
     }
     setAnimationDistances(distances);
     
@@ -261,12 +244,12 @@ export function GameScreen({
         setRecentlySubstitutedPlayers(new Set());
       }, 1500);
     }, 1000);
-  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, calculateAnimationDistances, calculate7PlayerAnimationDistances]);
+  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, animationCalculator]);
 
   // Enhanced position switch handler with animation
   const handlePositionSwitchWithAnimation = React.useCallback((player1Id, player2Id) => {
-    // Calculate animation distances
-    const distances = calculatePositionSwitchDistances(player1Id, player2Id);
+    // Calculate animation distances using the new abstraction
+    const distances = animationCalculator.calculatePositionSwitchDistances(player1Id, player2Id);
     
     // Set up animation state with custom distances for the two players
     setAnimationDistances({
@@ -311,7 +294,7 @@ export function GameScreen({
         setRecentlySubstitutedPlayers(new Set());
       }, 1500);
     }, 1000);
-  }, [calculatePositionSwitchDistances, switchPlayerPositions, getPlayerName]);
+  }, [animationCalculator, switchPlayerPositions, getPlayerName]);
 
   // Effect to trigger substitution after state update
   React.useEffect(() => {
@@ -492,14 +475,9 @@ export function GameScreen({
       
       if (willTriggerAnimation) {
         // For inactivation of substitute7_1, start animation first, then perform state change
-        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-        const sub1Index = positions.indexOf('substitute7_1');
-        const sub2Index = positions.indexOf('substitute7_2');
-        
-        // Calculate the distance between substitute positions
-        const contentHeight = 64; // Individual position height
-        const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
-        const distanceBetween = Math.abs(sub2Index - sub1Index) * boxHeight;
+        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
+        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
+        const distanceBetween = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
         
         setAnimationDistances({ 
           fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
@@ -540,14 +518,9 @@ export function GameScreen({
       
       if (willTriggerAnimation) {
         // For reactivation of substitute7_2, start animation first, then perform state change
-        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-        const sub1Index = positions.indexOf('substitute7_1');
-        const sub2Index = positions.indexOf('substitute7_2');
-        
-        // Calculate the distance between substitute positions
-        const contentHeight = 64; // Individual position height
-        const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
-        const distanceBetween = Math.abs(sub2Index - sub1Index) * boxHeight;
+        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
+        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
+        const distanceBetween = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
         
         setAnimationDistances({ 
           fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
