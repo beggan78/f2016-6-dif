@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock } from 'lucide-react';
-import { Button, SubstitutionModal, PlayerInactiveModal } from './UI';
+import { Button, OutfieldPlayerModal, PlayerInactiveModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function GameScreen({ 
@@ -21,21 +21,26 @@ export function GameScreen({
   setNextPlayerToSubOut,
   formationType,
   alertMinutes,
-  togglePlayerInactive
+  togglePlayerInactive,
+  switchPlayerPositions,
+  getOutfieldPlayers
 }) {
-  const getPlayerName = (id) => allPlayers.find(p => p.id === id)?.name || 'N/A';
+  const getPlayerName = React.useCallback((id) => allPlayers.find(p => p.id === id)?.name || 'N/A', [allPlayers]);
   
   // Determine which formation mode we're using
   const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
   const isIndividual6Mode = formationType === FORMATION_TYPES.INDIVIDUAL_6;
   const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
   
-  // State for substitution confirmation modal
-  const [confirmationModal, setConfirmationModal] = React.useState({
+  // State for outfield player modal
+  const [outfieldPlayerModal, setOutfieldPlayerModal] = React.useState({
     isOpen: false,
     type: null, // 'pair' or 'player'
     target: null, // pairKey or position
-    playerName: ''
+    playerName: '',
+    sourcePlayerId: null,
+    availablePlayers: [],
+    showPositionOptions: false
   });
   
   // State for player inactive modal (7-player individual mode only)
@@ -109,6 +114,57 @@ export function GameScreen({
     
     return { nextOffToSub: 0, subToNextOff: 0 };
   }, [isPairsMode, isIndividual6Mode, isIndividual7Mode, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation]);
+
+  // Calculate animation distances for position switching between two players
+  const calculatePositionSwitchDistances = React.useCallback((player1Id, player2Id) => {
+    const player1 = allPlayers.find(p => p.id === player1Id);
+    const player2 = allPlayers.find(p => p.id === player2Id);
+    
+    if (!player1 || !player2) return { player1Distance: 0, player2Distance: 0 };
+    
+    const player1Position = player1.stats.currentPairKey;
+    const player2Position = player2.stats.currentPairKey;
+    
+    let player1Index = -1;
+    let player2Index = -1;
+    
+    if (isPairsMode) {
+      // For 7-player pairs mode, find indices
+      const pairs = ['leftPair', 'rightPair', 'subPair'];
+      player1Index = pairs.indexOf(player1Position);
+      player2Index = pairs.indexOf(player2Position);
+    } else if (isIndividual6Mode) {
+      // For 6-player mode, find indices
+      const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
+      player1Index = positions.indexOf(player1Position);
+      player2Index = positions.indexOf(player2Position);
+    } else if (isIndividual7Mode) {
+      // For 7-player individual mode, find indices
+      const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+      player1Index = positions.indexOf(player1Position);
+      player2Index = positions.indexOf(player2Position);
+    }
+    
+    if (player1Index !== -1 && player2Index !== -1) {
+      // Calculate distance between positions
+      let contentHeight;
+      if (isPairsMode) {
+        contentHeight = 90; // 7-player pairs: larger content
+      } else {
+        contentHeight = 64; // Individual modes: smaller content
+      }
+      
+      const boxHeight = 24 + 4 + contentHeight + 12; // padding + border + content + gap
+      const distanceBetween = Math.abs(player2Index - player1Index) * boxHeight;
+      
+      return {
+        player1Distance: player2Index > player1Index ? distanceBetween : -distanceBetween,
+        player2Distance: player1Index > player2Index ? distanceBetween : -distanceBetween
+      };
+    }
+    
+    return { player1Distance: 0, player2Distance: 0 };
+  }, [allPlayers, isPairsMode, isIndividual6Mode, isIndividual7Mode]);
 
   // Calculate animation distances specifically for 7-player individual mode
   const calculate7PlayerAnimationDistances = React.useCallback(() => {
@@ -207,6 +263,56 @@ export function GameScreen({
     }, 1000);
   }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, calculateAnimationDistances, calculate7PlayerAnimationDistances]);
 
+  // Enhanced position switch handler with animation
+  const handlePositionSwitchWithAnimation = React.useCallback((player1Id, player2Id) => {
+    // Calculate animation distances
+    const distances = calculatePositionSwitchDistances(player1Id, player2Id);
+    
+    // Set up animation state with custom distances for the two players
+    setAnimationDistances({
+      positionSwitch: true,
+      player1Id: player1Id,
+      player2Id: player2Id,
+      player1Distance: distances.player1Distance,
+      player2Distance: distances.player2Distance,
+      // Keep these for backwards compatibility
+      nextOffToSub: 0,
+      subToNextOff: 0
+    });
+    
+    // Start the animation sequence
+    setIsAnimating(true);
+    setAnimationPhase('switching');
+    setHideNextOffIndicator(true);
+    
+    // After animation completes (1 second), perform position switch and start glow
+    setTimeout(() => {
+      // Perform the actual position switch
+      const success = switchPlayerPositions(player1Id, player2Id);
+      if (success) {
+        // Set both players for highlighting
+        setRecentlySubstitutedPlayers(new Set([player1Id, player2Id]));
+        
+        const player1Name = getPlayerName(player1Id);
+        const player2Name = getPlayerName(player2Id);
+        console.log(`Successfully switched positions between ${player1Name} and ${player2Name}`);
+      } else {
+        console.warn('Position switch failed');
+      }
+      
+      // End animation
+      setIsAnimating(false);
+      setAnimationPhase('completing');
+      
+      // After glow effect completes (1.5 more seconds), reset everything
+      setTimeout(() => {
+        setAnimationPhase('idle');
+        setHideNextOffIndicator(false);
+        setRecentlySubstitutedPlayers(new Set());
+      }, 1500);
+    }, 1000);
+  }, [calculatePositionSwitchDistances, switchPlayerPositions, getPlayerName]);
+
   // Effect to trigger substitution after state update
   React.useEffect(() => {
     if (shouldSubstituteNow) {
@@ -263,11 +369,14 @@ export function GameScreen({
       const pairData = periodFormation[pairKey];
       const defenderName = getPlayerName(pairData?.defender);
       const attackerName = getPlayerName(pairData?.attacker);
-      setConfirmationModal({
+      setOutfieldPlayerModal({
         isOpen: true,
         type: 'pair',
         target: pairKey,
-        playerName: `${defenderName} & ${attackerName}`
+        playerName: `${defenderName} & ${attackerName}`,
+        sourcePlayerId: null,
+        availablePlayers: [],
+        showPositionOptions: false
       });
     }
   };
@@ -281,11 +390,14 @@ export function GameScreen({
     if (validPositions.includes(position)) {
       const playerId = periodFormation[position];
       const playerName = getPlayerName(playerId);
-      setConfirmationModal({
+      setOutfieldPlayerModal({
         isOpen: true,
         type: 'player',
         target: position,
-        playerName: playerName
+        playerName: playerName,
+        sourcePlayerId: null,
+        availablePlayers: [],
+        showPositionOptions: false
       });
     }
   };
@@ -307,30 +419,54 @@ export function GameScreen({
     });
   };
 
-  // Handle substitution modal actions
+  // Handle outfield player modal actions
   const handleSetNextSubstitution = () => {
-    if (confirmationModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(confirmationModal.target);
-    } else if (confirmationModal.type === 'player') {
-      setNextPlayerToSubOut(confirmationModal.target);
+    if (outfieldPlayerModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(outfieldPlayerModal.target);
+    } else if (outfieldPlayerModal.type === 'player') {
+      setNextPlayerToSubOut(outfieldPlayerModal.target);
     }
-    setConfirmationModal({ isOpen: false, type: null, target: null, playerName: '' });
+    setOutfieldPlayerModal({ 
+      isOpen: false, 
+      type: null, 
+      target: null, 
+      playerName: '', 
+      sourcePlayerId: null, 
+      availablePlayers: [], 
+      showPositionOptions: false 
+    });
   };
 
   const handleSubstituteNow = () => {
     // First set as next substitution
-    if (confirmationModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(confirmationModal.target);
-    } else if (confirmationModal.type === 'player') {
-      setNextPlayerToSubOut(confirmationModal.target);
+    if (outfieldPlayerModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(outfieldPlayerModal.target);
+    } else if (outfieldPlayerModal.type === 'player') {
+      setNextPlayerToSubOut(outfieldPlayerModal.target);
     }
     // Set flag to trigger substitution after state update
     setShouldSubstituteNow(true);
-    setConfirmationModal({ isOpen: false, type: null, target: null, playerName: '' });
+    setOutfieldPlayerModal({ 
+      isOpen: false, 
+      type: null, 
+      target: null, 
+      playerName: '', 
+      sourcePlayerId: null, 
+      availablePlayers: [], 
+      showPositionOptions: false 
+    });
   };
 
-  const handleCancelSubstitution = () => {
-    setConfirmationModal({ isOpen: false, type: null, target: null, playerName: '' });
+  const handleCancelOutfieldPlayerModal = () => {
+    setOutfieldPlayerModal({ 
+      isOpen: false, 
+      type: null, 
+      target: null, 
+      playerName: '', 
+      sourcePlayerId: null, 
+      availablePlayers: [], 
+      showPositionOptions: false 
+    });
   };
 
   // Handle inactive modal actions
@@ -448,6 +584,72 @@ export function GameScreen({
     setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
   };
 
+  // Handle position change actions
+  const handleChangePosition = (action) => {
+    if (action === 'show-options') {
+      // Show the position selection options
+      if (outfieldPlayerModal.target && outfieldPlayerModal.type === 'player') {
+        const sourcePlayerId = periodFormation[outfieldPlayerModal.target];
+        
+        if (sourcePlayerId) {
+          // Get only field players (exclude substitutes) except the source player
+          const availablePlayers = getOutfieldPlayers().filter(p => {
+            if (p.id === sourcePlayerId) return false;
+            
+            // Only include players currently on the field (not substitutes)
+            const player = allPlayers.find(pl => pl.id === p.id);
+            if (!player) return false;
+            
+            const currentPairKey = player.stats.currentPairKey;
+            
+            // Exclude substitutes based on formation type
+            if (formationType === FORMATION_TYPES.PAIRS_7) {
+              return currentPairKey !== 'subPair';
+            } else if (formationType === FORMATION_TYPES.INDIVIDUAL_6) {
+              return currentPairKey !== 'substitute';
+            } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
+              return currentPairKey !== 'substitute7_1' && currentPairKey !== 'substitute7_2';
+            }
+            
+            return true;
+          });
+          
+          setOutfieldPlayerModal(prev => ({
+            ...prev,
+            sourcePlayerId: sourcePlayerId,
+            availablePlayers: availablePlayers,
+            showPositionOptions: true
+          }));
+        }
+      } else if (outfieldPlayerModal.type === 'pair') {
+        // For pairs formation, position change is not supported
+        alert('Position change is not supported for pairs mode. Please use individual mode.');
+        handleCancelOutfieldPlayerModal();
+      }
+    } else if (action === null) {
+      // Go back to main options
+      setOutfieldPlayerModal(prev => ({
+        ...prev,
+        showPositionOptions: false,
+        availablePlayers: [],
+        sourcePlayerId: null
+      }));
+    } else {
+      // action is a player ID - perform the animated position switch
+      const targetPlayerId = action;
+      if (outfieldPlayerModal.sourcePlayerId && targetPlayerId) {
+        // Close the modal first
+        handleCancelOutfieldPlayerModal();
+        
+        // Perform the animated position switch
+        handlePositionSwitchWithAnimation(outfieldPlayerModal.sourcePlayerId, targetPlayerId);
+      } else {
+        // Close the modal if something went wrong
+        handleCancelOutfieldPlayerModal();
+      }
+    }
+  };
+
   // Hook for handling long press and double click
   const useLongPressAndDoubleClick = (callback, ms = 1000) => {
     const [startLongPress, setStartLongPress] = React.useState(false);
@@ -519,18 +721,51 @@ export function GameScreen({
     let styleProps = {};
     
     if (isAnimating && animationPhase === 'switching') {
-      if (isNextOff) {
-        animationClass = 'animate-dynamic-down';
-        zIndexClass = 'z-10'; // Lower z-index when going down
-        styleProps = {
-          '--move-distance': `${animationDistances.nextOffToSub}px`
-        };
-      } else if (isNextOn) {
-        animationClass = 'animate-dynamic-up';
-        zIndexClass = 'z-20'; // Higher z-index when coming up
-        styleProps = {
-          '--move-distance': `${animationDistances.subToNextOff}px`
-        };
+      // Check if this is a position switch animation
+      if (animationDistances.positionSwitch) {
+        const pairDefenderId = pairData.defender;
+        const pairAttackerId = pairData.attacker;
+        
+        if (pairDefenderId === animationDistances.player1Id) {
+          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player1Distance}px`
+          };
+        } else if (pairAttackerId === animationDistances.player1Id) {
+          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player1Distance}px`
+          };
+        } else if (pairDefenderId === animationDistances.player2Id) {
+          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player2Distance}px`
+          };
+        } else if (pairAttackerId === animationDistances.player2Id) {
+          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player2Distance}px`
+          };
+        }
+      } else {
+        // Normal substitution animation
+        if (isNextOff) {
+          animationClass = 'animate-dynamic-down';
+          zIndexClass = 'z-10'; // Lower z-index when going down
+          styleProps = {
+            '--move-distance': `${animationDistances.nextOffToSub}px`
+          };
+        } else if (isNextOn) {
+          animationClass = 'animate-dynamic-up';
+          zIndexClass = 'z-20'; // Higher z-index when coming up
+          styleProps = {
+            '--move-distance': `${animationDistances.subToNextOff}px`
+          };
+        }
       }
     }
 
@@ -601,7 +836,7 @@ export function GameScreen({
           </div>
         </div>
         {canBeSelected && (
-          <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
+          <p className="text-xs text-slate-400 mt-1">Hold for options</p>
         )}
       </div>
     );
@@ -627,18 +862,36 @@ export function GameScreen({
     let styleProps = {};
     
     if (isAnimating && animationPhase === 'switching') {
-      if (isNextOff) {
-        animationClass = 'animate-dynamic-down';
-        zIndexClass = 'z-10'; // Lower z-index when going down
-        styleProps = {
-          '--move-distance': `${animationDistances.nextOffToSub}px`
-        };
-      } else if (isNextOn) {
-        animationClass = 'animate-dynamic-up';
-        zIndexClass = 'z-20'; // Higher z-index when coming up
-        styleProps = {
-          '--move-distance': `${animationDistances.subToNextOff}px`
-        };
+      // Check if this is a position switch animation
+      if (animationDistances.positionSwitch) {
+        if (playerId === animationDistances.player1Id) {
+          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player1Distance}px`
+          };
+        } else if (playerId === animationDistances.player2Id) {
+          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player2Distance}px`
+          };
+        }
+      } else {
+        // Normal substitution animation
+        if (isNextOff) {
+          animationClass = 'animate-dynamic-down';
+          zIndexClass = 'z-10'; // Lower z-index when going down
+          styleProps = {
+            '--move-distance': `${animationDistances.nextOffToSub}px`
+          };
+        } else if (isNextOn) {
+          animationClass = 'animate-dynamic-up';
+          zIndexClass = 'z-20'; // Higher z-index when coming up
+          styleProps = {
+            '--move-distance': `${animationDistances.subToNextOff}px`
+          };
+        }
       }
     }
 
@@ -701,7 +954,7 @@ export function GameScreen({
           })()}
         </div>
         {canBeSelected && (
-          <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
+          <p className="text-xs text-slate-400 mt-1">Hold for options</p>
         )}
       </div>
     );
@@ -733,7 +986,22 @@ export function GameScreen({
     let styleProps = {};
     
     if (isAnimating && animationPhase === 'switching') {
-      if (isIndividual7Mode) {
+      // Check if this is a position switch animation
+      if (animationDistances.positionSwitch) {
+        if (playerId === animationDistances.player1Id) {
+          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player1Distance}px`
+          };
+        } else if (playerId === animationDistances.player2Id) {
+          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+          styleProps = {
+            '--move-distance': `${animationDistances.player2Distance}px`
+          };
+        }
+      } else if (isIndividual7Mode) {
         // Check if this is a reactivation/inactivation animation (only substitute positions move)
         const isSubstituteSwapAnimation = animationDistances.sub1ToField === 0;
         
@@ -893,7 +1161,7 @@ export function GameScreen({
           })()}
         </div>
         {canBeSelected && (
-          <p className="text-xs text-slate-400 mt-1">Hold to set as next sub</p>
+          <p className="text-xs text-slate-400 mt-1">Hold for options</p>
         )}
         {isSubstitute && (
           <p className="text-xs text-slate-400 mt-1">Hold to {isInactive ? 'activate' : 'inactivate'}</p>
@@ -973,13 +1241,17 @@ export function GameScreen({
         </Button>
       </div>
 
-      {/* Substitution Options Modal */}
-      <SubstitutionModal
-        isOpen={confirmationModal.isOpen}
+      {/* Outfield Player Options Modal */}
+      <OutfieldPlayerModal
+        isOpen={outfieldPlayerModal.isOpen}
         onSetNext={handleSetNextSubstitution}
         onSubNow={handleSubstituteNow}
-        onCancel={handleCancelSubstitution}
-        playerName={confirmationModal.playerName}
+        onCancel={handleCancelOutfieldPlayerModal}
+        onChangePosition={!isPairsMode ? handleChangePosition : null}
+        playerName={outfieldPlayerModal.playerName}
+        availablePlayers={outfieldPlayerModal.availablePlayers}
+        showPositionChange={!isPairsMode && outfieldPlayerModal.type === 'player'}
+        showPositionOptions={outfieldPlayerModal.showPositionOptions}
       />
 
       {/* Player Inactive Modal */}

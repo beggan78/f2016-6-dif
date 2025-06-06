@@ -991,6 +991,136 @@ export function useGameState() {
     return player?.stats.currentPairKey;
   }, [allPlayers]);
 
+  // Function to switch positions between two outfield players
+  const switchPlayerPositions = useCallback((player1Id, player2Id) => {
+    if (!player1Id || !player2Id || player1Id === player2Id) {
+      console.warn('Invalid player IDs for position switch');
+      return false;
+    }
+
+    const player1 = allPlayers.find(p => p.id === player1Id);
+    const player2 = allPlayers.find(p => p.id === player2Id);
+    
+    if (!player1 || !player2) {
+      console.warn('Players not found for position switch');
+      return false;
+    }
+
+    // Don't allow switching with goalie
+    if (player1.id === periodFormation.goalie || player2.id === periodFormation.goalie) {
+      console.warn('Cannot switch positions with goalie');
+      return false;
+    }
+
+    const player1Position = player1.stats.currentPairKey;
+    const player2Position = player2.stats.currentPairKey;
+
+    // Don't allow switching if either player is not currently on field or substitute
+    const validPositions = {
+      [FORMATION_TYPES.PAIRS_7]: ['leftPair', 'rightPair', 'subPair'],
+      [FORMATION_TYPES.INDIVIDUAL_6]: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
+      [FORMATION_TYPES.INDIVIDUAL_7]: ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2']
+    };
+
+    const currentValidPositions = validPositions[formationType] || [];
+    if (!currentValidPositions.includes(player1Position) || !currentValidPositions.includes(player2Position)) {
+      console.warn('One or both players are not in valid positions for switching');
+      return false;
+    }
+
+    // Update period formation by swapping positions
+    setPeriodFormation(prev => {
+      const newFormation = { ...prev };
+      
+      if (formationType === FORMATION_TYPES.PAIRS_7) {
+        // Handle pairs formation
+        if (player1Position === 'leftPair') {
+          if (prev.leftPair.defender === player1Id) {
+            newFormation.leftPair = { ...prev.leftPair, defender: player2Id };
+          } else if (prev.leftPair.attacker === player1Id) {
+            newFormation.leftPair = { ...prev.leftPair, attacker: player2Id };
+          }
+        } else if (player1Position === 'rightPair') {
+          if (prev.rightPair.defender === player1Id) {
+            newFormation.rightPair = { ...prev.rightPair, defender: player2Id };
+          } else if (prev.rightPair.attacker === player1Id) {
+            newFormation.rightPair = { ...prev.rightPair, attacker: player2Id };
+          }
+        } else if (player1Position === 'subPair') {
+          if (prev.subPair.defender === player1Id) {
+            newFormation.subPair = { ...prev.subPair, defender: player2Id };
+          } else if (prev.subPair.attacker === player1Id) {
+            newFormation.subPair = { ...prev.subPair, attacker: player2Id };
+          }
+        }
+
+        if (player2Position === 'leftPair') {
+          if (prev.leftPair.defender === player2Id) {
+            newFormation.leftPair = { ...newFormation.leftPair, defender: player1Id };
+          } else if (prev.leftPair.attacker === player2Id) {
+            newFormation.leftPair = { ...newFormation.leftPair, attacker: player1Id };
+          }
+        } else if (player2Position === 'rightPair') {
+          if (prev.rightPair.defender === player2Id) {
+            newFormation.rightPair = { ...newFormation.rightPair, defender: player1Id };
+          } else if (prev.rightPair.attacker === player2Id) {
+            newFormation.rightPair = { ...newFormation.rightPair, attacker: player1Id };
+          }
+        } else if (player2Position === 'subPair') {
+          if (prev.subPair.defender === player2Id) {
+            newFormation.subPair = { ...newFormation.subPair, defender: player1Id };
+          } else if (prev.subPair.attacker === player2Id) {
+            newFormation.subPair = { ...newFormation.subPair, attacker: player1Id };
+          }
+        }
+      } else {
+        // Handle individual formations (6-player and 7-player)
+        // Simply swap the position assignments
+        newFormation[player1Position] = player2Id;
+        newFormation[player2Position] = player1Id;
+      }
+      
+      return newFormation;
+    });
+
+    // Update player stats to reflect new positions
+    setAllPlayers(prev => prev.map(p => {
+      if (p.id === player1Id) {
+        return { 
+          ...p, 
+          stats: { 
+            ...p.stats, 
+            currentPairKey: player2Position 
+          } 
+        };
+      }
+      if (p.id === player2Id) {
+        return { 
+          ...p, 
+          stats: { 
+            ...p.stats, 
+            currentPairKey: player1Position 
+          } 
+        };
+      }
+      return p;
+    }));
+
+    // The rotation queue order remains intact - no changes needed
+    // Players keep their position in the queue, just their on-field positions change
+    
+    console.log(`Successfully switched positions: ${player1.name} (${player1Position}) <-> ${player2.name} (${player2Position})`);
+    return true;
+  }, [allPlayers, periodFormation, formationType]);
+
+  // Helper function to get all outfield players (excludes goalie)
+  const getOutfieldPlayers = useCallback(() => {
+    return allPlayers.filter(p => 
+      selectedSquadIds.includes(p.id) && 
+      p.id !== periodFormation.goalie
+    );
+  }, [allPlayers, selectedSquadIds, periodFormation.goalie]);
+
   return {
     // State
     allPlayers,
@@ -1038,6 +1168,8 @@ export function useGameState() {
     formPairs,
     togglePlayerInactive,
     getInactivePlayerPosition,
+    switchPlayerPositions,
+    getOutfieldPlayers,
     
     // Enhanced persistence actions
     createManualBackup,

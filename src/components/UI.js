@@ -38,6 +38,7 @@ export function Button({ onClick, children, Icon, variant = 'primary', size = 'm
     primary: `bg-sky-600 hover:bg-sky-500 text-white focus:ring-sky-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
     secondary: `bg-slate-600 hover:bg-slate-500 text-sky-100 focus:ring-slate-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
     danger: `bg-rose-600 hover:bg-rose-500 text-white focus:ring-rose-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
+    accent: `bg-emerald-600 hover:bg-emerald-500 text-white focus:ring-emerald-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
   };
 
   return (
@@ -78,33 +79,81 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message,
   );
 }
 
-export function SubstitutionModal({ isOpen, onSetNext, onSubNow, onCancel, playerName }) {
+export function OutfieldPlayerModal({ 
+  isOpen, 
+  onSetNext, 
+  onSubNow, 
+  onCancel, 
+  onChangePosition, 
+  playerName, 
+  availablePlayers = [],
+  showPositionChange = false,
+  showPositionOptions = false 
+}) {
   if (!isOpen) return null;
+
+  const handleBack = () => {
+    // Call onChangePosition with null to go back to main options
+    onChangePosition && onChangePosition(null);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">Substitution Options</h3>
+          <h3 className="text-lg font-semibold text-sky-300">
+            {showPositionOptions ? 'Change Position' : 'Player Options'}
+          </h3>
         </div>
         <div className="p-4">
-          <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
-          <div className="flex flex-col gap-3">
-            <Button onClick={onCancel} variant="secondary">
-              Cancel
-            </Button>
-            <Button onClick={onSetNext} variant="primary">
-              Set next sub: {playerName}
-            </Button>
-            <Button onClick={onSubNow} variant="danger">
-              Substitute {playerName} now
-            </Button>
-          </div>
+          {showPositionOptions ? (
+            <>
+              <p className="text-slate-200 mb-6">
+                Select which player to switch positions with {playerName}:
+              </p>
+              <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+                <Button onClick={handleBack} variant="secondary">
+                  Back
+                </Button>
+                {availablePlayers.map((player) => (
+                  <Button
+                    key={player.id}
+                    onClick={() => onChangePosition && onChangePosition(player.id)}
+                    variant="primary"
+                    className="text-left"
+                  >
+                    Switch with {player.name}
+                  </Button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
+              <div className="flex flex-col gap-3">
+                <Button onClick={onCancel} variant="secondary">
+                  Cancel
+                </Button>
+                <Button onClick={onSetNext} variant="primary">
+                  Set next sub: {playerName}
+                </Button>
+                <Button onClick={onSubNow} variant="danger">
+                  Substitute {playerName} now
+                </Button>
+                {showPositionChange && (
+                  <Button onClick={() => onChangePosition && onChangePosition('show-options')} variant="accent">
+                    Change position
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
 
 export function PlayerInactiveModal({ isOpen, onInactivate, onActivate, onCancel, playerName, isCurrentlyInactive }) {
   if (!isOpen) return null;

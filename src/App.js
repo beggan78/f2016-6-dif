@@ -170,6 +170,8 @@ function App() {
             formationType={gameState.formationType}
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
+            switchPlayerPositions={gameState.switchPlayerPositions}
+            getOutfieldPlayers={gameState.getOutfieldPlayers}
           />
         );
       case 'stats':
