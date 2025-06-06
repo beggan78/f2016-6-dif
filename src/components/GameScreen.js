@@ -1233,15 +1233,15 @@ export function GameScreen({
 
       {/* Timers */}
       <div className="grid grid-cols-2 gap-4 text-center">
-        <div className="p-3 bg-slate-700 rounded-lg">
-          <p className="text-sm text-sky-200 mb-1">Match Clock</p>
-          <p className={`text-3xl font-mono ${matchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
+        <div className="p-2 bg-slate-700 rounded-lg">
+          <p className="text-xs text-sky-200 mb-0.5">Match Clock</p>
+          <p className={`text-2xl font-mono ${matchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
             {matchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(matchTimerSeconds))}
           </p>
         </div>
-        <div className="p-3 bg-slate-700 rounded-lg">
-          <p className="text-sm text-sky-200 mb-1">Substitution Timer</p>
-          <p className={`text-3xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
+        <div className="p-2 bg-slate-700 rounded-lg">
+          <p className="text-xs text-sky-200 mb-0.5">Substitution Timer</p>
+          <p className={`text-2xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
             {formatTime(subTimerSeconds)}
           </p>
         </div>
