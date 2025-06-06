@@ -650,59 +650,116 @@ export function GameScreen({
     }
   };
 
-  // Hook for handling long press and double click
-  const useLongPressAndDoubleClick = (callback, ms = 1000) => {
+  // Hook for handling long press with scroll detection
+  const useLongPressWithScrollDetection = (callback, ms = 1000) => {
     const [startLongPress, setStartLongPress] = React.useState(false);
     const callbackRef = React.useRef(callback);
+    const initialTouchPos = React.useRef({ x: 0, y: 0 });
+    const hasScrolled = React.useRef(false);
+    const timerId = React.useRef(null);
 
     // Update callback ref when callback changes
     React.useEffect(() => {
       callbackRef.current = callback;
     }, [callback]);
 
-    React.useEffect(() => {
-      let timerId;
-      if (startLongPress) {
-        timerId = setTimeout(() => {
+    const startPress = (clientX, clientY) => {
+      initialTouchPos.current = { x: clientX, y: clientY };
+      hasScrolled.current = false;
+      setStartLongPress(true);
+      
+      timerId.current = setTimeout(() => {
+        if (!hasScrolled.current) {
           callbackRef.current();
-        }, ms);
-      } else {
-        clearTimeout(timerId);
-      }
+        }
+      }, ms);
+    };
 
+    const endPress = () => {
+      setStartLongPress(false);
+      if (timerId.current) {
+        clearTimeout(timerId.current);
+        timerId.current = null;
+      }
+    };
+
+    const handleMove = React.useCallback((clientX, clientY) => {
+      if (startLongPress) {
+        const moveThreshold = 10; // pixels
+        const deltaX = Math.abs(clientX - initialTouchPos.current.x);
+        const deltaY = Math.abs(clientY - initialTouchPos.current.y);
+        
+        if (deltaX > moveThreshold || deltaY > moveThreshold) {
+          hasScrolled.current = true;
+          endPress();
+        }
+      }
+    }, [startLongPress]);
+
+    const handleTouchMove = React.useCallback((e) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        handleMove(touch.clientX, touch.clientY);
+      }
+    }, [handleMove]);
+
+    const handleMouseMove = React.useCallback((e) => {
+      handleMove(e.clientX, e.clientY);
+    }, [handleMove]);
+
+    React.useEffect(() => {
+      if (startLongPress) {
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
+        document.addEventListener('mousemove', handleMouseMove);
+        
+        return () => {
+          document.removeEventListener('touchmove', handleTouchMove);
+          document.removeEventListener('mousemove', handleMouseMove);
+        };
+      }
+    }, [startLongPress, handleTouchMove, handleMouseMove]);
+
+    React.useEffect(() => {
       return () => {
-        clearTimeout(timerId);
+        if (timerId.current) {
+          clearTimeout(timerId.current);
+        }
       };
-    }, [ms, startLongPress]);
+    }, []);
 
     return {
-      onMouseDown: () => setStartLongPress(true),
-      onMouseUp: () => setStartLongPress(false),
-      onMouseLeave: () => setStartLongPress(false),
-      onTouchStart: () => setStartLongPress(true),
-      onTouchEnd: () => setStartLongPress(false),
+      onMouseDown: (e) => startPress(e.clientX, e.clientY),
+      onMouseUp: endPress,
+      onMouseLeave: endPress,
+      onTouchStart: (e) => {
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          startPress(touch.clientX, touch.clientY);
+        }
+      },
+      onTouchEnd: endPress,
     };
   };
 
-  // Create long press and double click handlers for each pair and individual position
-  const leftPairEvents = useLongPressAndDoubleClick(() => handlePairLongPress('leftPair'));
-  const rightPairEvents = useLongPressAndDoubleClick(() => handlePairLongPress('rightPair'));
+  // Create long press handlers for each pair and individual position
+  const leftPairEvents = useLongPressWithScrollDetection(() => handlePairLongPress('leftPair'));
+  const rightPairEvents = useLongPressWithScrollDetection(() => handlePairLongPress('rightPair'));
   
   // 6-player individual mode events
-  const leftDefenderEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftDefender'));
-  const rightDefenderEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightDefender'));
-  const leftAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftAttacker'));
-  const rightAttackerEvents = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightAttacker'));
+  const leftDefenderEvents = useLongPressWithScrollDetection(() => handlePlayerLongPress('leftDefender'));
+  const rightDefenderEvents = useLongPressWithScrollDetection(() => handlePlayerLongPress('rightDefender'));
+  const leftAttackerEvents = useLongPressWithScrollDetection(() => handlePlayerLongPress('leftAttacker'));
+  const rightAttackerEvents = useLongPressWithScrollDetection(() => handlePlayerLongPress('rightAttacker'));
   
   // 7-player individual mode events
-  const leftDefender7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftDefender7'));
-  const rightDefender7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightDefender7'));
-  const leftAttacker7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('leftAttacker7'));
-  const rightAttacker7Events = useLongPressAndDoubleClick(() => handlePlayerLongPress('rightAttacker7'));
+  const leftDefender7Events = useLongPressWithScrollDetection(() => handlePlayerLongPress('leftDefender7'));
+  const rightDefender7Events = useLongPressWithScrollDetection(() => handlePlayerLongPress('rightDefender7'));
+  const leftAttacker7Events = useLongPressWithScrollDetection(() => handlePlayerLongPress('leftAttacker7'));
+  const rightAttacker7Events = useLongPressWithScrollDetection(() => handlePlayerLongPress('rightAttacker7'));
   
   // 7-player individual mode substitute events
-  const substitute7_1Events = useLongPressAndDoubleClick(() => handleSubstituteLongPress('substitute7_1'));
-  const substitute7_2Events = useLongPressAndDoubleClick(() => handleSubstituteLongPress('substitute7_2'));
+  const substitute7_1Events = useLongPressWithScrollDetection(() => handleSubstituteLongPress('substitute7_1'));
+  const substitute7_2Events = useLongPressWithScrollDetection(() => handleSubstituteLongPress('substitute7_2'));
 
   const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
