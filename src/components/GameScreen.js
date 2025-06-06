@@ -855,45 +855,45 @@ export function GameScreen({
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
+        className={`p-2 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
         style={styleProps}
         {...longPressEvents}
       >
-        <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
+        <h3 className="text-sm font-semibold mb-1 flex items-center justify-between">
           {pairName}
           <div>
-            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
-            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-5 w-5 text-rose-400 inline-block" />}
+            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-5 w-5 text-emerald-400 inline-block" />}
           </div>
         </h3>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <div className="flex items-center justify-between">
-            <div><Shield className="inline h-4 w-4 mr-1" /> D: {getPlayerName(pairData.defender)}</div>
+            <div><Shield className="inline h-3 w-3 mr-1" /> D: {getPlayerName(pairData.defender)}</div>
             {pairData.defender && (() => {
               const stats = getPlayerTimeStats(pairData.defender);
               return (
-                <div className="text-right text-sm">
+                <div className="text-right text-xs">
                   <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
-                  <span className="ml-6"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+                  <span className="ml-4"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
                 </div>
               );
             })()}
           </div>
           <div className="flex items-center justify-between">
-            <div><Sword className="inline h-4 w-4 mr-1" /> A: {getPlayerName(pairData.attacker)}</div>
+            <div><Sword className="inline h-3 w-3 mr-1" /> A: {getPlayerName(pairData.attacker)}</div>
             {pairData.attacker && (() => {
               const stats = getPlayerTimeStats(pairData.attacker);
               return (
-                <div className="text-right text-sm">
+                <div className="text-right text-xs">
                   <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
-                  <span className="ml-6"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
+                  <span className="ml-4"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
                 </div>
               );
             })()}
           </div>
         </div>
         {canBeSelected && (
-          <p className="text-xs text-slate-400 mt-1">Hold for options</p>
+          <p className="text-xs text-slate-400 mt-0.5">Hold for options</p>
         )}
       </div>
     );
@@ -987,15 +987,15 @@ export function GameScreen({
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
+        className={`p-2 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected ? 'cursor-pointer select-none' : ''} relative`}
         style={styleProps}
         {...longPressEvents}
       >
-        <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
+        <h3 className="text-sm font-semibold mb-1 flex items-center justify-between">
           {positionName}
           <div>
-            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
-            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+            {isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-5 w-5 text-rose-400 inline-block" />}
+            {isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-5 w-5 text-emerald-400 inline-block" />}
           </div>
         </h3>
         <div className="flex items-center justify-between">
@@ -1003,7 +1003,7 @@ export function GameScreen({
           {playerId && (() => {
             const stats = getPlayerTimeStats(playerId);
             return (
-              <div className="text-right text-sm">
+              <div className="text-right text-xs">
                 <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
                 <span className="ml-3"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
               </div>
@@ -1011,7 +1011,7 @@ export function GameScreen({
           })()}
         </div>
         {canBeSelected && (
-          <p className="text-xs text-slate-400 mt-1">Hold for options</p>
+          <p className="text-xs text-slate-400 mt-0.5">Hold for options</p>
         )}
       </div>
     );
@@ -1190,16 +1190,16 @@ export function GameScreen({
 
     return (
       <div 
-        className={`p-3 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected || isSubstitute ? 'cursor-pointer select-none' : ''} relative`}
+        className={`p-2 rounded-lg shadow-md transition-all duration-300 border-2 ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected || isSubstitute ? 'cursor-pointer select-none' : ''} relative`}
         style={styleProps}
         {...longPressEvents}
       >
-        <h3 className="text-base font-semibold mb-1.5 flex items-center justify-between">
+        <h3 className="text-sm font-semibold mb-1 flex items-center justify-between">
           {positionName} {isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
           <div className="flex space-x-1">
             {/* Primary indicators (full opacity) - only show for active players */}
-            {!isInactive && isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-6 w-6 text-rose-400 inline-block" />}
-            {!isInactive && isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-6 w-6 text-emerald-400 inline-block" />}
+            {!isInactive && isNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-5 w-5 text-rose-400 inline-block" />}
+            {!isInactive && isNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-5 w-5 text-emerald-400 inline-block" />}
             {/* Secondary indicators (very dimmed) - only show for active players */}
             {!isInactive && isNextNextOff && !hideNextOffIndicator && <ArrowDownCircle className="h-4 w-4 text-rose-200 opacity-40 inline-block" />}
             {!isInactive && isNextNextOn && !hideNextOffIndicator && <ArrowUpCircle className="h-4 w-4 text-emerald-200 opacity-40 inline-block" />}
@@ -1210,7 +1210,7 @@ export function GameScreen({
           {playerId && (() => {
             const stats = getPlayerTimeStats(playerId);
             return (
-              <div className="text-right text-sm">
+              <div className="text-right text-xs">
                 <span><Clock className="inline h-3 w-3" /> <span className="font-mono">{formatTime(stats.totalOutfieldTime)}</span></span>
                 <span className="ml-3"><Sword className="inline h-3 w-3" /> <span className="font-mono">{formatTimeDifference(stats.attackDefenderDiff)}</span></span>
               </div>
@@ -1218,10 +1218,10 @@ export function GameScreen({
           })()}
         </div>
         {canBeSelected && (
-          <p className="text-xs text-slate-400 mt-1">Hold for options</p>
+          <p className="text-xs text-slate-400 mt-0.5">Hold for options</p>
         )}
         {isSubstitute && (
-          <p className="text-xs text-slate-400 mt-1">Hold to {isInactive ? 'activate' : 'inactivate'}</p>
+          <p className="text-xs text-slate-400 mt-0.5">Hold to {isInactive ? 'activate' : 'inactivate'}</p>
         )}
       </div>
     );
@@ -1254,7 +1254,7 @@ export function GameScreen({
       </div>
       
       {isPairsMode && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {renderPair('leftPair', 'Left', 0)}
           {renderPair('rightPair', 'Right', 1)}
           {renderPair('subPair', 'Substitutes', 2)}
@@ -1262,29 +1262,29 @@ export function GameScreen({
       )}
 
       {isIndividual6Mode && (
-        <div className="space-y-3">
-          {renderIndividualPosition('leftDefender', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />, 0)}
-          {renderIndividualPosition('rightDefender', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />, 1)}
-          {renderIndividualPosition('leftAttacker', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />, 2)}
-          {renderIndividualPosition('rightAttacker', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />, 3)}
-          {renderIndividualPosition('substitute', 'Substitute', <RotateCcw className="inline h-4 w-4 mr-1" />, 4)}
+        <div className="space-y-2">
+          {renderIndividualPosition('leftDefender', 'Left Defender', <Shield className="inline h-3 w-3 mr-1" />, 0)}
+          {renderIndividualPosition('rightDefender', 'Right Defender', <Shield className="inline h-3 w-3 mr-1" />, 1)}
+          {renderIndividualPosition('leftAttacker', 'Left Attacker', <Sword className="inline h-3 w-3 mr-1" />, 2)}
+          {renderIndividualPosition('rightAttacker', 'Right Attacker', <Sword className="inline h-3 w-3 mr-1" />, 3)}
+          {renderIndividualPosition('substitute', 'Substitute', <RotateCcw className="inline h-3 w-3 mr-1" />, 4)}
         </div>
       )}
 
       {isIndividual7Mode && (
-        <div className="space-y-3">
-          {renderIndividual7Position('leftDefender7', 'Left Defender', <Shield className="inline h-4 w-4 mr-1" />, 0, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
-          {renderIndividual7Position('rightDefender7', 'Right Defender', <Shield className="inline h-4 w-4 mr-1" />, 1, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
-          {renderIndividual7Position('leftAttacker7', 'Left Attacker', <Sword className="inline h-4 w-4 mr-1" />, 2, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
-          {renderIndividual7Position('rightAttacker7', 'Right Attacker', <Sword className="inline h-4 w-4 mr-1" />, 3, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+        <div className="space-y-2">
+          {renderIndividual7Position('leftDefender7', 'Left Defender', <Shield className="inline h-3 w-3 mr-1" />, 0, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('rightDefender7', 'Right Defender', <Shield className="inline h-3 w-3 mr-1" />, 1, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('leftAttacker7', 'Left Attacker', <Sword className="inline h-3 w-3 mr-1" />, 2, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          {renderIndividual7Position('rightAttacker7', 'Right Attacker', <Sword className="inline h-3 w-3 mr-1" />, 3, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
           {renderIndividual7Position('substitute7_1', (() => {
             const player = allPlayers.find(p => p.id === periodFormation.substitute7_1);
             return player?.stats.isInactive ? 'Inactive' : 'Substitute';
-          })(), <RotateCcw className="inline h-4 w-4 mr-1" />, 4, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          })(), <RotateCcw className="inline h-3 w-3 mr-1" />, 4, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
           {renderIndividual7Position('substitute7_2', (() => {
             const player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
             return player?.stats.isInactive ? 'Inactive' : 'Substitute';
-          })(), <RotateCcw className="inline h-4 w-4 mr-1" />, 5, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
+          })(), <RotateCcw className="inline h-3 w-3 mr-1" />, 5, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
         </div>
       )}
 
