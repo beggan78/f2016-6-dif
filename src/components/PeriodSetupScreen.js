@@ -43,7 +43,7 @@ export function PeriodSetupScreen({
       const attackDefenderDiff = player.stats.timeAsAttackerSeconds - player.stats.timeAsDefenderSeconds;
       const diffFormatted = formatTimeDifference(attackDefenderDiff);
       
-      return `${player.name} - ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
+      return `${player.name}  ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
     }
     return player.name;
   };
