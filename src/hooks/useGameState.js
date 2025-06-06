@@ -3,102 +3,19 @@ import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from 
 import { generateRecommendedFormation } from '../utils/formationGenerator';
 import { createSubstitutionManager, calculatePlayerTimeStats } from '../utils/substitutionManager';
 import { createRotationQueue } from '../utils/rotationQueue';
+import { createGamePersistenceManager } from '../utils/persistenceManager';
 
-// localStorage utilities - NOTE: Essential for preventing state loss on page refresh
-const STORAGE_KEY = 'dif-coach-game-state';
-
-const loadFromStorage = () => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
-  } catch (error) {
-    console.warn('Failed to load game state from localStorage:', error);
-    return null;
-  }
-};
-
-const saveToStorage = (state) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.warn('Failed to save game state to localStorage:', error);
-  }
-};
+// PersistenceManager for handling localStorage operations
+const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
 
 export function useGameState() {
-  // Initialize state from localStorage or defaults
-  const initializeState = () => {
-    const saved = loadFromStorage();
-    if (saved) {
-      return {
-        allPlayers: saved.allPlayers || initializePlayers(initialRoster),
-        view: saved.view || 'config',
-        selectedSquadIds: saved.selectedSquadIds || [],
-        numPeriods: saved.numPeriods || 3,
-        periodDurationMinutes: saved.periodDurationMinutes || 15,
-        periodGoalieIds: saved.periodGoalieIds || {},
-        formationType: saved.formationType || FORMATION_TYPES.PAIRS_7, // Default to pairs mode
-        alertMinutes: saved.alertMinutes || 2,
-        currentPeriodNumber: saved.currentPeriodNumber || 1,
-        periodFormation: saved.periodFormation || {
-          goalie: null,
-          leftPair: { defender: null, attacker: null },
-          rightPair: { defender: null, attacker: null },
-          subPair: { defender: null, attacker: null },
-          // 6-player formation structure
-          leftDefender: null,
-          rightDefender: null,
-          leftAttacker: null,
-          rightAttacker: null,
-          substitute: null,
-          // 7-player individual formation structure
-          leftDefender7: null,
-          rightDefender7: null,
-          leftAttacker7: null,
-          rightAttacker7: null,
-          substitute7_1: null, // First substitute (next to go in)
-          substitute7_2: null, // Second substitute (next-next to go in)
-        },
-        nextPhysicalPairToSubOut: saved.nextPhysicalPairToSubOut || 'leftPair',
-        nextPlayerToSubOut: saved.nextPlayerToSubOut || 'leftDefender', // For 6-player mode (legacy)
-        nextPlayerIdToSubOut: saved.nextPlayerIdToSubOut || null, // New: track actual player ID
-        nextNextPlayerIdToSubOut: saved.nextNextPlayerIdToSubOut || null, // Track next-next player for 7-player individual mode
-        rotationQueue: saved.rotationQueue || [], // Queue of player IDs for 6-player rotation
-        gameLog: saved.gameLog || [],
-      };
-    }
-    return {
-      allPlayers: initializePlayers(initialRoster),
-      view: 'config',
-      selectedSquadIds: [],
-      numPeriods: 3,
-      periodDurationMinutes: 15,
-      periodGoalieIds: {},
-      formationType: FORMATION_TYPES.PAIRS_7, // Default to pairs mode
-      alertMinutes: 2,
-      currentPeriodNumber: 1,
-      periodFormation: {
-        goalie: null,
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null },
-        // 6-player formation structure
-        leftDefender: null,
-        rightDefender: null,
-        leftAttacker: null,
-        rightAttacker: null,
-        substitute: null,
-      },
-      nextPhysicalPairToSubOut: 'leftPair',
-      nextPlayerToSubOut: 'leftDefender', // For 6-player mode (legacy)
-      nextPlayerIdToSubOut: null, // New: track actual player ID
-      nextNextPlayerIdToSubOut: null, // Track next-next player for 7-player individual mode
-      rotationQueue: [], // Queue of player IDs for 6-player rotation
-      gameLog: [],
-    };
-  };
-
-  const initialState = initializeState();
+  // Initialize state from PersistenceManager
+  const initialState = persistenceManager.loadState();
+  
+  // Ensure allPlayers is initialized if not present
+  if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
+    initialState.allPlayers = initializePlayers(initialRoster);
+  }
   
   const [allPlayers, setAllPlayers] = useState(initialState.allPlayers);
   const [view, setView] = useState(initialState.view);
@@ -188,7 +105,9 @@ export function useGameState() {
       rotationQueue,
       gameLog,
     };
-    saveToStorage(currentState);
+    
+    // Use the persistence manager's saveGameState method
+    persistenceManager.saveGameState(currentState);
   }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, formationType, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog]);
 
 
@@ -399,7 +318,7 @@ export function useGameState() {
     preparePeriodWithGameLog(periodNum, gameLog);
   }, [preparePeriodWithGameLog, gameLog]);
 
-  const handleStartPeriodSetup = () => {
+  const handleStartPeriodSetup = useCallback(() => {
     if (selectedSquadIds.length !== 7 && selectedSquadIds.length !== 6) {
       alert("Please select exactly 6 or 7 players for the squad."); // Replace with modal
       return;
@@ -409,6 +328,9 @@ export function useGameState() {
       alert("Please assign a goalie for each period."); // Replace with modal
       return;
     }
+
+    // Create auto-backup before starting game
+    persistenceManager.autoBackup();
 
     // Reset player stats for the new game for the selected squad
     setAllPlayers(prev => prev.map(p => {
@@ -425,7 +347,7 @@ export function useGameState() {
     setGameLog([]); // Clear game log for new game
     preparePeriod(1);
     setView('periodSetup');
-  };
+  }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod]);
 
   const handleStartGame = () => {
     // Validate formation based on formation type
@@ -623,6 +545,8 @@ export function useGameState() {
   };
 
   const handleEndPeriod = () => {
+    // Create auto-backup before ending period
+    persistenceManager.autoBackup();
     const currentTimeEpoch = Date.now();
     const selectedSquadPlayers = allPlayers.filter(p => selectedSquadIds.includes(p.id));
     const playerIdsInPeriod = selectedSquadPlayers.map(p => p.id);
@@ -687,14 +611,52 @@ export function useGameState() {
     setSelectedSquadIds(prev => [...prev, newPlayerId]);
   }, []);
 
-  // Clear stored state - useful for starting fresh
-  const clearStoredState = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.warn('Failed to clear stored state:', error);
+  // Enhanced clear stored state with backup
+  const clearStoredState = useCallback(() => {
+    // Create backup before clearing
+    const backupKey = persistenceManager.createBackup();
+    if (backupKey) {
+      console.log('Created backup before clearing:', backupKey);
     }
-  };
+    
+    // Clear the state
+    const result = persistenceManager.clearState();
+    if (result) {
+      console.log('Game state cleared successfully');
+    } else {
+      console.warn('Failed to clear game state');
+    }
+    
+    return result;
+  }, []);
+
+  // Enhanced backup management
+  const createManualBackup = useCallback(() => {
+    const backupKey = persistenceManager.createBackup();
+    if (backupKey) {
+      console.log('Manual backup created:', backupKey);
+      // Clean up old backups, keep 5 most recent
+      persistenceManager.cleanupBackups(5);
+    }
+    return backupKey;
+  }, []);
+
+  const listAvailableBackups = useCallback(() => {
+    return persistenceManager.listBackups();
+  }, []);
+
+  const restoreFromBackup = useCallback((backupKey) => {
+    const result = persistenceManager.restoreFromBackup(backupKey);
+    if (result) {
+      // Reload the page to refresh all state
+      window.location.reload();
+    }
+    return result;
+  }, []);
+
+  const getStorageInfo = useCallback(() => {
+    return persistenceManager.getStorageInfo();
+  }, []);
 
   // Formation type switching functions
   const splitPairs = useCallback(() => {
@@ -1076,5 +1038,11 @@ export function useGameState() {
     formPairs,
     togglePlayerInactive,
     getInactivePlayerPosition,
+    
+    // Enhanced persistence actions
+    createManualBackup,
+    listAvailableBackups,
+    restoreFromBackup,
+    getStorageInfo,
   };
 }
