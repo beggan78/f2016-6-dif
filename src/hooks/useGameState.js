@@ -1,6 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from '../utils/gameLogic';
 import { generateRecommendedFormation } from '../utils/formationGenerator';
+import { SubstitutionManager } from '../utils/substitutionManager';
 
 // localStorage utilities - NOTE: Essential for preventing state loss on page refresh
 const STORAGE_KEY = 'dif-coach-game-state';
@@ -115,6 +116,19 @@ export function useGameState() {
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
 
+  // Create substitution manager instance
+  const substitutionManager = useMemo(() => {
+    return new SubstitutionManager({
+      currentFormation: periodFormation,
+      rotationQueue: rotationQueue,
+      goalieId: periodFormation.goalie,
+      nextOffIndex: formationType === FORMATION_TYPES.PAIRS_7 ? 
+        (nextPhysicalPairToSubOut === 'leftPair' ? 0 : 1) : 0,
+      inactivePlayerIds: allPlayers.filter(p => p.stats?.isInactive).map(p => p.id),
+      formationType: formationType
+    });
+  }, [periodFormation, rotationQueue, nextPhysicalPairToSubOut, allPlayers, formationType]);
+
   // Wake lock and alert management
   const [wakeLock, setWakeLock] = useState(null);
   const [alertTimer, setAlertTimer] = useState(null);
@@ -223,21 +237,6 @@ export function useGameState() {
     }));
   }, []);
 
-  // Helper function to determine role from position
-  const getPositionRole = (position) => {
-    if (position === 'leftDefender' || position === 'rightDefender' || 
-        position === 'leftDefender7' || position === 'rightDefender7') {
-      return PLAYER_ROLES.DEFENDER;
-    } else if (position === 'leftAttacker' || position === 'rightAttacker' ||
-               position === 'leftAttacker7' || position === 'rightAttacker7') {
-      return PLAYER_ROLES.ATTACKER;
-    } else if (position === 'substitute' || position === 'substitute7_1' || position === 'substitute7_2') {
-      return PLAYER_ROLES.SUBSTITUTE;
-    } else if (position === 'goalie') {
-      return PLAYER_ROLES.GOALIE;
-    }
-    return null;
-  };
 
   const preparePeriodWithGameLog = useCallback((periodNum, gameLogToUse) => {
     const currentGoalieId = periodGoalieIds[periodNum];
@@ -629,246 +628,94 @@ export function useGameState() {
     requestWakeLock();
     startAlertTimer();
 
-    if (formationType === FORMATION_TYPES.PAIRS_7) {
-      // 7-player pairs substitution logic
-      const pairToSubOutKey = nextPhysicalPairToSubOut;
-      const pairToSubInKey = 'subPair';
-
-      const pairGettingSubbed = periodFormation[pairToSubOutKey];
-      const pairComingIn = periodFormation[pairToSubInKey];
-
-      const playersGoingOffIds = [pairGettingSubbed.defender, pairGettingSubbed.attacker].filter(Boolean);
-      const playersComingOnIds = [pairComingIn.defender, pairComingIn.attacker].filter(Boolean);
-
-      updatePlayerTimeStats(playersGoingOffIds, 'substitute', currentTimeEpoch);
-      updatePlayerTimeStats(playersComingOnIds, 'on_field', currentTimeEpoch);
-
-      // Swap player IDs in formation
-      setPeriodFormation(prev => {
-        const newFormation = JSON.parse(JSON.stringify(prev)); // Deep copy
-        newFormation[pairToSubOutKey].defender = pairComingIn.defender;
-        newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
-        newFormation[pairToSubInKey].defender = pairGettingSubbed.defender;
-        newFormation[pairToSubInKey].attacker = pairGettingSubbed.attacker;
-        return newFormation;
+    try {
+      // Update substitution manager state before performing substitution
+      substitutionManager.setState({
+        currentFormation: periodFormation,
+        rotationQueue: rotationQueue,
+        goalieId: periodFormation.goalie,
+        nextOffIndex: formationType === FORMATION_TYPES.PAIRS_7 ? 
+          (nextPhysicalPairToSubOut === 'leftPair' ? 0 : 1) : 0,
+        inactivePlayerIds: allPlayers.filter(p => p.stats?.isInactive).map(p => p.id),
+        formationType: formationType
       });
 
-      // Update player's currentPairKey
-      setAllPlayers(prev => prev.map(p => {
-        if (playersGoingOffIds.includes(p.id)) return {...p, stats: {...p.stats, currentPairKey: pairToSubInKey}};
-        if (playersComingOnIds.includes(p.id)) return {...p, stats: {...p.stats, currentPairKey: pairToSubOutKey}};
-        return p;
-      }));
-
-      setNextPhysicalPairToSubOut(pairToSubOutKey === 'leftPair' ? 'rightPair' : 'leftPair');
-    } else if (formationType === FORMATION_TYPES.INDIVIDUAL_6) {
-      // 6-player individual substitution logic (player-based round-robin)
-      const playerGoingOffId = nextPlayerIdToSubOut;
-      const playerComingOnId = periodFormation.substitute;
+      // Perform substitution through manager
+      const result = substitutionManager.performSubstitution(currentTimeEpoch);
       
-      // Find which position the outgoing player is currently in
-      const playerToSubOutKey = Object.keys(periodFormation).find(key => 
-        periodFormation[key] === playerGoingOffId && key !== 'substitute' && key !== 'goalie'
-      );
-
-      // Determine the new role for the player coming on
-      const newRole = getPositionRole(playerToSubOutKey);
+      // Update formation state
+      setPeriodFormation(result.newState.currentFormation);
+      setRotationQueue(result.newState.rotationQueue);
       
-      // Update time stats and roles in one operation
-      setAllPlayers(prev => prev.map(p => {
-        if (p.id === playerGoingOffId) {
-          const stats = { ...p.stats };
-          const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
-
-          if (stats.currentPeriodStatus === 'on_field') {
-            stats.timeOnFieldSeconds += timeInPreviousStint;
-            // Track role-specific time for new points system
-            if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) {
-              stats.timeAsDefenderSeconds += timeInPreviousStint;
-            } else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) {
-              stats.timeAsAttackerSeconds += timeInPreviousStint;
-            }
-          }
-
-          return {...p, stats: {
-            ...stats, 
-            currentPairKey: 'substitute', 
-            currentPeriodRole: PLAYER_ROLES.SUBSTITUTE,
-            currentPeriodStatus: 'substitute',
-            lastStintStartTimeEpoch: currentTimeEpoch
-          }};
-        }
-        if (p.id === playerComingOnId) {
-          const stats = { ...p.stats };
-          const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
-
-          if (stats.currentPeriodStatus === 'substitute') {
-            stats.timeAsSubSeconds += timeInPreviousStint;
-          }
-
-          return {...p, stats: {
-            ...stats,
-            currentPairKey: playerToSubOutKey, 
-            currentPeriodRole: newRole,
-            currentPeriodStatus: 'on_field',
-            lastStintStartTimeEpoch: currentTimeEpoch
-          }};
-        }
-        return p;
-      }));
-
-      // Swap player IDs in formation
-      setPeriodFormation(prev => {
-        const newFormation = JSON.parse(JSON.stringify(prev));
-        newFormation[playerToSubOutKey] = playerComingOnId;
-        newFormation.substitute = playerGoingOffId;
-        return newFormation;
-      });
-
-      // Update rotation queue after substitution
-      const updatedQueue = [...rotationQueue];
-      const currentPlayerIndex = updatedQueue.indexOf(playerGoingOffId);
-      
-      // Remove the player who just went off from current position
-      updatedQueue.splice(currentPlayerIndex, 1);
-      // Add them to the end of the queue
-      updatedQueue.push(playerGoingOffId);
-      
-      // Next player is now at the front of the queue
-      const nextPlayerToSubOutId = updatedQueue[0];
-      
-      setRotationQueue(updatedQueue);
-      setNextPlayerIdToSubOut(nextPlayerToSubOutId);
-      
-      // Update legacy position tracking for compatibility
-      const outfieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
-      const nextPlayerPosition = outfieldPositions.find(pos => periodFormation[pos] === nextPlayerToSubOutId);
-      setNextPlayerToSubOut(nextPlayerPosition || 'leftDefender');
-    } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
-      // 7-player individual substitution logic (player-based round-robin with dual substitutes)
-      const playerGoingOffId = nextPlayerIdToSubOut;
-      const playerComingOnId = periodFormation.substitute7_1; // First substitute comes in
-      
-      // CRITICAL SAFETY CHECK: substitute7_1 should NEVER be inactive when substituting
-      const substitute7_1Player = allPlayers.find(p => p.id === playerComingOnId);
-      if (substitute7_1Player?.stats.isInactive) {
-        console.error('ERROR: substitute7_1 is inactive but was selected for substitution! This should never happen.');
-        return; // Abort substitution to prevent invalid state
-      }
-      
-      // Check if substitute7_2 is inactive - this is crucial for proper rotation
-      const substitute7_2Player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
-      const isSubstitute7_2Inactive = substitute7_2Player?.stats.isInactive || false;
-      
-      // Find which position the outgoing player is currently in
-      const playerToSubOutKey = Object.keys(periodFormation).find(key => 
-        periodFormation[key] === playerGoingOffId && !key.includes('substitute') && key !== 'goalie'
-      );
-
-      // Determine the new role for the player coming on
-      const newRole = getPositionRole(playerToSubOutKey);
-      
-      // Update time stats and roles based on whether substitute7_2 is inactive
-      setAllPlayers(prev => prev.map(p => {
-        if (p.id === playerGoingOffId) {
-          const stats = { ...p.stats };
-          const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
-
-          if (stats.currentPeriodStatus === 'on_field') {
-            stats.timeOnFieldSeconds += timeInPreviousStint;
-            // Track role-specific time for new points system
-            if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) {
-              stats.timeAsDefenderSeconds += timeInPreviousStint;
-            } else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) {
-              stats.timeAsAttackerSeconds += timeInPreviousStint;
-            }
-          }
-
-          // If substitute7_2 is inactive, outgoing player becomes substitute7_1 (next to go in)
-          // If substitute7_2 is active, outgoing player goes to substitute7_2 as normal
-          const newPairKey = isSubstitute7_2Inactive ? 'substitute7_1' : 'substitute7_2';
-          
-          return {...p, stats: {
-            ...stats, 
-            currentPairKey: newPairKey, 
-            currentPeriodRole: PLAYER_ROLES.SUBSTITUTE,
-            currentPeriodStatus: 'substitute',
-            lastStintStartTimeEpoch: currentTimeEpoch
-          }};
-        }
-        if (p.id === playerComingOnId) {
-          const stats = { ...p.stats };
-          const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
-
-          if (stats.currentPeriodStatus === 'substitute') {
-            stats.timeAsSubSeconds += timeInPreviousStint;
-          }
-
-          return {...p, stats: {
-            ...stats,
-            currentPairKey: playerToSubOutKey, 
-            currentPeriodRole: newRole,
-            currentPeriodStatus: 'on_field',
-            lastStintStartTimeEpoch: currentTimeEpoch
-          }};
-        }
-        // CRITICAL: Only move substitute7_2 to substitute7_1 if they are NOT inactive
-        if (p.id === periodFormation.substitute7_2 && !isSubstitute7_2Inactive) {
-          return {...p, stats: {...p.stats, currentPairKey: 'substitute7_1', currentPeriodRole: PLAYER_ROLES.SUBSTITUTE}};
-        }
-        // Inactive players never change position - they stay where they are
-        return p;
-      }));
-
-      // Update formation based on whether substitute7_2 is inactive
-      setPeriodFormation(prev => {
-        const newFormation = JSON.parse(JSON.stringify(prev));
-        newFormation[playerToSubOutKey] = playerComingOnId; // substitute7_1 takes the field position
-        
-        if (isSubstitute7_2Inactive) {
-          // If substitute7_2 is inactive, they stay put and outgoing player becomes substitute7_1
-          newFormation.substitute7_1 = playerGoingOffId;
-          // substitute7_2 stays the same (inactive player doesn't move)
-        } else {
-          // Normal rotation: substitute7_2 moves to substitute7_1, outgoing player goes to substitute7_2
-          newFormation.substitute7_1 = prev.substitute7_2; 
-          newFormation.substitute7_2 = playerGoingOffId;
-        }
-        
-        return newFormation;
-      });
-
-      // Update rotation queue after substitution - exclude inactive players from active rotation
-      const updatedQueue = [...rotationQueue];
-      const currentPlayerIndex = updatedQueue.indexOf(playerGoingOffId);
-      
-      // Remove the player who just went off from current position
-      updatedQueue.splice(currentPlayerIndex, 1);
-      // Add them to the end of the queue
-      updatedQueue.push(playerGoingOffId);
-      
-      // Find next active player (skip inactive players) - this is critical
-      const activeQueue = updatedQueue.filter(id => {
-        const player = allPlayers.find(p => p.id === id);
-        return player && !player.stats.isInactive;
-      });
-      
-      const nextPlayerToSubOutId = activeQueue[0] || null;
-      
-      setRotationQueue(updatedQueue);
-      setNextPlayerIdToSubOut(nextPlayerToSubOutId);
-      
-      // Set next-next player (second active player in queue) for 7-player individual mode
-      if (activeQueue.length >= 2) {
-        setNextNextPlayerIdToSubOut(activeQueue[1]);
+      // Update next off tracking based on formation type
+      if (formationType === FORMATION_TYPES.PAIRS_7) {
+        const nextPair = result.newState.nextOffIndex === 0 ? 'leftPair' : 'rightPair';
+        setNextPhysicalPairToSubOut(nextPair);
       } else {
-        setNextNextPlayerIdToSubOut(null);
+        // For individual modes, update next player tracking
+        const activeQueue = result.newState.rotationQueue.filter(id => {
+          const player = allPlayers.find(p => p.id === id);
+          return player && !player.stats?.isInactive;
+        });
+        
+        if (activeQueue.length > 0) {
+          setNextPlayerIdToSubOut(activeQueue[0]);
+          
+          // For 7-player mode, also set next-next player
+          if (formationType === FORMATION_TYPES.INDIVIDUAL_7 && activeQueue.length >= 2) {
+            setNextNextPlayerIdToSubOut(activeQueue[1]);
+          }
+          
+          // Update legacy position tracking
+          const positions = formationType === FORMATION_TYPES.INDIVIDUAL_6 
+            ? ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker']
+            : ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
+          
+          const nextPlayerPosition = positions.find(pos => 
+            result.newState.currentFormation[pos] === activeQueue[0]
+          );
+          setNextPlayerToSubOut(nextPlayerPosition || positions[0]);
+        }
       }
-      
-      // Update legacy position tracking for compatibility
-      const outfieldPositions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
-      const nextPlayerPosition = outfieldPositions.find(pos => periodFormation[pos] === nextPlayerToSubOutId);
-      setNextPlayerToSubOut(nextPlayerPosition || 'leftDefender7');
+
+      // Apply player stats updates
+      setAllPlayers(prev => prev.map(player => {
+        const update = result.playerStatsUpdates.find(u => u.playerId === player.id);
+        if (!update) return player;
+
+        const stats = { ...player.stats };
+        const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
+
+        // Update time spent in previous status
+        if (stats.currentPeriodStatus === 'on_field') {
+          stats.timeOnFieldSeconds += timeInPreviousStint;
+          if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) {
+            stats.timeAsDefenderSeconds += timeInPreviousStint;
+          } else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) {
+            stats.timeAsAttackerSeconds += timeInPreviousStint;
+          }
+        } else if (stats.currentPeriodStatus === 'substitute') {
+          stats.timeAsSubSeconds += timeInPreviousStint;
+        } else if (stats.currentPeriodStatus === 'goalie') {
+          stats.timeAsGoalieSeconds += timeInPreviousStint;
+        }
+
+        // Apply new status and role
+        return {
+          ...player,
+          stats: {
+            ...stats,
+            currentPeriodStatus: update.newStatus,
+            currentPeriodRole: update.newRole,
+            currentPairKey: update.newPairKey,
+            lastStintStartTimeEpoch: update.currentTimeEpoch
+          }
+        };
+      }));
+
+    } catch (error) {
+      console.error('Substitution failed:', error);
+      alert(`Substitution failed: ${error.message}`);
     }
   };
 
@@ -1114,36 +961,38 @@ export function useGameState() {
     console.log('Manually setting next player to substitute:', newPosition);
     setNextPlayerToSubOut(newPosition);
     
-    // For 6-player mode, reorder the rotation queue
-    if (periodFormation && periodFormation[newPosition] && rotationQueue.length > 0) {
+    if (periodFormation && periodFormation[newPosition]) {
       const selectedPlayerId = periodFormation[newPosition];
-      const originalNextPlayerId = nextPlayerIdToSubOut;
       
-      console.log('Reordering queue - selected:', selectedPlayerId, 'was next:', originalNextPlayerId);
-      
-      // Reorder queue: remove selected player and insert before originally next player
-      const newQueue = [...rotationQueue];
-      const selectedIndex = newQueue.indexOf(selectedPlayerId);
-      const originalNextIndex = newQueue.indexOf(originalNextPlayerId);
-      
-      if (selectedIndex !== -1 && originalNextIndex !== -1 && selectedIndex !== originalNextIndex) {
-        // Remove selected player from current position
-        newQueue.splice(selectedIndex, 1);
+      try {
+        // Update substitution manager state
+        substitutionManager.setState({
+          currentFormation: periodFormation,
+          rotationQueue: rotationQueue,
+          goalieId: periodFormation.goalie,
+          nextOffIndex: formationType === FORMATION_TYPES.PAIRS_7 ? 
+            (nextPhysicalPairToSubOut === 'leftPair' ? 0 : 1) : 0,
+          inactivePlayerIds: allPlayers.filter(p => p.stats?.isInactive).map(p => p.id),
+          formationType: formationType
+        });
+
+        // Use substitution manager to set next player
+        const newState = substitutionManager.setNextPlayer(selectedPlayerId);
         
-        // Find new position of originally next player (index may have shifted)
-        const adjustedNextIndex = newQueue.indexOf(originalNextPlayerId);
+        // Update local state
+        setRotationQueue(newState.rotationQueue);
+        setNextPlayerIdToSubOut(selectedPlayerId);
         
-        // Insert selected player before originally next player
-        newQueue.splice(adjustedNextIndex, 0, selectedPlayerId);
+        console.log('Set next player ID to substitute:', selectedPlayerId);
+        console.log('New queue order:', newState.rotationQueue);
         
-        setRotationQueue(newQueue);
-        console.log('New queue order:', newQueue);
+      } catch (error) {
+        console.error('Failed to set next player:', error);
+        // Fallback to direct ID setting
+        setNextPlayerIdToSubOut(selectedPlayerId);
       }
-      
-      setNextPlayerIdToSubOut(selectedPlayerId);
-      console.log('Set next player ID to substitute:', selectedPlayerId);
     }
-  }, [periodFormation, rotationQueue, nextPlayerIdToSubOut]);
+  }, [periodFormation, rotationQueue, nextPlayerIdToSubOut, substitutionManager, nextPhysicalPairToSubOut, allPlayers, formationType]);
 
   // Player inactivation/activation functions for 7-player individual mode
   const togglePlayerInactive = useCallback((playerId, animationCallback = null, delayMs = 0) => {
@@ -1158,19 +1007,6 @@ export function useGameState() {
     // Only allow inactivating/activating substitute players
     if (!isSubstitute) return;
 
-    // CRITICAL SAFETY CHECK: Prevent having both substitutes inactive
-    if (!currentlyInactive) { // Player is about to be inactivated
-      const substitute7_1Id = periodFormation.substitute7_1;
-      const substitute7_2Id = periodFormation.substitute7_2;
-      const otherSubstituteId = playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
-      const otherSubstitute = allPlayers.find(p => p.id === otherSubstituteId);
-      
-      if (otherSubstitute?.stats.isInactive) {
-        console.warn('Cannot inactivate player: would result in both substitutes being inactive');
-        return; // Prevent both substitutes from being inactive
-      }
-    }
-
     // Call animation callback if provided (for UI animations)
     if (animationCallback) {
       animationCallback(!currentlyInactive, player.stats.currentPairKey);
@@ -1178,120 +1014,68 @@ export function useGameState() {
 
     // Function to perform the actual state changes
     const performStateChanges = () => {
-      // Update rotation queue and positions
-      if (currentlyInactive) {
-        // Player is being activated - they become the next player to go in (substitute7_1)
-        const updatedQueue = rotationQueue.filter(id => id !== playerId);
-        const newQueue = [playerId, ...updatedQueue];
+      try {
+        // Update substitution manager state
+        substitutionManager.setState({
+          currentFormation: periodFormation,
+          rotationQueue: rotationQueue,
+          goalieId: periodFormation.goalie,
+          nextOffIndex: 0,
+          inactivePlayerIds: allPlayers.filter(p => p.stats?.isInactive).map(p => p.id),
+          formationType: formationType
+        });
+
+        // Perform inactivation/activation through manager
+        const result = substitutionManager.togglePlayerInactive(playerId);
         
-        // Get current substitute positions
-        const currentSub7_1Id = periodFormation.substitute7_1;
-        const currentSub7_2Id = periodFormation.substitute7_2;
+        // Update formation and rotation queue
+        setPeriodFormation(result.newState.currentFormation);
+        setRotationQueue(result.newState.rotationQueue);
         
-        // The reactivated player should become substitute7_1 (next to go in)
-        // The current substitute7_1 (if active) should move to substitute7_2
-        // If the reactivated player was substitute7_2, swap with substitute7_1
+        // Update next player tracking
+        const activeQueue = result.newState.rotationQueue.filter(id => {
+          const queuePlayer = allPlayers.find(p => p.id === id);
+          return queuePlayer && !result.newState.inactivePlayerIds.includes(id);
+        });
         
-        if (playerId === currentSub7_1Id) {
-          // Reactivated player is already in substitute7_1 position - just activate them
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, isInactive: false } };
-            }
-            return p;
-          }));
-          
-          // nextPlayerIdToSubOut should remain pointing to the current active field player
-          // Find the next active player for substitute7_2 position
-          const activeQueue = newQueue.filter(id => {
-            const queuePlayer = allPlayers.find(p => p.id === id);
-            return queuePlayer && !queuePlayer.stats.isInactive && id !== playerId;
-          });
-          if (activeQueue.length >= 1) {
-            setNextNextPlayerIdToSubOut(activeQueue[0]);
-          }
-          // Don't change nextPlayerIdToSubOut - it should still point to the field player
-        } else if (playerId === currentSub7_2Id) {
-          // Reactivated player is in substitute7_2 - swap with substitute7_1
-          setPeriodFormation(prev => ({
-            ...prev,
-            substitute7_1: playerId,
-            substitute7_2: currentSub7_1Id
-          }));
-          
-          // Update player positions and inactive state in one operation
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1', isInactive: false } };
-            }
-            if (p.id === currentSub7_1Id) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
-            }
-            return p;
-          }));
-          
-          // nextPlayerIdToSubOut should still point to the current field player who's next to come off
-          setNextNextPlayerIdToSubOut(currentSub7_1Id);
-          // Don't change nextPlayerIdToSubOut - it should still point to the field player
-        }
-        
-        setRotationQueue(newQueue);
-      } else {
-        // Player is being inactivated - remove from rotation queue
-        const updatedQueue = rotationQueue.filter(id => id !== playerId);
-        setRotationQueue(updatedQueue);
-        
-        // Update next player tracking if the inactivated player was next
-        if (playerId === nextPlayerIdToSubOut && updatedQueue.length > 0) {
-          const activePlayerIds = updatedQueue.filter(id => {
-            const queuePlayer = allPlayers.find(p => p.id === id);
-            return queuePlayer && !queuePlayer.stats.isInactive;
-          });
-          if (activePlayerIds.length > 0) {
-            setNextPlayerIdToSubOut(activePlayerIds[0]);
-            if (activePlayerIds.length >= 2) {
-              setNextNextPlayerIdToSubOut(activePlayerIds[1]);
-            }
-          }
-        } else if (playerId === nextNextPlayerIdToSubOut) {
-          const activePlayerIds = updatedQueue.filter(id => {
-            const queuePlayer = allPlayers.find(p => p.id === id);
-            return queuePlayer && !queuePlayer.stats.isInactive;
-          });
-          if (activePlayerIds.length >= 2) {
-            setNextNextPlayerIdToSubOut(activePlayerIds[1]);
+        if (activeQueue.length > 0) {
+          setNextPlayerIdToSubOut(activeQueue[0]);
+          if (activeQueue.length >= 2) {
+            setNextNextPlayerIdToSubOut(activeQueue[1]);
           }
         }
-        
-        // Move inactive player to substitute7_2 position if they were substitute7_1
-        if (player.stats.currentPairKey === 'substitute7_1' && periodFormation.substitute7_2) {
-          // Swap positions - substitute7_2 becomes substitute7_1, inactive player goes to substitute7_2
-          const otherSubId = periodFormation.substitute7_2;
+
+        // Apply player stats updates (mainly for position changes and inactive status)
+        setAllPlayers(prev => prev.map(p => {
+          // Update inactive status
+          if (p.id === playerId) {
+            return { ...p, stats: { ...p.stats, isInactive: !currentlyInactive } };
+          }
           
-          setPeriodFormation(prev => ({
-            ...prev,
-            substitute7_1: otherSubId,
-            substitute7_2: playerId
-          }));
+          // Apply position updates from substitution manager
+          const update = result.playerStatsUpdates.find(u => u.playerId === p.id);
+          if (update) {
+            return {
+              ...p,
+              stats: {
+                ...p.stats,
+                currentPairKey: update.newPairKey
+              }
+            };
+          }
           
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2', isInactive: true } };
-            }
-            if (p.id === otherSubId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
-            }
-            return p;
-          }));
-        } else {
-          // Just mark player as inactive without changing position
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, isInactive: true } };
-            }
-            return p;
-          }));
-        }
+          return p;
+        }));
+
+      } catch (error) {
+        console.error('Failed to toggle player inactive status:', error);
+        // Fallback to manual toggle without position changes
+        setAllPlayers(prev => prev.map(p => {
+          if (p.id === playerId) {
+            return { ...p, stats: { ...p.stats, isInactive: !currentlyInactive } };
+          }
+          return p;
+        }));
       }
     };
     
@@ -1301,7 +1085,7 @@ export function useGameState() {
     } else {
       performStateChanges();
     }
-  }, [formationType, allPlayers, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, periodFormation]);
+  }, [formationType, allPlayers, rotationQueue, periodFormation, substitutionManager]);
 
   // Helper function to get inactive players for animation purposes
   const getInactivePlayerPosition = useCallback((playerId) => {
