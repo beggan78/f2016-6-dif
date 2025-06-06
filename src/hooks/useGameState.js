@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from '../utils/gameLogic';
 import { generateRecommendedFormation } from '../utils/formationGenerator';
 import { createSubstitutionManager, calculatePlayerTimeStats } from '../utils/substitutionManager';
+import { createRotationQueue } from '../utils/rotationQueue';
 
 // localStorage utilities - NOTE: Essential for preventing state loss on page refresh
 const STORAGE_KEY = 'dif-coach-game-state';
@@ -855,29 +856,20 @@ export function useGameState() {
       
       console.log('Reordering queue - selected:', selectedPlayerId, 'was next:', originalNextPlayerId);
       
-      // Reorder queue: remove selected player and insert before originally next player
-      const newQueue = [...rotationQueue];
-      const selectedIndex = newQueue.indexOf(selectedPlayerId);
-      const originalNextIndex = newQueue.indexOf(originalNextPlayerId);
+      // Use RotationQueue to handle reordering
+      const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+      queueManager.initialize(); // Separate active and inactive players
       
-      if (selectedIndex !== -1 && originalNextIndex !== -1 && selectedIndex !== originalNextIndex) {
-        // Remove selected player from current position
-        newQueue.splice(selectedIndex, 1);
-        
-        // Find new position of originally next player (index may have shifted)
-        const adjustedNextIndex = newQueue.indexOf(originalNextPlayerId);
-        
-        // Insert selected player before originally next player
-        newQueue.splice(adjustedNextIndex, 0, selectedPlayerId);
-        
-        setRotationQueue(newQueue);
-        console.log('New queue order:', newQueue);
+      if (selectedPlayerId !== originalNextPlayerId) {
+        queueManager.insertBefore(selectedPlayerId, originalNextPlayerId);
+        setRotationQueue(queueManager.toArray());
+        console.log('New queue order:', queueManager.toArray());
       }
       
       setNextPlayerIdToSubOut(selectedPlayerId);
       console.log('Set next player ID to substitute:', selectedPlayerId);
     }
-  }, [periodFormation, rotationQueue, nextPlayerIdToSubOut]);
+  }, [periodFormation, rotationQueue, nextPlayerIdToSubOut, allPlayers]);
 
   // Player inactivation/activation functions for 7-player individual mode
   const togglePlayerInactive = useCallback((playerId, animationCallback = null, delayMs = 0) => {
@@ -915,8 +907,9 @@ export function useGameState() {
       // Update rotation queue and positions
       if (currentlyInactive) {
         // Player is being activated - they become the next player to go in (substitute7_1)
-        const updatedQueue = rotationQueue.filter(id => id !== playerId);
-        const newQueue = [playerId, ...updatedQueue];
+        const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+        queueManager.initialize(); // Separate active and inactive players
+        queueManager.reactivatePlayer(playerId);
         
         // Get current substitute positions
         const currentSub7_1Id = periodFormation.substitute7_1;
@@ -937,12 +930,9 @@ export function useGameState() {
           
           // nextPlayerIdToSubOut should remain pointing to the current active field player
           // Find the next active player for substitute7_2 position
-          const activeQueue = newQueue.filter(id => {
-            const queuePlayer = allPlayers.find(p => p.id === id);
-            return queuePlayer && !queuePlayer.stats.isInactive && id !== playerId;
-          });
-          if (activeQueue.length >= 1) {
-            setNextNextPlayerIdToSubOut(activeQueue[0]);
+          const nextActivePlayers = queueManager.getNextActivePlayer(2);
+          if (nextActivePlayers.length >= 1) {
+            setNextNextPlayerIdToSubOut(nextActivePlayers[0]);
           }
           // Don't change nextPlayerIdToSubOut - it should still point to the field player
         } else if (playerId === currentSub7_2Id) {
@@ -969,31 +959,27 @@ export function useGameState() {
           // Don't change nextPlayerIdToSubOut - it should still point to the field player
         }
         
-        setRotationQueue(newQueue);
+        setRotationQueue(queueManager.toArray());
       } else {
-        // Player is being inactivated - remove from rotation queue
-        const updatedQueue = rotationQueue.filter(id => id !== playerId);
-        setRotationQueue(updatedQueue);
+        // Player is being inactivated - use queue manager
+        const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+        queueManager.initialize(); // Separate active and inactive players
+        queueManager.deactivatePlayer(playerId);
+        setRotationQueue(queueManager.toArray());
         
         // Update next player tracking if the inactivated player was next
-        if (playerId === nextPlayerIdToSubOut && updatedQueue.length > 0) {
-          const activePlayerIds = updatedQueue.filter(id => {
-            const queuePlayer = allPlayers.find(p => p.id === id);
-            return queuePlayer && !queuePlayer.stats.isInactive;
-          });
-          if (activePlayerIds.length > 0) {
-            setNextPlayerIdToSubOut(activePlayerIds[0]);
-            if (activePlayerIds.length >= 2) {
-              setNextNextPlayerIdToSubOut(activePlayerIds[1]);
+        if (playerId === nextPlayerIdToSubOut && queueManager.activeSize() > 0) {
+          const nextActivePlayers = queueManager.getNextActivePlayer(2);
+          if (nextActivePlayers.length > 0) {
+            setNextPlayerIdToSubOut(nextActivePlayers[0]);
+            if (nextActivePlayers.length >= 2) {
+              setNextNextPlayerIdToSubOut(nextActivePlayers[1]);
             }
           }
         } else if (playerId === nextNextPlayerIdToSubOut) {
-          const activePlayerIds = updatedQueue.filter(id => {
-            const queuePlayer = allPlayers.find(p => p.id === id);
-            return queuePlayer && !queuePlayer.stats.isInactive;
-          });
-          if (activePlayerIds.length >= 2) {
-            setNextNextPlayerIdToSubOut(activePlayerIds[1]);
+          const nextActivePlayers = queueManager.getNextActivePlayer(2);
+          if (nextActivePlayers.length >= 2) {
+            setNextNextPlayerIdToSubOut(nextActivePlayers[1]);
           }
         }
         

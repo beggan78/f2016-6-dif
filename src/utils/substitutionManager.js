@@ -1,4 +1,5 @@
 import { PLAYER_ROLES, FORMATION_TYPES } from './gameLogic';
+import { createRotationQueue } from './rotationQueue';
 
 /**
  * Calculates updated time stats for a player based on their current status and role
@@ -134,6 +135,10 @@ export class SubstitutionManager {
     const playerGoingOffId = nextPlayerIdToSubOut;
     const playerComingOnId = periodFormation.substitute;
 
+    // Create rotation queue helper
+    const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+    queueManager.initialize(); // Separate active and inactive players
+
     // Find position of outgoing player
     const playerToSubOutKey = Object.keys(periodFormation).find(key => 
       periodFormation[key] === playerGoingOffId && key !== 'substitute' && key !== 'goalie'
@@ -173,13 +178,10 @@ export class SubstitutionManager {
       return p;
     });
 
-    // Update rotation queue
-    const updatedQueue = [...rotationQueue];
-    const currentPlayerIndex = updatedQueue.indexOf(playerGoingOffId);
-    updatedQueue.splice(currentPlayerIndex, 1);
-    updatedQueue.push(playerGoingOffId);
-
-    const nextPlayerToSubOutId = updatedQueue[0];
+    // Update rotation queue using the queue manager
+    queueManager.rotatePlayer(playerGoingOffId);
+    const nextPlayerToSubOutId = queueManager.getNextActivePlayer();
+    
     const outfieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
     const nextPlayerPosition = outfieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
@@ -188,7 +190,7 @@ export class SubstitutionManager {
     return {
       newFormation,
       updatedPlayers,
-      newRotationQueue: updatedQueue,
+      newRotationQueue: queueManager.toArray(),
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender'
     };
@@ -208,6 +210,10 @@ export class SubstitutionManager {
 
     const playerGoingOffId = nextPlayerIdToSubOut;
     const playerComingOnId = periodFormation.substitute7_1;
+
+    // Create rotation queue helper
+    const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+    queueManager.initialize(); // Separate active and inactive players
 
     // Safety check for inactive substitute
     const substitute7_1Player = allPlayers.find(p => p.id === playerComingOnId);
@@ -275,19 +281,12 @@ export class SubstitutionManager {
       return p;
     });
 
-    // Update rotation queue (exclude inactive players)
-    const updatedQueue = [...rotationQueue];
-    const currentPlayerIndex = updatedQueue.indexOf(playerGoingOffId);
-    updatedQueue.splice(currentPlayerIndex, 1);
-    updatedQueue.push(playerGoingOffId);
-
-    const activeQueue = updatedQueue.filter(id => {
-      const player = allPlayers.find(p => p.id === id);
-      return player && !player.stats.isInactive;
-    });
-
-    const nextPlayerToSubOutId = activeQueue[0] || null;
-    const nextNextPlayerIdToSubOut = activeQueue[1] || null;
+    // Update rotation queue using the queue manager
+    queueManager.rotatePlayer(playerGoingOffId);
+    const nextActivePlayer = queueManager.getNextActivePlayer();
+    const nextTwoActivePlayers = queueManager.getNextActivePlayer(2);
+    const nextPlayerToSubOutId = nextActivePlayer;
+    const nextNextPlayerIdToSubOut = nextTwoActivePlayers[1] || null;
 
     const outfieldPositions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
     const nextPlayerPosition = outfieldPositions.find(pos => 
@@ -297,7 +296,7 @@ export class SubstitutionManager {
     return {
       newFormation,
       updatedPlayers,
-      newRotationQueue: updatedQueue,
+      newRotationQueue: queueManager.toArray(),
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextNextPlayerIdToSubOut: nextNextPlayerIdToSubOut,
       newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7'
