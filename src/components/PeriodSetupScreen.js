@@ -17,7 +17,7 @@ export function PeriodSetupScreen({
   setPeriodGoalieIds, 
   numPeriods,
   formationType,
-  setView 
+  setView
 }) {
   // Determine formation mode
   const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;

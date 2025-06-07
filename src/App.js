@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import './App.css';
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
+import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
 import { formatTime } from './utils/timeCalculations';
 import { initializePlayers, initialRoster } from './utils/gameLogic';
 import { ConfigurationScreen } from './components/ConfigurationScreen';
@@ -16,14 +17,58 @@ import { AddPlayerModal } from './components/AddPlayerModal';
 function App() {
   const gameState = useGameState();
   const timers = useTimers(gameState.periodDurationMinutes);
+  const { pushModalState, popModalState, hasOpenModals } = useBrowserBackIntercept();
   
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+  const [showNewGameModal, setShowNewGameModal] = useState(false);
 
   const selectedSquadPlayers = useMemo(() => {
     return gameState.allPlayers.filter(p => gameState.selectedSquadIds.includes(p.id));
   }, [gameState.allPlayers, gameState.selectedSquadIds]);
+
+  // Global browser back handler
+  useEffect(() => {
+    let isSetupComplete = false;
+    
+    // Wait a bit to ensure app is fully mounted
+    const setupTimer = setTimeout(() => {
+      isSetupComplete = true;
+      // Push a state to history stack to detect back navigation
+      window.history.pushState({ app: 'dif-coach' }, '', window.location.href);
+    }, 100);
+
+    const handlePopState = (event) => {
+      if (!isSetupComplete) return; // Ignore if still setting up
+      
+      // Check if any modals managed by the modal intercept system are open
+      if (hasOpenModals()) {
+        // Modal system will handle this automatically
+        return;
+      }
+      
+      // Check current view and handle accordingly
+      if (gameState.view === 'periodSetup' && gameState.currentPeriodNumber === 1) {
+        // Exception 2: PeriodSetupScreen -> ConfigurationScreen
+        gameState.setView('config');
+      } else {
+        // Default: Show "Start a new game?" confirmation modal
+        setShowNewGameModal(true);
+        // Add modal to browser back intercept
+        pushModalState(() => {
+          setShowNewGameModal(false);
+        });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      clearTimeout(setupTimer);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [gameState, hasOpenModals, pushModalState]);
 
   const availableForPairing = useMemo(() => {
     if (!gameState.periodFormation.goalie) return [];
@@ -54,6 +99,10 @@ function App() {
       
       setConfirmModalData({ timeString });
       setShowConfirmModal(true);
+      // Add modal to browser back button handling
+      pushModalState(() => {
+        setShowConfirmModal(false);
+      });
       return;
     }
     
@@ -63,12 +112,14 @@ function App() {
   };
 
   const handleConfirmEndPeriod = () => {
+    popModalState();
     setShowConfirmModal(false);
     timers.stopTimers();
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
 
   const handleCancelEndPeriod = () => {
+    popModalState();
     setShowConfirmModal(false);
   };
 
@@ -97,15 +148,33 @@ function App() {
 
   const handleAddPlayer = () => {
     setShowAddPlayerModal(true);
+    // Add modal to browser back button handling
+    pushModalState(() => {
+      setShowAddPlayerModal(false);
+    });
   };
 
   const handleAddPlayerConfirm = (playerName) => {
+    popModalState();
     gameState.addTemporaryPlayer(playerName);
     setShowAddPlayerModal(false);
   };
 
   const handleAddPlayerCancel = () => {
+    popModalState();
     setShowAddPlayerModal(false);
+  };
+
+  // Handle new game confirmation modal
+  const handleConfirmNewGame = () => {
+    popModalState();
+    setShowNewGameModal(false);
+    handleRestartMatch();
+  };
+
+  const handleCancelNewGame = () => {
+    popModalState();
+    setShowNewGameModal(false);
   };
 
   // Render logic
@@ -177,6 +246,8 @@ function App() {
             switchPlayerPositions={gameState.switchPlayerPositions}
             switchGoalie={gameState.switchGoalie}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
+            pushModalState={pushModalState}
+            popModalState={popModalState}
           />
         );
       case 'stats':
@@ -234,6 +305,16 @@ function App() {
         isOpen={showAddPlayerModal}
         onClose={handleAddPlayerCancel}
         onAddPlayer={handleAddPlayerConfirm}
+      />
+      
+      <ConfirmationModal
+        isOpen={showNewGameModal}
+        onConfirm={handleConfirmNewGame}
+        onCancel={handleCancelNewGame}
+        title="Start a new game?"
+        message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
+        confirmText="Yes, start new game"
+        cancelText="Cancel"
       />
     </div>
   );

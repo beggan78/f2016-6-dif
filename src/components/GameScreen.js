@@ -28,9 +28,69 @@ export function GameScreen({
   togglePlayerInactive,
   switchPlayerPositions,
   switchGoalie,
-  getOutfieldPlayers
+  getOutfieldPlayers,
+  pushModalState,
+  popModalState
 }) {
   const getPlayerName = React.useCallback((id) => allPlayers.find(p => p.id === id)?.name || 'N/A', [allPlayers]);
+  
+  // Helper functions for modal management with browser back intercept
+  const openPlayerOptionsModal = React.useCallback((modalData) => {
+    setPlayerOptionsModal(modalData);
+    if (pushModalState) {
+      pushModalState(() => {
+        setPlayerOptionsModal({ 
+          isOpen: false, 
+          type: null, 
+          target: null, 
+          playerName: '', 
+          sourcePlayerId: null, 
+          availablePlayers: [], 
+          showPositionOptions: false 
+        });
+      });
+    }
+  }, [pushModalState]);
+
+  const closePlayerOptionsModal = React.useCallback(() => {
+    if (popModalState) {
+      popModalState();
+    }
+    closePlayerOptionsModal();
+  }, [popModalState]);
+
+  const openInactiveModal = React.useCallback((modalData) => {
+    setInactiveModal(modalData);
+    if (pushModalState) {
+      pushModalState(() => {
+        setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+      });
+    }
+  }, [pushModalState]);
+
+  const closeInactiveModal = React.useCallback(() => {
+    if (popModalState) {
+      popModalState();
+    }
+    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+  }, [popModalState]);
+
+  const openGoalieModal = React.useCallback((modalData) => {
+    setGoalieModal(modalData);
+    if (pushModalState) {
+      pushModalState(() => {
+        setGoalieModal({ isOpen: false, currentGoalieName: '', availablePlayers: [] });
+      });
+    }
+  }, [pushModalState]);
+
+  const closeGoalieModal = React.useCallback(() => {
+    if (popModalState) {
+      popModalState();
+    }
+    setGoalieModal({ isOpen: false, currentGoalieName: '', availablePlayers: [] });
+  }, [popModalState]);
+
   
   // Function to update player stats when pausing/resuming
   const updatePlayerStatsForPause = React.useCallback((currentTimeEpoch, isPausing) => {
@@ -412,7 +472,7 @@ export function GameScreen({
       const pairData = periodFormation[pairKey];
       const defenderName = getPlayerName(pairData?.defender);
       const attackerName = getPlayerName(pairData?.attacker);
-      setPlayerOptionsModal({
+      openPlayerOptionsModal({
         isOpen: true,
         type: 'pair',
         target: pairKey,
@@ -433,7 +493,7 @@ export function GameScreen({
     if (validPositions.includes(position)) {
       const playerId = periodFormation[position];
       const playerName = getPlayerName(playerId);
-      setPlayerOptionsModal({
+      openPlayerOptionsModal({
         isOpen: true,
         type: 'player',
         target: position,
@@ -454,7 +514,7 @@ export function GameScreen({
     const player = allPlayers.find(p => p.id === playerId);
     const isCurrentlyInactive = player?.stats.isInactive || false;
     
-    setInactiveModal({
+    openInactiveModal({
       isOpen: true,
       playerId: playerId,
       playerName: playerName,
@@ -469,15 +529,7 @@ export function GameScreen({
     } else if (playerOptionsModal.type === 'player') {
       setNextPlayerToSubOut(playerOptionsModal.target);
     }
-    setPlayerOptionsModal({ 
-      isOpen: false, 
-      type: null, 
-      target: null, 
-      playerName: '', 
-      sourcePlayerId: null, 
-      availablePlayers: [], 
-      showPositionOptions: false 
-    });
+    closePlayerOptionsModal();
   };
 
   const handleSubstituteNow = () => {
@@ -489,27 +541,11 @@ export function GameScreen({
     }
     // Set flag to trigger substitution after state update
     setShouldSubstituteNow(true);
-    setPlayerOptionsModal({ 
-      isOpen: false, 
-      type: null, 
-      target: null, 
-      playerName: '', 
-      sourcePlayerId: null, 
-      availablePlayers: [], 
-      showPositionOptions: false 
-    });
+    closePlayerOptionsModal();
   };
 
   const handleCancelPlayerOptionsModal = () => {
-    setPlayerOptionsModal({ 
-      isOpen: false, 
-      type: null, 
-      target: null, 
-      playerName: '', 
-      sourcePlayerId: null, 
-      availablePlayers: [], 
-      showPositionOptions: false 
-    });
+    closePlayerOptionsModal();
   };
 
   // Handle inactive modal actions
@@ -525,7 +561,7 @@ export function GameScreen({
         
         if (otherSubstitute?.stats.isInactive) {
           alert('Cannot inactivate this player as it would result in both substitutes being inactive.');
-          setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+          closeInactiveModal();
           return;
         }
       }
@@ -567,7 +603,7 @@ export function GameScreen({
         togglePlayerInactive(inactiveModal.playerId);
       }
     }
-    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+    closeInactiveModal();
   };
 
   const handleActivatePlayer = () => {
@@ -610,11 +646,11 @@ export function GameScreen({
         togglePlayerInactive(inactiveModal.playerId);
       }
     }
-    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+    closeInactiveModal();
   };
 
   const handleCancelInactive = () => {
-    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+    closeInactiveModal();
   };
 
   // Handle goalie replacement modal actions
@@ -628,7 +664,7 @@ export function GameScreen({
       isInactive: player.stats.isInactive || false
     })).filter(player => player.id !== periodFormation.goalie); // Exclude current goalie
     
-    setGoalieModal({
+    openGoalieModal({
       isOpen: true,
       currentGoalieName: currentGoalieName,
       availablePlayers: activePlayingPlayers
@@ -648,11 +684,11 @@ export function GameScreen({
       console.warn('Goalie switch failed');
     }
     
-    setGoalieModal({ isOpen: false, currentGoalieName: '', availablePlayers: [] });
+    closeGoalieModal();
   };
 
   const handleCancelGoalieModal = () => {
-    setGoalieModal({ isOpen: false, currentGoalieName: '', availablePlayers: [] });
+    closeGoalieModal();
   };
 
   // Function to swap attacker and defender within a pair
