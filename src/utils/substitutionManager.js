@@ -321,6 +321,22 @@ export class SubstitutionManager {
 }
 
 /**
+ * Handles role changes within a period (like pair swaps)
+ * This calculates time for the previous role and updates the player's current role
+ */
+export function handleRoleChange(player, newRole, currentTimeEpoch) {
+  // First calculate stats for the time spent in the previous role
+  const updatedStats = calculatePlayerTimeStats(player, currentTimeEpoch);
+  
+  // Update the role and reset the stint timer
+  return {
+    ...updatedStats,
+    currentPeriodRole: newRole,
+    lastStintStartTimeEpoch: currentTimeEpoch
+  };
+}
+
+/**
  * Factory function to create substitution manager
  */
 export function createSubstitutionManager(formationType) {

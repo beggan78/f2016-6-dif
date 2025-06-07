@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from '../utils/gameLogic';
 import { generateRecommendedFormation } from '../utils/formationGenerator';
-import { createSubstitutionManager, calculatePlayerTimeStats } from '../utils/substitutionManager';
+import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../utils/substitutionManager';
 import { createRotationQueue } from '../utils/rotationQueue';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 
@@ -556,7 +556,9 @@ export function useGameState() {
       if (playerIdsInPeriod.includes(p.id)) {
         const stats = calculatePlayerTimeStats(p, currentTimeEpoch);
 
-        // Update period role counts
+        // Update period role counts (based on final role of the period)
+        // Note: With pair swapping, players can change roles mid-period, but we count
+        // the period based on their final role for formation recommendation purposes
         if (stats.currentPeriodRole === PLAYER_ROLES.GOALIE) stats.periodsAsGoalie += 1;
         else if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) stats.periodsAsDefender += 1;
         else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) stats.periodsAsAttacker += 1;
@@ -1083,24 +1085,60 @@ export function useGameState() {
       return newFormation;
     });
 
-    // Update player stats to reflect new positions
+    // Update player stats to reflect new positions and handle role changes
+    const currentTimeEpoch = Date.now();
     setAllPlayers(prev => prev.map(p => {
       if (p.id === player1Id) {
+        // Determine the new role for player1 based on their new position
+        let newRole = p.stats.currentPeriodRole; // Default to current role
+        
+        if (formationType === FORMATION_TYPES.PAIRS_7) {
+          // For pairs, we need to determine the new role based on what position they took in the new pair
+          // Since this is a position switch, player1 takes player2's role and vice versa
+          newRole = player2.stats.currentPeriodRole;
+        } else {
+          // For individual formations, determine role from position name
+          if (player2Position?.includes('Defender') || player2Position?.includes('defender')) {
+            newRole = PLAYER_ROLES.DEFENDER;
+          } else if (player2Position?.includes('Attacker') || player2Position?.includes('attacker')) {
+            newRole = PLAYER_ROLES.ATTACKER;
+          } else if (player2Position?.includes('substitute')) {
+            newRole = PLAYER_ROLES.SUBSTITUTE;
+          }
+        }
+        
         return { 
           ...p, 
-          stats: { 
-            ...p.stats, 
-            currentPairKey: player2Position 
-          } 
+          stats: {
+            ...handleRoleChange(p, newRole, currentTimeEpoch),
+            currentPairKey: player2Position
+          }
         };
       }
       if (p.id === player2Id) {
+        // Determine the new role for player2 based on their new position
+        let newRole = p.stats.currentPeriodRole; // Default to current role
+        
+        if (formationType === FORMATION_TYPES.PAIRS_7) {
+          // For pairs, player2 takes player1's role
+          newRole = player1.stats.currentPeriodRole;
+        } else {
+          // For individual formations, determine role from position name
+          if (player1Position?.includes('Defender') || player1Position?.includes('defender')) {
+            newRole = PLAYER_ROLES.DEFENDER;
+          } else if (player1Position?.includes('Attacker') || player1Position?.includes('attacker')) {
+            newRole = PLAYER_ROLES.ATTACKER;
+          } else if (player1Position?.includes('substitute')) {
+            newRole = PLAYER_ROLES.SUBSTITUTE;
+          }
+        }
+        
         return { 
           ...p, 
-          stats: { 
-            ...p.stats, 
-            currentPairKey: player1Position 
-          } 
+          stats: {
+            ...handleRoleChange(p, newRole, currentTimeEpoch),
+            currentPairKey: player1Position
+          }
         };
       }
       return p;

@@ -348,7 +348,7 @@ export function GameScreen({
 
   // Click and hold logic for changing next substitution target
   const handlePairLongPress = (pairKey) => {
-    if (pairKey === 'leftPair' || pairKey === 'rightPair') {
+    if (pairKey === 'leftPair' || pairKey === 'rightPair' || pairKey === 'subPair') {
       const pairData = periodFormation[pairKey];
       const defenderName = getPlayerName(pairData?.defender);
       const attackerName = getPlayerName(pairData?.attacker);
@@ -557,6 +557,27 @@ export function GameScreen({
     setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
   };
 
+  // Function to swap attacker and defender within a pair
+  const handleSwapPairPositions = (pairKey) => {
+    if (!isPairsMode) return;
+    
+    const pairData = periodFormation[pairKey];
+    if (!pairData || !pairData.defender || !pairData.attacker) return;
+    
+    const defenderName = getPlayerName(pairData.defender);
+    const attackerName = getPlayerName(pairData.attacker);
+    
+    // Use the existing switchPlayerPositions function to handle the swap
+    // This will properly handle time tracking and role changes
+    const success = switchPlayerPositions(pairData.defender, pairData.attacker);
+    
+    if (success) {
+      console.log(`Swapped positions in ${pairKey}: ${defenderName} (D->A) <-> ${attackerName} (A->D)`);
+    } else {
+      console.warn(`Failed to swap positions in ${pairKey}`);
+    }
+  };
+
   // Handle position change actions
   const handleChangePosition = (action) => {
     if (action === 'show-options') {
@@ -595,8 +616,14 @@ export function GameScreen({
           }));
         }
       } else if (outfieldPlayerModal.type === 'pair') {
-        // For pairs formation, position change is not supported
-        alert('Position change is not supported for pairs mode. Please use individual mode.');
+        // For pairs formation, position change between pairs is not supported, but swapping within pair is
+        alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
+        handleCancelOutfieldPlayerModal();
+      }
+    } else if (action === 'swap-pair-positions') {
+      // Swap attacker and defender within the pair
+      if (outfieldPlayerModal.target && outfieldPlayerModal.type === 'pair') {
+        handleSwapPairPositions(outfieldPlayerModal.target);
         handleCancelOutfieldPlayerModal();
       }
     } else if (action === null) {
@@ -717,6 +744,7 @@ export function GameScreen({
   // Create long press handlers for each pair and individual position
   const leftPairEvents = useLongPressWithScrollDetection(() => handlePairLongPress('leftPair'));
   const rightPairEvents = useLongPressWithScrollDetection(() => handlePairLongPress('rightPair'));
+  const subPairEvents = useLongPressWithScrollDetection(() => handlePairLongPress('subPair'));
   
   // 6-player individual mode events
   const leftDefenderEvents = useLongPressWithScrollDetection(() => handlePlayerLongPress('leftDefender'));
@@ -739,7 +767,7 @@ export function GameScreen({
     if (!pairData) return null;
     const isNextOff = pairKey === nextPhysicalPairToSubOut && pairKey !== 'subPair';
     const isNextOn = pairKey === 'subPair';
-    const canBeSelected = pairKey === 'leftPair' || pairKey === 'rightPair';
+    const canBeSelected = pairKey === 'leftPair' || pairKey === 'rightPair' || pairKey === 'subPair';
 
     // Check if any player in this pair was recently substituted
     const hasRecentlySubstitutedPlayer = (pairData.defender && recentlySubstitutedPlayers.has(pairData.defender)) ||
@@ -825,6 +853,7 @@ export function GameScreen({
     let longPressEvents = {};
     if (pairKey === 'leftPair') longPressEvents = leftPairEvents;
     else if (pairKey === 'rightPair') longPressEvents = rightPairEvents;
+    else if (pairKey === 'subPair') longPressEvents = subPairEvents;
 
     return (
       <div 
@@ -1277,11 +1306,12 @@ export function GameScreen({
         onSetNext={handleSetNextSubstitution}
         onSubNow={handleSubstituteNow}
         onCancel={handleCancelOutfieldPlayerModal}
-        onChangePosition={!isPairsMode ? handleChangePosition : null}
+        onChangePosition={handleChangePosition}
         playerName={outfieldPlayerModal.playerName}
         availablePlayers={outfieldPlayerModal.availablePlayers}
         showPositionChange={!isPairsMode && outfieldPlayerModal.type === 'player'}
         showPositionOptions={outfieldPlayerModal.showPositionOptions}
+        showSwapPositions={isPairsMode && outfieldPlayerModal.type === 'pair'}
       />
 
       {/* Player Inactive Modal */}

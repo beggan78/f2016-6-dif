@@ -88,7 +88,8 @@ export function OutfieldPlayerModal({
   playerName, 
   availablePlayers = [],
   showPositionChange = false,
-  showPositionOptions = false 
+  showPositionOptions = false,
+  showSwapPositions = false 
 }) {
   if (!isOpen) return null;
 
@@ -143,6 +144,11 @@ export function OutfieldPlayerModal({
                 {showPositionChange && (
                   <Button onClick={() => onChangePosition && onChangePosition('show-options')} variant="accent">
                     Change position
+                  </Button>
+                )}
+                {showSwapPositions && (
+                  <Button onClick={() => onChangePosition && onChangePosition('swap-pair-positions')} variant="accent">
+                    Swap positions
                   </Button>
                 )}
               </div>
