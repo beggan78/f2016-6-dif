@@ -40,7 +40,8 @@ export function StatsScreen({
   };
 
   const generateStatsText = () => {
-    let text = "Spelare\t\tStart\tM\tB\tA\tUte\tBack\tFw\tMv\n";
+    let text = `Final Score: Djurgårn ${homeScore} - ${awayScore} ${opponentTeamName || 'Opponent'}\n\n`;
+    text += "Spelare\t\tStart\tM\tB\tA\tUte\tBack\tFw\tMv\n";
     text += "------\t\t-------\t-\t-\t-\t----------\t----\t--\t--\n";
     
     squadForStats.forEach(player => {
@@ -88,13 +89,6 @@ export function StatsScreen({
             <div className="text-sm text-slate-300 font-semibold">{opponentTeamName || 'Opponent'}</div>
           </div>
         </div>
-        {homeScore > awayScore ? (
-          <p className="text-emerald-400 font-semibold mt-3">🎉 Victory!</p>
-        ) : homeScore < awayScore ? (
-          <p className="text-rose-400 font-semibold mt-3">Better luck next time!</p>
-        ) : (
-          <p className="text-slate-300 font-semibold mt-3">It's a tie!</p>
-        )}
       </div>
 
       <div className="overflow-x-auto bg-slate-700 rounded-lg p-1">

@@ -17,7 +17,10 @@ export function PeriodSetupScreen({
   setPeriodGoalieIds, 
   numPeriods,
   formationType,
-  setView
+  setView,
+  homeScore,
+  awayScore,
+  opponentTeamName
 }) {
   // Determine formation mode
   const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
@@ -285,6 +288,22 @@ export function PeriodSetupScreen({
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
         <Users className="mr-2 h-6 w-6" />Period {currentPeriodNumber} Team Selection
       </h2>
+      
+      {/* Current Score Display */}
+      <div className="p-2 bg-slate-700 rounded-lg text-center">
+        <h3 className="text-sm font-medium text-sky-200 mb-2">Current Score</h3>
+        <div className="flex items-center justify-center space-x-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-sky-400">{homeScore}</div>
+            <div className="text-xs text-slate-300 font-semibold">Djurgårn</div>
+          </div>
+          <div className="text-xl font-mono font-bold text-slate-400">-</div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-slate-400">{awayScore}</div>
+            <div className="text-xs text-slate-300 font-semibold">{opponentTeamName || 'Opponent'}</div>
+          </div>
+        </div>
+      </div>
 
       <div className="p-2 bg-slate-700 rounded-md">
         <h3 className="text-sm font-medium text-sky-200 mb-1">Goalie for Period {currentPeriodNumber}</h3>

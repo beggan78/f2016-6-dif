@@ -220,6 +220,9 @@ function App() {
             numPeriods={gameState.numPeriods}
             formationType={gameState.formationType}
             setView={gameState.setView}
+            homeScore={gameState.homeScore}
+            awayScore={gameState.awayScore}
+            opponentTeamName={gameState.opponentTeamName}
           />
         );
       case 'game':
