@@ -17,7 +17,9 @@ export function StatsScreen({
   clearTimerState,
   homeScore,
   awayScore,
-  opponentTeamName
+  opponentTeamName,
+  resetScore,
+  setOpponentTeamName
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
@@ -61,6 +63,8 @@ export function StatsScreen({
     setSelectedSquadIds([]);
     setPeriodGoalieIds({});
     setGameLog([]);
+    resetScore(); // Clear score
+    setOpponentTeamName(''); // Clear opponent team name
     setView('config');
   };
 

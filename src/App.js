@@ -141,6 +141,7 @@ function App() {
       substitute: null,
     });
     gameState.resetScore();
+    gameState.setOpponentTeamName('');
     gameState.clearStoredState();
     timers.clearTimerState();
   };
@@ -276,6 +277,8 @@ function App() {
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             opponentTeamName={gameState.opponentTeamName}
+            resetScore={gameState.resetScore}
+            setOpponentTeamName={gameState.setOpponentTeamName}
           />
         );
       default:
