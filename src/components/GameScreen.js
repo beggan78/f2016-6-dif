@@ -337,7 +337,7 @@ export function GameScreen({
         setRecentlySubstitutedPlayers(new Set());
       }, 1500);
     }, 1000);
-  }, [animationCalculator, switchPlayerPositions, getPlayerName]);
+  }, [animationCalculator, switchPlayerPositions, getPlayerName, isSubTimerPaused]);
 
   // Effect to trigger substitution after state update
   React.useEffect(() => {
