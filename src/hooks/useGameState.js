@@ -1152,6 +1152,169 @@ export function useGameState() {
     return true;
   }, [allPlayers, periodFormation, formationType]);
 
+  // Function to switch goalies
+  const switchGoalie = useCallback((newGoalieId, isSubTimerPaused = false) => {
+    if (!newGoalieId || newGoalieId === periodFormation.goalie) {
+      console.warn('Invalid new goalie ID or same as current goalie');
+      return false;
+    }
+
+    const currentGoalie = allPlayers.find(p => p.id === periodFormation.goalie);
+    const newGoalie = allPlayers.find(p => p.id === newGoalieId);
+    
+    if (!currentGoalie || !newGoalie) {
+      console.warn('Goalie not found for switch');
+      return false;
+    }
+
+    // Don't allow switching with inactive player
+    if (newGoalie.stats.isInactive) {
+      console.warn('Cannot switch to inactive player as goalie');
+      return false;
+    }
+
+    const newGoaliePosition = newGoalie.stats.currentPairKey;
+
+    // Update period formation
+    setPeriodFormation(prev => {
+      const newFormation = { ...prev };
+      
+      // Set new goalie
+      newFormation.goalie = newGoalieId;
+      
+      // Place current goalie in the position of the new goalie
+      if (formationType === FORMATION_TYPES.PAIRS_7) {
+        // Handle pairs formation
+        if (newGoaliePosition === 'leftPair') {
+          if (prev.leftPair.defender === newGoalieId) {
+            newFormation.leftPair = { ...prev.leftPair, defender: periodFormation.goalie };
+          } else if (prev.leftPair.attacker === newGoalieId) {
+            newFormation.leftPair = { ...prev.leftPair, attacker: periodFormation.goalie };
+          }
+        } else if (newGoaliePosition === 'rightPair') {
+          if (prev.rightPair.defender === newGoalieId) {
+            newFormation.rightPair = { ...prev.rightPair, defender: periodFormation.goalie };
+          } else if (prev.rightPair.attacker === newGoalieId) {
+            newFormation.rightPair = { ...prev.rightPair, attacker: periodFormation.goalie };
+          }
+        } else if (newGoaliePosition === 'subPair') {
+          if (prev.subPair.defender === newGoalieId) {
+            newFormation.subPair = { ...prev.subPair, defender: periodFormation.goalie };
+          } else if (prev.subPair.attacker === newGoalieId) {
+            newFormation.subPair = { ...prev.subPair, attacker: periodFormation.goalie };
+          }
+        }
+      } else {
+        // Handle individual formations (6-player and 7-player)
+        newFormation[newGoaliePosition] = periodFormation.goalie;
+      }
+      
+      return newFormation;
+    });
+
+    // Update player stats and handle role changes
+    const currentTimeEpoch = Date.now();
+    setAllPlayers(prev => prev.map(p => {
+      if (p.id === periodFormation.goalie) {
+        // Current goalie becomes a field player
+        // First calculate accumulated time for their goalie stint
+        const updatedStats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
+        
+        // Determine new role and status based on position they're moving to
+        let newRole = PLAYER_ROLES.DEFENDER; // Default
+        let newStatus = 'on_field'; // Default
+        
+        if (formationType === FORMATION_TYPES.PAIRS_7) {
+          if (newGoaliePosition === 'leftPair' || newGoaliePosition === 'rightPair') {
+            // Field positions
+            const pairData = periodFormation[newGoaliePosition];
+            if (pairData) {
+              if (pairData.defender === newGoalieId) {
+                newRole = PLAYER_ROLES.DEFENDER;
+              } else if (pairData.attacker === newGoalieId) {
+                newRole = PLAYER_ROLES.ATTACKER;
+              }
+            }
+            newStatus = 'on_field';
+          } else if (newGoaliePosition === 'subPair') {
+            // Substitute position
+            const pairData = periodFormation[newGoaliePosition];
+            if (pairData) {
+              if (pairData.defender === newGoalieId) {
+                newRole = PLAYER_ROLES.DEFENDER;
+              } else if (pairData.attacker === newGoalieId) {
+                newRole = PLAYER_ROLES.ATTACKER;
+              }
+            }
+            newStatus = 'substitute';
+          }
+        } else {
+          // Individual formations
+          if (newGoaliePosition.includes('substitute')) {
+            // Substitute positions
+            newRole = PLAYER_ROLES.SUBSTITUTE;
+            newStatus = 'substitute';
+          } else if (newGoaliePosition.includes('Defender') || newGoaliePosition.includes('defender')) {
+            newRole = PLAYER_ROLES.DEFENDER;
+            newStatus = 'on_field';
+          } else if (newGoaliePosition.includes('Attacker') || newGoaliePosition.includes('attacker')) {
+            newRole = PLAYER_ROLES.ATTACKER;
+            newStatus = 'on_field';
+          }
+        }
+        
+        // Handle role change from goalie to new position
+        const newStats = handleRoleChange(
+          { ...p, stats: updatedStats },
+          newRole,
+          currentTimeEpoch,
+          isSubTimerPaused
+        );
+        
+        // Update status and position
+        newStats.currentPeriodStatus = newStatus;
+        newStats.currentPairKey = newGoaliePosition;
+        
+        return { ...p, stats: newStats };
+      } else if (p.id === newGoalieId) {
+        // New goalie - calculate accumulated time for their field stint
+        const updatedStats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
+        
+        // Handle role change from field player to goalie
+        const newStats = handleRoleChange(
+          { ...p, stats: updatedStats },
+          PLAYER_ROLES.GOALIE,
+          currentTimeEpoch,
+          isSubTimerPaused
+        );
+        
+        // Update status and position
+        newStats.currentPeriodStatus = 'goalie';
+        newStats.currentPairKey = 'goalie';
+        
+        return { ...p, stats: newStats };
+      }
+      return p;
+    }));
+
+    // Update rotation queue - remove new goalie from queue and add old goalie
+    setRotationQueue(prev => {
+      const queueManager = createRotationQueue(prev, (id) => allPlayers.find(p => p.id === id));
+      queueManager.initialize(); // Separate active and inactive players
+      
+      // Remove new goalie from queue (they're now goalie, not in rotation)
+      queueManager.removePlayer(newGoalieId);
+      
+      // Add old goalie to queue at the end (they're now in rotation)
+      queueManager.addPlayer(periodFormation.goalie, 'end');
+      
+      return queueManager.toArray();
+    });
+
+    console.log(`Successfully switched goalie: ${currentGoalie.name} -> ${newGoalie.name}`);
+    return true;
+  }, [allPlayers, periodFormation, formationType, setAllPlayers, setPeriodFormation, setRotationQueue]);
+
   // Helper function to get all outfield players (excludes goalie)
   const getOutfieldPlayers = useCallback(() => {
     return allPlayers.filter(p => 
@@ -1208,6 +1371,7 @@ export function useGameState() {
     togglePlayerInactive,
     getInactivePlayerPosition,
     switchPlayerPositions,
+    switchGoalie,
     getOutfieldPlayers,
     
     // Enhanced persistence actions

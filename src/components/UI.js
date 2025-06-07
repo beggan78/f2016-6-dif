@@ -196,3 +196,44 @@ export function PlayerInactiveModal({ isOpen, onInactivate, onActivate, onCancel
     </div>
   );
 }
+
+export function GoalieModal({ 
+  isOpen, 
+  onCancel, 
+  onSelectGoalie, 
+  currentGoalieName, 
+  availablePlayers = [] 
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">Replace Goalie</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-slate-200 mb-6">
+            Select a new goalie to replace {currentGoalieName}:
+          </p>
+          <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+            <Button onClick={onCancel} variant="secondary">
+              Cancel
+            </Button>
+            {availablePlayers.map((player) => (
+              <Button
+                key={player.id}
+                onClick={() => onSelectGoalie(player.id)}
+                variant={player.isInactive ? "secondary" : "primary"}
+                disabled={player.isInactive}
+                className={`text-left ${player.isInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {player.name} {player.isInactive ? '(Inactive)' : ''}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

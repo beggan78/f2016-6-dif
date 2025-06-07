@@ -175,6 +175,7 @@ function App() {
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
             switchPlayerPositions={gameState.switchPlayerPositions}
+            switchGoalie={gameState.switchGoalie}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
           />
         );

@@ -16,7 +16,10 @@ export function calculatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPau
     };
   }
   
-  const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
+  // Only calculate time if lastStintStartTimeEpoch is properly set (not 0)
+  const timeInPreviousStint = (stats.lastStintStartTimeEpoch && stats.lastStintStartTimeEpoch > 0) 
+    ? Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000) 
+    : 0;
 
   if (stats.currentPeriodStatus === 'on_field') {
     stats.timeOnFieldSeconds += timeInPreviousStint;

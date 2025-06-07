@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play } from 'lucide-react';
-import { Button, PlayerOptionsModal, PlayerInactiveModal } from './UI';
+import { Button, PlayerOptionsModal, PlayerInactiveModal, GoalieModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function GameScreen({ 
@@ -27,6 +27,7 @@ export function GameScreen({
   alertMinutes,
   togglePlayerInactive,
   switchPlayerPositions,
+  switchGoalie,
   getOutfieldPlayers
 }) {
   const getPlayerName = React.useCallback((id) => allPlayers.find(p => p.id === id)?.name || 'N/A', [allPlayers]);
@@ -92,6 +93,13 @@ export function GameScreen({
     playerId: null,
     playerName: '',
     isCurrentlyInactive: false
+  });
+  
+  // State for goalie replacement modal
+  const [goalieModal, setGoalieModal] = React.useState({
+    isOpen: false,
+    currentGoalieName: '',
+    availablePlayers: []
   });
   
   // State to track if we should substitute immediately after setting next sub
@@ -609,6 +617,44 @@ export function GameScreen({
     setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
   };
 
+  // Handle goalie replacement modal actions
+  const handleGoalieLongPress = () => {
+    const currentGoalieName = getPlayerName(periodFormation.goalie);
+    
+    // Get all active players currently playing (from selected squad)
+    const activePlayingPlayers = selectedSquadPlayers.map(player => ({
+      id: player.id,
+      name: player.name,
+      isInactive: player.stats.isInactive || false
+    })).filter(player => player.id !== periodFormation.goalie); // Exclude current goalie
+    
+    setGoalieModal({
+      isOpen: true,
+      currentGoalieName: currentGoalieName,
+      availablePlayers: activePlayingPlayers
+    });
+  };
+
+  const handleSelectNewGoalie = (newGoalieId) => {
+    // Use the switchGoalie function to handle the goalie switch
+    // This will properly handle time tracking, role changes, and rotation queue updates
+    const success = switchGoalie(newGoalieId, isSubTimerPaused);
+    
+    if (success) {
+      const oldGoalieName = getPlayerName(periodFormation.goalie);
+      const newGoalieName = getPlayerName(newGoalieId);
+      console.log(`Successfully switched goalie: ${oldGoalieName} -> ${newGoalieName}`);
+    } else {
+      console.warn('Goalie switch failed');
+    }
+    
+    setGoalieModal({ isOpen: false, currentGoalieName: '', availablePlayers: [] });
+  };
+
+  const handleCancelGoalieModal = () => {
+    setGoalieModal({ isOpen: false, currentGoalieName: '', availablePlayers: [] });
+  };
+
   // Function to swap attacker and defender within a pair
   const handleSwapPairPositions = (pairKey) => {
     if (!isPairsMode) return;
@@ -813,6 +859,9 @@ export function GameScreen({
   // 7-player individual mode substitute events
   const substitute7_1Events = useLongPressWithScrollDetection(() => handleSubstituteLongPress('substitute7_1'));
   const substitute7_2Events = useLongPressWithScrollDetection(() => handleSubstituteLongPress('substitute7_2'));
+  
+  // Goalie long-press event
+  const goalieEvents = useLongPressWithScrollDetection(() => handleGoalieLongPress());
 
   const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
@@ -1316,8 +1365,14 @@ export function GameScreen({
 
 
       {/* Field & Subs Visualization */}
-      <div className="p-2 bg-slate-700 rounded-lg">
-        <p className="text-center my-1 text-sky-200">Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span></p>
+      <div 
+        className="p-2 bg-slate-700 rounded-lg cursor-pointer select-none hover:bg-slate-600 transition-colors duration-150"
+        {...goalieEvents}
+      >
+        <p className="text-center my-1 text-sky-200">
+          Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span>
+        </p>
+        <p className="text-xs text-slate-400 text-center">Hold to replace goalie</p>
       </div>
       
       {isPairsMode && (
@@ -1391,6 +1446,15 @@ export function GameScreen({
         onCancel={handleCancelInactive}
         playerName={inactiveModal.playerName}
         isCurrentlyInactive={inactiveModal.isCurrentlyInactive}
+      />
+
+      {/* Goalie Replacement Modal */}
+      <GoalieModal
+        isOpen={goalieModal.isOpen}
+        onCancel={handleCancelGoalieModal}
+        onSelectGoalie={handleSelectNewGoalie}
+        currentGoalieName={goalieModal.currentGoalieName}
+        availablePlayers={goalieModal.availablePlayers}
       />
     </div>
   );
