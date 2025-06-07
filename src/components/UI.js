@@ -79,7 +79,7 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message,
   );
 }
 
-export function OutfieldPlayerModal({ 
+export function PlayerOptionsModal({ 
   isOpen, 
   onSetNext, 
   onSubNow, 
@@ -89,7 +89,8 @@ export function OutfieldPlayerModal({
   availablePlayers = [],
   showPositionChange = false,
   showPositionOptions = false,
-  showSwapPositions = false 
+  showSwapPositions = false,
+  showSubstitutionOptions = true  // New prop to control substitution options
 }) {
   if (!isOpen) return null;
 
@@ -135,12 +136,16 @@ export function OutfieldPlayerModal({
                 <Button onClick={onCancel} variant="secondary">
                   Cancel
                 </Button>
-                <Button onClick={onSetNext} variant="primary">
-                  Set next sub: {playerName}
-                </Button>
-                <Button onClick={onSubNow} variant="danger">
-                  Substitute {playerName} now
-                </Button>
+                {showSubstitutionOptions && (
+                  <>
+                    <Button onClick={onSetNext} variant="primary">
+                      Set next sub: {playerName}
+                    </Button>
+                    <Button onClick={onSubNow} variant="danger">
+                      Substitute {playerName} now
+                    </Button>
+                  </>
+                )}
                 {showPositionChange && (
                   <Button onClick={() => onChangePosition && onChangePosition('show-options')} variant="accent">
                     Change position

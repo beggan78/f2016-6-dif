@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock } from 'lucide-react';
-import { Button, OutfieldPlayerModal, PlayerInactiveModal } from './UI';
+import { Button, PlayerOptionsModal, PlayerInactiveModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function GameScreen({ 
@@ -32,8 +32,8 @@ export function GameScreen({
   const isIndividual6Mode = formationType === FORMATION_TYPES.INDIVIDUAL_6;
   const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
   
-  // State for outfield player modal
-  const [outfieldPlayerModal, setOutfieldPlayerModal] = React.useState({
+  // State for player options modal
+  const [playerOptionsModal, setPlayerOptionsModal] = React.useState({
     isOpen: false,
     type: null, // 'pair' or 'player'
     target: null, // pairKey or position
@@ -352,7 +352,7 @@ export function GameScreen({
       const pairData = periodFormation[pairKey];
       const defenderName = getPlayerName(pairData?.defender);
       const attackerName = getPlayerName(pairData?.attacker);
-      setOutfieldPlayerModal({
+      setPlayerOptionsModal({
         isOpen: true,
         type: 'pair',
         target: pairKey,
@@ -373,7 +373,7 @@ export function GameScreen({
     if (validPositions.includes(position)) {
       const playerId = periodFormation[position];
       const playerName = getPlayerName(playerId);
-      setOutfieldPlayerModal({
+      setPlayerOptionsModal({
         isOpen: true,
         type: 'player',
         target: position,
@@ -402,14 +402,14 @@ export function GameScreen({
     });
   };
 
-  // Handle outfield player modal actions
+  // Handle player options modal actions
   const handleSetNextSubstitution = () => {
-    if (outfieldPlayerModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(outfieldPlayerModal.target);
-    } else if (outfieldPlayerModal.type === 'player') {
-      setNextPlayerToSubOut(outfieldPlayerModal.target);
+    if (playerOptionsModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(playerOptionsModal.target);
+    } else if (playerOptionsModal.type === 'player') {
+      setNextPlayerToSubOut(playerOptionsModal.target);
     }
-    setOutfieldPlayerModal({ 
+    setPlayerOptionsModal({ 
       isOpen: false, 
       type: null, 
       target: null, 
@@ -422,14 +422,14 @@ export function GameScreen({
 
   const handleSubstituteNow = () => {
     // First set as next substitution
-    if (outfieldPlayerModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(outfieldPlayerModal.target);
-    } else if (outfieldPlayerModal.type === 'player') {
-      setNextPlayerToSubOut(outfieldPlayerModal.target);
+    if (playerOptionsModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(playerOptionsModal.target);
+    } else if (playerOptionsModal.type === 'player') {
+      setNextPlayerToSubOut(playerOptionsModal.target);
     }
     // Set flag to trigger substitution after state update
     setShouldSubstituteNow(true);
-    setOutfieldPlayerModal({ 
+    setPlayerOptionsModal({ 
       isOpen: false, 
       type: null, 
       target: null, 
@@ -440,8 +440,8 @@ export function GameScreen({
     });
   };
 
-  const handleCancelOutfieldPlayerModal = () => {
-    setOutfieldPlayerModal({ 
+  const handleCancelPlayerOptionsModal = () => {
+    setPlayerOptionsModal({ 
       isOpen: false, 
       type: null, 
       target: null, 
@@ -582,8 +582,8 @@ export function GameScreen({
   const handleChangePosition = (action) => {
     if (action === 'show-options') {
       // Show the position selection options
-      if (outfieldPlayerModal.target && outfieldPlayerModal.type === 'player') {
-        const sourcePlayerId = periodFormation[outfieldPlayerModal.target];
+      if (playerOptionsModal.target && playerOptionsModal.type === 'player') {
+        const sourcePlayerId = periodFormation[playerOptionsModal.target];
         
         if (sourcePlayerId) {
           // Get only field players (exclude substitutes) except the source player
@@ -608,27 +608,27 @@ export function GameScreen({
             return true;
           });
           
-          setOutfieldPlayerModal(prev => ({
+          setPlayerOptionsModal(prev => ({
             ...prev,
             sourcePlayerId: sourcePlayerId,
             availablePlayers: availablePlayers,
             showPositionOptions: true
           }));
         }
-      } else if (outfieldPlayerModal.type === 'pair') {
+      } else if (playerOptionsModal.type === 'pair') {
         // For pairs formation, position change between pairs is not supported, but swapping within pair is
         alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
-        handleCancelOutfieldPlayerModal();
+        handleCancelPlayerOptionsModal();
       }
     } else if (action === 'swap-pair-positions') {
       // Swap attacker and defender within the pair
-      if (outfieldPlayerModal.target && outfieldPlayerModal.type === 'pair') {
-        handleSwapPairPositions(outfieldPlayerModal.target);
-        handleCancelOutfieldPlayerModal();
+      if (playerOptionsModal.target && playerOptionsModal.type === 'pair') {
+        handleSwapPairPositions(playerOptionsModal.target);
+        handleCancelPlayerOptionsModal();
       }
     } else if (action === null) {
       // Go back to main options
-      setOutfieldPlayerModal(prev => ({
+      setPlayerOptionsModal(prev => ({
         ...prev,
         showPositionOptions: false,
         availablePlayers: [],
@@ -637,15 +637,15 @@ export function GameScreen({
     } else {
       // action is a player ID - perform the animated position switch
       const targetPlayerId = action;
-      if (outfieldPlayerModal.sourcePlayerId && targetPlayerId) {
+      if (playerOptionsModal.sourcePlayerId && targetPlayerId) {
         // Close the modal first
-        handleCancelOutfieldPlayerModal();
+        handleCancelPlayerOptionsModal();
         
         // Perform the animated position switch
-        handlePositionSwitchWithAnimation(outfieldPlayerModal.sourcePlayerId, targetPlayerId);
+        handlePositionSwitchWithAnimation(playerOptionsModal.sourcePlayerId, targetPlayerId);
       } else {
         // Close the modal if something went wrong
-        handleCancelOutfieldPlayerModal();
+        handleCancelPlayerOptionsModal();
       }
     }
   };
@@ -1300,18 +1300,22 @@ export function GameScreen({
         </Button>
       </div>
 
-      {/* Outfield Player Options Modal */}
-      <OutfieldPlayerModal
-        isOpen={outfieldPlayerModal.isOpen}
+      {/* Player Options Modal */}
+      <PlayerOptionsModal
+        isOpen={playerOptionsModal.isOpen}
         onSetNext={handleSetNextSubstitution}
         onSubNow={handleSubstituteNow}
-        onCancel={handleCancelOutfieldPlayerModal}
+        onCancel={handleCancelPlayerOptionsModal}
         onChangePosition={handleChangePosition}
-        playerName={outfieldPlayerModal.playerName}
-        availablePlayers={outfieldPlayerModal.availablePlayers}
-        showPositionChange={!isPairsMode && outfieldPlayerModal.type === 'player'}
-        showPositionOptions={outfieldPlayerModal.showPositionOptions}
-        showSwapPositions={isPairsMode && outfieldPlayerModal.type === 'pair'}
+        playerName={playerOptionsModal.playerName}
+        availablePlayers={playerOptionsModal.availablePlayers}
+        showPositionChange={!isPairsMode && playerOptionsModal.type === 'player'}
+        showPositionOptions={playerOptionsModal.showPositionOptions}
+        showSwapPositions={isPairsMode && playerOptionsModal.type === 'pair'}
+        showSubstitutionOptions={
+          playerOptionsModal.type === 'player' || 
+          (playerOptionsModal.type === 'pair' && playerOptionsModal.target !== 'subPair')
+        }
       />
 
       {/* Player Inactive Modal */}
