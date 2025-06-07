@@ -139,10 +139,10 @@ export function PlayerOptionsModal({
                 {showSubstitutionOptions && (
                   <>
                     <Button onClick={onSetNext} variant="primary">
-                      Set next sub: {playerName}
+                      Set as next sub
                     </Button>
                     <Button onClick={onSubNow} variant="danger">
-                      Substitute {playerName} now
+                      Substitute now
                     </Button>
                   </>
                 )}
