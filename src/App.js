@@ -140,6 +140,7 @@ function App() {
       rightAttacker: null,
       substitute: null,
     });
+    gameState.resetScore();
     gameState.clearStoredState();
     timers.clearTimerState();
   };
@@ -198,6 +199,8 @@ function App() {
             setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
             selectedSquadPlayers={selectedSquadPlayers}
+            opponentTeamName={gameState.opponentTeamName}
+            setOpponentTeamName={gameState.setOpponentTeamName}
           />
         );
       case 'periodSetup':
@@ -247,7 +250,13 @@ function App() {
             switchGoalie={gameState.switchGoalie}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
             pushModalState={pushModalState}
-            popModalState={popModalState}
+            removeModalFromStack={removeModalFromStack}
+            homeScore={gameState.homeScore}
+            awayScore={gameState.awayScore}
+            opponentTeamName={gameState.opponentTeamName}
+            addHomeGoal={gameState.addHomeGoal}
+            addAwayGoal={gameState.addAwayGoal}
+            setScore={gameState.setScore}
           />
         );
       case 'stats':
@@ -264,6 +273,9 @@ function App() {
             initialRoster={initialRoster}
             clearStoredState={gameState.clearStoredState}
             clearTimerState={timers.clearTimerState}
+            homeScore={gameState.homeScore}
+            awayScore={gameState.awayScore}
+            opponentTeamName={gameState.opponentTeamName}
           />
         );
       default:

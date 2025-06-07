@@ -33,6 +33,9 @@ export function useGameState() {
   const [nextNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut] = useState(initialState.nextNextPlayerIdToSubOut);
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
+  const [opponentTeamName, setOpponentTeamName] = useState(initialState.opponentTeamName || '');
+  const [homeScore, setHomeScore] = useState(initialState.homeScore || 0); // Djurgårn score
+  const [awayScore, setAwayScore] = useState(initialState.awayScore || 0); // Opponent score
 
   // Wake lock and alert management
   const [wakeLock, setWakeLock] = useState(null);
@@ -104,11 +107,14 @@ export function useGameState() {
       nextNextPlayerIdToSubOut,
       rotationQueue,
       gameLog,
+      opponentTeamName,
+      homeScore,
+      awayScore,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, formationType, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, formationType, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore]);
 
 
 
@@ -1323,6 +1329,25 @@ export function useGameState() {
     );
   }, [allPlayers, selectedSquadIds, periodFormation.goalie]);
 
+  // Score management functions
+  const addHomeGoal = useCallback(() => {
+    setHomeScore(prev => prev + 1);
+  }, []);
+
+  const addAwayGoal = useCallback(() => {
+    setAwayScore(prev => prev + 1);
+  }, []);
+
+  const setScore = useCallback((home, away) => {
+    setHomeScore(home);
+    setAwayScore(away);
+  }, []);
+
+  const resetScore = useCallback(() => {
+    setHomeScore(0);
+    setAwayScore(0);
+  }, []);
+
   return {
     // State
     allPlayers,
@@ -1356,6 +1381,10 @@ export function useGameState() {
     setRotationQueue,
     gameLog,
     setGameLog,
+    opponentTeamName,
+    setOpponentTeamName,
+    homeScore,
+    awayScore,
     
     // Actions
     preparePeriod,
@@ -1373,6 +1402,10 @@ export function useGameState() {
     switchPlayerPositions,
     switchGoalie,
     getOutfieldPlayers,
+    addHomeGoal,
+    addAwayGoal,
+    setScore,
+    resetScore,
     
     // Enhanced persistence actions
     createManualBackup,

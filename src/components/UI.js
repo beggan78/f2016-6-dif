@@ -1,6 +1,20 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 
+export function Input({ value, onChange, placeholder, id, disabled, type = 'text', className = '' }) {
+  return (
+    <input
+      type={type}
+      id={id}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={`w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-500 transition-colors ${className}`}
+    />
+  );
+}
+
 export function Select({ value, onChange, options, placeholder, id, disabled }) {
   return (
     <div className="relative">
@@ -231,6 +245,116 @@ export function GoalieModal({
                 {player.name} {player.isInactive ? '(Inactive)' : ''}
               </Button>
             ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ScoreEditModal({ 
+  isOpen, 
+  onCancel, 
+  onSave, 
+  homeScore, 
+  awayScore, 
+  homeTeamName = "Djurgårn", 
+  awayTeamName = "Opponent" 
+}) {
+  const [editHomeScore, setEditHomeScore] = React.useState(homeScore);
+  const [editAwayScore, setEditAwayScore] = React.useState(awayScore);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setEditHomeScore(homeScore);
+      setEditAwayScore(awayScore);
+    }
+  }, [isOpen, homeScore, awayScore]);
+
+  const handleSave = () => {
+    onSave(editHomeScore, editAwayScore);
+  };
+
+  const handleCancel = () => {
+    setEditHomeScore(homeScore);
+    setEditAwayScore(awayScore);
+    onCancel();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">Edit Score</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between space-x-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-slate-300 mb-2">{homeTeamName}</label>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  onClick={() => setEditHomeScore(Math.max(0, editHomeScore - 1))}
+                  variant="secondary"
+                  size="sm"
+                  disabled={editHomeScore <= 0}
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={editHomeScore}
+                  onChange={(e) => setEditHomeScore(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="text-center w-16"
+                />
+                <Button 
+                  onClick={() => setEditHomeScore(editHomeScore + 1)}
+                  variant="secondary"
+                  size="sm"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            
+            <div className="text-2xl font-mono font-bold text-slate-400">-</div>
+            
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-slate-300 mb-2">{awayTeamName}</label>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  onClick={() => setEditAwayScore(Math.max(0, editAwayScore - 1))}
+                  variant="secondary"
+                  size="sm"
+                  disabled={editAwayScore <= 0}
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={editAwayScore}
+                  onChange={(e) => setEditAwayScore(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="text-center w-16"
+                />
+                <Button 
+                  onClick={() => setEditAwayScore(editAwayScore + 1)}
+                  variant="secondary"
+                  size="sm"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 justify-end pt-4">
+            <Button onClick={handleCancel} variant="secondary">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} variant="primary">
+              Save Score
+            </Button>
           </div>
         </div>
       </div>

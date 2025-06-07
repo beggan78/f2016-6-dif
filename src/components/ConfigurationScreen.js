@@ -1,6 +1,6 @@
     import React from 'react';
 import { Settings, Play } from 'lucide-react';
-import { Select, Button } from './UI';
+import { Select, Button, Input } from './UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS, FORMATION_TYPES } from '../utils/gameLogic';
 
 export function ConfigurationScreen({ 
@@ -18,7 +18,9 @@ export function ConfigurationScreen({
   alertMinutes,
   setAlertMinutes,
   handleStartPeriodSetup, 
-  selectedSquadPlayers 
+  selectedSquadPlayers,
+  opponentTeamName,
+  setOpponentTeamName
 }) {
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {
@@ -62,6 +64,18 @@ export function ConfigurationScreen({
             </label>
           ))}
         </div>
+      </div>
+
+      {/* Opponent Team Name */}
+      <div className="p-3 bg-slate-700 rounded-md">
+        <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
+        <Input
+          id="opponentTeam"
+          value={opponentTeamName}
+          onChange={e => setOpponentTeamName(e.target.value)}
+          placeholder="Enter opponent team name (optional)"
+        />
+        <p className="text-xs text-slate-400 mt-1">Leave empty to use "Opponent"</p>
       </div>
 
       {/* Game Settings */}

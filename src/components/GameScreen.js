@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play } from 'lucide-react';
-import { Button, PlayerOptionsModal, PlayerInactiveModal, GoalieModal } from './UI';
+import { Button, PlayerOptionsModal, PlayerInactiveModal, GoalieModal, ScoreEditModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function GameScreen({ 
@@ -30,7 +30,13 @@ export function GameScreen({
   switchGoalie,
   getOutfieldPlayers,
   pushModalState,
-  popModalState
+  removeModalFromStack,
+  homeScore,
+  awayScore,
+  opponentTeamName,
+  addHomeGoal,
+  addAwayGoal,
+  setScore
 }) {
   const getPlayerName = React.useCallback((id) => allPlayers.find(p => p.id === id)?.name || 'N/A', [allPlayers]);
   
@@ -53,11 +59,16 @@ export function GameScreen({
   }, [pushModalState]);
 
   const closePlayerOptionsModal = React.useCallback(() => {
-    if (popModalState) {
-      popModalState();
-    }
-    closePlayerOptionsModal();
-  }, [popModalState]);
+    setPlayerOptionsModal({ 
+      isOpen: false, 
+      type: null, 
+      target: null, 
+      playerName: '', 
+      sourcePlayerId: null, 
+      availablePlayers: [], 
+      showPositionOptions: false 
+    });
+  }, []);
 
   const openInactiveModal = React.useCallback((modalData) => {
     setInactiveModal(modalData);
@@ -69,11 +80,8 @@ export function GameScreen({
   }, [pushModalState]);
 
   const closeInactiveModal = React.useCallback(() => {
-    if (popModalState) {
-      popModalState();
-    }
     setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
-  }, [popModalState]);
+  }, []);
 
   const openGoalieModal = React.useCallback((modalData) => {
     setGoalieModal(modalData);
@@ -85,11 +93,8 @@ export function GameScreen({
   }, [pushModalState]);
 
   const closeGoalieModal = React.useCallback(() => {
-    if (popModalState) {
-      popModalState();
-    }
     setGoalieModal({ isOpen: false, currentGoalieName: '', availablePlayers: [] });
-  }, [popModalState]);
+  }, []);
 
   
   // Function to update player stats when pausing/resuming
@@ -160,6 +165,11 @@ export function GameScreen({
     isOpen: false,
     currentGoalieName: '',
     availablePlayers: []
+  });
+  
+  // State for score editing modal
+  const [scoreEditModal, setScoreEditModal] = React.useState({
+    isOpen: false
   });
   
   // State to track if we should substitute immediately after setting next sub
@@ -546,6 +556,9 @@ export function GameScreen({
 
   const handleCancelPlayerOptionsModal = () => {
     closePlayerOptionsModal();
+    if (removeModalFromStack) {
+      removeModalFromStack();
+    }
   };
 
   // Handle inactive modal actions
@@ -651,6 +664,9 @@ export function GameScreen({
 
   const handleCancelInactive = () => {
     closeInactiveModal();
+    if (removeModalFromStack) {
+      removeModalFromStack();
+    }
   };
 
   // Handle goalie replacement modal actions
@@ -689,6 +705,26 @@ export function GameScreen({
 
   const handleCancelGoalieModal = () => {
     closeGoalieModal();
+  };
+
+  // Handle score editing modal actions
+  const handleScoreLongPress = () => {
+    setScoreEditModal({ isOpen: true });
+    // Add modal to browser back button handling
+    if (pushModalState) {
+      pushModalState(() => {
+        setScoreEditModal({ isOpen: false });
+      });
+    }
+  };
+
+  const handleScoreEditSave = (newHomeScore, newAwayScore) => {
+    setScore(newHomeScore, newAwayScore);
+    setScoreEditModal({ isOpen: false });
+  };
+
+  const handleScoreEditCancel = () => {
+    setScoreEditModal({ isOpen: false });
   };
 
   // Function to swap attacker and defender within a pair
@@ -898,6 +934,9 @@ export function GameScreen({
   
   // Goalie long-press event
   const goalieEvents = useLongPressWithScrollDetection(() => handleGoalieLongPress());
+  
+  // Score long-press event
+  const scoreEvents = useLongPressWithScrollDetection(() => handleScoreLongPress());
 
   const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
@@ -1399,6 +1438,30 @@ export function GameScreen({
         </div>
       </div>
 
+      {/* Score Display */}
+      <div className="p-2 bg-slate-700 rounded-lg text-center">
+        <div className="flex items-center justify-center space-x-4">
+          <button
+            onClick={addHomeGoal}
+            className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors"
+          >
+            Djurgårn
+          </button>
+          <div 
+            className="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-4 py-2 rounded-md hover:bg-slate-600 transition-colors"
+            {...scoreEvents}
+          >
+            {homeScore} - {awayScore}
+          </div>
+          <button
+            onClick={addAwayGoal}
+            className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors"
+          >
+            {opponentTeamName || 'Opponent'}
+          </button>
+        </div>
+        <p className="text-xs text-slate-400 mt-1">Tap team name to add goal • Hold score to edit</p>
+      </div>
 
       {/* Field & Subs Visualization */}
       <div 
@@ -1491,6 +1554,17 @@ export function GameScreen({
         onSelectGoalie={handleSelectNewGoalie}
         currentGoalieName={goalieModal.currentGoalieName}
         availablePlayers={goalieModal.availablePlayers}
+      />
+
+      {/* Score Edit Modal */}
+      <ScoreEditModal
+        isOpen={scoreEditModal.isOpen}
+        onCancel={handleScoreEditCancel}
+        onSave={handleScoreEditSave}
+        homeScore={homeScore}
+        awayScore={awayScore}
+        homeTeamName="Djurgårn"
+        awayTeamName={opponentTeamName || 'Opponent'}
       />
     </div>
   );
