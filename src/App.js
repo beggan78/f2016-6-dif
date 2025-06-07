@@ -38,7 +38,7 @@ function App() {
 
   const handleSubstitution = () => {
     if (!timers.isPeriodActive) return;
-    gameState.handleSubstitution();
+    gameState.handleSubstitution(timers.isSubTimerPaused);
     timers.resetSubTimer();
   };
 
@@ -59,13 +59,13 @@ function App() {
     
     // Proceed with ending the period
     timers.stopTimers();
-    gameState.handleEndPeriod();
+    gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
 
   const handleConfirmEndPeriod = () => {
     setShowConfirmModal(false);
     timers.stopTimers();
-    gameState.handleEndPeriod();
+    gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
 
   const handleCancelEndPeriod = () => {
@@ -155,8 +155,12 @@ function App() {
             currentPeriodNumber={gameState.currentPeriodNumber}
             periodFormation={gameState.periodFormation}
             allPlayers={gameState.allPlayers}
+            setAllPlayers={gameState.setAllPlayers}
             matchTimerSeconds={timers.matchTimerSeconds}
             subTimerSeconds={timers.subTimerSeconds}
+            isSubTimerPaused={timers.isSubTimerPaused}
+            pauseSubTimer={timers.pauseSubTimer}
+            resumeSubTimer={timers.resumeSubTimer}
             formatTime={formatTime}
             handleSubstitution={handleSubstitution}
             handleEndPeriod={handleEndPeriod}

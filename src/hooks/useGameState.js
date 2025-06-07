@@ -498,7 +498,7 @@ export function useGameState() {
     setView('game');
   };
 
-  const handleSubstitution = () => {
+  const handleSubstitution = (isSubTimerPaused = false) => {
     const currentTimeEpoch = Date.now();
 
     // Request wake lock and start alert timer
@@ -513,7 +513,8 @@ export function useGameState() {
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
-      currentTimeEpoch
+      currentTimeEpoch,
+      isSubTimerPaused
     };
 
     try {
@@ -544,7 +545,7 @@ export function useGameState() {
     }
   };
 
-  const handleEndPeriod = () => {
+  const handleEndPeriod = (isSubTimerPaused = false) => {
     // Create auto-backup before ending period
     persistenceManager.autoBackup();
     const currentTimeEpoch = Date.now();
@@ -554,7 +555,7 @@ export function useGameState() {
     // Calculate updated stats
     const updatedPlayersWithFinalStats = allPlayers.map(p => {
       if (playerIdsInPeriod.includes(p.id)) {
-        const stats = calculatePlayerTimeStats(p, currentTimeEpoch);
+        const stats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
 
         // Update period role counts (based on final role of the period)
         // Note: With pair swapping, players can change roles mid-period, but we count
@@ -994,7 +995,7 @@ export function useGameState() {
   }, [allPlayers]);
 
   // Function to switch positions between two outfield players
-  const switchPlayerPositions = useCallback((player1Id, player2Id) => {
+  const switchPlayerPositions = useCallback((player1Id, player2Id, isSubTimerPaused = false) => {
     if (!player1Id || !player2Id || player1Id === player2Id) {
       console.warn('Invalid player IDs for position switch');
       return false;
@@ -1110,7 +1111,7 @@ export function useGameState() {
         return { 
           ...p, 
           stats: {
-            ...handleRoleChange(p, newRole, currentTimeEpoch),
+            ...handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused),
             currentPairKey: player2Position
           }
         };
@@ -1136,7 +1137,7 @@ export function useGameState() {
         return { 
           ...p, 
           stats: {
-            ...handleRoleChange(p, newRole, currentTimeEpoch),
+            ...handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused),
             currentPairKey: player1Position
           }
         };

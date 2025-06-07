@@ -5,8 +5,17 @@ import { createRotationQueue } from './rotationQueue';
  * Calculates updated time stats for a player based on their current status and role
  * This is shared logic used by both substitutions and period end calculations
  */
-export function calculatePlayerTimeStats(player, currentTimeEpoch) {
+export function calculatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused = false) {
   const stats = { ...player.stats };
+  
+  // If timer is paused, don't calculate any time progression
+  if (isSubTimerPaused) {
+    return {
+      ...stats
+      // Don't update lastStintStartTimeEpoch when paused
+    };
+  }
+  
   const timeInPreviousStint = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
 
   if (stats.currentPeriodStatus === 'on_field') {
@@ -39,8 +48,8 @@ export class SubstitutionManager {
   /**
    * Calculates time stats for players during substitution
    */
-  calculateTimeStats(player, currentTimeEpoch) {
-    return calculatePlayerTimeStats(player, currentTimeEpoch);
+  calculateTimeStats(player, currentTimeEpoch, isSubTimerPaused = false) {
+    return calculatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
   }
 
   /**
@@ -67,7 +76,8 @@ export class SubstitutionManager {
       periodFormation, 
       nextPhysicalPairToSubOut, 
       allPlayers, 
-      currentTimeEpoch 
+      currentTimeEpoch,
+      isSubTimerPaused = false
     } = context;
 
     const pairToSubOutKey = nextPhysicalPairToSubOut;
@@ -92,7 +102,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...this.calculateTimeStats(p, currentTimeEpoch),
+            ...this.calculateTimeStats(p, currentTimeEpoch, isSubTimerPaused),
             currentPeriodStatus: 'substitute',
             currentPairKey: pairToSubInKey
           }
@@ -102,7 +112,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...this.calculateTimeStats(p, currentTimeEpoch),
+            ...this.calculateTimeStats(p, currentTimeEpoch, isSubTimerPaused),
             currentPeriodStatus: 'on_field',
             currentPairKey: pairToSubOutKey
           }
@@ -129,7 +139,8 @@ export class SubstitutionManager {
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
-      currentTimeEpoch
+      currentTimeEpoch,
+      isSubTimerPaused = false
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
@@ -157,7 +168,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...this.calculateTimeStats(p, currentTimeEpoch),
+            ...this.calculateTimeStats(p, currentTimeEpoch, isSubTimerPaused),
             currentPeriodStatus: 'substitute',
             currentPairKey: 'substitute',
             currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
@@ -168,7 +179,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...this.calculateTimeStats(p, currentTimeEpoch),
+            ...this.calculateTimeStats(p, currentTimeEpoch, isSubTimerPaused),
             currentPeriodStatus: 'on_field',
             currentPairKey: playerToSubOutKey,
             currentPeriodRole: newRole
@@ -205,7 +216,8 @@ export class SubstitutionManager {
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
-      currentTimeEpoch
+      currentTimeEpoch,
+      isSubTimerPaused = false
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
@@ -250,7 +262,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...this.calculateTimeStats(p, currentTimeEpoch),
+            ...this.calculateTimeStats(p, currentTimeEpoch, isSubTimerPaused),
             currentPeriodStatus: 'substitute',
             currentPairKey: newPairKey,
             currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
@@ -261,7 +273,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...this.calculateTimeStats(p, currentTimeEpoch),
+            ...this.calculateTimeStats(p, currentTimeEpoch, isSubTimerPaused),
             currentPeriodStatus: 'on_field',
             currentPairKey: playerToSubOutKey,
             currentPeriodRole: newRole
@@ -324,15 +336,15 @@ export class SubstitutionManager {
  * Handles role changes within a period (like pair swaps)
  * This calculates time for the previous role and updates the player's current role
  */
-export function handleRoleChange(player, newRole, currentTimeEpoch) {
+export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPaused = false) {
   // First calculate stats for the time spent in the previous role
-  const updatedStats = calculatePlayerTimeStats(player, currentTimeEpoch);
+  const updatedStats = calculatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
   
-  // Update the role and reset the stint timer
+  // Update the role and reset the stint timer (only if not paused)
   return {
     ...updatedStats,
     currentPeriodRole: newRole,
-    lastStintStartTimeEpoch: currentTimeEpoch
+    lastStintStartTimeEpoch: isSubTimerPaused ? updatedStats.lastStintStartTimeEpoch : currentTimeEpoch
   };
 }
 

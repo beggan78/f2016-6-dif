@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play } from 'lucide-react';
 import { Button, PlayerOptionsModal, PlayerInactiveModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 
@@ -7,8 +7,12 @@ export function GameScreen({
   currentPeriodNumber, 
   periodFormation, 
   allPlayers, 
+  setAllPlayers,
   matchTimerSeconds, 
   subTimerSeconds, 
+  isSubTimerPaused,
+  pauseSubTimer,
+  resumeSubTimer,
   formatTime, 
   handleSubstitution, 
   handleEndPeriod, 
@@ -26,6 +30,45 @@ export function GameScreen({
   getOutfieldPlayers
 }) {
   const getPlayerName = React.useCallback((id) => allPlayers.find(p => p.id === id)?.name || 'N/A', [allPlayers]);
+  
+  // Function to update player stats when pausing/resuming
+  const updatePlayerStatsForPause = React.useCallback((currentTimeEpoch, isPausing) => {
+    setAllPlayers(prev => prev.map(player => {
+      if (!selectedSquadPlayers.find(p => p.id === player.id)) {
+        return player; // Not in selected squad, don't update
+      }
+      
+      const stats = { ...player.stats };
+      
+      if (isPausing) {
+        // When pausing: calculate and store accumulated time, but don't reset stint timer
+        if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'on_field') {
+          const currentStintTime = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
+          
+          // Accumulate the time into the appropriate buckets
+          stats.timeOnFieldSeconds += currentStintTime;
+          if (stats.currentPeriodRole === 'Attacker') {
+            stats.timeAsAttackerSeconds += currentStintTime;
+          } else if (stats.currentPeriodRole === 'Defender') {
+            stats.timeAsDefenderSeconds += currentStintTime;
+          }
+        } else if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'substitute') {
+          const currentStintTime = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
+          stats.timeAsSubSeconds += currentStintTime;
+        } else if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'goalie') {
+          const currentStintTime = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
+          stats.timeAsGoalieSeconds += currentStintTime;
+        }
+      } else {
+        // When resuming: reset stint start time for all active players
+        if (stats.currentPeriodStatus === 'on_field' || stats.currentPeriodStatus === 'substitute' || stats.currentPeriodStatus === 'goalie') {
+          stats.lastStintStartTimeEpoch = currentTimeEpoch;
+        }
+      }
+      
+      return { ...player, stats };
+    }));
+  }, [selectedSquadPlayers, setAllPlayers]);
   
   // Determine which formation mode we're using
   const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
@@ -271,7 +314,7 @@ export function GameScreen({
     // After animation completes (1 second), perform position switch and start glow
     setTimeout(() => {
       // Perform the actual position switch
-      const success = switchPlayerPositions(player1Id, player2Id);
+      const success = switchPlayerPositions(player1Id, player2Id, isSubTimerPaused);
       if (success) {
         // Set both players for highlighting
         setRecentlySubstitutedPlayers(new Set([player1Id, player2Id]));
@@ -307,14 +350,23 @@ export function GameScreen({
   // Note: Timeout logic is now handled in handleSubstitutionWithHighlight
 
   // Calculate player time statistics
-  const getPlayerTimeStats = (playerId) => {
+  const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = allPlayers.find(p => p.id === playerId);
     if (!player) return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
     
     const stats = player.stats;
+    
+    // When timer is paused, only use the stored stats without calculating current stint
+    if (isSubTimerPaused) {
+      return { 
+        totalOutfieldTime: stats.timeOnFieldSeconds, 
+        attackDefenderDiff: stats.timeAsAttackerSeconds - stats.timeAsDefenderSeconds 
+      };
+    }
+    
     const currentTime = Date.now();
     
-    // Calculate current stint time if player is active
+    // Calculate current stint time if player is active and timer is not paused
     let currentStintTime = 0;
     if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'on_field') {
       currentStintTime = Math.round((currentTime - stats.lastStintStartTimeEpoch) / 1000);
@@ -338,7 +390,7 @@ export function GameScreen({
     const attackDefenderDiff = attackerTime - defenderTime;
     
     return { totalOutfieldTime, attackDefenderDiff };
-  };
+  }, [allPlayers, isSubTimerPaused]);
 
   const formatTimeDifference = (diffSeconds) => {
     const sign = diffSeconds >= 0 ? '+' : '-';
@@ -569,7 +621,7 @@ export function GameScreen({
     
     // Use the existing switchPlayerPositions function to handle the swap
     // This will properly handle time tracking and role changes
-    const success = switchPlayerPositions(pairData.defender, pairData.attacker);
+    const success = switchPlayerPositions(pairData.defender, pairData.attacker, isSubTimerPaused);
     
     if (success) {
       console.log(`Swapped positions in ${pairKey}: ${defenderName} (D->A) <-> ${attackerName} (A->D)`);
@@ -1241,11 +1293,24 @@ export function GameScreen({
             {matchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(matchTimerSeconds))}
           </p>
         </div>
-        <div className="p-2 bg-slate-700 rounded-lg">
+        <div className="p-2 bg-slate-700 rounded-lg relative">
           <p className="text-xs text-sky-200 mb-0.5">Substitution Timer</p>
-          <p className={`text-2xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
-            {formatTime(subTimerSeconds)}
-          </p>
+          <div className="flex items-center justify-center gap-3">
+            <p className={`text-2xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
+              {formatTime(subTimerSeconds)}
+            </p>
+            <button
+              onClick={isSubTimerPaused ? () => resumeSubTimer(updatePlayerStatsForPause) : () => pauseSubTimer(updatePlayerStatsForPause)}
+              className="p-1 hover:bg-slate-600 rounded-full transition-colors duration-150 flex-shrink-0"
+              title={isSubTimerPaused ? "Resume substitution timer" : "Pause substitution timer"}
+            >
+              {isSubTimerPaused ? (
+                <Play className="h-5 w-5 text-emerald-400" />
+              ) : (
+                <Pause className="h-5 w-5 text-slate-400" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
