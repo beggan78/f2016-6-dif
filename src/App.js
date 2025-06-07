@@ -44,7 +44,7 @@ function App() {
     }
   }, [gameState]);
   
-  const { pushModalState, popModalState, removeModalFromStack } = useBrowserBackIntercept(handleGlobalNavigation);
+  const { pushModalState, removeModalFromStack } = useBrowserBackIntercept(handleGlobalNavigation);
   
   // Store the pushModalState function in the ref
   useEffect(() => {
