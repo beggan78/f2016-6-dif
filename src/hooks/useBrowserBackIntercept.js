@@ -13,7 +13,7 @@ import { useEffect, useRef } from 'react';
  * popModalState();
  * setModalOpen(false);
  */
-export function useBrowserBackIntercept() {
+export function useBrowserBackIntercept(globalNavigationHandler) {
   const modalStack = useRef([]);
   const hasInitialized = useRef(false);
 
@@ -43,8 +43,11 @@ export function useBrowserBackIntercept() {
             window.location.href
           );
         }
+      } else if (globalNavigationHandler && typeof globalNavigationHandler === 'function') {
+        // No modals open, call the global navigation handler
+        globalNavigationHandler();
       }
-      // If no modals are open, let the browser handle the back navigation normally
+      // If no modals are open and no global handler, let the browser handle the back navigation normally
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -52,7 +55,7 @@ export function useBrowserBackIntercept() {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, []);
+  }, [globalNavigationHandler]);
 
   const pushModalState = (closeModalCallback) => {
     if (typeof closeModalCallback !== 'function') {
@@ -82,6 +85,13 @@ export function useBrowserBackIntercept() {
     }
   };
 
+  const removeModalFromStack = () => {
+    // Remove modal from stack without triggering browser navigation
+    if (modalStack.current.length > 0) {
+      modalStack.current.pop();
+    }
+  };
+
   const clearModalStack = () => {
     modalStack.current = [];
     // Go back to base state if we're in a modal state
@@ -93,6 +103,7 @@ export function useBrowserBackIntercept() {
   return {
     pushModalState,
     popModalState,
+    removeModalFromStack,
     clearModalStack,
     hasOpenModals: () => modalStack.current.length > 0
   };

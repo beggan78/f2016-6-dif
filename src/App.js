@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
@@ -17,58 +17,56 @@ import { AddPlayerModal } from './components/AddPlayerModal';
 function App() {
   const gameState = useGameState();
   const timers = useTimers(gameState.periodDurationMinutes);
-  const { pushModalState, popModalState, hasOpenModals } = useBrowserBackIntercept();
   
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  
+  // Create a ref to store the pushModalState function to avoid circular dependency
+  const pushModalStateRef = useRef(null);
+  
+  // Global navigation handler for when no modals are open
+  const handleGlobalNavigation = useCallback(() => {
+    // Check current view and handle accordingly
+    if (gameState.view === 'periodSetup' && gameState.currentPeriodNumber === 1) {
+      // Exception: PeriodSetupScreen -> ConfigurationScreen
+      gameState.setView('config');
+    } else {
+      // Default: Show "Start a new game?" confirmation modal
+      setShowNewGameModal(true);
+      // Register this modal with the browser back intercept system
+      if (pushModalStateRef.current) {
+        pushModalStateRef.current(() => {
+          setShowNewGameModal(false);
+        });
+      }
+    }
+  }, [gameState]);
+  
+  const { pushModalState, popModalState, removeModalFromStack } = useBrowserBackIntercept(handleGlobalNavigation);
+  
+  // Store the pushModalState function in the ref
+  useEffect(() => {
+    pushModalStateRef.current = pushModalState;
+  }, [pushModalState]);
 
   const selectedSquadPlayers = useMemo(() => {
     return gameState.allPlayers.filter(p => gameState.selectedSquadIds.includes(p.id));
   }, [gameState.allPlayers, gameState.selectedSquadIds]);
 
-  // Global browser back handler
+  // Global browser back handler - integrated with useBrowserBackIntercept
   useEffect(() => {
-    let isSetupComplete = false;
-    
     // Wait a bit to ensure app is fully mounted
     const setupTimer = setTimeout(() => {
-      isSetupComplete = true;
       // Push a state to history stack to detect back navigation
       window.history.pushState({ app: 'dif-coach' }, '', window.location.href);
     }, 100);
 
-    const handlePopState = (event) => {
-      if (!isSetupComplete) return; // Ignore if still setting up
-      
-      // Check if any modals managed by the modal intercept system are open
-      if (hasOpenModals()) {
-        // Modal system will handle this automatically
-        return;
-      }
-      
-      // Check current view and handle accordingly
-      if (gameState.view === 'periodSetup' && gameState.currentPeriodNumber === 1) {
-        // Exception 2: PeriodSetupScreen -> ConfigurationScreen
-        gameState.setView('config');
-      } else {
-        // Default: Show "Start a new game?" confirmation modal
-        setShowNewGameModal(true);
-        // Add modal to browser back intercept
-        pushModalState(() => {
-          setShowNewGameModal(false);
-        });
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
     return () => {
       clearTimeout(setupTimer);
-      window.removeEventListener('popstate', handlePopState);
     };
-  }, [gameState, hasOpenModals, pushModalState]);
+  }, []);
 
   const availableForPairing = useMemo(() => {
     if (!gameState.periodFormation.goalie) return [];
@@ -112,15 +110,15 @@ function App() {
   };
 
   const handleConfirmEndPeriod = () => {
-    popModalState();
     setShowConfirmModal(false);
+    removeModalFromStack();
     timers.stopTimers();
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
 
   const handleCancelEndPeriod = () => {
-    popModalState();
     setShowConfirmModal(false);
+    removeModalFromStack();
   };
 
   const handleRestartMatch = () => {
@@ -155,26 +153,28 @@ function App() {
   };
 
   const handleAddPlayerConfirm = (playerName) => {
-    popModalState();
-    gameState.addTemporaryPlayer(playerName);
     setShowAddPlayerModal(false);
+    removeModalFromStack();
+    gameState.addTemporaryPlayer(playerName);
   };
 
   const handleAddPlayerCancel = () => {
-    popModalState();
     setShowAddPlayerModal(false);
+    removeModalFromStack();
   };
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = () => {
-    popModalState();
     setShowNewGameModal(false);
+    removeModalFromStack();
     handleRestartMatch();
   };
 
   const handleCancelNewGame = () => {
-    popModalState();
+    // When user clicks Cancel button, just close the modal without triggering browser back
     setShowNewGameModal(false);
+    // Remove the modal from the browser back intercept stack without triggering navigation
+    removeModalFromStack();
   };
 
   // Render logic

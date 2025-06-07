@@ -434,9 +434,11 @@ export function PeriodSetupScreen({
         Start Period {currentPeriodNumber}
       </Button>
       
-      <Button onClick={() => setView('config')} Icon={ArrowLeft}>
-        Back to Configuration
-      </Button>
+      {currentPeriodNumber === 1 && (
+        <Button onClick={() => setView('config')} Icon={ArrowLeft}>
+          Back to Configuration
+        </Button>
+      )}
     </div>
   );
 }
