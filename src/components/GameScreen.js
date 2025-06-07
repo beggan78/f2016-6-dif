@@ -1295,13 +1295,13 @@ export function GameScreen({
         </div>
         <div className="p-2 bg-slate-700 rounded-lg relative">
           <p className="text-xs text-sky-200 mb-0.5">Substitution Timer</p>
-          <div className="flex items-center justify-center gap-3">
+          <div className="relative flex items-center justify-center">
             <p className={`text-2xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
               {formatTime(subTimerSeconds)}
             </p>
             <button
               onClick={isSubTimerPaused ? () => resumeSubTimer(updatePlayerStatsForPause) : () => pauseSubTimer(updatePlayerStatsForPause)}
-              className="p-1 hover:bg-slate-600 rounded-full transition-colors duration-150 flex-shrink-0"
+              className="absolute right-0 p-1 hover:bg-slate-600 rounded-full transition-colors duration-150 flex-shrink-0"
               title={isSubTimerPaused ? "Resume substitution timer" : "Pause substitution timer"}
             >
               {isSubTimerPaused ? (

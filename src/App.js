@@ -218,7 +218,7 @@ function App() {
         {renderView()}
       </main>
       <footer className="mt-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} Coach App by Codewizard.</p>
+        <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
       </footer>
       
       <ConfirmationModal
