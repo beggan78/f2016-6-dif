@@ -476,30 +476,51 @@ export function GameScreen({
       
       // Only proceed if the player is substitute7_2 (next-next to go in)
       if (playerId === substitute7_2Id) {
-        // Swap substitute positions
-        setPeriodFormation(prev => ({
-          ...prev,
-          substitute7_1: substitute7_2Id,
-          substitute7_2: substitute7_1Id
-        }));
+        // Calculate animation distances for substitute swap
+        const distances = animationCalculator.calculate7PlayerDistances();
+        // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
+        const nextToGoInSwapDistances = {
+          ...distances,
+          sub1ToField: 0, // This signals it's a substitute swap animation
+          fieldToSub2: animationCalculator.getBoxHeight('individual'),
+          sub2ToSub1: -animationCalculator.getBoxHeight('individual')
+        };
         
-        // Update player positions
-        setAllPlayers(prev => prev.map(p => {
-          if (p.id === substitute7_1Id) {
-            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
-          }
-          if (p.id === substitute7_2Id) {
-            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
-          }
-          return p;
-        }));
+        setAnimationDistances(nextToGoInSwapDistances);
+        setIsAnimating(true);
+        setAnimationPhase('switching');
         
-        // Update next player tracking
-        // After the swap: substitute7_2Id is now in substitute7_1 position (next to go in)
-        // substitute7_1Id is now in substitute7_2 position (next-next to go in)
-        // No need to change nextNextPlayerIdToSubOut - it should still point to the field player
-        // who is second in the rotation queue, not to substitute players
-        // nextPlayerIdToSubOut should remain pointing to the current field player
+        // Delay the actual state change until animation completes
+        setTimeout(() => {
+          // Swap substitute positions
+          setPeriodFormation(prev => ({
+            ...prev,
+            substitute7_1: substitute7_2Id,
+            substitute7_2: substitute7_1Id
+          }));
+          
+          // Update player positions
+          setAllPlayers(prev => prev.map(p => {
+            if (p.id === substitute7_1Id) {
+              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+            }
+            if (p.id === substitute7_2Id) {
+              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+            }
+            return p;
+          }));
+          
+          // Update next player tracking
+          // After the swap: substitute7_2Id is now in substitute7_1 position (next to go in)
+          // substitute7_1Id is now in substitute7_2 position (next-next to go in)
+          // No need to change nextNextPlayerIdToSubOut - it should still point to the field player
+          // who is second in the rotation queue, not to substitute players
+          // nextPlayerIdToSubOut should remain pointing to the current field player
+          
+          // Animation complete callback
+          setIsAnimating(false);
+          setAnimationPhase('idle');
+        }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
       }
     }
     closeSubstituteModal();
