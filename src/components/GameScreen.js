@@ -1,11 +1,12 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play } from 'lucide-react';
-import { Button, PlayerOptionsModal, PlayerInactiveModal, GoalieModal, ScoreEditModal } from './UI';
+import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 
 export function GameScreen({ 
   currentPeriodNumber, 
   periodFormation, 
+  setPeriodFormation,
   allPlayers, 
   setAllPlayers,
   matchTimerSeconds, 
@@ -20,6 +21,7 @@ export function GameScreen({
   nextPlayerToSubOut,
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
+  setNextNextPlayerIdToSubOut,
   selectedSquadPlayers,
   setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
@@ -41,46 +43,46 @@ export function GameScreen({
   const getPlayerName = React.useCallback((id) => allPlayers.find(p => p.id === id)?.name || 'N/A', [allPlayers]);
   
   // Helper functions for modal management with browser back intercept
-  const openPlayerOptionsModal = React.useCallback((modalData) => {
-    setPlayerOptionsModal(modalData);
+  const openFieldPlayerModal = React.useCallback((modalData) => {
+    setFieldPlayerModal(modalData);
     if (pushModalState) {
       pushModalState(() => {
-        setPlayerOptionsModal({ 
+        setFieldPlayerModal({ 
           isOpen: false, 
           type: null, 
           target: null, 
           playerName: '', 
           sourcePlayerId: null, 
           availablePlayers: [], 
-          showPositionOptions: false 
+          showPositionOptions: false
         });
       });
     }
   }, [pushModalState]);
 
-  const closePlayerOptionsModal = React.useCallback(() => {
-    setPlayerOptionsModal({ 
+  const closeFieldPlayerModal = React.useCallback(() => {
+    setFieldPlayerModal({ 
       isOpen: false, 
       type: null, 
       target: null, 
       playerName: '', 
       sourcePlayerId: null, 
       availablePlayers: [], 
-      showPositionOptions: false 
+      showPositionOptions: false
     });
   }, []);
 
-  const openInactiveModal = React.useCallback((modalData) => {
-    setInactiveModal(modalData);
+  const openSubstituteModal = React.useCallback((modalData) => {
+    setSubstituteModal(modalData);
     if (pushModalState) {
       pushModalState(() => {
-        setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+        setSubstituteModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false, canSetAsNextToGoIn: false });
       });
     }
   }, [pushModalState]);
 
-  const closeInactiveModal = React.useCallback(() => {
-    setInactiveModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false });
+  const closeSubstituteModal = React.useCallback(() => {
+    setSubstituteModal({ isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false, canSetAsNextToGoIn: false });
   }, []);
 
   const openGoalieModal = React.useCallback((modalData) => {
@@ -141,8 +143,8 @@ export function GameScreen({
   const isIndividual6Mode = formationType === FORMATION_TYPES.INDIVIDUAL_6;
   const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
   
-  // State for player options modal
-  const [playerOptionsModal, setPlayerOptionsModal] = React.useState({
+  // State for field player modal
+  const [fieldPlayerModal, setFieldPlayerModal] = React.useState({
     isOpen: false,
     type: null, // 'pair' or 'player'
     target: null, // pairKey or position
@@ -152,12 +154,13 @@ export function GameScreen({
     showPositionOptions: false
   });
   
-  // State for player inactive modal (7-player individual mode only)
-  const [inactiveModal, setInactiveModal] = React.useState({
+  // State for substitute player modal (7-player individual mode only)
+  const [substituteModal, setSubstituteModal] = React.useState({
     isOpen: false,
     playerId: null,
     playerName: '',
-    isCurrentlyInactive: false
+    isCurrentlyInactive: false,
+    canSetAsNextToGoIn: false
   });
   
   // State for goalie replacement modal
@@ -482,7 +485,7 @@ export function GameScreen({
       const pairData = periodFormation[pairKey];
       const defenderName = getPlayerName(pairData?.defender);
       const attackerName = getPlayerName(pairData?.attacker);
-      openPlayerOptionsModal({
+      openFieldPlayerModal({
         isOpen: true,
         type: 'pair',
         target: pairKey,
@@ -495,15 +498,31 @@ export function GameScreen({
   };
 
   const handlePlayerLongPress = (position) => {
-    const validPositions = [
+    const fieldPositions = [
       'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', // 6-player mode
       'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7' // 7-player individual mode
     ];
+    const substitutePositions = ['substitute']; // 6-player mode only
     
-    if (validPositions.includes(position)) {
+    if (fieldPositions.includes(position)) {
       const playerId = periodFormation[position];
       const playerName = getPlayerName(playerId);
-      openPlayerOptionsModal({
+      
+      openFieldPlayerModal({
+        isOpen: true,
+        type: 'player',
+        target: position,
+        playerName: playerName,
+        sourcePlayerId: null,
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+    } else if (substitutePositions.includes(position)) {
+      // Handle 6-player substitute (no special options needed)
+      const playerId = periodFormation[position];
+      const playerName = getPlayerName(playerId);
+      
+      openFieldPlayerModal({
         isOpen: true,
         type: 'player',
         target: position,
@@ -524,150 +543,118 @@ export function GameScreen({
     const player = allPlayers.find(p => p.id === playerId);
     const isCurrentlyInactive = player?.stats.isInactive || false;
     
-    openInactiveModal({
+    // Determine if player can be set as next to go in
+    const isNextToGoIn = playerId === nextPlayerIdToSubOut;
+    const canSetAsNextToGoIn = position === 'substitute7_2' && !isNextToGoIn && !isCurrentlyInactive;
+    
+    openSubstituteModal({
       isOpen: true,
       playerId: playerId,
       playerName: playerName,
-      isCurrentlyInactive: isCurrentlyInactive
+      isCurrentlyInactive: isCurrentlyInactive,
+      canSetAsNextToGoIn: canSetAsNextToGoIn
     });
   };
 
-  // Handle player options modal actions
+  // Handle field player modal actions
   const handleSetNextSubstitution = () => {
-    if (playerOptionsModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(playerOptionsModal.target);
-    } else if (playerOptionsModal.type === 'player') {
-      setNextPlayerToSubOut(playerOptionsModal.target);
+    if (fieldPlayerModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(fieldPlayerModal.target);
+    } else if (fieldPlayerModal.type === 'player') {
+      setNextPlayerToSubOut(fieldPlayerModal.target);
     }
-    closePlayerOptionsModal();
+    closeFieldPlayerModal();
   };
 
   const handleSubstituteNow = () => {
     // First set as next substitution
-    if (playerOptionsModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(playerOptionsModal.target);
-    } else if (playerOptionsModal.type === 'player') {
-      setNextPlayerToSubOut(playerOptionsModal.target);
+    if (fieldPlayerModal.type === 'pair') {
+      setNextPhysicalPairToSubOut(fieldPlayerModal.target);
+    } else if (fieldPlayerModal.type === 'player') {
+      setNextPlayerToSubOut(fieldPlayerModal.target);
     }
     // Set flag to trigger substitution after state update
     setShouldSubstituteNow(true);
-    closePlayerOptionsModal();
+    closeFieldPlayerModal();
   };
 
-  const handleCancelPlayerOptionsModal = () => {
-    closePlayerOptionsModal();
+  const handleCancelFieldPlayerModal = () => {
+    closeFieldPlayerModal();
     if (removeModalFromStack) {
       removeModalFromStack();
     }
   };
 
-  // Handle inactive modal actions
-  const handleInactivatePlayer = () => {
-    if (inactiveModal.playerId) {
-      // Check if this would result in both substitutes being inactive
-      const playerToInactivate = allPlayers.find(p => p.id === inactiveModal.playerId);
-      if (playerToInactivate && !playerToInactivate.stats.isInactive) {
-        const substitute7_1Id = periodFormation.substitute7_1;
-        const substitute7_2Id = periodFormation.substitute7_2;
-        const otherSubstituteId = inactiveModal.playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
-        const otherSubstitute = allPlayers.find(p => p.id === otherSubstituteId);
-        
-        if (otherSubstitute?.stats.isInactive) {
-          alert('Cannot inactivate this player as it would result in both substitutes being inactive.');
-          closeInactiveModal();
-          return;
-        }
-      }
+  // Handle substitute modal actions
+  const handleSetAsNextToGoIn = () => {
+    if (substituteModal.playerId && isIndividual7Mode) {
+      const playerId = substituteModal.playerId;
       
-      // Check if this will trigger an animation (substitute7_1 being inactivated)
-      const willTriggerAnimation = playerToInactivate && !playerToInactivate.stats.isInactive && playerToInactivate.stats.currentPairKey === 'substitute7_1';
+      // Find current positions
+      const substitute7_1Id = periodFormation.substitute7_1;
+      const substitute7_2Id = periodFormation.substitute7_2;
       
-      if (willTriggerAnimation) {
-        // For inactivation of substitute7_1, start animation first, then perform state change
-        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
-        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
-        const distanceBetween = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
+      // Only proceed if the player is substitute7_2 (next-next to go in)
+      if (playerId === substitute7_2Id) {
+        // Swap substitute positions
+        setPeriodFormation(prev => ({
+          ...prev,
+          substitute7_1: substitute7_2Id,
+          substitute7_2: substitute7_1Id
+        }));
         
-        setAnimationDistances({ 
-          fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
-          sub1ToField: 0,  // Not used in inactivation
-          sub2ToSub1: -distanceBetween,  // substitute7_2 moves up to substitute7_1
-          nextOffToSub: distanceBetween,  // For backwards compatibility
-          subToNextOff: -distanceBetween  // For backwards compatibility
-        });
+        // Update player positions
+        setAllPlayers(prev => prev.map(p => {
+          if (p.id === substitute7_1Id) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+          }
+          if (p.id === substitute7_2Id) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+          }
+          return p;
+        }));
         
-        // Start the animation sequence
-        setIsAnimating(true);
-        setAnimationPhase('switching');
-        setHideNextOffIndicator(true);
-        
-        // After animation completes (1 second), perform state change
-        setTimeout(() => {
-          // Perform the actual state change
-          togglePlayerInactive(inactiveModal.playerId);
-          
-          // End animation
-          setIsAnimating(false);
-          setAnimationPhase('idle');
-          setHideNextOffIndicator(false);
-        }, 1000);
-      } else {
-        // No animation needed, perform state change immediately
-        togglePlayerInactive(inactiveModal.playerId);
+        // Update next player tracking
+        // After the swap: substitute7_2Id is now in substitute7_1 position (next to go in)
+        // substitute7_1Id is now in substitute7_2 position (next-next to go in)
+        // No need to change nextNextPlayerIdToSubOut - it should still point to the field player
+        // who is second in the rotation queue, not to substitute players
+        // nextPlayerIdToSubOut should remain pointing to the current field player
       }
     }
-    closeInactiveModal();
+    closeSubstituteModal();
+    if (removeModalFromStack) {
+      removeModalFromStack();
+    }
+  };
+
+  const handleInactivatePlayer = () => {
+    if (substituteModal.playerId) {
+      togglePlayerInactive(substituteModal.playerId);
+    }
+    closeSubstituteModal();
+    if (removeModalFromStack) {
+      removeModalFromStack();
+    }
   };
 
   const handleActivatePlayer = () => {
-    if (inactiveModal.playerId) {
-      // Check if this will trigger an animation (substitute7_2 being reactivated)
-      const playerToActivate = allPlayers.find(p => p.id === inactiveModal.playerId);
-      const willTriggerAnimation = playerToActivate && playerToActivate.stats.isInactive && playerToActivate.stats.currentPairKey === 'substitute7_2';
-      
-      if (willTriggerAnimation) {
-        // For reactivation of substitute7_2, start animation first, then perform state change
-        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
-        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
-        const distanceBetween = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
-        
-        setAnimationDistances({ 
-          fieldToSub2: distanceBetween,  // substitute7_1 moves down to substitute7_2
-          sub1ToField: 0,  // Not used in reactivation
-          sub2ToSub1: -distanceBetween,  // substitute7_2 moves up to substitute7_1
-          nextOffToSub: distanceBetween,  // For backwards compatibility
-          subToNextOff: -distanceBetween  // For backwards compatibility
-        });
-        
-        // Start the animation sequence
-        setIsAnimating(true);
-        setAnimationPhase('switching');
-        setHideNextOffIndicator(true);
-        
-        // After animation completes (1 second), perform state change
-        setTimeout(() => {
-          // Perform the actual state change
-          togglePlayerInactive(inactiveModal.playerId);
-          
-          // End animation
-          setIsAnimating(false);
-          setAnimationPhase('idle');
-          setHideNextOffIndicator(false);
-        }, 1000);
-      } else {
-        // No animation needed, perform state change immediately
-        togglePlayerInactive(inactiveModal.playerId);
-      }
+    if (substituteModal.playerId) {
+      togglePlayerInactive(substituteModal.playerId);
     }
-    closeInactiveModal();
-  };
-
-  const handleCancelInactive = () => {
-    closeInactiveModal();
+    closeSubstituteModal();
     if (removeModalFromStack) {
       removeModalFromStack();
     }
   };
+
+  const handleCancelSubstituteModal = () => {
+    closeSubstituteModal();
+    if (removeModalFromStack) {
+      removeModalFromStack();
+    }
+  };
+
 
   // Handle goalie replacement modal actions
   const handleGoalieLongPress = () => {
@@ -752,8 +739,8 @@ export function GameScreen({
   const handleChangePosition = (action) => {
     if (action === 'show-options') {
       // Show the position selection options
-      if (playerOptionsModal.target && playerOptionsModal.type === 'player') {
-        const sourcePlayerId = periodFormation[playerOptionsModal.target];
+      if (fieldPlayerModal.target && fieldPlayerModal.type === 'player') {
+        const sourcePlayerId = periodFormation[fieldPlayerModal.target];
         
         if (sourcePlayerId) {
           // Get only field players (exclude substitutes) except the source player
@@ -778,27 +765,27 @@ export function GameScreen({
             return true;
           });
           
-          setPlayerOptionsModal(prev => ({
+          setFieldPlayerModal(prev => ({
             ...prev,
             sourcePlayerId: sourcePlayerId,
             availablePlayers: availablePlayers,
             showPositionOptions: true
           }));
         }
-      } else if (playerOptionsModal.type === 'pair') {
+      } else if (fieldPlayerModal.type === 'pair') {
         // For pairs formation, position change between pairs is not supported, but swapping within pair is
         alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
-        handleCancelPlayerOptionsModal();
+        handleCancelFieldPlayerModal();
       }
     } else if (action === 'swap-pair-positions') {
       // Swap attacker and defender within the pair
-      if (playerOptionsModal.target && playerOptionsModal.type === 'pair') {
-        handleSwapPairPositions(playerOptionsModal.target);
-        handleCancelPlayerOptionsModal();
+      if (fieldPlayerModal.target && fieldPlayerModal.type === 'pair') {
+        handleSwapPairPositions(fieldPlayerModal.target);
+        handleCancelFieldPlayerModal();
       }
     } else if (action === null) {
       // Go back to main options
-      setPlayerOptionsModal(prev => ({
+      setFieldPlayerModal(prev => ({
         ...prev,
         showPositionOptions: false,
         availablePlayers: [],
@@ -807,15 +794,15 @@ export function GameScreen({
     } else {
       // action is a player ID - perform the animated position switch
       const targetPlayerId = action;
-      if (playerOptionsModal.sourcePlayerId && targetPlayerId) {
+      if (fieldPlayerModal.sourcePlayerId && targetPlayerId) {
         // Close the modal first
-        handleCancelPlayerOptionsModal();
+        handleCancelFieldPlayerModal();
         
         // Perform the animated position switch
-        handlePositionSwitchWithAnimation(playerOptionsModal.sourcePlayerId, targetPlayerId);
+        handlePositionSwitchWithAnimation(fieldPlayerModal.sourcePlayerId, targetPlayerId);
       } else {
         // Close the modal if something went wrong
-        handleCancelPlayerOptionsModal();
+        handleCancelFieldPlayerModal();
       }
     }
   };
@@ -1519,32 +1506,34 @@ export function GameScreen({
         </Button>
       </div>
 
-      {/* Player Options Modal */}
-      <PlayerOptionsModal
-        isOpen={playerOptionsModal.isOpen}
+      {/* Field Player Modal */}
+      <FieldPlayerModal
+        isOpen={fieldPlayerModal.isOpen}
         onSetNext={handleSetNextSubstitution}
         onSubNow={handleSubstituteNow}
-        onCancel={handleCancelPlayerOptionsModal}
+        onCancel={handleCancelFieldPlayerModal}
         onChangePosition={handleChangePosition}
-        playerName={playerOptionsModal.playerName}
-        availablePlayers={playerOptionsModal.availablePlayers}
-        showPositionChange={!isPairsMode && playerOptionsModal.type === 'player'}
-        showPositionOptions={playerOptionsModal.showPositionOptions}
-        showSwapPositions={isPairsMode && playerOptionsModal.type === 'pair'}
+        playerName={fieldPlayerModal.playerName}
+        availablePlayers={fieldPlayerModal.availablePlayers}
+        showPositionChange={!isPairsMode && fieldPlayerModal.type === 'player'}
+        showPositionOptions={fieldPlayerModal.showPositionOptions}
+        showSwapPositions={isPairsMode && fieldPlayerModal.type === 'pair'}
         showSubstitutionOptions={
-          playerOptionsModal.type === 'player' || 
-          (playerOptionsModal.type === 'pair' && playerOptionsModal.target !== 'subPair')
+          fieldPlayerModal.type === 'player' || 
+          (fieldPlayerModal.type === 'pair' && fieldPlayerModal.target !== 'subPair')
         }
       />
 
-      {/* Player Inactive Modal */}
-      <PlayerInactiveModal
-        isOpen={inactiveModal.isOpen}
+      {/* Substitute Player Modal */}
+      <SubstitutePlayerModal
+        isOpen={substituteModal.isOpen}
         onInactivate={handleInactivatePlayer}
         onActivate={handleActivatePlayer}
-        onCancel={handleCancelInactive}
-        playerName={inactiveModal.playerName}
-        isCurrentlyInactive={inactiveModal.isCurrentlyInactive}
+        onCancel={handleCancelSubstituteModal}
+        onSetAsNextToGoIn={handleSetAsNextToGoIn}
+        playerName={substituteModal.playerName}
+        isCurrentlyInactive={substituteModal.isCurrentlyInactive}
+        canSetAsNextToGoIn={substituteModal.canSetAsNextToGoIn}
       />
 
       {/* Goalie Replacement Modal */}

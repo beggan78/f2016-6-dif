@@ -1377,6 +1377,7 @@ export function useGameState() {
     nextPlayerIdToSubOut,
     setNextPlayerIdToSubOut,
     nextNextPlayerIdToSubOut,
+    setNextNextPlayerIdToSubOut,
     rotationQueue,
     setRotationQueue,
     gameLog,

@@ -230,6 +230,7 @@ function App() {
           <GameScreen 
             currentPeriodNumber={gameState.currentPeriodNumber}
             periodFormation={gameState.periodFormation}
+            setPeriodFormation={gameState.setPeriodFormation}
             allPlayers={gameState.allPlayers}
             setAllPlayers={gameState.setAllPlayers}
             matchTimerSeconds={timers.matchTimerSeconds}
@@ -244,6 +245,7 @@ function App() {
             nextPlayerToSubOut={gameState.nextPlayerToSubOut}
             nextPlayerIdToSubOut={gameState.nextPlayerIdToSubOut}
             nextNextPlayerIdToSubOut={gameState.nextNextPlayerIdToSubOut}
+            setNextNextPlayerIdToSubOut={gameState.setNextNextPlayerIdToSubOut}
             selectedSquadPlayers={selectedSquadPlayers}
             setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}

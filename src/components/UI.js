@@ -93,7 +93,7 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message,
   );
 }
 
-export function PlayerOptionsModal({ 
+export function FieldPlayerModal({ 
   isOpen, 
   onSetNext, 
   onSubNow, 
@@ -104,7 +104,7 @@ export function PlayerOptionsModal({
   showPositionChange = false,
   showPositionOptions = false,
   showSwapPositions = false,
-  showSubstitutionOptions = true  // New prop to control substitution options
+  showSubstitutionOptions = true
 }) {
   if (!isOpen) return null;
 
@@ -118,7 +118,7 @@ export function PlayerOptionsModal({
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
           <h3 className="text-lg font-semibold text-sky-300">
-            {showPositionOptions ? 'Change Position' : 'Player Options'}
+            {showPositionOptions ? 'Change Position' : 'Field Player Options'}
           </h3>
         </div>
         <div className="p-4">
@@ -180,14 +180,23 @@ export function PlayerOptionsModal({
 }
 
 
-export function PlayerInactiveModal({ isOpen, onInactivate, onActivate, onCancel, playerName, isCurrentlyInactive }) {
+export function SubstitutePlayerModal({ 
+  isOpen, 
+  onInactivate, 
+  onActivate, 
+  onCancel, 
+  onSetAsNextToGoIn,
+  playerName, 
+  isCurrentlyInactive,
+  canSetAsNextToGoIn = false
+}) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">Player Status</h3>
+          <h3 className="text-lg font-semibold text-sky-300">Substitute Options</h3>
         </div>
         <div className="p-4">
           <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
@@ -195,6 +204,11 @@ export function PlayerInactiveModal({ isOpen, onInactivate, onActivate, onCancel
             <Button onClick={onCancel} variant="secondary">
               Cancel
             </Button>
+            {canSetAsNextToGoIn && !isCurrentlyInactive && (
+              <Button onClick={onSetAsNextToGoIn} variant="accent">
+                Set as next to go in
+              </Button>
+            )}
             {isCurrentlyInactive ? (
               <Button onClick={onActivate} variant="primary">
                 Put {playerName} back into rotation
@@ -258,7 +272,7 @@ export function ScoreEditModal({
   onSave, 
   homeScore, 
   awayScore, 
-  homeTeamName = "Djurgårn", 
+  homeTeamName = "Djurgården",
   awayTeamName = "Opponent" 
 }) {
   const [editHomeScore, setEditHomeScore] = React.useState(homeScore);
