@@ -478,12 +478,18 @@ export function GameScreen({
       if (playerId === substitute7_2Id) {
         // Calculate animation distances for substitute swap
         const distances = animationCalculator.calculate7PlayerDistances();
+        
+        // Calculate proper distances between substitute positions
+        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
+        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
+        const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
+        
         // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
         const nextToGoInSwapDistances = {
           ...distances,
           sub1ToField: 0, // This signals it's a substitute swap animation
-          fieldToSub2: animationCalculator.getBoxHeight('individual'),
-          sub2ToSub1: -animationCalculator.getBoxHeight('individual')
+          fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
+          sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
         };
         
         setAnimationDistances(nextToGoInSwapDistances);
@@ -533,12 +539,18 @@ export function GameScreen({
     if (substituteModal.playerId && isIndividual7Mode) {
       // Calculate animation distances for inactive player swap
       const distances = animationCalculator.calculate7PlayerDistances();
+      
+      // Calculate proper distances between substitute positions
+      const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
+      const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
+      const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
+      
       // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
       const inactiveSwapDistances = {
         ...distances,
         sub1ToField: 0, // This signals it's a substitute swap animation
-        fieldToSub2: animationCalculator.getBoxHeight('individual'),
-        sub2ToSub1: -animationCalculator.getBoxHeight('individual')
+        fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
+        sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
       };
       
       setAnimationDistances(inactiveSwapDistances);
@@ -567,12 +579,18 @@ export function GameScreen({
     if (substituteModal.playerId && isIndividual7Mode) {
       // Calculate animation distances for reactivation player swap
       const distances = animationCalculator.calculate7PlayerDistances();
+      
+      // Calculate proper distances between substitute positions
+      const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
+      const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
+      const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
+      
       // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
       const reactivationSwapDistances = {
         ...distances,
         sub1ToField: 0, // This signals it's a substitute swap animation
-        fieldToSub2: animationCalculator.getBoxHeight('individual'),
-        sub2ToSub1: -animationCalculator.getBoxHeight('individual')
+        fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
+        sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
       };
       
       setAnimationDistances(reactivationSwapDistances);
@@ -1501,7 +1519,7 @@ export function GameScreen({
         onSave={handleScoreEditSave}
         homeScore={homeScore}
         awayScore={awayScore}
-        homeTeamName="Djurgårn"
+        homeTeamName="Djurgården"
         awayTeamName={opponentTeamName || 'Opponent'}
       />
     </div>
