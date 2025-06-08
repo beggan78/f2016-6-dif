@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
+import { formatTimeDifference } from '../utils/formatUtils';
 
 export function GameScreen({ 
   currentPeriodNumber, 
@@ -473,11 +474,6 @@ export function GameScreen({
     return { totalOutfieldTime, attackDefenderDiff };
   }, [allPlayers, isSubTimerPaused]);
 
-  const formatTimeDifference = (diffSeconds) => {
-    const sign = diffSeconds >= 0 ? '+' : '-';
-    const absSeconds = Math.abs(diffSeconds);
-    return sign + formatTime(absSeconds);
-  };
 
   // Click and hold logic for changing next substitution target
   const handlePairLongPress = (pairKey) => {

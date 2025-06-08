@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ListChecks, PlusCircle, Copy } from 'lucide-react';
 import { Button } from './UI';
 import { PLAYER_ROLES, calculateRolePoints } from '../utils/gameLogic';
+import { formatPoints, generateStatsText } from '../utils/formatUtils';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -24,12 +25,9 @@ export function StatsScreen({
   const [copySuccess, setCopySuccess] = useState(false);
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
 
-  const formatPoints = (points) => {
-    return points % 1 === 0 ? points.toString() : points.toFixed(1);
-  };
 
   const copyStatsToClipboard = async () => {
-    const statsText = generateStatsText();
+    const statsText = generateStatsText(squadForStats, homeScore, awayScore, opponentTeamName);
     try {
       await navigator.clipboard.writeText(statsText);
       setCopySuccess(true);
@@ -39,22 +37,6 @@ export function StatsScreen({
     }
   };
 
-  const generateStatsText = () => {
-    let text = `Final Score: Djurgårn ${homeScore} - ${awayScore} ${opponentTeamName || 'Opponent'}\n\n`;
-    text += "Spelare\t\tStart\tM\tB\tA\tUte\tBack\tFw\tMv\n";
-    text += "------\t\t-------\t-\t-\t-\t----------\t----\t--\t--\n";
-    
-    squadForStats.forEach(player => {
-      const { goaliePoints, defenderPoints, attackerPoints } = calculateRolePoints(player);
-      const startedAs = player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
-                       player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
-                       player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-';
-      
-      text += `${player.name}\t\t${startedAs}\t${formatPoints(goaliePoints)}\t${formatPoints(defenderPoints)}\t${formatPoints(attackerPoints)}\t${formatTime(player.stats.timeOnFieldSeconds)}\t${formatTime(player.stats.timeAsDefenderSeconds)}\t${formatTime(player.stats.timeAsAttackerSeconds)}\t${formatTime(player.stats.timeAsGoalieSeconds)}\n`;
-    });
-    
-    return text;
-  };
 
   const handleNewGame = () => {
     // Reset global state for a new game configuration and clear localStorage

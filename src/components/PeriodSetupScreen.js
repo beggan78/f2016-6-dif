@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { Users, Play, Edit3, ArrowLeft } from 'lucide-react';
 import { Select, Button } from './UI';
-import { formatTime } from '../utils/timeCalculations';
 import { FORMATION_TYPES } from '../utils/gameLogic';
+import { getPlayerLabel } from '../utils/formatUtils';
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
@@ -33,23 +33,6 @@ export function PeriodSetupScreen({
 
   const goalieForPeriod = allPlayers.find(p => p.id === periodFormation.goalie);
 
-  const formatTimeDifference = (diffSeconds) => {
-    const sign = diffSeconds >= 0 ? '+' : '-';
-    const absSeconds = Math.abs(diffSeconds);
-    return sign + formatTime(absSeconds);
-  };
-
-  const getPlayerLabel = (player) => {
-    // Only show accumulated time for periods 2 and 3
-    if (currentPeriodNumber > 1) {
-      const outfieldTime = formatTime(player.stats.timeOnFieldSeconds);
-      const attackDefenderDiff = player.stats.timeAsAttackerSeconds - player.stats.timeAsDefenderSeconds;
-      const diffFormatted = formatTimeDifference(attackDefenderDiff);
-      
-      return `${player.name}  ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
-    }
-    return player.name;
-  };
 
   const handlePlayerAssignment = (pairKey, role, playerId) => {
     // If formation is complete, allow player switching
@@ -316,7 +299,7 @@ export function PeriodSetupScreen({
           <Select
             value={periodFormation.goalie || ""}
             onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
-            options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
+            options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
             placeholder="Select Goalie for this Period"
           />
         )}
@@ -330,7 +313,7 @@ export function PeriodSetupScreen({
             pair={periodFormation.leftPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <PairSelectionCard
             title="Right"
@@ -338,7 +321,7 @@ export function PeriodSetupScreen({
             pair={periodFormation.rightPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <PairSelectionCard
             title="Substitutes"
@@ -346,7 +329,7 @@ export function PeriodSetupScreen({
             pair={periodFormation.subPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
         </>
       )}
@@ -359,7 +342,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.leftDefender}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Right Defender"
@@ -367,7 +350,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.rightDefender}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Left Attacker"
@@ -375,7 +358,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.leftAttacker}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Right Attacker"
@@ -383,7 +366,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.rightAttacker}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Substitute"
@@ -391,7 +374,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.substitute}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
         </>
       )}
@@ -404,7 +387,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.leftDefender7}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Right Defender"
@@ -412,7 +395,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.rightDefender7}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Left Attacker"
@@ -420,7 +403,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.leftAttacker7}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Right Attacker"
@@ -428,7 +411,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.rightAttacker7}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Substitute (Next)"
@@ -436,7 +419,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.substitute7_1}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Substitute (Next-Next)"
@@ -444,7 +427,7 @@ export function PeriodSetupScreen({
             playerId={periodFormation.substitute7_2}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
-            getPlayerLabel={getPlayerLabel}
+            currentPeriodNumber={currentPeriodNumber}
           />
         </>
       )}
@@ -462,7 +445,7 @@ export function PeriodSetupScreen({
   );
 }
 
-export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAvailableOptions, getPlayerLabel }) {
+export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
   const defenderOptions = getAvailableOptions(pairKey, 'defender');
   const attackerOptions = getAvailableOptions(pairKey, 'attacker');
 
@@ -479,7 +462,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         <Select
           value={pair.defender || ""}
           onChange={e => onPlayerAssign(pairKey, 'defender', e.target.value)}
-          options={defenderOptions.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
+          options={defenderOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
           placeholder="Select Defender"
         />
       </div>
@@ -488,7 +471,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         <Select
           value={pair.attacker || ""}
           onChange={e => onPlayerAssign(pairKey, 'attacker', e.target.value)}
-          options={attackerOptions.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
+          options={attackerOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
           placeholder="Select Attacker"
         />
       </div>
@@ -496,7 +479,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
   );
 }
 
-export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, getPlayerLabel }) {
+export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
   const availableOptions = getAvailableOptions(position);
 
   // Use same colors as GameScreen: sky for on-field, slate for substitutes
@@ -510,7 +493,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
       <Select
         value={playerId || ""}
         onChange={e => onPlayerAssign(position, e.target.value)}
-        options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p) }))}
+        options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
         placeholder={`Select ${title}`}
       />
     </div>
