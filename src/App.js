@@ -302,6 +302,8 @@ function App() {
             formationType={gameState.formationType}
             onSplitPairs={gameState.splitPairs}
             onFormPairs={gameState.formPairs}
+            allPlayers={gameState.allPlayers}
+            selectedSquadIds={gameState.selectedSquadIds}
           />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>

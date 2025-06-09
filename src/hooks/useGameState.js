@@ -750,6 +750,16 @@ export function useGameState() {
   const formPairs = useCallback(() => {
     if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) return;
     
+    // Check for inactive players in the selected squad
+    const hasInactivePlayers = allPlayers.some(player => 
+      selectedSquadIds.includes(player.id) && player.stats?.isInactive
+    );
+    
+    if (hasInactivePlayers) {
+      alert('Cannot form pairs while there are inactive players. Please activate all players first.');
+      return;
+    }
+    
     setPeriodFormation(prev => {
       const newFormation = {
         goalie: prev.goalie,
@@ -807,7 +817,7 @@ export function useGameState() {
     setNextPlayerIdToSubOut(null);
     setNextNextPlayerIdToSubOut(null);
     setNextPlayerToSubOut(null);
-  }, [formationType, selectedSquadIds]);
+  }, [formationType, selectedSquadIds, allPlayers]);
 
   // Enhanced setters for manual selection - rotation logic already handles sequence correctly
   const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {

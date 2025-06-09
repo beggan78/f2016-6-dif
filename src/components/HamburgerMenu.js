@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, formationType, onSplitPairs, onFormPairs }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, formationType, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -30,6 +30,15 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, format
   const isConfigScreen = currentView === 'config';
   const isGameScreen = currentView === 'game';
   const showFormationOptions = isGameScreen && (formationType === 'pairs_7' || formationType === 'individual_7');
+  
+  // Check for inactive players in the selected squad
+  const hasInactivePlayers = allPlayers && selectedSquadIds && 
+    allPlayers.some(player => 
+      selectedSquadIds.includes(player.id) && player.stats?.isInactive
+    );
+  
+  // Disable "Form Pairs" if there are inactive players
+  const canFormPairs = !hasInactivePlayers;
 
   return (
     <div className="relative">
@@ -84,7 +93,13 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, format
               {showFormationOptions && formationType === 'individual_7' && (
                 <button
                   onClick={handleFormPairs}
-                  className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                  disabled={!canFormPairs}
+                  className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                    canFormPairs 
+                      ? 'text-slate-100 hover:bg-slate-600 hover:text-sky-400' 
+                      : 'text-slate-400 cursor-not-allowed'
+                  }`}
+                  title={!canFormPairs ? "Cannot form pairs while there are inactive players" : ""}
                 >
                   Form Pairs
                 </button>
