@@ -10,6 +10,7 @@ import { PeriodSetupScreen } from './components/PeriodSetupScreen';
 import { GameScreen } from './components/GameScreen';
 import { StatsScreen } from './components/StatsScreen';
 import { ConfirmationModal } from './components/UI';
+import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/HamburgerMenu';
 import { AddPlayerModal } from './components/AddPlayerModal';
 
@@ -52,7 +53,7 @@ function App() {
   }, [pushModalState]);
 
   const selectedSquadPlayers = useMemo(() => {
-    return gameState.allPlayers.filter(p => gameState.selectedSquadIds.includes(p.id));
+    return getSelectedSquadPlayers(gameState.allPlayers, gameState.selectedSquadIds);
   }, [gameState.allPlayers, gameState.selectedSquadIds]);
 
   // Global browser back handler - integrated with useBrowserBackIntercept
@@ -70,8 +71,8 @@ function App() {
 
   const availableForPairing = useMemo(() => {
     if (!gameState.periodFormation.goalie) return [];
-    return selectedSquadPlayers.filter(p => p.id !== gameState.periodFormation.goalie);
-  }, [selectedSquadPlayers, gameState.periodFormation.goalie]);
+    return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.periodFormation.goalie);
+  }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.periodFormation.goalie]);
 
   // Enhanced game handlers that integrate with timers
   const handleStartGame = () => {

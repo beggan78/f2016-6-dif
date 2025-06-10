@@ -2,6 +2,7 @@
  * Animation support utilities
  * Provides calculations and measurements needed for smooth UI animations
  */
+import { findPlayerById } from './playerUtils';
 
 /**
  * Creates an animation calculator with methods for position and distance calculations
@@ -95,8 +96,8 @@ export const createAnimationCalculator = (
 
     // Calculate position switch animation distances
     calculatePositionSwitchDistances: (player1Id, player2Id) => {
-      const player1 = allPlayers.find(p => p.id === player1Id);
-      const player2 = allPlayers.find(p => p.id === player2Id);
+      const player1 = findPlayerById(allPlayers, player1Id);
+      const player2 = findPlayerById(allPlayers, player2Id);
       
       if (!player1 || !player2) return { player1Distance: 0, player2Distance: 0 };
       

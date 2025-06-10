@@ -4,7 +4,7 @@ import { generateRecommendedFormation } from '../utils/formationGenerator';
 import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../utils/substitutionManager';
 import { createRotationQueue } from '../utils/rotationQueue';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
-import { hasInactivePlayersInSquad } from '../utils/playerUtils';
+import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -175,7 +175,7 @@ export function useGameState() {
         // 6-player individual formation generation - recommend player with most time as substitute
         const outfielders = selectedSquadIds.filter(id => id !== currentGoalieId);
         const outfieldersWithStats = outfielders.map(id => {
-          const player = allPlayers.find(p => p.id === id);
+          const player = findPlayerById(allPlayers, id);
           const stats = playersWithLastPeriodStats.find(s => s.id === id);
           return {
             id,
@@ -229,7 +229,7 @@ export function useGameState() {
         // 7-player individual formation generation - recommend player with most time as substitute
         const outfielders = selectedSquadIds.filter(id => id !== currentGoalieId);
         const outfieldersWithStats = outfielders.map(id => {
-          const player = allPlayers.find(p => p.id === id);
+          const player = findPlayerById(allPlayers, id);
           const stats = playersWithLastPeriodStats.find(s => s.id === id);
           return {
             id,
@@ -556,7 +556,7 @@ export function useGameState() {
     // Create auto-backup before ending period
     persistenceManager.autoBackup();
     const currentTimeEpoch = Date.now();
-    const selectedSquadPlayers = allPlayers.filter(p => selectedSquadIds.includes(p.id));
+    const selectedSquadPlayers = getSelectedSquadPlayers(allPlayers, selectedSquadIds);
     const playerIdsInPeriod = selectedSquadPlayers.map(p => p.id);
 
     // Calculate updated stats
@@ -835,7 +835,7 @@ export function useGameState() {
       console.log('Reordering queue - selected:', selectedPlayerId, 'was next:', originalNextPlayerId);
       
       // Use RotationQueue to handle reordering
-      const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+      const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
       queueManager.initialize(); // Separate active and inactive players
       
       if (selectedPlayerId !== originalNextPlayerId) {
@@ -853,7 +853,7 @@ export function useGameState() {
   const togglePlayerInactive = useCallback((playerId, animationCallback = null, delayMs = 0) => {
     if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) return;
 
-    const player = allPlayers.find(p => p.id === playerId);
+    const player = findPlayerById(allPlayers, playerId);
     if (!player) return;
 
     const currentlyInactive = player.stats.isInactive;
@@ -867,7 +867,7 @@ export function useGameState() {
       const substitute7_1Id = periodFormation.substitute7_1;
       const substitute7_2Id = periodFormation.substitute7_2;
       const otherSubstituteId = playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
-      const otherSubstitute = allPlayers.find(p => p.id === otherSubstituteId);
+      const otherSubstitute = findPlayerById(allPlayers, otherSubstituteId);
       
       if (otherSubstitute?.stats.isInactive) {
         console.warn('Cannot inactivate player: would result in both substitutes being inactive');
@@ -885,7 +885,7 @@ export function useGameState() {
       // Update rotation queue and positions
       if (currentlyInactive) {
         // Player is being activated - they become the next player to go in (substitute7_1)
-        const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+        const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
         queueManager.initialize(); // Separate active and inactive players
         queueManager.reactivatePlayer(playerId);
         
@@ -940,7 +940,7 @@ export function useGameState() {
         setRotationQueue(queueManager.toArray());
       } else {
         // Player is being inactivated - use queue manager
-        const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+        const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
         queueManager.initialize(); // Separate active and inactive players
         queueManager.deactivatePlayer(playerId);
         setRotationQueue(queueManager.toArray());
@@ -1003,7 +1003,7 @@ export function useGameState() {
 
   // Helper function to get inactive players for animation purposes
   const getInactivePlayerPosition = useCallback((playerId) => {
-    const player = allPlayers.find(p => p.id === playerId);
+    const player = findPlayerById(allPlayers, playerId);
     return player?.stats.currentPairKey;
   }, [allPlayers]);
 
@@ -1014,8 +1014,8 @@ export function useGameState() {
       return false;
     }
 
-    const player1 = allPlayers.find(p => p.id === player1Id);
-    const player2 = allPlayers.find(p => p.id === player2Id);
+    const player1 = findPlayerById(allPlayers, player1Id);
+    const player2 = findPlayerById(allPlayers, player2Id);
     
     if (!player1 || !player2) {
       console.warn('Players not found for position switch');
@@ -1172,8 +1172,8 @@ export function useGameState() {
       return false;
     }
 
-    const currentGoalie = allPlayers.find(p => p.id === periodFormation.goalie);
-    const newGoalie = allPlayers.find(p => p.id === newGoalieId);
+    const currentGoalie = findPlayerById(allPlayers, periodFormation.goalie);
+    const newGoalie = findPlayerById(allPlayers, newGoalieId);
     
     if (!currentGoalie || !newGoalie) {
       console.warn('Goalie not found for switch');
@@ -1312,7 +1312,7 @@ export function useGameState() {
 
     // Update rotation queue - remove new goalie from queue and add old goalie
     setRotationQueue(prev => {
-      const queueManager = createRotationQueue(prev, (id) => allPlayers.find(p => p.id === id));
+      const queueManager = createRotationQueue(prev, createPlayerLookup(allPlayers));
       queueManager.initialize(); // Separate active and inactive players
       
       // Remove new goalie from queue (they're now goalie, not in rotation)
@@ -1329,11 +1329,8 @@ export function useGameState() {
   }, [allPlayers, periodFormation, formationType, setAllPlayers, setPeriodFormation, setRotationQueue]);
 
   // Helper function to get all outfield players (excludes goalie)
-  const getOutfieldPlayers = useCallback(() => {
-    return allPlayers.filter(p => 
-      selectedSquadIds.includes(p.id) && 
-      p.id !== periodFormation.goalie
-    );
+  const getOutfieldPlayersForGame = useCallback(() => {
+    return getOutfieldPlayers(allPlayers, selectedSquadIds, periodFormation.goalie);
   }, [allPlayers, selectedSquadIds, periodFormation.goalie]);
 
   // Score management functions
@@ -1409,7 +1406,7 @@ export function useGameState() {
     getInactivePlayerPosition,
     switchPlayerPositions,
     switchGoalie,
-    getOutfieldPlayers,
+    getOutfieldPlayers: getOutfieldPlayersForGame,
     addHomeGoal,
     addAwayGoal,
     setScore,

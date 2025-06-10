@@ -1,5 +1,6 @@
 import { PLAYER_ROLES, FORMATION_TYPES } from './gameLogic';
 import { createRotationQueue } from './rotationQueue';
+import { createPlayerLookup, findPlayerById } from './playerUtils';
 
 /**
  * Calculates updated time stats for a player based on their current status and role
@@ -150,7 +151,7 @@ export class SubstitutionManager {
     const playerComingOnId = periodFormation.substitute;
 
     // Create rotation queue helper
-    const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     queueManager.initialize(); // Separate active and inactive players
 
     // Find position of outgoing player
@@ -227,17 +228,17 @@ export class SubstitutionManager {
     const playerComingOnId = periodFormation.substitute7_1;
 
     // Create rotation queue helper
-    const queueManager = createRotationQueue(rotationQueue, (id) => allPlayers.find(p => p.id === id));
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     queueManager.initialize(); // Separate active and inactive players
 
     // Safety check for inactive substitute
-    const substitute7_1Player = allPlayers.find(p => p.id === playerComingOnId);
+    const substitute7_1Player = findPlayerById(allPlayers, playerComingOnId);
     if (substitute7_1Player?.stats.isInactive) {
       throw new Error('substitute7_1 is inactive but was selected for substitution');
     }
 
     // Check if substitute7_2 is inactive
-    const substitute7_2Player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
+    const substitute7_2Player = findPlayerById(allPlayers, periodFormation.substitute7_2);
     const isSubstitute7_2Inactive = substitute7_2Player?.stats.isInactive || false;
 
     // Find position of outgoing player

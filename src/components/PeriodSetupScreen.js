@@ -3,6 +3,7 @@ import { Users, Play, Edit3, ArrowLeft } from 'lucide-react';
 import { Select, Button } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 import { getPlayerLabel } from '../utils/formatUtils';
+import { findPlayerById } from '../utils/playerUtils';
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
@@ -31,7 +32,7 @@ export function PeriodSetupScreen({
     window.scrollTo(0, 0);
   }, []);
 
-  const goalieForPeriod = allPlayers.find(p => p.id === periodFormation.goalie);
+  const goalieForPeriod = findPlayerById(allPlayers, periodFormation.goalie);
 
 
   const handlePlayerAssignment = (pairKey, role, playerId) => {

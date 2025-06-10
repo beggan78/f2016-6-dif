@@ -4,6 +4,7 @@ import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEdit
 import { FORMATION_TYPES } from '../utils/gameLogic';
 import { formatTimeDifference } from '../utils/formatUtils';
 import { createAnimationCalculator } from '../utils/animationSupport';
+import { getPlayerName, findPlayerById } from '../utils/playerUtils';
 
 export function GameScreen({ 
   currentPeriodNumber, 
@@ -42,7 +43,7 @@ export function GameScreen({
   addAwayGoal,
   setScore
 }) {
-  const getPlayerName = React.useCallback((id) => allPlayers.find(p => p.id === id)?.name || 'N/A', [allPlayers]);
+  const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
   
   // Helper functions for modal management with browser back intercept
   const openFieldPlayerModal = React.useCallback((modalData) => {
@@ -285,8 +286,8 @@ export function GameScreen({
         // Set both players for highlighting
         setRecentlySubstitutedPlayers(new Set([player1Id, player2Id]));
         
-        const player1Name = getPlayerName(player1Id);
-        const player2Name = getPlayerName(player2Id);
+        const player1Name = getPlayerNameById(player1Id);
+        const player2Name = getPlayerNameById(player2Id);
         console.log(`Successfully switched positions between ${player1Name} and ${player2Name}`);
       } else {
         console.warn('Position switch failed');
@@ -303,7 +304,7 @@ export function GameScreen({
         setRecentlySubstitutedPlayers(new Set());
       }, 1500);
     }, 1000);
-  }, [animationCalculator, switchPlayerPositions, getPlayerName, isSubTimerPaused]);
+  }, [animationCalculator, switchPlayerPositions, getPlayerNameById, isSubTimerPaused]);
 
   // Effect to trigger substitution after state update
   React.useEffect(() => {
@@ -317,7 +318,7 @@ export function GameScreen({
 
   // Calculate player time statistics
   const getPlayerTimeStats = React.useCallback((playerId) => {
-    const player = allPlayers.find(p => p.id === playerId);
+    const player = findPlayerById(allPlayers, playerId);
     if (!player) return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
     
     const stats = player.stats;
@@ -363,8 +364,8 @@ export function GameScreen({
   const handlePairLongPress = (pairKey) => {
     if (pairKey === 'leftPair' || pairKey === 'rightPair' || pairKey === 'subPair') {
       const pairData = periodFormation[pairKey];
-      const defenderName = getPlayerName(pairData?.defender);
-      const attackerName = getPlayerName(pairData?.attacker);
+      const defenderName = getPlayerNameById(pairData?.defender);
+      const attackerName = getPlayerNameById(pairData?.attacker);
       openFieldPlayerModal({
         isOpen: true,
         type: 'pair',
@@ -386,7 +387,7 @@ export function GameScreen({
     
     if (fieldPositions.includes(position)) {
       const playerId = periodFormation[position];
-      const playerName = getPlayerName(playerId);
+      const playerName = getPlayerNameById(playerId);
       
       openFieldPlayerModal({
         isOpen: true,
@@ -400,7 +401,7 @@ export function GameScreen({
     } else if (substitutePositions.includes(position)) {
       // Handle 6-player substitute (no special options needed)
       const playerId = periodFormation[position];
-      const playerName = getPlayerName(playerId);
+      const playerName = getPlayerNameById(playerId);
       
       openFieldPlayerModal({
         isOpen: true,
@@ -419,8 +420,8 @@ export function GameScreen({
     if (!isIndividual7Mode || (position !== 'substitute7_1' && position !== 'substitute7_2')) return;
     
     const playerId = periodFormation[position];
-    const playerName = getPlayerName(playerId);
-    const player = allPlayers.find(p => p.id === playerId);
+    const playerName = getPlayerNameById(playerId);
+    const player = findPlayerById(allPlayers, playerId);
     const isCurrentlyInactive = player?.stats.isInactive || false;
     
     // Determine if player can be set as next to go in
@@ -538,7 +539,7 @@ export function GameScreen({
   const handleInactivatePlayer = () => {
     if (substituteModal.playerId && isIndividual7Mode) {
       // Check if substitute7_2 is being inactivated
-      const playerBeingInactivated = allPlayers.find(p => p.id === substituteModal.playerId);
+      const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
       const isSubstitute7_2BeingInactivated = playerBeingInactivated?.stats.currentPairKey === 'substitute7_2';
       
       if (isSubstitute7_2BeingInactivated) {
@@ -634,7 +635,7 @@ export function GameScreen({
 
   // Handle goalie replacement modal actions
   const handleGoalieLongPress = () => {
-    const currentGoalieName = getPlayerName(periodFormation.goalie);
+    const currentGoalieName = getPlayerNameById(periodFormation.goalie);
     
     // Get all active players currently playing (from selected squad)
     const activePlayingPlayers = selectedSquadPlayers.map(player => ({
@@ -656,8 +657,8 @@ export function GameScreen({
     const success = switchGoalie(newGoalieId, isSubTimerPaused);
     
     if (success) {
-      const oldGoalieName = getPlayerName(periodFormation.goalie);
-      const newGoalieName = getPlayerName(newGoalieId);
+      const oldGoalieName = getPlayerNameById(periodFormation.goalie);
+      const newGoalieName = getPlayerNameById(newGoalieId);
       console.log(`Successfully switched goalie: ${oldGoalieName} -> ${newGoalieName}`);
     } else {
       console.warn('Goalie switch failed');
@@ -697,8 +698,8 @@ export function GameScreen({
     const pairData = periodFormation[pairKey];
     if (!pairData || !pairData.defender || !pairData.attacker) return;
     
-    const defenderName = getPlayerName(pairData.defender);
-    const attackerName = getPlayerName(pairData.attacker);
+    const defenderName = getPlayerNameById(pairData.defender);
+    const attackerName = getPlayerNameById(pairData.attacker);
     
     // Use the existing switchPlayerPositions function to handle the swap
     // This will properly handle time tracking and role changes
@@ -1009,7 +1010,7 @@ export function GameScreen({
         </h3>
         <div className="space-y-0.5">
           <div className="flex items-center justify-between">
-            <div><Shield className="inline h-3 w-3 mr-1" /> D: {getPlayerName(pairData.defender)}</div>
+            <div><Shield className="inline h-3 w-3 mr-1" /> D: {getPlayerNameById(pairData.defender)}</div>
             {pairData.defender && (() => {
               const stats = getPlayerTimeStats(pairData.defender);
               return (
@@ -1021,7 +1022,7 @@ export function GameScreen({
             })()}
           </div>
           <div className="flex items-center justify-between">
-            <div><Sword className="inline h-3 w-3 mr-1" /> A: {getPlayerName(pairData.attacker)}</div>
+            <div><Sword className="inline h-3 w-3 mr-1" /> A: {getPlayerNameById(pairData.attacker)}</div>
             {pairData.attacker && (() => {
               const stats = getPlayerTimeStats(pairData.attacker);
               return (
@@ -1140,7 +1141,7 @@ export function GameScreen({
           </div>
         </h3>
         <div className="flex items-center justify-between">
-          <div>{icon} {getPlayerName(playerId)}</div>
+          <div>{icon} {getPlayerNameById(playerId)}</div>
           {playerId && (() => {
             const stats = getPlayerTimeStats(playerId);
             return (
@@ -1163,7 +1164,7 @@ export function GameScreen({
     const playerId = periodFormation[position];
     if (!playerId) return null;
     
-    const player = allPlayers.find(p => p.id === playerId);
+    const player = findPlayerById(allPlayers, playerId);
     const isInactive = player?.stats.isInactive || false;
     const isSubstitute = position.includes('substitute');
     
@@ -1231,7 +1232,7 @@ export function GameScreen({
           // CRITICAL: Inactive players never move during animations
           
           // Check if substitute7_2 is inactive to determine where field player should go
-          const substitute7_2Player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
+          const substitute7_2Player = findPlayerById(allPlayers, periodFormation.substitute7_2);
           const isSubstitute7_2Inactive = substitute7_2Player?.stats.isInactive || false;
           
           if (isNextOff && !isInactive) {
@@ -1347,7 +1348,7 @@ export function GameScreen({
           </div>
         </h3>
         <div className="flex items-center justify-between">
-          <div>{icon} {getPlayerName(playerId)}</div>
+          <div>{icon} {getPlayerNameById(playerId)}</div>
           {playerId && (() => {
             const stats = getPlayerTimeStats(playerId);
             return (
@@ -1432,7 +1433,7 @@ export function GameScreen({
         {...goalieEvents}
       >
         <p className="text-center my-1 text-sky-200">
-          Goalie: <span className="font-semibold">{getPlayerName(periodFormation.goalie)}</span>
+          Goalie: <span className="font-semibold">{getPlayerNameById(periodFormation.goalie)}</span>
         </p>
         <p className="text-xs text-slate-400 text-center">Hold to replace goalie</p>
       </div>
@@ -1462,11 +1463,11 @@ export function GameScreen({
           {renderIndividual7Position('leftAttacker7', 'Left Attacker', <Sword className="inline h-3 w-3 mr-1" />, 2, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
           {renderIndividual7Position('rightAttacker7', 'Right Attacker', <Sword className="inline h-3 w-3 mr-1" />, 3, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
           {renderIndividual7Position('substitute7_1', (() => {
-            const player = allPlayers.find(p => p.id === periodFormation.substitute7_1);
+            const player = findPlayerById(allPlayers, periodFormation.substitute7_1);
             return player?.stats.isInactive ? 'Inactive' : 'Substitute';
           })(), <RotateCcw className="inline h-3 w-3 mr-1" />, 4, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
           {renderIndividual7Position('substitute7_2', (() => {
-            const player = allPlayers.find(p => p.id === periodFormation.substitute7_2);
+            const player = findPlayerById(allPlayers, periodFormation.substitute7_2);
             return player?.stats.isInactive ? 'Inactive' : 'Substitute';
           })(), <RotateCcw className="inline h-3 w-3 mr-1" />, 5, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut)}
         </div>
