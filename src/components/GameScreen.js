@@ -940,6 +940,21 @@ export function GameScreen({
   // Score long-press event
   const scoreEvents = useLongPressWithScrollDetection(() => handleScoreLongPress());
 
+  // Centralized goalie animation logic helper
+  const getGoalieAnimationProps = (playerId) => {
+    if (!isGoalieAnimating || animationPhase !== 'switching' || playerId !== goalieAnimationData.newGoalieId) {
+      return null;
+    }
+    
+    return {
+      animationClass: 'animate-dynamic-up',
+      zIndexClass: 'z-30', // Highest z-index for replacement goalie moving up
+      styleProps: {
+        '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
+      }
+    };
+  };
+
   const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
     if (!pairData) return null;
@@ -1006,18 +1021,13 @@ export function GameScreen({
     }
     
     // Handle goalie replacement animation for pairs
-    if (isGoalieAnimating && animationPhase === 'switching') {
-      const pairDefenderId = pairData.defender;
-      const pairAttackerId = pairData.attacker;
-      
-      // Check if either player in this pair is being replaced by the goalie
-      if (pairDefenderId === goalieAnimationData.newGoalieId || pairAttackerId === goalieAnimationData.newGoalieId) {
-        animationClass = 'animate-dynamic-up';
-        zIndexClass = 'z-30'; // Highest z-index for replacement goalie moving up
-        styleProps = {
-          '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
-        };
-      }
+    const pairDefenderId = pairData.defender;
+    const pairAttackerId = pairData.attacker;
+    const goalieAnimationProps = getGoalieAnimationProps(pairDefenderId) || getGoalieAnimationProps(pairAttackerId);
+    if (goalieAnimationProps) {
+      animationClass = goalieAnimationProps.animationClass;
+      zIndexClass = goalieAnimationProps.zIndexClass;
+      styleProps = goalieAnimationProps.styleProps;
     }
 
     let bgColor = 'bg-slate-700'; // Default for subs or if logic is off
@@ -1148,17 +1158,11 @@ export function GameScreen({
     }
     
     // Handle goalie replacement animation
-    if (isGoalieAnimating && animationPhase === 'switching') {
-      console.log('🎬 Field player animation check - playerId:', playerId, 'newGoalieId:', goalieAnimationData.newGoalieId, 'goalieToField:', goalieAnimationData.goalieToField);
-      // Check if this player is the one being replaced by the goalie
-      if (playerId === goalieAnimationData.newGoalieId) {
-        animationClass = 'animate-dynamic-up';
-        zIndexClass = 'z-30'; // Highest z-index for replacement goalie moving up
-        styleProps = {
-          '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
-        };
-        console.log('🎬 Applying field player animation - animationClass:', animationClass, 'styleProps:', styleProps);
-      }
+    const goalieAnimationProps = getGoalieAnimationProps(playerId);
+    if (goalieAnimationProps) {
+      animationClass = goalieAnimationProps.animationClass;
+      zIndexClass = goalieAnimationProps.zIndexClass;
+      styleProps = goalieAnimationProps.styleProps;
     }
 
     let bgColor = 'bg-slate-700'; // Default for substitute
@@ -1354,15 +1358,11 @@ export function GameScreen({
     }
     
     // Handle goalie replacement animation for 7-player individual mode
-    if (isGoalieAnimating && animationPhase === 'switching') {
-      // Check if this player is the one being replaced by the goalie
-      if (playerId === goalieAnimationData.newGoalieId) {
-        animationClass = 'animate-dynamic-up';
-        zIndexClass = 'z-30'; // Highest z-index for replacement goalie moving up
-        styleProps = {
-          '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
-        };
-      }
+    const goalieAnimationProps = getGoalieAnimationProps(playerId);
+    if (goalieAnimationProps) {
+      animationClass = goalieAnimationProps.animationClass;
+      zIndexClass = goalieAnimationProps.zIndexClass;
+      styleProps = goalieAnimationProps.styleProps;
     }
 
     let bgColor = 'bg-slate-700'; // Default for substitute
