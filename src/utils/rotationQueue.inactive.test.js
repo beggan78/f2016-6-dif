@@ -130,4 +130,66 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     cloned.reactivatePlayer('2');
     expect(queue.getInactivePlayers()).toContain('2'); // Original unchanged
   });
+
+  test('bug fix: reactivated player should not become next to substitute out', () => {
+    // Recreate the exact bug scenario from the issue report
+    // Initial setup with 7 players (typical 7-player individual mode)
+    const players = ['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury'];
+    const getPlayerById = (id) => ({ id, name: id, stats: { isInactive: false } });
+    
+    const bugTestQueue = createRotationQueue(players, getPlayerById);
+    bugTestQueue.initialize();
+    
+    // Initial state: [FieldA, FieldB, FieldC, FieldD, OtherSub, PlayerWithInjury]
+    expect(bugTestQueue.toArray()).toEqual(['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury']);
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // Correct - field player
+    
+    // Step 1: Inactivate PlayerWithInjury
+    bugTestQueue.deactivatePlayer('PlayerWithInjury');
+    expect(bugTestQueue.toArray()).toEqual(['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub']);
+    expect(bugTestQueue.getInactivePlayers()).toEqual(['PlayerWithInjury']);
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // Still correct
+    
+    // Step 2: Reactivate PlayerWithInjury (THE FIX)
+    bugTestQueue.reactivatePlayer('PlayerWithInjury');
+    expect(bugTestQueue.toArray()).toEqual(['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury']);
+    expect(bugTestQueue.getInactivePlayers()).toEqual([]);
+    
+    // CRITICAL: Next player should still be FieldA, NOT PlayerWithInjury
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // ✅ Fixed - field player, not substitute
+    
+    // Step 4: Simulate first substitution (FieldA comes off)
+    bugTestQueue.rotatePlayer('FieldA'); // FieldA goes to end
+    expect(bugTestQueue.toArray()).toEqual(['FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury', 'FieldA']);
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldB'); // ✅ Correct - next field player
+    
+    // Step 5: Simulate second substitution (FieldB comes off)
+    bugTestQueue.rotatePlayer('FieldB'); // FieldB goes to end  
+    expect(bugTestQueue.toArray()).toEqual(['FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury', 'FieldA', 'FieldB']);
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldC'); // ✅ Correct - next field player
+    
+    // Verify PlayerWithInjury is NOT at the front of the queue
+    expect(bugTestQueue.getNextActivePlayer()).not.toBe('PlayerWithInjury');
+  });
+
+  test('bug fix: reactivated player goes to end, preserving field player priority', () => {
+    // Test that field players always have priority over substitute players
+    const players = ['Field1', 'Field2', 'Sub1', 'Sub2'];
+    const getPlayerById = (id) => ({ id, name: id, stats: { isInactive: false } });
+    
+    const priorityTestQueue = createRotationQueue(players, getPlayerById);
+    priorityTestQueue.initialize();
+    
+    // Inactivate Sub2
+    priorityTestQueue.deactivatePlayer('Sub2');
+    expect(priorityTestQueue.toArray()).toEqual(['Field1', 'Field2', 'Sub1']);
+    
+    // Reactivate Sub2 - should go to END, not start
+    priorityTestQueue.reactivatePlayer('Sub2');
+    expect(priorityTestQueue.toArray()).toEqual(['Field1', 'Field2', 'Sub1', 'Sub2']);
+    
+    // Field players should still have priority for substitution
+    expect(priorityTestQueue.getNextActivePlayer()).toBe('Field1');
+    expect(priorityTestQueue.getNextActivePlayer(2)).toEqual(['Field1', 'Field2']);
+  });
 });
