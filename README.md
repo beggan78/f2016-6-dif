@@ -54,7 +54,7 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
 
 ### 2. Period Setup
 - Configure team formation for the current period
-- AI recommendations based on previous playing time (for periods 2-3)
+- AI recommendations based on intelligent formation logic (for periods 2-3)
 - Manual override available for all positions
 
 ### 3. Live Game Management
@@ -119,7 +119,92 @@ The interface provides clear visual cues for complex rotation planning:
 - **Precise Role Tracking**: Individual positions allow granular attacker vs defender time balance
 - **Fair Distribution**: All 6 outfield players rotate through all positions
 - **Statistical Analysis**: Detailed breakdown of time spent in each role
-- **Intelligent Recommendations**: AI suggests formations based on accumulated time data
+- **Intelligent Recommendations**: AI suggests formations based on sophisticated balancing algorithms
+
+## Formation Recommendation System
+
+The app features an intelligent formation recommendation system that automatically suggests optimal player arrangements for periods 2 and 3, ensuring fair role distribution and maintaining team chemistry through strategic pair management.
+
+### Pair Mode Recommendations
+
+#### Before 2nd Period
+The system prioritizes maintaining existing partnerships while ensuring position balance:
+
+**Pair Integrity Maintenance**
+- When the goalie changes, the algorithm identifies the new goalie's original partner from the previous period
+- The ex-goalie is paired with this "orphaned" partner
+- The orphaned partner changes defender/attacker roles from their previous position
+- The former goalie takes the vacant role in the new pair
+
+**Role Swapping for Balance**
+- All other existing pairs are preserved but with swapped defender/attacker roles
+- This ensures players experience both defensive and attacking positions across periods
+- Team chemistry is maintained while promoting positional versatility
+
+**Playing Time Considerations**
+- **Substitute Recommendation**: The pair containing the player with the most total outfield time becomes the recommended substitute pair
+- **First Substitution Target**: Among non-substitute pairs, the pair with the player having the most outfield time is recommended as "first to rotate off"
+
+#### Before 3rd Period
+Period 3 introduces sophisticated role balance enforcement based on accumulated playing time:
+
+**Role Balance Enforcement (Time-Based)**
+The system analyzes each player's defender vs attacker time ratio to determine role requirements:
+- **Balanced Players**: Those with `0.8 ≤ defenderTime/attackerTime ≤ 1.25` have no specific role restrictions
+- **Must Play Defender**: Players with `defenderTime/attackerTime < 0.8` (predominantly played attacker) are assigned defender roles
+- **Must Play Attacker**: Players with `defenderTime/attackerTime > 1.25` (predominantly played defender) are assigned attacker roles
+- The system adds 1 second to each time category to prevent division-by-zero errors
+
+**Adaptive Pair Management**
+The algorithm attempts to maintain pair integrity while respecting role balance requirements:
+
+1. **Pair Preservation Priority**: When possible, existing pairs are maintained with appropriate role adjustments
+2. **Strategic Pair Breaking**: If role balance cannot be achieved while keeping pairs intact, the system intelligently breaks pairs to ensure fair role distribution
+3. **Goalie Change Handling**: Similar to period 2, but with additional role balance constraints applied
+
+**Flexible Player Assignment**
+For players not restricted by balancing rules:
+- They receive the opposite role from what they played in period 2
+- This promotes continued positional variety and skill development
+
+**Example Scenarios**
+
+*Scenario 1: Balanced Distribution*
+- Player A: 150s defender, 160s attacker (ratio = 0.94) → Flexible
+- Player B: 180s defender, 140s attacker (ratio = 1.29) → Must play attacker
+- Result: Pair maintained with Player B as attacker, Player A takes defender role
+
+*Scenario 2: Pair Breaking Required*
+- Player C: 50s defender, 200s attacker (ratio = 0.25) → Must play defender  
+- Player D: 60s defender, 180s attacker (ratio = 0.33) → Must play defender
+- Result: Original C-D pair broken, each paired with players who need attacker roles
+
+### Substitute Recommendations (All Periods)
+
+**Primary Recommendation Logic**
+- The pair containing the player with the highest total outfield time is recommended as the substitute pair
+- This ensures players with more accumulated playing time get appropriate rest periods
+
+**First Rotation Target**
+- Among the two non-substitute pairs, the one containing the player with the most outfield time is marked as "first to rotate off"
+- This balances playing time by prioritizing substitutions for players who have been on field longer
+
+### Algorithm Benefits
+
+**Fair Play Assurance**
+- Time-based calculations ensure truly equitable role distribution
+- Prevents players from being "stuck" in single positions across multiple periods
+- Maintains competitive balance while developing all players
+
+**Team Chemistry**
+- Prioritizes keeping successful partnerships together when possible
+- Only breaks pairs when necessary for fairness, minimizing disruption
+- Smooth transitions maintain team coordination and player confidence
+
+**Coaching Support**
+- Recommendations are clearly presented but never mandatory
+- Coaches can override any suggestion while maintaining the underlying tracking
+- Visual indicators help coaches understand the reasoning behind recommendations
 
 ## Technology Stack
 
