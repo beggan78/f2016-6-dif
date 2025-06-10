@@ -4,6 +4,7 @@ import { generateRecommendedFormation } from '../utils/formationGenerator';
 import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../utils/substitutionManager';
 import { createRotationQueue } from '../utils/rotationQueue';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
+import { hasInactivePlayersInSquad } from '../utils/playerUtils';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -751,11 +752,7 @@ export function useGameState() {
     if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) return;
     
     // Check for inactive players in the selected squad
-    const hasInactivePlayers = allPlayers.some(player => 
-      selectedSquadIds.includes(player.id) && player.stats?.isInactive
-    );
-    
-    if (hasInactivePlayers) {
+    if (hasInactivePlayersInSquad(allPlayers, selectedSquadIds)) {
       alert('Cannot form pairs while there are inactive players. Please activate all players first.');
       return;
     }

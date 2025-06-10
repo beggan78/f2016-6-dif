@@ -107,15 +107,15 @@ describe('RotationQueue', () => {
       expect(queue.getInactivePlayers()).toEqual(['3', '2']); // '2' added to inactive list
     });
 
-    test('reactivates player by moving from inactive to front of queue', () => {
+    test('reactivates player by moving from inactive to end of queue', () => {
       queue.reactivatePlayer('3'); // '3' was inactive
-      expect(queue.toArray()).toEqual(['3', '1', '2', '4', '5']); // '3' at front
+      expect(queue.toArray()).toEqual(['1', '2', '4', '5', '3']); // '3' at end
       expect(queue.getInactivePlayers()).toEqual([]); // '3' removed from inactive list
     });
 
     test('handles reactivating player not in inactive list', () => {
       queue.reactivatePlayer('6'); // Player not in queue at all
-      expect(queue.toArray()).toEqual(['6', '1', '2', '4', '5']); // '6' added to front
+      expect(queue.toArray()).toEqual(['1', '2', '4', '5', '6']); // '6' added to end
       expect(queue.getInactivePlayers()).toEqual(['3']); // Inactive list unchanged
     });
 

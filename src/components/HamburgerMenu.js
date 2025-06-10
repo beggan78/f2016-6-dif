@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { hasInactivePlayersInSquad } from '../utils/playerUtils';
 
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, formationType, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,10 +33,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, format
   const showFormationOptions = isGameScreen && (formationType === 'pairs_7' || formationType === 'individual_7');
   
   // Check for inactive players in the selected squad
-  const hasInactivePlayers = allPlayers && selectedSquadIds && 
-    allPlayers.some(player => 
-      selectedSquadIds.includes(player.id) && player.stats?.isInactive
-    );
+  const hasInactivePlayers = hasInactivePlayersInSquad(allPlayers, selectedSquadIds);
   
   // Disable "Form Pairs" if there are inactive players
   const canFormPairs = !hasInactivePlayers;

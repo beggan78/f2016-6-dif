@@ -537,34 +537,43 @@ export function GameScreen({
 
   const handleInactivatePlayer = () => {
     if (substituteModal.playerId && isIndividual7Mode) {
-      // Calculate animation distances for inactive player swap
-      const distances = animationCalculator.calculate7PlayerDistances();
+      // Check if substitute7_2 is being inactivated
+      const playerBeingInactivated = allPlayers.find(p => p.id === substituteModal.playerId);
+      const isSubstitute7_2BeingInactivated = playerBeingInactivated?.stats.currentPairKey === 'substitute7_2';
       
-      // Calculate proper distances between substitute positions
-      const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
-      const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
-      const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
-      
-      // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
-      const inactiveSwapDistances = {
-        ...distances,
-        sub1ToField: 0, // This signals it's a substitute swap animation
-        fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
-        sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
-      };
-      
-      setAnimationDistances(inactiveSwapDistances);
-      setIsAnimating(true);
-      setAnimationPhase('switching');
-      
-      // Delay the actual state change until animation completes
-      setTimeout(() => {
-        togglePlayerInactive(substituteModal.playerId, () => {
-          // Animation complete callback
-          setIsAnimating(false);
-          setAnimationPhase('idle');
-        }, 0);
-      }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
+      if (isSubstitute7_2BeingInactivated) {
+        // No animation needed - substitute7_2 is already in the correct position for inactive players
+        togglePlayerInactive(substituteModal.playerId);
+      } else {
+        // Calculate animation distances for inactive player swap (substitute7_1 being inactivated)
+        const distances = animationCalculator.calculate7PlayerDistances();
+        
+        // Calculate proper distances between substitute positions
+        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
+        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
+        const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
+        
+        // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
+        const inactiveSwapDistances = {
+          ...distances,
+          sub1ToField: 0, // This signals it's a substitute swap animation
+          fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
+          sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
+        };
+        
+        setAnimationDistances(inactiveSwapDistances);
+        setIsAnimating(true);
+        setAnimationPhase('switching');
+        
+        // Delay the actual state change until animation completes
+        setTimeout(() => {
+          togglePlayerInactive(substituteModal.playerId, () => {
+            // Animation complete callback
+            setIsAnimating(false);
+            setAnimationPhase('idle');
+          }, 0);
+        }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
+      }
     } else if (substituteModal.playerId) {
       // Non-7-player mode, no animation needed
       togglePlayerInactive(substituteModal.playerId);

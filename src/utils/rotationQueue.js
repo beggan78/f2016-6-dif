@@ -113,7 +113,7 @@ export class RotationQueue {
   }
 
   /**
-   * Handle player becoming active again - remove from inactive list and add to front of queue
+   * Handle player becoming active again - remove from inactive list and add to end of queue
    */
   reactivatePlayer(playerId) {
     // Remove from inactive players
@@ -122,8 +122,9 @@ export class RotationQueue {
       this.inactivePlayers.splice(inactiveIndex, 1);
     }
     
-    // Add to front of queue (next to be substituted)
-    this.addPlayer(playerId, 'start');
+    // Add to end of queue (they should be last priority to come off field)
+    // The "set as next to go in" logic in useGameState will handle making them substitute7_1
+    this.addPlayer(playerId, 'end');
   }
 
   /**

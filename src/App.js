@@ -122,6 +122,10 @@ function App() {
   };
 
   const handleRestartMatch = () => {
+    // Reset all timer state and clear localStorage
+    timers.resetAllTimers();
+    
+    // Reset all game state
     gameState.setView('config');
     gameState.setCurrentPeriodNumber(1);
     gameState.setGameLog([]);
@@ -143,7 +147,6 @@ function App() {
     gameState.resetScore();
     gameState.setOpponentTeamName('');
     gameState.clearStoredState();
-    timers.clearTimerState();
   };
 
   const handleAddPlayer = () => {

@@ -198,6 +198,27 @@ export function useTimers(periodDurationMinutes) {
     }
   };
 
+  // Reset all timer state to initial values
+  const resetAllTimers = () => {
+    setMatchTimerSeconds(periodDurationMinutes * 60);
+    setSubTimerSeconds(0);
+    setIsPeriodActive(false);
+    setIsSubTimerPaused(false);
+    setPeriodStartTime(null);
+    setLastSubTime(null);
+    setPausedSubTime(0);
+    setSubPauseStartTime(null);
+    
+    // Clear any running interval
+    if (updateIntervalId) {
+      clearInterval(updateIntervalId);
+      setUpdateIntervalId(null);
+    }
+    
+    // Clear localStorage
+    clearTimerState();
+  };
+
   return {
     matchTimerSeconds,
     setMatchTimerSeconds,
@@ -214,5 +235,6 @@ export function useTimers(periodDurationMinutes) {
     periodStartTime,
     lastSubTime,
     clearTimerState,
+    resetAllTimers,
   };
 }

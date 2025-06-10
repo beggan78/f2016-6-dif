@@ -64,17 +64,17 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     expect(queue.getNextActivePlayer(5)).toEqual(['1', '5']);
   });
 
-  test('reactivating a player puts them at front of queue', () => {
+  test('reactivating a player puts them at end of queue', () => {
     // Reactivate player '2'
     queue.reactivatePlayer('2');
     
-    // They should be at front of active queue
-    expect(queue.toArray()).toEqual(['2', '1', '3', '5']);
+    // They should be at end of active queue
+    expect(queue.toArray()).toEqual(['1', '3', '5', '2']);
     // And removed from inactive list
     expect(queue.getInactivePlayers()).toEqual(['4']);
     
-    // They should be next to be substituted
-    expect(queue.getNextActivePlayer()).toBe('2');
+    // Next to be substituted should still be the first player
+    expect(queue.getNextActivePlayer()).toBe('1');
   });
 
   test('complex scenario: deactivate, rotate, reactivate maintains correct order', () => {
@@ -89,14 +89,14 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     queue.rotatePlayer('3');
     expect(queue.toArray()).toEqual(['5', '3']);
     
-    // Reactivate player '4' - should go to front
+    // Reactivate player '4' - should go to end
     queue.reactivatePlayer('4');
-    expect(queue.toArray()).toEqual(['4', '5', '3']);
+    expect(queue.toArray()).toEqual(['5', '3', '4']);
     expect(queue.getInactivePlayers()).toEqual(['2', '1']);
     
-    // Next player should be '4' (the reactivated one)
-    expect(queue.getNextActivePlayer()).toBe('4');
-    expect(queue.getNextActivePlayer(3)).toEqual(['4', '5', '3']);
+    // Next player should be '5' (the first in queue)
+    expect(queue.getNextActivePlayer()).toBe('5');
+    expect(queue.getNextActivePlayer(3)).toEqual(['5', '3', '4']);
   });
 
   test('queue size methods work correctly with inactive players', () => {
