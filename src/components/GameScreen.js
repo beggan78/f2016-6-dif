@@ -192,6 +192,15 @@ export function GameScreen({
   const [animationPhase, setAnimationPhase] = React.useState('idle'); // 'idle', 'switching', 'completing'
   const [animationDistances, setAnimationDistances] = React.useState({ nextOffToSub: 0, subToNextOff: 0 });
   
+  // State to track goalie replacement animation
+  const [isGoalieAnimating, setIsGoalieAnimating] = React.useState(false);
+  const [goalieAnimationData, setGoalieAnimationData] = React.useState({
+    newGoalieId: null,
+    newGoaliePosition: null,
+    goalieToField: 0,
+    fieldToGoalie: 0
+  });
+  
   // Create animation calculator instance
   const animationCalculator = React.useMemo(() => {
     return createAnimationCalculator(
@@ -652,19 +661,48 @@ export function GameScreen({
   };
 
   const handleSelectNewGoalie = (newGoalieId) => {
-    // Use the switchGoalie function to handle the goalie switch
-    // This will properly handle time tracking, role changes, and rotation queue updates
-    const success = switchGoalie(newGoalieId, isSubTimerPaused);
+    // Calculate animation distances for goalie replacement
+    const animationData = animationCalculator.calculateGoalieReplacementDistances(newGoalieId);
+    console.log('🎬 Goalie animation data:', animationData);
+    setGoalieAnimationData(animationData);
     
-    if (success) {
-      const oldGoalieName = getPlayerNameById(periodFormation.goalie);
-      const newGoalieName = getPlayerNameById(newGoalieId);
-      console.log(`Successfully switched goalie: ${oldGoalieName} -> ${newGoalieName}`);
-    } else {
-      console.warn('Goalie switch failed');
+    // Start goalie animation sequence
+    setIsGoalieAnimating(true);
+    setAnimationPhase('switching');
+    console.log('🎬 Starting goalie animation - isGoalieAnimating:', true, 'animationPhase:', 'switching');
+    
+    // Close modal immediately to show animation
+    closeGoalieModal();
+    if (removeModalFromStack) {
+      removeModalFromStack();
     }
     
-    closeGoalieModal();
+    // After animation completes (1 second), perform the actual goalie switch
+    setTimeout(() => {
+      const success = switchGoalie(newGoalieId, isSubTimerPaused);
+      
+      setAnimationPhase('completing');
+      
+      if (success) {
+        const oldGoalieName = getPlayerNameById(periodFormation.goalie);
+        const newGoalieName = getPlayerNameById(newGoalieId);
+        console.log(`Successfully switched goalie: ${oldGoalieName} -> ${newGoalieName}`);
+      } else {
+        console.warn('Goalie switch failed');
+      }
+      
+      // Complete animation
+      setTimeout(() => {
+        setAnimationPhase('idle');
+        setIsGoalieAnimating(false);
+        setGoalieAnimationData({
+          newGoalieId: null,
+          newGoaliePosition: null,
+          goalieToField: 0,
+          fieldToGoalie: 0
+        });
+      }, 500);
+    }, 1000);
   };
 
   const handleCancelGoalieModal = () => {
@@ -966,6 +1004,21 @@ export function GameScreen({
         }
       }
     }
+    
+    // Handle goalie replacement animation for pairs
+    if (isGoalieAnimating && animationPhase === 'switching') {
+      const pairDefenderId = pairData.defender;
+      const pairAttackerId = pairData.attacker;
+      
+      // Check if either player in this pair is being replaced by the goalie
+      if (pairDefenderId === goalieAnimationData.newGoalieId || pairAttackerId === goalieAnimationData.newGoalieId) {
+        animationClass = 'animate-dynamic-up';
+        zIndexClass = 'z-30'; // Highest z-index for replacement goalie moving up
+        styleProps = {
+          '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
+        };
+      }
+    }
 
     let bgColor = 'bg-slate-700'; // Default for subs or if logic is off
     let textColor = 'text-slate-300';
@@ -1091,6 +1144,20 @@ export function GameScreen({
             '--move-distance': `${animationDistances.subToNextOff}px`
           };
         }
+      }
+    }
+    
+    // Handle goalie replacement animation
+    if (isGoalieAnimating && animationPhase === 'switching') {
+      console.log('🎬 Field player animation check - playerId:', playerId, 'newGoalieId:', goalieAnimationData.newGoalieId, 'goalieToField:', goalieAnimationData.goalieToField);
+      // Check if this player is the one being replaced by the goalie
+      if (playerId === goalieAnimationData.newGoalieId) {
+        animationClass = 'animate-dynamic-up';
+        zIndexClass = 'z-30'; // Highest z-index for replacement goalie moving up
+        styleProps = {
+          '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
+        };
+        console.log('🎬 Applying field player animation - animationClass:', animationClass, 'styleProps:', styleProps);
       }
     }
 
@@ -1285,6 +1352,18 @@ export function GameScreen({
         }
       }
     }
+    
+    // Handle goalie replacement animation for 7-player individual mode
+    if (isGoalieAnimating && animationPhase === 'switching') {
+      // Check if this player is the one being replaced by the goalie
+      if (playerId === goalieAnimationData.newGoalieId) {
+        animationClass = 'animate-dynamic-up';
+        zIndexClass = 'z-30'; // Highest z-index for replacement goalie moving up
+        styleProps = {
+          '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
+        };
+      }
+    }
 
     let bgColor = 'bg-slate-700'; // Default for substitute
     let textColor = 'text-slate-300';
@@ -1431,6 +1510,20 @@ export function GameScreen({
       <div 
         className="p-2 bg-slate-700 rounded-lg cursor-pointer select-none hover:bg-slate-600 transition-colors duration-150"
         {...goalieEvents}
+        style={(() => {
+          // Calculate goalie animation style
+          if (isGoalieAnimating && animationPhase === 'switching' && goalieAnimationData.goalieToField !== 0) {
+            const style = {
+              transform: `translateY(${goalieAnimationData.goalieToField}px)`,
+              transition: 'transform 1s ease-in-out',
+              zIndex: 20, // Medium z-index for old goalie moving down
+              position: 'relative'
+            };
+            console.log('🎬 Applying goalie style:', style);
+            return style;
+          }
+          return {};
+        })()}
       >
         <p className="text-center my-1 text-sky-200">
           Goalie: <span className="font-semibold">{getPlayerNameById(periodFormation.goalie)}</span>

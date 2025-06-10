@@ -54,10 +54,17 @@ export const createAnimationCalculator = (
   };
 
   const calculateDistance = (fromIndex, toIndex, mode) => {
-    if (fromIndex === -1 || toIndex === -1) return 0;
+    // Special case: if either index is -1, it means we have an invalid position
+    // EXCEPT for goalie animations where -1 represents the goalie position
+    if ((fromIndex === -1 && toIndex === -1) || (fromIndex < -1 || toIndex < -1)) return 0;
+    
     const boxHeight = getBoxHeight(mode);
     const distance = Math.abs(toIndex - fromIndex) * boxHeight;
-    return toIndex > fromIndex ? distance : -distance;
+    const result = toIndex > fromIndex ? distance : -distance;
+    
+    console.log('🎬 Distance calculation - fromIndex:', fromIndex, 'toIndex:', toIndex, 'boxHeight:', boxHeight, 'result:', result);
+    
+    return result;
   };
 
   return {
@@ -144,6 +151,50 @@ export const createAnimationCalculator = (
         sub2ToSub1,
         nextOffToSub: fieldToSub2,
         subToNextOff: sub1ToField
+      };
+    },
+
+    // Calculate goalie replacement animation distances
+    calculateGoalieReplacementDistances: (newGoalieId) => {
+      console.log('🎬 Animation calculator - newGoalieId:', newGoalieId);
+      const newGoalie = findPlayerById(allPlayers, newGoalieId);
+      if (!newGoalie) {
+        console.log('🎬 Animation calculator - newGoalie not found');
+        return { goalieToField: 0, fieldToGoalie: 0 };
+      }
+      
+      const newGoaliePosition = newGoalie.stats.currentPairKey;
+      console.log('🎬 Animation calculator - newGoaliePosition:', newGoaliePosition);
+      
+      // Goalie is always at position -1 (above all other positions)
+      const goalieIndex = -1;
+      
+      let mode = 'individual';
+      let modeKey = 'individual6';
+      
+      if (isPairsMode) {
+        mode = 'pairs';
+        modeKey = 'pairs';
+      } else if (isIndividual7Mode) {
+        modeKey = 'individual7';
+      }
+      
+      console.log('🎬 Animation calculator - mode:', mode, 'modeKey:', modeKey);
+      
+      const fieldPlayerIndex = getPositionIndex(newGoaliePosition, modeKey);
+      console.log('🎬 Animation calculator - fieldPlayerIndex:', fieldPlayerIndex, 'goalieIndex:', goalieIndex);
+      
+      // Calculate distances - goalie moves down to field, field player moves up to goalie
+      const goalieToField = calculateDistance(goalieIndex, fieldPlayerIndex, mode);
+      const fieldToGoalie = calculateDistance(fieldPlayerIndex, goalieIndex, mode);
+      
+      console.log('🎬 Animation calculator - goalieToField:', goalieToField, 'fieldToGoalie:', fieldToGoalie);
+      
+      return {
+        goalieToField: goalieToField,
+        fieldToGoalie: fieldToGoalie,
+        newGoalieId: newGoalieId,
+        newGoaliePosition: newGoaliePosition
       };
     }
   };
