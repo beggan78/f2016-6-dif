@@ -689,6 +689,9 @@ export function GameScreen({
   };
 
   const handleSelectNewGoalie = (newGoalieId) => {
+    // Capture the current goalie ID before the switch
+    const formerGoalieId = periodFormation.goalie;
+    
     // Calculate animation distances for goalie replacement
     const animationData = animationCalculator.calculateGoalieReplacementDistances(newGoalieId);
     
@@ -709,26 +712,30 @@ export function GameScreen({
     setTimeout(() => {
       const success = switchGoalie(newGoalieId, isSubTimerPaused);
       
-      setAnimationState(prev => ({
-        ...prev,
-        phase: 'completing'
-      }));
-      
       if (success) {
-        const oldGoalieName = getPlayerNameById(periodFormation.goalie);
+        // Add both players to the glow effect - former goalie and new goalie
+        setRecentlySubstitutedPlayers(new Set([formerGoalieId, newGoalieId]));
+        
+        const oldGoalieName = getPlayerNameById(formerGoalieId);
         const newGoalieName = getPlayerNameById(newGoalieId);
         console.log(`Successfully switched goalie: ${oldGoalieName} -> ${newGoalieName}`);
       } else {
         console.warn('Goalie switch failed');
       }
       
-      // Complete animation
+      setAnimationState(prev => ({
+        ...prev,
+        phase: 'completing'
+      }));
+      
+      // After glow effect completes, reset everything
       setTimeout(() => {
         setAnimationState({
           type: 'none',
           phase: 'idle',
           data: {}
         });
+        setRecentlySubstitutedPlayers(new Set());
       }, GLOW_DURATION);
     }, ANIMATION_DURATION);
   };
