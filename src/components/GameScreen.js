@@ -663,13 +663,11 @@ export function GameScreen({
   const handleSelectNewGoalie = (newGoalieId) => {
     // Calculate animation distances for goalie replacement
     const animationData = animationCalculator.calculateGoalieReplacementDistances(newGoalieId);
-    console.log('🎬 Goalie animation data:', animationData);
     setGoalieAnimationData(animationData);
     
     // Start goalie animation sequence
     setIsGoalieAnimating(true);
     setAnimationPhase('switching');
-    console.log('🎬 Starting goalie animation - isGoalieAnimating:', true, 'animationPhase:', 'switching');
     
     // Close modal immediately to show animation
     closeGoalieModal();
@@ -1513,14 +1511,12 @@ export function GameScreen({
         style={(() => {
           // Calculate goalie animation style
           if (isGoalieAnimating && animationPhase === 'switching' && goalieAnimationData.goalieToField !== 0) {
-            const style = {
+            return {
               transform: `translateY(${goalieAnimationData.goalieToField}px)`,
               transition: 'transform 1s ease-in-out',
               zIndex: 20, // Medium z-index for old goalie moving down
               position: 'relative'
             };
-            console.log('🎬 Applying goalie style:', style);
-            return style;
           }
           return {};
         })()}
