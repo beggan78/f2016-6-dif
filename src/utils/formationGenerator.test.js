@@ -1,0 +1,394 @@
+import { generateRecommendedFormation, generateBalancedFormationForPeriod3 } from './formationGenerator';
+
+describe('Formation Generator - Pair Mode', () => {
+  // Mock player data
+  const createPlayer = (id, name, timeOnField = 0, defenderTime = 0, attackerTime = 0) => ({
+    id,
+    name,
+    stats: {
+      timeOnFieldSeconds: timeOnField,
+      timeAsDefenderSeconds: defenderTime,
+      timeAsAttackerSeconds: attackerTime
+    }
+  });
+
+  const squad = [
+    createPlayer('p1', 'Player 1'),
+    createPlayer('p2', 'Player 2'),
+    createPlayer('p3', 'Player 3'),
+    createPlayer('p4', 'Player 4'),
+    createPlayer('p5', 'Player 5'),
+    createPlayer('p6', 'Player 6'),
+    createPlayer('p7', 'Player 7')
+  ];
+
+  describe('Period 2 Formation Logic', () => {
+    test('should maintain pair integrity with role swapping when no goalie change', () => {
+      const prevFormation = {
+        leftPair: { defender: 'p1', attacker: 'p2' },
+        rightPair: { defender: 'p3', attacker: 'p4' },
+        subPair: { defender: 'p5', attacker: 'p6' }
+      };
+
+      const result = generateRecommendedFormation(
+        2, // period 2
+        'p7', // same goalie
+        'p7', // previous goalie
+        prevFormation,
+        squad,
+        squad
+      );
+
+      // All pairs should be preserved but with swapped roles
+      const allPairs = [result.recommendedLeft, result.recommendedRight, result.recommendedSubs];
+      
+      // Check that p1-p2 pair exists with swapped roles
+      const p1p2Pair = allPairs.find(pair => 
+        (pair.defender === 'p1' && pair.attacker === 'p2') ||
+        (pair.defender === 'p2' && pair.attacker === 'p1')
+      );
+      expect(p1p2Pair).toBeDefined();
+      expect(p1p2Pair.defender).toBe('p2'); // Swapped from original
+      expect(p1p2Pair.attacker).toBe('p1');
+
+      // Check that p3-p4 pair exists with swapped roles
+      const p3p4Pair = allPairs.find(pair => 
+        (pair.defender === 'p3' && pair.attacker === 'p4') ||
+        (pair.defender === 'p4' && pair.attacker === 'p3')
+      );
+      expect(p3p4Pair).toBeDefined();
+      expect(p3p4Pair.defender).toBe('p4'); // Swapped from original
+      expect(p3p4Pair.attacker).toBe('p3');
+
+      // Check that p5-p6 pair exists with swapped roles
+      const p5p6Pair = allPairs.find(pair => 
+        (pair.defender === 'p5' && pair.attacker === 'p6') ||
+        (pair.defender === 'p6' && pair.attacker === 'p5')
+      );
+      expect(p5p6Pair).toBeDefined();
+      expect(p5p6Pair.defender).toBe('p6'); // Swapped from original
+      expect(p5p6Pair.attacker).toBe('p5');
+    });
+
+    test('should handle goalie change by pairing ex-goalie with orphaned partner', () => {
+      const prevFormation = {
+        leftPair: { defender: 'p1', attacker: 'p2' },
+        rightPair: { defender: 'p3', attacker: 'p4' },
+        subPair: { defender: 'p5', attacker: 'p7' } // p7 was goalie's partner
+      };
+
+      const playerStatsWithTime = squad.map(p => ({
+        ...p,
+        stats: {
+          ...p.stats,
+          timeOnFieldSeconds: p.id === 'p7' ? 300 : 150 // p7 has most time
+        }
+      }));
+
+      const result = generateRecommendedFormation(
+        2, // period 2
+        'p6', // new goalie
+        'p7', // previous goalie
+        prevFormation,
+        playerStatsWithTime,
+        squad
+      );
+
+      // Should find a pair containing both p7 (ex-goalie) and p5 (orphaned partner)
+      const allPairs = [result.recommendedLeft, result.recommendedRight, result.recommendedSubs];
+      const exGoaliePair = allPairs.find(pair => 
+        (pair.defender === 'p7' && pair.attacker === 'p5') ||
+        (pair.defender === 'p5' && pair.attacker === 'p7')
+      );
+      
+      expect(exGoaliePair).toBeDefined();
+      
+      // The orphaned partner (p5) should have changed roles (was defender, now attacker)
+      if (exGoaliePair.attacker === 'p5') {
+        expect(exGoaliePair.defender).toBe('p7');
+      } else {
+        expect(exGoaliePair.attacker).toBe('p7');
+        expect(exGoaliePair.defender).toBe('p5');
+      }
+    });
+
+    test('should recommend substitute pair based on most playing time', () => {
+      const prevFormation = {
+        leftPair: { defender: 'p1', attacker: 'p2' },
+        rightPair: { defender: 'p3', attacker: 'p4' },
+        subPair: { defender: 'p5', attacker: 'p6' }
+      };
+
+      const playerStatsWithTime = squad.map(p => ({
+        ...p,
+        stats: {
+          ...p.stats,
+          timeOnFieldSeconds: p.id === 'p3' ? 400 : 150 // p3 has most time
+        }
+      }));
+
+      const result = generateRecommendedFormation(
+        2,
+        'p7',
+        'p7',
+        prevFormation,
+        playerStatsWithTime,
+        squad
+      );
+
+      // The pair containing p3 should be recommended as substitutes
+      expect(
+        result.recommendedSubs.defender === 'p3' || result.recommendedSubs.attacker === 'p3'
+      ).toBe(true);
+    });
+  });
+
+  describe('Period 3 Formation Logic - Role Balance Enforcement', () => {
+    test('should enforce role balance based on time ratios', () => {
+      const prevFormation = {
+        leftPair: { defender: 'p1', attacker: 'p2' },
+        rightPair: { defender: 'p3', attacker: 'p4' },
+        subPair: { defender: 'p5', attacker: 'p6' }
+      };
+
+      // Create imbalanced player stats
+      const playerStatsImbalanced = [
+        createPlayer('p1', 'Player 1', 300, 1, 300), // Needs defender role (ratio < 0.8)
+        createPlayer('p2', 'Player 2', 300, 300, 1), // Needs attacker role (ratio > 1.25)
+        createPlayer('p3', 'Player 3', 300, 100, 100), // Balanced (ratio ≈ 1)
+        createPlayer('p4', 'Player 4', 300, 120, 120), // Balanced
+        createPlayer('p5', 'Player 5', 300, 1, 400), // Needs defender role
+        createPlayer('p6', 'Player 6', 300, 400, 1), // Needs attacker role
+        createPlayer('p7', 'Player 7', 0, 0, 0) // Goalie
+      ];
+
+      const result = generateBalancedFormationForPeriod3(
+        'p7',
+        'p7',
+        prevFormation,
+        playerStatsImbalanced,
+        playerStatsImbalanced
+      );
+
+      // Find pairs and check role assignments
+      const allPairs = [result.recommendedLeft, result.recommendedRight, result.recommendedSubs];
+      
+      // p1 and p5 should be defenders (they need defender role)
+      const p1Pair = allPairs.find(pair => pair.defender === 'p1' || pair.attacker === 'p1');
+      const p5Pair = allPairs.find(pair => pair.defender === 'p5' || pair.attacker === 'p5');
+      
+      expect(p1Pair?.defender).toBe('p1');
+      expect(p5Pair?.defender).toBe('p5');
+
+      // p2 and p6 should be attackers (they need attacker role)
+      const p2Pair = allPairs.find(pair => pair.defender === 'p2' || pair.attacker === 'p2');
+      const p6Pair = allPairs.find(pair => pair.defender === 'p6' || pair.attacker === 'p6');
+      
+      expect(p2Pair?.attacker).toBe('p2');
+      expect(p6Pair?.attacker).toBe('p6');
+    });
+
+    test('should break pairs when role balance cannot be maintained with existing pairs', () => {
+      const prevFormation = {
+        leftPair: { defender: 'p1', attacker: 'p2' },
+        rightPair: { defender: 'p3', attacker: 'p4' },
+        subPair: { defender: 'p5', attacker: 'p6' }
+      };
+
+      // Create scenario where pairs must be broken for role balance
+      const playerStatsForBreaking = [
+        createPlayer('p1', 'Player 1', 300, 1, 400), // Needs defender role
+        createPlayer('p2', 'Player 2', 300, 1, 350), // Needs defender role 
+        createPlayer('p3', 'Player 3', 300, 400, 1), // Needs attacker role
+        createPlayer('p4', 'Player 4', 300, 350, 1), // Needs attacker role
+        createPlayer('p5', 'Player 5', 300, 100, 100), // Balanced
+        createPlayer('p6', 'Player 6', 300, 120, 120), // Balanced
+        createPlayer('p7', 'Player 7', 0, 0, 0) // Goalie
+      ];
+
+      const result = generateBalancedFormationForPeriod3(
+        'p7',
+        'p7',
+        prevFormation,
+        playerStatsForBreaking,
+        playerStatsForBreaking
+      );
+
+      // Verify that role requirements are respected even if pairs are broken
+      const allPairs = [result.recommendedLeft, result.recommendedRight, result.recommendedSubs];
+      
+      // p1 and p2 should both be defenders
+      const p1Pair = allPairs.find(pair => pair.defender === 'p1' || pair.attacker === 'p1');
+      const p2Pair = allPairs.find(pair => pair.defender === 'p2' || pair.attacker === 'p2');
+      
+      expect(p1Pair?.defender).toBe('p1');
+      expect(p2Pair?.defender).toBe('p2');
+
+      // p3 and p4 should both be attackers
+      const p3Pair = allPairs.find(pair => pair.defender === 'p3' || pair.attacker === 'p3');
+      const p4Pair = allPairs.find(pair => pair.defender === 'p4' || pair.attacker === 'p4');
+      
+      expect(p3Pair?.attacker).toBe('p3');
+      expect(p4Pair?.attacker).toBe('p4');
+
+      // This means the original pairs (p1-p2, p3-p4) have been broken up
+      // p1 should NOT be paired with p2, and p3 should NOT be paired with p4
+      expect(p1Pair === p2Pair).toBe(false);
+      expect(p3Pair === p4Pair).toBe(false);
+    });
+
+    test('should handle goalie change in period 3 while maintaining role balance', () => {
+      const prevFormation = {
+        leftPair: { defender: 'p1', attacker: 'p2' },
+        rightPair: { defender: 'p3', attacker: 'p7' }, // p7 was playing with p3
+        subPair: { defender: 'p5', attacker: 'p6' }
+      };
+
+      const playerStatsWithGoalieChange = [
+        createPlayer('p1', 'Player 1', 300, 100, 100), // Balanced
+        createPlayer('p2', 'Player 2', 300, 120, 120), // Balanced
+        createPlayer('p3', 'Player 3', 300, 1, 400), // Needs defender role
+        createPlayer('p4', 'Player 4', 300, 400, 1), // Needs attacker role (new goalie)
+        createPlayer('p5', 'Player 5', 300, 130, 130), // Balanced
+        createPlayer('p6', 'Player 6', 300, 140, 140), // Balanced
+        createPlayer('p7', 'Player 7', 250, 200, 1) // Ex-goalie, needs attacker role
+      ];
+
+      const result = generateBalancedFormationForPeriod3(
+        'p4', // new goalie
+        'p4', // previous goalie (same for this test)
+        prevFormation,
+        playerStatsWithGoalieChange,
+        playerStatsWithGoalieChange
+      );
+
+      const allPairs = [result.recommendedLeft, result.recommendedRight, result.recommendedSubs];
+      
+      // p3 should be defender (needs defender role)
+      const p3Pair = allPairs.find(pair => pair.defender === 'p3' || pair.attacker === 'p3');
+      expect(p3Pair?.defender).toBe('p3');
+
+      // p7 should be attacker (needs attacker role)
+      const p7Pair = allPairs.find(pair => pair.defender === 'p7' || pair.attacker === 'p7');
+      expect(p7Pair?.attacker).toBe('p7');
+
+      // All players should be assigned to exactly one pair
+      const assignedPlayers = new Set();
+      allPairs.forEach(pair => {
+        if (pair.defender) assignedPlayers.add(pair.defender);
+        if (pair.attacker) assignedPlayers.add(pair.attacker);
+      });
+      
+      // Should have 6 outfield players assigned
+      expect(assignedPlayers.size).toBe(6);
+      expect(assignedPlayers.has('p4')).toBe(false); // p4 is goalie
+    });
+
+    test('should apply opposite role rule for flexible players', () => {
+      const prevFormation = {
+        leftPair: { defender: 'p1', attacker: 'p2' },
+        rightPair: { defender: 'p3', attacker: 'p4' },
+        subPair: { defender: 'p5', attacker: 'p6' }
+      };
+
+      // All players have balanced time ratios (flexible)
+      const balancedPlayerStats = [
+        createPlayer('p1', 'Player 1', 300, 150, 150),
+        createPlayer('p2', 'Player 2', 300, 140, 160),
+        createPlayer('p3', 'Player 3', 300, 160, 140),
+        createPlayer('p4', 'Player 4', 300, 155, 145),
+        createPlayer('p5', 'Player 5', 300, 145, 155),
+        createPlayer('p6', 'Player 6', 300, 150, 150),
+        createPlayer('p7', 'Player 7', 0, 0, 0) // Goalie
+      ];
+
+      const result = generateBalancedFormationForPeriod3(
+        'p7',
+        'p7',
+        prevFormation,
+        balancedPlayerStats,
+        balancedPlayerStats
+      );
+
+      const allPairs = [result.recommendedLeft, result.recommendedRight, result.recommendedSubs];
+      
+      // Players should get opposite roles from period 2
+      // p1 was defender in period 2, should be attacker in period 3
+      const p1Pair = allPairs.find(pair => pair.defender === 'p1' || pair.attacker === 'p1');
+      expect(p1Pair?.attacker).toBe('p1');
+
+      // p2 was attacker in period 2, should be defender in period 3
+      const p2Pair = allPairs.find(pair => pair.defender === 'p2' || pair.attacker === 'p2');
+      expect(p2Pair?.defender).toBe('p2');
+
+      // p3 was defender in period 2, should be attacker in period 3
+      const p3Pair = allPairs.find(pair => pair.defender === 'p3' || pair.attacker === 'p3');
+      expect(p3Pair?.attacker).toBe('p3');
+
+      // p4 was attacker in period 2, should be defender in period 3
+      const p4Pair = allPairs.find(pair => pair.defender === 'p4' || pair.attacker === 'p4');
+      expect(p4Pair?.defender).toBe('p4');
+    });
+  });
+
+  describe('Substitute Recommendations', () => {
+    test('should recommend pair with most playing time as substitutes', () => {
+      const playerStatsWithTime = [
+        createPlayer('p1', 'Player 1', 200, 100, 100),
+        createPlayer('p2', 'Player 2', 250, 125, 125),
+        createPlayer('p3', 'Player 3', 400, 200, 200), // Most time
+        createPlayer('p4', 'Player 4', 180, 90, 90),
+        createPlayer('p5', 'Player 5', 220, 110, 110),
+        createPlayer('p6', 'Player 6', 190, 95, 95),
+        createPlayer('p7', 'Player 7', 0, 0, 0)
+      ];
+
+      const result = generateBalancedFormationForPeriod3(
+        'p7',
+        'p7',
+        null, // No previous formation
+        playerStatsWithTime,
+        playerStatsWithTime
+      );
+
+      // p3 should be in the substitute pair
+      expect(
+        result.recommendedSubs.defender === 'p3' || result.recommendedSubs.attacker === 'p3'
+      ).toBe(true);
+    });
+
+    test('should recommend first to rotate off among non-substitute pairs', () => {
+      const playerStatsWithTime = [
+        createPlayer('p1', 'Player 1', 350, 175, 175), // Second highest time
+        createPlayer('p2', 'Player 2', 180, 90, 90),
+        createPlayer('p3', 'Player 3', 400, 200, 200), // Highest time - should be sub
+        createPlayer('p4', 'Player 4', 160, 80, 80),
+        createPlayer('p5', 'Player 5', 220, 110, 110),
+        createPlayer('p6', 'Player 6', 190, 95, 95),
+        createPlayer('p7', 'Player 7', 0, 0, 0)
+      ];
+
+      const result = generateBalancedFormationForPeriod3(
+        'p7',
+        'p7',
+        null,
+        playerStatsWithTime,
+        playerStatsWithTime
+      );
+
+      // p3 should be in substitutes
+      expect(
+        result.recommendedSubs.defender === 'p3' || result.recommendedSubs.attacker === 'p3'
+      ).toBe(true);
+
+      // p1 should be in the first to rotate off pair (among non-subs)
+      const firstToRotateOffPair = result.firstToSubRec === 'leftPair' 
+        ? result.recommendedLeft 
+        : result.recommendedRight;
+      
+      expect(
+        firstToRotateOffPair.defender === 'p1' || firstToRotateOffPair.attacker === 'p1'
+      ).toBe(true);
+    });
+  });
+});
