@@ -6,6 +6,10 @@ import { formatTimeDifference } from '../utils/formatUtils';
 import { createAnimationCalculator } from '../utils/animationSupport';
 import { getPlayerName, findPlayerById } from '../utils/playerUtils';
 
+// Animation timing constants
+const ANIMATION_DURATION = 1000; // 1 second for position transitions
+const GLOW_DURATION = 900; // 0.9 seconds for post-animation glow effect
+
 export function GameScreen({ 
   currentPeriodNumber, 
   periodFormation, 
@@ -238,7 +242,7 @@ export function GameScreen({
     });
     setHideNextOffIndicator(true);
     
-    // After animation completes (1 second), perform substitution and start glow
+    // After animation completes, perform substitution and start glow
     setTimeout(() => {
       // Perform the actual substitution
       handleSubstitution();
@@ -252,7 +256,7 @@ export function GameScreen({
         phase: 'completing'
       }));
       
-      // After glow effect completes (1.5 more seconds), reset everything
+      // After glow effect completes, reset everything
       setTimeout(() => {
         setAnimationState({
           type: 'none',
@@ -261,8 +265,8 @@ export function GameScreen({
         });
         setHideNextOffIndicator(false);
         setRecentlySubstitutedPlayers(new Set());
-      }, 1500);
-    }, 1000);
+      }, GLOW_DURATION);
+    }, ANIMATION_DURATION);
   }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, animationCalculator]);
 
   // Enhanced position switch handler with animation
@@ -290,7 +294,7 @@ export function GameScreen({
     });
     setHideNextOffIndicator(true);
     
-    // After animation completes (1 second), perform position switch and start glow
+    // After animation completes, perform position switch and start glow
     setTimeout(() => {
       // Perform the actual position switch
       const success = switchPlayerPositions(player1Id, player2Id, isSubTimerPaused);
@@ -311,7 +315,7 @@ export function GameScreen({
         phase: 'completing'
       }));
       
-      // After glow effect completes (1.5 more seconds), reset everything
+      // After glow effect completes, reset everything
       setTimeout(() => {
         setAnimationState({
           type: 'none',
@@ -320,8 +324,8 @@ export function GameScreen({
         });
         setHideNextOffIndicator(false);
         setRecentlySubstitutedPlayers(new Set());
-      }, 1500);
-    }, 1000);
+      }, GLOW_DURATION);
+    }, ANIMATION_DURATION);
   }, [animationCalculator, switchPlayerPositions, getPlayerNameById, isSubTimerPaused]);
 
   // Effect to trigger substitution after state update
@@ -550,7 +554,7 @@ export function GameScreen({
             phase: 'idle',
             data: {}
           });
-        }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
+        }, ANIMATION_DURATION); // Wait for animation to complete (200ms start delay + 400ms animation)
       }
     }
     closeSubstituteModal();
@@ -601,7 +605,7 @@ export function GameScreen({
               data: {}
             });
           }, 0);
-        }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
+        }, ANIMATION_DURATION); // Wait for animation to complete (200ms start delay + 400ms animation)
       }
     } else if (substituteModal.playerId) {
       // Non-7-player mode, no animation needed
@@ -701,7 +705,7 @@ export function GameScreen({
       removeModalFromStack();
     }
     
-    // After animation completes (1 second), perform the actual goalie switch
+    // After animation completes, perform the actual goalie switch
     setTimeout(() => {
       const success = switchGoalie(newGoalieId, isSubTimerPaused);
       
@@ -725,8 +729,8 @@ export function GameScreen({
           phase: 'idle',
           data: {}
         });
-      }, 500);
-    }, 1000);
+      }, GLOW_DURATION);
+    }, ANIMATION_DURATION);
   };
 
   const handleCancelGoalieModal = () => {
