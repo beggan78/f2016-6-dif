@@ -187,18 +187,11 @@ export function GameScreen({
   // State to track if we should hide the "next off" indicator during glow effect
   const [hideNextOffIndicator, setHideNextOffIndicator] = React.useState(false);
   
-  // State to track box switching animation
-  const [isAnimating, setIsAnimating] = React.useState(false);
-  const [animationPhase, setAnimationPhase] = React.useState('idle'); // 'idle', 'switching', 'completing'
-  const [animationDistances, setAnimationDistances] = React.useState({ nextOffToSub: 0, subToNextOff: 0 });
-  
-  // State to track goalie replacement animation
-  const [isGoalieAnimating, setIsGoalieAnimating] = React.useState(false);
-  const [goalieAnimationData, setGoalieAnimationData] = React.useState({
-    newGoalieId: null,
-    newGoaliePosition: null,
-    goalieToField: 0,
-    fieldToGoalie: 0
+  // Unified animation state management
+  const [animationState, setAnimationState] = React.useState({
+    type: 'none', // 'none', 'substitution', 'goalie', 'position-switch'
+    phase: 'idle', // 'idle', 'switching', 'completing'
+    data: {} // Animation-specific data
   });
   
   // Create animation calculator instance
@@ -237,11 +230,12 @@ export function GameScreen({
     } else {
       distances = animationCalculator.calculateSubstitutionDistances();
     }
-    setAnimationDistances(distances);
-    
     // Start the animation sequence
-    setIsAnimating(true);
-    setAnimationPhase('switching');
+    setAnimationState({
+      type: 'substitution',
+      phase: 'switching', 
+      data: distances
+    });
     setHideNextOffIndicator(true);
     
     // After animation completes (1 second), perform substitution and start glow
@@ -253,12 +247,18 @@ export function GameScreen({
       setRecentlySubstitutedPlayers(new Set(playersComingOnIds));
       
       // End animation
-      setIsAnimating(false);
-      setAnimationPhase('completing');
+      setAnimationState(prev => ({
+        ...prev,
+        phase: 'completing'
+      }));
       
       // After glow effect completes (1.5 more seconds), reset everything
       setTimeout(() => {
-        setAnimationPhase('idle');
+        setAnimationState({
+          type: 'none',
+          phase: 'idle',
+          data: {}
+        });
         setHideNextOffIndicator(false);
         setRecentlySubstitutedPlayers(new Set());
       }, 1500);
@@ -271,7 +271,7 @@ export function GameScreen({
     const distances = animationCalculator.calculatePositionSwitchDistances(player1Id, player2Id);
     
     // Set up animation state with custom distances for the two players
-    setAnimationDistances({
+    const positionSwitchData = {
       positionSwitch: true,
       player1Id: player1Id,
       player2Id: player2Id,
@@ -280,11 +280,14 @@ export function GameScreen({
       // Keep these for backwards compatibility
       nextOffToSub: 0,
       subToNextOff: 0
-    });
+    };
     
     // Start the animation sequence
-    setIsAnimating(true);
-    setAnimationPhase('switching');
+    setAnimationState({
+      type: 'position-switch',
+      phase: 'switching',
+      data: positionSwitchData
+    });
     setHideNextOffIndicator(true);
     
     // After animation completes (1 second), perform position switch and start glow
@@ -303,12 +306,18 @@ export function GameScreen({
       }
       
       // End animation
-      setIsAnimating(false);
-      setAnimationPhase('completing');
+      setAnimationState(prev => ({
+        ...prev,
+        phase: 'completing'
+      }));
       
       // After glow effect completes (1.5 more seconds), reset everything
       setTimeout(() => {
-        setAnimationPhase('idle');
+        setAnimationState({
+          type: 'none',
+          phase: 'idle',
+          data: {}
+        });
         setHideNextOffIndicator(false);
         setRecentlySubstitutedPlayers(new Set());
       }, 1500);
@@ -502,9 +511,11 @@ export function GameScreen({
           sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
         };
         
-        setAnimationDistances(nextToGoInSwapDistances);
-        setIsAnimating(true);
-        setAnimationPhase('switching');
+        setAnimationState({
+          type: 'substitution',
+          phase: 'switching',
+          data: nextToGoInSwapDistances
+        });
         
         // Delay the actual state change until animation completes
         setTimeout(() => {
@@ -534,8 +545,11 @@ export function GameScreen({
           // nextPlayerIdToSubOut should remain pointing to the current field player
           
           // Animation complete callback
-          setIsAnimating(false);
-          setAnimationPhase('idle');
+          setAnimationState({
+            type: 'none',
+            phase: 'idle',
+            data: {}
+          });
         }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
       }
     }
@@ -571,16 +585,21 @@ export function GameScreen({
           sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
         };
         
-        setAnimationDistances(inactiveSwapDistances);
-        setIsAnimating(true);
-        setAnimationPhase('switching');
+        setAnimationState({
+          type: 'substitution',
+          phase: 'switching',
+          data: inactiveSwapDistances
+        });
         
         // Delay the actual state change until animation completes
         setTimeout(() => {
           togglePlayerInactive(substituteModal.playerId, () => {
             // Animation complete callback
-            setIsAnimating(false);
-            setAnimationPhase('idle');
+            setAnimationState({
+              type: 'none',
+              phase: 'idle',
+              data: {}
+            });
           }, 0);
         }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
       }
@@ -612,16 +631,21 @@ export function GameScreen({
         sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
       };
       
-      setAnimationDistances(reactivationSwapDistances);
-      setIsAnimating(true);
-      setAnimationPhase('switching');
+      setAnimationState({
+        type: 'substitution',
+        phase: 'switching',
+        data: reactivationSwapDistances
+      });
       
       // Delay the actual state change until animation completes
       setTimeout(() => {
         togglePlayerInactive(substituteModal.playerId, () => {
           // Animation complete callback
-          setIsAnimating(false);
-          setAnimationPhase('idle');
+          setAnimationState({
+            type: 'none',
+            phase: 'idle',
+            data: {}
+          });
         }, 0);
       }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
     } else if (substituteModal.playerId) {
@@ -663,11 +687,13 @@ export function GameScreen({
   const handleSelectNewGoalie = (newGoalieId) => {
     // Calculate animation distances for goalie replacement
     const animationData = animationCalculator.calculateGoalieReplacementDistances(newGoalieId);
-    setGoalieAnimationData(animationData);
     
     // Start goalie animation sequence
-    setIsGoalieAnimating(true);
-    setAnimationPhase('switching');
+    setAnimationState({
+      type: 'goalie',
+      phase: 'switching',
+      data: animationData
+    });
     
     // Close modal immediately to show animation
     closeGoalieModal();
@@ -679,7 +705,10 @@ export function GameScreen({
     setTimeout(() => {
       const success = switchGoalie(newGoalieId, isSubTimerPaused);
       
-      setAnimationPhase('completing');
+      setAnimationState(prev => ({
+        ...prev,
+        phase: 'completing'
+      }));
       
       if (success) {
         const oldGoalieName = getPlayerNameById(periodFormation.goalie);
@@ -691,13 +720,10 @@ export function GameScreen({
       
       // Complete animation
       setTimeout(() => {
-        setAnimationPhase('idle');
-        setIsGoalieAnimating(false);
-        setGoalieAnimationData({
-          newGoalieId: null,
-          newGoaliePosition: null,
-          goalieToField: 0,
-          fieldToGoalie: 0
+        setAnimationState({
+          type: 'none',
+          phase: 'idle',
+          data: {}
         });
       }, 500);
     }, 1000);
@@ -940,7 +966,7 @@ export function GameScreen({
 
   // Centralized goalie animation logic helper
   const getGoalieAnimationProps = (playerId) => {
-    if (!isGoalieAnimating || animationPhase !== 'switching' || playerId !== goalieAnimationData.newGoalieId) {
+    if (animationState.type !== 'goalie' || animationState.phase !== 'switching' || playerId !== animationState.data.newGoalieId) {
       return null;
     }
     
@@ -948,7 +974,7 @@ export function GameScreen({
       animationClass: 'animate-dynamic-up',
       zIndexClass: 'z-30', // Highest z-index for replacement goalie moving up
       styleProps: {
-        '--move-distance': `${goalieAnimationData.fieldToGoalie}px`
+        '--move-distance': `${animationState.data.fieldToGoalie}px`
       }
     };
   };
@@ -969,50 +995,50 @@ export function GameScreen({
     let zIndexClass = '';
     let styleProps = {};
     
-    if (isAnimating && animationPhase === 'switching') {
+    if (animationState.phase === 'switching') {
       // Check if this is a position switch animation
-      if (animationDistances.positionSwitch) {
+      if (animationState.type === 'position-switch' && animationState.data.positionSwitch) {
         const pairDefenderId = pairData.defender;
         const pairAttackerId = pairData.attacker;
         
-        if (pairDefenderId === animationDistances.player1Id) {
-          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+        if (pairDefenderId === animationState.data.player1Id) {
+          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player1Distance}px`
+            '--move-distance': `${animationState.data.player1Distance}px`
           };
-        } else if (pairAttackerId === animationDistances.player1Id) {
-          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+        } else if (pairAttackerId === animationState.data.player1Id) {
+          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player1Distance}px`
+            '--move-distance': `${animationState.data.player1Distance}px`
           };
-        } else if (pairDefenderId === animationDistances.player2Id) {
-          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+        } else if (pairDefenderId === animationState.data.player2Id) {
+          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player2Distance}px`
+            '--move-distance': `${animationState.data.player2Distance}px`
           };
-        } else if (pairAttackerId === animationDistances.player2Id) {
-          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+        } else if (pairAttackerId === animationState.data.player2Id) {
+          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player2Distance}px`
+            '--move-distance': `${animationState.data.player2Distance}px`
           };
         }
-      } else {
+      } else if (animationState.type === 'substitution') {
         // Normal substitution animation
         if (isNextOff) {
           animationClass = 'animate-dynamic-down';
           zIndexClass = 'z-10'; // Lower z-index when going down
           styleProps = {
-            '--move-distance': `${animationDistances.nextOffToSub}px`
+            '--move-distance': `${animationState.data.nextOffToSub}px`
           };
         } else if (isNextOn) {
           animationClass = 'animate-dynamic-up';
           zIndexClass = 'z-20'; // Higher z-index when coming up
           styleProps = {
-            '--move-distance': `${animationDistances.subToNextOff}px`
+            '--move-distance': `${animationState.data.subToNextOff}px`
           };
         }
       }
@@ -1121,35 +1147,35 @@ export function GameScreen({
     let zIndexClass = '';
     let styleProps = {};
     
-    if (isAnimating && animationPhase === 'switching') {
+    if (animationState.phase === 'switching') {
       // Check if this is a position switch animation
-      if (animationDistances.positionSwitch) {
-        if (playerId === animationDistances.player1Id) {
-          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+      if (animationState.type === 'position-switch' && animationState.data.positionSwitch) {
+        if (playerId === animationState.data.player1Id) {
+          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player1Distance}px`
+            '--move-distance': `${animationState.data.player1Distance}px`
           };
-        } else if (playerId === animationDistances.player2Id) {
-          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+        } else if (playerId === animationState.data.player2Id) {
+          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player2Distance}px`
+            '--move-distance': `${animationState.data.player2Distance}px`
           };
         }
-      } else {
+      } else if (animationState.type === 'substitution') {
         // Normal substitution animation
         if (isNextOff) {
           animationClass = 'animate-dynamic-down';
           zIndexClass = 'z-10'; // Lower z-index when going down
           styleProps = {
-            '--move-distance': `${animationDistances.nextOffToSub}px`
+            '--move-distance': `${animationState.data.nextOffToSub}px`
           };
         } else if (isNextOn) {
           animationClass = 'animate-dynamic-up';
           zIndexClass = 'z-20'; // Higher z-index when coming up
           styleProps = {
-            '--move-distance': `${animationDistances.subToNextOff}px`
+            '--move-distance': `${animationState.data.subToNextOff}px`
           };
         }
       }
@@ -1253,25 +1279,25 @@ export function GameScreen({
     let zIndexClass = '';
     let styleProps = {};
     
-    if (isAnimating && animationPhase === 'switching') {
+    if (animationState.phase === 'switching') {
       // Check if this is a position switch animation
-      if (animationDistances.positionSwitch) {
-        if (playerId === animationDistances.player1Id) {
-          animationClass = animationDistances.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player1Distance > 0 ? 'z-10' : 'z-20';
+      if (animationState.type === 'position-switch' && animationState.data.positionSwitch) {
+        if (playerId === animationState.data.player1Id) {
+          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player1Distance}px`
+            '--move-distance': `${animationState.data.player1Distance}px`
           };
-        } else if (playerId === animationDistances.player2Id) {
-          animationClass = animationDistances.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationDistances.player2Distance > 0 ? 'z-10' : 'z-20';
+        } else if (playerId === animationState.data.player2Id) {
+          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
+          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.player2Distance}px`
+            '--move-distance': `${animationState.data.player2Distance}px`
           };
         }
-      } else if (isIndividual7Mode) {
+      } else if (animationState.type === 'substitution' && isIndividual7Mode) {
         // Check if this is a reactivation/inactivation animation (only substitute positions move)
-        const isSubstituteSwapAnimation = animationDistances.sub1ToField === 0;
+        const isSubstituteSwapAnimation = animationState.data.sub1ToField === 0;
         
         if (isSubstituteSwapAnimation) {
           // Reactivation or inactivation animation: only substitute positions swap
@@ -1283,16 +1309,16 @@ export function GameScreen({
             animationClass = 'animate-dynamic-down';
             zIndexClass = 'z-10';
             styleProps = {
-              '--move-distance': `${animationDistances.fieldToSub2}px`
+              '--move-distance': `${animationState.data.fieldToSub2}px`
             };
-          } else if (position === 'substitute7_2' && (!isInactive || (isInactive && animationDistances.sub2ToSub1 !== 0))) {
+          } else if (position === 'substitute7_2' && (!isInactive || (isInactive && animationState.data.sub2ToSub1 !== 0))) {
             // substitute7_2 moves up to substitute7_1 position
             // Normal case: only if not inactive
             // Special case: if inactive but sub2ToSub1 distance is set, this is a reactivation animation where the inactive player should move
             animationClass = 'animate-dynamic-up';
             zIndexClass = 'z-20';
             styleProps = {
-              '--move-distance': `${animationDistances.sub2ToSub1}px`
+              '--move-distance': `${animationState.data.sub2ToSub1}px`
             };
           }
           // If player is inactive, they get no animation (stay completely still)
@@ -1312,12 +1338,12 @@ export function GameScreen({
               // If substitute7_2 is inactive, field player goes to substitute7_1 position
               // Use negative sub1ToField distance (field to sub1 instead of sub1 to field)
               styleProps = {
-                '--move-distance': `${-animationDistances.sub1ToField}px`
+                '--move-distance': `${-animationState.data.sub1ToField}px`
               };
             } else {
               // Normal case: field player goes to substitute7_2 position
               styleProps = {
-                '--move-distance': `${animationDistances.fieldToSub2}px`
+                '--move-distance': `${animationState.data.fieldToSub2}px`
               };
             }
           } else if (position === 'substitute7_1' && !isInactive) {
@@ -1325,31 +1351,31 @@ export function GameScreen({
             animationClass = 'animate-dynamic-up';
             zIndexClass = 'z-20';
             styleProps = {
-              '--move-distance': `${animationDistances.sub1ToField}px`
+              '--move-distance': `${animationState.data.sub1ToField}px`
             };
           } else if (position === 'substitute7_2' && !isInactive) {
             // substitute7_2 moves up to substitute7_1 position (only if not inactive)
             animationClass = 'animate-dynamic-up';
             zIndexClass = 'z-15';
             styleProps = {
-              '--move-distance': `${animationDistances.sub2ToSub1}px`
+              '--move-distance': `${animationState.data.sub2ToSub1}px`
             };
           }
           // If player is inactive, they get no animation (stay completely still)
         }
-      } else {
+      } else if (animationState.type === 'substitution') {
         // Original logic for other modes
         if (isNextOff) {
           animationClass = 'animate-dynamic-down';
           zIndexClass = 'z-10';
           styleProps = {
-            '--move-distance': `${animationDistances.nextOffToSub}px`
+            '--move-distance': `${animationState.data.nextOffToSub}px`
           };
         } else if (isNextOn) {
           animationClass = 'animate-dynamic-up';
           zIndexClass = 'z-20';
           styleProps = {
-            '--move-distance': `${animationDistances.subToNextOff}px`
+            '--move-distance': `${animationState.data.subToNextOff}px`
           };
         }
       }
@@ -1510,9 +1536,9 @@ export function GameScreen({
         {...goalieEvents}
         style={(() => {
           // Calculate goalie animation style
-          if (isGoalieAnimating && animationPhase === 'switching' && goalieAnimationData.goalieToField !== 0) {
+          if (animationState.type === 'goalie' && animationState.phase === 'switching' && animationState.data.goalieToField !== 0) {
             return {
-              transform: `translateY(${goalieAnimationData.goalieToField}px)`,
+              transform: `translateY(${animationState.data.goalieToField}px)`,
               transition: 'transform 1s ease-in-out',
               zIndex: 20, // Medium z-index for old goalie moving down
               position: 'relative'
