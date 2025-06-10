@@ -50,6 +50,35 @@ export class SubstitutionManager {
   }
 
   /**
+   * Rebuilds rotation queue based on current playing times to maintain proper order
+   */
+  rebuildRotationQueue(updatedPlayers, currentGoalieId) {
+    const updatedPlayersWithStats = updatedPlayers.map(p => {
+      const stats = p.stats;
+      return {
+        id: p.id,
+        totalOutfieldTime: stats.timeOnFieldSeconds || 0,
+        isInactive: stats.isInactive || false
+      };
+    }).filter(p => !p.isInactive && p.id !== currentGoalieId); // Only active non-goalie players
+
+    // Sort by total outfield time to maintain proper rotation order
+    const sortedByTime = updatedPlayersWithStats.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+    
+    // Get the 4 players with least time (should be on field)
+    const leastTimePlayers = sortedByTime.slice(0, 4);
+    // Order these 4 by most time first (rotation order)
+    const fieldPlayersOrdered = leastTimePlayers.sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
+    
+    // Get remaining players ordered by least time first (substitutes)
+    const remainingPlayers = sortedByTime.slice(4);
+    const substitutesOrdered = remainingPlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+    
+    // Create new rotation queue
+    return [...fieldPlayersOrdered.map(p => p.id), ...substitutesOrdered.map(p => p.id)];
+  }
+
+  /**
    * Calculates time stats for players during substitution
    */
   calculateTimeStats(player, currentTimeEpoch, isSubTimerPaused = false) {
@@ -193,9 +222,10 @@ export class SubstitutionManager {
       return p;
     });
 
-    // Update rotation queue using the queue manager
-    queueManager.rotatePlayer(playerGoingOffId);
-    const nextPlayerToSubOutId = queueManager.getNextActivePlayer();
+    // For individual modes, rebuild the rotation queue based on updated playing times
+    const currentGoalieId = newFormation.goalie;
+    const newRotationQueue = this.rebuildRotationQueue(updatedPlayers, currentGoalieId);
+    const nextPlayerToSubOutId = newRotationQueue[0];
     
     const outfieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
     const nextPlayerPosition = outfieldPositions.find(pos => 
@@ -205,7 +235,7 @@ export class SubstitutionManager {
     return {
       newFormation,
       updatedPlayers,
-      newRotationQueue: queueManager.toArray(),
+      newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender'
     };
@@ -297,12 +327,11 @@ export class SubstitutionManager {
       return p;
     });
 
-    // Update rotation queue using the queue manager
-    queueManager.rotatePlayer(playerGoingOffId);
-    const nextActivePlayer = queueManager.getNextActivePlayer();
-    const nextTwoActivePlayers = queueManager.getNextActivePlayer(2);
-    const nextPlayerToSubOutId = nextActivePlayer;
-    const nextNextPlayerIdToSubOut = nextTwoActivePlayers[1] || null;
+    // For individual modes, rebuild the rotation queue based on updated playing times
+    const currentGoalieId = newFormation.goalie;
+    const newRotationQueue = this.rebuildRotationQueue(updatedPlayers, currentGoalieId);
+    const nextPlayerToSubOutId = newRotationQueue[0];
+    const nextNextPlayerIdToSubOut = newRotationQueue[1] || null;
 
     const outfieldPositions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
     const nextPlayerPosition = outfieldPositions.find(pos => 
@@ -312,7 +341,7 @@ export class SubstitutionManager {
     return {
       newFormation,
       updatedPlayers,
-      newRotationQueue: queueManager.toArray(),
+      newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextNextPlayerIdToSubOut: nextNextPlayerIdToSubOut,
       newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7'

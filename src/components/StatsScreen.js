@@ -63,7 +63,7 @@ export function StatsScreen({
         <div className="flex items-center justify-center space-x-6">
           <div className="text-center">
             <div className="text-3xl font-bold text-sky-400">{homeScore}</div>
-            <div className="text-sm text-slate-300 font-semibold">Djurgårn</div>
+            <div className="text-sm text-slate-300 font-semibold">Djurgården</div>
           </div>
           <div className="text-2xl font-mono font-bold text-slate-400">-</div>
           <div className="text-center">

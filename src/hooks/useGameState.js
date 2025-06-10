@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from '../utils/gameLogic';
-import { generateRecommendedFormation } from '../utils/formationGenerator';
+import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
 import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../utils/substitutionManager';
 import { createRotationQueue } from '../utils/rotationQueue';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
@@ -35,7 +35,7 @@ export function useGameState() {
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
   const [opponentTeamName, setOpponentTeamName] = useState(initialState.opponentTeamName || '');
-  const [homeScore, setHomeScore] = useState(initialState.homeScore || 0); // Djurgårn score
+  const [homeScore, setHomeScore] = useState(initialState.homeScore || 0); // Djurgården score
   const [awayScore, setAwayScore] = useState(initialState.awayScore || 0); // Opponent score
 
   // Wake lock and alert management
@@ -172,21 +172,13 @@ export function useGameState() {
         });
         setNextPhysicalPairToSubOut(firstToSubRec); // 'leftPair' or 'rightPair'
       } else if (formationType === FORMATION_TYPES.INDIVIDUAL_6) {
-        // 6-player individual formation generation - recommend player with most time as substitute
-        const outfielders = selectedSquadIds.filter(id => id !== currentGoalieId);
-        const outfieldersWithStats = outfielders.map(id => {
-          const player = findPlayerById(allPlayers, id);
-          const stats = playersWithLastPeriodStats.find(s => s.id === id);
-          return {
-            id,
-            name: player.name,
-            totalOutfieldTime: stats?.stats.timeOnFieldSeconds || 0
-          };
-        }).sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
-
-        // Most time player becomes substitute, others fill positions
-        const substituteId = outfieldersWithStats[0].id;
-        const playingPlayers = outfieldersWithStats.slice(1);
+        // 6-player individual formation generation using new logic
+        const result = generateIndividualFormationRecommendation(
+          currentGoalieId,
+          playersWithLastPeriodStats,
+          selectedSquadIds.map(id => allPlayers.find(p => p.id === id)),
+          'INDIVIDUAL_6'
+        );
 
         setPeriodFormation({
           goalie: currentGoalieId,
@@ -194,54 +186,38 @@ export function useGameState() {
           rightPair: { defender: null, attacker: null },
           subPair: { defender: null, attacker: null },
           // 6-player formation structure
-          leftDefender: playingPlayers[0]?.id || null,
-          rightDefender: playingPlayers[1]?.id || null,
-          leftAttacker: playingPlayers[2]?.id || null,
-          rightAttacker: playingPlayers[3]?.id || null,
-          substitute: substituteId,
+          leftDefender: result.formation.leftDefender,
+          rightDefender: result.formation.rightDefender,
+          leftAttacker: result.formation.leftAttacker,
+          rightAttacker: result.formation.rightAttacker,
+          substitute: result.formation.substitute,
+          // 7-player individual formation structure
+          leftDefender7: null,
+          rightDefender7: null,
+          leftAttacker7: null,
+          rightAttacker7: null,
+          substitute7_1: null,
+          substitute7_2: null,
         });
         
-        // Recommend first substitution for player with second most time
-        const secondMostTimePlayer = outfieldersWithStats[1];
-        const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
-        const playerPosition = positions.find(pos => 
-          (pos === 'leftDefender' && playingPlayers[0]?.id === secondMostTimePlayer.id) ||
-          (pos === 'rightDefender' && playingPlayers[1]?.id === secondMostTimePlayer.id) ||
-          (pos === 'leftAttacker' && playingPlayers[2]?.id === secondMostTimePlayer.id) ||
-          (pos === 'rightAttacker' && playingPlayers[3]?.id === secondMostTimePlayer.id)
-        );
-        setNextPlayerToSubOut(playerPosition || 'leftDefender');
-        setNextPlayerIdToSubOut(secondMostTimePlayer?.id || null);
+        // Set next player to substitute off (player with most field time)
+        setNextPlayerIdToSubOut(result.nextToRotateOff);
         
-        // Initialize rotation queue for 6-player mode with desired substitution order
-        // Order players by position preference: Left Defender -> Left Attacker -> Right Defender -> Right Attacker -> Substitute
-        const positionOrder = ['leftDefender', 'leftAttacker', 'rightDefender', 'rightAttacker', 'substitute'];
-        const orderedQueue = positionOrder.map(pos => {
-          if (pos === 'leftDefender') return playingPlayers[0]?.id;
-          if (pos === 'leftAttacker') return playingPlayers[2]?.id;
-          if (pos === 'rightDefender') return playingPlayers[1]?.id;
-          if (pos === 'rightAttacker') return playingPlayers[3]?.id;
-          if (pos === 'substitute') return substituteId;
-          return null;
-        }).filter(Boolean);
-        setRotationQueue(orderedQueue);
+        // Find the position of the next player to substitute
+        const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+        const playerPosition = positions.find(pos => result.formation[pos] === result.nextToRotateOff);
+        setNextPlayerToSubOut(playerPosition || 'leftDefender');
+        
+        // Set rotation queue
+        setRotationQueue(result.rotationQueue);
       } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
-        // 7-player individual formation generation - recommend player with most time as substitute
-        const outfielders = selectedSquadIds.filter(id => id !== currentGoalieId);
-        const outfieldersWithStats = outfielders.map(id => {
-          const player = findPlayerById(allPlayers, id);
-          const stats = playersWithLastPeriodStats.find(s => s.id === id);
-          return {
-            id,
-            name: player.name,
-            totalOutfieldTime: stats?.stats.timeOnFieldSeconds || 0
-          };
-        }).sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
-
-        // Top 2 players with most time become substitutes, others fill positions
-        const substitute1Id = outfieldersWithStats[0].id;
-        const substitute2Id = outfieldersWithStats[1].id;
-        const playingPlayers = outfieldersWithStats.slice(2);
+        // 7-player individual formation generation using new logic
+        const result = generateIndividualFormationRecommendation(
+          currentGoalieId,
+          playersWithLastPeriodStats,
+          selectedSquadIds.map(id => allPlayers.find(p => p.id === id)),
+          'INDIVIDUAL_7'
+        );
 
         setPeriodFormation({
           goalie: currentGoalieId,
@@ -255,38 +231,29 @@ export function useGameState() {
           rightAttacker: null,
           substitute: null,
           // 7-player individual formation structure
-          leftDefender7: playingPlayers[0]?.id || null,
-          rightDefender7: playingPlayers[1]?.id || null,
-          leftAttacker7: playingPlayers[2]?.id || null,
-          rightAttacker7: playingPlayers[3]?.id || null,
-          substitute7_1: substitute1Id,
-          substitute7_2: substitute2Id,
+          leftDefender7: result.formation.leftDefender7,
+          rightDefender7: result.formation.rightDefender7,
+          leftAttacker7: result.formation.leftAttacker7,
+          rightAttacker7: result.formation.rightAttacker7,
+          substitute7_1: result.formation.substitute7_1,
+          substitute7_2: result.formation.substitute7_2,
         });
         
-        // Recommend first substitution for player with third most time
-        const thirdMostTimePlayer = outfieldersWithStats[2];
-        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
-        const playerPosition = positions.find(pos => 
-          (pos === 'leftDefender7' && playingPlayers[0]?.id === thirdMostTimePlayer.id) ||
-          (pos === 'rightDefender7' && playingPlayers[1]?.id === thirdMostTimePlayer.id) ||
-          (pos === 'leftAttacker7' && playingPlayers[2]?.id === thirdMostTimePlayer.id) ||
-          (pos === 'rightAttacker7' && playingPlayers[3]?.id === thirdMostTimePlayer.id)
-        );
-        setNextPlayerToSubOut(playerPosition || 'leftDefender7');
-        setNextPlayerIdToSubOut(thirdMostTimePlayer?.id || null);
+        // Set next player to substitute off (player with most field time)
+        setNextPlayerIdToSubOut(result.nextToRotateOff);
         
-        // Initialize rotation queue for 7-player individual mode
-        const positionOrder = ['leftDefender7', 'leftAttacker7', 'rightDefender7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-        const orderedQueue = positionOrder.map(pos => {
-          if (pos === 'leftDefender7') return playingPlayers[0]?.id;
-          if (pos === 'leftAttacker7') return playingPlayers[2]?.id;
-          if (pos === 'rightDefender7') return playingPlayers[1]?.id;
-          if (pos === 'rightAttacker7') return playingPlayers[3]?.id;
-          if (pos === 'substitute7_1') return substitute1Id;
-          if (pos === 'substitute7_2') return substitute2Id;
-          return null;
-        }).filter(Boolean);
-        setRotationQueue(orderedQueue);
+        // Find the position of the next player to substitute
+        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
+        const playerPosition = positions.find(pos => result.formation[pos] === result.nextToRotateOff);
+        setNextPlayerToSubOut(playerPosition || 'leftDefender7');
+        
+        // Set rotation queue
+        setRotationQueue(result.rotationQueue);
+        
+        // Set next-next player (second in rotation queue)
+        if (result.rotationQueue.length >= 2) {
+          setNextNextPlayerIdToSubOut(result.rotationQueue[1]);
+        }
       }
 
     } else {

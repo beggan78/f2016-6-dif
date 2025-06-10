@@ -1523,7 +1523,7 @@ export function GameScreen({
             onClick={addHomeGoal}
             className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors"
           >
-            Djurgårn
+            Djurgården
           </button>
           <div 
             className="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-4 py-2 rounded-md hover:bg-slate-600 transition-colors"

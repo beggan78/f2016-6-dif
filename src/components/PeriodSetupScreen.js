@@ -279,7 +279,7 @@ export function PeriodSetupScreen({
         <div className="flex items-center justify-center space-x-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-sky-400">{homeScore}</div>
-            <div className="text-xs text-slate-300 font-semibold">Djurgårn</div>
+            <div className="text-xs text-slate-300 font-semibold">Djurgården</div>
           </div>
           <div className="text-xl font-mono font-bold text-slate-400">-</div>
           <div className="text-center">
@@ -415,7 +415,7 @@ export function PeriodSetupScreen({
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
-            title="Substitute (Next)"
+            title="Substitute" // Please never change this title! But yes, it is the NEXT to sub in
             position="substitute7_1"
             playerId={periodFormation.substitute7_1}
             onPlayerAssign={handleIndividual7PlayerAssignment}
@@ -423,7 +423,7 @@ export function PeriodSetupScreen({
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
-            title="Substitute (Next-Next)"
+            title="Substitute"  // Please never change this title! But yes, it is the NEXT-NEXT to sub in
             position="substitute7_2"
             playerId={periodFormation.substitute7_2}
             onPlayerAssign={handleIndividual7PlayerAssignment}

@@ -40,7 +40,7 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
 
 #### 7-Player Mode (Individual)
 - Players assigned to individual positions without pairs
-- Positions: Left Defender, Right Defender, Left Attacker, Right Attacker, Substitute (Next), Substitute (Next-Next)
+- Positions: Left Defender, Right Defender, Left Attacker, Right Attacker, Substitute1, Substitute2
 - Dual substitution system with two substitute players
 - Advanced visual indicators showing both immediate and upcoming substitutions
 - Round-robin rotation through all 6 outfield positions
@@ -83,7 +83,7 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
 The 7-player individual mode provides maximum flexibility for player rotation while maintaining fair playing time:
 
 - **4 Field Players**: Left Defender, Right Defender, Left Attacker, Right Attacker
-- **2 Substitutes**: First Substitute (Next) and Second Substitute (Next-Next)
+- **2 Substitutes**: First Substitute and Second Substitute
 - **1 Goalie**: Rotates by period
 
 ### Dual Substitution System
@@ -92,9 +92,9 @@ Unlike traditional single-substitute systems, the 7-player individual mode featu
 1. **Primary Substitution Queue**: First substitute is ready to enter immediately
 2. **Secondary Substitution Queue**: Second substitute is prepared for the next rotation
 3. **Automatic Rotation**: When a substitution occurs:
-   - Player coming off → becomes Second Substitute (Next-Next)
+   - Player coming off → becomes Second Substitute
    - First Substitute → enters the field in the departing player's position
-   - Second Substitute → moves up to become First Substitute (Next)
+   - Second Substitute → moves up to become First Substitute
 
 ### Visual Indicator System
 The interface provides clear visual cues for complex rotation planning:

@@ -49,7 +49,7 @@ export const formatPoints = (points) => {
  * @returns {string} Formatted statistics text
  */
 export const generateStatsText = (squadForStats, homeScore, awayScore, opponentTeamName) => {
-  let text = `Final Score: Djurgårn ${homeScore} - ${awayScore} ${opponentTeamName || 'Opponent'}\n\n`;
+  let text = `Final Score: Djurgården ${homeScore} - ${awayScore} ${opponentTeamName || 'Opponent'}\n\n`;
   text += "Spelare\t\tStart\tM\tB\tA\tUte\tBack\tFw\tMv\n";
   text += "------\t\t-------\t-\t-\t-\t----------\t----\t--\t--\n";
   

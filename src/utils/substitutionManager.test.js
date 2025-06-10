@@ -57,10 +57,20 @@ describe('SubstitutionManager', () => {
     });
 
     test('handles individual substitution correctly', () => {
+      // Create realistic player data with playing times
+      const playersWithTime = [
+        { id: '1', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 300, isInactive: false } },
+        { id: '2', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 250, isInactive: false } },
+        { id: '3', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 200, isInactive: false } },
+        { id: '4', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 150, isInactive: false } },
+        { id: '5', stats: { currentPeriodStatus: 'substitute', currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 100, isInactive: false } },
+        { id: '6', stats: { currentPeriodStatus: 'goalie', currentPeriodRole: PLAYER_ROLES.GOALIE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 0, isInactive: false } }
+      ];
+
       const context = {
         periodFormation: mockFormation,
-        nextPlayerIdToSubOut: '1',
-        allPlayers: mockPlayers,
+        nextPlayerIdToSubOut: '1', // Player with most time (300s) should rotate off
+        allPlayers: playersWithTime,
         rotationQueue: ['1', '2', '3', '4', '5'],
         currentTimeEpoch: 2000
       };
@@ -69,6 +79,16 @@ describe('SubstitutionManager', () => {
 
       expect(result.newFormation.leftDefender).toBe('5');
       expect(result.newFormation.substitute).toBe('1');
+      
+      // With new logic, rotation queue should be rebuilt based on accumulated time
+      // After substitution:
+      // - Player '1': ~301s (300 + 1s from stint) - most time, should be first
+      // - Player '2': ~251s (250 + 1s from stint)  
+      // - Player '3': ~201s (200 + 1s from stint)
+      // - Player '4': ~151s (150 + 1s from stint)
+      // - Player '5': ~101s (100 + 1s from stint) - least time
+      // The 4 with least time (2,3,4,5) go on field, ordered by most time first: [2,3,4,5]
+      // Player 1 with most time becomes substitute
       expect(result.newRotationQueue).toEqual(['2', '3', '4', '5', '1']);
     });
   });
