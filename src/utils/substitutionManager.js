@@ -1,6 +1,7 @@
 import { PLAYER_ROLES, FORMATION_TYPES } from './gameLogic';
 import { createRotationQueue } from './rotationQueue';
 import { createPlayerLookup, findPlayerById } from './playerUtils';
+import { getPositionRole, getFieldPositions } from './positionUtils';
 
 /**
  * Calculates updated time stats for a player based on their current status and role
@@ -49,34 +50,6 @@ export class SubstitutionManager {
     this.formationType = formationType;
   }
 
-  /**
-   * Rebuilds rotation queue based on current playing times to maintain proper order
-   */
-  rebuildRotationQueue(updatedPlayers, currentGoalieId) {
-    const updatedPlayersWithStats = updatedPlayers.map(p => {
-      const stats = p.stats;
-      return {
-        id: p.id,
-        totalOutfieldTime: stats.timeOnFieldSeconds || 0,
-        isInactive: stats.isInactive || false
-      };
-    }).filter(p => !p.isInactive && p.id !== currentGoalieId); // Only active non-goalie players
-
-    // Sort by total outfield time to maintain proper rotation order
-    const sortedByTime = updatedPlayersWithStats.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-    
-    // Get the 4 players with least time (should be on field)
-    const leastTimePlayers = sortedByTime.slice(0, 4);
-    // Order these 4 by most time first (rotation order)
-    const fieldPlayersOrdered = leastTimePlayers.sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
-    
-    // Get remaining players ordered by least time first (substitutes)
-    const remainingPlayers = sortedByTime.slice(4);
-    const substitutesOrdered = remainingPlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-    
-    // Create new rotation queue
-    return [...fieldPlayersOrdered.map(p => p.id), ...substitutesOrdered.map(p => p.id)];
-  }
 
   /**
    * Calculates time stats for players during substitution
@@ -86,19 +59,10 @@ export class SubstitutionManager {
   }
 
   /**
-   * Gets role from position key
+   * Gets role from position key (delegates to shared utility)
    */
   getPositionRole(position) {
-    if (position?.includes('Defender') || position?.includes('defender')) {
-      return PLAYER_ROLES.DEFENDER;
-    } else if (position?.includes('Attacker') || position?.includes('attacker')) {
-      return PLAYER_ROLES.ATTACKER;
-    } else if (position?.includes('substitute')) {
-      return PLAYER_ROLES.SUBSTITUTE;
-    } else if (position === 'goalie') {
-      return PLAYER_ROLES.GOALIE;
-    }
-    return null;
+    return getPositionRole(position);
   }
 
   /**
@@ -222,13 +186,20 @@ export class SubstitutionManager {
       return p;
     });
 
-    // For individual modes, rebuild the rotation queue based on updated playing times
-    const currentGoalieId = newFormation.goalie;
-    const newRotationQueue = this.rebuildRotationQueue(updatedPlayers, currentGoalieId);
+    // For individual modes, just rotate the current queue (no rebuilding during gameplay)
+    const rotationQueueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    rotationQueueManager.initialize(); // Separate active and inactive players
+    
+    // Move the substituted player to the end of the queue
+    rotationQueueManager.rotatePlayer(playerGoingOffId);
+    const newRotationQueue = rotationQueueManager.toArray();
     const nextPlayerToSubOutId = newRotationQueue[0];
     
-    const outfieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
-    const nextPlayerPosition = outfieldPositions.find(pos => 
+    console.log('🔄 INDIVIDUAL_6 Substitution - Rotated queue:', newRotationQueue);
+    console.log('🔄 INDIVIDUAL_6 Substitution - Next player to sub out:', nextPlayerToSubOutId);
+    
+    const fieldPositions = getFieldPositions(this.formationType);
+    const nextPlayerPosition = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
 
@@ -327,14 +298,22 @@ export class SubstitutionManager {
       return p;
     });
 
-    // For individual modes, rebuild the rotation queue based on updated playing times
-    const currentGoalieId = newFormation.goalie;
-    const newRotationQueue = this.rebuildRotationQueue(updatedPlayers, currentGoalieId);
+    // For individual modes, just rotate the current queue (no rebuilding during gameplay)
+    const rotationQueueManager7 = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    rotationQueueManager7.initialize(); // Separate active and inactive players
+    
+    // Move the substituted player to the end of the queue
+    rotationQueueManager7.rotatePlayer(playerGoingOffId);
+    const newRotationQueue = rotationQueueManager7.toArray();
     const nextPlayerToSubOutId = newRotationQueue[0];
     const nextNextPlayerIdToSubOut = newRotationQueue[1] || null;
 
-    const outfieldPositions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
-    const nextPlayerPosition = outfieldPositions.find(pos => 
+    console.log('🔄 INDIVIDUAL_7 Substitution - Rotated queue:', newRotationQueue);
+    console.log('🔄 INDIVIDUAL_7 Substitution - Next player to sub out:', nextPlayerToSubOutId);
+    console.log('🔄 INDIVIDUAL_7 Substitution - Next-next player to sub out:', nextNextPlayerIdToSubOut);
+
+    const fieldPositions = getFieldPositions(this.formationType);
+    const nextPlayerPosition = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
 

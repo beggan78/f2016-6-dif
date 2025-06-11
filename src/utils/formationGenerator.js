@@ -248,6 +248,8 @@ function determineSubstituteRecommendations(finalPairs, outfieldersWithStats) {
 
 /**
  * Generates formation recommendations for individual modes (6, 7, or 8+ players)
+ * For Period 1 (no stats), creates basic positional rotation queue
+ * For Period 2+, creates time-based rotation queue
  */
 const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, formationType) => {
   const outfielders = squad.filter(p => p.id !== currentGoalieId);

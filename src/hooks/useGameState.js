@@ -209,6 +209,7 @@ export function useGameState() {
         setNextPlayerToSubOut(playerPosition || 'leftDefender');
         
         // Set rotation queue
+        console.log('🔄 Period Start - Initial rotation queue for INDIVIDUAL_6:', result.rotationQueue);
         setRotationQueue(result.rotationQueue);
       } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
         // 7-player individual formation generation using new logic
@@ -248,6 +249,7 @@ export function useGameState() {
         setNextPlayerToSubOut(playerPosition || 'leftDefender7');
         
         // Set rotation queue
+        console.log('🔄 Period Start - Initial rotation queue for INDIVIDUAL_7:', result.rotationQueue);
         setRotationQueue(result.rotationQueue);
         
         // Set next-next player (second in rotation queue)
@@ -279,11 +281,15 @@ export function useGameState() {
       });
       setNextPhysicalPairToSubOut('leftPair');
       
-      // Initialize next player for individual modes in P1
+      // Initialize next player and rotation queue for individual modes in P1
       if (formationType === FORMATION_TYPES.INDIVIDUAL_6) {
         setNextPlayerToSubOut('leftDefender');
+        // Initialize basic rotation queue for Period 1 (will be filled when game starts)
+        setRotationQueue([]);
       } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
         setNextPlayerToSubOut('leftDefender7');
+        // Initialize basic rotation queue for Period 1 (will be filled when game starts)
+        setRotationQueue([]);
       }
     }
   }, [periodGoalieIds, selectedSquadIds, allPlayers, formationType]);
@@ -440,26 +446,29 @@ export function useGameState() {
       return p;
     }));
 
-    // Initialize nextPlayerIdToSubOut and rotation queue for individual modes
-    if (formationType === FORMATION_TYPES.INDIVIDUAL_6 && nextPlayerToSubOut) {
+    // Initialize rotation queue for individual modes only if not already set by formation generator
+    // For Period 1 or when formation generator hasn't provided a queue
+    if (formationType === FORMATION_TYPES.INDIVIDUAL_6 && nextPlayerToSubOut && rotationQueue.length === 0) {
       const initialPlayerToSubOut = periodFormation[nextPlayerToSubOut];
       setNextPlayerIdToSubOut(initialPlayerToSubOut);
       
-      // Initialize rotation queue with desired substitution order: Left Defender -> Left Attacker -> Right Defender -> Right Attacker -> Substitute
+      // Fallback: Initialize rotation queue with basic positional order for Period 1
       const outfieldPositions = ['leftDefender', 'leftAttacker', 'rightDefender', 'rightAttacker', 'substitute'];
       const initialQueue = outfieldPositions.map(pos => periodFormation[pos]).filter(Boolean);
+      console.log('🎮 Game Start - Fallback initialization for INDIVIDUAL_6 (Period 1):', initialQueue);
       setRotationQueue(initialQueue);
-    } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7 && nextPlayerToSubOut) {
-      // Initialize for 7-player individual mode
+    } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7 && nextPlayerToSubOut && rotationQueue.length === 0) {
+      // Fallback: Initialize for 7-player individual mode only if formation generator hasn't set it
       const initialPlayerToSubOut = periodFormation[nextPlayerToSubOut];
       
-      // Initialize rotation queue with desired substitution order for 7-player individual mode
+      // Basic positional order for Period 1
       const outfieldPositions = ['leftDefender7', 'leftAttacker7', 'rightDefender7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
       const initialQueue = outfieldPositions.map(pos => periodFormation[pos]).filter(Boolean);
       
       // Only set values if we have a complete formation
       if (initialPlayerToSubOut && initialQueue.length === 6) {
         setNextPlayerIdToSubOut(initialPlayerToSubOut);
+        console.log('🎮 Game Start - Fallback initialization for INDIVIDUAL_7 (Period 1):', initialQueue);
         setRotationQueue(initialQueue);
         
         // Set next-next player (second in queue) for 7-player individual mode
@@ -502,6 +511,8 @@ export function useGameState() {
         setNextPhysicalPairToSubOut(result.newNextPhysicalPairToSubOut);
       }
       if (result.newRotationQueue) {
+        console.log('🔄 After Substitution - New rotation queue:', result.newRotationQueue);
+        console.log('🔄 Next player to substitute out (ID):', result.newNextPlayerIdToSubOut);
         setRotationQueue(result.newRotationQueue);
       }
       if (result.newNextPlayerIdToSubOut !== undefined) {
@@ -794,27 +805,14 @@ export function useGameState() {
     console.log('Manually setting next player to substitute:', newPosition);
     setNextPlayerToSubOut(newPosition);
     
-    // For 6-player mode, reorder the rotation queue
-    if (periodFormation && periodFormation[newPosition] && rotationQueue.length > 0) {
+    // Update next player tracking only (do NOT reorder rotation queue to maintain round-robin)
+    if (periodFormation && periodFormation[newPosition]) {
       const selectedPlayerId = periodFormation[newPosition];
-      const originalNextPlayerId = nextPlayerIdToSubOut;
-      
-      console.log('Reordering queue - selected:', selectedPlayerId, 'was next:', originalNextPlayerId);
-      
-      // Use RotationQueue to handle reordering
-      const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
-      queueManager.initialize(); // Separate active and inactive players
-      
-      if (selectedPlayerId !== originalNextPlayerId) {
-        queueManager.insertBefore(selectedPlayerId, originalNextPlayerId);
-        setRotationQueue(queueManager.toArray());
-        console.log('New queue order:', queueManager.toArray());
-      }
-      
       setNextPlayerIdToSubOut(selectedPlayerId);
       console.log('Set next player ID to substitute:', selectedPlayerId);
+      console.log('Note: Rotation queue order preserved for round-robin rotation');
     }
-  }, [periodFormation, rotationQueue, nextPlayerIdToSubOut, allPlayers]);
+  }, [periodFormation]);
 
   // Player inactivation/activation functions for 7-player individual mode
   const togglePlayerInactive = useCallback((playerId, animationCallback = null, delayMs = 0) => {
