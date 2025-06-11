@@ -36,14 +36,14 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
 - Players assigned to individual positions
 - Positions: Left Defender, Right Defender, Left Attacker, Right Attacker, Substitute
 - Individual player substitutions
-- Intelligent rotation queue management
+- Time-based rotation queue management with round-robin during periods
 
 #### 7-Player Mode (Individual)
 - Players assigned to individual positions without pairs
 - Positions: Left Defender, Right Defender, Left Attacker, Right Attacker, Substitute1, Substitute2
 - Dual substitution system with two substitute players
 - Advanced visual indicators showing both immediate and upcoming substitutions
-- Round-robin rotation through all 6 outfield positions
+- Round-robin rotation through all 6 outfield positions during periods
 
 ## App Workflow
 
@@ -123,7 +123,66 @@ The interface provides clear visual cues for complex rotation planning:
 
 ## Formation Recommendation System
 
-The app features an intelligent formation recommendation system that automatically suggests optimal player arrangements for periods 2 and 3, ensuring fair role distribution and maintaining team chemistry through strategic pair management.
+The app features an intelligent formation recommendation system that automatically suggests optimal player arrangements for periods 2 and 3, ensuring fair role distribution and maintaining team chemistry through strategic management. The system uses different approaches for pair-based and individual formation types.
+
+### Individual Mode Rotation System
+
+Individual modes (6-player and 7-player) use a sophisticated time-based rotation queue system designed to ensure fair playing time distribution.
+
+#### Rotation Queue Management
+
+**Period 1 Initialization**
+- Basic positional rotation queue is created based on formation positions
+- Players are ordered by their assigned positions in the formation
+
+**Period 2+ Initialization (Time-Based)**
+- Rotation queue is rebuilt based on accumulated playing times from previous periods
+- Players are sorted by total field time (ascending - least time first)
+- The 4 players with least accumulated time are selected for field positions
+- Remaining players become substitutes, ordered by playing time
+
+#### Role Assignment Logic
+
+For field players, roles are assigned based on time balance to promote fair role distribution:
+
+**Role Balance Analysis**
+- Each player's surplus attacker time is calculated: `attackerTime - defenderTime`
+- Players with most surplus attacker time are assigned defender roles (to balance their experience)
+- Players with least surplus attacker time are assigned attacker roles
+
+**Formation Positioning**
+- **6-Player Mode**: 4 field positions + 1 substitute
+- **7-Player Mode**: 4 field positions + 2 substitutes (with inactive player support)
+
+#### During Period Rotation
+
+**Round-Robin Principle**
+- Rotation queue remains fixed during periods - no rebuilding based on playing times
+- Players rotate in established order to ensure predictable, fair rotations
+- Next player to substitute off is always the first player in the rotation queue
+- After substitution, the outgoing player moves to the end of the queue
+
+**Queue Integrity**
+- Manual player selection updates tracking but preserves queue order
+- Inactive player management (7-player mode) maintains queue structure
+- Position switches between players don't affect rotation order
+
+#### Example Rotation Flow (6-Player Mode)
+
+**Period Start Queue**: [Player A, Player B, Player C, Player D, Player E]
+- Field: A, B, C, D (positions assigned by role balance)  
+- Substitute: E
+
+**After First Substitution**: [Player B, Player C, Player D, Player E, Player A]
+- Player A (most time) comes off → becomes substitute
+- Player E comes on → takes Player A's position
+- Queue rotates: A moves to end, B becomes next to rotate off
+
+**Key Benefits**
+- Predictable rotation order throughout period
+- Fair time distribution through initial time-based sorting
+- Simplified substitution decisions for coaches
+- Maintains role balance through intelligent position assignment
 
 ### Pair Mode Recommendations
 
@@ -191,12 +250,18 @@ For players not restricted by balancing rules:
 
 ### Algorithm Benefits
 
-**Fair Play Assurance**
+**Fair Play Assurance (All Modes)**
 - Time-based calculations ensure truly equitable role distribution
 - Prevents players from being "stuck" in single positions across multiple periods
 - Maintains competitive balance while developing all players
 
-**Team Chemistry**
+**Individual Mode Advantages**
+- Round-robin rotation provides predictable, fair substitution patterns
+- Role balance through intelligent position assignment
+- Simplified coaching decisions with clear rotation order
+- Granular time tracking for precise fairness
+
+**Pair Mode Advantages**
 - Prioritizes keeping successful partnerships together when possible
 - Only breaks pairs when necessary for fairness, minimizing disruption
 - Smooth transitions maintain team coordination and player confidence
@@ -205,6 +270,7 @@ For players not restricted by balancing rules:
 - Recommendations are clearly presented but never mandatory
 - Coaches can override any suggestion while maintaining the underlying tracking
 - Visual indicators help coaches understand the reasoning behind recommendations
+- Manual selections preserve queue integrity while updating player tracking
 
 ## Technology Stack
 
