@@ -2,6 +2,7 @@
 import { Settings, Play } from 'lucide-react';
 import { Select, Button, Input } from './UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS, FORMATION_TYPES } from '../utils/gameLogic';
+import { sanitizeNameInput } from '../utils/inputSanitization';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -72,8 +73,9 @@ export function ConfigurationScreen({
         <Input
           id="opponentTeam"
           value={opponentTeamName}
-          onChange={e => setOpponentTeamName(e.target.value)}
+          onChange={e => setOpponentTeamName(sanitizeNameInput(e.target.value))}
           placeholder="Enter opponent team name (optional)"
+          maxLength={50}
         />
         <p className="text-xs text-slate-400 mt-1">Leave empty to use "Opponent"</p>
       </div>

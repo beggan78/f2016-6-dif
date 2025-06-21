@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { sanitizeNameInput } from '../utils/inputSanitization';
 
 export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
   const [playerName, setPlayerName] = useState('');
@@ -33,9 +34,10 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
               type="text"
               id="playerName"
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
+              onChange={(e) => setPlayerName(sanitizeNameInput(e.target.value))}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
               placeholder="Enter player name"
+              maxLength={50}
               autoFocus
             />
           </div>
