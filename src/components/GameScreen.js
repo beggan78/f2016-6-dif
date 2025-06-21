@@ -1483,6 +1483,80 @@ export function GameScreen({
     );
   };
 
+  // Function to abbreviate team names when they don't fit
+  const abbreviateTeamName = (teamName) => {
+    if (!teamName) return teamName;
+    return teamName.substring(0, 3) + '.';
+  };
+
+  // State for managing team name abbreviation
+  const [shouldAbbreviate, setShouldAbbreviate] = React.useState(false);
+  const scoreRowRef = React.useRef(null);
+  
+  const homeTeamName = "Djurgården";
+  const awayTeamName = opponentTeamName || 'Opponent';
+  
+  const displayHomeTeam = shouldAbbreviate ? abbreviateTeamName(homeTeamName) : homeTeamName;
+  const displayAwayTeam = shouldAbbreviate ? abbreviateTeamName(awayTeamName) : awayTeamName;
+
+  // Effect to check if abbreviation is needed based on actual rendered width
+  React.useEffect(() => {
+    const checkWidth = () => {
+      if (!scoreRowRef.current) return;
+      
+      const container = scoreRowRef.current;
+      const containerWidth = container.offsetWidth;
+      
+      // Test with full names to see if they fit
+      const homeTeamFull = "Djurgården";
+      const awayTeamFull = opponentTeamName || 'Opponent';
+      
+      // Create a temporary invisible element to measure full names
+      const testDiv = document.createElement('div');
+      testDiv.style.position = 'absolute';
+      testDiv.style.visibility = 'hidden';
+      testDiv.style.whiteSpace = 'nowrap';
+      testDiv.className = container.className;
+      
+      // Create test content with full names
+      testDiv.innerHTML = `
+        <button class="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors">
+          ${homeTeamFull}
+        </button>
+        <div class="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0">
+          ${homeScore} - ${awayScore}
+        </div>
+        <button class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors">
+          ${awayTeamFull}
+        </button>
+      `;
+      
+      // Temporarily add to DOM to measure
+      container.parentElement.appendChild(testDiv);
+      const testWidth = testDiv.scrollWidth;
+      container.parentElement.removeChild(testDiv);
+      
+      // Decide whether to abbreviate based on test measurement
+      const needsAbbreviation = testWidth > containerWidth;
+      
+      if (needsAbbreviation && !shouldAbbreviate) {
+        setShouldAbbreviate(true);
+      } else if (!needsAbbreviation && shouldAbbreviate) {
+        setShouldAbbreviate(false);
+      }
+    };
+
+    // Check on mount and when dependencies change
+    checkWidth();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkWidth);
+    
+    return () => {
+      window.removeEventListener('resize', checkWidth);
+    };
+  }, [homeScore, awayScore, opponentTeamName, shouldAbbreviate]);
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber}</h2>
@@ -1518,12 +1592,12 @@ export function GameScreen({
 
       {/* Score Display */}
       <div className="p-2 bg-slate-700 rounded-lg text-center">
-        <div className="flex items-center justify-center space-x-2.5">
+        <div ref={scoreRowRef} className="flex items-center justify-center space-x-2.5">
           <button
             onClick={addHomeGoal}
             className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors"
           >
-            Djurgården
+            {displayHomeTeam}
           </button>
           <div 
             className="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0"
@@ -1535,7 +1609,7 @@ export function GameScreen({
             onClick={addAwayGoal}
             className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors"
           >
-            {opponentTeamName || 'Opponent'}
+            {displayAwayTeam}
           </button>
         </div>
         <p className="text-xs text-slate-400 mt-1">Tap team name to add goal • Hold score to edit</p>
