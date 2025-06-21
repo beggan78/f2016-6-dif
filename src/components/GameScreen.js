@@ -1518,7 +1518,7 @@ export function GameScreen({
 
       {/* Score Display */}
       <div className="p-2 bg-slate-700 rounded-lg text-center">
-        <div className="flex items-center justify-center space-x-4">
+        <div className="flex items-center justify-center space-x-2.5">
           <button
             onClick={addHomeGoal}
             className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors"
@@ -1526,7 +1526,7 @@ export function GameScreen({
             Djurgården
           </button>
           <div 
-            className="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-4 py-2 rounded-md hover:bg-slate-600 transition-colors"
+            className="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0"
             {...scoreEvents}
           >
             {homeScore} - {awayScore}
