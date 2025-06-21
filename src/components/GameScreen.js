@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play, Undo2 } from 'lucide-react';
-import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal } from './UI';
+import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 import { formatTimeDifference } from '../utils/formatUtils';
 import { createAnimationCalculator } from '../utils/animationSupport';
@@ -51,7 +51,7 @@ export function GameScreen({
 }) {
   const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
   
-  // Helper functions for modal management with browser back intercept
+  // Helper functions for The modal can modal management with browser back intercept
   const openFieldPlayerModal = React.useCallback((modalData) => {
     setFieldPlayerModal(modalData);
     if (pushModalState) {
@@ -181,6 +181,11 @@ export function GameScreen({
   
   // State for score editing modal
   const [scoreEditModal, setScoreEditModal] = React.useState({
+    isOpen: false
+  });
+  
+  // State for undo substitution confirmation modal
+  const [undoConfirmModal, setUndoConfirmModal] = React.useState({
     isOpen: false
   });
   
@@ -967,6 +972,34 @@ export function GameScreen({
 
   const handleScoreEditCancel = () => {
     setScoreEditModal({ isOpen: false });
+  };
+
+  // Handle undo substitution confirmation modal actions
+  const handleUndoSubstitutionClick = () => {
+    if (!lastSubstitution) return;
+    
+    setUndoConfirmModal({ isOpen: true });
+    // Add modal to browser back button handling
+    if (pushModalState) {
+      pushModalState(() => {
+        setUndoConfirmModal({ isOpen: false });
+      });
+    }
+  };
+
+  const handleConfirmUndoSubstitution = () => {
+    setUndoConfirmModal({ isOpen: false });
+    if (removeModalFromStack) {
+      removeModalFromStack();
+    }
+    handleUndoSubstitution();
+  };
+
+  const handleCancelUndoSubstitution = () => {
+    setUndoConfirmModal({ isOpen: false });
+    if (removeModalFromStack) {
+      removeModalFromStack();
+    }
   };
 
   // Function to swap attacker and defender within a pair
@@ -1879,22 +1912,28 @@ export function GameScreen({
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 mt-4">
-        <Button onClick={handleSubstitutionWithHighlight} Icon={RotateCcw} className="flex-1">
-          SUB NOW
-        </Button>
-        {lastSubstitution && (
-          <Button 
-            onClick={handleUndoSubstitution} 
-            Icon={Undo2} 
-            variant="secondary" 
-            className="flex-1"
-            title="Undo last substitution"
-          >
-            UNDO SUB
+      <div className="flex flex-col gap-3 mt-4">
+        {/* Top row: SUB NOW with undo button */}
+        <div className="flex gap-2">
+          <Button onClick={handleSubstitutionWithHighlight} Icon={RotateCcw} className="flex-1">
+            SUB NOW
           </Button>
-        )}
-        <Button onClick={handleEndPeriod} Icon={Square} variant="danger" className="flex-1">
+          <button
+            onClick={handleUndoSubstitutionClick}
+            disabled={!lastSubstitution}
+            className={`w-12 h-12 rounded-md flex items-center justify-center transition-all duration-200 ${
+              lastSubstitution 
+                ? 'bg-slate-600 hover:bg-slate-500 text-slate-100 shadow-md cursor-pointer' 
+                : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-50'
+            }`}
+            title={lastSubstitution ? "Undo last substitution" : "No substitution to undo"}
+          >
+            <Undo2 className="h-5 w-5" />
+          </button>
+        </div>
+        
+        {/* Bottom row: End Period */}
+        <Button onClick={handleEndPeriod} Icon={Square} variant="danger" className="w-full">
           End Period
         </Button>
       </div>
@@ -1947,6 +1986,17 @@ export function GameScreen({
         awayScore={awayScore}
         homeTeamName="Djurgården"
         awayTeamName={opponentTeamName || 'Opponent'}
+      />
+      
+      {/* Undo Substitution Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={undoConfirmModal.isOpen}
+        onConfirm={handleConfirmUndoSubstitution}
+        onCancel={handleCancelUndoSubstitution}
+        title="Undo Substitution?"
+        message="Are you sure you want to undo the last substitution? This will restore the previous formation and player positions."
+        confirmText="Yes, undo substitution"
+        cancelText="Cancel"
       />
     </div>
   );
