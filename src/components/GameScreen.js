@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play, Undo2 } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 import { formatTimeDifference } from '../utils/formatUtils';
@@ -23,6 +23,7 @@ export function GameScreen({
   resumeSubTimer,
   formatTime, 
   handleSubstitution, 
+  handleUndoSubstitution: handleUndoSubstitutionTimer,
   handleEndPeriod, 
   nextPhysicalPairToSubOut,
   nextPlayerToSubOut,
@@ -32,6 +33,7 @@ export function GameScreen({
   selectedSquadPlayers,
   setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
+  setNextPlayerIdToSubOut,
   formationType,
   alertMinutes,
   togglePlayerInactive,
@@ -191,6 +193,9 @@ export function GameScreen({
   // State to track if we should hide the "next off" indicator during glow effect
   const [hideNextOffIndicator, setHideNextOffIndicator] = React.useState(false);
   
+  // State to track the last substitution for undo functionality
+  const [lastSubstitution, setLastSubstitution] = React.useState(null);
+  
   // Unified animation state management
   const [animationState, setAnimationState] = React.useState({
     type: 'none', // 'none', 'substitution', 'goalie', 'position-switch'
@@ -213,19 +218,43 @@ export function GameScreen({
 
   // Enhanced substitution handler with animation and highlighting
   const handleSubstitutionWithHighlight = React.useCallback(() => {
+    const substitutionTimestamp = Date.now();
     let playersComingOnIds = [];
+    let playersGoingOffIds = [];
     
     if (isPairsMode) {
-      // 7-player pairs logic - get players coming from sub pair
+      // 7-player pairs logic - get players coming from sub pair and going off
       const pairComingIn = periodFormation.subPair;
+      const pairGoingOff = periodFormation[nextPhysicalPairToSubOut];
       playersComingOnIds = [pairComingIn?.defender, pairComingIn?.attacker].filter(Boolean);
+      playersGoingOffIds = [pairGoingOff?.defender, pairGoingOff?.attacker].filter(Boolean);
     } else if (isIndividual6Mode) {
-      // 6-player logic - get player coming from substitute position
+      // 6-player logic - get player coming from substitute position and going off
       playersComingOnIds = [periodFormation.substitute].filter(Boolean);
+      playersGoingOffIds = [nextPlayerIdToSubOut].filter(Boolean);
     } else if (isIndividual7Mode) {
-      // 7-player individual logic - get player coming from first substitute position
+      // 7-player individual logic - get player coming from first substitute position and going off
       playersComingOnIds = [periodFormation.substitute7_1].filter(Boolean);
+      playersGoingOffIds = [nextPlayerIdToSubOut].filter(Boolean);
     }
+    
+    // Store state before substitution for undo functionality
+    const beforeFormation = JSON.parse(JSON.stringify(periodFormation));
+    const beforeNextPair = nextPhysicalPairToSubOut;
+    const beforeNextPlayer = nextPlayerToSubOut;
+    const beforeNextPlayerId = nextPlayerIdToSubOut;
+    const beforeNextNextPlayerId = nextNextPlayerIdToSubOut;
+    const subTimerSecondsAtSubstitution = subTimerSeconds;
+    
+    // Store original stats for players coming on (they should return to these exact stats)
+    const playersComingOnOriginalStats = playersComingOnIds.map(playerId => {
+      const player = allPlayers.find(p => p.id === playerId);
+      return {
+        id: playerId,
+        name: player?.name,
+        stats: JSON.parse(JSON.stringify(player?.stats))
+      };
+    });
     
     // Calculate animation distances using the new abstraction
     let distances;
@@ -247,6 +276,21 @@ export function GameScreen({
       // Perform the actual substitution
       handleSubstitution();
       
+      // Store undo data after substitution is complete
+      setLastSubstitution({
+        timestamp: substitutionTimestamp,
+        beforeFormation,
+        beforeNextPair,
+        beforeNextPlayer, 
+        beforeNextPlayerId,
+        beforeNextNextPlayerId,
+        playersComingOnOriginalStats, // Original stats for players who came on
+        playersComingOnIds,
+        playersGoingOffIds,
+        formationType,
+        subTimerSecondsAtSubstitution
+      });
+      
       // Set the players who are coming on field for highlighting
       setRecentlySubstitutedPlayers(new Set(playersComingOnIds));
       
@@ -267,7 +311,162 @@ export function GameScreen({
         setRecentlySubstitutedPlayers(new Set());
       }, GLOW_DURATION);
     }, ANIMATION_DURATION);
-  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, animationCalculator]);
+  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, animationCalculator, allPlayers, formationType, nextNextPlayerIdToSubOut, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, nextPlayerToSubOut, subTimerSeconds]);
+
+  // Undo substitution handler with animation and time calculations
+  const handleUndoSubstitution = React.useCallback(() => {
+    if (!lastSubstitution) {
+      console.warn('No substitution to undo');
+      return;
+    }
+
+    const currentTime = Date.now();
+    const timeSinceSubstitution = Math.round((currentTime - lastSubstitution.timestamp) / 1000); // seconds
+
+    // Calculate animation distances for the reverse substitution
+    let distances;
+    if (lastSubstitution.formationType === 'INDIVIDUAL_7') {
+      distances = animationCalculator.calculate7PlayerDistances();
+    } else {
+      distances = animationCalculator.calculateSubstitutionDistances();
+    }
+
+    // Reverse the animation directions by flipping the distances
+    const reverseDistances = {
+      nextOffToSub: -distances.subToNextOff,
+      subToNextOff: -distances.nextOffToSub,
+      sub1ToField: -distances.sub1ToField,
+      fieldToSub2: -distances.fieldToSub2,
+      sub2ToSub1: -distances.sub2ToSub1
+    };
+
+    // Start reverse animation
+    setAnimationState({
+      type: 'substitution',
+      phase: 'switching',
+      data: reverseDistances
+    });
+    setHideNextOffIndicator(true);
+
+    // After animation completes, revert the substitution
+    setTimeout(() => {
+      // Restore formation
+      setPeriodFormation(lastSubstitution.beforeFormation);
+      setNextPhysicalPairToSubOut(lastSubstitution.beforeNextPair);
+      setNextPlayerToSubOut(lastSubstitution.beforeNextPlayer);
+      setNextPlayerIdToSubOut(lastSubstitution.beforeNextPlayerId);
+      setNextNextPlayerIdToSubOut(lastSubstitution.beforeNextNextPlayerId);
+
+      // Calculate and restore player stats with time adjustments
+      console.log(`=== UNDO CALCULATIONS (${timeSinceSubstitution}s since substitution) ===`);
+      setAllPlayers(prev => prev.map(player => {
+        const wasComingOn = lastSubstitution.playersComingOnIds.includes(player.id);
+        const wasGoingOff = lastSubstitution.playersGoingOffIds.includes(player.id);
+        
+        const playerName = player.name;
+
+        if (wasComingOn) {
+          // Player came on during substitution - restore their original stats (before they came on)
+          const originalStats = lastSubstitution.playersComingOnOriginalStats.find(p => p.id === player.id);
+          if (originalStats) {
+            console.log(`${playerName} (CAME ON): Restoring original stats`);
+            console.log(`  - Original stats: ${originalStats.stats.timeOnFieldSeconds}s field, ${originalStats.stats.timeAsAttackerSeconds}s att, ${originalStats.stats.timeAsDefenderSeconds}s def`);
+            console.log(`  - Restored status: ${originalStats.stats.currentPeriodStatus}, position: ${originalStats.stats.currentPairKey}`);
+            return { ...player, stats: originalStats.stats };
+          }
+          return player;
+        } else if (wasGoingOff) {
+          // Player went off during substitution - they should get credit for the time they spent on bench
+          // We need to calculate their current accumulated stats (which includes their stint before substitution)
+          // and add the bench time
+          const currentStats = { ...player.stats };
+          
+          console.log(`${playerName} (WENT OFF):`);
+          console.log(`  - Current stats (with their stint): ${currentStats.timeOnFieldSeconds}s field, ${currentStats.timeAsAttackerSeconds}s att, ${currentStats.timeAsDefenderSeconds}s def`);
+          console.log(`  - Role when substituted: ${currentStats.currentPeriodRole}`);
+          console.log(`  - Adding ${timeSinceSubstitution}s bench time to field time`);
+          
+          // Add the bench time to their total field time
+          currentStats.timeOnFieldSeconds += timeSinceSubstitution;
+          
+          // Add bench time to their role-specific counter based on what role they had when substituted
+          if (currentStats.currentPeriodRole === 'Attacker') {
+            currentStats.timeAsAttackerSeconds += timeSinceSubstitution;
+            console.log(`  - Adding ${timeSinceSubstitution}s to attacker time`);
+          } else if (currentStats.currentPeriodRole === 'Defender') {
+            currentStats.timeAsDefenderSeconds += timeSinceSubstitution;
+            console.log(`  - Adding ${timeSinceSubstitution}s to defender time`);
+          }
+
+          // CRITICAL: Update their status back to 'on_field' and reset stint timer
+          currentStats.currentPeriodStatus = 'on_field';
+          currentStats.lastStintStartTimeEpoch = currentTime;
+          
+          // Restore their field position from the before-substitution formation
+          const beforeFormation = lastSubstitution.beforeFormation;
+          
+          // Find what position this player had before substitution
+          let restoredPosition = null;
+          if (formationType === 'PAIRS_7') {
+            if (beforeFormation.leftPair?.defender === player.id) restoredPosition = 'leftPair';
+            else if (beforeFormation.leftPair?.attacker === player.id) restoredPosition = 'leftPair';
+            else if (beforeFormation.rightPair?.defender === player.id) restoredPosition = 'rightPair';
+            else if (beforeFormation.rightPair?.attacker === player.id) restoredPosition = 'rightPair';
+          } else if (formationType === 'INDIVIDUAL_6') {
+            if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
+            else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
+            else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
+            else if (beforeFormation.rightAttacker === player.id) restoredPosition = 'rightAttacker';
+          } else if (formationType === 'INDIVIDUAL_7') {
+            if (beforeFormation.leftDefender7 === player.id) restoredPosition = 'leftDefender7';
+            else if (beforeFormation.rightDefender7 === player.id) restoredPosition = 'rightDefender7';
+            else if (beforeFormation.leftAttacker7 === player.id) restoredPosition = 'leftAttacker7';
+            else if (beforeFormation.rightAttacker7 === player.id) restoredPosition = 'rightAttacker7';
+          }
+          
+          if (restoredPosition) {
+            currentStats.currentPairKey = restoredPosition;
+            console.log(`  - Restored position: ${restoredPosition}`);
+          }
+
+          console.log(`  - Final stats: ${currentStats.timeOnFieldSeconds}s field, ${currentStats.timeAsAttackerSeconds}s att, ${currentStats.timeAsDefenderSeconds}s def`);
+          return { ...player, stats: currentStats };
+        } else {
+          // Player wasn't involved in substitution - no changes needed
+          console.log(`${playerName} (NOT INVOLVED): No changes`);
+          return player;
+        }
+      }));
+
+      // Set players who are going back on field for highlighting (reverse of original)
+      setRecentlySubstitutedPlayers(new Set(lastSubstitution.playersGoingOffIds));
+
+      // End animation
+      setAnimationState(prev => ({
+        ...prev,
+        phase: 'completing'
+      }));
+
+      // Restore substitution timer
+      if (handleUndoSubstitutionTimer && lastSubstitution.subTimerSecondsAtSubstitution !== undefined) {
+        handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution);
+      }
+
+      // Clear the undo data since we've used it
+      setLastSubstitution(null);
+
+      // After glow effect completes, reset everything
+      setTimeout(() => {
+        setAnimationState({
+          type: 'none',
+          phase: 'idle',
+          data: {}
+        });
+        setHideNextOffIndicator(false);
+        setRecentlySubstitutedPlayers(new Set());
+      }, GLOW_DURATION);
+    }, ANIMATION_DURATION);
+  }, [lastSubstitution, animationCalculator, setPeriodFormation, setNextPhysicalPairToSubOut, setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setAllPlayers, formationType, handleUndoSubstitutionTimer]);
 
   // Enhanced position switch handler with animation
   const handlePositionSwitchWithAnimation = React.useCallback((player1Id, player2Id) => {
@@ -335,6 +534,12 @@ export function GameScreen({
       setShouldSubstituteNow(false);
     }
   }, [shouldSubstituteNow, nextPhysicalPairToSubOut, nextPlayerToSubOut, handleSubstitutionWithHighlight]);
+
+  // Clear undo data when period changes
+  React.useEffect(() => {
+    setLastSubstitution(null);
+  }, [currentPeriodNumber]);
+
 
   // Note: Timeout logic is now handled in handleSubstitutionWithHighlight
 
@@ -1678,6 +1883,17 @@ export function GameScreen({
         <Button onClick={handleSubstitutionWithHighlight} Icon={RotateCcw} className="flex-1">
           SUB NOW
         </Button>
+        {lastSubstitution && (
+          <Button 
+            onClick={handleUndoSubstitution} 
+            Icon={Undo2} 
+            variant="secondary" 
+            className="flex-1"
+            title="Undo last substitution"
+          >
+            UNDO SUB
+          </Button>
+        )}
         <Button onClick={handleEndPeriod} Icon={Square} variant="danger" className="flex-1">
           End Period
         </Button>

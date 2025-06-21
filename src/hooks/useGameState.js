@@ -37,6 +37,7 @@ export function useGameState() {
   const [opponentTeamName, setOpponentTeamName] = useState(initialState.opponentTeamName || '');
   const [homeScore, setHomeScore] = useState(initialState.homeScore || 0); // Djurgården score
   const [awayScore, setAwayScore] = useState(initialState.awayScore || 0); // Opponent score
+  const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
 
   // Wake lock and alert management
   const [wakeLock, setWakeLock] = useState(null);
@@ -111,11 +112,12 @@ export function useGameState() {
       opponentTeamName,
       homeScore,
       awayScore,
+      lastSubstitutionTimestamp,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, formationType, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, formationType, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp]);
 
 
 
@@ -483,6 +485,7 @@ export function useGameState() {
 
   const handleSubstitution = (isSubTimerPaused = false) => {
     const currentTimeEpoch = Date.now();
+    setLastSubstitutionTimestamp(currentTimeEpoch);
 
     // Request wake lock and start alert timer
     requestWakeLock();
@@ -1355,6 +1358,7 @@ export function useGameState() {
     setOpponentTeamName,
     homeScore,
     awayScore,
+    lastSubstitutionTimestamp,
     
     // Actions
     preparePeriod,

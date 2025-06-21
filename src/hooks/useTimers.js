@@ -139,6 +139,17 @@ export function useTimers(periodDurationMinutes) {
     setSubPauseStartTime(null);
   };
 
+  const restoreSubTimer = (targetSeconds) => {
+    // Restore sub timer to a specific value (for undo functionality)
+    const now = Date.now();
+    // Set the last sub time to be in the past so that the timer shows the target seconds
+    setLastSubTime(now - (targetSeconds * 1000));
+    setSubTimerSeconds(targetSeconds);
+    setPausedSubTime(0);
+    setIsSubTimerPaused(false);
+    setSubPauseStartTime(null);
+  };
+
   const pauseSubTimer = (updatePlayerStats) => {
     if (!isSubTimerPaused && lastSubTime) {
       const now = Date.now();
@@ -228,6 +239,7 @@ export function useTimers(periodDurationMinutes) {
     setIsPeriodActive,
     isSubTimerPaused,
     resetSubTimer,
+    restoreSubTimer,
     pauseSubTimer,
     resumeSubTimer,
     startTimers,

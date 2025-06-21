@@ -86,6 +86,14 @@ function App() {
     timers.resetSubTimer();
   };
 
+  const handleUndoSubstitution = (subTimerSecondsAtSubstitution) => {
+    // Calculate how much time has passed since the substitution
+    const timeSinceSubstitution = Math.round((Date.now() - gameState.lastSubstitutionTimestamp) / 1000);
+    // Restore sub timer to where it would have been if substitution never happened
+    const targetSubTimerSeconds = subTimerSecondsAtSubstitution + timeSinceSubstitution;
+    timers.restoreSubTimer(targetSubTimerSeconds);
+  };
+
   const handleEndPeriod = () => {
     // Check if period is ending more than 1 minute early
     const remainingMinutes = Math.floor(timers.matchTimerSeconds / 60);
@@ -244,6 +252,7 @@ function App() {
             resumeSubTimer={timers.resumeSubTimer}
             formatTime={formatTime}
             handleSubstitution={handleSubstitution}
+            handleUndoSubstitution={handleUndoSubstitution}
             handleEndPeriod={handleEndPeriod}
             nextPhysicalPairToSubOut={gameState.nextPhysicalPairToSubOut}
             nextPlayerToSubOut={gameState.nextPlayerToSubOut}
@@ -253,6 +262,7 @@ function App() {
             selectedSquadPlayers={selectedSquadPlayers}
             setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
+            setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}
             formationType={gameState.formationType}
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
