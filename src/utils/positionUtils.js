@@ -1,4 +1,4 @@
-import { PLAYER_ROLES, FORMATION_TYPES } from './gameLogic';
+import { PLAYER_ROLES, FORMATION_TYPES } from '../game/logic/gameLogic';
 
 /**
  * Shared utilities for position and role management across formation types

@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from '../utils/gameLogic';
+import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from '../game/logic/gameLogic';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
-import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../utils/substitutionManager';
-import { createRotationQueue } from '../utils/rotationQueue';
+import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../game/logic/substitutionManager';
+import { createRotationQueue } from '../game/queue/rotationQueue';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 

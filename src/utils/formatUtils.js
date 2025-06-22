@@ -1,6 +1,6 @@
 import { formatTime } from './timeCalculations';
-import { calculateRolePoints } from './gameLogic';
-import { PLAYER_ROLES } from './gameLogic';
+import { calculateRolePoints } from '../game/logic/gameLogic';
+import { PLAYER_ROLES } from '../game/logic/gameLogic';
 
 /**
  * Formats time difference with +/- sign

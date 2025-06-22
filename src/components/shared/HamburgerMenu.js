@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { hasInactivePlayersInSquad } from '../utils/playerUtils';
+import { hasInactivePlayersInSquad } from '../../utils/playerUtils';
 
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, formationType, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
   const [isOpen, setIsOpen] = useState(false);

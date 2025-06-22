@@ -4,15 +4,15 @@ import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
 import { formatTime } from './utils/timeCalculations';
-import { initializePlayers, initialRoster } from './utils/gameLogic';
-import { ConfigurationScreen } from './components/ConfigurationScreen';
-import { PeriodSetupScreen } from './components/PeriodSetupScreen';
-import { GameScreen } from './components/GameScreen';
-import { StatsScreen } from './components/StatsScreen';
-import { ConfirmationModal } from './components/UI';
+import { initializePlayers, initialRoster } from './game/logic/gameLogic';
+import { ConfigurationScreen } from './components/setup/ConfigurationScreen';
+import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
+import { GameScreen } from './components/game/GameScreen';
+import { StatsScreen } from './components/stats/StatsScreen';
+import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
-import { HamburgerMenu } from './components/HamburgerMenu';
-import { AddPlayerModal } from './components/AddPlayerModal';
+import { HamburgerMenu } from './components/shared/HamburgerMenu';
+import { AddPlayerModal } from './components/shared/AddPlayerModal';
 
 // Main App Component
 function App() {

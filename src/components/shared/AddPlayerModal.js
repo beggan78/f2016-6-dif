@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { sanitizeNameInput } from '../utils/inputSanitization';
+import { sanitizeNameInput } from '../../utils/inputSanitization';
 
 export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
   const [playerName, setPlayerName] = useState('');

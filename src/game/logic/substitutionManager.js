@@ -1,7 +1,7 @@
 import { PLAYER_ROLES, FORMATION_TYPES } from './gameLogic';
-import { createRotationQueue } from './rotationQueue';
-import { createPlayerLookup, findPlayerById } from './playerUtils';
-import { getPositionRole, getFieldPositions } from './positionUtils';
+import { createRotationQueue } from '../queue/rotationQueue';
+import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
+import { getPositionRole, getFieldPositions } from '../../utils/positionUtils';
 
 /**
  * Calculates updated time stats for a player based on their current status and role
@@ -300,20 +300,14 @@ export class SubstitutionManager {
 
     // For individual modes, just rotate the current queue (no rebuilding during gameplay)
     const rotationQueueManager7 = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
-    console.log('🔄 Before initialize() - rotationQueue input:', rotationQueue);
     rotationQueueManager7.initialize(); // Separate active and inactive players
-    console.log('🔄 After initialize() - queue:', rotationQueueManager7.toArray());
     
     // Move the substituted player to the end of the queue
-    console.log('🔄 About to rotate player:', playerGoingOffId);
     rotationQueueManager7.rotatePlayer(playerGoingOffId);
     const newRotationQueue = rotationQueueManager7.toArray();
     const nextPlayerToSubOutId = newRotationQueue[0];
     const nextNextPlayerIdToSubOut = newRotationQueue[1] || null;
 
-    console.log('🔄 INDIVIDUAL_7 Substitution - Rotated queue:', newRotationQueue);
-    console.log('🔄 INDIVIDUAL_7 Substitution - Next player to sub out:', nextPlayerToSubOutId);
-    console.log('🔄 INDIVIDUAL_7 Substitution - Next-next player to sub out:', nextNextPlayerIdToSubOut);
 
     const fieldPositions = getFieldPositions(this.formationType);
     const nextPlayerPosition = fieldPositions.find(pos => 

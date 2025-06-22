@@ -1,16 +1,18 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play, Undo2 } from 'lucide-react';
-import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from './UI';
-import { FORMATION_TYPES } from '../utils/gameLogic';
-import { formatTimeDifference } from '../utils/formatUtils';
-import { animateStateChange, getPlayerAnimationProps } from '../utils/animationSupport';
-import { getPlayerName, findPlayerById } from '../utils/playerUtils';
+import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
+import { FORMATION_TYPES } from '../../game/logic/gameLogic';
+import { formatTimeDifference } from '../../utils/formatUtils';
+import { animateStateChange, getPlayerAnimationProps } from '../../game/animation/animationSupport';
+import { getPlayerName, findPlayerById } from '../../utils/playerUtils';
 import { 
   calculateSubstitution, 
   calculatePositionSwitch, 
   calculateGoalieSwitch, 
-  calculateUndo
-} from '../utils/gameStateLogic';
+  calculateUndo,
+  calculatePlayerToggleInactive,
+  calculateSubstituteSwap
+} from '../../game/logic/gameStateLogic';
 
 // Animation timing constants are now imported from animationSupport
 
@@ -229,13 +231,6 @@ export function GameScreen({
 
   // New substitution handler using the unified animation system
   const handleSubstitutionWithHighlight = React.useCallback(() => {
-    console.log('🚀 Starting substitution with current state:', {
-      nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut,
-      nextPlayerToSubOut,
-      nextPhysicalPairToSubOut
-    });
-    
     const substitutionTimestamp = Date.now();
     
     // Store state before substitution for undo functionality
@@ -271,13 +266,6 @@ export function GameScreen({
       createGameState(),
       calculateSubstitution,
       (newGameState) => {
-        console.log('🎯 Applying substitution state changes:', {
-          nextPlayerIdToSubOut: newGameState.nextPlayerIdToSubOut,
-          nextNextPlayerIdToSubOut: newGameState.nextNextPlayerIdToSubOut,
-          nextPlayerToSubOut: newGameState.nextPlayerToSubOut,
-          nextPhysicalPairToSubOut: newGameState.nextPhysicalPairToSubOut
-        });
-        
         // Apply the state changes
         setPeriodFormation(newGameState.periodFormation);
         setAllPlayers(newGameState.allPlayers);
@@ -387,16 +375,6 @@ export function GameScreen({
     setLastSubstitution(null);
   }, [currentPeriodNumber]);
 
-  // Debug: Track changes to next player indicators
-  React.useEffect(() => {
-    console.log('📊 Next player state changed:', {
-      nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut,
-      nextPlayerToSubOut,
-      nextPhysicalPairToSubOut,
-      hideNextOffIndicator
-    });
-  }, [nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, nextPlayerToSubOut, nextPhysicalPairToSubOut, hideNextOffIndicator]);
 
 
   // Note: Timeout logic is now handled in handleSubstitutionWithHighlight
@@ -562,25 +540,19 @@ export function GameScreen({
       
       // Only proceed if the player is substitute7_2 (next-next to go in)
       if (playerId === substitute7_2Id) {
-        // Use new animation system for substitute swap
-        // For now, implement without animation (TODO: add proper substitute swap animation)
-        // Swap substitute positions
-        setPeriodFormation(prev => ({
-          ...prev,
-          substitute7_1: substitute7_2Id,
-          substitute7_2: substitute7_1Id
-        }));
-        
-        // Update player positions
-        setAllPlayers(prev => prev.map(p => {
-          if (p.id === substitute7_1Id) {
-            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
-          }
-          if (p.id === substitute7_2Id) {
-            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
-          }
-          return p;
-        }));
+        // Use the new animation system for substitute swap
+        animateStateChange(
+          createGameState(),
+          (gameState) => calculateSubstituteSwap(gameState, substitute7_1Id, substitute7_2Id),
+          (newGameState) => {
+            // Apply the state changes
+            setPeriodFormation(newGameState.periodFormation);
+            setAllPlayers(newGameState.allPlayers);
+          },
+          setAnimationState,
+          setHideNextOffIndicator,
+          setRecentlySubstitutedPlayers
+        );
       }
     }
     closeSubstituteModal();
@@ -599,8 +571,24 @@ export function GameScreen({
         // No animation needed - substitute7_2 is already in the correct position for inactive players
         togglePlayerInactive(substituteModal.playerId);
       } else {
-        // For now, implement without animation (TODO: add proper substitute swap animation)
-        togglePlayerInactive(substituteModal.playerId);
+        // Use animation system for substitute position swap during inactivation
+        animateStateChange(
+          createGameState(),
+          (gameState) => calculatePlayerToggleInactive(gameState, substituteModal.playerId),
+          (newGameState) => {
+            // Apply the state changes
+            setPeriodFormation(newGameState.periodFormation);
+            setAllPlayers(newGameState.allPlayers);
+            setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
+            setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
+            if (newGameState.rotationQueue) {
+              setRotationQueue(newGameState.rotationQueue);
+            }
+          },
+          setAnimationState,
+          setHideNextOffIndicator,
+          setRecentlySubstitutedPlayers
+        );
       }
     } else if (substituteModal.playerId) {
       // Non-7-player mode, no animation needed
@@ -614,8 +602,24 @@ export function GameScreen({
 
   const handleActivatePlayer = () => {
     if (substituteModal.playerId && isIndividual7Mode) {
-      // For now, implement without animation (TODO: add proper substitute swap animation)
-      togglePlayerInactive(substituteModal.playerId);
+      // Use animation system for substitute position swap during activation
+      animateStateChange(
+        createGameState(),
+        (gameState) => calculatePlayerToggleInactive(gameState, substituteModal.playerId),
+        (newGameState) => {
+          // Apply the state changes
+          setPeriodFormation(newGameState.periodFormation);
+          setAllPlayers(newGameState.allPlayers);
+          setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
+          setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
+          if (newGameState.rotationQueue) {
+            setRotationQueue(newGameState.rotationQueue);
+          }
+        },
+        setAnimationState,
+        setHideNextOffIndicator,
+        setRecentlySubstitutedPlayers
+      );
     } else if (substituteModal.playerId) {
       // Non-7-player mode, no animation needed
       togglePlayerInactive(substituteModal.playerId);

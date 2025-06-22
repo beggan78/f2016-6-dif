@@ -5,11 +5,11 @@
  */
 
 import { createSubstitutionManager } from './substitutionManager';
-import { findPlayerById } from './playerUtils';
+import { findPlayerById } from '../../utils/playerUtils';
 import { PLAYER_ROLES } from './gameLogic';
 import { calculatePlayerTimeStats, handleRoleChange } from './substitutionManager';
-import { createRotationQueue } from './rotationQueue';
-import { createPlayerLookup } from './playerUtils';
+import { createRotationQueue } from '../queue/rotationQueue';
+import { createPlayerLookup } from '../../utils/playerUtils';
 
 /**
  * Calculate the result of a substitution without modifying any state
@@ -41,14 +41,6 @@ export const calculateSubstitution = (gameState) => {
   try {
     const result = substitutionManager.executeSubstitution(context);
     
-    console.log('🔄 calculateSubstitution result:', {
-      newNextPlayerIdToSubOut: result.newNextPlayerIdToSubOut,
-      newNextNextPlayerIdToSubOut: result.newNextNextPlayerIdToSubOut,
-      newNextPlayerToSubOut: result.newNextPlayerToSubOut,
-      gameStateNextPlayerIdToSubOut: gameState.nextPlayerIdToSubOut,
-      gameStateNextNextPlayerIdToSubOut: gameState.nextNextPlayerIdToSubOut
-    });
-    
     const newGameState = {
       ...gameState,
       periodFormation: result.newFormation,
@@ -61,12 +53,6 @@ export const calculateSubstitution = (gameState) => {
       playersToHighlight: result.playersComingOnIds || [],
       lastSubstitutionTimestamp: currentTimeEpoch
     };
-
-    console.log('🔄 calculateSubstitution final result:', {
-      newRotationQueue: newGameState.rotationQueue,
-      newNextPlayerIdToSubOut: newGameState.nextPlayerIdToSubOut,
-      newNextNextPlayerIdToSubOut: newGameState.nextNextPlayerIdToSubOut
-    });
 
     return newGameState;
   } catch (error) {
@@ -634,6 +620,48 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     nextPlayerIdToSubOut: newNextPlayerIdToSubOut,
     nextNextPlayerIdToSubOut: newNextNextPlayerIdToSubOut,
     playersToHighlight: [] // No special highlighting for activation/deactivation
+  };
+};
+
+/**
+ * Calculate the result of swapping substitute positions (7-player mode)
+ */
+export const calculateSubstituteSwap = (gameState, substitute7_1Id, substitute7_2Id) => {
+  const { allPlayers, periodFormation, formationType } = gameState;
+  
+  if (formationType !== 'INDIVIDUAL_7') {
+    console.warn('Substitute swap only supported in 7-player individual mode');
+    return gameState;
+  }
+  
+  if (!substitute7_1Id || !substitute7_2Id) {
+    console.warn('Invalid substitute IDs for swap');
+    return gameState;
+  }
+  
+  // Create new formation with swapped substitute positions
+  const newFormation = {
+    ...periodFormation,
+    substitute7_1: substitute7_2Id,
+    substitute7_2: substitute7_1Id
+  };
+  
+  // Update player positions in their stats
+  const newAllPlayers = allPlayers.map(p => {
+    if (p.id === substitute7_1Id) {
+      return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+    }
+    if (p.id === substitute7_2Id) {
+      return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+    }
+    return p;
+  });
+  
+  return {
+    ...gameState,
+    periodFormation: newFormation,
+    allPlayers: newAllPlayers,
+    playersToHighlight: [substitute7_1Id, substitute7_2Id]
   };
 };
 

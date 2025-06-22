@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ListChecks, PlusCircle, Copy } from 'lucide-react';
-import { Button } from './UI';
-import { PLAYER_ROLES, calculateRolePoints } from '../utils/gameLogic';
-import { formatPoints, generateStatsText } from '../utils/formatUtils';
+import { Button } from '../shared/UI';
+import { PLAYER_ROLES, calculateRolePoints } from '../../game/logic/gameLogic';
+import { formatPoints, generateStatsText } from '../../utils/formatUtils';
 
 export function StatsScreen({ 
   allPlayers, 

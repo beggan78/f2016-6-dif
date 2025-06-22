@@ -44,25 +44,13 @@ export class RotationQueue {
    * Rotate a player to the end of the queue
    */
   rotatePlayer(playerId) {
-    console.log('🔄 rotatePlayer() called with:', {
-      playerId,
-      queueBefore: [...this.queue],
-      playerIndex: this.queue.indexOf(playerId)
-    });
-    
     const playerIndex = this.queue.indexOf(playerId);
-    if (playerIndex === -1) {
-      console.log('⚠️ rotatePlayer() - Player not found in queue:', playerId);
-      return;
-    }
+    if (playerIndex === -1) return;
 
     // Remove player from current position
     this.queue.splice(playerIndex, 1);
-    console.log('🔄 After removing player:', [...this.queue]);
-    
     // Add to end of queue
     this.queue.push(playerId);
-    console.log('🔄 After adding to end:', [...this.queue]);
   }
 
   /**
@@ -214,7 +202,6 @@ export class RotationQueue {
    * Call this after creating the queue to properly separate existing inactive players
    */
   initialize() {
-    console.log('🔄 initialize() called - queue before:', [...this.queue]);
     const inactivePlayersFound = [];
     const activePlayersFound = [];
 
@@ -222,16 +209,13 @@ export class RotationQueue {
       const player = this.getPlayerById(playerId);
       if (player?.stats?.isInactive) {
         inactivePlayersFound.push(playerId);
-        console.log('🔄 Found inactive player:', playerId);
       } else {
         activePlayersFound.push(playerId);
-        console.log('🔄 Found active player:', playerId);
       }
     });
 
     this.queue = activePlayersFound;
     this.inactivePlayers = inactivePlayersFound;
-    console.log('🔄 initialize() complete - active queue:', [...this.queue], 'inactive:', [...this.inactivePlayers]);
   }
 
   /**
