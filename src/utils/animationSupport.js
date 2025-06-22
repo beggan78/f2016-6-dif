@@ -1,189 +1,289 @@
 /**
- * Animation support utilities
- * Provides calculations and measurements needed for smooth UI animations
+ * New generic animation support utilities
+ * Provides a unified approach for calculating and managing player position animations
  */
-import { findPlayerById } from './playerUtils';
+// No longer using findPlayerById in this file
+import { FORMATION_TYPES } from './gameLogic';
+
+// Animation timing constants
+export const ANIMATION_DURATION = 1000; // 1 second for position transitions
+export const GLOW_DURATION = 900; // 0.9 seconds for post-animation glow effect
+
+// Layout measurements for animation distance calculations
+const MEASUREMENTS = {
+  padding: 16, // p-2 = 8px top + 8px bottom = 16px total
+  border: 4,   // border-2 = 2px top + 2px bottom = 4px total
+  gap: 8,      // space-y-2 = 8px between elements
+  contentHeight: {
+    pairs: 84,      // Content height for pair components
+    individual: 76  // Content height for individual components
+  }
+};
 
 /**
- * Creates an animation calculator with methods for position and distance calculations
- * @param {boolean} isPairsMode - Whether the game is in pairs formation mode
- * @param {boolean} isIndividual6Mode - Whether the game is in 6-player individual mode
- * @param {boolean} isIndividual7Mode - Whether the game is in 7-player individual mode
- * @param {string} nextPhysicalPairToSubOut - Next pair to substitute out (pairs mode)
- * @param {string} nextPlayerIdToSubOut - Next player ID to substitute out
- * @param {Object} periodFormation - Current period formation data
- * @param {Array} allPlayers - Array of all players
- * @returns {Object} Animation calculator with calculation methods
+ * Get the total height of a position box including padding, border, and gap
  */
-export const createAnimationCalculator = (
-  isPairsMode,
-  isIndividual6Mode,
-  isIndividual7Mode,
-  nextPhysicalPairToSubOut,
-  nextPlayerIdToSubOut,
-  periodFormation,
-  allPlayers
-) => {
-  // Updated measurements for compact design - let's be more generous to account for all spacing
-  const MEASUREMENTS = {
-    padding: 16, // p-2 = 8px top + 8px bottom = 16px total
-    border: 4,   // border-2 = 2px top + 2px bottom = 4px total
-    gap: 0,      // space-y-2 = 8px between elements
-    contentHeight: {
-      // Being more generous with content heights to account for line heights, margins, etc.
-      pairs: 84,      // Was 76, increased to account for all text spacing
-      individual: 76  // Was 68, increased to account for all text spacing
-    }
-  };
+const getBoxHeight = (mode) => {
+  const contentHeight = mode === 'pairs' ? MEASUREMENTS.contentHeight.pairs : MEASUREMENTS.contentHeight.individual;
+  return MEASUREMENTS.padding + MEASUREMENTS.border + contentHeight + MEASUREMENTS.gap;
+};
 
-  const getBoxHeight = (mode) => {
-    const contentHeight = mode === 'pairs' ? MEASUREMENTS.contentHeight.pairs : MEASUREMENTS.contentHeight.individual;
-    // Total height = padding + border + content + gap to next element
-    return MEASUREMENTS.padding + MEASUREMENTS.border + contentHeight + MEASUREMENTS.gap;
+/**
+ * Get the visual order index of a position in the UI layout
+ */
+const getPositionIndex = (position, formationType) => {
+  const positionArrays = {
+    [FORMATION_TYPES.PAIRS_7]: ['goalie', 'leftPair', 'rightPair', 'subPair'],
+    [FORMATION_TYPES.INDIVIDUAL_6]: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
+    [FORMATION_TYPES.INDIVIDUAL_7]: ['goalie', 'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2']
   };
+  
+  const positions = positionArrays[formationType] || [];
+  return positions.indexOf(position);
+};
 
-  const getPositionIndex = (position, mode) => {
-    const positionArrays = {
-      pairs: ['leftPair', 'rightPair', 'subPair'],
-      individual6: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
-      individual7: ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2']
+/**
+ * Calculate pixel distance between two position indices
+ */
+const calculateDistance = (fromIndex, toIndex, formationType) => {
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return 0;
+  
+  const mode = formationType === FORMATION_TYPES.PAIRS_7 ? 'pairs' : 'individual';
+  const boxHeight = getBoxHeight(mode);
+  const distance = Math.abs(toIndex - fromIndex) * boxHeight;
+  return toIndex > fromIndex ? distance : -distance;
+};
+
+/**
+ * Capture current positions of all players including goalie
+ */
+export const captureAllPlayerPositions = (periodFormation, allPlayers, formationType) => {
+  const positions = {};
+  
+  // Add goalie
+  if (periodFormation.goalie) {
+    positions[periodFormation.goalie] = {
+      playerId: periodFormation.goalie,
+      position: 'goalie',
+      positionIndex: getPositionIndex('goalie', formationType)
     };
-    
-    const positions = positionArrays[mode] || [];
-    return positions.indexOf(position);
-  };
+  }
+  
+  // Add field and substitute players based on formation type
+  if (formationType === FORMATION_TYPES.PAIRS_7) {
+    // Pairs mode
+    ['leftPair', 'rightPair', 'subPair'].forEach(pairKey => {
+      const pair = periodFormation[pairKey];
+      if (pair) {
+        if (pair.defender) {
+          positions[pair.defender] = {
+            playerId: pair.defender,
+            position: pairKey,
+            positionIndex: getPositionIndex(pairKey, formationType),
+            role: 'defender'
+          };
+        }
+        if (pair.attacker) {
+          positions[pair.attacker] = {
+            playerId: pair.attacker,
+            position: pairKey,
+            positionIndex: getPositionIndex(pairKey, formationType),
+            role: 'attacker'
+          };
+        }
+      }
+    });
+  } else if (formationType === FORMATION_TYPES.INDIVIDUAL_6) {
+    // 6-player individual mode
+    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
+      const playerId = periodFormation[pos];
+      if (playerId) {
+        positions[playerId] = {
+          playerId: playerId,
+          position: pos,
+          positionIndex: getPositionIndex(pos, formationType)
+        };
+      }
+    });
+  } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
+    // 7-player individual mode
+    ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].forEach(pos => {
+      const playerId = periodFormation[pos];
+      if (playerId) {
+        positions[playerId] = {
+          playerId: playerId,
+          position: pos,
+          positionIndex: getPositionIndex(pos, formationType)
+        };
+      }
+    });
+  }
+  
+  return positions;
+};
 
-  const calculateDistance = (fromIndex, toIndex, mode) => {
-    // Special case: if either index is -1, it means we have an invalid position
-    // EXCEPT for goalie animations where -1 represents the goalie position
-    if ((fromIndex === -1 && toIndex === -1) || (fromIndex < -1 || toIndex < -1)) return 0;
+/**
+ * Calculate animations needed to move players from before to after positions
+ */
+export const calculateAllPlayerAnimations = (beforePositions, afterPositions, formationType) => {
+  const animations = {};
+  
+  // Find all players that need to move
+  const allPlayerIds = new Set([
+    ...Object.keys(beforePositions),
+    ...Object.keys(afterPositions)
+  ]);
+  
+  allPlayerIds.forEach(playerId => {
+    const before = beforePositions[playerId];
+    const after = afterPositions[playerId];
     
-    const boxHeight = getBoxHeight(mode);
-    const distance = Math.abs(toIndex - fromIndex) * boxHeight;
-    return toIndex > fromIndex ? distance : -distance;
-  };
+    // Skip if player didn't exist in both states or didn't move
+    if (!before || !after || before.positionIndex === after.positionIndex) {
+      return;
+    }
+    
+    const distance = calculateDistance(before.positionIndex, after.positionIndex, formationType);
+    
+    if (distance !== 0) {
+      animations[playerId] = {
+        playerId: playerId,
+        distance: distance,
+        direction: distance > 0 ? 'down' : 'up',
+        fromPosition: before.position,
+        toPosition: after.position
+      };
+    }
+  });
+  
+  return animations;
+};
 
+/**
+ * Create a preview of what the state would look like after applying a logic function
+ * This allows us to calculate animations before actually changing the state
+ */
+export const previewStateChange = (currentState, logicFunction) => {
+  // Create a deep copy of the current state
+  const stateCopy = JSON.parse(JSON.stringify(currentState));
+  
+  // Apply the logic function to the copy
+  // Note: This assumes the logic function can accept a state object and return the modified state
+  // For the actual implementation, we might need to adapt existing logic functions
+  return logicFunction(stateCopy);
+};
+
+/**
+ * Main animation orchestrator - handles the complete animation flow
+ * This is the new unified approach that calculates before/after positions and animates the differences
+ */
+export const animateStateChange = (
+  gameState,
+  pureLogicFunction,
+  applyStateFunction,
+  setAnimationState,
+  setHideNextOffIndicator,
+  setRecentlySubstitutedPlayers
+) => {
+  // 1. Capture current positions
+  const beforePositions = captureAllPlayerPositions(
+    gameState.periodFormation, 
+    gameState.allPlayers, 
+    gameState.formationType
+  );
+  
+  // 2. Calculate what the new state would be
+  const newGameState = pureLogicFunction(gameState);
+  
+  // 3. Capture after positions
+  const afterPositions = captureAllPlayerPositions(
+    newGameState.periodFormation, 
+    newGameState.allPlayers, 
+    newGameState.formationType
+  );
+  
+  // 4. Calculate animations needed
+  const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, gameState.formationType);
+  
+  // 5. Start animations if there are any
+  if (Object.keys(animations).length > 0) {
+    setAnimationState({
+      type: 'generic',
+      phase: 'switching',
+      data: { animations }
+    });
+    
+    if (setHideNextOffIndicator) {
+      setHideNextOffIndicator(true);
+    }
+    
+    // 6. Apply actual state changes after animation delay
+    setTimeout(() => {
+      applyStateFunction(newGameState);
+      
+      // Set glow effect for affected players
+      if (setRecentlySubstitutedPlayers && newGameState.playersToHighlight?.length > 0) {
+        setRecentlySubstitutedPlayers(new Set(newGameState.playersToHighlight));
+      }
+      
+      // End animation
+      setAnimationState(prev => ({
+        ...prev,
+        phase: 'completing'
+      }));
+      
+      // After glow effect completes, reset everything
+      setTimeout(() => {
+        setAnimationState({
+          type: 'none',
+          phase: 'idle',
+          data: {}
+        });
+        if (setHideNextOffIndicator) {
+          setHideNextOffIndicator(false);
+        }
+        if (setRecentlySubstitutedPlayers) {
+          setRecentlySubstitutedPlayers(new Set());
+        }
+      }, GLOW_DURATION);
+    }, ANIMATION_DURATION);
+  } else {
+    // No animations needed, apply state changes immediately
+    applyStateFunction(newGameState);
+    
+    // Still apply glow effect even without animations
+    if (setRecentlySubstitutedPlayers && newGameState.playersToHighlight?.length > 0) {
+      setRecentlySubstitutedPlayers(new Set(newGameState.playersToHighlight));
+      
+      // Clear glow after delay
+      setTimeout(() => {
+        setRecentlySubstitutedPlayers(new Set());
+      }, GLOW_DURATION);
+    }
+  }
+};
+
+/**
+ * Helper function to get animation properties for a specific player during rendering
+ */
+export const getPlayerAnimationProps = (playerId, animationState) => {
+  if (animationState.type !== 'generic' || animationState.phase !== 'switching') {
+    return null;
+  }
+  
+  const playerAnimation = animationState.data.animations?.[playerId];
+  if (!playerAnimation) {
+    return null;
+  }
+  
   return {
-    // Expose helper methods
-    getPositionIndex,
-    calculateDistance,
-    getBoxHeight,
-
-    // Calculate substitution animation distances
-    calculateSubstitutionDistances: () => {
-      let nextOffIndex = -1;
-      let subIndex = -1;
-      let mode = 'individual';
-      
-      if (isPairsMode) {
-        mode = 'pairs';
-        nextOffIndex = getPositionIndex(nextPhysicalPairToSubOut, 'pairs');
-        subIndex = getPositionIndex('subPair', 'pairs');
-      } else if (isIndividual6Mode) {
-        mode = 'individual';
-        const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
-        nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
-        subIndex = getPositionIndex('substitute', 'individual6');
-      } else if (isIndividual7Mode) {
-        mode = 'individual';
-        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-        nextOffIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
-        subIndex = getPositionIndex('substitute7_1', 'individual7');
-      }
-      
-      return {
-        nextOffToSub: calculateDistance(nextOffIndex, subIndex, mode),
-        subToNextOff: calculateDistance(subIndex, nextOffIndex, mode)
-      };
-    },
-
-    // Calculate position switch animation distances
-    calculatePositionSwitchDistances: (player1Id, player2Id) => {
-      const player1 = findPlayerById(allPlayers, player1Id);
-      const player2 = findPlayerById(allPlayers, player2Id);
-      
-      if (!player1 || !player2) return { player1Distance: 0, player2Distance: 0 };
-      
-      const player1Position = player1.stats.currentPairKey;
-      const player2Position = player2.stats.currentPairKey;
-      
-      let mode = 'individual';
-      let modeKey = 'individual6';
-      
-      if (isPairsMode) {
-        mode = 'pairs';
-        modeKey = 'pairs';
-      } else if (isIndividual7Mode) {
-        modeKey = 'individual7';
-      }
-      
-      const player1Index = getPositionIndex(player1Position, modeKey);
-      const player2Index = getPositionIndex(player2Position, modeKey);
-      
-      return {
-        player1Distance: calculateDistance(player1Index, player2Index, mode),
-        player2Distance: calculateDistance(player2Index, player1Index, mode)
-      };
-    },
-
-    // Calculate 7-player individual mode specific distances
-    calculate7PlayerDistances: () => {
-      const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-      const fieldPlayerIndex = positions.findIndex(pos => periodFormation[pos] === nextPlayerIdToSubOut);
-      const sub1Index = getPositionIndex('substitute7_1', 'individual7');
-      const sub2Index = getPositionIndex('substitute7_2', 'individual7');
-      
-      if (fieldPlayerIndex === -1) {
-        return { fieldToSub2: 0, sub1ToField: 0, sub2ToSub1: 0, nextOffToSub: 0, subToNextOff: 0 };
-      }
-      
-      const fieldToSub2 = calculateDistance(fieldPlayerIndex, sub2Index, 'individual');
-      const sub1ToField = calculateDistance(sub1Index, fieldPlayerIndex, 'individual');
-      const sub2ToSub1 = calculateDistance(sub2Index, sub1Index, 'individual');
-      
-      return {
-        fieldToSub2,
-        sub1ToField,
-        sub2ToSub1,
-        nextOffToSub: fieldToSub2,
-        subToNextOff: sub1ToField
-      };
-    },
-
-    // Calculate goalie replacement animation distances
-    calculateGoalieReplacementDistances: (newGoalieId) => {
-      const newGoalie = findPlayerById(allPlayers, newGoalieId);
-      if (!newGoalie) {
-        return { goalieToField: 0, fieldToGoalie: 0 };
-      }
-      
-      const newGoaliePosition = newGoalie.stats.currentPairKey;
-      
-      // Goalie is always at position -1 (above all other positions)
-      const goalieIndex = -1;
-      
-      let mode = 'individual';
-      let modeKey = 'individual6';
-      
-      if (isPairsMode) {
-        mode = 'pairs';
-        modeKey = 'pairs';
-      } else if (isIndividual7Mode) {
-        modeKey = 'individual7';
-      }
-      
-      const fieldPlayerIndex = getPositionIndex(newGoaliePosition, modeKey);
-      
-      // Calculate distances - goalie moves down to field, field player moves up to goalie
-      const goalieToField = calculateDistance(goalieIndex, fieldPlayerIndex, mode);
-      const fieldToGoalie = calculateDistance(fieldPlayerIndex, goalieIndex, mode);
-      
-      return {
-        goalieToField: goalieToField,
-        fieldToGoalie: fieldToGoalie,
-        newGoalieId: newGoalieId,
-        newGoaliePosition: newGoaliePosition
-      };
+    animationClass: playerAnimation.direction === 'down' ? 'animate-dynamic-down' : 'animate-dynamic-up',
+    zIndexClass: playerAnimation.direction === 'down' ? 'z-10' : 'z-20',
+    styleProps: {
+      '--move-distance': `${playerAnimation.distance}px`
     }
   };
 };
+
+// Export the helper functions for backward compatibility during transition
+export { getPositionIndex, calculateDistance, getBoxHeight };

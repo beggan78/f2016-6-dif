@@ -3,12 +3,16 @@ import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from './UI';
 import { FORMATION_TYPES } from '../utils/gameLogic';
 import { formatTimeDifference } from '../utils/formatUtils';
-import { createAnimationCalculator } from '../utils/animationSupport';
+import { animateStateChange, getPlayerAnimationProps } from '../utils/animationSupport';
 import { getPlayerName, findPlayerById } from '../utils/playerUtils';
+import { 
+  calculateSubstitution, 
+  calculatePositionSwitch, 
+  calculateGoalieSwitch, 
+  calculateUndo
+} from '../utils/gameStateLogic';
 
-// Animation timing constants
-const ANIMATION_DURATION = 1000; // 1 second for position transitions
-const GLOW_DURATION = 900; // 0.9 seconds for post-animation glow effect
+// Animation timing constants are now imported from animationSupport
 
 export function GameScreen({ 
   currentPeriodNumber, 
@@ -47,7 +51,9 @@ export function GameScreen({
   opponentTeamName,
   addHomeGoal,
   addAwayGoal,
-  setScore
+  setScore,
+  rotationQueue,
+  setRotationQueue
 }) {
   const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
   
@@ -208,40 +214,29 @@ export function GameScreen({
     data: {} // Animation-specific data
   });
   
-  // Create animation calculator instance
-  const animationCalculator = React.useMemo(() => {
-    return createAnimationCalculator(
-      isPairsMode,
-      isIndividual6Mode,
-      isIndividual7Mode,
-      nextPhysicalPairToSubOut,
-      nextPlayerIdToSubOut,
-      periodFormation,
-      allPlayers
-    );
-  }, [isPairsMode, isIndividual6Mode, isIndividual7Mode, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, periodFormation, allPlayers]);
+  // Helper to create game state object for pure logic functions
+  const createGameState = React.useCallback(() => ({
+    periodFormation,
+    allPlayers,
+    formationType,
+    nextPhysicalPairToSubOut,
+    nextPlayerIdToSubOut,
+    nextNextPlayerIdToSubOut,
+    nextPlayerToSubOut,
+    rotationQueue,
+    isSubTimerPaused
+  }), [periodFormation, allPlayers, formationType, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, nextPlayerToSubOut, rotationQueue, isSubTimerPaused]);
 
-  // Enhanced substitution handler with animation and highlighting
+  // New substitution handler using the unified animation system
   const handleSubstitutionWithHighlight = React.useCallback(() => {
-    const substitutionTimestamp = Date.now();
-    let playersComingOnIds = [];
-    let playersGoingOffIds = [];
+    console.log('🚀 Starting substitution with current state:', {
+      nextPlayerIdToSubOut,
+      nextNextPlayerIdToSubOut,
+      nextPlayerToSubOut,
+      nextPhysicalPairToSubOut
+    });
     
-    if (isPairsMode) {
-      // 7-player pairs logic - get players coming from sub pair and going off
-      const pairComingIn = periodFormation.subPair;
-      const pairGoingOff = periodFormation[nextPhysicalPairToSubOut];
-      playersComingOnIds = [pairComingIn?.defender, pairComingIn?.attacker].filter(Boolean);
-      playersGoingOffIds = [pairGoingOff?.defender, pairGoingOff?.attacker].filter(Boolean);
-    } else if (isIndividual6Mode) {
-      // 6-player logic - get player coming from substitute position and going off
-      playersComingOnIds = [periodFormation.substitute].filter(Boolean);
-      playersGoingOffIds = [nextPlayerIdToSubOut].filter(Boolean);
-    } else if (isIndividual7Mode) {
-      // 7-player individual logic - get player coming from first substitute position and going off
-      playersComingOnIds = [periodFormation.substitute7_1].filter(Boolean);
-      playersGoingOffIds = [nextPlayerIdToSubOut].filter(Boolean);
-    }
+    const substitutionTimestamp = Date.now();
     
     // Store state before substitution for undo functionality
     const beforeFormation = JSON.parse(JSON.stringify(periodFormation));
@@ -251,7 +246,17 @@ export function GameScreen({
     const beforeNextNextPlayerId = nextNextPlayerIdToSubOut;
     const subTimerSecondsAtSubstitution = subTimerSeconds;
     
-    // Store original stats for players coming on (they should return to these exact stats)
+    // Store original stats for players coming on
+    let playersComingOnIds = [];
+    if (isPairsMode) {
+      const pairComingIn = periodFormation.subPair;
+      playersComingOnIds = [pairComingIn?.defender, pairComingIn?.attacker].filter(Boolean);
+    } else if (isIndividual6Mode) {
+      playersComingOnIds = [periodFormation.substitute].filter(Boolean);
+    } else if (isIndividual7Mode) {
+      playersComingOnIds = [periodFormation.substitute7_1].filter(Boolean);
+    }
+    
     const playersComingOnOriginalStats = playersComingOnIds.map(playerId => {
       const player = allPlayers.find(p => p.id === playerId);
       return {
@@ -260,277 +265,114 @@ export function GameScreen({
         stats: JSON.parse(JSON.stringify(player?.stats))
       };
     });
-    
-    // Calculate animation distances using the new abstraction
-    let distances;
-    if (isIndividual7Mode) {
-      distances = animationCalculator.calculate7PlayerDistances();
-    } else {
-      distances = animationCalculator.calculateSubstitutionDistances();
-    }
-    // Start the animation sequence
-    setAnimationState({
-      type: 'substitution',
-      phase: 'switching', 
-      data: distances
-    });
-    setHideNextOffIndicator(true);
-    
-    // After animation completes, perform substitution and start glow
-    setTimeout(() => {
-      // Perform the actual substitution
-      handleSubstitution();
-      
-      // Store undo data after substitution is complete
-      setLastSubstitution({
-        timestamp: substitutionTimestamp,
-        beforeFormation,
-        beforeNextPair,
-        beforeNextPlayer, 
-        beforeNextPlayerId,
-        beforeNextNextPlayerId,
-        playersComingOnOriginalStats, // Original stats for players who came on
-        playersComingOnIds,
-        playersGoingOffIds,
-        formationType,
-        subTimerSecondsAtSubstitution
-      });
-      
-      // Set the players who are coming on field for highlighting
-      setRecentlySubstitutedPlayers(new Set(playersComingOnIds));
-      
-      // End animation
-      setAnimationState(prev => ({
-        ...prev,
-        phase: 'completing'
-      }));
-      
-      // After glow effect completes, reset everything
-      setTimeout(() => {
-        setAnimationState({
-          type: 'none',
-          phase: 'idle',
-          data: {}
-        });
-        setHideNextOffIndicator(false);
-        setRecentlySubstitutedPlayers(new Set());
-      }, GLOW_DURATION);
-    }, ANIMATION_DURATION);
-  }, [handleSubstitution, periodFormation, isPairsMode, isIndividual6Mode, isIndividual7Mode, animationCalculator, allPlayers, formationType, nextNextPlayerIdToSubOut, nextPhysicalPairToSubOut, nextPlayerIdToSubOut, nextPlayerToSubOut, subTimerSeconds]);
 
-  // Undo substitution handler with animation and time calculations
+    // Use the new animation system
+    animateStateChange(
+      createGameState(),
+      calculateSubstitution,
+      (newGameState) => {
+        console.log('🎯 Applying substitution state changes:', {
+          nextPlayerIdToSubOut: newGameState.nextPlayerIdToSubOut,
+          nextNextPlayerIdToSubOut: newGameState.nextNextPlayerIdToSubOut,
+          nextPlayerToSubOut: newGameState.nextPlayerToSubOut,
+          nextPhysicalPairToSubOut: newGameState.nextPhysicalPairToSubOut
+        });
+        
+        // Apply the state changes
+        setPeriodFormation(newGameState.periodFormation);
+        setAllPlayers(newGameState.allPlayers);
+        if (newGameState.nextPhysicalPairToSubOut) {
+          setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
+        }
+        if (newGameState.nextPlayerIdToSubOut !== undefined) {
+          setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
+        }
+        if (newGameState.nextNextPlayerIdToSubOut !== undefined) {
+          setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
+        }
+        if (newGameState.nextPlayerToSubOut) {
+          setNextPlayerToSubOut(newGameState.nextPlayerToSubOut, true); // isAutomaticUpdate = true
+        }
+        // Update rotation queue if it was modified
+        if (newGameState.rotationQueue) {
+          setRotationQueue(newGameState.rotationQueue);
+        }
+
+        // Store undo data
+        setLastSubstitution({
+          timestamp: substitutionTimestamp,
+          beforeFormation,
+          beforeNextPair,
+          beforeNextPlayer,
+          beforeNextPlayerId,
+          beforeNextNextPlayerId,
+          playersComingOnOriginalStats,
+          playersComingOnIds: newGameState.playersToHighlight || [],
+          playersGoingOffIds: [nextPlayerIdToSubOut].filter(Boolean),
+          formationType,
+          subTimerSecondsAtSubstitution
+        });
+      },
+      setAnimationState,
+      setHideNextOffIndicator,
+      setRecentlySubstitutedPlayers
+    );
+  }, [createGameState, setPeriodFormation, setAllPlayers, setNextPhysicalPairToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setNextPlayerToSubOut, setRotationQueue, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, subTimerSeconds, allPlayers, formationType, isPairsMode, isIndividual6Mode, isIndividual7Mode]);
+
+  // New undo substitution handler using the unified animation system
   const handleUndoSubstitution = React.useCallback(() => {
     if (!lastSubstitution) {
       console.warn('No substitution to undo');
       return;
     }
 
-    const currentTime = Date.now();
-    const timeSinceSubstitution = Math.round((currentTime - lastSubstitution.timestamp) / 1000); // seconds
+    // Use the new animation system
+    animateStateChange(
+      createGameState(),
+      (gameState) => calculateUndo(gameState, lastSubstitution),
+      (newGameState) => {
+        // Apply the state changes
+        setPeriodFormation(newGameState.periodFormation);
+        setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
+        setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
+        setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
+        setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
+        setAllPlayers(newGameState.allPlayers);
 
-    // Calculate animation distances for the reverse substitution
-    let distances;
-    if (lastSubstitution.formationType === 'INDIVIDUAL_7') {
-      distances = animationCalculator.calculate7PlayerDistances();
-    } else {
-      distances = animationCalculator.calculateSubstitutionDistances();
-    }
-
-    // Reverse the animation directions by flipping the distances
-    const reverseDistances = {
-      nextOffToSub: -distances.subToNextOff,
-      subToNextOff: -distances.nextOffToSub,
-      sub1ToField: -distances.sub1ToField,
-      fieldToSub2: -distances.fieldToSub2,
-      sub2ToSub1: -distances.sub2ToSub1
-    };
-
-    // Start reverse animation
-    setAnimationState({
-      type: 'substitution',
-      phase: 'switching',
-      data: reverseDistances
-    });
-    setHideNextOffIndicator(true);
-
-    // After animation completes, revert the substitution
-    setTimeout(() => {
-      // Restore formation
-      setPeriodFormation(lastSubstitution.beforeFormation);
-      setNextPhysicalPairToSubOut(lastSubstitution.beforeNextPair);
-      setNextPlayerToSubOut(lastSubstitution.beforeNextPlayer);
-      setNextPlayerIdToSubOut(lastSubstitution.beforeNextPlayerId);
-      setNextNextPlayerIdToSubOut(lastSubstitution.beforeNextNextPlayerId);
-
-      // Calculate and restore player stats with time adjustments
-      console.log(`=== UNDO CALCULATIONS (${timeSinceSubstitution}s since substitution) ===`);
-      setAllPlayers(prev => prev.map(player => {
-        const wasComingOn = lastSubstitution.playersComingOnIds.includes(player.id);
-        const wasGoingOff = lastSubstitution.playersGoingOffIds.includes(player.id);
-        
-        const playerName = player.name;
-
-        if (wasComingOn) {
-          // Player came on during substitution - restore their original stats (before they came on)
-          const originalStats = lastSubstitution.playersComingOnOriginalStats.find(p => p.id === player.id);
-          if (originalStats) {
-            console.log(`${playerName} (CAME ON): Restoring original stats`);
-            console.log(`  - Original stats: ${originalStats.stats.timeOnFieldSeconds}s field, ${originalStats.stats.timeAsAttackerSeconds}s att, ${originalStats.stats.timeAsDefenderSeconds}s def`);
-            console.log(`  - Restored status: ${originalStats.stats.currentPeriodStatus}, position: ${originalStats.stats.currentPairKey}`);
-            return { ...player, stats: originalStats.stats };
-          }
-          return player;
-        } else if (wasGoingOff) {
-          // Player went off during substitution - they should get credit for the time they spent on bench
-          // We need to calculate their current accumulated stats (which includes their stint before substitution)
-          // and add the bench time
-          const currentStats = { ...player.stats };
-          
-          console.log(`${playerName} (WENT OFF):`);
-          console.log(`  - Current stats (with their stint): ${currentStats.timeOnFieldSeconds}s field, ${currentStats.timeAsAttackerSeconds}s att, ${currentStats.timeAsDefenderSeconds}s def`);
-          console.log(`  - Role when substituted: ${currentStats.currentPeriodRole}`);
-          console.log(`  - Adding ${timeSinceSubstitution}s bench time to field time`);
-          
-          // Add the bench time to their total field time
-          currentStats.timeOnFieldSeconds += timeSinceSubstitution;
-          
-          // Add bench time to their role-specific counter based on what role they had when substituted
-          if (currentStats.currentPeriodRole === 'Attacker') {
-            currentStats.timeAsAttackerSeconds += timeSinceSubstitution;
-            console.log(`  - Adding ${timeSinceSubstitution}s to attacker time`);
-          } else if (currentStats.currentPeriodRole === 'Defender') {
-            currentStats.timeAsDefenderSeconds += timeSinceSubstitution;
-            console.log(`  - Adding ${timeSinceSubstitution}s to defender time`);
-          }
-
-          // CRITICAL: Update their status back to 'on_field' and reset stint timer
-          currentStats.currentPeriodStatus = 'on_field';
-          currentStats.lastStintStartTimeEpoch = currentTime;
-          
-          // Restore their field position from the before-substitution formation
-          const beforeFormation = lastSubstitution.beforeFormation;
-          
-          // Find what position this player had before substitution
-          let restoredPosition = null;
-          if (formationType === 'PAIRS_7') {
-            if (beforeFormation.leftPair?.defender === player.id) restoredPosition = 'leftPair';
-            else if (beforeFormation.leftPair?.attacker === player.id) restoredPosition = 'leftPair';
-            else if (beforeFormation.rightPair?.defender === player.id) restoredPosition = 'rightPair';
-            else if (beforeFormation.rightPair?.attacker === player.id) restoredPosition = 'rightPair';
-          } else if (formationType === 'INDIVIDUAL_6') {
-            if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
-            else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
-            else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
-            else if (beforeFormation.rightAttacker === player.id) restoredPosition = 'rightAttacker';
-          } else if (formationType === 'INDIVIDUAL_7') {
-            if (beforeFormation.leftDefender7 === player.id) restoredPosition = 'leftDefender7';
-            else if (beforeFormation.rightDefender7 === player.id) restoredPosition = 'rightDefender7';
-            else if (beforeFormation.leftAttacker7 === player.id) restoredPosition = 'leftAttacker7';
-            else if (beforeFormation.rightAttacker7 === player.id) restoredPosition = 'rightAttacker7';
-          }
-          
-          if (restoredPosition) {
-            currentStats.currentPairKey = restoredPosition;
-            console.log(`  - Restored position: ${restoredPosition}`);
-          }
-
-          console.log(`  - Final stats: ${currentStats.timeOnFieldSeconds}s field, ${currentStats.timeAsAttackerSeconds}s att, ${currentStats.timeAsDefenderSeconds}s def`);
-          return { ...player, stats: currentStats };
-        } else {
-          // Player wasn't involved in substitution - no changes needed
-          console.log(`${playerName} (NOT INVOLVED): No changes`);
-          return player;
+        // Restore substitution timer
+        if (handleUndoSubstitutionTimer && lastSubstitution.subTimerSecondsAtSubstitution !== undefined) {
+          handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution);
         }
-      }));
 
-      // Set players who are going back on field for highlighting (reverse of original)
-      setRecentlySubstitutedPlayers(new Set(lastSubstitution.playersGoingOffIds));
+        // Clear the undo data since we've used it
+        setLastSubstitution(null);
+      },
+      setAnimationState,
+      setHideNextOffIndicator,
+      setRecentlySubstitutedPlayers
+    );
+  }, [lastSubstitution, createGameState, setPeriodFormation, setNextPhysicalPairToSubOut, setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setAllPlayers, handleUndoSubstitutionTimer, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers]);
 
-      // End animation
-      setAnimationState(prev => ({
-        ...prev,
-        phase: 'completing'
-      }));
-
-      // Restore substitution timer
-      if (handleUndoSubstitutionTimer && lastSubstitution.subTimerSecondsAtSubstitution !== undefined) {
-        handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution);
-      }
-
-      // Clear the undo data since we've used it
-      setLastSubstitution(null);
-
-      // After glow effect completes, reset everything
-      setTimeout(() => {
-        setAnimationState({
-          type: 'none',
-          phase: 'idle',
-          data: {}
-        });
-        setHideNextOffIndicator(false);
-        setRecentlySubstitutedPlayers(new Set());
-      }, GLOW_DURATION);
-    }, ANIMATION_DURATION);
-  }, [lastSubstitution, animationCalculator, setPeriodFormation, setNextPhysicalPairToSubOut, setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setAllPlayers, formationType, handleUndoSubstitutionTimer]);
-
-  // Enhanced position switch handler with animation
+  // New position switch handler using the unified animation system
   const handlePositionSwitchWithAnimation = React.useCallback((player1Id, player2Id) => {
-    // Calculate animation distances using the new abstraction
-    const distances = animationCalculator.calculatePositionSwitchDistances(player1Id, player2Id);
-    
-    // Set up animation state with custom distances for the two players
-    const positionSwitchData = {
-      positionSwitch: true,
-      player1Id: player1Id,
-      player2Id: player2Id,
-      player1Distance: distances.player1Distance,
-      player2Distance: distances.player2Distance,
-      // Keep these for backwards compatibility
-      nextOffToSub: 0,
-      subToNextOff: 0
-    };
-    
-    // Start the animation sequence
-    setAnimationState({
-      type: 'position-switch',
-      phase: 'switching',
-      data: positionSwitchData
-    });
-    setHideNextOffIndicator(true);
-    
-    // After animation completes, perform position switch and start glow
-    setTimeout(() => {
-      // Perform the actual position switch
-      const success = switchPlayerPositions(player1Id, player2Id, isSubTimerPaused);
-      if (success) {
-        // Set both players for highlighting
-        setRecentlySubstitutedPlayers(new Set([player1Id, player2Id]));
+    // Use the new animation system
+    animateStateChange(
+      createGameState(),
+      (gameState) => calculatePositionSwitch(gameState, player1Id, player2Id),
+      (newGameState) => {
+        // Apply the state changes
+        setPeriodFormation(newGameState.periodFormation);
+        setAllPlayers(newGameState.allPlayers);
         
         const player1Name = getPlayerNameById(player1Id);
         const player2Name = getPlayerNameById(player2Id);
         console.log(`Successfully switched positions between ${player1Name} and ${player2Name}`);
-      } else {
-        console.warn('Position switch failed');
-      }
-      
-      // End animation
-      setAnimationState(prev => ({
-        ...prev,
-        phase: 'completing'
-      }));
-      
-      // After glow effect completes, reset everything
-      setTimeout(() => {
-        setAnimationState({
-          type: 'none',
-          phase: 'idle',
-          data: {}
-        });
-        setHideNextOffIndicator(false);
-        setRecentlySubstitutedPlayers(new Set());
-      }, GLOW_DURATION);
-    }, ANIMATION_DURATION);
-  }, [animationCalculator, switchPlayerPositions, getPlayerNameById, isSubTimerPaused]);
+      },
+      setAnimationState,
+      setHideNextOffIndicator,
+      setRecentlySubstitutedPlayers
+    );
+  }, [createGameState, setPeriodFormation, setAllPlayers, getPlayerNameById, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers]);
 
   // Effect to trigger substitution after state update
   React.useEffect(() => {
@@ -544,6 +386,17 @@ export function GameScreen({
   React.useEffect(() => {
     setLastSubstitution(null);
   }, [currentPeriodNumber]);
+
+  // Debug: Track changes to next player indicators
+  React.useEffect(() => {
+    console.log('📊 Next player state changed:', {
+      nextPlayerIdToSubOut,
+      nextNextPlayerIdToSubOut,
+      nextPlayerToSubOut,
+      nextPhysicalPairToSubOut,
+      hideNextOffIndicator
+    });
+  }, [nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, nextPlayerToSubOut, nextPhysicalPairToSubOut, hideNextOffIndicator]);
 
 
   // Note: Timeout logic is now handled in handleSubstitutionWithHighlight
@@ -709,62 +562,25 @@ export function GameScreen({
       
       // Only proceed if the player is substitute7_2 (next-next to go in)
       if (playerId === substitute7_2Id) {
-        // Calculate animation distances for substitute swap
-        const distances = animationCalculator.calculate7PlayerDistances();
+        // Use new animation system for substitute swap
+        // For now, implement without animation (TODO: add proper substitute swap animation)
+        // Swap substitute positions
+        setPeriodFormation(prev => ({
+          ...prev,
+          substitute7_1: substitute7_2Id,
+          substitute7_2: substitute7_1Id
+        }));
         
-        // Calculate proper distances between substitute positions
-        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
-        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
-        const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
-        
-        // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
-        const nextToGoInSwapDistances = {
-          ...distances,
-          sub1ToField: 0, // This signals it's a substitute swap animation
-          fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
-          sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
-        };
-        
-        setAnimationState({
-          type: 'substitution',
-          phase: 'switching',
-          data: nextToGoInSwapDistances
-        });
-        
-        // Delay the actual state change until animation completes
-        setTimeout(() => {
-          // Swap substitute positions
-          setPeriodFormation(prev => ({
-            ...prev,
-            substitute7_1: substitute7_2Id,
-            substitute7_2: substitute7_1Id
-          }));
-          
-          // Update player positions
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === substitute7_1Id) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
-            }
-            if (p.id === substitute7_2Id) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
-            }
-            return p;
-          }));
-          
-          // Update next player tracking
-          // After the swap: substitute7_2Id is now in substitute7_1 position (next to go in)
-          // substitute7_1Id is now in substitute7_2 position (next-next to go in)
-          // No need to change nextNextPlayerIdToSubOut - it should still point to the field player
-          // who is second in the rotation queue, not to substitute players
-          // nextPlayerIdToSubOut should remain pointing to the current field player
-          
-          // Animation complete callback
-          setAnimationState({
-            type: 'none',
-            phase: 'idle',
-            data: {}
-          });
-        }, ANIMATION_DURATION); // Wait for animation to complete (200ms start delay + 400ms animation)
+        // Update player positions
+        setAllPlayers(prev => prev.map(p => {
+          if (p.id === substitute7_1Id) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+          }
+          if (p.id === substitute7_2Id) {
+            return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+          }
+          return p;
+        }));
       }
     }
     closeSubstituteModal();
@@ -783,39 +599,8 @@ export function GameScreen({
         // No animation needed - substitute7_2 is already in the correct position for inactive players
         togglePlayerInactive(substituteModal.playerId);
       } else {
-        // Calculate animation distances for inactive player swap (substitute7_1 being inactivated)
-        const distances = animationCalculator.calculate7PlayerDistances();
-        
-        // Calculate proper distances between substitute positions
-        const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
-        const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
-        const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
-        
-        // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
-        const inactiveSwapDistances = {
-          ...distances,
-          sub1ToField: 0, // This signals it's a substitute swap animation
-          fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
-          sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
-        };
-        
-        setAnimationState({
-          type: 'substitution',
-          phase: 'switching',
-          data: inactiveSwapDistances
-        });
-        
-        // Delay the actual state change until animation completes
-        setTimeout(() => {
-          togglePlayerInactive(substituteModal.playerId, () => {
-            // Animation complete callback
-            setAnimationState({
-              type: 'none',
-              phase: 'idle',
-              data: {}
-            });
-          }, 0);
-        }, ANIMATION_DURATION); // Wait for animation to complete (200ms start delay + 400ms animation)
+        // For now, implement without animation (TODO: add proper substitute swap animation)
+        togglePlayerInactive(substituteModal.playerId);
       }
     } else if (substituteModal.playerId) {
       // Non-7-player mode, no animation needed
@@ -829,39 +614,8 @@ export function GameScreen({
 
   const handleActivatePlayer = () => {
     if (substituteModal.playerId && isIndividual7Mode) {
-      // Calculate animation distances for reactivation player swap
-      const distances = animationCalculator.calculate7PlayerDistances();
-      
-      // Calculate proper distances between substitute positions
-      const sub1Index = animationCalculator.getPositionIndex('substitute7_1', 'individual7');
-      const sub2Index = animationCalculator.getPositionIndex('substitute7_2', 'individual7');
-      const substituteSwapDistance = animationCalculator.calculateDistance(sub1Index, sub2Index, 'individual');
-      
-      // Set animation to be a substitute swap (sub1ToField = 0 indicates substitute swap)
-      const reactivationSwapDistances = {
-        ...distances,
-        sub1ToField: 0, // This signals it's a substitute swap animation
-        fieldToSub2: substituteSwapDistance, // sub1 moves down to sub2 position
-        sub2ToSub1: -substituteSwapDistance // sub2 moves up to sub1 position
-      };
-      
-      setAnimationState({
-        type: 'substitution',
-        phase: 'switching',
-        data: reactivationSwapDistances
-      });
-      
-      // Delay the actual state change until animation completes
-      setTimeout(() => {
-        togglePlayerInactive(substituteModal.playerId, () => {
-          // Animation complete callback
-          setAnimationState({
-            type: 'none',
-            phase: 'idle',
-            data: {}
-          });
-        }, 0);
-      }, 600); // Wait for animation to complete (200ms start delay + 400ms animation)
+      // For now, implement without animation (TODO: add proper substitute swap animation)
+      togglePlayerInactive(substituteModal.playerId);
     } else if (substituteModal.playerId) {
       // Non-7-player mode, no animation needed
       togglePlayerInactive(substituteModal.playerId);
@@ -899,55 +653,30 @@ export function GameScreen({
   };
 
   const handleSelectNewGoalie = (newGoalieId) => {
-    // Capture the current goalie ID before the switch
-    const formerGoalieId = periodFormation.goalie;
-    
-    // Calculate animation distances for goalie replacement
-    const animationData = animationCalculator.calculateGoalieReplacementDistances(newGoalieId);
-    
-    // Start goalie animation sequence
-    setAnimationState({
-      type: 'goalie',
-      phase: 'switching',
-      data: animationData
-    });
-    
-    // Close modal immediately to show animation
+    // Close modal immediately
     closeGoalieModal();
     if (removeModalFromStack) {
       removeModalFromStack();
     }
     
-    // After animation completes, perform the actual goalie switch
-    setTimeout(() => {
-      const success = switchGoalie(newGoalieId, isSubTimerPaused);
-      
-      if (success) {
-        // Add both players to the glow effect - former goalie and new goalie
-        setRecentlySubstitutedPlayers(new Set([formerGoalieId, newGoalieId]));
+    // Use the new animation system
+    animateStateChange(
+      createGameState(),
+      (gameState) => calculateGoalieSwitch(gameState, newGoalieId),
+      (newGameState) => {
+        // Apply the state changes
+        setPeriodFormation(newGameState.periodFormation);
+        setAllPlayers(newGameState.allPlayers);
         
+        const formerGoalieId = periodFormation.goalie;
         const oldGoalieName = getPlayerNameById(formerGoalieId);
         const newGoalieName = getPlayerNameById(newGoalieId);
         console.log(`Successfully switched goalie: ${oldGoalieName} -> ${newGoalieName}`);
-      } else {
-        console.warn('Goalie switch failed');
-      }
-      
-      setAnimationState(prev => ({
-        ...prev,
-        phase: 'completing'
-      }));
-      
-      // After glow effect completes, reset everything
-      setTimeout(() => {
-        setAnimationState({
-          type: 'none',
-          phase: 'idle',
-          data: {}
-        });
-        setRecentlySubstitutedPlayers(new Set());
-      }, GLOW_DURATION);
-    }, ANIMATION_DURATION);
+      },
+      setAnimationState,
+      setHideNextOffIndicator,
+      setRecentlySubstitutedPlayers
+    );
   };
 
   const handleCancelGoalieModal = () => {
@@ -1213,20 +942,7 @@ export function GameScreen({
   // Score long-press event
   const scoreEvents = useLongPressWithScrollDetection(() => handleScoreLongPress());
 
-  // Centralized goalie animation logic helper
-  const getGoalieAnimationProps = (playerId) => {
-    if (animationState.type !== 'goalie' || animationState.phase !== 'switching' || playerId !== animationState.data.newGoalieId) {
-      return null;
-    }
-    
-    return {
-      animationClass: 'animate-dynamic-up',
-      zIndexClass: 'z-30', // Highest z-index for replacement goalie moving up
-      styleProps: {
-        '--move-distance': `${animationState.data.fieldToGoalie}px`
-      }
-    };
-  };
+  // Old goalie animation helper removed - now using unified animation system
 
   const renderPair = (pairKey, pairName, renderIndex) => {
     const pairData = periodFormation[pairKey];
@@ -1239,68 +955,24 @@ export function GameScreen({
     const hasRecentlySubstitutedPlayer = (pairData.defender && recentlySubstitutedPlayers.has(pairData.defender)) ||
                                         (pairData.attacker && recentlySubstitutedPlayers.has(pairData.attacker));
 
-    // Animation logic for switching positions
+    // New unified animation logic
     let animationClass = '';
     let zIndexClass = '';
     let styleProps = {};
     
-    if (animationState.phase === 'switching') {
-      // Check if this is a position switch animation
-      if (animationState.type === 'position-switch' && animationState.data.positionSwitch) {
-        const pairDefenderId = pairData.defender;
-        const pairAttackerId = pairData.attacker;
-        
-        if (pairDefenderId === animationState.data.player1Id) {
-          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player1Distance}px`
-          };
-        } else if (pairAttackerId === animationState.data.player1Id) {
-          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player1Distance}px`
-          };
-        } else if (pairDefenderId === animationState.data.player2Id) {
-          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player2Distance}px`
-          };
-        } else if (pairAttackerId === animationState.data.player2Id) {
-          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player2Distance}px`
-          };
-        }
-      } else if (animationState.type === 'substitution') {
-        // Normal substitution animation
-        if (isNextOff) {
-          animationClass = 'animate-dynamic-down';
-          zIndexClass = 'z-10'; // Lower z-index when going down
-          styleProps = {
-            '--move-distance': `${animationState.data.nextOffToSub}px`
-          };
-        } else if (isNextOn) {
-          animationClass = 'animate-dynamic-up';
-          zIndexClass = 'z-20'; // Higher z-index when coming up
-          styleProps = {
-            '--move-distance': `${animationState.data.subToNextOff}px`
-          };
-        }
-      }
-    }
-    
-    // Handle goalie replacement animation for pairs
+    // Check for animations on both players in the pair
     const pairDefenderId = pairData.defender;
     const pairAttackerId = pairData.attacker;
-    const goalieAnimationProps = getGoalieAnimationProps(pairDefenderId) || getGoalieAnimationProps(pairAttackerId);
-    if (goalieAnimationProps) {
-      animationClass = goalieAnimationProps.animationClass;
-      zIndexClass = goalieAnimationProps.zIndexClass;
-      styleProps = goalieAnimationProps.styleProps;
+    
+    const defenderAnimationProps = pairDefenderId ? getPlayerAnimationProps(pairDefenderId, animationState) : null;
+    const attackerAnimationProps = pairAttackerId ? getPlayerAnimationProps(pairAttackerId, animationState) : null;
+    
+    // Use defender animation if available, otherwise attacker animation
+    const animationProps = defenderAnimationProps || attackerAnimationProps;
+    if (animationProps) {
+      animationClass = animationProps.animationClass;
+      zIndexClass = animationProps.zIndexClass;
+      styleProps = animationProps.styleProps;
     }
 
     let bgColor = 'bg-slate-700'; // Default for subs or if logic is off
@@ -1391,51 +1063,17 @@ export function GameScreen({
     // Check if this player was recently substituted
     const isRecentlySubstituted = recentlySubstitutedPlayers.has(playerId);
 
-    // Animation logic for switching positions
+    // New unified animation logic
     let animationClass = '';
     let zIndexClass = '';
     let styleProps = {};
     
-    if (animationState.phase === 'switching') {
-      // Check if this is a position switch animation
-      if (animationState.type === 'position-switch' && animationState.data.positionSwitch) {
-        if (playerId === animationState.data.player1Id) {
-          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player1Distance}px`
-          };
-        } else if (playerId === animationState.data.player2Id) {
-          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player2Distance}px`
-          };
-        }
-      } else if (animationState.type === 'substitution') {
-        // Normal substitution animation
-        if (isNextOff) {
-          animationClass = 'animate-dynamic-down';
-          zIndexClass = 'z-10'; // Lower z-index when going down
-          styleProps = {
-            '--move-distance': `${animationState.data.nextOffToSub}px`
-          };
-        } else if (isNextOn) {
-          animationClass = 'animate-dynamic-up';
-          zIndexClass = 'z-20'; // Higher z-index when coming up
-          styleProps = {
-            '--move-distance': `${animationState.data.subToNextOff}px`
-          };
-        }
-      }
-    }
-    
-    // Handle goalie replacement animation
-    const goalieAnimationProps = getGoalieAnimationProps(playerId);
-    if (goalieAnimationProps) {
-      animationClass = goalieAnimationProps.animationClass;
-      zIndexClass = goalieAnimationProps.zIndexClass;
-      styleProps = goalieAnimationProps.styleProps;
+    // Get animation properties for this specific player
+    const animationProps = getPlayerAnimationProps(playerId, animationState);
+    if (animationProps) {
+      animationClass = animationProps.animationClass;
+      zIndexClass = animationProps.zIndexClass;
+      styleProps = animationProps.styleProps;
     }
 
     let bgColor = 'bg-slate-700'; // Default for substitute
@@ -1523,119 +1161,17 @@ export function GameScreen({
     // Check if this player was recently substituted
     const isRecentlySubstituted = recentlySubstitutedPlayers.has(playerId);
 
-    // Animation logic for switching positions
+    // New unified animation logic
     let animationClass = '';
     let zIndexClass = '';
     let styleProps = {};
     
-    if (animationState.phase === 'switching') {
-      // Check if this is a position switch animation
-      if (animationState.type === 'position-switch' && animationState.data.positionSwitch) {
-        if (playerId === animationState.data.player1Id) {
-          animationClass = animationState.data.player1Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player1Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player1Distance}px`
-          };
-        } else if (playerId === animationState.data.player2Id) {
-          animationClass = animationState.data.player2Distance > 0 ? 'animate-dynamic-down' : 'animate-dynamic-up';
-          zIndexClass = animationState.data.player2Distance > 0 ? 'z-10' : 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.player2Distance}px`
-          };
-        }
-      } else if (animationState.type === 'substitution' && isIndividual7Mode) {
-        // Check if this is a reactivation/inactivation animation (only substitute positions move)
-        const isSubstituteSwapAnimation = animationState.data.sub1ToField === 0;
-        
-        if (isSubstituteSwapAnimation) {
-          // Reactivation or inactivation animation: only substitute positions swap
-          // For inactivation: the player being inactivated moves, but becomes inactive after animation
-          // For reactivation: only active players move
-          if (position === 'substitute7_1') {
-            // substitute7_1 moves down to substitute7_2 position
-            // This happens during both inactivation (player becomes inactive) and reactivation (active player moves down)
-            animationClass = 'animate-dynamic-down';
-            zIndexClass = 'z-10';
-            styleProps = {
-              '--move-distance': `${animationState.data.fieldToSub2}px`
-            };
-          } else if (position === 'substitute7_2' && (!isInactive || (isInactive && animationState.data.sub2ToSub1 !== 0))) {
-            // substitute7_2 moves up to substitute7_1 position
-            // Normal case: only if not inactive
-            // Special case: if inactive but sub2ToSub1 distance is set, this is a reactivation animation where the inactive player should move
-            animationClass = 'animate-dynamic-up';
-            zIndexClass = 'z-20';
-            styleProps = {
-              '--move-distance': `${animationState.data.sub2ToSub1}px`
-            };
-          }
-          // If player is inactive, they get no animation (stay completely still)
-        } else {
-          // Normal substitution animation
-          // CRITICAL: Inactive players never move during animations
-          
-          // Check if substitute7_2 is inactive to determine where field player should go
-          const substitute7_2Player = findPlayerById(allPlayers, periodFormation.substitute7_2);
-          const isSubstitute7_2Inactive = substitute7_2Player?.stats.isInactive || false;
-          
-          if (isNextOff && !isInactive) {
-            // Field player going off - destination depends on whether substitute7_2 is inactive
-            animationClass = 'animate-dynamic-down';
-            zIndexClass = 'z-10';
-            if (isSubstitute7_2Inactive) {
-              // If substitute7_2 is inactive, field player goes to substitute7_1 position
-              // Use negative sub1ToField distance (field to sub1 instead of sub1 to field)
-              styleProps = {
-                '--move-distance': `${-animationState.data.sub1ToField}px`
-              };
-            } else {
-              // Normal case: field player goes to substitute7_2 position
-              styleProps = {
-                '--move-distance': `${animationState.data.fieldToSub2}px`
-              };
-            }
-          } else if (position === 'substitute7_1' && !isInactive) {
-            // substitute7_1 moves up to field position (only if not inactive)
-            animationClass = 'animate-dynamic-up';
-            zIndexClass = 'z-20';
-            styleProps = {
-              '--move-distance': `${animationState.data.sub1ToField}px`
-            };
-          } else if (position === 'substitute7_2' && !isInactive) {
-            // substitute7_2 moves up to substitute7_1 position (only if not inactive)
-            animationClass = 'animate-dynamic-up';
-            zIndexClass = 'z-15';
-            styleProps = {
-              '--move-distance': `${animationState.data.sub2ToSub1}px`
-            };
-          }
-          // If player is inactive, they get no animation (stay completely still)
-        }
-      } else if (animationState.type === 'substitution') {
-        // Original logic for other modes
-        if (isNextOff) {
-          animationClass = 'animate-dynamic-down';
-          zIndexClass = 'z-10';
-          styleProps = {
-            '--move-distance': `${animationState.data.nextOffToSub}px`
-          };
-        } else if (isNextOn) {
-          animationClass = 'animate-dynamic-up';
-          zIndexClass = 'z-20';
-          styleProps = {
-            '--move-distance': `${animationState.data.subToNextOff}px`
-          };
-        }
-      }
-    }
-    
-    // Handle goalie replacement animation for 7-player individual mode
-    const goalieAnimationProps = getGoalieAnimationProps(playerId);
-    if (goalieAnimationProps) {
-      animationClass = goalieAnimationProps.animationClass;
-      zIndexClass = goalieAnimationProps.zIndexClass;
-      styleProps = goalieAnimationProps.styleProps;
+    // Get animation properties for this specific player
+    const animationProps = getPlayerAnimationProps(playerId, animationState);
+    if (animationProps) {
+      animationClass = animationProps.animationClass;
+      zIndexClass = animationProps.zIndexClass;
+      styleProps = animationProps.styleProps;
     }
 
     let bgColor = 'bg-slate-700'; // Default for substitute
@@ -1855,20 +1391,18 @@ export function GameScreen({
 
       {/* Field & Subs Visualization */}
       <div 
-        className="p-2 bg-slate-700 rounded-lg cursor-pointer select-none hover:bg-slate-600 transition-colors duration-150"
-        {...goalieEvents}
-        style={(() => {
-          // Calculate goalie animation style
-          if (animationState.type === 'goalie' && animationState.phase === 'switching' && animationState.data.goalieToField !== 0) {
-            return {
-              transform: `translateY(${animationState.data.goalieToField}px)`,
-              transition: 'transform 1s ease-in-out',
-              zIndex: 20, // Medium z-index for old goalie moving down
-              position: 'relative'
-            };
-          }
-          return {};
+        className={(() => {
+          // Get animation properties for the current goalie
+          const goalieAnimationProps = getPlayerAnimationProps(periodFormation.goalie, animationState);
+          const animationClass = goalieAnimationProps?.animationClass || '';
+          const zIndexClass = goalieAnimationProps?.zIndexClass || '';
+          return `p-2 bg-slate-700 rounded-lg cursor-pointer select-none hover:bg-slate-600 transition-colors duration-150 ${animationClass} ${zIndexClass}`;
         })()}
+        style={(() => {
+          const goalieAnimationProps = getPlayerAnimationProps(periodFormation.goalie, animationState);
+          return goalieAnimationProps?.styleProps || {};
+        })()}
+        {...goalieEvents}
       >
         <p className="text-center my-1 text-sky-200">
           Goalie: <span className="font-semibold">{getPlayerNameById(periodFormation.goalie)}</span>

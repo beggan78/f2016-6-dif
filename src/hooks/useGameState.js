@@ -804,16 +804,18 @@ export function useGameState() {
     // The existing rotation logic in handleSubstitution will continue from this selection
   }, []);
 
-  const setNextPlayerToSubOutWithRotation = useCallback((newPosition) => {
+  const setNextPlayerToSubOutWithRotation = useCallback((newPosition, isAutomaticUpdate = false) => {
     console.log('Manually setting next player to substitute:', newPosition);
     setNextPlayerToSubOut(newPosition);
     
-    // Update next player tracking only (do NOT reorder rotation queue to maintain round-robin)
-    if (periodFormation && periodFormation[newPosition]) {
+    // Only auto-update player ID for manual user selection, not during automatic substitution calculations
+    if (!isAutomaticUpdate && periodFormation && periodFormation[newPosition]) {
       const selectedPlayerId = periodFormation[newPosition];
       setNextPlayerIdToSubOut(selectedPlayerId);
-      console.log('Set next player ID to substitute:', selectedPlayerId);
+      console.log('Set next player ID to substitute (manual selection):', selectedPlayerId);
       console.log('Note: Rotation queue order preserved for round-robin rotation');
+    } else if (isAutomaticUpdate) {
+      console.log('Note: Player ID will be managed by rotation queue logic during substitutions');
     }
   }, [periodFormation]);
 

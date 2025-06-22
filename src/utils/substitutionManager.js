@@ -300,9 +300,12 @@ export class SubstitutionManager {
 
     // For individual modes, just rotate the current queue (no rebuilding during gameplay)
     const rotationQueueManager7 = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    console.log('🔄 Before initialize() - rotationQueue input:', rotationQueue);
     rotationQueueManager7.initialize(); // Separate active and inactive players
+    console.log('🔄 After initialize() - queue:', rotationQueueManager7.toArray());
     
     // Move the substituted player to the end of the queue
+    console.log('🔄 About to rotate player:', playerGoingOffId);
     rotationQueueManager7.rotatePlayer(playerGoingOffId);
     const newRotationQueue = rotationQueueManager7.toArray();
     const nextPlayerToSubOutId = newRotationQueue[0];

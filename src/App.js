@@ -267,6 +267,8 @@ function App() {
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
             switchPlayerPositions={gameState.switchPlayerPositions}
+            rotationQueue={gameState.rotationQueue}
+            setRotationQueue={gameState.setRotationQueue}
             switchGoalie={gameState.switchGoalie}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
             pushModalState={pushModalState}
