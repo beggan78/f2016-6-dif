@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, RotateCcw, Square, Clock, Pause, Play, Undo2 } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
-import { FORMATION_TYPES } from '../../game/logic/gameLogic';
+import { FORMATION_TYPES } from '../../constants/playerConstants';
 import { formatTimeDifference } from '../../utils/formatUtils';
 import { animateStateChange, getPlayerAnimationProps } from '../../game/animation/animationSupport';
 import { getPlayerName, findPlayerById } from '../../utils/playerUtils';

@@ -3,7 +3,7 @@
  * Provides a unified approach for calculating and managing player position animations
  */
 // No longer using findPlayerById in this file
-import { FORMATION_TYPES } from '../logic/gameLogic';
+import { FORMATION_TYPES } from '../../constants/playerConstants';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions

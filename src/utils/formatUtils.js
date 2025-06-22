@@ -1,6 +1,16 @@
-import { formatTime } from './timeCalculations';
-import { calculateRolePoints } from '../game/logic/gameLogic';
-import { PLAYER_ROLES } from '../game/logic/gameLogic';
+import { calculateRolePoints } from './rolePointUtils';
+import { PLAYER_ROLES } from '../constants/playerConstants';
+
+/**
+ * Formats time in MM:SS format
+ * @param {number} totalSeconds - Total seconds to format
+ * @returns {string} Formatted time (e.g., "05:30")
+ */
+export const formatTime = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
 
 /**
  * Formats time difference with +/- sign

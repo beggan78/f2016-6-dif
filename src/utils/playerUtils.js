@@ -2,6 +2,30 @@
  * Utility functions for player-related operations
  */
 
+// Helper to initialize player objects
+export const initializePlayers = (roster) => roster.map((name, index) => ({
+  id: `p${index + 1}`,
+  name,
+  stats: {
+    startedMatchAs: null, // 'Goalie', 'On Field', 'Substitute'
+    periodsAsGoalie: 0,
+    periodsAsDefender: 0,
+    periodsAsAttacker: 0,
+    timeOnFieldSeconds: 0, // Total outfield play time
+    timeAsSubSeconds: 0,   // Total time as substitute
+    timeAsGoalieSeconds: 0, // Total time as goalie
+    // Role-specific time tracking for new points system
+    timeAsDefenderSeconds: 0, // Total time spent as defender
+    timeAsAttackerSeconds: 0, // Total time spent as attacker
+    // Temporary per-period tracking
+    currentPeriodRole: null, // 'Goalie', 'Defender', 'Attacker'
+    currentPeriodStatus: null, // 'on_field', 'substitute', 'goalie'
+    lastStintStartTimeEpoch: 0, // For calculating duration of current stint
+    currentPairKey: null, // 'leftPair', 'rightPair', 'subPair'
+    isInactive: false, // For 7-player individual mode - temporarily removes player from rotation
+  }
+}));
+
 /**
  * Checks if there are any inactive players in the selected squad
  * @param {Array} allPlayers - Array of all players

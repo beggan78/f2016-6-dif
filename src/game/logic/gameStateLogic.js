@@ -6,10 +6,11 @@
 
 import { createSubstitutionManager } from './substitutionManager';
 import { findPlayerById } from '../../utils/playerUtils';
-import { PLAYER_ROLES } from './gameLogic';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculatePlayerTimeStats, handleRoleChange } from './substitutionManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
+import { getPositionRole } from './positionUtils';
 
 /**
  * Calculate the result of a substitution without modifying any state
@@ -163,14 +164,8 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
         // For pairs, player1 takes player2's role
         newRole = player2.stats.currentPeriodRole;
       } else {
-        // For individual formations, determine role from position name
-        if (player2Position?.includes('Defender') || player2Position?.includes('defender')) {
-          newRole = PLAYER_ROLES.DEFENDER;
-        } else if (player2Position?.includes('Attacker') || player2Position?.includes('attacker')) {
-          newRole = PLAYER_ROLES.ATTACKER;
-        } else if (player2Position?.includes('substitute')) {
-          newRole = PLAYER_ROLES.SUBSTITUTE;
-        }
+        // For individual formations, use centralized role determination
+        newRole = getPositionRole(player2Position) || newRole;
       }
       
       return { 
@@ -189,14 +184,8 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
         // For pairs, player2 takes player1's role
         newRole = player1.stats.currentPeriodRole;
       } else {
-        // For individual formations, determine role from position name
-        if (player1Position?.includes('Defender') || player1Position?.includes('defender')) {
-          newRole = PLAYER_ROLES.DEFENDER;
-        } else if (player1Position?.includes('Attacker') || player1Position?.includes('attacker')) {
-          newRole = PLAYER_ROLES.ATTACKER;
-        } else if (player1Position?.includes('substitute')) {
-          newRole = PLAYER_ROLES.SUBSTITUTE;
-        }
+        // For individual formations, use centralized role determination
+        newRole = getPositionRole(player1Position) || newRole;
       }
       
       return { 
@@ -312,17 +301,9 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
           newStatus = 'substitute';
         }
       } else {
-        // Individual formations
-        if (newGoaliePosition.includes('substitute')) {
-          newRole = PLAYER_ROLES.SUBSTITUTE;
-          newStatus = 'substitute';
-        } else if (newGoaliePosition.includes('Defender') || newGoaliePosition.includes('defender')) {
-          newRole = PLAYER_ROLES.DEFENDER;
-          newStatus = 'on_field';
-        } else if (newGoaliePosition.includes('Attacker') || newGoaliePosition.includes('attacker')) {
-          newRole = PLAYER_ROLES.ATTACKER;
-          newStatus = 'on_field';
-        }
+        // Individual formations - use centralized role determination
+        newRole = getPositionRole(newGoaliePosition) || PLAYER_ROLES.DEFENDER; // Default to defender
+        newStatus = newGoaliePosition.includes('substitute') ? 'substitute' : 'on_field';
       }
       
       // Handle role change from goalie to new position

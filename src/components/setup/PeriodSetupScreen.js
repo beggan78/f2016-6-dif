@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Users, Play, Edit3, ArrowLeft } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
-import { FORMATION_TYPES } from '../../game/logic/gameLogic';
+import { FORMATION_TYPES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { findPlayerById } from '../../utils/playerUtils';
 

@@ -1,7 +1,8 @@
     import React from 'react';
 import { Settings, Play } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
-import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS, FORMATION_TYPES } from '../../game/logic/gameLogic';
+import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 
 export function ConfigurationScreen({ 

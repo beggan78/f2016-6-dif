@@ -1,7 +1,7 @@
-import { PLAYER_ROLES, FORMATION_TYPES } from './gameLogic';
+import { PLAYER_ROLES, FORMATION_TYPES } from '../../constants/playerConstants';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
-import { getPositionRole, getFieldPositions } from '../../utils/positionUtils';
+import { getPositionRole, getFieldPositions } from './positionUtils';
 
 /**
  * Calculates updated time stats for a player based on their current status and role

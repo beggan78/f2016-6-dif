@@ -1,8 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
-import { initializePlayers, initialRoster, PLAYER_ROLES, FORMATION_TYPES } from '../game/logic/gameLogic';
+import { initializePlayers } from '../utils/playerUtils';
+import { initialRoster } from '../constants/defaultData';
+import { PLAYER_ROLES, FORMATION_TYPES } from '../constants/playerConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
 import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../game/logic/substitutionManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
+import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 
@@ -1081,14 +1084,8 @@ export function useGameState() {
           // Since this is a position switch, player1 takes player2's role and vice versa
           newRole = player2.stats.currentPeriodRole;
         } else {
-          // For individual formations, determine role from position name
-          if (player2Position?.includes('Defender') || player2Position?.includes('defender')) {
-            newRole = PLAYER_ROLES.DEFENDER;
-          } else if (player2Position?.includes('Attacker') || player2Position?.includes('attacker')) {
-            newRole = PLAYER_ROLES.ATTACKER;
-          } else if (player2Position?.includes('substitute')) {
-            newRole = PLAYER_ROLES.SUBSTITUTE;
-          }
+          // For individual formations, use centralized role determination
+          newRole = getPositionRole(player2Position) || newRole;
         }
         
         return { 
@@ -1107,14 +1104,8 @@ export function useGameState() {
           // For pairs, player2 takes player1's role
           newRole = player1.stats.currentPeriodRole;
         } else {
-          // For individual formations, determine role from position name
-          if (player1Position?.includes('Defender') || player1Position?.includes('defender')) {
-            newRole = PLAYER_ROLES.DEFENDER;
-          } else if (player1Position?.includes('Attacker') || player1Position?.includes('attacker')) {
-            newRole = PLAYER_ROLES.ATTACKER;
-          } else if (player1Position?.includes('substitute')) {
-            newRole = PLAYER_ROLES.SUBSTITUTE;
-          }
+          // For individual formations, use centralized role determination
+          newRole = getPositionRole(player1Position) || newRole;
         }
         
         return { 
@@ -1232,18 +1223,9 @@ export function useGameState() {
             newStatus = 'substitute';
           }
         } else {
-          // Individual formations
-          if (newGoaliePosition.includes('substitute')) {
-            // Substitute positions
-            newRole = PLAYER_ROLES.SUBSTITUTE;
-            newStatus = 'substitute';
-          } else if (newGoaliePosition.includes('Defender') || newGoaliePosition.includes('defender')) {
-            newRole = PLAYER_ROLES.DEFENDER;
-            newStatus = 'on_field';
-          } else if (newGoaliePosition.includes('Attacker') || newGoaliePosition.includes('attacker')) {
-            newRole = PLAYER_ROLES.ATTACKER;
-            newStatus = 'on_field';
-          }
+          // Individual formations - use centralized role determination
+          newRole = getPositionRole(newGoaliePosition) || PLAYER_ROLES.DEFENDER; // Default to defender
+          newStatus = newGoaliePosition.includes('substitute') ? 'substitute' : 'on_field';
         }
         
         // Handle role change from goalie to new position

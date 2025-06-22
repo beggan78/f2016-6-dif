@@ -1,5 +1,5 @@
 import { createSubstitutionManager, SubstitutionManager, calculatePlayerTimeStats } from './substitutionManager';
-import { FORMATION_TYPES, PLAYER_ROLES } from './gameLogic';
+import { FORMATION_TYPES, PLAYER_ROLES } from '../../constants/playerConstants';
 
 describe('SubstitutionManager', () => {
   let manager;
