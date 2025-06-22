@@ -16,3 +16,7 @@ export const ALERT_OPTIONS = [
   { value: 4.5, label: "4:30" },
   { value: 5, label: "5:00" }
 ];
+
+export const TIME_CONSTANTS = {
+  MILLISECONDS_PER_SECOND: 1000
+};

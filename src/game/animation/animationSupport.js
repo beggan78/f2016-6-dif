@@ -4,6 +4,7 @@
  */
 // No longer using findPlayerById in this file
 import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { POSITION_KEYS, FORMATION_POSITIONS_WITH_GOALIE } from '../../constants/positionConstants';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -32,13 +33,7 @@ const getBoxHeight = (mode) => {
  * Get the visual order index of a position in the UI layout
  */
 const getPositionIndex = (position, formationType) => {
-  const positionArrays = {
-    [FORMATION_TYPES.PAIRS_7]: ['goalie', 'leftPair', 'rightPair', 'subPair'],
-    [FORMATION_TYPES.INDIVIDUAL_6]: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
-    [FORMATION_TYPES.INDIVIDUAL_7]: ['goalie', 'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2']
-  };
-  
-  const positions = positionArrays[formationType] || [];
+  const positions = FORMATION_POSITIONS_WITH_GOALIE[formationType] || [];
   return positions.indexOf(position);
 };
 
@@ -64,15 +59,15 @@ export const captureAllPlayerPositions = (periodFormation, allPlayers, formation
   if (periodFormation.goalie) {
     positions[periodFormation.goalie] = {
       playerId: periodFormation.goalie,
-      position: 'goalie',
-      positionIndex: getPositionIndex('goalie', formationType)
+      position: POSITION_KEYS.GOALIE,
+      positionIndex: getPositionIndex(POSITION_KEYS.GOALIE, formationType)
     };
   }
   
   // Add field and substitute players based on formation type
   if (formationType === FORMATION_TYPES.PAIRS_7) {
     // Pairs mode
-    ['leftPair', 'rightPair', 'subPair'].forEach(pairKey => {
+    [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR, POSITION_KEYS.SUB_PAIR].forEach(pairKey => {
       const pair = periodFormation[pairKey];
       if (pair) {
         if (pair.defender) {
@@ -95,7 +90,7 @@ export const captureAllPlayerPositions = (periodFormation, allPlayers, formation
     });
   } else if (formationType === FORMATION_TYPES.INDIVIDUAL_6) {
     // 6-player individual mode
-    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
+    [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE].forEach(pos => {
       const playerId = periodFormation[pos];
       if (playerId) {
         positions[playerId] = {
@@ -107,7 +102,7 @@ export const captureAllPlayerPositions = (periodFormation, allPlayers, formation
     });
   } else if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
     // 7-player individual mode
-    ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].forEach(pos => {
+    [POSITION_KEYS.LEFT_DEFENDER_7, POSITION_KEYS.RIGHT_DEFENDER_7, POSITION_KEYS.LEFT_ATTACKER_7, POSITION_KEYS.RIGHT_ATTACKER_7, POSITION_KEYS.SUBSTITUTE_7_1, POSITION_KEYS.SUBSTITUTE_7_2].forEach(pos => {
       const playerId = periodFormation[pos];
       if (playerId) {
         positions[playerId] = {

@@ -1,4 +1,5 @@
-import { PLAYER_ROLES, FORMATION_TYPES } from '../../constants/playerConstants';
+import { PLAYER_ROLES, FORMATION_TYPES, EXPECTED_PLAYER_COUNTS } from '../../constants/playerConstants';
+import { POSITION_KEYS, FORMATION_POSITIONS } from '../../constants/positionConstants';
 
 /**
  * Shared utilities for position and role management across formation types
@@ -14,7 +15,7 @@ export function getPositionRole(position) {
     return PLAYER_ROLES.ATTACKER;
   } else if (position?.includes('substitute')) {
     return PLAYER_ROLES.SUBSTITUTE;
-  } else if (position === 'goalie') {
+  } else if (position === POSITION_KEYS.GOALIE) {
     return PLAYER_ROLES.GOALIE;
   }
   return null;
@@ -24,16 +25,7 @@ export function getPositionRole(position) {
  * Gets the list of outfield positions for a given formation type
  */
 export function getOutfieldPositions(formationType) {
-  switch (formationType) {
-    case FORMATION_TYPES.INDIVIDUAL_6:
-      return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'];
-    case FORMATION_TYPES.INDIVIDUAL_7:
-      return ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-    case FORMATION_TYPES.PAIRS_7:
-      return ['leftPair', 'rightPair', 'subPair'];
-    default:
-      return [];
-  }
+  return FORMATION_POSITIONS[formationType] || [];
 }
 
 /**
@@ -42,11 +34,11 @@ export function getOutfieldPositions(formationType) {
 export function getFieldPositions(formationType) {
   switch (formationType) {
     case FORMATION_TYPES.INDIVIDUAL_6:
-      return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+      return [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER];
     case FORMATION_TYPES.INDIVIDUAL_7:
-      return ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
+      return [POSITION_KEYS.LEFT_DEFENDER_7, POSITION_KEYS.RIGHT_DEFENDER_7, POSITION_KEYS.LEFT_ATTACKER_7, POSITION_KEYS.RIGHT_ATTACKER_7];
     case FORMATION_TYPES.PAIRS_7:
-      return ['leftPair', 'rightPair'];
+      return [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR];
     default:
       return [];
   }
@@ -58,11 +50,11 @@ export function getFieldPositions(formationType) {
 export function getSubstitutePositions(formationType) {
   switch (formationType) {
     case FORMATION_TYPES.INDIVIDUAL_6:
-      return ['substitute'];
+      return [POSITION_KEYS.SUBSTITUTE];
     case FORMATION_TYPES.INDIVIDUAL_7:
-      return ['substitute7_1', 'substitute7_2'];
+      return [POSITION_KEYS.SUBSTITUTE_7_1, POSITION_KEYS.SUBSTITUTE_7_2];
     case FORMATION_TYPES.PAIRS_7:
-      return ['subPair'];
+      return [POSITION_KEYS.SUB_PAIR];
     default:
       return [];
   }
@@ -95,14 +87,6 @@ export function isSubstitutePosition(position, formationType) {
  * Gets the expected number of outfield players for a formation type
  */
 export function getExpectedOutfieldPlayerCount(formationType) {
-  switch (formationType) {
-    case FORMATION_TYPES.INDIVIDUAL_6:
-      return 5; // 4 on field + 1 substitute
-    case FORMATION_TYPES.INDIVIDUAL_7:
-      return 6; // 4 on field + 2 substitutes
-    case FORMATION_TYPES.PAIRS_7:
-      return 6; // 2 pairs on field + 1 pair substitute
-    default:
-      return 0;
-  }
+  const counts = EXPECTED_PLAYER_COUNTS[formationType];
+  return counts ? counts.outfield : 0;
 }

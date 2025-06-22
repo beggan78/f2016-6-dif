@@ -6,7 +6,8 @@
 
 import { createSubstitutionManager } from './substitutionManager';
 import { findPlayerById } from '../../utils/playerUtils';
-import { PLAYER_ROLES } from '../../constants/playerConstants';
+import { PLAYER_ROLES, FORMATION_TYPES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { POSITION_KEYS } from '../../constants/positionConstants';
 import { calculatePlayerTimeStats, handleRoleChange } from './substitutionManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
@@ -92,9 +93,9 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
 
   // Validate positions
   const validPositions = {
-    'PAIRS_7': ['leftPair', 'rightPair', 'subPair'],
-    'INDIVIDUAL_6': ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
-    'INDIVIDUAL_7': ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2']
+    [FORMATION_TYPES.PAIRS_7]: [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR, POSITION_KEYS.SUB_PAIR],
+    [FORMATION_TYPES.INDIVIDUAL_6]: [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE],
+    [FORMATION_TYPES.INDIVIDUAL_7]: [POSITION_KEYS.LEFT_DEFENDER_7, POSITION_KEYS.RIGHT_DEFENDER_7, POSITION_KEYS.LEFT_ATTACKER_7, POSITION_KEYS.RIGHT_ATTACKER_7, POSITION_KEYS.SUBSTITUTE_7_1, POSITION_KEYS.SUBSTITUTE_7_2]
   };
 
   const currentValidPositions = validPositions[formationType] || [];
@@ -106,21 +107,21 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   // Create new formation with swapped positions
   const newFormation = { ...periodFormation };
   
-  if (formationType === 'PAIRS_7') {
+  if (formationType === FORMATION_TYPES.PAIRS_7) {
     // Handle pairs formation
-    if (player1Position === 'leftPair') {
+    if (player1Position === POSITION_KEYS.LEFT_PAIR) {
       if (periodFormation.leftPair.defender === player1Id) {
         newFormation.leftPair = { ...periodFormation.leftPair, defender: player2Id };
       } else if (periodFormation.leftPair.attacker === player1Id) {
         newFormation.leftPair = { ...periodFormation.leftPair, attacker: player2Id };
       }
-    } else if (player1Position === 'rightPair') {
+    } else if (player1Position === POSITION_KEYS.RIGHT_PAIR) {
       if (periodFormation.rightPair.defender === player1Id) {
         newFormation.rightPair = { ...periodFormation.rightPair, defender: player2Id };
       } else if (periodFormation.rightPair.attacker === player1Id) {
         newFormation.rightPair = { ...periodFormation.rightPair, attacker: player2Id };
       }
-    } else if (player1Position === 'subPair') {
+    } else if (player1Position === POSITION_KEYS.SUB_PAIR) {
       if (periodFormation.subPair.defender === player1Id) {
         newFormation.subPair = { ...periodFormation.subPair, defender: player2Id };
       } else if (periodFormation.subPair.attacker === player1Id) {
@@ -128,19 +129,19 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
       }
     }
 
-    if (player2Position === 'leftPair') {
+    if (player2Position === POSITION_KEYS.LEFT_PAIR) {
       if (periodFormation.leftPair.defender === player2Id) {
         newFormation.leftPair = { ...newFormation.leftPair, defender: player1Id };
       } else if (periodFormation.leftPair.attacker === player2Id) {
         newFormation.leftPair = { ...newFormation.leftPair, attacker: player1Id };
       }
-    } else if (player2Position === 'rightPair') {
+    } else if (player2Position === POSITION_KEYS.RIGHT_PAIR) {
       if (periodFormation.rightPair.defender === player2Id) {
         newFormation.rightPair = { ...newFormation.rightPair, defender: player1Id };
       } else if (periodFormation.rightPair.attacker === player2Id) {
         newFormation.rightPair = { ...newFormation.rightPair, attacker: player1Id };
       }
-    } else if (player2Position === 'subPair') {
+    } else if (player2Position === POSITION_KEYS.SUB_PAIR) {
       if (periodFormation.subPair.defender === player2Id) {
         newFormation.subPair = { ...newFormation.subPair, defender: player1Id };
       } else if (periodFormation.subPair.attacker === player2Id) {
@@ -160,7 +161,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
       // Determine the new role for player1 based on their new position
       let newRole = p.stats.currentPeriodRole; // Default to current role
       
-      if (formationType === 'PAIRS_7') {
+      if (formationType === FORMATION_TYPES.PAIRS_7) {
         // For pairs, player1 takes player2's role
         newRole = player2.stats.currentPeriodRole;
       } else {
@@ -180,7 +181,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
       // Determine the new role for player2 based on their new position
       let newRole = p.stats.currentPeriodRole; // Default to current role
       
-      if (formationType === 'PAIRS_7') {
+      if (formationType === FORMATION_TYPES.PAIRS_7) {
         // For pairs, player2 takes player1's role
         newRole = player1.stats.currentPeriodRole;
       } else {
@@ -241,21 +242,21 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   newFormation.goalie = newGoalieId;
   
   // Place current goalie in the position of the new goalie
-  if (formationType === 'PAIRS_7') {
+  if (formationType === FORMATION_TYPES.PAIRS_7) {
     // Handle pairs formation
-    if (newGoaliePosition === 'leftPair') {
+    if (newGoaliePosition === POSITION_KEYS.LEFT_PAIR) {
       if (periodFormation.leftPair.defender === newGoalieId) {
         newFormation.leftPair = { ...periodFormation.leftPair, defender: periodFormation.goalie };
       } else if (periodFormation.leftPair.attacker === newGoalieId) {
         newFormation.leftPair = { ...periodFormation.leftPair, attacker: periodFormation.goalie };
       }
-    } else if (newGoaliePosition === 'rightPair') {
+    } else if (newGoaliePosition === POSITION_KEYS.RIGHT_PAIR) {
       if (periodFormation.rightPair.defender === newGoalieId) {
         newFormation.rightPair = { ...periodFormation.rightPair, defender: periodFormation.goalie };
       } else if (periodFormation.rightPair.attacker === newGoalieId) {
         newFormation.rightPair = { ...periodFormation.rightPair, attacker: periodFormation.goalie };
       }
-    } else if (newGoaliePosition === 'subPair') {
+    } else if (newGoaliePosition === POSITION_KEYS.SUB_PAIR) {
       if (periodFormation.subPair.defender === newGoalieId) {
         newFormation.subPair = { ...periodFormation.subPair, defender: periodFormation.goalie };
       } else if (periodFormation.subPair.attacker === newGoalieId) {
@@ -278,8 +279,8 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
       let newRole = PLAYER_ROLES.DEFENDER; // Default
       let newStatus = 'on_field'; // Default
       
-      if (formationType === 'PAIRS_7') {
-        if (newGoaliePosition === 'leftPair' || newGoaliePosition === 'rightPair') {
+      if (formationType === FORMATION_TYPES.PAIRS_7) {
+        if (newGoaliePosition === POSITION_KEYS.LEFT_PAIR || newGoaliePosition === POSITION_KEYS.RIGHT_PAIR) {
           const pairData = periodFormation[newGoaliePosition];
           if (pairData) {
             if (pairData.defender === newGoalieId) {
@@ -288,8 +289,8 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
               newRole = PLAYER_ROLES.ATTACKER;
             }
           }
-          newStatus = 'on_field';
-        } else if (newGoaliePosition === 'subPair') {
+          newStatus = PLAYER_STATUS.ON_FIELD;
+        } else if (newGoaliePosition === POSITION_KEYS.SUB_PAIR) {
           const pairData = periodFormation[newGoaliePosition];
           if (pairData) {
             if (pairData.defender === newGoalieId) {
@@ -298,12 +299,12 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
               newRole = PLAYER_ROLES.ATTACKER;
             }
           }
-          newStatus = 'substitute';
+          newStatus = PLAYER_STATUS.SUBSTITUTE;
         }
       } else {
         // Individual formations - use centralized role determination
         newRole = getPositionRole(newGoaliePosition) || PLAYER_ROLES.DEFENDER; // Default to defender
-        newStatus = newGoaliePosition.includes('substitute') ? 'substitute' : 'on_field';
+        newStatus = newGoaliePosition.includes('substitute') ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
       }
       
       // Handle role change from goalie to new position
@@ -332,8 +333,8 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
       );
       
       // Update status and position
-      newStats.currentPeriodStatus = 'goalie';
-      newStats.currentPairKey = 'goalie';
+      newStats.currentPeriodStatus = PLAYER_STATUS.GOALIE;
+      newStats.currentPairKey = POSITION_KEYS.GOALIE;
       
       return { ...p, stats: newStats };
     }
@@ -460,7 +461,7 @@ export const calculateUndo = (gameState, lastSubstitution) => {
 export const calculatePlayerToggleInactive = (gameState, playerId) => {
   const { allPlayers, periodFormation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, formationType } = gameState;
 
-  if (formationType !== 'INDIVIDUAL_7') {
+  if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) {
     console.warn('Player inactivation only supported in 7-player individual mode');
     return gameState;
   }
@@ -472,7 +473,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
   }
 
   const currentlyInactive = player.stats.isInactive;
-  const isSubstitute = player.stats.currentPairKey === 'substitute7_1' || player.stats.currentPairKey === 'substitute7_2';
+  const isSubstitute = player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_7_1 || player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_7_2;
   
   // Only allow inactivating/activating substitute players
   if (!isSubstitute) {
@@ -535,10 +536,10 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       // Update positions in player data
       newAllPlayers = newAllPlayers.map(p => {
         if (p.id === playerId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_1 } };
         }
         if (p.id === currentSub7_1Id) {
-          return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_2 } };
         }
         return p;
       });
@@ -571,7 +572,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     }
     
     // Move inactive player to substitute7_2 position if they were substitute7_1
-    if (player.stats.currentPairKey === 'substitute7_1' && periodFormation.substitute7_2) {
+    if (player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_7_1 && periodFormation.substitute7_2) {
       const otherSubId = periodFormation.substitute7_2;
       
       newFormation = {
@@ -583,10 +584,10 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       // Update positions in player data
       newAllPlayers = newAllPlayers.map(p => {
         if (p.id === playerId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_2 } };
         }
         if (p.id === otherSubId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_1 } };
         }
         return p;
       });
@@ -610,7 +611,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
 export const calculateSubstituteSwap = (gameState, substitute7_1Id, substitute7_2Id) => {
   const { allPlayers, periodFormation, formationType } = gameState;
   
-  if (formationType !== 'INDIVIDUAL_7') {
+  if (formationType !== FORMATION_TYPES.INDIVIDUAL_7) {
     console.warn('Substitute swap only supported in 7-player individual mode');
     return gameState;
   }
@@ -630,10 +631,10 @@ export const calculateSubstituteSwap = (gameState, substitute7_1Id, substitute7_
   // Update player positions in their stats
   const newAllPlayers = allPlayers.map(p => {
     if (p.id === substitute7_1Id) {
-      return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+      return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_2 } };
     }
     if (p.id === substitute7_2Id) {
-      return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+      return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_1 } };
     }
     return p;
   });
