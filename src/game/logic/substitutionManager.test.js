@@ -1,4 +1,5 @@
-import { createSubstitutionManager, SubstitutionManager, calculatePlayerTimeStats } from './substitutionManager';
+import { createSubstitutionManager, SubstitutionManager } from './substitutionManager';
+import { updatePlayerTimeStats } from '../time/stintManager';
 import { FORMATION_TYPES, PLAYER_ROLES } from '../../constants/playerConstants';
 
 describe('SubstitutionManager', () => {
@@ -123,7 +124,7 @@ describe('SubstitutionManager', () => {
       expect(updatedStats.lastStintStartTimeEpoch).toBe(2000);
     });
 
-    test('calculatePlayerTimeStats standalone function works', () => {
+    test('updatePlayerTimeStats from time module works', () => {
       const player = {
         stats: {
           currentPeriodStatus: 'substitute',
@@ -133,7 +134,7 @@ describe('SubstitutionManager', () => {
         }
       };
 
-      const updatedStats = calculatePlayerTimeStats(player, 3000);
+      const updatedStats = updatePlayerTimeStats(player, 3000);
 
       expect(updatedStats.timeAsSubSeconds).toBe(7); // 5 + 2 seconds
       expect(updatedStats.lastStintStartTimeEpoch).toBe(3000);

@@ -8,7 +8,8 @@ import { createSubstitutionManager } from './substitutionManager';
 import { findPlayerById } from '../../utils/playerUtils';
 import { PLAYER_ROLES, FORMATION_TYPES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { calculatePlayerTimeStats, handleRoleChange } from './substitutionManager';
+import { handleRoleChange } from './substitutionManager';
+import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
@@ -273,7 +274,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   const newAllPlayers = allPlayers.map(p => {
     if (p.id === periodFormation.goalie) {
       // Current goalie becomes a field player
-      const updatedStats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
+      const updatedStats = updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
       
       // Determine new role and status based on position they're moving to
       let newRole = PLAYER_ROLES.DEFENDER; // Default
@@ -322,7 +323,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
       return { ...p, stats: newStats };
     } else if (p.id === newGoalieId) {
       // New goalie - calculate accumulated time for their field stint
-      const updatedStats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
+      const updatedStats = updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
       
       // Handle role change from field player to goalie
       const newStats = handleRoleChange(

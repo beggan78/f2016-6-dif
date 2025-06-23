@@ -81,11 +81,6 @@ function App() {
     timers.startTimers();
   };
 
-  const handleSubstitution = () => {
-    if (!timers.isPeriodActive) return;
-    gameState.handleSubstitution(timers.isSubTimerPaused);
-    timers.resetSubTimer();
-  };
 
   const handleUndoSubstitution = (subTimerSecondsAtSubstitution) => {
     // Calculate how much time has passed since the substitution
@@ -252,7 +247,7 @@ function App() {
             pauseSubTimer={timers.pauseSubTimer}
             resumeSubTimer={timers.resumeSubTimer}
             formatTime={formatTime}
-            handleSubstitution={handleSubstitution}
+            resetSubTimer={timers.resetSubTimer}
             handleUndoSubstitution={handleUndoSubstitution}
             handleEndPeriod={handleEndPeriod}
             nextPhysicalPairToSubOut={gameState.nextPhysicalPairToSubOut}

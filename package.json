@@ -4,6 +4,7 @@
   "private": true,
   "homepage": "https://beggan78.github.io/f2016-6-dif",
   "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.31",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",

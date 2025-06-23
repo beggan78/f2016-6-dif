@@ -3,7 +3,8 @@ import { initializePlayers } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
 import { PLAYER_ROLES, FORMATION_TYPES } from '../constants/playerConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
-import { createSubstitutionManager, calculatePlayerTimeStats, handleRoleChange } from '../game/logic/substitutionManager';
+import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
+import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
@@ -546,7 +547,7 @@ export function useGameState() {
     // Calculate updated stats
     const updatedPlayersWithFinalStats = allPlayers.map(p => {
       if (playerIdsInPeriod.includes(p.id)) {
-        const stats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
+        const stats = updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
 
         // Update period role counts (based on final role of the period)
         // Note: With pair swapping, players can change roles mid-period, but we count
@@ -1192,7 +1193,7 @@ export function useGameState() {
       if (p.id === periodFormation.goalie) {
         // Current goalie becomes a field player
         // First calculate accumulated time for their goalie stint
-        const updatedStats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
+        const updatedStats = updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
         
         // Determine new role and status based on position they're moving to
         let newRole = PLAYER_ROLES.DEFENDER; // Default
@@ -1243,7 +1244,7 @@ export function useGameState() {
         return { ...p, stats: newStats };
       } else if (p.id === newGoalieId) {
         // New goalie - calculate accumulated time for their field stint
-        const updatedStats = calculatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
+        const updatedStats = updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
         
         // Handle role change from field player to goalie
         const newStats = handleRoleChange(

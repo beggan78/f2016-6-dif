@@ -2,45 +2,8 @@ import { PLAYER_ROLES, FORMATION_TYPES } from '../../constants/playerConstants';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
 import { getPositionRole, getFieldPositions } from './positionUtils';
+import { updatePlayerTimeStats, startNewStint } from '../time/stintManager';
 
-/**
- * Calculates updated time stats for a player based on their current status and role
- * This is shared logic used by both substitutions and period end calculations
- */
-export function calculatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused = false) {
-  const stats = { ...player.stats };
-  
-  // If timer is paused, don't calculate any time progression
-  if (isSubTimerPaused) {
-    return {
-      ...stats
-      // Don't update lastStintStartTimeEpoch when paused
-    };
-  }
-  
-  // Only calculate time if lastStintStartTimeEpoch is properly set (not 0)
-  const timeInPreviousStint = (stats.lastStintStartTimeEpoch && stats.lastStintStartTimeEpoch > 0) 
-    ? Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000) 
-    : 0;
-
-  if (stats.currentPeriodStatus === 'on_field') {
-    stats.timeOnFieldSeconds += timeInPreviousStint;
-    if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) {
-      stats.timeAsDefenderSeconds += timeInPreviousStint;
-    } else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) {
-      stats.timeAsAttackerSeconds += timeInPreviousStint;
-    }
-  } else if (stats.currentPeriodStatus === 'substitute') {
-    stats.timeAsSubSeconds += timeInPreviousStint;
-  } else if (stats.currentPeriodStatus === 'goalie') {
-    stats.timeAsGoalieSeconds += timeInPreviousStint;
-  }
-
-  return {
-    ...stats,
-    lastStintStartTimeEpoch: currentTimeEpoch
-  };
-}
 
 /**
  * Manages substitution logic for different formation types
@@ -55,7 +18,7 @@ export class SubstitutionManager {
    * Calculates time stats for players during substitution
    */
   calculateTimeStats(player, currentTimeEpoch, isSubTimerPaused = false) {
-    return calculatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
+    return updatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
   }
 
   /**
@@ -347,14 +310,23 @@ export class SubstitutionManager {
  */
 export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPaused = false) {
   // First calculate stats for the time spent in the previous role
-  const updatedStats = calculatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
+  const updatedStats = updatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
   
-  // Update the role and reset the stint timer (only if not paused)
-  return {
-    ...updatedStats,
-    currentPeriodRole: newRole,
-    lastStintStartTimeEpoch: isSubTimerPaused ? updatedStats.lastStintStartTimeEpoch : currentTimeEpoch
+  // Create updated player with new role
+  const playerWithUpdatedStats = {
+    ...player,
+    stats: {
+      ...updatedStats,
+      currentPeriodRole: newRole
+    }
   };
+  
+  // Start new stint if timer is not paused
+  if (!isSubTimerPaused) {
+    return startNewStint(playerWithUpdatedStats, currentTimeEpoch);
+  }
+  
+  return playerWithUpdatedStats;
 }
 
 /**

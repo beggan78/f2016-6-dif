@@ -21,6 +21,10 @@ src/
     │   ├── gameStateLogic.js  # Pure functions for state transitions
     │   ├── substitutionManager.js # Substitution business logic
     │   └── positionUtils.js   # Position and formation utilities
+    ├── time/                   # Time management and stint tracking
+    │   ├── index.js           # Time module barrel exports
+    │   ├── timeCalculator.js  # Pure time calculation functions
+    │   └── stintManager.js    # Player stint state management
     ├── animation/              # Animation system for visual transitions
     │   ├── index.js           # Animation module barrel exports
     │   └── animationSupport.js # Unified animation calculation and orchestration
@@ -139,7 +143,6 @@ This separation allows logic changes without breaking animations and vice versa.
 **Purpose**: Specialized substitution business logic and time calculation  
 **Responsibilities**:
 - `SubstitutionManager` class: Handles formation-specific substitution logic
-- `calculatePlayerTimeStats()`: Updates player time tracking based on current stint
 - `handleRoleChange()`: Manages role transitions within periods
 - Formation-specific handlers:
   - `handlePairsSubstitution()`: Pairs mode substitution logic
@@ -180,6 +183,44 @@ This separation allows logic changes without breaking animations and vice versa.
 - Changing position naming conventions
 - Adding new position validation rules
 - Modifying role assignment logic
+
+---
+
+## Time Module (`/time/`)
+
+### `time/timeCalculator.js`
+**Purpose**: Pure time calculation functions with no side effects  
+**Responsibilities**:
+- `calculateDurationSeconds()`: Calculate duration between epoch timestamps
+- `shouldSkipTimeCalculation()`: Determine if time calculation should be skipped
+- `isValidTimeRange()`: Validate time range parameters
+- `calculateCurrentStintDuration()`: Calculate time elapsed in current stint
+
+**Key characteristics**:
+- Pure functions with zero dependencies
+- Mathematical operations only
+- No game state knowledge
+- Reusable across different timing contexts
+
+### `time/stintManager.js`
+**Purpose**: Game state integration for player stint tracking and time allocation  
+**Responsibilities**:
+- `updatePlayerTimeStats()`: Apply stint duration to appropriate time counters
+- `startNewStint()`: Initialize new stint timing for a player
+- `completeCurrentStint()`: Finalize stint and update player stats
+- `applyStintTimeToCounters()`: Allocate time based on player status and role
+
+**Integration points**:
+- Uses timeCalculator for pure time calculations
+- Understands player status (on_field, substitute, goalie) and roles
+- Manages stint lifecycle (start, update, complete)
+- Respects timer pause state
+
+**When to modify**:
+- Adding new player statuses or roles
+- Changing time allocation rules
+- Modifying stint state management
+- Adding new time-based features
 
 ---
 

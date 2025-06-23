@@ -28,7 +28,7 @@ export function GameScreen({
   pauseSubTimer,
   resumeSubTimer,
   formatTime, 
-  handleSubstitution, 
+  resetSubTimer, 
   handleUndoSubstitution: handleUndoSubstitutionTimer,
   handleEndPeriod, 
   nextPhysicalPairToSubOut,
@@ -300,12 +300,15 @@ export function GameScreen({
           formationType,
           subTimerSecondsAtSubstitution
         });
+
+        // Reset substitution timer after successful substitution
+        resetSubTimer();
       },
       setAnimationState,
       setHideNextOffIndicator,
       setRecentlySubstitutedPlayers
     );
-  }, [createGameState, setPeriodFormation, setAllPlayers, setNextPhysicalPairToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setNextPlayerToSubOut, setRotationQueue, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, subTimerSeconds, allPlayers, formationType, isPairsMode, isIndividual6Mode, isIndividual7Mode]);
+  }, [createGameState, setPeriodFormation, setAllPlayers, setNextPhysicalPairToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setNextPlayerToSubOut, setRotationQueue, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, subTimerSeconds, allPlayers, formationType, isPairsMode, isIndividual6Mode, isIndividual7Mode, resetSubTimer]);
 
   // New undo substitution handler using the unified animation system
   const handleUndoSubstitution = React.useCallback(() => {
