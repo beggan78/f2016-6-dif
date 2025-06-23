@@ -4,7 +4,8 @@
  */
 // No longer using findPlayerById in this file
 import { FORMATION_TYPES } from '../../constants/playerConstants';
-import { POSITION_KEYS, FORMATION_POSITIONS_WITH_GOALIE } from '../../constants/positionConstants';
+import { POSITION_KEYS } from '../../constants/positionConstants';
+import { getFormationPositionsWithGoalie } from '../../constants/formations';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -33,7 +34,7 @@ const getBoxHeight = (mode) => {
  * Get the visual order index of a position in the UI layout
  */
 const getPositionIndex = (position, formationType) => {
-  const positions = FORMATION_POSITIONS_WITH_GOALIE[formationType] || [];
+  const positions = getFormationPositionsWithGoalie(formationType);
   return positions.indexOf(position);
 };
 

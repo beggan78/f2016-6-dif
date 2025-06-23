@@ -1,7 +1,7 @@
 import { PLAYER_ROLES, FORMATION_TYPES } from '../../constants/playerConstants';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
-import { getPositionRole, getFieldPositions } from './positionUtils';
+import { getPositionRole, getFieldPositions } from '../../utils/formationUtils';
 import { updatePlayerTimeStats, startNewStint } from '../time/stintManager';
 
 

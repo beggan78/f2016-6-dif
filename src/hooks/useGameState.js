@@ -6,7 +6,7 @@ import { generateRecommendedFormation, generateIndividualFormationRecommendation
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
-import { getPositionRole } from '../game/logic/positionUtils';
+import { getPositionRole } from '../utils/formationUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 

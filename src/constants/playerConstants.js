@@ -18,8 +18,4 @@ export const PLAYER_STATUS = {
   GOALIE: 'goalie'
 };
 
-export const EXPECTED_PLAYER_COUNTS = {
-  [FORMATION_TYPES.INDIVIDUAL_6]: { outfield: 5, onField: 4 },
-  [FORMATION_TYPES.INDIVIDUAL_7]: { outfield: 6, onField: 4 },
-  [FORMATION_TYPES.PAIRS_7]: { outfield: 6, onField: 4 }
-};
+// EXPECTED_PLAYER_COUNTS moved to constants/formations.js to eliminate duplication
