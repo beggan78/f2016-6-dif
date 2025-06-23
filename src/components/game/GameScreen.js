@@ -45,6 +45,7 @@ export function GameScreen({
   togglePlayerInactive,
   switchPlayerPositions,
   switchGoalie,
+  setLastSubstitutionTimestamp,
   getOutfieldPlayers,
   pushModalState,
   removeModalFromStack,
@@ -241,6 +242,12 @@ export function GameScreen({
     const beforeNextNextPlayerId = nextNextPlayerIdToSubOut;
     const subTimerSecondsAtSubstitution = subTimerSeconds;
     
+    console.log('🔄 SUBSTITUTION START:', {
+      subTimerSecondsAtSubstitution,
+      subTimerSeconds,
+      timestamp: substitutionTimestamp
+    });
+    
     // Store original stats for players coming on
     let playersComingOnIds = [];
     if (isPairsMode) {
@@ -301,14 +308,21 @@ export function GameScreen({
           subTimerSecondsAtSubstitution
         });
 
+        // Update last substitution timestamp for undo functionality
+        setLastSubstitutionTimestamp(substitutionTimestamp);
+        console.log('🔄 SUBSTITUTION: Updated lastSubstitutionTimestamp to:', substitutionTimestamp);
+
         // Reset substitution timer after successful substitution
+        console.log('🔄 SUBSTITUTION: Before timer reset, subTimerSeconds:', subTimerSeconds);
         resetSubTimer();
+        console.log('🔄 SUBSTITUTION: Timer reset called');
+        console.log('🔄 SUBSTITUTION END: Stored value:', subTimerSecondsAtSubstitution);
       },
       setAnimationState,
       setHideNextOffIndicator,
       setRecentlySubstitutedPlayers
     );
-  }, [createGameState, setPeriodFormation, setAllPlayers, setNextPhysicalPairToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setNextPlayerToSubOut, setRotationQueue, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, subTimerSeconds, allPlayers, formationType, isPairsMode, isIndividual6Mode, isIndividual7Mode, resetSubTimer]);
+  }, [createGameState, setPeriodFormation, setAllPlayers, setNextPhysicalPairToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setNextPlayerToSubOut, setRotationQueue, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, subTimerSeconds, allPlayers, formationType, isPairsMode, isIndividual6Mode, isIndividual7Mode, resetSubTimer, setLastSubstitutionTimestamp]);
 
   // New undo substitution handler using the unified animation system
   const handleUndoSubstitution = React.useCallback(() => {
@@ -316,6 +330,13 @@ export function GameScreen({
       console.warn('No substitution to undo');
       return;
     }
+
+    console.log('↩️ UNDO START:', {
+      storedTimerValue: lastSubstitution.subTimerSecondsAtSubstitution,
+      currentTimerValue: subTimerSeconds,
+      timestamp: Date.now(),
+      substitutionTimestamp: lastSubstitution.timestamp
+    });
 
     // Use the new animation system
     animateStateChange(
@@ -332,7 +353,9 @@ export function GameScreen({
 
         // Restore substitution timer
         if (handleUndoSubstitutionTimer && lastSubstitution.subTimerSecondsAtSubstitution !== undefined) {
+          console.log('↩️ UNDO: Calling handleUndoSubstitutionTimer with value:', lastSubstitution.subTimerSecondsAtSubstitution);
           handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution);
+          console.log('↩️ UNDO: Timer restoration called');
         }
 
         // Clear the undo data since we've used it
@@ -342,7 +365,7 @@ export function GameScreen({
       setHideNextOffIndicator,
       setRecentlySubstitutedPlayers
     );
-  }, [lastSubstitution, createGameState, setPeriodFormation, setNextPhysicalPairToSubOut, setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setAllPlayers, handleUndoSubstitutionTimer, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers]);
+  }, [lastSubstitution, createGameState, setPeriodFormation, setNextPhysicalPairToSubOut, setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setAllPlayers, handleUndoSubstitutionTimer, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers, subTimerSeconds]);
 
   // New position switch handler using the unified animation system
   const handlePositionSwitchWithAnimation = React.useCallback((player1Id, player2Id) => {

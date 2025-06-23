@@ -132,22 +132,51 @@ export function useTimers(periodDurationMinutes) {
   }, [matchTimerSeconds, subTimerSeconds, isPeriodActive, isSubTimerPaused, periodStartTime, lastSubTime, pausedSubTime, subPauseStartTime]);
 
   const resetSubTimer = () => {
-    setLastSubTime(Date.now());
+    const now = Date.now();
+    console.log('⏰ RESET TIMER: Called at', now);
+    console.log('⏰ RESET TIMER: Previous values:', {
+      lastSubTime,
+      subTimerSeconds,
+      pausedSubTime,
+      isSubTimerPaused
+    });
+    
+    setLastSubTime(now);
     setSubTimerSeconds(0);
     setPausedSubTime(0);
     setIsSubTimerPaused(false);
     setSubPauseStartTime(null);
+    
+    console.log('⏰ RESET TIMER: Reset complete');
   };
 
   const restoreSubTimer = (targetSeconds) => {
     // Restore sub timer to a specific value (for undo functionality)
     const now = Date.now();
+    const calculatedLastSubTime = now - (targetSeconds * 1000);
+    
+    console.log('⏰ RESTORE TIMER: Called with targetSeconds:', targetSeconds);
+    console.log('⏰ RESTORE TIMER: Calculations:', {
+      now,
+      targetSeconds,
+      calculatedLastSubTime,
+      timeDifference: targetSeconds * 1000
+    });
+    console.log('⏰ RESTORE TIMER: Previous values:', {
+      lastSubTime,
+      subTimerSeconds,
+      pausedSubTime,
+      isSubTimerPaused
+    });
+    
     // Set the last sub time to be in the past so that the timer shows the target seconds
-    setLastSubTime(now - (targetSeconds * 1000));
+    setLastSubTime(calculatedLastSubTime);
     setSubTimerSeconds(targetSeconds);
     setPausedSubTime(0);
     setIsSubTimerPaused(false);
     setSubPauseStartTime(null);
+    
+    console.log('⏰ RESTORE TIMER: Restore complete');
   };
 
   const pauseSubTimer = (updatePlayerStats) => {

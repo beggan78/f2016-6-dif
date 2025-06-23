@@ -1344,6 +1344,7 @@ export function useGameState() {
     homeScore,
     awayScore,
     lastSubstitutionTimestamp,
+    setLastSubstitutionTimestamp,
     
     // Actions
     preparePeriod,

@@ -83,11 +83,24 @@ function App() {
 
 
   const handleUndoSubstitution = (subTimerSecondsAtSubstitution) => {
+    console.log('↩️ APP UNDO: Input parameters:', {
+      subTimerSecondsAtSubstitution,
+      lastSubstitutionTimestamp: gameState.lastSubstitutionTimestamp,
+      currentTime: Date.now()
+    });
+    
     // Calculate how much time has passed since the substitution
     const timeSinceSubstitution = Math.round((Date.now() - gameState.lastSubstitutionTimestamp) / 1000);
     // Restore sub timer to where it would have been if substitution never happened
     const targetSubTimerSeconds = subTimerSecondsAtSubstitution + timeSinceSubstitution;
+    
+    console.log('↩️ APP UNDO: Calculations:', {
+      timeSinceSubstitution,
+      targetSubTimerSeconds
+    });
+    
     timers.restoreSubTimer(targetSubTimerSeconds);
+    console.log('↩️ APP UNDO: restoreSubTimer called with:', targetSubTimerSeconds);
   };
 
   const handleEndPeriod = () => {
@@ -266,6 +279,7 @@ function App() {
             rotationQueue={gameState.rotationQueue}
             setRotationQueue={gameState.setRotationQueue}
             switchGoalie={gameState.switchGoalie}
+            setLastSubstitutionTimestamp={gameState.setLastSubstitutionTimestamp}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
             pushModalState={pushModalState}
             removeModalFromStack={removeModalFromStack}
