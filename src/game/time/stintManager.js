@@ -106,3 +106,41 @@ export const completeCurrentStint = (player, currentTimeEpoch, isSubTimerPaused 
     stats: updatedStats
   };
 };
+
+/**
+ * Handle pause/resume time calculations for a player
+ * @param {Object} player - Player object
+ * @param {number} currentTimeEpoch - Current time in milliseconds since epoch
+ * @param {boolean} isPausing - True if pausing, false if resuming
+ * @returns {Object} Player object with updated stats
+ */
+export const handlePauseResumeTime = (player, currentTimeEpoch, isPausing) => {
+  const stats = { ...player.stats };
+  
+  if (isPausing) {
+    // When pausing: calculate and accumulate time without resetting stint timer
+    if (shouldSkipTimeCalculation(false, stats.lastStintStartTimeEpoch)) {
+      return { ...player, stats };
+    }
+    
+    const currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, currentTimeEpoch);
+    
+    // Apply time to appropriate counters based on current status and role
+    const updatedStats = applyStintTimeToCounters(stats, currentStintTime);
+    
+    return {
+      ...player,
+      stats: updatedStats
+      // Keep lastStintStartTimeEpoch unchanged when pausing
+    };
+  } else {
+    // When resuming: reset stint start time for active players
+    if (stats.currentPeriodStatus === 'on_field' || 
+        stats.currentPeriodStatus === 'substitute' || 
+        stats.currentPeriodStatus === 'goalie') {
+      return startNewStint(player, currentTimeEpoch);
+    }
+    
+    return { ...player, stats };
+  }
+};

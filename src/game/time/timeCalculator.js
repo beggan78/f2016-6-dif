@@ -48,3 +48,20 @@ export const calculateCurrentStintDuration = (lastStintStartTimeEpoch, currentTi
   }
   return calculateDurationSeconds(lastStintStartTimeEpoch, currentTimeEpoch);
 };
+
+/**
+ * Calculate the target timer value for undo functionality
+ * @param {number} timerValueAtSubstitution - Timer value when substitution happened
+ * @param {number} substitutionTimestamp - When the substitution occurred
+ * @param {number} currentTimestamp - Current time
+ * @returns {number} Target timer value for restoration
+ */
+export const calculateUndoTimerTarget = (timerValueAtSubstitution, substitutionTimestamp, currentTimestamp = Date.now()) => {
+  if (!substitutionTimestamp || substitutionTimestamp <= 0) {
+    console.warn('Invalid substitution timestamp for undo calculation');
+    return timerValueAtSubstitution;
+  }
+  
+  const timeSinceSubstitution = calculateDurationSeconds(substitutionTimestamp, currentTimestamp);
+  return timerValueAtSubstitution + timeSinceSubstitution;
+};

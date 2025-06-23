@@ -13,6 +13,8 @@ import {
   calculatePlayerToggleInactive,
   calculateSubstituteSwap
 } from '../../game/logic/gameStateLogic';
+import { handlePauseResumeTime } from '../../game/time/stintManager';
+import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 
 // Animation timing constants are now imported from animationSupport
 
@@ -124,35 +126,7 @@ export function GameScreen({
         return player; // Not in selected squad, don't update
       }
       
-      const stats = { ...player.stats };
-      
-      if (isPausing) {
-        // When pausing: calculate and store accumulated time, but don't reset stint timer
-        if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'on_field') {
-          const currentStintTime = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
-          
-          // Accumulate the time into the appropriate buckets
-          stats.timeOnFieldSeconds += currentStintTime;
-          if (stats.currentPeriodRole === 'Attacker') {
-            stats.timeAsAttackerSeconds += currentStintTime;
-          } else if (stats.currentPeriodRole === 'Defender') {
-            stats.timeAsDefenderSeconds += currentStintTime;
-          }
-        } else if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'substitute') {
-          const currentStintTime = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
-          stats.timeAsSubSeconds += currentStintTime;
-        } else if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'goalie') {
-          const currentStintTime = Math.round((currentTimeEpoch - stats.lastStintStartTimeEpoch) / 1000);
-          stats.timeAsGoalieSeconds += currentStintTime;
-        }
-      } else {
-        // When resuming: reset stint start time for all active players
-        if (stats.currentPeriodStatus === 'on_field' || stats.currentPeriodStatus === 'substitute' || stats.currentPeriodStatus === 'goalie') {
-          stats.lastStintStartTimeEpoch = currentTimeEpoch;
-        }
-      }
-      
-      return { ...player, stats };
+      return handlePauseResumeTime(player, currentTimeEpoch, isPausing);
     }));
   }, [selectedSquadPlayers, setAllPlayers]);
   
@@ -242,11 +216,6 @@ export function GameScreen({
     const beforeNextNextPlayerId = nextNextPlayerIdToSubOut;
     const subTimerSecondsAtSubstitution = subTimerSeconds;
     
-    console.log('🔄 SUBSTITUTION START:', {
-      subTimerSecondsAtSubstitution,
-      subTimerSeconds,
-      timestamp: substitutionTimestamp
-    });
     
     // Store original stats for players coming on
     let playersComingOnIds = [];
@@ -310,13 +279,9 @@ export function GameScreen({
 
         // Update last substitution timestamp for undo functionality
         setLastSubstitutionTimestamp(substitutionTimestamp);
-        console.log('🔄 SUBSTITUTION: Updated lastSubstitutionTimestamp to:', substitutionTimestamp);
 
         // Reset substitution timer after successful substitution
-        console.log('🔄 SUBSTITUTION: Before timer reset, subTimerSeconds:', subTimerSeconds);
         resetSubTimer();
-        console.log('🔄 SUBSTITUTION: Timer reset called');
-        console.log('🔄 SUBSTITUTION END: Stored value:', subTimerSecondsAtSubstitution);
       },
       setAnimationState,
       setHideNextOffIndicator,
@@ -331,12 +296,6 @@ export function GameScreen({
       return;
     }
 
-    console.log('↩️ UNDO START:', {
-      storedTimerValue: lastSubstitution.subTimerSecondsAtSubstitution,
-      currentTimerValue: subTimerSeconds,
-      timestamp: Date.now(),
-      substitutionTimestamp: lastSubstitution.timestamp
-    });
 
     // Use the new animation system
     animateStateChange(
@@ -353,9 +312,7 @@ export function GameScreen({
 
         // Restore substitution timer
         if (handleUndoSubstitutionTimer && lastSubstitution.subTimerSecondsAtSubstitution !== undefined) {
-          console.log('↩️ UNDO: Calling handleUndoSubstitutionTimer with value:', lastSubstitution.subTimerSecondsAtSubstitution);
           handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution);
-          console.log('↩️ UNDO: Timer restoration called');
         }
 
         // Clear the undo data since we've used it
@@ -365,7 +322,7 @@ export function GameScreen({
       setHideNextOffIndicator,
       setRecentlySubstitutedPlayers
     );
-  }, [lastSubstitution, createGameState, setPeriodFormation, setNextPhysicalPairToSubOut, setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setAllPlayers, handleUndoSubstitutionTimer, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers, subTimerSeconds]);
+  }, [lastSubstitution, createGameState, setPeriodFormation, setNextPhysicalPairToSubOut, setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut, setAllPlayers, handleUndoSubstitutionTimer, setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers]);
 
   // New position switch handler using the unified animation system
   const handlePositionSwitchWithAnimation = React.useCallback((player1Id, player2Id) => {
@@ -420,12 +377,10 @@ export function GameScreen({
       };
     }
     
-    const currentTime = Date.now();
-    
-    // Calculate current stint time if player is active and timer is not paused
+    // Calculate current stint time using time module
     let currentStintTime = 0;
-    if (stats.lastStintStartTimeEpoch && stats.currentPeriodStatus === 'on_field') {
-      currentStintTime = Math.round((currentTime - stats.lastStintStartTimeEpoch) / 1000);
+    if (stats.currentPeriodStatus === 'on_field') {
+      currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, Date.now());
     }
     
     // Total outfield time includes completed time plus current stint if on field

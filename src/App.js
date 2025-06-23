@@ -4,6 +4,7 @@ import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
 import { formatTime } from './utils/formatUtils';
+import { calculateUndoTimerTarget } from './game/time/timeCalculator';
 import { initializePlayers } from './utils/playerUtils';
 import { initialRoster } from './constants/defaultData';
 import { ConfigurationScreen } from './components/setup/ConfigurationScreen';
@@ -83,24 +84,12 @@ function App() {
 
 
   const handleUndoSubstitution = (subTimerSecondsAtSubstitution) => {
-    console.log('↩️ APP UNDO: Input parameters:', {
+    const targetSubTimerSeconds = calculateUndoTimerTarget(
       subTimerSecondsAtSubstitution,
-      lastSubstitutionTimestamp: gameState.lastSubstitutionTimestamp,
-      currentTime: Date.now()
-    });
-    
-    // Calculate how much time has passed since the substitution
-    const timeSinceSubstitution = Math.round((Date.now() - gameState.lastSubstitutionTimestamp) / 1000);
-    // Restore sub timer to where it would have been if substitution never happened
-    const targetSubTimerSeconds = subTimerSecondsAtSubstitution + timeSinceSubstitution;
-    
-    console.log('↩️ APP UNDO: Calculations:', {
-      timeSinceSubstitution,
-      targetSubTimerSeconds
-    });
+      gameState.lastSubstitutionTimestamp
+    );
     
     timers.restoreSubTimer(targetSubTimerSeconds);
-    console.log('↩️ APP UNDO: restoreSubTimer called with:', targetSubTimerSeconds);
   };
 
   const handleEndPeriod = () => {
