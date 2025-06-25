@@ -40,7 +40,8 @@ export const createSubstitutionHandlers = (
   const {
     closeFieldPlayerModal,
     closeSubstituteModal,
-    removeModalFromStack
+    removeModalFromStack,
+    openFieldPlayerModal
   } = modalHandlers;
 
   const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
@@ -274,13 +275,66 @@ export const createSubstitutionHandlers = (
     );
   };
 
-  const handleChangePosition = (selectedPosition) => {
+  const handleChangePosition = (action) => {
     const gameState = gameStateFactory();
     const { fieldPlayerModal } = gameState;
     
-    if (fieldPlayerModal.type === 'player' && fieldPlayerModal.sourcePlayerId) {
-      // Position switch between two individual players
-      const targetPlayerId = gameState.periodFormation[selectedPosition];
+    if (action === 'show-options') {
+      // Show the position selection options
+      if (fieldPlayerModal.target && fieldPlayerModal.type === 'player') {
+        const sourcePlayerId = gameState.periodFormation[fieldPlayerModal.target];
+        
+        if (sourcePlayerId) {
+          // Get available positions for switching (excluding goalie and current position)
+          const availablePositions = Object.keys(gameState.periodFormation)
+            .filter(pos => pos !== 'goalie' && pos !== fieldPlayerModal.target && 
+                          pos !== 'substitute' && pos !== 'substitute7_1' && pos !== 'substitute7_2');
+          
+          // Build player objects for available positions
+          const availablePlayers = availablePositions.map(position => {
+            const playerId = gameState.periodFormation[position];
+            const player = gameState.allPlayers.find(p => p.id === playerId);
+            return {
+              id: playerId,
+              name: player ? player.name : 'Unknown Player',
+              position: position
+            };
+          }).filter(player => player.id); // Filter out any invalid players
+          
+          // Update modal state to show position options
+          openFieldPlayerModal({
+            type: 'player',
+            target: fieldPlayerModal.target,
+            playerName: fieldPlayerModal.playerName,
+            sourcePlayerId: sourcePlayerId,
+            availablePlayers: availablePlayers,
+            showPositionOptions: true
+          });
+        }
+      }
+    } else if (action === 'swap-pair-positions') {
+      // Handle pair position swapping (for pairs mode)
+      if (fieldPlayerModal.target && fieldPlayerModal.type === 'pair') {
+        // This would handle swapping attacker and defender within a pair
+        // Implementation depends on pair swapping logic
+        closeFieldPlayerModal();
+      }
+    } else if (action === null) {
+      // Go back to main options
+      const gameState = gameStateFactory();
+      const { fieldPlayerModal } = gameState;
+      
+      openFieldPlayerModal({
+        type: fieldPlayerModal.type,
+        target: fieldPlayerModal.target,
+        playerName: fieldPlayerModal.playerName,
+        sourcePlayerId: fieldPlayerModal.sourcePlayerId,
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+    } else if (typeof action === 'string' && fieldPlayerModal.sourcePlayerId) {
+      // action is a player ID - perform the animated position switch
+      const targetPlayerId = action;
       
       animateStateChange(
         gameState,
@@ -293,8 +347,11 @@ export const createSubstitutionHandlers = (
         setHideNextOffIndicator,
         setRecentlySubstitutedPlayers
       );
+      closeFieldPlayerModal();
+    } else {
+      // Close modal if something unexpected happened
+      closeFieldPlayerModal();
     }
-    closeFieldPlayerModal();
   };
 
   const handleUndo = (lastSubstitution) => {

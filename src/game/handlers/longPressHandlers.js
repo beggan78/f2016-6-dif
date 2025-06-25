@@ -39,18 +39,13 @@ export const createLongPressHandlers = (
       const playerId = periodFormation[position];
       const playerName = getPlayerNameById(playerId);
       
-      // Get available positions for switching (excluding goalie and current position)
-      const availablePositions = Object.keys(periodFormation)
-        .filter(pos => pos !== 'goalie' && pos !== position && 
-                      pos !== 'substitute' && pos !== 'substitute7_1' && pos !== 'substitute7_2');
-
       openFieldPlayerModal({
         type: 'player',
         target: position,
         playerName: playerName,
         sourcePlayerId: playerId,
-        availablePlayers: availablePositions,
-        showPositionOptions: true
+        availablePlayers: [],
+        showPositionOptions: false
       });
     }
   };
