@@ -6,7 +6,7 @@ import {
   calculateSubstituteSwap,
   calculateUndo
 } from '../logic/gameStateLogic';
-import { findPlayerById } from '../../utils/playerUtils';
+import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
 import { FORMATION_TYPES } from '../../constants/playerConstants';
 
 export const createSubstitutionHandlers = (
@@ -280,26 +280,48 @@ export const createSubstitutionHandlers = (
     const { fieldPlayerModal } = gameState;
     
     if (action === 'show-options') {
-      // Show the position selection options
+      // Check if this is pairs mode - position change not supported
+      if (gameState.formationType === FORMATION_TYPES.PAIRS_7) {
+        alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
+        closeFieldPlayerModal();
+        return;
+      }
+      
+      // Show the position selection options for individual modes
       if (fieldPlayerModal.target && fieldPlayerModal.type === 'player') {
         const sourcePlayerId = gameState.periodFormation[fieldPlayerModal.target];
+        const goalieId = gameState.periodFormation.goalie;
         
         if (sourcePlayerId) {
-          // Get available positions for switching (excluding goalie and current position)
-          const availablePositions = Object.keys(gameState.periodFormation)
-            .filter(pos => pos !== 'goalie' && pos !== fieldPlayerModal.target && 
-                          pos !== 'substitute' && pos !== 'substitute7_1' && pos !== 'substitute7_2');
+          // Extract IDs from selectedSquadPlayers for getOutfieldPlayers function
+          const selectedSquadIds = gameState.selectedSquadPlayers.map(p => p.id);
           
-          // Build player objects for available positions
-          const availablePlayers = availablePositions.map(position => {
-            const playerId = gameState.periodFormation[position];
-            const player = gameState.allPlayers.find(p => p.id === playerId);
-            return {
-              id: playerId,
-              name: player ? player.name : 'Unknown Player',
-              position: position
-            };
-          }).filter(player => player.id); // Filter out any invalid players
+          // Use utility function to get outfield players, then filter by status
+          const availablePlayers = getOutfieldPlayers(
+            gameState.allPlayers, 
+            selectedSquadIds, 
+            goalieId
+          ).filter(player => {
+            // Exclude the source player
+            if (player.id === sourcePlayerId) return false;
+            
+            // Find full player data for status checking
+            const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
+            if (!fullPlayerData) return false;
+            
+            const currentPairKey = fullPlayerData.stats.currentPairKey;
+            
+            // Exclude substitutes based on formation type
+            if (gameState.formationType === FORMATION_TYPES.PAIRS_7) {
+              return currentPairKey !== 'subPair';
+            } else if (gameState.formationType === FORMATION_TYPES.INDIVIDUAL_6) {
+              return currentPairKey !== 'substitute';
+            } else if (gameState.formationType === FORMATION_TYPES.INDIVIDUAL_7) {
+              return currentPairKey !== 'substitute7_1' && currentPairKey !== 'substitute7_2';
+            }
+            
+            return true;
+          });
           
           // Update modal state to show position options
           openFieldPlayerModal({
