@@ -1,7 +1,7 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
 import { FORMATION_TYPES } from '../../constants/playerConstants';
 
-export const createLongPressHandlers = (
+export const createFieldPositionHandlers = (
   formationType,
   periodFormation,
   allPlayers,
@@ -71,76 +71,24 @@ export const createLongPressHandlers = (
     });
   };
 
-  // Create position-specific handlers for long press events
-  const createPositionHandlers = (position) => {
-    let touchTimer = null;
-    let longPressTriggered = false;
-
-    const handleTouchStart = (e) => {
-      e.preventDefault();
-      longPressTriggered = false;
-      touchTimer = setTimeout(() => {
-        longPressTriggered = true;
-        if (position === 'substitute7_1' || position === 'substitute7_2') {
-          handleSubstituteLongPress(position);
-        } else {
-          handleFieldPlayerLongPress(position);
-        }
-      }, 500); // 500ms long press threshold
-    };
-
-    const handleTouchEnd = (e) => {
-      e.preventDefault();
-      if (touchTimer) {
-        clearTimeout(touchTimer);
-        touchTimer = null;
+  // Create position-specific callback functions for long press events
+  const createPositionCallback = (position) => {
+    return () => {
+      if (position === 'substitute7_1' || position === 'substitute7_2') {
+        handleSubstituteLongPress(position);
+      } else {
+        handleFieldPlayerLongPress(position);
       }
-    };
-
-    const handleMouseDown = (e) => {
-      e.preventDefault();
-      longPressTriggered = false;
-      touchTimer = setTimeout(() => {
-        longPressTriggered = true;
-        if (position === 'substitute7_1' || position === 'substitute7_2') {
-          handleSubstituteLongPress(position);
-        } else {
-          handleFieldPlayerLongPress(position);
-        }
-      }, 500);
-    };
-
-    const handleMouseUp = (e) => {
-      e.preventDefault();
-      if (touchTimer) {
-        clearTimeout(touchTimer);
-        touchTimer = null;
-      }
-    };
-
-    const handleMouseLeave = (e) => {
-      if (touchTimer) {
-        clearTimeout(touchTimer);
-        touchTimer = null;
-      }
-    };
-
-    return {
-      onTouchStart: handleTouchStart,
-      onTouchEnd: handleTouchEnd,
-      onMouseDown: handleMouseDown,
-      onMouseUp: handleMouseUp,
-      onMouseLeave: handleMouseLeave
     };
   };
 
-  // Generate handlers for all possible positions
-  const positionHandlers = {};
+  // Generate callback functions for all possible positions
+  const positionCallbacks = {};
   
   if (isPairsMode) {
-    positionHandlers.leftPairEvents = createPositionHandlers('leftPair');
-    positionHandlers.rightPairEvents = createPositionHandlers('rightPair');
-    positionHandlers.subPairEvents = createPositionHandlers('subPair');
+    positionCallbacks.leftPairCallback = createPositionCallback('leftPair');
+    positionCallbacks.rightPairCallback = createPositionCallback('rightPair');
+    positionCallbacks.subPairCallback = createPositionCallback('subPair');
   } else {
     // Individual modes
     const positions = [
@@ -150,9 +98,9 @@ export const createLongPressHandlers = (
     ];
     
     positions.forEach(position => {
-      positionHandlers[`${position}Events`] = createPositionHandlers(position);
+      positionCallbacks[`${position}Callback`] = createPositionCallback(position);
     });
   }
 
-  return positionHandlers;
+  return positionCallbacks;
 };

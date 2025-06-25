@@ -67,67 +67,16 @@ export const createGoalieHandlers = (
     }
   };
 
-  // Create goalie long press handlers
-  const createGoalieHandlers = () => {
-    let touchTimer = null;
-    let longPressTriggered = false;
-
-    const handleTouchStart = (e) => {
-      e.preventDefault();
-      longPressTriggered = false;
-      touchTimer = setTimeout(() => {
-        longPressTriggered = true;
-        const gameState = gameStateFactory();
-        handleGoalieLongPress(gameState.periodFormation);
-      }, 500);
-    };
-
-    const handleTouchEnd = (e) => {
-      e.preventDefault();
-      if (touchTimer) {
-        clearTimeout(touchTimer);
-        touchTimer = null;
-      }
-    };
-
-    const handleMouseDown = (e) => {
-      e.preventDefault();
-      longPressTriggered = false;
-      touchTimer = setTimeout(() => {
-        longPressTriggered = true;
-        const gameState = gameStateFactory();
-        handleGoalieLongPress(gameState.periodFormation);
-      }, 500);
-    };
-
-    const handleMouseUp = (e) => {
-      e.preventDefault();
-      if (touchTimer) {
-        clearTimeout(touchTimer);
-        touchTimer = null;
-      }
-    };
-
-    const handleMouseLeave = (e) => {
-      if (touchTimer) {
-        clearTimeout(touchTimer);
-        touchTimer = null;
-      }
-    };
-
-    return {
-      onTouchStart: handleTouchStart,
-      onTouchEnd: handleTouchEnd,
-      onMouseDown: handleMouseDown,
-      onMouseUp: handleMouseUp,
-      onMouseLeave: handleMouseLeave
-    };
+  // Create goalie long press callback
+  const goalieCallback = () => {
+    const gameState = gameStateFactory();
+    handleGoalieLongPress(gameState.periodFormation);
   };
 
   return {
     handleGoalieLongPress,
     handleSelectNewGoalie,
     handleCancelGoalieModal,
-    goalieEvents: createGoalieHandlers()
+    goalieCallback
   };
 };

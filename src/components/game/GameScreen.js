@@ -12,7 +12,9 @@ import { useGameUIState } from '../../hooks/useGameUIState';
 import { useTeamNameAbbreviation } from '../../hooks/useTeamNameAbbreviation';
 import { FormationRenderer } from './formations';
 import { createSubstitutionHandlers } from '../../game/handlers/substitutionHandlers';
-import { createLongPressHandlers } from '../../game/handlers/longPressHandlers';
+import { createFieldPositionHandlers } from '../../game/handlers/fieldPositionHandlers';
+import { useFieldPositionHandlers } from '../../hooks/useFieldPositionHandlers';
+import { useLongPressWithScrollDetection } from '../../hooks/useLongPressWithScrollDetection';
 import { createTimerHandlers } from '../../game/handlers/timerHandlers';
 import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
@@ -144,8 +146,8 @@ export function GameScreen({
     ), [createGameState, stateUpdaters, animationHooks, modalHandlers, formationType]
   );
 
-  const longPressHandlers = React.useMemo(() =>
-    createLongPressHandlers(
+  const fieldPositionCallbacks = React.useMemo(() =>
+    createFieldPositionHandlers(
       formationType,
       periodFormation,
       allPlayers,
@@ -153,6 +155,8 @@ export function GameScreen({
       modalHandlers
     ), [formationType, periodFormation, allPlayers, nextPlayerIdToSubOut, modalHandlers]
   );
+
+  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, formationType);
 
   const timerHandlers = React.useMemo(() =>
     createTimerHandlers(
@@ -169,7 +173,7 @@ export function GameScreen({
     ), [stateUpdaters, modalHandlers]
   );
 
-  const goalieHandlers = React.useMemo(() =>
+  const goalieHandlerCallbacks = React.useMemo(() =>
     createGoalieHandlers(
       createGameState,
       stateUpdaters,
@@ -179,6 +183,13 @@ export function GameScreen({
       selectedSquadPlayers
     ), [createGameState, stateUpdaters, animationHooks, modalHandlers, allPlayers, selectedSquadPlayers]
   );
+
+  const goalieEvents = useLongPressWithScrollDetection(goalieHandlerCallbacks.goalieCallback, 500);
+  
+  const goalieHandlers = React.useMemo(() => ({
+    ...goalieHandlerCallbacks,
+    goalieEvents
+  }), [goalieHandlerCallbacks, goalieEvents]);
 
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
