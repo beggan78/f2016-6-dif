@@ -184,7 +184,7 @@ export function GameScreen({
     ), [createGameState, stateUpdaters, animationHooks, modalHandlers, allPlayers, selectedSquadPlayers]
   );
 
-  const goalieEvents = useLongPressWithScrollDetection(goalieHandlerCallbacks.goalieCallback, 500);
+  const goalieEvents = useLongPressWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
   
   const goalieHandlers = React.useMemo(() => ({
     ...goalieHandlerCallbacks,

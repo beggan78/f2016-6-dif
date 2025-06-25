@@ -3,56 +3,56 @@ import { FORMATION_TYPES } from '../constants/playerConstants';
 
 export const useFieldPositionHandlers = (fieldPositionCallbacks, formationType) => {
   const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
-  
+
   // Create all the long press handlers using the hook
   // Note: These hooks must be called consistently on every render
-  
+
   // Pairs mode handlers
   const leftPairEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.leftPairCallback || (() => {}), 500
+    fieldPositionCallbacks.leftPairCallback || (() => {})
   );
   const rightPairEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.rightPairCallback || (() => {}), 500
+    fieldPositionCallbacks.rightPairCallback || (() => {})
   );
   const subPairEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.subPairCallback || (() => {}), 500
+    fieldPositionCallbacks.subPairCallback || (() => {})
   );
-  
+
   // Individual mode handlers
   const leftDefenderEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.leftDefenderCallback || (() => {}), 500
+    fieldPositionCallbacks.leftDefenderCallback || (() => {})
   );
   const rightDefenderEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.rightDefenderCallback || (() => {}), 500
+    fieldPositionCallbacks.rightDefenderCallback || (() => {})
   );
   const leftAttackerEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.leftAttackerCallback || (() => {}), 500
+    fieldPositionCallbacks.leftAttackerCallback || (() => {})
   );
   const rightAttackerEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.rightAttackerCallback || (() => {}), 500
+    fieldPositionCallbacks.rightAttackerCallback || (() => {})
   );
   const substituteEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.substituteCallback || (() => {}), 500
+    fieldPositionCallbacks.substituteCallback || (() => {})
   );
   const leftDefender7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.leftDefender7Callback || (() => {}), 500
+    fieldPositionCallbacks.leftDefender7Callback || (() => {})
   );
   const rightDefender7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.rightDefender7Callback || (() => {}), 500
+    fieldPositionCallbacks.rightDefender7Callback || (() => {})
   );
   const leftAttacker7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.leftAttacker7Callback || (() => {}), 500
+    fieldPositionCallbacks.leftAttacker7Callback || (() => {})
   );
   const rightAttacker7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.rightAttacker7Callback || (() => {}), 500
+    fieldPositionCallbacks.rightAttacker7Callback || (() => {})
   );
   const substitute7_1Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.substitute7_1Callback || (() => {}), 500
+    fieldPositionCallbacks.substitute7_1Callback || (() => {})
   );
   const substitute7_2Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.substitute7_2Callback || (() => {}), 500
+    fieldPositionCallbacks.substitute7_2Callback || (() => {})
   );
-  
+
   if (isPairsMode) {
     return {
       leftPairEvents,
