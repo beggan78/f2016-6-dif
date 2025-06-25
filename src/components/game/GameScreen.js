@@ -2,14 +2,15 @@ import React from 'react';
 import { Square, Pause, Play, Undo2, RotateCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
 import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById } from '../../utils/playerUtils';
-import { calculateUndo } from '../../game/logic/gameStateLogic';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
 import { useGameUIState } from '../../hooks/useGameUIState';
-import { FormationRenderer } from './formations/FormationRenderer';
+import { useTeamNameAbbreviation } from '../../hooks/useTeamNameAbbreviation';
+import { FormationRenderer } from './formations';
 import { createSubstitutionHandlers } from '../../game/handlers/substitutionHandlers';
 import { createLongPressHandlers } from '../../game/handlers/longPressHandlers';
 import { createTimerHandlers } from '../../game/handlers/timerHandlers';
@@ -58,6 +59,13 @@ export function GameScreen({
   // Use new modular hooks
   const modalHandlers = useGameModals(pushModalState, removeModalFromStack);
   const uiState = useGameUIState();
+  
+  // Team name management
+  const homeTeamName = TEAM_CONFIG.HOME_TEAM_NAME;
+  const awayTeamName = opponentTeamName || TEAM_CONFIG.DEFAULT_AWAY_TEAM_NAME;
+  const { scoreRowRef, displayHomeTeam, displayAwayTeam } = useTeamNameAbbreviation(
+    homeTeamName, awayTeamName, homeScore, awayScore
+  );
 
   // Helper functions
   const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
@@ -77,11 +85,13 @@ export function GameScreen({
     rotationQueue,
     selectedSquadPlayers,
     fieldPlayerModal: modalHandlers.modals.fieldPlayer,
-    lastSubstitution: uiState.lastSubstitution
+    lastSubstitution: uiState.lastSubstitution,
+    subTimerSeconds
   }), [
     periodFormation, allPlayers, formationType, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
-    rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution
+    rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
+    subTimerSeconds
   ]);
 
   // State updaters object for handlers
@@ -99,12 +109,15 @@ export function GameScreen({
     setHomeScore: (score) => setScore(score, awayScore),
     setAwayScore: (score) => setScore(homeScore, score),
     addHomeGoal,
-    addAwayGoal
+    addAwayGoal,
+    resetSubTimer,
+    handleUndoSubstitutionTimer
   }), [
     setPeriodFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setLastSubstitution,
-    setScore, homeScore, awayScore, addHomeGoal, addAwayGoal
+    setScore, homeScore, awayScore, addHomeGoal, addAwayGoal, resetSubTimer,
+    handleUndoSubstitutionTimer
   ]);
 
   // Animation hooks object for handlers
@@ -216,98 +229,15 @@ export function GameScreen({
     }
   }, [uiState.shouldSubstituteNow, uiState.setShouldSubstituteNow, substitutionHandlers]);
 
-  // Handle undo substitution
+  // Handle undo substitution using handler pattern
   const handleUndoSubstitutionClick = () => {
     if (uiState.lastSubstitution) {
-      // Calculate undo using pure function
-      const undoResult = calculateUndo(createGameState());
-      
-      if (undoResult) {
-        // Apply the undo changes
-        setPeriodFormation(undoResult.periodFormation);
-        setAllPlayers(undoResult.allPlayers);
-        setNextPhysicalPairToSubOut(undoResult.nextPhysicalPairToSubOut);
-        setNextPlayerToSubOut(undoResult.nextPlayerToSubOut);
-        setNextPlayerIdToSubOut(undoResult.nextPlayerIdToSubOut);
-        setNextNextPlayerIdToSubOut(undoResult.nextNextPlayerIdToSubOut);
-        if (undoResult.rotationQueue) {
-          setRotationQueue(undoResult.rotationQueue);
-        }
-        
-        // Clear the last substitution
-        uiState.clearLastSubstitution();
-        
-        // Handle timer undo
-        handleUndoSubstitutionTimer();
-      }
+      substitutionHandlers.handleUndo(uiState.lastSubstitution);
+      // Clear the last substitution after handling
+      uiState.clearLastSubstitution();
     }
   };
 
-  // Function to abbreviate team names when they don't fit
-  const abbreviateTeamName = (teamName) => {
-    if (!teamName) return teamName;
-    return teamName.substring(0, 3) + '.';
-  };
-
-  // State for managing team name abbreviation
-  const [shouldAbbreviate, setShouldAbbreviate] = React.useState(false);
-  const scoreRowRef = React.useRef(null);
-  
-  const homeTeamName = "Djurgården";
-  const awayTeamName = opponentTeamName || 'Opponent';
-  
-  const displayHomeTeam = shouldAbbreviate ? abbreviateTeamName(homeTeamName) : homeTeamName;
-  const displayAwayTeam = shouldAbbreviate ? abbreviateTeamName(awayTeamName) : awayTeamName;
-
-  // Effect to check if abbreviation is needed based on actual rendered width
-  React.useEffect(() => {
-    const checkWidth = () => {
-      if (!scoreRowRef.current) return;
-      
-      const container = scoreRowRef.current;
-      const containerWidth = container.offsetWidth;
-      
-      // Test with full names to see if they fit
-      const homeTeamFull = "Djurgården";
-      const awayTeamFull = opponentTeamName || 'Opponent';
-      
-      // Create a temporary invisible element to measure full names
-      const testDiv = document.createElement('div');
-      testDiv.style.position = 'absolute';
-      testDiv.style.visibility = 'hidden';
-      testDiv.style.whiteSpace = 'nowrap';
-      testDiv.className = container.className;
-      
-      // Create test content with full names
-      testDiv.innerHTML = `
-        <button class="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors">
-          ${homeTeamFull}
-        </button>
-        <div class="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0">
-          ${homeScore} - ${awayScore}
-        </div>
-        <button class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors">
-          ${awayTeamFull}
-        </button>
-      `;
-      
-      // Temporarily add to DOM to measure
-      container.parentElement.appendChild(testDiv);
-      const testWidth = testDiv.scrollWidth;
-      container.parentElement.removeChild(testDiv);
-      
-      // Decide whether to abbreviate based on test measurement
-      const needsAbbreviation = testWidth > containerWidth;
-      setShouldAbbreviate(needsAbbreviation);
-    };
-
-    // Initial check
-    checkWidth();
-    
-    // Check on window resize
-    window.addEventListener('resize', checkWidth);
-    return () => window.removeEventListener('resize', checkWidth);
-  }, [homeScore, awayScore, opponentTeamName]);
 
   return (
     <div className="space-y-4">

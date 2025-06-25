@@ -3,7 +3,8 @@ import {
   calculateSubstitution, 
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
-  calculateSubstituteSwap
+  calculateSubstituteSwap,
+  calculateUndo
 } from '../logic/gameStateLogic';
 import { findPlayerById } from '../../utils/playerUtils';
 import { FORMATION_TYPES } from '../../constants/playerConstants';
@@ -25,7 +26,9 @@ export const createSubstitutionHandlers = (
     setRotationQueue,
     setShouldSubstituteNow,
     setLastSubstitution,
-    setLastSubstitutionTimestamp
+    setLastSubstitutionTimestamp,
+    resetSubTimer,
+    handleUndoSubstitutionTimer
   } = stateUpdaters;
 
   const {
@@ -208,6 +211,15 @@ export const createSubstitutionHandlers = (
   const handleSubstitutionWithHighlight = () => {
     const gameState = gameStateFactory();
     
+    // Capture before-state for undo functionality
+    const substitutionTimestamp = Date.now();
+    const beforeFormation = { ...gameState.periodFormation };
+    const beforeNextPair = gameState.nextPhysicalPairToSubOut;
+    const beforeNextPlayer = gameState.nextPlayerToSubOut;
+    const beforeNextPlayerId = gameState.nextPlayerIdToSubOut;
+    const beforeNextNextPlayerId = gameState.nextNextPlayerIdToSubOut;
+    const subTimerSecondsAtSubstitution = gameState.subTimerSeconds;
+    
     // Use the new animation system for substitution
     animateStateChange(
       gameState,
@@ -224,9 +236,37 @@ export const createSubstitutionHandlers = (
           setRotationQueue(newGameState.rotationQueue);
         }
         
+        // Get players going off for undo data
+        const playersGoingOffIds = [beforeNextPlayerId].filter(Boolean);
+        
+        // Get players coming on and their original stats for undo
+        const playersComingOnIds = newGameState.playersToHighlight || [];
+        const playersComingOnOriginalStats = playersComingOnIds.map(playerId => {
+          const player = gameState.allPlayers.find(p => p.id === playerId);
+          return player ? { id: player.id, stats: { ...player.stats } } : null;
+        }).filter(Boolean);
+        
+        // Create lastSubstitution object for undo functionality
+        const lastSubstitutionData = {
+          timestamp: substitutionTimestamp,
+          beforeFormation,
+          beforeNextPair,
+          beforeNextPlayer,
+          beforeNextPlayerId,
+          beforeNextNextPlayerId,
+          playersComingOnOriginalStats,
+          playersComingOnIds,
+          playersGoingOffIds,
+          formationType,
+          subTimerSecondsAtSubstitution
+        };
+        
         // Store last substitution for undo
-        setLastSubstitution(newGameState.lastSubstitution);
-        setLastSubstitutionTimestamp(Date.now());
+        setLastSubstitution(lastSubstitutionData);
+        setLastSubstitutionTimestamp(substitutionTimestamp);
+        
+        // Reset substitution timer after successful substitution
+        resetSubTimer();
       },
       setAnimationState,
       setHideNextOffIndicator,
@@ -257,6 +297,39 @@ export const createSubstitutionHandlers = (
     closeFieldPlayerModal();
   };
 
+  const handleUndo = (lastSubstitution) => {
+    if (!lastSubstitution) {
+      console.warn('No substitution to undo');
+      return;
+    }
+
+    // Use the animation system for undo
+    animateStateChange(
+      gameStateFactory(),
+      (gameState) => calculateUndo(gameState, lastSubstitution),
+      (newGameState) => {
+        // Apply the state changes
+        setPeriodFormation(newGameState.periodFormation);
+        setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
+        setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
+        setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
+        setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
+        setAllPlayers(newGameState.allPlayers);
+        if (newGameState.rotationQueue) {
+          setRotationQueue(newGameState.rotationQueue);
+        }
+
+        // Restore substitution timer with the saved value
+        if (handleUndoSubstitutionTimer && lastSubstitution.subTimerSecondsAtSubstitution !== undefined) {
+          handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution);
+        }
+      },
+      setAnimationState,
+      setHideNextOffIndicator,
+      setRecentlySubstitutedPlayers
+    );
+  };
+
   return {
     handleSetNextSubstitution,
     handleSubstituteNow,
@@ -266,6 +339,7 @@ export const createSubstitutionHandlers = (
     handleActivatePlayer,
     handleCancelSubstituteModal,
     handleSubstitutionWithHighlight,
-    handleChangePosition
+    handleChangePosition,
+    handleUndo
   };
 };

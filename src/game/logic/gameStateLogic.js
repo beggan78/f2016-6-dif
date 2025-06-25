@@ -12,7 +12,7 @@ import { handleRoleChange } from './substitutionManager';
 import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
-import { getPositionRole } from '../../utils/formationUtils';
+import { getPositionRole } from './positionUtils';
 
 /**
  * Calculate the result of a substitution without modifying any state
