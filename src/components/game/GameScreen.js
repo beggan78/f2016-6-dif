@@ -108,6 +108,7 @@ export function GameScreen({
     setShouldSubstituteNow: uiState.setShouldSubstituteNow,
     setLastSubstitution: uiState.setLastSubstitution,
     setLastSubstitutionTimestamp: () => {}, // Legacy - not used in new architecture
+    setScore, // Direct access for atomic updates
     setHomeScore: (score) => setScore(score, awayScore),
     setAwayScore: (score) => setScore(homeScore, score),
     addHomeGoal,
@@ -185,6 +186,7 @@ export function GameScreen({
   );
 
   const goalieEvents = useLongPressWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
+  const scoreEvents = useLongPressWithScrollDetection(scoreHandlers.scoreCallback);
   
   const goalieHandlers = React.useMemo(() => ({
     ...goalieHandlerCallbacks,
@@ -289,7 +291,7 @@ export function GameScreen({
             {displayHomeTeam}
           </button>
           <div 
-            onClick={scoreHandlers.handleOpenScoreEdit}
+            {...scoreEvents}
             className="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0"
           >
             {homeScore} - {awayScore}
@@ -401,8 +403,8 @@ export function GameScreen({
         isOpen={modalHandlers.modals.scoreEdit.isOpen}
         onCancel={modalHandlers.closeScoreEditModal}
         onSave={(newHomeScore, newAwayScore) => scoreHandlers.handleScoreEdit(newHomeScore, newAwayScore)}
-        currentHomeScore={homeScore}
-        currentAwayScore={awayScore}
+        homeScore={homeScore}
+        awayScore={awayScore}
         homeTeamName={homeTeamName}
         awayTeamName={awayTeamName}
       />

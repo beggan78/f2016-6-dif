@@ -78,12 +78,10 @@ export const useLongPressWithScrollDetection = (callback, ms = 500) => {
 
   return {
     onTouchStart: (e) => {
-      e.preventDefault();
       const touch = e.touches[0];
       startPress(touch.clientX, touch.clientY);
     },
     onTouchEnd: (e) => {
-      e.preventDefault();
       endPress();
     },
     onMouseDown: (e) => {

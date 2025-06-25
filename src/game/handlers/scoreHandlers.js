@@ -3,8 +3,7 @@ export const createScoreHandlers = (
   modalHandlers
 ) => {
   const { 
-    setHomeScore, 
-    setAwayScore,
+    setScore,
     addHomeGoal,
     addAwayGoal 
   } = stateUpdaters;
@@ -20,8 +19,7 @@ export const createScoreHandlers = (
   };
 
   const handleScoreEdit = (newHomeScore, newAwayScore) => {
-    setHomeScore(newHomeScore);
-    setAwayScore(newAwayScore);
+    setScore(newHomeScore, newAwayScore);
     closeScoreEditModal();
   };
 
@@ -29,10 +27,15 @@ export const createScoreHandlers = (
     openScoreEditModal();
   };
 
+  const scoreCallback = () => {
+    handleOpenScoreEdit();
+  };
+
   return {
     handleAddHomeGoal,
     handleAddAwayGoal,
     handleScoreEdit,
-    handleOpenScoreEdit
+    handleOpenScoreEdit,
+    scoreCallback
   };
 };
