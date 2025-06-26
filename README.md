@@ -53,7 +53,7 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
 - Assign goalies for each period
 
 ### 2. Period Setup
-- Configure team formation for the current period
+- Configure team formation for the start of the current period
 - AI recommendations based on intelligent formation logic (for periods 2-3)
 - Manual override available for all positions
 
@@ -84,20 +84,23 @@ The 7-player individual mode provides maximum flexibility for player rotation wh
 
 - **4 Field Players**: Left Defender, Right Defender, Left Attacker, Right Attacker
 - **2 Substitutes**: First Substitute and Second Substitute
-- **1 Goalie**: Rotates by period
+- **1 Goalie**: Rotates by period but can also be replaced during a period
 
-### Dual Substitution System
-Unlike traditional single-substitute systems, the 7-player individual mode features a sophisticated dual-substitute rotation:
+### Substitution System
+The 7-player individual mode features a dual-substitute rotation:
 
-1. **Primary Substitution Queue**: First substitute is ready to enter immediately
-2. **Secondary Substitution Queue**: Second substitute is prepared for the next rotation
-3. **Automatic Rotation**: When a substitution occurs:
-   - Player coming off → becomes Second Substitute
-   - First Substitute → enters the field in the departing player's position
+1. **Rotation Queue**: Controls the substitution order
+   - First four positions in the queue are players currently on the field
+   - Players in positions 5 (index 4) and up are substitutes
+   - Player in the first position of the queue (index 0) is next to rotate off
+   - Player in the 5th position of the queue (index 4) is next to enter the field
+2. **Automatic Rotation**: When a substitution occurs:
+   - Player coming off is removed from the front of the queue and added to the end of the queue
+   - First Substitute (index 4 in queue) → enters the field in the departing player's position
    - Second Substitute → moves up to become First Substitute
 
 ### Visual Indicator System
-The interface provides clear visual cues for complex rotation planning:
+The interface provides clear visual cues for rotation planning:
 
 #### Immediate Indicators (Full Opacity)
 - **Green Arrow (↑)**: Player ready to enter field immediately
@@ -110,7 +113,7 @@ The interface provides clear visual cues for complex rotation planning:
 - **Subtle Borders**: Rose-200 (off) / Emerald-200 (on)
 
 ### Player Selection Logic
-- **For 7-Player Squads**: Formation type defaults to Pairs mode but can be switched to Individual
+- **For 7-Player Squads**: Mode defaults to Pairs mode but can be switched to Individual
 - **Period Setup**: Shows individual position cards instead of pair assignments
 - **Smart Filtering**: Only unassigned players appear in dropdowns until formation is complete
 - **Easy Swapping**: Once complete, all players available for position swapping
@@ -127,7 +130,7 @@ The app features an intelligent formation recommendation system that automatical
 
 ### Individual Mode Rotation System
 
-Individual modes (6-player and 7-player) use a sophisticated time-based rotation queue system designed to ensure fair playing time distribution.
+Individual modes (6-player and 7-player) use a sophisticated round-robin rotation queue system designed to ensure fair playing time distribution.
 
 #### Rotation Queue Management
 
@@ -164,7 +167,7 @@ For field players, roles are assigned based on time balance to promote fair role
 
 **Queue Integrity**
 - Manual player selection updates tracking but preserves queue order
-- Inactive player management (7-player mode) maintains queue structure
+- Inactive player management (7-player mode) maintains queue structure after inactive player has been removed from queue
 - Position switches between players don't affect rotation order
 
 #### Example Rotation Flow (6-Player Mode)
@@ -200,7 +203,7 @@ The system prioritizes maintaining existing partnerships while ensuring position
 - This ensures players experience both defensive and attacking positions across periods
 - Team chemistry is maintained while promoting positional versatility
 
-**Playing Time Considerations**
+**Playing Time Considerations (Pair mode)**
 - **Substitute Recommendation**: The pair containing the player with the most total outfield time becomes the recommended substitute pair
 - **First Substitution Target**: Among non-substitute pairs, the pair with the player having the most outfield time is recommended as "first to rotate off"
 

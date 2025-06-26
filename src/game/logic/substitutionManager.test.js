@@ -99,29 +99,12 @@ describe('SubstitutionManager', () => {
       manager = new SubstitutionManager(FORMATION_TYPES.PAIRS_7);
     });
 
-    test('getPositionRole returns correct roles', () => {
+    test('getPositionRole delegates to shared utility', () => {
       expect(manager.getPositionRole('leftDefender')).toBe(PLAYER_ROLES.DEFENDER);
       expect(manager.getPositionRole('rightAttacker')).toBe(PLAYER_ROLES.ATTACKER);
       expect(manager.getPositionRole('substitute')).toBe(PLAYER_ROLES.SUBSTITUTE);
+      // Note: goalie and pairs don't have direct role mapping
       expect(manager.getPositionRole('goalie')).toBe(PLAYER_ROLES.GOALIE);
-    });
-
-    test('calculateTimeStats updates time correctly', () => {
-      const player = {
-        stats: {
-          currentPeriodStatus: 'on_field',
-          currentPeriodRole: PLAYER_ROLES.DEFENDER,
-          lastStintStartTimeEpoch: 1000,
-          timeOnFieldSeconds: 0,
-          timeAsDefenderSeconds: 0
-        }
-      };
-
-      const updatedStats = manager.calculateTimeStats(player, 2000);
-
-      expect(updatedStats.timeOnFieldSeconds).toBe(1);
-      expect(updatedStats.timeAsDefenderSeconds).toBe(1);
-      expect(updatedStats.lastStintStartTimeEpoch).toBe(2000);
     });
 
     test('updatePlayerTimeStats from time module works', () => {

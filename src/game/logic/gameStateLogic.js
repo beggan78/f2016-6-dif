@@ -170,10 +170,11 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
         newRole = getPositionRole(player2Position) || newRole;
       }
       
+      const playerWithRoleChange = handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused);
       return { 
-        ...p, 
+        ...playerWithRoleChange, 
         stats: {
-          ...handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused),
+          ...playerWithRoleChange.stats,
           currentPairKey: player2Position
         }
       };
@@ -190,10 +191,11 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
         newRole = getPositionRole(player1Position) || newRole;
       }
       
+      const playerWithRoleChange = handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused);
       return { 
-        ...p, 
+        ...playerWithRoleChange, 
         stats: {
-          ...handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused),
+          ...playerWithRoleChange.stats,
           currentPairKey: player1Position
         }
       };
