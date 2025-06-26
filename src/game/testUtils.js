@@ -3,7 +3,7 @@
  * Provides consistent mock data and helper functions
  */
 
-import { FORMATION_TYPES, PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
+import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { POSITION_KEYS } from '../constants/positionConstants';
 
 /**
@@ -32,13 +32,13 @@ export const createMockPlayer = (id, overrides = {}) => ({
 /**
  * Creates an array of mock players with varied statuses
  */
-export const createMockPlayers = (count = 7, formationType = FORMATION_TYPES.INDIVIDUAL_7) => {
+export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7) => {
   const players = [];
   
   for (let i = 1; i <= count; i++) {
     let status, role, position;
     
-    if (formationType === FORMATION_TYPES.PAIRS_7) {
+    if (teamMode === TEAM_MODES.PAIRS_7) {
       if (i <= 4) {
         status = PLAYER_STATUS.ON_FIELD;
         role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
@@ -52,7 +52,7 @@ export const createMockPlayers = (count = 7, formationType = FORMATION_TYPES.IND
         role = PLAYER_ROLES.GOALIE;
         position = POSITION_KEYS.GOALIE;
       }
-    } else if (formationType === FORMATION_TYPES.INDIVIDUAL_6) {
+    } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
       if (i <= 4) {
         status = PLAYER_STATUS.ON_FIELD;
         role = i <= 2 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
@@ -104,9 +104,9 @@ export const createMockPlayers = (count = 7, formationType = FORMATION_TYPES.IND
 /**
  * Creates a mock formation for the specified formation type
  */
-export const createMockFormation = (formationType = FORMATION_TYPES.INDIVIDUAL_7) => {
-  switch (formationType) {
-    case FORMATION_TYPES.PAIRS_7:
+export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
+  switch (teamMode) {
+    case TEAM_MODES.PAIRS_7:
       return {
         leftPair: { defender: '1', attacker: '2' },
         rightPair: { defender: '3', attacker: '4' },
@@ -114,7 +114,7 @@ export const createMockFormation = (formationType = FORMATION_TYPES.INDIVIDUAL_7
         goalie: '7'
       };
       
-    case FORMATION_TYPES.INDIVIDUAL_6:
+    case TEAM_MODES.INDIVIDUAL_6:
       return {
         leftDefender: '1',
         rightDefender: '2',
@@ -124,7 +124,7 @@ export const createMockFormation = (formationType = FORMATION_TYPES.INDIVIDUAL_7
         goalie: '6'
       };
       
-    case FORMATION_TYPES.INDIVIDUAL_7:
+    case TEAM_MODES.INDIVIDUAL_7:
     default:
       return {
         leftDefender7: '1',
@@ -141,14 +141,14 @@ export const createMockFormation = (formationType = FORMATION_TYPES.INDIVIDUAL_7
 /**
  * Creates a complete mock game state
  */
-export const createMockGameState = (formationType = FORMATION_TYPES.INDIVIDUAL_7, overrides = {}) => {
-  const allPlayers = createMockPlayers(7, formationType);
-  const periodFormation = createMockFormation(formationType);
+export const createMockGameState = (teamMode = TEAM_MODES.INDIVIDUAL_7, overrides = {}) => {
+  const allPlayers = createMockPlayers(7, teamMode);
+  const periodFormation = createMockFormation(teamMode);
   
   return {
     periodFormation,
     allPlayers,
-    formationType,
+    teamMode,
     rotationQueue: ['1', '2', '3', '4', '5'],
     nextPhysicalPairToSubOut: 'leftPair',
     nextPlayerToSubOut: 'leftDefender7',
@@ -166,13 +166,13 @@ export const createMockGameState = (formationType = FORMATION_TYPES.INDIVIDUAL_7
 /**
  * Creates a mock rotation queue
  */
-export const createMockRotationQueue = (formationType = FORMATION_TYPES.INDIVIDUAL_7) => {
-  switch (formationType) {
-    case FORMATION_TYPES.PAIRS_7:
+export const createMockRotationQueue = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
+  switch (teamMode) {
+    case TEAM_MODES.PAIRS_7:
       return ['1', '2', '3', '4', '5', '6'];
-    case FORMATION_TYPES.INDIVIDUAL_6:
+    case TEAM_MODES.INDIVIDUAL_6:
       return ['1', '2', '3', '4', '5'];
-    case FORMATION_TYPES.INDIVIDUAL_7:
+    case TEAM_MODES.INDIVIDUAL_7:
     default:
       return ['1', '2', '3', '4', '5', '6'];
   }
@@ -243,8 +243,8 @@ export const expectPlayerStatsToMatch = (actual, expected) => {
   expect(actual.currentPairKey).toBe(expected.currentPairKey);
 };
 
-export const expectFormationToMatch = (actual, expected, formationType) => {
-  if (formationType === FORMATION_TYPES.PAIRS_7) {
+export const expectFormationToMatch = (actual, expected, teamMode) => {
+  if (teamMode === TEAM_MODES.PAIRS_7) {
     expect(actual.leftPair).toEqual(expected.leftPair);
     expect(actual.rightPair).toEqual(expected.rightPair);
     expect(actual.subPair).toEqual(expected.subPair);

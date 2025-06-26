@@ -1,17 +1,17 @@
 import React from 'react';
-import { FORMATION_TYPES } from '../../../constants/playerConstants';
+import { TEAM_MODES } from '../../../constants/playerConstants';
 import { PairsFormation } from './PairsFormation';
 import { IndividualFormation } from './IndividualFormation';
 
-export function FormationRenderer({ formationType, ...props }) {
-  if (formationType === FORMATION_TYPES.PAIRS_7) {
+export function FormationRenderer({ teamMode, ...props }) {
+  if (teamMode === TEAM_MODES.PAIRS_7) {
     return <PairsFormation {...props} />;
   } else if (
-    formationType === FORMATION_TYPES.INDIVIDUAL_6 || 
-    formationType === FORMATION_TYPES.INDIVIDUAL_7
+    teamMode === TEAM_MODES.INDIVIDUAL_6 || 
+    teamMode === TEAM_MODES.INDIVIDUAL_7
   ) {
-    return <IndividualFormation formationType={formationType} {...props} />;
+    return <IndividualFormation teamMode={teamMode} {...props} />;
   }
 
-  return <div>Unsupported formation type: {formationType}</div>;
+  return <div>Unsupported formation type: {teamMode}</div>;
 }

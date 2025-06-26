@@ -1,7 +1,7 @@
 import React from 'react';
 import { Square, Pause, Play, Undo2, RotateCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
-import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { TEAM_MODES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
@@ -45,7 +45,7 @@ export function GameScreen({
   setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
-  formationType,
+  teamMode,
   alertMinutes,
   pushModalState,
   removeModalFromStack,
@@ -73,13 +73,13 @@ export function GameScreen({
   const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
   
   // Determine which formation mode we're using
-  const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
+  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
 
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => ({
     periodFormation,
     allPlayers,
-    formationType,
+    teamMode,
     nextPhysicalPairToSubOut,
     nextPlayerToSubOut,
     nextPlayerIdToSubOut,
@@ -90,7 +90,7 @@ export function GameScreen({
     lastSubstitution: uiState.lastSubstitution,
     subTimerSeconds
   }), [
-    periodFormation, allPlayers, formationType, nextPhysicalPairToSubOut,
+    periodFormation, allPlayers, teamMode, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds
@@ -143,21 +143,21 @@ export function GameScreen({
       stateUpdaters,
       animationHooks,
       modalHandlers,
-      formationType
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, formationType]
+      teamMode
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamMode]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>
     createFieldPositionHandlers(
-      formationType,
+      teamMode,
       periodFormation,
       allPlayers,
       nextPlayerIdToSubOut,
       modalHandlers
-    ), [formationType, periodFormation, allPlayers, nextPlayerIdToSubOut, modalHandlers]
+    ), [teamMode, periodFormation, allPlayers, nextPlayerIdToSubOut, modalHandlers]
   );
 
-  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, formationType);
+  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamMode);
 
   const timerHandlers = React.useMemo(() =>
     createTimerHandlers(
@@ -318,7 +318,7 @@ export function GameScreen({
       </div>
 
       <FormationRenderer
-          formationType={formationType}
+          teamMode={teamMode}
           periodFormation={periodFormation}
           allPlayers={allPlayers}
           animationState={uiState.animationState}

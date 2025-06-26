@@ -13,7 +13,7 @@ import {
   supportsNextNextIndicators
 } from '../positionUtils';
 
-import { FORMATION_TYPES } from '../../../constants/playerConstants';
+import { TEAM_MODES } from '../../../constants/playerConstants';
 import { POSITION_KEYS } from '../../../constants/positionConstants';
 import { createMockPlayers } from '../../testUtils';
 
@@ -90,51 +90,51 @@ describe('UI positionUtils', () => {
 
   describe('getPositionDisplayName', () => {
     test('should return proper display names for individual 6 positions', () => {
-      expect(getPositionDisplayName('leftDefender', null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Left Defender');
-      expect(getPositionDisplayName('rightDefender', null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Right Defender');
-      expect(getPositionDisplayName('leftAttacker', null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Left Attacker');
-      expect(getPositionDisplayName('rightAttacker', null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Right Attacker');
-      expect(getPositionDisplayName('substitute', null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Substitute');
+      expect(getPositionDisplayName('leftDefender', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Left Defender');
+      expect(getPositionDisplayName('rightDefender', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Right Defender');
+      expect(getPositionDisplayName('leftAttacker', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Left Attacker');
+      expect(getPositionDisplayName('rightAttacker', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Right Attacker');
+      expect(getPositionDisplayName('substitute', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Substitute');
     });
 
     test('should return proper display names for individual 7 positions', () => {
-      expect(getPositionDisplayName('leftDefender7', null, FORMATION_TYPES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Defender');
-      expect(getPositionDisplayName('rightDefender7', null, FORMATION_TYPES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Defender');
-      expect(getPositionDisplayName('leftAttacker7', null, FORMATION_TYPES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Attacker');
-      expect(getPositionDisplayName('rightAttacker7', null, FORMATION_TYPES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Attacker');
-      expect(getPositionDisplayName('substitute7_1', null, FORMATION_TYPES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
-      expect(getPositionDisplayName('substitute7_2', null, FORMATION_TYPES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
+      expect(getPositionDisplayName('leftDefender7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Defender');
+      expect(getPositionDisplayName('rightDefender7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Defender');
+      expect(getPositionDisplayName('leftAttacker7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Attacker');
+      expect(getPositionDisplayName('rightAttacker7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Attacker');
+      expect(getPositionDisplayName('substitute7_1', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute7_2', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
     });
 
     test('should return proper display names for pair positions', () => {
-      expect(getPositionDisplayName('leftPair', null, FORMATION_TYPES.PAIRS_7, mockSubstitutePositionsPairs)).toBe('leftPair');
-      expect(getPositionDisplayName('rightPair', null, FORMATION_TYPES.PAIRS_7, mockSubstitutePositionsPairs)).toBe('rightPair');
-      expect(getPositionDisplayName('subPair', null, FORMATION_TYPES.PAIRS_7, mockSubstitutePositionsPairs)).toBe('subPair');
+      expect(getPositionDisplayName('leftPair', null, TEAM_MODES.PAIRS_7, mockSubstitutePositionsPairs)).toBe('leftPair');
+      expect(getPositionDisplayName('rightPair', null, TEAM_MODES.PAIRS_7, mockSubstitutePositionsPairs)).toBe('rightPair');
+      expect(getPositionDisplayName('subPair', null, TEAM_MODES.PAIRS_7, mockSubstitutePositionsPairs)).toBe('subPair');
     });
 
     test('should handle inactive player status', () => {
-      const mockPlayers = createMockPlayers(7, FORMATION_TYPES.INDIVIDUAL_7);
+      const mockPlayers = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
       // Make player inactive
       mockPlayers[4].stats.isInactive = true;
       
-      const displayName = getPositionDisplayName('substitute7_1', mockPlayers[4], FORMATION_TYPES.INDIVIDUAL_7, mockSubstitutePositions7);
+      const displayName = getPositionDisplayName('substitute7_1', mockPlayers[4], TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7);
       expect(displayName).toBe('Inactive');
     });
 
     test('should return position key for unknown positions', () => {
-      expect(getPositionDisplayName('unknownPosition', null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('unknownPosition');
-      expect(getPositionDisplayName('', null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('');
+      expect(getPositionDisplayName('unknownPosition', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('unknownPosition');
+      expect(getPositionDisplayName('', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('');
     });
 
     test('should handle null/undefined inputs', () => {
-      expect(getPositionDisplayName(null, null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe(null);
-      expect(getPositionDisplayName(undefined, null, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe(undefined);
+      expect(getPositionDisplayName(null, null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe(null);
+      expect(getPositionDisplayName(undefined, null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe(undefined);
     });
 
     test('should not show inactive for non-7-player formations', () => {
       const mockPlayer = { stats: { isInactive: true } };
       
-      const displayName = getPositionDisplayName('substitute', mockPlayer, FORMATION_TYPES.INDIVIDUAL_6, mockSubstitutePositions6);
+      const displayName = getPositionDisplayName('substitute', mockPlayer, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6);
       expect(displayName).toBe('Substitute'); // Should not show "Inactive", but still show proper display name
     });
   });
@@ -142,7 +142,7 @@ describe('UI positionUtils', () => {
   describe('getIndicatorProps', () => {
     test('should return next off indicator props for field player', () => {
       const mockPlayer = { id: '1' };
-      const props = getIndicatorProps(mockPlayer, 'leftDefender', FORMATION_TYPES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
+      const props = getIndicatorProps(mockPlayer, 'leftDefender', TEAM_MODES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
       
       expect(props.isNextOff).toBe(true);
       expect(props.isNextOn).toBe(false);
@@ -152,7 +152,7 @@ describe('UI positionUtils', () => {
 
     test('should return next on indicator props for first substitute', () => {
       const mockPlayer = { id: '5' };
-      const props = getIndicatorProps(mockPlayer, 'substitute', FORMATION_TYPES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
+      const props = getIndicatorProps(mockPlayer, 'substitute', TEAM_MODES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(true); // First substitute position
@@ -162,7 +162,7 @@ describe('UI positionUtils', () => {
 
     test('should return next-next indicators for INDIVIDUAL_7', () => {
       const mockPlayer = { id: '2' };
-      const props = getIndicatorProps(mockPlayer, 'rightDefender7', FORMATION_TYPES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
+      const props = getIndicatorProps(mockPlayer, 'rightDefender7', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
@@ -172,7 +172,7 @@ describe('UI positionUtils', () => {
 
     test('should return next-next on for second substitute in INDIVIDUAL_7', () => {
       const mockPlayer = { id: '6' };
-      const props = getIndicatorProps(mockPlayer, 'substitute7_2', FORMATION_TYPES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
+      const props = getIndicatorProps(mockPlayer, 'substitute7_2', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
@@ -182,7 +182,7 @@ describe('UI positionUtils', () => {
 
     test('should handle no indicators when player is not next', () => {
       const mockPlayer = { id: '3' };
-      const props = getIndicatorProps(mockPlayer, 'leftAttacker', FORMATION_TYPES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
+      const props = getIndicatorProps(mockPlayer, 'leftAttacker', TEAM_MODES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
@@ -191,7 +191,7 @@ describe('UI positionUtils', () => {
     });
 
     test('should handle null/undefined inputs', () => {
-      const props = getIndicatorProps(null, 'leftDefender', FORMATION_TYPES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
+      const props = getIndicatorProps(null, 'leftDefender', TEAM_MODES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
@@ -201,7 +201,7 @@ describe('UI positionUtils', () => {
 
     test('should disable next-next indicators for non-INDIVIDUAL_7 formations', () => {
       const mockPlayer = { id: '2' };
-      const props = getIndicatorProps(mockPlayer, 'rightDefender', FORMATION_TYPES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
+      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_MODES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
       
       expect(props.isNextNextOff).toBe(false);
       expect(props.isNextNextOn).toBe(false);
@@ -260,9 +260,9 @@ describe('UI positionUtils', () => {
   describe('formation support checks', () => {
     describe('supportsInactivePlayers', () => {
       test('should return true only for INDIVIDUAL_7', () => {
-        expect(supportsInactivePlayers(FORMATION_TYPES.INDIVIDUAL_7)).toBe(true);
-        expect(supportsInactivePlayers(FORMATION_TYPES.INDIVIDUAL_6)).toBe(false);
-        expect(supportsInactivePlayers(FORMATION_TYPES.PAIRS_7)).toBe(false);
+        expect(supportsInactivePlayers(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+        expect(supportsInactivePlayers(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+        expect(supportsInactivePlayers(TEAM_MODES.PAIRS_7)).toBe(false);
       });
 
       test('should return false for unknown formation types', () => {
@@ -274,9 +274,9 @@ describe('UI positionUtils', () => {
 
     describe('supportsNextNextIndicators', () => {
       test('should return true only for INDIVIDUAL_7', () => {
-        expect(supportsNextNextIndicators(FORMATION_TYPES.INDIVIDUAL_7)).toBe(true);
-        expect(supportsNextNextIndicators(FORMATION_TYPES.INDIVIDUAL_6)).toBe(false);
-        expect(supportsNextNextIndicators(FORMATION_TYPES.PAIRS_7)).toBe(false);
+        expect(supportsNextNextIndicators(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+        expect(supportsNextNextIndicators(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+        expect(supportsNextNextIndicators(TEAM_MODES.PAIRS_7)).toBe(false);
       });
 
       test('should return false for unknown formation types', () => {
@@ -290,21 +290,21 @@ describe('UI positionUtils', () => {
   describe('integration with formation types', () => {
     test('should provide consistent behavior across formation types', () => {
       const formations = [
-        FORMATION_TYPES.INDIVIDUAL_6,
-        FORMATION_TYPES.INDIVIDUAL_7,
-        FORMATION_TYPES.PAIRS_7
+        TEAM_MODES.INDIVIDUAL_6,
+        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_MODES.PAIRS_7
       ];
       
-      formations.forEach(formationType => {
+      formations.forEach(teamMode => {
         // Formation support checks should be consistent
-        const supportsInactive = supportsInactivePlayers(formationType);
-        const supportsNextNext = supportsNextNextIndicators(formationType);
+        const supportsInactive = supportsInactivePlayers(teamMode);
+        const supportsNextNext = supportsNextNextIndicators(teamMode);
         
         expect(typeof supportsInactive).toBe('boolean');
         expect(typeof supportsNextNext).toBe('boolean');
         
         // Both should be true for INDIVIDUAL_7, false for others
-        if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
+        if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
           expect(supportsInactive).toBe(true);
           expect(supportsNextNext).toBe(true);
         } else {
@@ -316,15 +316,15 @@ describe('UI positionUtils', () => {
 
     test('should handle indicator props consistently for each formation', () => {
       const formations = [
-        { type: FORMATION_TYPES.INDIVIDUAL_6, subs: mockSubstitutePositions6 },
-        { type: FORMATION_TYPES.INDIVIDUAL_7, subs: mockSubstitutePositions7 },
-        { type: FORMATION_TYPES.PAIRS_7, subs: mockSubstitutePositionsPairs }
+        { type: TEAM_MODES.INDIVIDUAL_6, subs: mockSubstitutePositions6 },
+        { type: TEAM_MODES.INDIVIDUAL_7, subs: mockSubstitutePositions7 },
+        { type: TEAM_MODES.PAIRS_7, subs: mockSubstitutePositionsPairs }
       ];
       
-      formations.forEach(({ type: formationType, subs: substitutePositions }) => {
+      formations.forEach(({ type: teamMode, subs: substitutePositions }) => {
         const mockPlayer = { id: '1' };
         // Test basic indicator logic - player ID '1' is nextPlayerIdToSubOut, player ID '2' is nextNextPlayerIdToSubOut
-        const props = getIndicatorProps(mockPlayer, 'leftDefender', formationType, '1', '2', substitutePositions);
+        const props = getIndicatorProps(mockPlayer, 'leftDefender', teamMode, '1', '2', substitutePositions);
         
         expect(typeof props.isNextOff).toBe('boolean');
         expect(typeof props.isNextOn).toBe('boolean');
@@ -335,7 +335,7 @@ describe('UI positionUtils', () => {
         expect(props.isNextOff).toBe(true);
         
         // Next-next indicators should only appear for INDIVIDUAL_7
-        if (formationType === FORMATION_TYPES.INDIVIDUAL_7) {
+        if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
           // Player '1' is nextPlayerIdToSubOut, not nextNextPlayerIdToSubOut ('2'), so isNextNextOff should be false
           expect(props.isNextNextOff).toBe(false);
         } else {
@@ -347,7 +347,7 @@ describe('UI positionUtils', () => {
 
     test('should show next-next indicators correctly for INDIVIDUAL_7', () => {
       const mockPlayer = { id: '2' }; // This player is nextNextPlayerIdToSubOut
-      const props = getIndicatorProps(mockPlayer, 'rightDefender7', FORMATION_TYPES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
+      const props = getIndicatorProps(mockPlayer, 'rightDefender7', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
       
       expect(props.isNextOff).toBe(false); // Not the next player to sub out
       expect(props.isNextNextOff).toBe(true); // This is the next-next player to sub out

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Shield, Sword, RotateCcw } from 'lucide-react';
-import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { TEAM_MODES } from '../../constants/playerConstants';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
 
 /**
@@ -24,9 +24,9 @@ export function getPositionIcon(position, substitutePositions) {
 /**
  * Get the display name for a position, accounting for inactive status
  */
-export function getPositionDisplayName(position, player, formationType, substitutePositions) {
+export function getPositionDisplayName(position, player, teamMode, substitutePositions) {
   // Check if this formation supports inactive players
-  const supportsInactivePlayers = formationType === FORMATION_TYPES.INDIVIDUAL_7;
+  const supportsInactivePlayers = teamMode === TEAM_MODES.INDIVIDUAL_7;
   
   // For substitute positions with inactive support, check player status
   if (supportsInactivePlayers && substitutePositions.includes(position)) {
@@ -41,10 +41,10 @@ export function getPositionDisplayName(position, player, formationType, substitu
 /**
  * Get indicator properties for next/nextNext logic
  */
-export function getIndicatorProps(player, position, formationType, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) {
+export function getIndicatorProps(player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) {
   const playerId = player?.id;
   const isSubstitutePosition = substitutePositions.includes(position);
-  const supportsNextNextIndicators = formationType === FORMATION_TYPES.INDIVIDUAL_7;
+  const supportsNextNextIndicators = teamMode === TEAM_MODES.INDIVIDUAL_7;
   
   return {
     isNextOff: playerId === nextPlayerIdToSubOut,
@@ -64,13 +64,13 @@ export function getPositionEvents(longPressHandlers, position) {
 /**
  * Check if a formation supports inactive players
  */
-export function supportsInactivePlayers(formationType) {
-  return formationType === FORMATION_TYPES.INDIVIDUAL_7;
+export function supportsInactivePlayers(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_7;
 }
 
 /**
  * Check if a formation supports next/nextNext indicators
  */
-export function supportsNextNextIndicators(formationType) {
-  return formationType === FORMATION_TYPES.INDIVIDUAL_7;
+export function supportsNextNextIndicators(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_7;
 }

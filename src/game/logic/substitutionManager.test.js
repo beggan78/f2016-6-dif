@@ -1,6 +1,6 @@
 import { createSubstitutionManager, SubstitutionManager } from './substitutionManager';
 import { updatePlayerTimeStats } from '../time/stintManager';
-import { FORMATION_TYPES, PLAYER_ROLES } from '../../constants/playerConstants';
+import { TEAM_MODES, PLAYER_ROLES } from '../../constants/playerConstants';
 
 describe('SubstitutionManager', () => {
   let manager;
@@ -17,7 +17,7 @@ describe('SubstitutionManager', () => {
 
   describe('7-player pairs formation', () => {
     beforeEach(() => {
-      manager = new SubstitutionManager(FORMATION_TYPES.PAIRS_7);
+      manager = new SubstitutionManager(TEAM_MODES.PAIRS_7);
       mockFormation = {
         leftPair: { defender: '1', attacker: '2' },
         rightPair: { defender: '4', attacker: '5' },
@@ -46,7 +46,7 @@ describe('SubstitutionManager', () => {
 
   describe('6-player individual formation', () => {
     beforeEach(() => {
-      manager = new SubstitutionManager(FORMATION_TYPES.INDIVIDUAL_6);
+      manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
       mockFormation = {
         leftDefender: '1',
         rightDefender: '2',
@@ -96,7 +96,7 @@ describe('SubstitutionManager', () => {
 
   describe('utility functions', () => {
     beforeEach(() => {
-      manager = new SubstitutionManager(FORMATION_TYPES.PAIRS_7);
+      manager = new SubstitutionManager(TEAM_MODES.PAIRS_7);
     });
 
     test('getPositionRole delegates to shared utility', () => {
@@ -125,8 +125,8 @@ describe('SubstitutionManager', () => {
   });
 
   test('createSubstitutionManager factory function works', () => {
-    const manager = createSubstitutionManager(FORMATION_TYPES.INDIVIDUAL_6);
+    const manager = createSubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
     expect(manager).toBeInstanceOf(SubstitutionManager);
-    expect(manager.formationType).toBe(FORMATION_TYPES.INDIVIDUAL_6);
+    expect(manager.teamMode).toBe(TEAM_MODES.INDIVIDUAL_6);
   });
 });

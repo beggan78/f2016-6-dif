@@ -1,8 +1,8 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
-import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { TEAM_MODES } from '../../constants/playerConstants';
 
 export const createFieldPositionHandlers = (
-  formationType,
+  teamMode,
   periodFormation,
   allPlayers,
   nextPlayerIdToSubOut,
@@ -10,8 +10,8 @@ export const createFieldPositionHandlers = (
 ) => {
   const { openFieldPlayerModal, openSubstituteModal } = modalHandlers;
   
-  const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
-  const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
+  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
+  const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
   
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 

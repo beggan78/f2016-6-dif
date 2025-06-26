@@ -7,14 +7,14 @@ import {
   calculateUndo
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
-import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { TEAM_MODES } from '../../constants/playerConstants';
 
 export const createSubstitutionHandlers = (
   gameStateFactory,
   stateUpdaters,
   animationHooks,
   modalHandlers,
-  formationType
+  teamMode
 ) => {
   const {
     setPeriodFormation,
@@ -44,7 +44,7 @@ export const createSubstitutionHandlers = (
     openFieldPlayerModal
   } = modalHandlers;
 
-  const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
+  const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
 
   const handleSetNextSubstitution = (fieldPlayerModal) => {
     if (fieldPlayerModal.type === 'pair') {
@@ -258,7 +258,7 @@ export const createSubstitutionHandlers = (
           playersComingOnOriginalStats,
           playersComingOnIds,
           playersGoingOffIds,
-          formationType,
+          teamMode,
           subTimerSecondsAtSubstitution
         };
         
@@ -281,7 +281,7 @@ export const createSubstitutionHandlers = (
     
     if (action === 'show-options') {
       // Check if this is pairs mode - position change not supported
-      if (gameState.formationType === FORMATION_TYPES.PAIRS_7) {
+      if (gameState.teamMode === TEAM_MODES.PAIRS_7) {
         alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
         closeFieldPlayerModal();
         return;
@@ -312,11 +312,11 @@ export const createSubstitutionHandlers = (
             const currentPairKey = fullPlayerData.stats.currentPairKey;
             
             // Exclude substitutes based on formation type
-            if (gameState.formationType === FORMATION_TYPES.PAIRS_7) {
+            if (gameState.teamMode === TEAM_MODES.PAIRS_7) {
               return currentPairKey !== 'subPair';
-            } else if (gameState.formationType === FORMATION_TYPES.INDIVIDUAL_6) {
+            } else if (gameState.teamMode === TEAM_MODES.INDIVIDUAL_6) {
               return currentPairKey !== 'substitute';
-            } else if (gameState.formationType === FORMATION_TYPES.INDIVIDUAL_7) {
+            } else if (gameState.teamMode === TEAM_MODES.INDIVIDUAL_7) {
               return currentPairKey !== 'substitute7_1' && currentPairKey !== 'substitute7_2';
             }
             

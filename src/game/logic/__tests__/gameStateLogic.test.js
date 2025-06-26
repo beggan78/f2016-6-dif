@@ -13,7 +13,7 @@ import {
   calculateNextSubstitutionTarget
 } from '../gameStateLogic';
 
-import { FORMATION_TYPES, PLAYER_ROLES, PLAYER_STATUS } from '../../../constants/playerConstants';
+import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../../constants/playerConstants';
 import { POSITION_KEYS } from '../../../constants/positionConstants';
 import {
   createMockGameState,
@@ -26,7 +26,7 @@ import {
 describe('gameStateLogic', () => {
   describe('calculateSubstitution', () => {
     test('should handle 6-player individual substitution', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_6);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       
       const result = calculateSubstitution(gameState);
       
@@ -38,7 +38,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should handle 7-player individual substitution', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
       const result = calculateSubstitution(gameState);
       
@@ -48,7 +48,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should handle pairs substitution', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.PAIRS_7);
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
       
       const result = calculateSubstitution(gameState);
       
@@ -57,7 +57,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should return unchanged state on error', () => {
-      const invalidGameState = { invalid: 'state' };
+      const invalidGameState = { invalid: 'state', teamMode: TEAM_MODES.INDIVIDUAL_6 };
       
       const result = calculateSubstitution(invalidGameState);
       
@@ -65,7 +65,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should update player time stats during substitution', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_6);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       const originalTimeOnField = gameState.allPlayers[0].stats.timeOnFieldSeconds;
       
       const result = calculateSubstitution(gameState);
@@ -82,7 +82,7 @@ describe('gameStateLogic', () => {
 
   describe('calculatePositionSwitch', () => {
     test('should swap two field players in individual mode', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const player1Id = '1'; // leftDefender7
       const player2Id = '3'; // leftAttacker7
       
@@ -94,7 +94,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should swap players in pair positions for pairs mode', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.PAIRS_7);
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
       const player1Id = '1'; // leftPair defender
       const player2Id = '3'; // rightPair defender
       
@@ -105,7 +105,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should update player roles when switching positions', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const defenderId = '1'; // defender
       const attackerId = '3'; // attacker
       
@@ -126,7 +126,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should return unchanged state for invalid inputs', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
       // Invalid: same player
       let result = calculatePositionSwitch(gameState, '1', '1');
@@ -144,7 +144,7 @@ describe('gameStateLogic', () => {
 
   describe('calculateGoalieSwitch', () => {
     test('should switch goalie with field player in individual mode', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const newGoalieId = '1'; // Currently leftDefender7
       const currentGoalieId = gameState.periodFormation.goalie;
       
@@ -157,7 +157,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should update player roles and statuses correctly', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const newGoalieId = '1';
       const currentGoalieId = gameState.periodFormation.goalie;
       
@@ -178,7 +178,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should handle goalie switch in pairs mode', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.PAIRS_7);
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
       const newGoalieId = '1'; // leftPair defender
       const currentGoalieId = gameState.periodFormation.goalie;
       
@@ -189,7 +189,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should update rotation queue correctly', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const newGoalieId = '1';
       
       const result = calculateGoalieSwitch(gameState, newGoalieId);
@@ -202,7 +202,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should return unchanged state for invalid inputs', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
       // Invalid: same as current goalie
       let result = calculateGoalieSwitch(gameState, gameState.periodFormation.goalie);
@@ -214,7 +214,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should reject inactive player as new goalie', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       // Make player inactive
       gameState.allPlayers[0].stats.isInactive = true;
       
@@ -226,10 +226,10 @@ describe('gameStateLogic', () => {
 
   describe('calculateUndo', () => {
     test('should restore previous formation and player stats', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_6);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       const lastSubstitution = {
         timestamp: 2000,
-        beforeFormation: createMockFormation(FORMATION_TYPES.INDIVIDUAL_6),
+        beforeFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_6),
         beforeNextPair: 'leftPair',
         beforeNextPlayer: 'leftDefender',
         beforeNextPlayerId: '1',
@@ -239,18 +239,18 @@ describe('gameStateLogic', () => {
         playersComingOnOriginalStats: [
           { id: '5', stats: { currentPeriodStatus: 'substitute' } }
         ],
-        formationType: FORMATION_TYPES.INDIVIDUAL_6
+        teamMode: TEAM_MODES.INDIVIDUAL_6
       };
       
       const result = calculateUndo(gameState, lastSubstitution);
       
-      expectFormationToMatch(result.periodFormation, lastSubstitution.beforeFormation, FORMATION_TYPES.INDIVIDUAL_6);
+      expectFormationToMatch(result.periodFormation, lastSubstitution.beforeFormation, TEAM_MODES.INDIVIDUAL_6);
       expect(result.nextPlayerIdToSubOut).toBe(lastSubstitution.beforeNextPlayerId);
       expect(result.lastSubstitutionTimestamp).toBeNull();
     });
 
     test('should adjust player times based on time since substitution', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_6);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       const baseTime = 1000;
       const substitutionTime = 2000;
       const currentTime = 5000; // 3 seconds after substitution
@@ -261,7 +261,7 @@ describe('gameStateLogic', () => {
       
       const lastSubstitution = {
         timestamp: substitutionTime,
-        beforeFormation: createMockFormation(FORMATION_TYPES.INDIVIDUAL_6),
+        beforeFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_6),
         beforeNextPair: 'leftPair',
         beforeNextPlayer: 'leftDefender',
         beforeNextPlayerId: '1',
@@ -271,7 +271,7 @@ describe('gameStateLogic', () => {
         playersComingOnOriginalStats: [
           { id: '5', stats: { currentPeriodStatus: 'substitute', timeAsSubSeconds: 10 } }
         ],
-        formationType: FORMATION_TYPES.INDIVIDUAL_6
+        teamMode: TEAM_MODES.INDIVIDUAL_6
       };
       
       const result = calculateUndo(gameState, lastSubstitution);
@@ -285,7 +285,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should return unchanged state if no substitution to undo', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_6);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       
       const result = calculateUndo(gameState, null);
       
@@ -295,17 +295,17 @@ describe('gameStateLogic', () => {
 
   describe('calculatePlayerToggleInactive', () => {
     test('should only work in 7-player individual mode', () => {
-      const gameState6 = createMockGameState(FORMATION_TYPES.INDIVIDUAL_6);
+      const gameState6 = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       const result6 = calculatePlayerToggleInactive(gameState6, '5');
       expect(result6).toBe(gameState6);
       
-      const gameStatePairs = createMockGameState(FORMATION_TYPES.PAIRS_7);
+      const gameStatePairs = createMockGameState(TEAM_MODES.PAIRS_7);
       const resultPairs = calculatePlayerToggleInactive(gameStatePairs, '5');
       expect(resultPairs).toBe(gameStatePairs);
     });
 
     test('should deactivate substitute player', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const substituteId = '5'; // substitute7_1
       
       const result = calculatePlayerToggleInactive(gameState, substituteId);
@@ -315,7 +315,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should reactivate inactive player', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const substituteId = '5';
       // Make player inactive first
       gameState.allPlayers.find(p => p.id === substituteId).stats.isInactive = true;
@@ -327,7 +327,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should only allow substitute players to be inactivated', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const fieldPlayerId = '1'; // leftDefender7
       
       const result = calculatePlayerToggleInactive(gameState, fieldPlayerId);
@@ -336,7 +336,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should prevent both substitutes from being inactive', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       // Make substitute7_2 inactive
       gameState.allPlayers.find(p => p.id === '6').stats.isInactive = true;
       
@@ -349,13 +349,13 @@ describe('gameStateLogic', () => {
 
   describe('calculateSubstituteSwap', () => {
     test('should only work in 7-player individual mode', () => {
-      const gameState6 = createMockGameState(FORMATION_TYPES.INDIVIDUAL_6);
+      const gameState6 = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       const result6 = calculateSubstituteSwap(gameState6, '5', '6');
       expect(result6).toBe(gameState6);
     });
 
     test('should swap substitute positions', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const sub1Id = '5';
       const sub2Id = '6';
       
@@ -367,7 +367,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should update player position keys', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const sub1Id = '5';
       const sub2Id = '6';
       
@@ -381,7 +381,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should return unchanged state for invalid inputs', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
       const result = calculateSubstituteSwap(gameState, null, '6');
       
@@ -391,7 +391,7 @@ describe('gameStateLogic', () => {
 
   describe('calculateNextSubstitutionTarget', () => {
     test('should update next pair target for pairs mode', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.PAIRS_7);
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
       
       const result = calculateNextSubstitutionTarget(gameState, 'rightPair', 'pair');
       
@@ -399,7 +399,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should update next player target for individual modes', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       gameState.periodFormation.leftDefender7 = '2';
       
       const result = calculateNextSubstitutionTarget(gameState, 'leftDefender7', 'player');
@@ -409,7 +409,7 @@ describe('gameStateLogic', () => {
     });
 
     test('should return unchanged state for unknown target type', () => {
-      const gameState = createMockGameState(FORMATION_TYPES.INDIVIDUAL_7);
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
       const result = calculateNextSubstitutionTarget(gameState, 'target', 'unknown');
       

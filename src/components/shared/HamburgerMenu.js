@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { hasInactivePlayersInSquad } from '../../utils/playerUtils';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, formationType, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -30,7 +30,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, format
 
   const isConfigScreen = currentView === 'config';
   const isGameScreen = currentView === 'game';
-  const showFormationOptions = isGameScreen && (formationType === 'pairs_7' || formationType === 'individual_7');
+  const showFormationOptions = isGameScreen && (teamMode === 'pairs_7' || teamMode === 'individual_7');
   
   // Check for inactive players in the selected squad
   const hasInactivePlayers = hasInactivePlayersInSquad(allPlayers, selectedSquadIds);
@@ -80,7 +80,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, format
               >
                 Add Player
               </button>
-              {showFormationOptions && formationType === 'pairs_7' && (
+              {showFormationOptions && teamMode === 'pairs_7' && (
                 <button
                   onClick={handleSplitPairs}
                   className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
@@ -88,7 +88,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, format
                   Split Pairs
                 </button>
               )}
-              {showFormationOptions && formationType === 'individual_7' && (
+              {showFormationOptions && teamMode === 'individual_7' && (
                 <button
                   onClick={handleFormPairs}
                   disabled={!canFormPairs}

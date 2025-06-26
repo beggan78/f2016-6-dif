@@ -1,11 +1,11 @@
-import { PLAYER_ROLES, FORMATION_TYPES } from './playerConstants';
+import { PLAYER_ROLES, TEAM_MODES } from './playerConstants';
 
 /**
  * Complete formation definitions - Single source of truth for all formation logic
  * This replaces scattered formation logic across constants and utils
  */
 export const FORMATION_DEFINITIONS = {
-  [FORMATION_TYPES.PAIRS_7]: {
+  [TEAM_MODES.PAIRS_7]: {
     positions: {
       goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
       leftPair: { key: 'leftPair', type: 'pair' },
@@ -17,7 +17,7 @@ export const FORMATION_DEFINITIONS = {
     fieldPositions: ['leftPair', 'rightPair'],
     substitutePositions: ['subPair']
   },
-  [FORMATION_TYPES.INDIVIDUAL_6]: {
+  [TEAM_MODES.INDIVIDUAL_6]: {
     positions: {
       goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
       leftDefender: { key: 'leftDefender', role: PLAYER_ROLES.DEFENDER },
@@ -31,7 +31,7 @@ export const FORMATION_DEFINITIONS = {
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
     substitutePositions: ['substitute']
   },
-  [FORMATION_TYPES.INDIVIDUAL_7]: {
+  [TEAM_MODES.INDIVIDUAL_7]: {
     positions: {
       goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
       leftDefender7: { key: 'leftDefender7', role: PLAYER_ROLES.DEFENDER },
@@ -69,15 +69,15 @@ export const POSITION_ROLE_MAP = {
 /**
  * Get formation positions (excluding goalie) - Replaces FORMATION_POSITIONS
  */
-export function getFormationPositions(formationType) {
-  const definition = FORMATION_DEFINITIONS[formationType];
+export function getFormationPositions(teamMode) {
+  const definition = FORMATION_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder.filter(pos => pos !== 'goalie') : [];
 }
 
 /**
  * Get formation positions including goalie - Replaces FORMATION_POSITIONS_WITH_GOALIE
  */
-export function getFormationPositionsWithGoalie(formationType) {
-  const definition = FORMATION_DEFINITIONS[formationType];
+export function getFormationPositionsWithGoalie(teamMode) {
+  const definition = FORMATION_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder : [];
 }

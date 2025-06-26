@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Users, Play, Edit3, ArrowLeft } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
-import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { findPlayerById } from '../../utils/playerUtils';
 
@@ -17,16 +17,16 @@ export function PeriodSetupScreen({
   periodGoalieIds, 
   setPeriodGoalieIds, 
   numPeriods,
-  formationType,
+  teamMode,
   setView,
   homeScore,
   awayScore,
   opponentTeamName
 }) {
   // Determine formation mode
-  const isPairsMode = formationType === FORMATION_TYPES.PAIRS_7;
-  const isIndividual6Mode = formationType === FORMATION_TYPES.INDIVIDUAL_6;
-  const isIndividual7Mode = formationType === FORMATION_TYPES.INDIVIDUAL_7;
+  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
+  const isIndividual6Mode = teamMode === TEAM_MODES.INDIVIDUAL_6;
+  const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
   
   useEffect(() => {
     window.scrollTo(0, 0);

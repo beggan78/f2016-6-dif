@@ -17,7 +17,7 @@ import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES, HELP_MESSAGES } from './constants';
 
 export function IndividualFormation({ 
-  formationType,
+  teamMode,
   periodFormation, 
   allPlayers, 
   animationState,
@@ -30,13 +30,13 @@ export function IndividualFormation({
   getPlayerTimeStats 
 }) {
   // Get formation-specific position lists from formation definitions
-  const fieldPositions = getFieldPositions(formationType);
-  const substitutePositions = getSubstitutePositions(formationType);
-  const allPositions = getAllPositions(formationType).filter(pos => pos !== 'goalie');
+  const fieldPositions = getFieldPositions(teamMode);
+  const substitutePositions = getSubstitutePositions(teamMode);
+  const allPositions = getAllPositions(teamMode).filter(pos => pos !== 'goalie');
   
   // Formation capabilities
-  const formationSupportsInactive = supportsInactivePlayers(formationType);
-  const formationSupportsNextNext = supportsNextNextIndicators(formationType);
+  const formationSupportsInactive = supportsInactivePlayers(teamMode);
+  const formationSupportsNextNext = supportsNextNextIndicators(teamMode);
 
   const renderIndividualPosition = (position, renderIndex) => {
     const playerId = periodFormation[position];
@@ -55,7 +55,7 @@ export function IndividualFormation({
 
     // Get indicator props using utility
     const { isNextOff, isNextOn, isNextNextOff, isNextNextOn } = getIndicatorProps(
-      player, position, formationType, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions
+      player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions
     );
 
     // Get styling and animation using utilities
@@ -72,7 +72,7 @@ export function IndividualFormation({
 
     // Get utilities
     const longPressEvents = getPositionEvents(longPressHandlers, position);
-    const positionDisplayName = getPositionDisplayName(position, player, formationType, substitutePositions);
+    const positionDisplayName = getPositionDisplayName(position, player, teamMode, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
 
     return (

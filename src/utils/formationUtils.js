@@ -9,14 +9,14 @@ import { FORMATION_DEFINITIONS } from '../constants/formations';
 /**
  * Gets all positions for a formation including goalie
  */
-export function getAllPositions(formationType) {
-  const definition = FORMATION_DEFINITIONS[formationType];
+export function getAllPositions(teamMode) {
+  const definition = FORMATION_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder : [];
 }
 
 /**
  * Gets formation definition for a formation type
  */
-export function getFormationDefinition(formationType) {
-  return FORMATION_DEFINITIONS[formationType] || null;
+export function getFormationDefinition(teamMode) {
+  return FORMATION_DEFINITIONS[teamMode] || null;
 }

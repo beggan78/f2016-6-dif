@@ -1,7 +1,7 @@
     import React from 'react';
 import { Settings, Play } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
-import { FORMATION_TYPES } from '../../constants/playerConstants';
+import { TEAM_MODES } from '../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 
@@ -15,8 +15,8 @@ export function ConfigurationScreen({
   setPeriodDurationMinutes, 
   periodGoalieIds, 
   setPeriodGoalieIds, 
-  formationType,
-  setFormationType,
+  teamMode,
+  setTeamMode,
   alertMinutes,
   setAlertMinutes,
   handleStartPeriodSetup, 
@@ -30,9 +30,9 @@ export function ConfigurationScreen({
       
       // Auto-set formation type based on squad size
       if (newIds.length === 6) {
-        setFormationType(FORMATION_TYPES.INDIVIDUAL_6);
-      } else if (newIds.length === 7 && formationType === FORMATION_TYPES.INDIVIDUAL_6) {
-        setFormationType(FORMATION_TYPES.PAIRS_7); // Default to pairs for 7-player
+        setTeamMode(TEAM_MODES.INDIVIDUAL_6);
+      } else if (newIds.length === 7 && teamMode === TEAM_MODES.INDIVIDUAL_6) {
+        setTeamMode(TEAM_MODES.PAIRS_7); // Default to pairs for 7-player
       }
       
       return newIds;
@@ -105,10 +105,10 @@ export function ConfigurationScreen({
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
-                name="formationType"
-                value={FORMATION_TYPES.PAIRS_7}
-                checked={formationType === FORMATION_TYPES.PAIRS_7}
-                onChange={e => setFormationType(e.target.value)}
+                name="teamMode"
+                value={TEAM_MODES.PAIRS_7}
+                checked={teamMode === TEAM_MODES.PAIRS_7}
+                onChange={e => setTeamMode(e.target.value)}
                 className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
               />
               <div>
@@ -119,10 +119,10 @@ export function ConfigurationScreen({
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
-                name="formationType"
-                value={FORMATION_TYPES.INDIVIDUAL_7}
-                checked={formationType === FORMATION_TYPES.INDIVIDUAL_7}
-                onChange={e => setFormationType(e.target.value)}
+                name="teamMode"
+                value={TEAM_MODES.INDIVIDUAL_7}
+                checked={teamMode === TEAM_MODES.INDIVIDUAL_7}
+                onChange={e => setTeamMode(e.target.value)}
                 className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
               />
               <div>

@@ -1,4 +1,4 @@
-import { PLAYER_ROLES, FORMATION_TYPES } from '../../constants/playerConstants';
+import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
 import { getPositionRole, getFieldPositions } from './positionUtils';
@@ -9,8 +9,8 @@ import { updatePlayerTimeStats, startNewStint } from '../time/stintManager';
  * Manages substitution logic for different formation types
  */
 export class SubstitutionManager {
-  constructor(formationType) {
-    this.formationType = formationType;
+  constructor(teamMode) {
+    this.teamMode = teamMode;
   }
 
 
@@ -155,7 +155,7 @@ export class SubstitutionManager {
     console.log('🔄 INDIVIDUAL_6 Substitution - Rotated queue:', newRotationQueue);
     console.log('🔄 INDIVIDUAL_6 Substitution - Next player to sub out:', nextPlayerToSubOutId);
     
-    const fieldPositions = getFieldPositions(this.formationType);
+    const fieldPositions = getFieldPositions(this.teamMode);
     const nextPlayerPosition = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
@@ -266,7 +266,7 @@ export class SubstitutionManager {
     const nextNextPlayerIdToSubOut = newRotationQueue[1] || null;
 
 
-    const fieldPositions = getFieldPositions(this.formationType);
+    const fieldPositions = getFieldPositions(this.teamMode);
     const nextPlayerPosition = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
@@ -285,15 +285,15 @@ export class SubstitutionManager {
    * Main substitution handler - delegates to appropriate method based on formation type
    */
   executeSubstitution(context) {
-    switch (this.formationType) {
-      case FORMATION_TYPES.PAIRS_7:
+    switch (this.teamMode) {
+      case TEAM_MODES.PAIRS_7:
         return this.handlePairsSubstitution(context);
-      case FORMATION_TYPES.INDIVIDUAL_6:
+      case TEAM_MODES.INDIVIDUAL_6:
         return this.handleIndividualSubstitution(context);
-      case FORMATION_TYPES.INDIVIDUAL_7:
+      case TEAM_MODES.INDIVIDUAL_7:
         return this.handleIndividual7Substitution(context);
       default:
-        throw new Error(`Unknown formation type: ${this.formationType}`);
+        throw new Error(`Unknown team mode: ${this.teamMode}`);
     }
   }
 }
@@ -326,6 +326,6 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
 /**
  * Factory function to create substitution manager
  */
-export function createSubstitutionManager(formationType) {
-  return new SubstitutionManager(formationType);
+export function createSubstitutionManager(teamMode) {
+  return new SubstitutionManager(teamMode);
 }

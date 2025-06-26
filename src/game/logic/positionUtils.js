@@ -18,40 +18,40 @@ export function getPositionRole(position) {
  * Gets the list of outfield positions for a given formation type
  * Replaces FORMATION_POSITIONS from positionConstants
  */
-export function getOutfieldPositions(formationType) {
-  const definition = FORMATION_DEFINITIONS[formationType];
+export function getOutfieldPositions(teamMode) {
+  const definition = FORMATION_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder.filter(pos => pos !== 'goalie') : [];
 }
 
 /**
  * Gets the list of field positions (excludes substitutes) for a given formation type
  */
-export function getFieldPositions(formationType) {
-  const definition = FORMATION_DEFINITIONS[formationType];
+export function getFieldPositions(teamMode) {
+  const definition = FORMATION_DEFINITIONS[teamMode];
   return definition ? definition.fieldPositions : [];
 }
 
 /**
  * Gets the list of substitute positions for a given formation type
  */
-export function getSubstitutePositions(formationType) {
-  const definition = FORMATION_DEFINITIONS[formationType];
+export function getSubstitutePositions(teamMode) {
+  const definition = FORMATION_DEFINITIONS[teamMode];
   return definition ? definition.substitutePositions : [];
 }
 
 /**
  * Checks if a position is a field position (not substitute or goalie)
  */
-export function isFieldPosition(position, formationType) {
-  const fieldPositions = getFieldPositions(formationType);
+export function isFieldPosition(position, teamMode) {
+  const fieldPositions = getFieldPositions(teamMode);
   return fieldPositions.includes(position);
 }
 
 /**
  * Checks if a position is a substitute position
  */
-export function isSubstitutePosition(position, formationType) {
-  const substitutePositions = getSubstitutePositions(formationType);
+export function isSubstitutePosition(position, teamMode) {
+  const substitutePositions = getSubstitutePositions(teamMode);
   return substitutePositions.includes(position);
 }
 
@@ -59,8 +59,8 @@ export function isSubstitutePosition(position, formationType) {
  * Gets the expected counts for a formation type
  * Replaces EXPECTED_PLAYER_COUNTS from playerConstants
  */
-export function getExpectedCounts(formationType) {
-  const definition = FORMATION_DEFINITIONS[formationType];
+export function getExpectedCounts(teamMode) {
+  const definition = FORMATION_DEFINITIONS[teamMode];
   return definition ? definition.expectedCounts : { outfield: 0, onField: 0 };
 }
 
@@ -68,7 +68,7 @@ export function getExpectedCounts(formationType) {
  * Gets the expected number of outfield players for a formation type
  * Maintains backward compatibility
  */
-export function getExpectedOutfieldPlayerCount(formationType) {
-  const counts = getExpectedCounts(formationType);
+export function getExpectedOutfieldPlayerCount(teamMode) {
+  const counts = getExpectedCounts(teamMode);
   return counts.outfield;
 }
