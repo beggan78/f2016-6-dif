@@ -231,9 +231,43 @@ export const createMockGameStateDependencies = () => ({
     executeSubstitution: jest.fn(),
     updateRotationQueue: jest.fn()
   }),
-  handleRoleChange: jest.fn(),
-  updatePlayerTimeStats: jest.fn(),
-  createRotationQueue: jest.fn().mockReturnValue(['1', '2', '3', '4', '5', '6']),
+  handleRoleChange: jest.fn().mockImplementation((player, newRole, currentTime, isSubTimerPaused) => {
+    return {
+      ...player.stats,
+      currentPeriodRole: newRole,
+      lastStintStartTimeEpoch: currentTime,
+      timeOnFieldSeconds: player.stats.timeOnFieldSeconds || 0,
+      timeAsAttackerSeconds: player.stats.timeAsAttackerSeconds || 0,
+      timeAsDefenderSeconds: player.stats.timeAsDefenderSeconds || 0,
+      timeAsGoalieSeconds: player.stats.timeAsGoalieSeconds || 0,
+      currentPeriodStatus: player.stats.currentPeriodStatus,
+      currentPairKey: player.stats.currentPairKey,
+      isInactive: player.stats.isInactive || false
+    };
+  }),
+  updatePlayerTimeStats: jest.fn().mockImplementation((player, currentTime, isSubTimerPaused) => {
+    return {
+      ...player.stats,
+      lastStintStartTimeEpoch: currentTime,
+      timeOnFieldSeconds: player.stats.timeOnFieldSeconds || 0,
+      timeAsAttackerSeconds: player.stats.timeAsAttackerSeconds || 0,
+      timeAsDefenderSeconds: player.stats.timeAsDefenderSeconds || 0,
+      timeAsGoalieSeconds: player.stats.timeAsGoalieSeconds || 0,
+      currentPeriodStatus: player.stats.currentPeriodStatus,
+      currentPeriodRole: player.stats.currentPeriodRole,
+      currentPairKey: player.stats.currentPairKey,
+      isInactive: player.stats.isInactive || false
+    };
+  }),
+  createRotationQueue: jest.fn().mockReturnValue({
+    initialize: jest.fn(),
+    deactivatePlayer: jest.fn(),
+    activatePlayer: jest.fn(),
+    reactivatePlayer: jest.fn(),
+    removePlayer: jest.fn(),
+    addPlayer: jest.fn(),
+    toArray: jest.fn().mockReturnValue(['1', '2', '3', '4', '5', '6'])
+  }),
   getPositionRole: jest.fn().mockReturnValue(PLAYER_ROLES.DEFENDER),
   
   // Player utilities

@@ -380,4 +380,412 @@ describe('useGameState', () => {
       expect(() => unmount()).not.toThrow();
     });
   });
+
+  describe('Business Logic Functions', () => {
+    describe('handleSubstitution', () => {
+      it('should execute substitution with proper context', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        // Setup initial state for substitution
+        act(() => {
+          result.current.setTeamMode(TEAM_MODES.INDIVIDUAL_7);
+          result.current.setNextPlayerIdToSubOut('1');
+        });
+        
+        const mockSubstitutionResult = {
+          newFormation: createMockFormation(),
+          updatedPlayers: createMockPlayers(),
+          newNextPhysicalPairToSubOut: 'rightDefender7',
+          newRotationQueue: ['2', '3', '4', '5', '6', '1'],
+          newNextPlayerIdToSubOut: '2',
+          newNextNextPlayerIdToSubOut: '3',
+          newNextPlayerToSubOut: 'rightDefender7'
+        };
+        
+        mockDependencies.createSubstitutionManager.mockReturnValue({
+          executeSubstitution: jest.fn().mockReturnValue(mockSubstitutionResult)
+        });
+        
+        act(() => {
+          result.current.handleSubstitution(false);
+        });
+        
+        // Verify substitution manager was called with correct context
+        const substitutionManager = mockDependencies.createSubstitutionManager.mock.results[0].value;
+        expect(substitutionManager.executeSubstitution).toHaveBeenCalledWith(
+          expect.objectContaining({
+            periodFormation: expect.any(Object),
+            nextPlayerIdToSubOut: '1',
+            allPlayers: expect.any(Array),
+            rotationQueue: expect.any(Array),
+            currentTimeEpoch: expect.any(Number),
+            isSubTimerPaused: false
+          })
+        );
+        
+        // Verify state was updated with results
+        expect(result.current.nextPlayerIdToSubOut).toBe('2');
+        expect(result.current.nextNextPlayerIdToSubOut).toBe('3');
+      });
+
+      it('should handle substitution with paused timer', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        mockDependencies.createSubstitutionManager.mockReturnValue({
+          executeSubstitution: jest.fn().mockReturnValue({
+            newFormation: createMockFormation(),
+            updatedPlayers: createMockPlayers()
+          })
+        });
+        
+        act(() => {
+          result.current.handleSubstitution(true);
+        });
+        
+        const substitutionManager = mockDependencies.createSubstitutionManager.mock.results[0].value;
+        expect(substitutionManager.executeSubstitution).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isSubTimerPaused: true
+          })
+        );
+      });
+
+      it('should handle substitution errors gracefully', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        mockDependencies.createSubstitutionManager.mockReturnValue({
+          executeSubstitution: jest.fn().mockImplementation(() => {
+            throw new Error('Substitution failed');
+          })
+        });
+        
+        // Should not throw when substitution fails
+        expect(() => {
+          act(() => {
+            result.current.handleSubstitution();
+          });
+        }).not.toThrow();
+        
+        expect(console.error).toHaveBeenCalledWith('Substitution failed:', expect.any(Error));
+      });
+
+      it('should set lastSubstitutionTimestamp on substitution', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        mockDependencies.createSubstitutionManager.mockReturnValue({
+          executeSubstitution: jest.fn().mockReturnValue({
+            newFormation: createMockFormation(),
+            updatedPlayers: createMockPlayers()
+          })
+        });
+        
+        const beforeTime = Date.now();
+        
+        act(() => {
+          result.current.handleSubstitution();
+        });
+        
+        const afterTime = Date.now();
+        
+        expect(result.current.lastSubstitutionTimestamp).toBeGreaterThanOrEqual(beforeTime);
+        expect(result.current.lastSubstitutionTimestamp).toBeLessThanOrEqual(afterTime);
+      });
+    });
+
+    describe('switchPlayerPositions', () => {
+      it('should switch positions between two field players', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        // Setup initial formation and players
+        const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+        const players = createMockPlayers();
+        
+        // Set specific positions for testing
+        players[0].stats.currentPairKey = 'leftDefender7'; // Player 1
+        players[1].stats.currentPairKey = 'rightDefender7'; // Player 2
+        players[0].stats.currentPeriodRole = PLAYER_ROLES.DEFENDER;
+        players[1].stats.currentPeriodRole = PLAYER_ROLES.DEFENDER;
+        
+        formation.leftDefender7 = '1';
+        formation.rightDefender7 = '2';
+        
+        mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
+          allPlayers: players,
+          periodFormation: formation,
+          teamMode: TEAM_MODES.INDIVIDUAL_7
+        }));
+        
+        // Need to re-import hook with new mock data
+        const { result: newResult } = renderHook(() => useGameState());
+        
+        let success;
+        act(() => {
+          success = newResult.current.switchPlayerPositions('1', '2', false);
+        });
+        
+        expect(success).toBe(true);
+        
+        // Verify positions were swapped in formation
+        expect(newResult.current.periodFormation.leftDefender7).toBe('2');
+        expect(newResult.current.periodFormation.rightDefender7).toBe('1');
+        
+        // Verify players' position keys were updated
+        const updatedPlayer1 = newResult.current.allPlayers.find(p => p.id === '1');
+        const updatedPlayer2 = newResult.current.allPlayers.find(p => p.id === '2');
+        
+        expect(updatedPlayer1.stats.currentPairKey).toBe('rightDefender7');
+        expect(updatedPlayer2.stats.currentPairKey).toBe('leftDefender7');
+      });
+
+      it('should not allow switching with goalie', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        // Setup formation with goalie
+        const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+        formation.goalie = '7';
+        formation.leftDefender7 = '1';
+        
+        mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
+          periodFormation: formation,
+          teamMode: TEAM_MODES.INDIVIDUAL_7
+        }));
+        
+        const { result: newResult } = renderHook(() => useGameState());
+        
+        let success;
+        act(() => {
+          success = newResult.current.switchPlayerPositions('1', '7', false);
+        });
+        
+        expect(success).toBe(false);
+        expect(console.warn).toHaveBeenCalledWith('Cannot switch positions with goalie');
+      });
+
+      it('should handle role changes during position switch', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        // Mock role change handler
+        mockDependencies.handleRoleChange.mockImplementation((player, newRole, currentTime, isSubTimerPaused) => ({
+          ...player.stats,
+          currentPeriodRole: newRole,
+          lastStintStartTimeEpoch: currentTime
+        }));
+        
+        // Mock position role getter
+        mockDependencies.getPositionRole
+          .mockReturnValueOnce(PLAYER_ROLES.ATTACKER) // For player 1's new position
+          .mockReturnValueOnce(PLAYER_ROLES.DEFENDER); // For player 2's new position
+        
+        const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+        const players = createMockPlayers();
+        
+        players[0].stats.currentPairKey = 'leftDefender7';
+        players[1].stats.currentPairKey = 'leftAttacker7';
+        formation.leftDefender7 = '1';
+        formation.leftAttacker7 = '2';
+        
+        mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
+          allPlayers: players,
+          periodFormation: formation,
+          teamMode: TEAM_MODES.INDIVIDUAL_7
+        }));
+        
+        const { result: newResult } = renderHook(() => useGameState());
+        
+        act(() => {
+          newResult.current.switchPlayerPositions('1', '2', false);
+        });
+        
+        // Verify handleRoleChange was called for both players
+        expect(mockDependencies.handleRoleChange).toHaveBeenCalledTimes(2);
+        expect(mockDependencies.handleRoleChange).toHaveBeenCalledWith(
+          expect.objectContaining({ id: '1' }),
+          PLAYER_ROLES.ATTACKER,
+          expect.any(Number),
+          false
+        );
+        expect(mockDependencies.handleRoleChange).toHaveBeenCalledWith(
+          expect.objectContaining({ id: '2' }),
+          PLAYER_ROLES.DEFENDER,
+          expect.any(Number),
+          false
+        );
+      });
+    });
+
+    describe('switchGoalie', () => {
+      it('should switch goalie with field player', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+        const players = createMockPlayers();
+        
+        // Setup current goalie and field player
+        formation.goalie = '7';
+        formation.leftDefender7 = '1';
+        players[6].stats.currentPairKey = 'goalie'; // Player 7 (index 6)
+        players[0].stats.currentPairKey = 'leftDefender7'; // Player 1 (index 0)
+        
+        mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
+          allPlayers: players,
+          periodFormation: formation,
+          teamMode: TEAM_MODES.INDIVIDUAL_7
+        }));
+        
+        // Mock updatePlayerTimeStats to return complete stats object
+        mockDependencies.updatePlayerTimeStats.mockImplementation((player, currentTime, isSubTimerPaused) => {
+          return {
+            ...player.stats,
+            timeOnFieldSeconds: player.stats.timeOnFieldSeconds + 60,
+            currentPeriodStatus: player.stats.currentPeriodStatus,
+            currentPeriodRole: player.stats.currentPeriodRole,
+            currentPairKey: player.stats.currentPairKey
+          };
+        });
+        
+        const { result: newResult } = renderHook(() => useGameState());
+        
+        let success;
+        act(() => {
+          success = newResult.current.switchGoalie('1', false);
+        });
+        
+        expect(success).toBe(true);
+        
+        // Verify goalie was changed in formation
+        expect(newResult.current.periodFormation.goalie).toBe('1');
+        expect(newResult.current.periodFormation.leftDefender7).toBe('7');
+      });
+
+      it('should not switch to same goalie', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+        formation.goalie = '7';
+        
+        mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
+          periodFormation: formation
+        }));
+        
+        const { result: newResult } = renderHook(() => useGameState());
+        
+        let success;
+        act(() => {
+          success = newResult.current.switchGoalie('7', false);
+        });
+        
+        expect(success).toBe(false);
+        expect(console.warn).toHaveBeenCalledWith('Invalid new goalie ID or same as current goalie');
+      });
+
+      it('should not switch to inactive player', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+        const players = createMockPlayers();
+        
+        formation.goalie = '7';
+        players[0].stats.isInactive = true; // Make player 1 inactive
+        
+        mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
+          allPlayers: players,
+          periodFormation: formation
+        }));
+        
+        const { result: newResult } = renderHook(() => useGameState());
+        
+        let success;
+        act(() => {
+          success = newResult.current.switchGoalie('1', false);
+        });
+        
+        expect(success).toBe(false);
+        expect(console.warn).toHaveBeenCalledWith('Cannot switch to inactive player as goalie');
+      });
+    });
+
+    describe('togglePlayerInactive', () => {
+      it('should toggle substitute player inactive status in INDIVIDUAL_7 mode', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        // Setup INDIVIDUAL_7 mode with substitute player
+        const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+        const players = createMockPlayers();
+        
+        // Make player 5 a substitute
+        players[4].stats.currentPairKey = 'substitute7_1'; // Player 5 (index 4)
+        formation.substitute7_1 = '5';
+        
+        mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
+          allPlayers: players,
+          periodFormation: formation,
+          teamMode: TEAM_MODES.INDIVIDUAL_7
+        }));
+        
+        const { result: newResult } = renderHook(() => useGameState());
+        
+        // Player should start as active
+        const activePlayer = newResult.current.allPlayers.find(p => p.id === '5');
+        expect(activePlayer.stats.isInactive).toBe(false);
+        
+        act(() => {
+          newResult.current.togglePlayerInactive('5');
+        });
+        
+        const inactivePlayer = newResult.current.allPlayers.find(p => p.id === '5');
+        expect(inactivePlayer.stats.isInactive).toBe(true);
+        
+        // Toggle back to active
+        act(() => {
+          newResult.current.togglePlayerInactive('5');
+        });
+        
+        const activeAgainPlayer = newResult.current.allPlayers.find(p => p.id === '5');
+        expect(activeAgainPlayer.stats.isInactive).toBe(false);
+      });
+
+      it('should handle invalid player ID', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        // Should not throw for invalid ID
+        expect(() => {
+          act(() => {
+            result.current.togglePlayerInactive('999');
+          });
+        }).not.toThrow();
+      });
+    });
+
+    describe('addTemporaryPlayer', () => {
+      it('should add temporary player to roster', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        const initialPlayerCount = result.current.allPlayers.length;
+        
+        act(() => {
+          result.current.addTemporaryPlayer('Temporary Player');
+        });
+        
+        expect(result.current.allPlayers).toHaveLength(initialPlayerCount + 1);
+        
+        const tempPlayer = result.current.allPlayers[result.current.allPlayers.length - 1];
+        expect(tempPlayer.name).toBe('Temporary Player');
+        expect(tempPlayer.id).toBeDefined();
+        expect(tempPlayer.stats).toBeDefined();
+      });
+
+      it('should handle empty player name', () => {
+        const { result } = renderHook(() => useGameState());
+        
+        const initialPlayerCount = result.current.allPlayers.length;
+        
+        act(() => {
+          result.current.addTemporaryPlayer('');
+        });
+        
+        // Should still add player with empty name
+        expect(result.current.allPlayers).toHaveLength(initialPlayerCount + 1);
+      });
+    });
+  });
 });
