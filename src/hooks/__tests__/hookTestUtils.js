@@ -445,3 +445,13 @@ export default {
   simulateLocalStorageError,
   createMockGameLogEntry
 };
+
+// Simple validation test to prevent Jest from failing on this utilities file
+describe('Hook Test Utilities', () => {
+  it('should export all required utilities', () => {
+    expect(createMockLocalStorage).toBeInstanceOf(Function);
+    expect(createMockGameState).toBeInstanceOf(Function);
+    expect(createMockPlayers).toBeInstanceOf(Function);
+    expect(setupHookTestEnvironment).toBeInstanceOf(Function);
+  });
+});
