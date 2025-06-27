@@ -173,19 +173,7 @@ This document outlines a comprehensive testing strategy for the DIF F16-6 Coach 
 
 ---
 
-### **6. Performance Tests** ❌ (Missing - Future Consideration)
-**Purpose**: Ensure app performs well under various conditions  
-**Priority**: **LOW** - Optimization
-
-#### Performance Test Areas:
-- Large team rosters (50+ players)
-- Long game sessions (multiple periods)
-- Animation performance optimization
-- Memory leak detection
-
----
-
-### **7. Accessibility Tests** ❌ (Missing - Future Consideration)
+### **6. Accessibility Tests** ❌ (Missing - Future Consideration)
 **Purpose**: Ensure app works for users with disabilities  
 **Priority**: **LOW** - Compliance
 
@@ -197,24 +185,11 @@ This document outlines a comprehensive testing strategy for the DIF F16-6 Coach 
 
 ---
 
-### **8. Visual Regression Tests** ❌ (Missing - Future Consideration)
+### **7. Visual Regression Tests** ❌ (Missing - Future Consideration)
 **Purpose**: Catch unintended visual changes  
 **Priority**: **LOW** - Visual consistency
 
 ---
-
-### **9. Error Boundary Tests** ❌ (Missing - Phase 4 Priority)
-**Purpose**: Test React error boundary behavior  
-**Priority**: **MEDIUM** - Error resilience
-
----
-
-### **10. Cross-browser Tests** ❌ (Missing - Future Consideration)
-**Purpose**: Ensure compatibility across browsers  
-**Priority**: **LOW** - Compatibility
-
----
-
 ## Implementation Phases
 
 ### **Phase 1: Critical Hook Testing** ✅ **COMPLETED** (December 2024)
