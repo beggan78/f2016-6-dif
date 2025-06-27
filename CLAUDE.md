@@ -6,13 +6,15 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 ## Key Commands
 - **Development**: `npm start`
 - **Build**: `npm run build` 
-- **Test**: Currently no test setup
+- **Test**: `npm test` (345+ tests across comprehensive test suite)
+- **Test Coverage**: `npm test -- --coverage` (90%+ coverage achieved)
 
 ## Development Guidelines
 
 ### Prime Instructions
 - **Always read first**: `.claude/commands/prime.md` for project-specific guidelines
 - **Required documentation**: Read `README.md` and `src/game/README.md` before making changes
+- **Testing guidelines**: Read `.claude/testing-guidelines.md` for testing patterns and best practices
 - **Architecture principles**: DRY, KISS, Separation of Concerns, Single Responsibility
 
 ### Code Organization
@@ -63,8 +65,31 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Animation glitches**: Ensure proper before/after position capture
 - **State inconsistency**: Verify pure functions return consistent results
 
+## Testing Architecture
+
+### Test Coverage Status (Phase 2 Complete)
+- **Total Tests**: 345+ tests across 11 test suites
+- **Component Tests**: 9/9 major components tested (100%)
+- **Hook Tests**: 3/3 critical hooks tested (100%) 
+- **Utility Tests**: All core utilities tested (100%)
+- **Game Logic Tests**: Complete coverage (100%)
+
+### Key Test Patterns
+- **Component Testing**: Rendering, user interactions, props validation, edge cases
+- **Hook Testing**: State management, side effects, cleanup, integration
+- **Mock Strategies**: Realistic mocks for external dependencies, proper cleanup
+- **Data Management**: Shared utilities in `componentTestUtils.js`
+
+### Test Quality Standards
+- Minimum 90% coverage for new components
+- All user interaction flows must be tested
+- Error scenarios and edge cases required
+- Performance regression prevention
+
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing
 - Follow pure function architecture for all game logic
 - Maintain separation between logic, animation, and UI concerns
 - When in doubt about time calculations, trace through stint manager flow
+- **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
+- **New components**: Write tests first, following established patterns in `__tests__` directories
