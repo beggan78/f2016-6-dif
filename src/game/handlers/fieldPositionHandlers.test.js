@@ -1,0 +1,380 @@
+import { createFieldPositionHandlers } from './fieldPositionHandlers';
+import { TEAM_MODES } from '../../constants/playerConstants';
+import { 
+  createMockPlayers, 
+  createMockFormation, 
+  createMockDependencies 
+} from '../testUtils';
+
+describe('createFieldPositionHandlers', () => {
+  let mockDependencies;
+  let mockPlayers;
+  let mockFormation;
+  let mockModalHandlers;
+
+  beforeEach(() => {
+    mockDependencies = createMockDependencies();
+    mockModalHandlers = mockDependencies.modalHandlers;
+    mockPlayers = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
+    mockFormation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+  });
+
+  describe('INDIVIDUAL_7 mode', () => {
+    it('should create all required callback functions for individual 7 mode', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      expect(handlers.leftDefender7Callback).toBeDefined();
+      expect(handlers.rightDefender7Callback).toBeDefined();
+      expect(handlers.leftAttacker7Callback).toBeDefined();
+      expect(handlers.rightAttacker7Callback).toBeDefined();
+      expect(handlers.substitute7_1Callback).toBeDefined();
+      expect(handlers.substitute7_2Callback).toBeDefined();
+      expect(typeof handlers.leftDefender7Callback).toBe('function');
+    });
+
+    it('should handle field player long press correctly', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.leftDefender7Callback();
+
+      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
+        type: 'player',
+        target: 'leftDefender7',
+        playerName: 'Player 1',
+        sourcePlayerId: '1',
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+    });
+
+    it('should handle substitute long press for substitute7_1', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.substitute7_1Callback();
+
+      expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
+        playerId: '5',
+        playerName: 'Player 5',
+        isCurrentlyInactive: false,
+        canSetAsNextToGoIn: false
+      });
+    });
+
+    it('should handle substitute long press for substitute7_2 with next to go in option', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.substitute7_2Callback();
+
+      expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
+        playerId: '6',
+        playerName: 'Player 6',
+        isCurrentlyInactive: false,
+        canSetAsNextToGoIn: true
+      });
+    });
+
+    it('should not allow setting as next to go in when player is already next', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        mockPlayers,
+        '6',
+        mockModalHandlers
+      );
+
+      handlers.substitute7_2Callback();
+
+      expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
+        playerId: '6',
+        playerName: 'Player 6',
+        isCurrentlyInactive: false,
+        canSetAsNextToGoIn: false
+      });
+    });
+
+    it('should handle inactive player correctly', () => {
+      const inactivePlayers = mockPlayers.map(p => 
+        p.id === '5' ? { ...p, stats: { ...p.stats, isInactive: true } } : p
+      );
+
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        inactivePlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.substitute7_1Callback();
+
+      expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
+        playerId: '5',
+        playerName: 'Player 5',
+        isCurrentlyInactive: true,
+        canSetAsNextToGoIn: false
+      });
+    });
+  });
+
+  describe('PAIRS_7 mode', () => {
+    beforeEach(() => {
+      mockPlayers = createMockPlayers(7, TEAM_MODES.PAIRS_7);
+      mockFormation = createMockFormation(TEAM_MODES.PAIRS_7);
+    });
+
+    it('should create all required callback functions for pairs mode', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.PAIRS_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      expect(handlers.leftPairCallback).toBeDefined();
+      expect(handlers.rightPairCallback).toBeDefined();
+      expect(handlers.subPairCallback).toBeDefined();
+      expect(typeof handlers.leftPairCallback).toBe('function');
+    });
+
+    it('should handle pair long press correctly', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.PAIRS_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.leftPairCallback();
+
+      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
+        type: 'pair',
+        target: 'leftPair',
+        playerName: 'Player 1 / Player 2',
+        sourcePlayerId: null,
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+    });
+
+    it('should handle right pair long press correctly', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.PAIRS_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.rightPairCallback();
+
+      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
+        type: 'pair',
+        target: 'rightPair',
+        playerName: 'Player 3 / Player 4',
+        sourcePlayerId: null,
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+    });
+
+    it('should handle missing pair data gracefully', () => {
+      const emptyFormation = { ...mockFormation, leftPair: undefined };
+      
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.PAIRS_7,
+        emptyFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.leftPairCallback();
+
+      expect(mockModalHandlers.openFieldPlayerModal).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('INDIVIDUAL_6 mode', () => {
+    beforeEach(() => {
+      mockPlayers = createMockPlayers(6, TEAM_MODES.INDIVIDUAL_6);
+      mockFormation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
+    });
+
+    it('should create all required callback functions for individual 6 mode', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_6,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      expect(handlers.leftDefenderCallback).toBeDefined();
+      expect(handlers.rightDefenderCallback).toBeDefined();
+      expect(handlers.leftAttackerCallback).toBeDefined();
+      expect(handlers.rightAttackerCallback).toBeDefined();
+      expect(handlers.substituteCallback).toBeDefined();
+      expect(typeof handlers.leftDefenderCallback).toBe('function');
+    });
+
+    it('should handle field player long press in 6-player mode', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_6,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.leftDefenderCallback();
+
+      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
+        type: 'player',
+        target: 'leftDefender',
+        playerName: 'Player 1',
+        sourcePlayerId: '1',
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+    });
+
+    it('should not open substitute modal for regular substitute in 6-player mode', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_6,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.substituteCallback();
+
+      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
+        type: 'player',
+        target: 'substitute',
+        playerName: 'Player 5',
+        sourcePlayerId: '5',
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+      expect(mockModalHandlers.openSubstituteModal).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle missing player data gracefully', () => {
+      const playersWithMissingData = mockPlayers.slice(0, 5);
+      
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        playersWithMissingData,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.substitute7_2Callback();
+
+      expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
+        playerId: '6',
+        playerName: 'N/A',
+        isCurrentlyInactive: false,
+        canSetAsNextToGoIn: true
+      });
+    });
+
+    it('should handle empty formation gracefully', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        {},
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      handlers.leftDefender7Callback();
+
+      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
+        type: 'player',
+        target: 'leftDefender7',
+        playerName: 'N/A',
+        sourcePlayerId: undefined,
+        availablePlayers: [],
+        showPositionOptions: false
+      });
+    });
+  });
+
+  describe('callback generation', () => {
+    it('should generate callbacks for all positions in individual modes', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      const expectedCallbacks = [
+        'leftDefenderCallback',
+        'rightDefenderCallback', 
+        'leftAttackerCallback',
+        'rightAttackerCallback',
+        'substituteCallback',
+        'leftDefender7Callback',
+        'rightDefender7Callback',
+        'leftAttacker7Callback',
+        'rightAttacker7Callback',
+        'substitute7_1Callback',
+        'substitute7_2Callback'
+      ];
+
+      expectedCallbacks.forEach(callback => {
+        expect(handlers[callback]).toBeDefined();
+        expect(typeof handlers[callback]).toBe('function');
+      });
+    });
+
+    it('should only generate pair callbacks for pairs mode', () => {
+      const handlers = createFieldPositionHandlers(
+        TEAM_MODES.PAIRS_7,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      expect(handlers.leftPairCallback).toBeDefined();
+      expect(handlers.rightPairCallback).toBeDefined();
+      expect(handlers.subPairCallback).toBeDefined();
+      expect(handlers.leftDefender7Callback).toBeUndefined();
+      expect(handlers.substitute7_1Callback).toBeUndefined();
+    });
+  });
+});

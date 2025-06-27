@@ -1,6 +1,6 @@
-import { createSubstitutionManager, SubstitutionManager } from './substitutionManager';
-import { updatePlayerTimeStats } from '../time/stintManager';
-import { TEAM_MODES, PLAYER_ROLES } from '../../constants/playerConstants';
+import { createSubstitutionManager, SubstitutionManager } from '../substitutionManager';
+import { updatePlayerTimeStats } from '../../time/stintManager';
+import { TEAM_MODES, PLAYER_ROLES } from '../../../constants/playerConstants';
 
 describe('SubstitutionManager', () => {
   let manager;

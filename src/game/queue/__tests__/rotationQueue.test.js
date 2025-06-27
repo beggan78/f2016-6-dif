@@ -1,4 +1,4 @@
-import { RotationQueue, createRotationQueue } from './rotationQueue';
+import { RotationQueue, createRotationQueue } from '../rotationQueue';
 
 describe('RotationQueue', () => {
   let queue;
