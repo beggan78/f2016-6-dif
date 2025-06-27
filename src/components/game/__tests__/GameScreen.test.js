@@ -403,7 +403,72 @@ describe('GameScreen', () => {
       expect(screen.getByTestId('formation-renderer')).toBeInTheDocument();
     });
 
-    // Animation state test removed - complex mocking better covered in animation integration tests
+    it('should apply glow effect to the player coming on after a normal substitution', async () => {
+      const mockSetRecentlySubstitutedPlayers = jest.fn();
+      const mockSetAnimationState = jest.fn();
+      const mockSetHideNextOffIndicator = jest.fn();
+
+      // Mock useGameUIState to control and spy on its functions
+      require('../../../hooks/useGameUIState').useGameUIState.mockReturnValue({
+        animationState: { type: 'none', phase: 'idle', data: {} },
+        setAnimationState: mockSetAnimationState,
+        recentlySubstitutedPlayers: new Set(),
+        setRecentlySubstitutedPlayers: mockSetRecentlySubstitutedPlayers,
+        addRecentlySubstitutedPlayer: jest.fn(),
+        removeRecentlySubstitutedPlayer: jest.fn(),
+        clearRecentlySubstitutedPlayers: jest.fn(),
+        hideNextOffIndicator: false,
+        setHideNextOffIndicator: mockSetHideNextOffIndicator,
+        lastSubstitution: null,
+        setLastSubstitution: jest.fn(),
+        updateLastSubstitution: jest.fn(),
+        clearLastSubstitution: jest.fn(),
+        shouldSubstituteNow: false,
+        setShouldSubstituteNow: jest.fn(),
+        resetAnimationState: jest.fn()
+      });
+
+      // Mock the substitution handler to simulate the state change and highlight
+      const mockSubstitutionHandlers = require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers();
+      mockSubstitutionHandlers.handleSubstitutionWithHighlight.mockImplementation(() => {
+        // Simulate the state update that animateStateChange would trigger
+        // This is a simplified mock, in a real scenario, animateStateChange would handle this
+        // For this test, we directly call the setRecentlySubstitutedPlayers as if animation completed
+        mockSetAnimationState({ type: 'generic', phase: 'switching', data: { animations: {} } });
+        mockSetHideNextOffIndicator(true);
+
+        // Simulate the glow effect being applied after animation
+        setTimeout(() => {
+          mockSetRecentlySubstitutedPlayers(new Set(['player2'])); // Assuming 'player2' is the one coming on
+          mockSetAnimationState(prev => ({ ...prev, phase: 'completing' }));
+        }, 1000); // ANIMATION_DURATION
+
+        // Simulate glow clearing
+        setTimeout(() => {
+          mockSetRecentlySubstitutedPlayers(new Set());
+          mockSetAnimationState({ type: 'none', phase: 'idle', data: {} });
+          mockSetHideNextOffIndicator(false);
+        }, 1000 + 900); // ANIMATION_DURATION + GLOW_DURATION
+      });
+
+      render(<GameScreen {...defaultProps} />);
+
+      const subButton = screen.getByText(/SUB NOW/i);
+      await userEvent.click(subButton);
+
+      // Expect handleSubstitutionWithHighlight to be called
+      expect(mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
+
+      // Wait for the animation and glow to be applied
+      await waitFor(() => {
+        expect(mockSetRecentlySubstitutedPlayers).toHaveBeenCalledWith(new Set(['player2']));
+      }, { timeout: 1500 }); // Adjust timeout if necessary
+
+      // Wait for the glow to clear
+      await waitFor(() => {
+        expect(mockSetRecentlySubstitutedPlayers).toHaveBeenCalledWith(new Set());
+      }, { timeout: 2500 }); // Adjust timeout if necessary
+    });
   });
 
   describe('Player Selection and Position Switching', () => {
