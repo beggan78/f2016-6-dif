@@ -1,4 +1,4 @@
-import { FORMATION_DEFINITIONS, POSITION_ROLE_MAP } from '../../constants/formations';
+import { MODE_DEFINITIONS, POSITION_ROLE_MAP } from '../../constants/gameModes';
 
 /**
  * Core position utilities for game logic
@@ -19,7 +19,7 @@ export function getPositionRole(position) {
  * Replaces FORMATION_POSITIONS from positionConstants
  */
 export function getOutfieldPositions(teamMode) {
-  const definition = FORMATION_DEFINITIONS[teamMode];
+  const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder.filter(pos => pos !== 'goalie') : [];
 }
 
@@ -27,7 +27,7 @@ export function getOutfieldPositions(teamMode) {
  * Gets the list of field positions (excludes substitutes) for a given formation type
  */
 export function getFieldPositions(teamMode) {
-  const definition = FORMATION_DEFINITIONS[teamMode];
+  const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.fieldPositions : [];
 }
 
@@ -35,7 +35,7 @@ export function getFieldPositions(teamMode) {
  * Gets the list of substitute positions for a given formation type
  */
 export function getSubstitutePositions(teamMode) {
-  const definition = FORMATION_DEFINITIONS[teamMode];
+  const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.substitutePositions : [];
 }
 
@@ -60,7 +60,7 @@ export function isSubstitutePosition(position, teamMode) {
  * Replaces EXPECTED_PLAYER_COUNTS from playerConstants
  */
 export function getExpectedCounts(teamMode) {
-  const definition = FORMATION_DEFINITIONS[teamMode];
+  const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.expectedCounts : { outfield: 0, onField: 0 };
 }
 

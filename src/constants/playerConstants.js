@@ -22,4 +22,4 @@ export const PLAYER_STATUS = {
   GOALIE: 'goalie'
 };
 
-// EXPECTED_PLAYER_COUNTS moved to constants/formations.js to eliminate duplication
+// EXPECTED_PLAYER_COUNTS moved to constants/gameModes.js to eliminate duplication

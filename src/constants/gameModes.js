@@ -4,7 +4,7 @@ import { PLAYER_ROLES, TEAM_MODES } from './playerConstants';
  * Complete formation definitions - Single source of truth for all formation logic
  * This replaces scattered formation logic across constants and utils
  */
-export const FORMATION_DEFINITIONS = {
+export const MODE_DEFINITIONS = {
   [TEAM_MODES.PAIRS_7]: {
     positions: {
       goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
@@ -70,7 +70,7 @@ export const POSITION_ROLE_MAP = {
  * Get formation positions (excluding goalie) - Replaces FORMATION_POSITIONS
  */
 export function getFormationPositions(teamMode) {
-  const definition = FORMATION_DEFINITIONS[teamMode];
+  const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder.filter(pos => pos !== 'goalie') : [];
 }
 
@@ -78,6 +78,6 @@ export function getFormationPositions(teamMode) {
  * Get formation positions including goalie - Replaces FORMATION_POSITIONS_WITH_GOALIE
  */
 export function getFormationPositionsWithGoalie(teamMode) {
-  const definition = FORMATION_DEFINITIONS[teamMode];
+  const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder : [];
 }

@@ -15,7 +15,7 @@ describe('SubstitutionManager', () => {
     ];
   });
 
-  describe('7-player pairs formation', () => {
+  describe('7-player pair mode', () => {
     beforeEach(() => {
       manager = new SubstitutionManager(TEAM_MODES.PAIRS_7);
       mockFormation = {

@@ -5,7 +5,7 @@
 // No longer using findPlayerById in this file
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { getFormationPositionsWithGoalie } from '../../constants/formations';
+import { getFormationPositionsWithGoalie } from '../../constants/gameModes';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions

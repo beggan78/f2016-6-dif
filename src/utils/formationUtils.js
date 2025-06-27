@@ -1,4 +1,4 @@
-import { FORMATION_DEFINITIONS } from '../constants/formations';
+import { MODE_DEFINITIONS } from '../constants/gameModes';
 
 /**
  * Cross-screen formation utilities
@@ -10,13 +10,13 @@ import { FORMATION_DEFINITIONS } from '../constants/formations';
  * Gets all positions for a formation including goalie
  */
 export function getAllPositions(teamMode) {
-  const definition = FORMATION_DEFINITIONS[teamMode];
+  const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder : [];
 }
 
 /**
  * Gets formation definition for a formation type
  */
-export function getFormationDefinition(teamMode) {
-  return FORMATION_DEFINITIONS[teamMode] || null;
+export function getModeDefinition(teamMode) {
+  return MODE_DEFINITIONS[teamMode] || null;
 }

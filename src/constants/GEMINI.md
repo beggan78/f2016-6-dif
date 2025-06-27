@@ -5,7 +5,7 @@ This directory centralizes all static, unchanging values and configurations used
 ## 1. Key Constant Modules
 
 - **`formations.js`**: This is the most critical constant file, defining the complete structure and properties of all supported formation types (`PAIRS_7`, `INDIVIDUAL_6`, `INDIVIDUAL_7`). It includes:
-  - `FORMATION_DEFINITIONS`: A comprehensive object detailing positions, expected player counts, and the order of positions for each formation type.
+  - `MODE_DEFINITIONS`: A comprehensive object detailing positions, expected player counts, and the order of positions for each formation type.
   - `POSITION_ROLE_MAP`: A lookup table that maps specific position keys (e.g., `leftDefender`, `substitute7_1`) to their corresponding `PLAYER_ROLES`.
   - Helper functions (`getFormationPositions`, `getFormationPositionsWithGoalie`) to easily retrieve position lists based on formation type.
 
@@ -44,13 +44,13 @@ While JavaScript doesn't enforce strict types at runtime, using constants for en
 
 - **Global Access**: Constants are imported and used directly by almost every module in the application, including React components, hooks, game logic, and utility functions.
 
-- **Formation-Driven Logic**: The `FORMATION_DEFINITIONS` in `formations.js` are particularly influential, dictating how players are positioned, how substitutions occur, and how recommendations are generated across the entire game logic.
+- **Formation-Driven Logic**: The `MODE_DEFINITIONS` in `formations.js` are particularly influential, dictating how players are positioned, how substitutions occur, and how recommendations are generated across the entire game logic.
 
 ## 4. How to Make Changes
 
 - **Modifying Game Rules**: To change the number of periods, duration options, or player roles, update the relevant constants in `gameConfig.js` or `playerConstants.js`.
 
-- **Adding New Formations**: To introduce a new formation type, add a new entry to `FORMATION_DEFINITIONS` in `formations.js`, ensuring all necessary properties (positions, counts, order) are defined. You might also need to update `FORMATION_TYPES` in `playerConstants.js`.
+- **Adding New Formations**: To introduce a new formation type, add a new entry to `MODE_DEFINITIONS` in `formations.js`, ensuring all necessary properties (positions, counts, order) are defined. You might also need to update `FORMATION_TYPES` in `playerConstants.js`.
 
 - **Updating Player Roster**: Modify the `initialRoster` array in `defaultData.js`.
 
