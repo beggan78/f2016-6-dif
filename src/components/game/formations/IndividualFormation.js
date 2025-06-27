@@ -29,6 +29,11 @@ export function IndividualFormation({
   getPlayerNameById,
   getPlayerTimeStats 
 }) {
+  // Handle null/undefined periodFormation
+  if (!periodFormation) {
+    return <div className="space-y-2"></div>;
+  }
+
   // Get formation-specific position lists from formation definitions
   const fieldPositions = getFieldPositions(teamMode);
   const substitutePositions = getSubstitutePositions(teamMode);
@@ -94,7 +99,7 @@ export function IndividualFormation({
           </div>
         </h3>
         <div className="flex items-center justify-between">
-          <div>{icon} {getPlayerNameById(playerId)}</div>
+          <div>{icon} {getPlayerNameById ? getPlayerNameById(playerId) : playerId}</div>
           <PlayerStatsDisplay playerId={playerId} getPlayerTimeStats={getPlayerTimeStats} />
         </div>
         {canBeSelected && (

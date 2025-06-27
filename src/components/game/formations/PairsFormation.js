@@ -17,6 +17,17 @@ export function PairsFormation({
   getPlayerNameById,
   getPlayerTimeStats 
 }) {
+  // Handle null/undefined periodFormation
+  if (!periodFormation) {
+    return (
+      <div className="space-y-2">
+        <div>Left</div>
+        <div>Right</div>
+        <div>Substitutes</div>
+      </div>
+    );
+  }
+
   const renderPair = (pairKey, pairDisplayName, renderIndex) => {
     const pairData = periodFormation[pairKey];
     if (!pairData) return null;
@@ -64,11 +75,11 @@ export function PairsFormation({
         </h3>
         <div className="space-y-0.5">
           <div className="flex items-center justify-between">
-            <div><Shield className={ICON_STYLES.small} /> D: {getPlayerNameById(pairData.defender)}</div>
+            <div><Shield className={ICON_STYLES.small} /> D: {getPlayerNameById ? getPlayerNameById(pairData.defender) : pairData.defender}</div>
             <PlayerStatsDisplay playerId={pairData.defender} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
           </div>
           <div className="flex items-center justify-between">
-            <div><Sword className={ICON_STYLES.small} /> A: {getPlayerNameById(pairData.attacker)}</div>
+            <div><Sword className={ICON_STYLES.small} /> A: {getPlayerNameById ? getPlayerNameById(pairData.attacker) : pairData.attacker}</div>
             <PlayerStatsDisplay playerId={pairData.attacker} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
           </div>
         </div>
