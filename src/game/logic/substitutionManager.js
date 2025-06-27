@@ -165,7 +165,8 @@ export class SubstitutionManager {
       updatedPlayers,
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
-      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender'
+      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender',
+      playersComingOnIds: [playerComingOnId]
     };
   }
 
@@ -277,7 +278,8 @@ export class SubstitutionManager {
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextNextPlayerIdToSubOut: nextNextPlayerIdToSubOut,
-      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7'
+      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7',
+      playersComingOnIds: [playerComingOnId]
     };
   }
 
