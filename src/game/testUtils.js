@@ -102,7 +102,7 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
 };
 
 /**
- * Creates a mock formation for the specified formation type
+ * Creates a mock formation for the specified team mode
  */
 export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
   switch (teamMode) {

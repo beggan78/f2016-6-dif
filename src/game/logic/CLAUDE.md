@@ -39,12 +39,12 @@ Contains pure functions for all game state transitions and calculations. Handles
 ### `positionUtils.js` - Position and Formation Utilities
 **Core Functions**:
 - `getPositionRole(position)`: Maps position strings to player roles
-- `getOutfieldPositions(formationType)`: Gets outfield position lists by formation
-- `getFieldPositions(formationType)`: Gets field positions (excludes substitutes)
-- `getSubstitutePositions(formationType)`: Gets substitute position lists
-- `isFieldPosition(position, formationType)`: Checks if position is field position
-- `isSubstitutePosition(position, formationType)`: Checks if position is substitute
-- `getExpectedOutfieldPlayerCount(formationType)`: Gets expected player counts
+- `getOutfieldPositions(teamMode)`: Gets outfield position lists by team mode
+- `getFieldPositions(teamMode)`: Gets field positions (excludes substitutes)
+- `getSubstitutePositions(teamMode)`: Gets substitute position lists
+- `isFieldPosition(position, teamMode)`: Checks if position is field position
+- `isSubstitutePosition(position, teamMode)`: Checks if position is substitute
+- `getExpectedOutfieldPlayerCount(teamMode)`: Gets expected player counts
 
 ## Pure Function Architecture Pattern
 All state transitions follow this pattern:
@@ -96,7 +96,7 @@ export const calculateOperation = (gameState, ...params) => {
    );
    ```
 
-### Extending Formation Types
+### Extending Team Modes
 - Add new formation constants to `constants/playerConstants.js`
 - Update position utilities in `positionUtils.js` 
 - Add formation-specific logic to substitution manager
@@ -137,7 +137,7 @@ All logic functions can be tested in isolation:
 const testState = {
   periodFormation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
-  formationType: 'INDIVIDUAL_6'
+  teamMode: 'INDIVIDUAL_6'
 };
 
 const result = calculateSubstitution(testState);
@@ -153,5 +153,5 @@ expect(result.periodFormation).toBe(/* expected formation */);
 - Changing substitution rules for specific formations
 - Adding time calculation logic
 - Modifying rotation queue integration
-- Adding support for new formation types
+- Adding support for new team modes
 - Adding new player statuses or roles

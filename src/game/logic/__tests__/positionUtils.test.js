@@ -93,13 +93,13 @@ describe('positionUtils', () => {
       expect(positions).not.toContain(POSITION_KEYS.GOALIE);
     });
 
-    test('should return empty array for unknown formation type', () => {
-      const positions = getOutfieldPositions('UNKNOWN_FORMATION');
+    test('should return empty array for unknown team mode', () => {
+      const positions = getOutfieldPositions('UNKNOWN_TEAM_MODE');
       
       expect(positions).toEqual([]);
     });
 
-    test('should return empty array for null/undefined formation type', () => {
+    test('should return empty array for null/undefined team mode', () => {
       expect(getOutfieldPositions(null)).toEqual([]);
       expect(getOutfieldPositions(undefined)).toEqual([]);
     });
@@ -139,8 +139,8 @@ describe('positionUtils', () => {
       expect(positions).not.toContain(POSITION_KEYS.SUB_PAIR);
     });
 
-    test('should return empty array for unknown formation type', () => {
-      const positions = getFieldPositions('UNKNOWN_FORMATION');
+    test('should return empty array for unknown team mode', () => {
+      const positions = getFieldPositions('UNKNOWN_TEAM_MODE');
       
       expect(positions).toEqual([]);
     });
@@ -169,8 +169,8 @@ describe('positionUtils', () => {
       expect(positions).toContain(POSITION_KEYS.SUB_PAIR);
     });
 
-    test('should return empty array for unknown formation type', () => {
-      const positions = getSubstitutePositions('UNKNOWN_FORMATION');
+    test('should return empty array for unknown team mode', () => {
+      const positions = getSubstitutePositions('UNKNOWN_TEAM_MODE');
       
       expect(positions).toEqual([]);
     });
@@ -204,9 +204,9 @@ describe('positionUtils', () => {
       expect(isFieldPosition(POSITION_KEYS.SUB_PAIR, TEAM_MODES.PAIRS_7)).toBe(false);
     });
 
-    test('should return false for unknown positions or formation types', () => {
+    test('should return false for unknown positions or team modes', () => {
       expect(isFieldPosition('unknownPosition', TEAM_MODES.INDIVIDUAL_6)).toBe(false);
-      expect(isFieldPosition(POSITION_KEYS.LEFT_DEFENDER, 'UNKNOWN_FORMATION')).toBe(false);
+      expect(isFieldPosition(POSITION_KEYS.LEFT_DEFENDER, 'UNKNOWN_TEAM_MODE')).toBe(false);
     });
   });
 
@@ -232,9 +232,9 @@ describe('positionUtils', () => {
       expect(isSubstitutePosition(POSITION_KEYS.RIGHT_PAIR, TEAM_MODES.PAIRS_7)).toBe(false);
     });
 
-    test('should return false for unknown positions or formation types', () => {
+    test('should return false for unknown positions or team modes', () => {
       expect(isSubstitutePosition('unknownPosition', TEAM_MODES.INDIVIDUAL_6)).toBe(false);
-      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE, 'UNKNOWN_FORMATION')).toBe(false);
+      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE, 'UNKNOWN_TEAM_MODE')).toBe(false);
     });
   });
 
@@ -263,34 +263,34 @@ describe('positionUtils', () => {
       expect(counts.onField).toBe(4); // 2 field pairs (4 players)
     });
 
-    test('should return default counts for unknown formation type', () => {
-      const counts = getExpectedCounts('UNKNOWN_FORMATION');
+    test('should return default counts for unknown team mode', () => {
+      const counts = getExpectedCounts('UNKNOWN_TEAM_MODE');
       
       expect(counts).toEqual({ outfield: 0, onField: 0 });
     });
 
-    test('should handle null/undefined formation type', () => {
+    test('should handle null/undefined team mode', () => {
       expect(getExpectedCounts(null)).toEqual({ outfield: 0, onField: 0 });
       expect(getExpectedCounts(undefined)).toEqual({ outfield: 0, onField: 0 });
     });
   });
 
   describe('getExpectedOutfieldPlayerCount', () => {
-    test('should return outfield count for valid formation types', () => {
+    test('should return outfield count for valid team modes', () => {
       expect(getExpectedOutfieldPlayerCount(TEAM_MODES.INDIVIDUAL_6)).toBe(5);
       expect(getExpectedOutfieldPlayerCount(TEAM_MODES.INDIVIDUAL_7)).toBe(6);
       expect(getExpectedOutfieldPlayerCount(TEAM_MODES.PAIRS_7)).toBe(6);
     });
 
-    test('should return 0 for unknown formation type', () => {
-      expect(getExpectedOutfieldPlayerCount('UNKNOWN_FORMATION')).toBe(0);
+    test('should return 0 for unknown team mode', () => {
+      expect(getExpectedOutfieldPlayerCount('UNKNOWN_TEAM_MODE')).toBe(0);
       expect(getExpectedOutfieldPlayerCount(null)).toBe(0);
       expect(getExpectedOutfieldPlayerCount(undefined)).toBe(0);
     });
   });
 
-  describe('formation consistency', () => {
-    test('field positions + substitute positions should equal outfield positions for individual modes', () => {
+  describe('team mode consistency', () => {
+    test('field positions + substitute positions should equal outfield positions for individual team modes', () => {
       [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7].forEach(teamMode => {
         const fieldPositions = getFieldPositions(teamMode);
         const substitutePositions = getSubstitutePositions(teamMode);

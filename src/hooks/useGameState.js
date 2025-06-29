@@ -336,7 +336,7 @@ export function useGameState() {
   }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod]);
 
   const handleStartGame = () => {
-    // Validate formation based on formation type
+    // Validate formation based on team mode
     
     if (teamMode === TEAM_MODES.PAIRS_7) {
       // 7-player pairs validation
@@ -653,7 +653,7 @@ export function useGameState() {
     return persistenceManager.getStorageInfo();
   }, []);
 
-  // Formation type switching functions
+  // Team mode switching functions
   const splitPairs = useCallback(() => {
     if (teamMode !== TEAM_MODES.PAIRS_7) return;
     
@@ -708,7 +708,7 @@ export function useGameState() {
       return { ...p, stats };
     }));
 
-    // Update formation type
+    // Update team mode
     setTeamMode(TEAM_MODES.INDIVIDUAL_7);
     
     // Update next player tracking for individual mode
@@ -790,7 +790,7 @@ export function useGameState() {
       return { ...p, stats };
     }));
 
-    // Update formation type
+    // Update team mode
     setTeamMode(TEAM_MODES.PAIRS_7);
     
     // Update next pair tracking for pairs mode

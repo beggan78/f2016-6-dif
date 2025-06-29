@@ -13,8 +13,6 @@ export const TEAM_MODES = {
   INDIVIDUAL_7: 'individual_7'  // 7 players managed individually (4 field + 2 subs + goalie)
 };
 
-// @deprecated - Use TEAM_MODES instead. Will be removed in future version.
-export const FORMATION_TYPES = TEAM_MODES;
 
 export const PLAYER_STATUS = {
   ON_FIELD: 'on_field',

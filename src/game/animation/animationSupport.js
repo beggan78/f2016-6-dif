@@ -65,7 +65,7 @@ export const captureAllPlayerPositions = (periodFormation, allPlayers, teamMode)
     };
   }
   
-  // Add field and substitute players based on formation type
+  // Add field and substitute players based on team mode
   if (teamMode === TEAM_MODES.PAIRS_7) {
     // Pairs mode
     [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR, POSITION_KEYS.SUB_PAIR].forEach(pairKey => {

@@ -312,7 +312,7 @@ export function GameScreen({
         {...goalieHandlers.goalieEvents}
       >
         <p className="text-center my-1 text-sky-200">
-          Goalie: <span className="font-semibold">{getPlayerNameById(periodFormation.goalie)}</span>
+          Goalie: <span className="font-semibold">{periodFormation?.goalie ? getPlayerNameById(periodFormation.goalie) : 'None'}</span>
         </p>
         <p className="text-xs text-slate-400 text-center">Hold to replace goalie</p>
       </div>

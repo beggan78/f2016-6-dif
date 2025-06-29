@@ -19,7 +19,7 @@ This directory contains various utility functions that provide common functional
 
 - **`inputSanitization.js`**: Offers utilities for sanitizing and validating user input, primarily for player names, to prevent invalid characters or excessive length.
 
-- **`formationUtils.js`**: Provides general utilities related to formation structures, such as getting all positions for a given formation type.
+- **`formationUtils.js`**: Provides general utilities related to formation structures, such as getting all positions for a given team mode.
 
 - **`rolePointUtils.js`**: Contains the logic for calculating player role points based on their time spent as goalie, defender, and attacker, used for statistical analysis and fair play tracking.
 

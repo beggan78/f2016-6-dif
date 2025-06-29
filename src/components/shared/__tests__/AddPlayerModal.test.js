@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { AddPlayerModal } from '../AddPlayerModal';
 
 // Mock the input sanitization utility with inline functions
@@ -247,7 +247,9 @@ describe('AddPlayerModal', () => {
       
       fireEvent.change(input, { target: { value: 'Test Player' } });
       
-      form.dispatchEvent(submitEvent);
+      act(() => {
+        form.dispatchEvent(submitEvent);
+      });
       
       expect(mockPreventDefault).toHaveBeenCalled();
     });

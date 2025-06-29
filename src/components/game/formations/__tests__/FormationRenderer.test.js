@@ -120,7 +120,7 @@ describe('FormationRenderer', () => {
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported formation type: INVALID_MODE/)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported team mode: INVALID_MODE/)).toBeInTheDocument();
       expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
       expect(screen.queryByTestId('individual-formation')).not.toBeInTheDocument();
     });
@@ -133,7 +133,7 @@ describe('FormationRenderer', () => {
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported formation type:/)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported team mode:/)).toBeInTheDocument();
     });
 
     it('should show error message when teamMode is undefined', () => {
@@ -144,7 +144,7 @@ describe('FormationRenderer', () => {
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported formation type:/)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported team mode:/)).toBeInTheDocument();
     });
   });
 
@@ -315,7 +315,7 @@ describe('FormationRenderer', () => {
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported formation type:/)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported team mode:/)).toBeInTheDocument();
     });
   });
 });

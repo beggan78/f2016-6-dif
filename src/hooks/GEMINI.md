@@ -28,7 +28,7 @@ This directory contains custom React hooks that encapsulate reusable stateful lo
 
 - **`useBrowserBackIntercept.js`**: Intercepts the browser's back button functionality to close modals gracefully instead of navigating away. It maintains a stack of open modals.
 
-- **`useFieldPositionHandlers.js`**: A helper hook that simplifies the integration of `useLongPressWithScrollDetection` for various field positions, adapting to different formation types.
+- **`useFieldPositionHandlers.js`**: A helper hook that simplifies the integration of `useLongPressWithScrollDetection` for various field positions, adapting to different team modes.
 
 - **`useGameModals.js`**: Manages the state and actions for various modals used throughout the game UI (e.g., player selection, substitute options, goalie switch). It integrates with `useBrowserBackIntercept`.
 

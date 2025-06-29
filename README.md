@@ -4,12 +4,12 @@ A mobile-first web application designed for coaching youth soccer teams. This ap
 
 ## Overview
 
-DIF F16-6 Coach is built specifically for managing a soccer team of 14 players where 6-7 players are selected for each game. The app supports three distinct formation types: 7-player pairs, 6-player individual, and 7-player individual modes, each with intelligent rotation systems to ensure fair playing time distribution.
+DIF F16-6 Coach is built specifically for managing a soccer team of 14 players where 6-7 players are selected for each game. The app supports three distinct team modes: 7-player pairs, 6-player individual, and 7-player individual modes, each with intelligent rotation systems to ensure fair playing time distribution.
 
 ### Key Features
 
 - **Smart Player Selection**: Choose 6 or 7 players from your 14-player roster for each game
-- **Three Formation Types**: Supports pair-based (7 players), 6-player individual, and 7-player individual formations
+- **Three Team Modes**: Supports pair-based (7 players), 6-player individual, and 7-player individual formations
 - **Real-time Game Management**: Dual timers track match time and substitution intervals
 - **Automated Substitution Planning**: AI-powered recommendations for optimal player rotations
 - **Fair Time Distribution**: Comprehensive time tracking ensures equitable playing opportunities
@@ -126,7 +126,7 @@ The interface provides clear visual cues for rotation planning:
 
 ## Formation Recommendation System
 
-The app features an intelligent formation recommendation system that automatically suggests optimal player arrangements for periods 2 and 3, ensuring fair role distribution and maintaining team chemistry through strategic management. The system uses different approaches for pair-based and individual formation types.
+The app features an intelligent formation recommendation system that automatically suggests optimal player arrangements for periods 2 and 3, ensuring fair role distribution and maintaining team chemistry through strategic management. The system uses different approaches for pair-based and individual team modes.
 
 ### Individual Mode Rotation System
 

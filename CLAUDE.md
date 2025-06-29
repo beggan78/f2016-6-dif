@@ -29,7 +29,7 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 3. **Time Management**: Stint-based time tracking in `/src/game/time/`
 4. **Queue Management**: Player rotation queues in `/src/game/queue/`
 
-## Formation Types
+## Team Modes
 - **PAIRS_7**: 7-player pairs mode (3 pairs: left, right, substitute + goalie)
 - **INDIVIDUAL_6**: 6-player individual (4 field + 1 substitute + goalie)
 - **INDIVIDUAL_7**: 7-player individual (4 field + 2 substitutes + goalie)

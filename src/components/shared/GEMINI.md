@@ -16,7 +16,7 @@ This directory contains reusable UI components that are shared across different 
 
 - **`AddPlayerModal.js`**: A dedicated modal for adding temporary players to the roster during game configuration.
 
-- **`HamburgerMenu.js`**: The navigation menu component, typically found in the header. It provides options like adding players, switching formation types (for 7-player squads), and starting a new game.
+- **`HamburgerMenu.js`**: The navigation menu component, typically found in the header. It provides options like adding players, switching team modes (for 7-player squads), and starting a new game.
 
 ## 2. Core Architectural Concepts
 

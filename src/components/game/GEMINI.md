@@ -6,7 +6,7 @@ This directory contains the React components responsible for rendering the main 
 
 - **`GameScreen.js`**: The main component for the live game view. It orchestrates all other sub-components, manages UI-specific state, and integrates with various hooks to interact with the core game state and timers.
 - **`formations/`**: Contains components responsible for rendering the player formations on the field.
-  - **`FormationRenderer.js`**: A smart component that dynamically renders either `PairsFormation` or `IndividualFormation` based on the `formationType` prop.
+  - **`FormationRenderer.js`**: A smart component that dynamically renders either `PairsFormation` or `IndividualFormation` based on the `teamMode` prop.
   - **`PairsFormation.js`**: Renders the 7-player pairs formation, displaying pairs of defenders and attackers, and a substitute pair.
   - **`IndividualFormation.js`**: Renders the 6-player or 7-player individual formations, displaying players in specific positions (e.g., Left Defender, Right Attacker, Substitutes).
   - **`formations/components/PlayerStatsDisplay.js`**: A small, reusable component to display a player's total outfield time and attacker/defender time difference.
@@ -26,7 +26,7 @@ User interactions (taps, long presses) on player cards trigger callbacks that ar
 - **`playerStyling.js` (in `src/game/ui/`)**: Provides utility functions to determine dynamic styling (background colors, border colors, text colors) based on player status, role, and next substitution indicators.
 
 ### d. Dynamic Formation Rendering
-`FormationRenderer` abstracts away the complexity of different formation types, allowing `GameScreen` to simply pass the `formationType` and relevant data, and the correct formation visualization is rendered automatically.
+`FormationRenderer` abstracts away the complexity of different team modes, allowing `GameScreen` to simply pass the `teamMode` and relevant data, and the correct formation visualization is rendered automatically.
 
 ### e. Modals for Complex Interactions
 Complex user interactions (e.g., selecting a player for substitution, changing a goalie) are handled via modals, managed by `useGameModals`. This keeps the main `GameScreen` clean and focuses user attention on the specific interaction.

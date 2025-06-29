@@ -230,7 +230,7 @@ This document outlines a comprehensive testing strategy for the DIF F16-6 Coach 
    - ✅ Performance and mobile optimization tests
 
 2. **`FormationRenderer.test.js`** ⚠️ **PENDING** (🟡 High - 2 days)
-   - Component routing logic between formation types
+   - Component routing logic between team modes
    - Props passing and integration testing
 
 3. **Formation Component Tests** ⚠️ **PENDING** (🟡 High - 2 days)

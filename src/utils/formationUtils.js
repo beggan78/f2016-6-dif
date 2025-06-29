@@ -15,7 +15,7 @@ export function getAllPositions(teamMode) {
 }
 
 /**
- * Gets formation definition for a formation type
+ * Gets formation definition for a team mode
  */
 export function getModeDefinition(teamMode) {
   return MODE_DEFINITIONS[teamMode] || null;

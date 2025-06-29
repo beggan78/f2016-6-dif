@@ -15,12 +15,13 @@ export function PairsFormation({
   nextPhysicalPairToSubOut,
   longPressHandlers,
   getPlayerNameById,
-  getPlayerTimeStats 
+  getPlayerTimeStats,
+  ...domProps
 }) {
   // Handle null/undefined periodFormation
   if (!periodFormation) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2" {...domProps}>
         <div>Left</div>
         <div>Right</div>
         <div>Substitutes</div>
@@ -74,11 +75,11 @@ export function PairsFormation({
           </div>
         </h3>
         <div className="space-y-0.5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" data-testid={`player-${pairData.defender}`}>
             <div><Shield className={ICON_STYLES.small} /> D: {getPlayerNameById ? getPlayerNameById(pairData.defender) : pairData.defender}</div>
             <PlayerStatsDisplay playerId={pairData.defender} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" data-testid={`player-${pairData.attacker}`}>
             <div><Sword className={ICON_STYLES.small} /> A: {getPlayerNameById ? getPlayerNameById(pairData.attacker) : pairData.attacker}</div>
             <PlayerStatsDisplay playerId={pairData.attacker} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
           </div>
@@ -91,7 +92,7 @@ export function PairsFormation({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" {...domProps}>
       {renderPair('leftPair', 'Left', 0)}
       {renderPair('rightPair', 'Right', 1)}
       {renderPair('subPair', 'Substitutes', 2)}

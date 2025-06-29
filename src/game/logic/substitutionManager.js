@@ -6,7 +6,7 @@ import { updatePlayerTimeStats, startNewStint } from '../time/stintManager';
 
 
 /**
- * Manages substitution logic for different formation types
+ * Manages substitution logic for different team modes
  */
 export class SubstitutionManager {
   constructor(teamMode) {
@@ -284,7 +284,7 @@ export class SubstitutionManager {
   }
 
   /**
-   * Main substitution handler - delegates to appropriate method based on formation type
+   * Main substitution handler - delegates to appropriate method based on team mode
    */
   executeSubstitution(context) {
     switch (this.teamMode) {

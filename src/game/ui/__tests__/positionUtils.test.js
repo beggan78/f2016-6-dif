@@ -131,7 +131,7 @@ describe('UI positionUtils', () => {
       expect(getPositionDisplayName(undefined, null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe(undefined);
     });
 
-    test('should not show inactive for non-7-player formations', () => {
+    test('should not show inactive for non-7-player team modes', () => {
       const mockPlayer = { stats: { isInactive: true } };
       
       const displayName = getPositionDisplayName('substitute', mockPlayer, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6);
@@ -265,8 +265,8 @@ describe('UI positionUtils', () => {
         expect(supportsInactivePlayers(TEAM_MODES.PAIRS_7)).toBe(false);
       });
 
-      test('should return false for unknown formation types', () => {
-        expect(supportsInactivePlayers('UNKNOWN_FORMATION')).toBe(false);
+      test('should return false for unknown team modes', () => {
+        expect(supportsInactivePlayers('UNKNOWN_TEAM_MODE')).toBe(false);
         expect(supportsInactivePlayers(null)).toBe(false);
         expect(supportsInactivePlayers(undefined)).toBe(false);
       });
@@ -279,24 +279,24 @@ describe('UI positionUtils', () => {
         expect(supportsNextNextIndicators(TEAM_MODES.PAIRS_7)).toBe(false);
       });
 
-      test('should return false for unknown formation types', () => {
-        expect(supportsNextNextIndicators('UNKNOWN_FORMATION')).toBe(false);
+      test('should return false for unknown team modes', () => {
+        expect(supportsNextNextIndicators('UNKNOWN_TEAM_MODE')).toBe(false);
         expect(supportsNextNextIndicators(null)).toBe(false);
         expect(supportsNextNextIndicators(undefined)).toBe(false);
       });
     });
   });
 
-  describe('integration with formation types', () => {
-    test('should provide consistent behavior across formation types', () => {
-      const formations = [
+  describe('integration with team modes', () => {
+    test('should provide consistent behavior across team modes', () => {
+      const teamModes = [
         TEAM_MODES.INDIVIDUAL_6,
         TEAM_MODES.INDIVIDUAL_7,
         TEAM_MODES.PAIRS_7
       ];
       
-      formations.forEach(teamMode => {
-        // Formation support checks should be consistent
+      teamModes.forEach(teamMode => {
+        // Team mode support checks should be consistent
         const supportsInactive = supportsInactivePlayers(teamMode);
         const supportsNextNext = supportsNextNextIndicators(teamMode);
         
@@ -314,14 +314,14 @@ describe('UI positionUtils', () => {
       });
     });
 
-    test('should handle indicator props consistently for each formation', () => {
-      const formations = [
+    test('should handle indicator props consistently for each team mode', () => {
+      const teamModeConfigs = [
         { type: TEAM_MODES.INDIVIDUAL_6, subs: mockSubstitutePositions6 },
         { type: TEAM_MODES.INDIVIDUAL_7, subs: mockSubstitutePositions7 },
         { type: TEAM_MODES.PAIRS_7, subs: mockSubstitutePositionsPairs }
       ];
       
-      formations.forEach(({ type: teamMode, subs: substitutePositions }) => {
+      teamModeConfigs.forEach(({ type: teamMode, subs: substitutePositions }) => {
         const mockPlayer = { id: '1' };
         // Test basic indicator logic - player ID '1' is nextPlayerIdToSubOut, player ID '2' is nextNextPlayerIdToSubOut
         const props = getIndicatorProps(mockPlayer, 'leftDefender', teamMode, '1', '2', substitutePositions);

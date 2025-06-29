@@ -15,7 +15,7 @@ export function getPositionRole(position) {
 }
 
 /**
- * Gets the list of outfield positions for a given formation type
+ * Gets the list of outfield positions for a given team mode
  * Replaces FORMATION_POSITIONS from positionConstants
  */
 export function getOutfieldPositions(teamMode) {
@@ -24,7 +24,7 @@ export function getOutfieldPositions(teamMode) {
 }
 
 /**
- * Gets the list of field positions (excludes substitutes) for a given formation type
+ * Gets the list of field positions (excludes substitutes) for a given team mode
  */
 export function getFieldPositions(teamMode) {
   const definition = MODE_DEFINITIONS[teamMode];
@@ -32,7 +32,7 @@ export function getFieldPositions(teamMode) {
 }
 
 /**
- * Gets the list of substitute positions for a given formation type
+ * Gets the list of substitute positions for a given team mode
  */
 export function getSubstitutePositions(teamMode) {
   const definition = MODE_DEFINITIONS[teamMode];
@@ -56,7 +56,7 @@ export function isSubstitutePosition(position, teamMode) {
 }
 
 /**
- * Gets the expected counts for a formation type
+ * Gets the expected counts for a team mode
  * Replaces EXPECTED_PLAYER_COUNTS from playerConstants
  */
 export function getExpectedCounts(teamMode) {
@@ -65,7 +65,7 @@ export function getExpectedCounts(teamMode) {
 }
 
 /**
- * Gets the expected number of outfield players for a formation type
+ * Gets the expected number of outfield players for a team mode
  * Maintains backward compatibility
  */
 export function getExpectedOutfieldPlayerCount(teamMode) {

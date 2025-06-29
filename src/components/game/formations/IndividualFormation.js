@@ -27,11 +27,12 @@ export function IndividualFormation({
   nextNextPlayerIdToSubOut,
   longPressHandlers,
   getPlayerNameById,
-  getPlayerTimeStats 
+  getPlayerTimeStats,
+  ...domProps
 }) {
   // Handle null/undefined periodFormation
   if (!periodFormation) {
-    return <div className="space-y-2"></div>;
+    return <div className="space-y-2" {...domProps}></div>;
   }
 
   // Get formation-specific position lists from formation definitions
@@ -83,6 +84,7 @@ export function IndividualFormation({
     return (
       <div 
         key={position}
+        data-testid={`player-${playerId}`}
         className={`${FORMATION_STYLES.containerBase} ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} ${canBeSelected || isSubstitutePosition ? FORMATION_STYLES.interactive : ''}`}
         style={styleProps}
         {...longPressEvents}
@@ -113,7 +115,7 @@ export function IndividualFormation({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" {...domProps}>
       {allPositions.map((position, index) => 
         renderIndividualPosition(position, index)
       )}

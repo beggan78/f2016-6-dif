@@ -27,7 +27,7 @@ The animation system works by:
 3. Computing visual differences and animation requirements
 4. Orchestrating timing and applying state changes
 
-## Formation Types
+## Team Modes
 
 ### PAIRS_7 (Pairs Mode)
 - Field positions: `leftPair`, `rightPair` (each with defender/attacker roles)
@@ -55,7 +55,7 @@ The central `gameState` object contains:
 - `periodFormation`: Current player positions and formation structure
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
-- `formationType`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
+- `teamMode`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
 - `playersToHighlight`: Players to show glow effects
 - Various timing and metadata fields

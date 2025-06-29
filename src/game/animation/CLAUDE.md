@@ -11,8 +11,8 @@ Complete animation calculation and orchestration system that provides smooth vis
 **Core Functions**:
 
 #### Position Management
-- `captureAllPlayerPositions(periodFormation, allPlayers, formationType)`: Captures current positions of all players including goalie
-- `calculateAllPlayerAnimations(beforePositions, afterPositions, formationType)`: Compares before/after position snapshots and calculates movements
+- `captureAllPlayerPositions(periodFormation, allPlayers, teamMode)`: Captures current positions of all players including goalie
+- `calculateAllPlayerAnimations(beforePositions, afterPositions, teamMode)`: Compares before/after position snapshots and calculates movements
 
 #### Animation Orchestration
 - `animateStateChange(gameState, pureLogicFunction, applyStateFunction, ...)`: Main orchestration function
@@ -62,7 +62,7 @@ const MEASUREMENTS = {
 ```
 
 ### Position Mapping
-Each formation type has specific position mappings:
+Each team mode has specific position mappings:
 - **PAIRS_7**: leftPair (index 0), rightPair (index 1), subPair (index 2), goalie (index 3)
 - **INDIVIDUAL_6**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute (4), goalie (5)
 - **INDIVIDUAL_7**: leftDefender7 (0), rightDefender7 (1), leftAttacker7 (2), rightAttacker7 (3), substitute7_1 (4), substitute7_2 (5), goalie (6)
@@ -157,13 +157,13 @@ Components use `getPlayerAnimationProps()` to apply:
 ### Animation Issues
 ```javascript
 // Enable debug logging
-const animations = calculateAllPlayerAnimations(before, after, formationType);
+const animations = calculateAllPlayerAnimations(before, after, teamMode);
 console.log('Animation data:', animations);
 ```
 
 ### Common Problems
 - **No animation**: Check if positions actually changed between before/after
-- **Wrong direction**: Verify position index calculations for formation type
+- **Wrong direction**: Verify position index calculations for team mode
 - **Timing issues**: Ensure CSS animation duration matches JavaScript timing
 - **Z-index conflicts**: Check moving direction and z-index classes
 - **State inconsistency**: Verify pure functions return consistent position mappings
@@ -175,7 +175,7 @@ console.log('Animation data:', animations);
 
 ## When to Modify
 
-### Adding New Formation Types
+### Adding New Team Modes
 - Update position mappings in `captureAllPlayerPositions()`
 - Add new position index calculations
 - Update measurement constants if UI layout changes
@@ -183,7 +183,7 @@ console.log('Animation data:', animations);
 ### Changing UI Layout
 - Update measurement constants (`MEASUREMENTS` object)
 - Recalculate position index mappings
-- Test distance calculations for all formation types
+- Test distance calculations for all team modes
 
 ### Adding New Animation Types
 - Extend animation calculation logic

@@ -10,7 +10,7 @@ This directory contains handler functions that act as an intermediary layer betw
   - Managing the `lastSubstitution` state for undo functionality.
   - Handling modal interactions for setting next substitutions, performing swaps, and managing inactive players.
 
-- **`fieldPositionHandlers.js`**: Creates callbacks for long-press events on player positions (field players and substitutes). These callbacks open appropriate modals (`FieldPlayerModal`, `SubstitutePlayerModal`) based on the formation type and the player's role.
+- **`fieldPositionHandlers.js`**: Creates callbacks for long-press events on player positions (field players and substitutes). These callbacks open appropriate modals (`FieldPlayerModal`, `SubstitutePlayerModal`) based on the team mode and the player's role.
 
 - **`goalieHandlers.js`**: Manages the logic for changing the goalie. It opens the `GoalieModal`, calls `calculateGoalieSwitch` from `src/game/logic/gameStateLogic`, and triggers animations.
 

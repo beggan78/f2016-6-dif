@@ -281,12 +281,12 @@ describe('ConfigurationScreen', () => {
     });
   });
 
-  describe('Formation Type Selection (7 Players)', () => {
+  describe('Team Mode Selection (7 Players)', () => {
     const sevenPlayerProps = {
       selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7']
     };
 
-    it('should show formation type selection when 7 players are selected', () => {
+    it('should show team mode selection when 7 players are selected', () => {
       const props = { ...defaultProps, ...sevenPlayerProps };
       
       render(<ConfigurationScreen {...props} />);
@@ -296,7 +296,7 @@ describe('ConfigurationScreen', () => {
       expect(screen.getByText('Individual')).toBeInTheDocument();
     });
 
-    it('should not show formation type selection when fewer than 7 players', () => {
+    it('should not show team mode selection when fewer than 7 players', () => {
       const props = {
         ...defaultProps,
         selectedSquadIds: ['1', '2', '3', '4', '5', '6']

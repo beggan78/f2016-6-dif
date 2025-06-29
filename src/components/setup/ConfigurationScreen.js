@@ -28,7 +28,7 @@ export function ConfigurationScreen({
     setSelectedSquadIds(prev => {
       const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
       
-      // Auto-set formation type based on squad size
+      // Auto-set team mode based on squad size
       if (newIds.length === 6) {
         setTeamMode(TEAM_MODES.INDIVIDUAL_6);
       } else if (newIds.length === 7 && teamMode === TEAM_MODES.INDIVIDUAL_6) {
@@ -97,7 +97,7 @@ export function ConfigurationScreen({
         </div>
       </div>
 
-      {/* Formation Type Selection */}
+      {/* Team Mode Selection */}
       {selectedSquadIds.length === 7 && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>

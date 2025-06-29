@@ -305,7 +305,7 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
   const defenders = fieldPlayersByAttackerSurplus.slice(0, 2); // Top 2 with most surplus attacker time
   const attackers = fieldPlayersByAttackerSurplus.slice(2, 4); // Bottom 2
 
-  // Create formation object based on formation type
+  // Create formation object based on team mode
   let formation = {
     goalie: currentGoalieId
   };

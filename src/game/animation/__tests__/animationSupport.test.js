@@ -18,7 +18,7 @@ import {
 
 describe.skip('animationSupport', () => {
   describe('captureAllPlayerPositions', () => {
-    test('should capture positions for INDIVIDUAL_6 formation', () => {
+    test('should capture positions for INDIVIDUAL_6 team mode', () => {
       const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
       const players = createMockPlayers(6, TEAM_MODES.INDIVIDUAL_6);
       
@@ -36,7 +36,7 @@ describe.skip('animationSupport', () => {
       expect(positions['6']).toBeDefined(); // goalie
     });
 
-    test('should capture positions for INDIVIDUAL_7 formation', () => {
+    test('should capture positions for INDIVIDUAL_7 team mode', () => {
       const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
       const players = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
       
@@ -54,7 +54,7 @@ describe.skip('animationSupport', () => {
       expect(positions['7']).toBeDefined(); // goalie
     });
 
-    test('should capture positions for PAIRS_7 formation', () => {
+    test('should capture positions for PAIRS_7 team mode', () => {
       const formation = createMockFormation(TEAM_MODES.PAIRS_7);
       const players = createMockPlayers(7, TEAM_MODES.PAIRS_7);
       
@@ -142,11 +142,11 @@ describe.skip('animationSupport', () => {
       // Should still return position mapping structure even with missing players
     });
 
-    test('should handle unknown formation type gracefully', () => {
+    test('should handle unknown team mode gracefully', () => {
       const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
       const players = createMockPlayers(6, TEAM_MODES.INDIVIDUAL_6);
       
-      const positions = captureAllPlayerPositions(formation, players, 'UNKNOWN_FORMATION');
+      const positions = captureAllPlayerPositions(formation, players, 'UNKNOWN_TEAM_MODE');
       
       expect(positions).toBeDefined();
       expect(typeof positions).toBe('object');
@@ -257,7 +257,7 @@ describe.skip('animationSupport', () => {
       });
     });
 
-    test('should handle pairs formation movement correctly', () => {
+    test('should handle pairs team mode movement correctly', () => {
       const beforeFormation = createMockFormation(TEAM_MODES.PAIRS_7);
       const afterFormation = { ...beforeFormation };
       
@@ -303,14 +303,14 @@ describe.skip('animationSupport', () => {
   });
 
   describe('position index mapping consistency', () => {
-    test('should have consistent position indices across formation types', () => {
-      const formations = [
+    test('should have consistent position indices across team modes', () => {
+      const teamModeConfigs = [
         { type: TEAM_MODES.INDIVIDUAL_6, playerCount: 6 },
         { type: TEAM_MODES.INDIVIDUAL_7, playerCount: 7 },
         { type: TEAM_MODES.PAIRS_7, playerCount: 7 }
       ];
       
-      formations.forEach(({ type, playerCount }) => {
+      teamModeConfigs.forEach(({ type, playerCount }) => {
         const formation = createMockFormation(type);
         const players = createMockPlayers(playerCount, type);
         
@@ -337,8 +337,8 @@ describe.skip('animationSupport', () => {
       });
     });
 
-    test('should maintain position index order within formation types', () => {
-      // Individual 6: leftDef(0), rightDef(1), leftAtt(2), rightAtt(3), sub(4), goalie(5)
+    test('should maintain position index order within team modes', () => {
+      // Individual 6 team mode: leftDef(0), rightDef(1), leftAtt(2), rightAtt(3), sub(4), goalie(5)
       const formation6 = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
       const players6 = createMockPlayers(6, TEAM_MODES.INDIVIDUAL_6);
       const positions6 = captureAllPlayerPositions(formation6, players6, TEAM_MODES.INDIVIDUAL_6);
@@ -350,7 +350,7 @@ describe.skip('animationSupport', () => {
       expect(positions6[formation6.substitute].positionIndex).toBe(4);
       expect(positions6[formation6.goalie].positionIndex).toBe(5);
       
-      // Individual 7: similar pattern with 7 positions
+      // Individual 7 team mode: similar pattern with 7 positions
       const formation7 = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
       const players7 = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
       const positions7 = captureAllPlayerPositions(formation7, players7, TEAM_MODES.INDIVIDUAL_7);

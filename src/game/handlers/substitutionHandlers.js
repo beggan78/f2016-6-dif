@@ -311,7 +311,7 @@ export const createSubstitutionHandlers = (
             
             const currentPairKey = fullPlayerData.stats.currentPairKey;
             
-            // Exclude substitutes based on formation type
+            // Exclude substitutes based on team mode
             if (gameState.teamMode === TEAM_MODES.PAIRS_7) {
               return currentPairKey !== 'subPair';
             } else if (gameState.teamMode === TEAM_MODES.INDIVIDUAL_6) {

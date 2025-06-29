@@ -141,7 +141,7 @@ export function FormationComponent({
   periodFormation,      // Current period formation
   longPressHandlers,    // Interaction handlers
   onPlayerMove,         // Movement callback
-  teamMode             // Formation type
+  teamMode             // Team mode
 }) {
   // Render formation-specific layout
   // Handle user interactions

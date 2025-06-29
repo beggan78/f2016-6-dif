@@ -7,7 +7,7 @@ This folder contains all game-specific logic, state management, and systems for 
 ```
 src/
 ├── constants/                   # Domain constants and configuration options
-│   ├── playerConstants.js      # PLAYER_ROLES, FORMATION_TYPES
+│   ├── playerConstants.js      # PLAYER_ROLES, TEAM_MODES
 │   ├── gameConfig.js           # PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS
 │   └── defaultData.js          # initialRoster and other default data
 ├── utils/                      # Utilities used across multiple screens
@@ -109,7 +109,7 @@ This separation allows logic changes without breaking animations and vice versa.
 **Purpose**: Core player and formation constants used across all screens  
 **Responsibilities**:
 - `PLAYER_ROLES`: Defines valid player roles (Goalie, Defender, Attacker, Substitute, On Field)
-- `FORMATION_TYPES`: Supported formation modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+- `TEAM_MODES`: Supported team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
 
 ### `constants/gameConfig.js`
 **Purpose**: Game configuration options for setup screens  
@@ -137,7 +137,7 @@ This separation allows logic changes without breaking animations and vice versa.
 - Other existing player utility functions
 
 **When to modify constants/utils**: 
-- Adding new formation types (update `playerConstants.js`)
+- Adding new team modes (update `playerConstants.js`)
 - Changing point calculation rules (update `rolePointUtils.js`)
 - Adding new player roles or statuses (update `playerConstants.js`)
 - Modifying game configuration options (update `gameConfig.js`)
@@ -187,18 +187,18 @@ This separation allows logic changes without breaking animations and vice versa.
 - Changing substitution rules for specific formations
 - Adding time calculation logic
 - Modifying rotation queue integration
-- Adding support for new formation types
+- Adding support for new team modes
 
 ### `logic/positionUtils.js`
 **Purpose**: Position and formation utilities for game logic  
 **Responsibilities**:
 - `getPositionRole(position)`: Maps position strings to player roles
-- `getOutfieldPositions(formationType)`: Gets outfield position lists by formation
-- `getFieldPositions(formationType)`: Gets field positions (excludes substitutes)
-- `getSubstitutePositions(formationType)`: Gets substitute position lists
-- `isFieldPosition(position, formationType)`: Checks if position is field position
-- `isSubstitutePosition(position, formationType)`: Checks if position is substitute
-- `getExpectedOutfieldPlayerCount(formationType)`: Gets expected player counts
+- `getOutfieldPositions(teamMode)`: Gets outfield position lists by team mode
+- `getFieldPositions(teamMode)`: Gets field positions (excludes substitutes)
+- `getSubstitutePositions(teamMode)`: Gets substitute position lists
+- `isFieldPosition(position, teamMode)`: Checks if position is field position
+- `isSubstitutePosition(position, teamMode)`: Checks if position is substitute
+- `getExpectedOutfieldPlayerCount(teamMode)`: Gets expected player counts
 
 **Key characteristics**:
 - Pure functions with no side effects
@@ -207,7 +207,7 @@ This separation allows logic changes without breaking animations and vice versa.
 - Used throughout game logic for position validation and role determination
 
 **When to modify**:
-- Adding new formation types (update all position list functions)
+- Adding new team modes (update all position list functions)
 - Changing position naming conventions
 - Adding new position validation rules
 - Modifying role assignment logic
@@ -257,7 +257,7 @@ This separation allows logic changes without breaking animations and vice versa.
 ### `animation/animationSupport.js`
 **Purpose**: Complete animation calculation and orchestration system  
 **Responsibilities**:
-- Position capture and mapping for all formation types
+- Position capture and mapping for all team modes
 - Distance calculation between UI positions
 - Animation timing and orchestration
 - Integration with pure logic functions
@@ -265,13 +265,13 @@ This separation allows logic changes without breaking animations and vice versa.
 
 #### Core Functions
 
-**`captureAllPlayerPositions(periodFormation, allPlayers, formationType)`**
+**`captureAllPlayerPositions(periodFormation, allPlayers, teamMode)`**
 - Captures current positions of all players including goalie
 - Maps each player to their UI position index and role
 - Returns position snapshot for before/after comparison
-- Supports all formation types (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+- Supports all team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
 
-**`calculateAllPlayerAnimations(beforePositions, afterPositions, formationType)`**
+**`calculateAllPlayerAnimations(beforePositions, afterPositions, teamMode)`**
 - Compares before/after position snapshots
 - Calculates pixel distance each player needs to move
 - Determines animation direction (up/down)
@@ -310,7 +310,7 @@ const MEASUREMENTS = {
 ```
 
 **When to modify**:
-- Adding new formation types (update position mappings)
+- Adding new team modes (update position mappings)
 - Changing UI layout (update measurement constants)
 - Adding new animation types (extend animation calculation)
 - Modifying timing behavior (adjust duration constants)
@@ -412,12 +412,12 @@ The UI module contains focused utilities for game screen rendering, separated fr
 **Responsibilities**:
 - `getPositionIcon()`: Returns appropriate icon (Shield/Sword/RotateCcw) for positions
 - `getPositionDisplayName()`: Position names with inactive player support
-- `getIndicatorProps()`: Next/nextNext indicator logic for different formation types
+- `getIndicatorProps()`: Next/nextNext indicator logic for different team modes
 - `getPositionEvents()`: Extracts long press event handlers from position key
 - `supportsInactivePlayers()` / `supportsNextNextIndicators()`: Formation capability checks
 
 **Key features**:
-- Formation-aware UI logic (handles differences between formation types)
+- Formation-aware UI logic (handles differences between team modes)
 - Inactive player status integration for 7-player individual mode
 - Consistent icon and naming across different formation renderers
 
@@ -451,7 +451,7 @@ The UI module contains focused utilities for game screen rendering, separated fr
 - **Separation of Concerns**: UI logic separated from business logic
 - **Reusability**: UI utilities can be shared across formation renderers
 - **Consistency**: Centralized styling and display logic ensures visual consistency
-- **Formation Awareness**: All utilities handle differences between formation types
+- **Formation Awareness**: All utilities handle differences between team modes
 - **Maintainability**: UI changes isolated from game logic changes
 
 ---
@@ -522,13 +522,13 @@ The central `gameState` object contains:
 - `periodFormation`: Current player positions and formation structure
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
-- `formationType`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
+- `teamMode`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
 - `playersToHighlight`: Players to show glow effects
 - Various timing and metadata fields
 
-## Formation Types
-Three supported formation types:
+## Team Modes
+Three supported team modes:
 - **PAIRS_7**: 7-player pairs mode (2 field pairs + 1 substitute pair + goalie)
 - **INDIVIDUAL_6**: 6-player individual mode (4 field players + 1 substitute + goalie)  
 - **INDIVIDUAL_7**: 7-player individual mode (4 field players + 2 substitutes + goalie)
@@ -647,7 +647,7 @@ Player time tracking follows this approach:
    </div>
    ```
 
-## Extending Formation Types
+## Extending Team Modes
 - Add new formation constants to `constants/playerConstants.js`
 - Update position utilities in `utils/positionUtils.js` 
 - Extend animation position mappings in `animationSupport.js`
@@ -741,7 +741,7 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 - `components/stats/`: Read game state for reporting (uses rolePointUtils)
 
 ## Constants & Utilities (Cross-Screen)
-- `constants/playerConstants.js`: Core domain constants (PLAYER_ROLES, FORMATION_TYPES)
+- `constants/playerConstants.js`: Core domain constants (PLAYER_ROLES, TEAM_MODES)
 - `constants/gameConfig.js`: Configuration options for setup screens
 - `constants/defaultData.js`: Default data for initialization
 - `utils/playerUtils.js`: Player data operations and queries (now includes initializePlayers)
@@ -774,7 +774,7 @@ All logic functions can be tested in isolation:
 const testState = {
   periodFormation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
-  formationType: 'INDIVIDUAL_6'
+  teamMode: 'INDIVIDUAL_6'
 };
 
 const result = calculateSubstitution(testState);
@@ -784,7 +784,7 @@ expect(result.periodFormation).toBe(/* expected formation */);
 ## Animation Debugging
 ```javascript
 // Enable debug logging
-const animations = calculateAllPlayerAnimations(before, after, formationType);
+const animations = calculateAllPlayerAnimations(before, after, teamMode);
 console.log('Animation data:', animations);
 ```
 

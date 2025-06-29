@@ -6,7 +6,7 @@ This directory contains the core, non-UI logic for the soccer game simulation. I
 
 - **`logic/`**: Contains the primary state transition functions. These functions take the current game state and an action (e.g., substitution, position switch) and return a new, updated game state.
   - `gameStateLogic.js`: The main entry point for all game actions. It orchestrates calls to other modules.
-  - `substitutionManager.js`: Encapsulates the complex rules for substitutions, which vary significantly between formation types (Pairs vs. Individual).
+  - `substitutionManager.js`: Encapsulates the complex rules for substitutions, which vary significantly between team modes (Pairs vs. Individual).
   - `positionUtils.js`: Provides helper functions for querying formation structures and determining player roles based on their position.
 - **`queue/`**: Manages the player rotation queue, which is fundamental to the fair play time algorithm in individual modes.
   - `rotationQueue.js`: A class that handles the order of players for substitutions, including support for temporarily inactive players in the 7-player individual mode.

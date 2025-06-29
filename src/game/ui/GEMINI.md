@@ -13,7 +13,7 @@ This directory contains utility functions specifically designed to support the u
   - Getting the display name for a position, with special handling for inactive players in 7-player individual mode.
   - Calculating `isNextOff`, `isNextOn`, `isNextNextOff`, and `isNextNextOn` indicators, which drive the visual cues for upcoming substitutions.
   - Providing a way to extract long-press event handlers for each position.
-  - Functions to check if a formation type supports inactive players or next/next-next indicators.
+  - Functions to check if a team mode supports inactive players or next/next-next indicators.
 
 ## 2. Core Architectural Concepts
 
