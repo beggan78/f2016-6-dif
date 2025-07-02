@@ -91,5 +91,6 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - Follow pure function architecture for all game logic
 - Maintain separation between logic, animation, and UI concerns
 - When in doubt about time calculations, trace through stint manager flow
+- Always run the whole test suite after having completed a feature or a change to make sure nothing has broken
 - **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
 - **New components**: Write tests first, following established patterns in `__tests__` directories

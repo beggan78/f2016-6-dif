@@ -323,7 +323,7 @@ describe('useTimers', () => {
       });
 
       expect(result.current.isSubTimerPaused).toBe(false);
-      expect(result.current.lastSubTime).toBe(1008000);
+      expect(result.current.lastSubTime).toBe(1000000); // Should remain the original substitution time
       expect(mockUpdatePlayerStats).toHaveBeenCalledWith(1008000, false);
     });
 

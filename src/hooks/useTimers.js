@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 // localStorage utilities for timers - NOTE: Essential for preventing timer loss on page refresh
 const TIMER_STORAGE_KEY = 'dif-coach-timer-state';
@@ -21,76 +21,101 @@ const saveTimerState = (state) => {
   }
 };
 
+// Timer calculation utilities
+const calculateMatchTimer = (periodStartTime, periodDurationMinutes) => {
+  if (!periodStartTime) return periodDurationMinutes * 60;
+  
+  const now = Date.now();
+  const elapsedSeconds = Math.floor((now - periodStartTime) / 1000);
+  const remainingSeconds = (periodDurationMinutes * 60) - elapsedSeconds;
+  
+  return remainingSeconds; // Allow negative values for tests and overtime scenarios
+};
+
+const calculateSubTimer = (lastSubstitutionTime, totalPausedDuration, pauseStartTime) => {
+  if (!lastSubstitutionTime) return 0;
+  
+  const now = Date.now();
+  const effectiveNow = pauseStartTime ? pauseStartTime : now;
+  const elapsedSeconds = Math.floor((effectiveNow - lastSubstitutionTime - totalPausedDuration) / 1000);
+  
+  return Math.max(0, elapsedSeconds);
+};
+
 export function useTimers(periodDurationMinutes) {
   // Initialize timer state from localStorage or defaults
   const initializeTimerState = () => {
     const saved = loadTimerState();
     if (saved) {
-      return {
-        matchTimerSeconds: saved.matchTimerSeconds ?? (periodDurationMinutes * 60),
-        subTimerSeconds: saved.subTimerSeconds ?? 0,
-        isPeriodActive: saved.isPeriodActive ?? false,
-        isSubTimerPaused: saved.isSubTimerPaused ?? false,
-        periodStartTime: saved.periodStartTime ?? null,
-        lastSubTime: saved.lastSubTime ?? null,
-        pausedSubTime: saved.pausedSubTime ?? 0, // Accumulated time before pause
-        subPauseStartTime: saved.subPauseStartTime ?? null,
-      };
+      // Handle backward compatibility with old timer state
+      if (saved.periodStartTime !== undefined) {
+        return {
+          isPeriodActive: saved.isPeriodActive ?? false,
+          periodStartTime: saved.periodStartTime ?? null,
+          lastSubstitutionTime: saved.lastSubstitutionTime ?? saved.lastSubTime ?? null,
+          secondLastSubstitutionTime: saved.secondLastSubstitutionTime ?? null,
+          pauseStartTime: saved.pauseStartTime ?? saved.subPauseStartTime ?? null,
+          totalPausedDuration: saved.totalPausedDuration ?? (saved.pausedSubTime ? saved.pausedSubTime * 1000 : 0),
+        };
+      }
     }
     return {
-      matchTimerSeconds: periodDurationMinutes * 60,
-      subTimerSeconds: 0,
       isPeriodActive: false,
-      isSubTimerPaused: false,
       periodStartTime: null,
-      lastSubTime: null,
-      pausedSubTime: 0,
-      subPauseStartTime: null,
+      lastSubstitutionTime: null,
+      secondLastSubstitutionTime: null,
+      pauseStartTime: null,
+      totalPausedDuration: 0,
     };
   };
 
   const initialTimerState = initializeTimerState();
   
-  const [matchTimerSeconds, setMatchTimerSeconds] = useState(initialTimerState.matchTimerSeconds);
-  const [subTimerSeconds, setSubTimerSeconds] = useState(initialTimerState.subTimerSeconds);
+  // Core timer state - only timestamps and flags
   const [isPeriodActive, setIsPeriodActive] = useState(initialTimerState.isPeriodActive);
-  const [isSubTimerPaused, setIsSubTimerPaused] = useState(initialTimerState.isSubTimerPaused);
   const [periodStartTime, setPeriodStartTime] = useState(initialTimerState.periodStartTime);
-  const [lastSubTime, setLastSubTime] = useState(initialTimerState.lastSubTime);
-  const [pausedSubTime, setPausedSubTime] = useState(initialTimerState.pausedSubTime);
-  const [subPauseStartTime, setSubPauseStartTime] = useState(initialTimerState.subPauseStartTime);
+  const [lastSubstitutionTime, setLastSubstitutionTime] = useState(initialTimerState.lastSubstitutionTime);
+  const [secondLastSubstitutionTime, setSecondLastSubstitutionTime] = useState(initialTimerState.secondLastSubstitutionTime);
+  const [pauseStartTime, setPauseStartTime] = useState(initialTimerState.pauseStartTime);
+  const [totalPausedDuration, setTotalPausedDuration] = useState(initialTimerState.totalPausedDuration);
+  
+  // Force re-render trigger for timer display updates
+  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
   const [updateIntervalId, setUpdateIntervalId] = useState(null);
+  
+  // For backward compatibility with tests - computed from lastSubstitutionTime
+  const lastSubTime = lastSubstitutionTime;
 
-  // Timer Effects
+  // Calculate current timer values on-demand
+  const matchTimerSeconds = useMemo(() => {
+    return calculateMatchTimer(periodStartTime, periodDurationMinutes);
+  }, [periodStartTime, periodDurationMinutes, forceUpdateCounter]);
+  
+  const subTimerSeconds = useMemo(() => {
+    return calculateSubTimer(lastSubstitutionTime, totalPausedDuration, pauseStartTime);
+  }, [lastSubstitutionTime, totalPausedDuration, pauseStartTime, forceUpdateCounter]);
+  
+  // Derived state
+  const isSubTimerPaused = pauseStartTime !== null;
+
+  // Timer display update effect - only triggers re-renders, doesn't save to localStorage
   useEffect(() => {
     if (isPeriodActive && periodStartTime) {
-      const updateTimers = () => {
-        const now = Date.now();
-        const elapsedSeconds = Math.floor((now - periodStartTime) / 1000);
-        const remainingSeconds = (periodDurationMinutes * 60) - elapsedSeconds;
-        
-        setMatchTimerSeconds(remainingSeconds);
-        
-        if (lastSubTime && !isSubTimerPaused) {
-          // Normal running: calculate from last sub time + any accumulated paused time
-          const subElapsedSeconds = Math.floor((now - lastSubTime) / 1000) + pausedSubTime;
-          setSubTimerSeconds(subElapsedSeconds);
-        }
-        // When paused, don't update the timer - it should stay at the value when paused
-        // The pauseSubTimer function will handle setting the correct paused time
+      const updateDisplay = () => {
+        setForceUpdateCounter(prev => prev + 1);
       };
       
       // Update immediately
-      updateTimers();
+      updateDisplay();
       
-      // Then update every second
-      const interval = setInterval(updateTimers, 1000);
+      // Then update every second for display
+      const interval = setInterval(updateDisplay, 1000);
       setUpdateIntervalId(interval);
       
       // Handle page visibility changes to force updates when coming back
       const handleVisibilityChange = () => {
         if (!document.hidden) {
-          updateTimers();
+          updateDisplay();
         }
       };
       
@@ -106,122 +131,150 @@ export function useTimers(periodDurationMinutes) {
         setUpdateIntervalId(null);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPeriodActive, periodStartTime, lastSubTime, periodDurationMinutes, isSubTimerPaused, pausedSubTime, subPauseStartTime]); // NOTE: updateIntervalId removed from deps to prevent infinite loop
+  }, [isPeriodActive, periodStartTime]);
 
-  // Update timer when period duration changes
-  useEffect(() => {
-    if (!isPeriodActive) {
-      setMatchTimerSeconds(periodDurationMinutes * 60);
-    }
-  }, [periodDurationMinutes, isPeriodActive]);
-
-  // Save timer state to localStorage whenever it changes - NOTE: Critical for refresh persistence
-  useEffect(() => {
+  // Save timer state to localStorage with specific values (handles async state updates)
+  const saveTimerStateWithOverrides = useCallback((overrides = {}) => {
     const currentTimerState = {
-      matchTimerSeconds,
-      subTimerSeconds,
       isPeriodActive,
-      isSubTimerPaused,
       periodStartTime,
-      lastSubTime,
-      pausedSubTime,
-      subPauseStartTime,
+      lastSubstitutionTime,
+      secondLastSubstitutionTime,
+      pauseStartTime,
+      totalPausedDuration,
+      ...overrides // Allow overriding specific values for immediate persistence
     };
     saveTimerState(currentTimerState);
-  }, [matchTimerSeconds, subTimerSeconds, isPeriodActive, isSubTimerPaused, periodStartTime, lastSubTime, pausedSubTime, subPauseStartTime]);
+  }, [isPeriodActive, periodStartTime, lastSubstitutionTime, secondLastSubstitutionTime, pauseStartTime, totalPausedDuration]);
+  
+  // Legacy saveCurrentState for other functions
+  const saveCurrentState = saveTimerStateWithOverrides;
 
-  const resetSubTimer = () => {
+  const resetSubTimer = useCallback(() => {
     const now = Date.now();
-    setLastSubTime(now);
-    setSubTimerSeconds(0);
-    setPausedSubTime(0);
-    setIsSubTimerPaused(false);
-    setSubPauseStartTime(null);
-  };
+    // Store previous substitution time for undo functionality
+    setSecondLastSubstitutionTime(lastSubstitutionTime);
+    setLastSubstitutionTime(now);
+    setPauseStartTime(null);
+    setTotalPausedDuration(0);
+    
+    // Save immediately with the new timestamp to fix async state issue
+    saveTimerStateWithOverrides({ 
+      lastSubstitutionTime: now,
+      secondLastSubstitutionTime: lastSubstitutionTime,
+      pauseStartTime: null,
+      totalPausedDuration: 0
+    });
+  }, [lastSubstitutionTime, saveTimerStateWithOverrides]);
 
-  const restoreSubTimer = (targetSeconds) => {
+  const restoreSubTimer = useCallback((targetSeconds) => {
     // Restore sub timer to a specific value (for undo functionality)
     const now = Date.now();
     const calculatedLastSubTime = now - (targetSeconds * 1000);
     
     // Set the last sub time to be in the past so that the timer shows the target seconds
-    setLastSubTime(calculatedLastSubTime);
-    setSubTimerSeconds(targetSeconds);
-    setPausedSubTime(0);
-    setIsSubTimerPaused(false);
-    setSubPauseStartTime(null);
-  };
+    setLastSubstitutionTime(calculatedLastSubTime);
+    setPauseStartTime(null);
+    setTotalPausedDuration(0);
+    
+    // Save immediately with the calculated timestamp
+    saveTimerStateWithOverrides({
+      lastSubstitutionTime: calculatedLastSubTime,
+      pauseStartTime: null,
+      totalPausedDuration: 0
+    });
+  }, [saveTimerStateWithOverrides]);
 
-  const pauseSubTimer = (updatePlayerStats) => {
-    if (!isSubTimerPaused && lastSubTime) {
+  const pauseSubTimer = useCallback((updatePlayerStats) => {
+    if (!isSubTimerPaused && lastSubstitutionTime) {
       const now = Date.now();
-      // Calculate and accumulate the time that passed since last sub or resume
-      const additionalTime = Math.floor((now - lastSubTime) / 1000);
-      const totalTime = pausedSubTime + additionalTime;
-      setPausedSubTime(totalTime);
-      setSubTimerSeconds(totalTime); // Set the timer to show the correct paused time
-      setSubPauseStartTime(now);
-      setIsSubTimerPaused(true);
+      setPauseStartTime(now);
       
       // Update all player stats to freeze their current time
       if (updatePlayerStats) {
         updatePlayerStats(now, true); // true = pausing
       }
+      
+      // Save immediately with the pause start time
+      saveTimerStateWithOverrides({
+        pauseStartTime: now
+      });
     }
-  };
+  }, [isSubTimerPaused, lastSubstitutionTime, saveTimerStateWithOverrides]);
 
-  const resumeSubTimer = (updatePlayerStats) => {
-    if (isSubTimerPaused) {
+  const resumeSubTimer = useCallback((updatePlayerStats) => {
+    if (isSubTimerPaused && pauseStartTime) {
       const now = Date.now();
-      setLastSubTime(now);
-      setIsSubTimerPaused(false);
-      setSubPauseStartTime(null);
+      // Add pause duration to total accumulated pause time
+      const pauseDuration = now - pauseStartTime;
+      const newTotalPausedDuration = totalPausedDuration + pauseDuration;
+      
+      setTotalPausedDuration(newTotalPausedDuration);
+      setPauseStartTime(null);
       
       // Reset all active player stint timers
       if (updatePlayerStats) {
         updatePlayerStats(now, false); // false = resuming
       }
+      
+      // Save immediately with the new pause duration
+      saveTimerStateWithOverrides({
+        totalPausedDuration: newTotalPausedDuration,
+        pauseStartTime: null
+      });
     }
-  };
+  }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides]);
 
-  const startTimers = () => {
+  const startTimers = useCallback(() => {
     const now = Date.now();
     setPeriodStartTime(now);
-    setLastSubTime(now);
+    setLastSubstitutionTime(now);
+    setSecondLastSubstitutionTime(null);
     setIsPeriodActive(true);
-    setIsSubTimerPaused(false);
-    setPausedSubTime(0);
-    setSubPauseStartTime(null);
-  };
+    setPauseStartTime(null);
+    setTotalPausedDuration(0);
+    
+    // Save immediately with all new values
+    saveTimerStateWithOverrides({
+      periodStartTime: now,
+      lastSubstitutionTime: now,
+      secondLastSubstitutionTime: null,
+      isPeriodActive: true,
+      pauseStartTime: null,
+      totalPausedDuration: 0
+    });
+  }, [saveTimerStateWithOverrides]);
 
-  const stopTimers = () => {
+  const stopTimers = useCallback(() => {
     setIsPeriodActive(false);
     if (updateIntervalId) {
       clearInterval(updateIntervalId);
       setUpdateIntervalId(null);
     }
-  };
+    
+    // Save immediately with isPeriodActive: false
+    saveTimerStateWithOverrides({
+      isPeriodActive: false
+    });
+  }, [updateIntervalId, saveTimerStateWithOverrides]);
 
   // Clear stored timer state - useful for starting fresh
-  const clearTimerState = () => {
+  const clearTimerState = useCallback(() => {
     try {
       localStorage.removeItem(TIMER_STORAGE_KEY);
     } catch (error) {
       console.warn('Failed to clear timer state:', error);
     }
-  };
+  }, []);
 
   // Reset all timer state to initial values
-  const resetAllTimers = () => {
-    setMatchTimerSeconds(periodDurationMinutes * 60);
-    setSubTimerSeconds(0);
+  const resetAllTimers = useCallback(() => {
     setIsPeriodActive(false);
-    setIsSubTimerPaused(false);
     setPeriodStartTime(null);
-    setLastSubTime(null);
-    setPausedSubTime(0);
-    setSubPauseStartTime(null);
+    setLastSubstitutionTime(null);
+    setSecondLastSubstitutionTime(null);
+    setPauseStartTime(null);
+    setTotalPausedDuration(0);
     
     // Clear any running interval
     if (updateIntervalId) {
@@ -231,25 +284,34 @@ export function useTimers(periodDurationMinutes) {
     
     // Clear localStorage
     clearTimerState();
-  };
+  }, [updateIntervalId, clearTimerState]);
 
   return {
+    // Calculated timer values (read-only)
     matchTimerSeconds,
-    setMatchTimerSeconds,
     subTimerSeconds,
-    setSubTimerSeconds,
+    
+    // Timer state
     isPeriodActive,
-    setIsPeriodActive,
     isSubTimerPaused,
+    periodStartTime,
+    lastSubTime, // For backward compatibility
+    lastSubstitutionTime,
+    secondLastSubstitutionTime,
+    
+    // Timer controls
     resetSubTimer,
     restoreSubTimer,
     pauseSubTimer,
     resumeSubTimer,
     startTimers,
     stopTimers,
-    periodStartTime,
-    lastSubTime,
     clearTimerState,
     resetAllTimers,
+    
+    // Deprecated setters (for backward compatibility - these now do nothing)
+    setMatchTimerSeconds: () => console.warn('setMatchTimerSeconds is deprecated - timer values are now calculated'),
+    setSubTimerSeconds: () => console.warn('setSubTimerSeconds is deprecated - timer values are now calculated'),
+    setIsPeriodActive: setIsPeriodActive,
   };
 }
