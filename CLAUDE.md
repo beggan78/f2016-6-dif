@@ -86,6 +86,11 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - Error scenarios and edge cases required
 - Performance regression prevention
 
+### Testing Development Guidelines
+- **Production Code Changes**: When the task is to write tests, do not change production code other than to add debug logs aimed at better understanding the logic better
+- **Suspected Issues**: If you suspect that the code is not functioning properly and needs changing, please pause and describe what you perceive the error to be. The user can then run the application to confirm or dismiss the hypothesis
+- **Test-First Approach**: Focus on making tests accurately reflect actual application behavior rather than changing production code to match test expectations
+
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing
 - Follow pure function architecture for all game logic
