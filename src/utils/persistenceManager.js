@@ -309,6 +309,9 @@ export class GamePersistenceManager extends PersistenceManager {
       nextNextPlayerIdToSubOut: null,
       rotationQueue: [],
       gameLog: [],
+      opponentTeamName: '',
+      homeScore: 0,
+      awayScore: 0,
     };
 
     super(storageKey, defaultGameState);
@@ -336,6 +339,9 @@ export class GamePersistenceManager extends PersistenceManager {
       nextNextPlayerIdToSubOut: gameState.nextNextPlayerIdToSubOut,
       rotationQueue: gameState.rotationQueue,
       gameLog: gameState.gameLog,
+      opponentTeamName: gameState.opponentTeamName,
+      homeScore: gameState.homeScore,
+      awayScore: gameState.awayScore,
     };
 
     return this.saveState(stateToSave);

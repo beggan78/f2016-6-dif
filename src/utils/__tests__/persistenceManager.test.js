@@ -580,6 +580,74 @@ describe('GamePersistenceManager', () => {
       expect(savedState).toHaveProperty('allPlayers');
       expect(savedState).toHaveProperty('periodFormation');
     });
+
+    it('should save homeScore and awayScore fields', () => {
+      const gameStateWithScores = {
+        allPlayers: [{ id: '1', name: 'Player 1' }],
+        view: 'game',
+        selectedSquadIds: ['1'],
+        homeScore: 3,
+        awayScore: 2,
+        opponentTeamName: 'Test Opponent',
+        periodFormation: { goalie: '1' },
+        gameLog: []
+      };
+      
+      jest.spyOn(gameManager, 'saveState');
+      gameManager.saveGameState(gameStateWithScores);
+      
+      expect(gameManager.saveState).toHaveBeenCalled();
+      const savedState = gameManager.saveState.mock.calls[0][0];
+      
+      // Verify scores are included in saved state
+      expect(savedState).toHaveProperty('homeScore', 3);
+      expect(savedState).toHaveProperty('awayScore', 2);
+      expect(savedState).toHaveProperty('opponentTeamName', 'Test Opponent');
+    });
+
+    it('should handle missing score fields gracefully', () => {
+      const gameStateWithoutScores = {
+        allPlayers: [{ id: '1', name: 'Player 1' }],
+        view: 'game',
+        selectedSquadIds: ['1'],
+        periodFormation: { goalie: '1' },
+        gameLog: []
+      };
+      
+      jest.spyOn(gameManager, 'saveState');
+      gameManager.saveGameState(gameStateWithoutScores);
+      
+      expect(gameManager.saveState).toHaveBeenCalled();
+      const savedState = gameManager.saveState.mock.calls[0][0];
+      
+      // Verify score fields are present (even if undefined)
+      expect('homeScore' in savedState).toBe(true);
+      expect('awayScore' in savedState).toBe(true);
+      expect(savedState.homeScore).toBeUndefined();
+      expect(savedState.awayScore).toBeUndefined();
+    });
+
+    it('should save zero scores correctly', () => {
+      const gameStateWithZeroScores = {
+        allPlayers: [{ id: '1', name: 'Player 1' }],
+        view: 'game',
+        selectedSquadIds: ['1'],
+        homeScore: 0,
+        awayScore: 0,
+        periodFormation: { goalie: '1' },
+        gameLog: []
+      };
+      
+      jest.spyOn(gameManager, 'saveState');
+      gameManager.saveGameState(gameStateWithZeroScores);
+      
+      expect(gameManager.saveState).toHaveBeenCalled();
+      const savedState = gameManager.saveState.mock.calls[0][0];
+      
+      // Verify zero scores are saved correctly
+      expect(savedState.homeScore).toBe(0);
+      expect(savedState.awayScore).toBe(0);
+    });
   });
 
   describe('autoBackup', () => {
