@@ -16,7 +16,7 @@ import {
   createMockPlayers
 } from '../../testUtils';
 
-describe.skip('animationSupport', () => {
+describe('animationSupport', () => {
   describe('captureAllPlayerPositions', () => {
     test('should capture positions for INDIVIDUAL_6 team mode', () => {
       const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
@@ -78,13 +78,13 @@ describe.skip('animationSupport', () => {
       
       const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.INDIVIDUAL_6);
       
-      // Check position indices match expected layout
-      expect(positions['1'].positionIndex).toBe(0); // leftDefender
-      expect(positions['2'].positionIndex).toBe(1); // rightDefender
-      expect(positions['3'].positionIndex).toBe(2); // leftAttacker
-      expect(positions['4'].positionIndex).toBe(3); // rightAttacker
-      expect(positions['5'].positionIndex).toBe(4); // substitute
-      expect(positions['6'].positionIndex).toBe(5); // goalie
+      // Check position indices match expected layout (goalie first in positionOrder)
+      expect(positions['1'].positionIndex).toBe(1); // leftDefender
+      expect(positions['2'].positionIndex).toBe(2); // rightDefender
+      expect(positions['3'].positionIndex).toBe(3); // leftAttacker
+      expect(positions['4'].positionIndex).toBe(4); // rightAttacker
+      expect(positions['5'].positionIndex).toBe(5); // substitute
+      expect(positions['6'].positionIndex).toBe(0); // goalie
     });
 
     test('should map players to correct position indices for INDIVIDUAL_7', () => {
@@ -93,14 +93,14 @@ describe.skip('animationSupport', () => {
       
       const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.INDIVIDUAL_7);
       
-      // Check position indices match expected layout
-      expect(positions['1'].positionIndex).toBe(0); // leftDefender7
-      expect(positions['2'].positionIndex).toBe(1); // rightDefender7
-      expect(positions['3'].positionIndex).toBe(2); // leftAttacker7
-      expect(positions['4'].positionIndex).toBe(3); // rightAttacker7
-      expect(positions['5'].positionIndex).toBe(4); // substitute7_1
-      expect(positions['6'].positionIndex).toBe(5); // substitute7_2
-      expect(positions['7'].positionIndex).toBe(6); // goalie
+      // Check position indices match expected layout (goalie first in positionOrder)
+      expect(positions['1'].positionIndex).toBe(1); // leftDefender7
+      expect(positions['2'].positionIndex).toBe(2); // rightDefender7
+      expect(positions['3'].positionIndex).toBe(3); // leftAttacker7
+      expect(positions['4'].positionIndex).toBe(4); // rightAttacker7
+      expect(positions['5'].positionIndex).toBe(5); // substitute7_1
+      expect(positions['6'].positionIndex).toBe(6); // substitute7_2
+      expect(positions['7'].positionIndex).toBe(0); // goalie
     });
 
     test('should map players to correct position indices for PAIRS_7', () => {
@@ -109,26 +109,28 @@ describe.skip('animationSupport', () => {
       
       const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.PAIRS_7);
       
-      // Check position indices match expected layout
-      expect(positions['1'].positionIndex).toBe(0); // leftPair.defender
-      expect(positions['2'].positionIndex).toBe(0); // leftPair.attacker (same pair)
-      expect(positions['3'].positionIndex).toBe(1); // rightPair.defender
-      expect(positions['4'].positionIndex).toBe(1); // rightPair.attacker (same pair)
-      expect(positions['5'].positionIndex).toBe(2); // subPair.defender
-      expect(positions['6'].positionIndex).toBe(2); // subPair.attacker (same pair)
-      expect(positions['7'].positionIndex).toBe(3); // goalie
+      // Check position indices match expected layout (goalie first in positionOrder)
+      expect(positions['1'].positionIndex).toBe(1); // leftPair.defender
+      expect(positions['2'].positionIndex).toBe(1); // leftPair.attacker (same pair)
+      expect(positions['3'].positionIndex).toBe(2); // rightPair.defender
+      expect(positions['4'].positionIndex).toBe(2); // rightPair.attacker (same pair)
+      expect(positions['5'].positionIndex).toBe(3); // subPair.defender
+      expect(positions['6'].positionIndex).toBe(3); // subPair.attacker (same pair)
+      expect(positions['7'].positionIndex).toBe(0); // goalie
     });
 
-    test('should include role information in position data', () => {
-      const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
-      const players = createMockPlayers(6, TEAM_MODES.INDIVIDUAL_6);
+    test('should include role information in position data for pairs mode', () => {
+      const formation = createMockFormation(TEAM_MODES.PAIRS_7);
+      const players = createMockPlayers(7, TEAM_MODES.PAIRS_7);
       
-      const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.INDIVIDUAL_6);
+      const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.PAIRS_7);
       
-      // Check that role information is captured
-      expect(positions['1'].role).toBeDefined();
-      expect(positions['2'].role).toBeDefined();
-      expect(positions['6'].role).toBeDefined(); // goalie
+      // Check that role information is captured for pairs mode
+      expect(positions['1'].role).toBeDefined(); // leftPair defender
+      expect(positions['2'].role).toBeDefined(); // leftPair attacker
+      expect(positions['1'].role).toBe('defender');
+      expect(positions['2'].role).toBe('attacker');
+      // Goalie does not have role information in position data
     });
 
     test('should handle missing players gracefully', () => {
@@ -167,9 +169,7 @@ describe.skip('animationSupport', () => {
       expect(typeof animations).toBe('object');
       
       // No players should be animating if positions are the same
-      Object.values(animations).forEach(animation => {
-        expect(animation.isMoving).toBe(false);
-      });
+      expect(Object.keys(animations)).toHaveLength(0);
     });
 
     test('should detect movement when positions change', () => {
@@ -188,15 +188,15 @@ describe.skip('animationSupport', () => {
       const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, TEAM_MODES.INDIVIDUAL_6);
       
       // The two swapped players should be moving
-      const movingPlayers = Object.entries(animations).filter(([_, anim]) => anim.isMoving);
-      expect(movingPlayers.length).toBe(2);
+      const animationEntries = Object.entries(animations);
+      expect(animationEntries.length).toBe(2);
       
       // Check that the moving players have the right animation data
-      movingPlayers.forEach(([playerId, animation]) => {
-        expect(animation.distance).toBeGreaterThan(0);
+      animationEntries.forEach(([playerId, animation]) => {
+        expect(Math.abs(animation.distance)).toBeGreaterThan(0);
         expect(['up', 'down']).toContain(animation.direction);
-        expect(typeof animation.fromIndex).toBe('number');
-        expect(typeof animation.toIndex).toBe('number');
+        expect(typeof animation.fromPosition).toBe('string');
+        expect(typeof animation.toPosition).toBe('string');
       });
     });
 
@@ -204,7 +204,7 @@ describe.skip('animationSupport', () => {
       const beforeFormation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
       const afterFormation = { ...beforeFormation };
       
-      // Move player from position 0 to position 2 (should be "down")
+      // Move player from leftDefender (index 1) to leftAttacker (index 3) - should be "down"
       const playerMovingDown = beforeFormation.leftDefender;
       afterFormation.leftDefender = beforeFormation.leftAttacker;
       afterFormation.leftAttacker = playerMovingDown;
@@ -216,20 +216,20 @@ describe.skip('animationSupport', () => {
       
       const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, TEAM_MODES.INDIVIDUAL_6);
       
-      // Player moving from index 0 to 2 should move "down"
+      // Player moving from leftDefender (index 1) to leftAttacker (index 3) should move "down"
       const playerMovingDownAnim = animations[playerMovingDown];
-      expect(playerMovingDownAnim.isMoving).toBe(true);
+      expect(playerMovingDownAnim).toBeDefined();
       expect(playerMovingDownAnim.direction).toBe('down');
-      expect(playerMovingDownAnim.fromIndex).toBe(0);
-      expect(playerMovingDownAnim.toIndex).toBe(2);
+      expect(playerMovingDownAnim.fromPosition).toBe('leftDefender');
+      expect(playerMovingDownAnim.toPosition).toBe('leftAttacker');
       
-      // Player moving from index 2 to 0 should move "up"
+      // Player moving from leftAttacker (index 3) to leftDefender (index 1) should move "up"
       const playerMovingUp = beforeFormation.leftAttacker;
       const playerMovingUpAnim = animations[playerMovingUp];
-      expect(playerMovingUpAnim.isMoving).toBe(true);
+      expect(playerMovingUpAnim).toBeDefined();
       expect(playerMovingUpAnim.direction).toBe('up');
-      expect(playerMovingUpAnim.fromIndex).toBe(2);
-      expect(playerMovingUpAnim.toIndex).toBe(0);
+      expect(playerMovingUpAnim.fromPosition).toBe('leftAttacker');
+      expect(playerMovingUpAnim.toPosition).toBe('leftDefender');
     });
 
     test('should calculate movement distances based on position indices', () => {
@@ -247,12 +247,12 @@ describe.skip('animationSupport', () => {
       
       const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, TEAM_MODES.INDIVIDUAL_7);
       
-      // Both players should be moving with positive distances
-      const movingPlayers = Object.entries(animations).filter(([_, anim]) => anim.isMoving);
-      expect(movingPlayers.length).toBe(2);
+      // Both players should be moving with non-zero distances
+      const animationEntries = Object.entries(animations);
+      expect(animationEntries.length).toBe(2);
       
-      movingPlayers.forEach(([playerId, animation]) => {
-        expect(animation.distance).toBeGreaterThan(0);
+      animationEntries.forEach(([playerId, animation]) => {
+        expect(Math.abs(animation.distance)).toBeGreaterThan(0);
         expect(typeof animation.distance).toBe('number');
       });
     });
@@ -273,13 +273,15 @@ describe.skip('animationSupport', () => {
       const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, TEAM_MODES.PAIRS_7);
       
       // All four players in the swapped pairs should be moving
-      const movingPlayers = Object.entries(animations).filter(([_, anim]) => anim.isMoving);
-      expect(movingPlayers.length).toBe(4);
+      const animationEntries = Object.entries(animations);
+      expect(animationEntries.length).toBe(4);
       
-      // Check that pair players move together (same direction)
+      // Check that pair players move together (same direction and distance)
       const leftPairDefender = beforeFormation.leftPair.defender;
       const leftPairAttacker = beforeFormation.leftPair.attacker;
       
+      expect(animations[leftPairDefender]).toBeDefined();
+      expect(animations[leftPairAttacker]).toBeDefined();
       expect(animations[leftPairDefender].direction).toBe(animations[leftPairAttacker].direction);
       expect(animations[leftPairDefender].distance).toBe(animations[leftPairAttacker].distance);
     });
@@ -295,10 +297,21 @@ describe.skip('animationSupport', () => {
     });
 
     test('should handle null/undefined position data', () => {
-      const animations = calculateAllPlayerAnimations(null, null, TEAM_MODES.INDIVIDUAL_6);
+      // Test with null inputs
+      const animations1 = calculateAllPlayerAnimations(null, null, TEAM_MODES.INDIVIDUAL_6);
+      expect(animations1).toBeDefined();
+      expect(typeof animations1).toBe('object');
       
-      expect(animations).toBeDefined();
-      expect(typeof animations).toBe('object');
+      // Test with undefined inputs
+      const animations2 = calculateAllPlayerAnimations(undefined, undefined, TEAM_MODES.INDIVIDUAL_6);
+      expect(animations2).toBeDefined();
+      expect(typeof animations2).toBe('object');
+      
+      // Test with mixed null/valid inputs
+      const validPositions = {};
+      const animations3 = calculateAllPlayerAnimations(null, validPositions, TEAM_MODES.INDIVIDUAL_6);
+      expect(animations3).toBeDefined();
+      expect(typeof animations3).toBe('object');
     });
   });
 
@@ -338,30 +351,30 @@ describe.skip('animationSupport', () => {
     });
 
     test('should maintain position index order within team modes', () => {
-      // Individual 6 team mode: leftDef(0), rightDef(1), leftAtt(2), rightAtt(3), sub(4), goalie(5)
+      // Individual 6 team mode: goalie(0), leftDef(1), rightDef(2), leftAtt(3), rightAtt(4), sub(5)
       const formation6 = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
       const players6 = createMockPlayers(6, TEAM_MODES.INDIVIDUAL_6);
       const positions6 = captureAllPlayerPositions(formation6, players6, TEAM_MODES.INDIVIDUAL_6);
       
-      expect(positions6[formation6.leftDefender].positionIndex).toBe(0);
-      expect(positions6[formation6.rightDefender].positionIndex).toBe(1);
-      expect(positions6[formation6.leftAttacker].positionIndex).toBe(2);
-      expect(positions6[formation6.rightAttacker].positionIndex).toBe(3);
-      expect(positions6[formation6.substitute].positionIndex).toBe(4);
-      expect(positions6[formation6.goalie].positionIndex).toBe(5);
+      expect(positions6[formation6.goalie].positionIndex).toBe(0);
+      expect(positions6[formation6.leftDefender].positionIndex).toBe(1);
+      expect(positions6[formation6.rightDefender].positionIndex).toBe(2);
+      expect(positions6[formation6.leftAttacker].positionIndex).toBe(3);
+      expect(positions6[formation6.rightAttacker].positionIndex).toBe(4);
+      expect(positions6[formation6.substitute].positionIndex).toBe(5);
       
-      // Individual 7 team mode: similar pattern with 7 positions
+      // Individual 7 team mode: goalie(0), leftDef7(1), rightDef7(2), leftAtt7(3), rightAtt7(4), sub7_1(5), sub7_2(6)
       const formation7 = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
       const players7 = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
       const positions7 = captureAllPlayerPositions(formation7, players7, TEAM_MODES.INDIVIDUAL_7);
       
-      expect(positions7[formation7.leftDefender7].positionIndex).toBe(0);
-      expect(positions7[formation7.rightDefender7].positionIndex).toBe(1);
-      expect(positions7[formation7.leftAttacker7].positionIndex).toBe(2);
-      expect(positions7[formation7.rightAttacker7].positionIndex).toBe(3);
-      expect(positions7[formation7.substitute7_1].positionIndex).toBe(4);
-      expect(positions7[formation7.substitute7_2].positionIndex).toBe(5);
-      expect(positions7[formation7.goalie].positionIndex).toBe(6);
+      expect(positions7[formation7.goalie].positionIndex).toBe(0);
+      expect(positions7[formation7.leftDefender7].positionIndex).toBe(1);
+      expect(positions7[formation7.rightDefender7].positionIndex).toBe(2);
+      expect(positions7[formation7.leftAttacker7].positionIndex).toBe(3);
+      expect(positions7[formation7.rightAttacker7].positionIndex).toBe(4);
+      expect(positions7[formation7.substitute7_1].positionIndex).toBe(5);
+      expect(positions7[formation7.substitute7_2].positionIndex).toBe(6);
     });
   });
 });
