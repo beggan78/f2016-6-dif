@@ -566,4 +566,546 @@ describe('useTimers', () => {
       expect(result.current.subTimerSeconds).toBe(30);
     });
   });
+
+  describe('Critical Bug Prevention Tests', () => {
+    describe('Match Clock Independence', () => {
+      it('should keep match timer running when sub timer is paused', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Run for 3 seconds
+        Date.now.mockReturnValue(1003000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        expect(result.current.matchTimerSeconds).toBe(897); // 900 - 3
+        expect(result.current.subTimerSeconds).toBe(3);
+
+        // Pause sub timer for 2 seconds
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1005000); // 2 seconds while paused
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // CRITICAL: Match timer should continue running, sub timer should stay at 3
+        expect(result.current.matchTimerSeconds).toBe(895); // 900 - 5 (continues running)
+        expect(result.current.subTimerSeconds).toBe(3); // Paused at 3
+
+        // Resume and run for 2 more seconds
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        Date.now.mockReturnValue(1007000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Match timer: 7 seconds total, Sub timer: 5 seconds (3 + 2, ignoring pause)
+        expect(result.current.matchTimerSeconds).toBe(893); // 900 - 7
+        expect(result.current.subTimerSeconds).toBe(5); // 3 + 2 (pause ignored)
+      });
+
+      it('should calculate match timer independently of pause state', () => {
+        const { result } = renderHook(() => useTimers(10));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Pause immediately
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        // Advance time by 30 seconds while paused
+        Date.now.mockReturnValue(1030000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Match timer should reflect 30 seconds elapsed regardless of pause
+        expect(result.current.matchTimerSeconds).toBe(570); // 600 - 30
+        expect(result.current.subTimerSeconds).toBe(0); // Paused at 0
+      });
+
+      it('should maintain match timer accuracy across multiple pause/resume cycles', () => {
+        const { result } = renderHook(() => useTimers(5));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // First cycle: run 10s, pause 5s, resume
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1015000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Second cycle: run 10s, pause 5s, resume
+        Date.now.mockReturnValue(1025000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1030000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Final run
+        Date.now.mockReturnValue(1040000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Match timer should show 40 seconds elapsed total (ignoring all pauses)
+        expect(result.current.matchTimerSeconds).toBe(260); // 300 - 40
+        // Sub timer should show 30 seconds (10+10+10, ignoring 10 seconds of pause)
+        expect(result.current.subTimerSeconds).toBe(30);
+      });
+    });
+
+    describe('lastSubstitutionTime Persistence', () => {
+      it('should persist lastSubstitutionTime immediately after resetSubTimer', () => {
+        const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Clear previous calls
+        setItemSpy.mockClear();
+
+        // Reset sub timer (this was the bug - timestamp wasn't persisting)
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          result.current.resetSubTimer();
+        });
+
+        // CRITICAL: localStorage should be called immediately with correct timestamp
+        expect(setItemSpy).toHaveBeenCalledWith(
+          'dif-coach-timer-state',
+          expect.stringContaining('"lastSubstitutionTime":1010000')
+        );
+
+        setItemSpy.mockRestore();
+      });
+
+      it('should handle React async state updates correctly with saveTimerStateWithOverrides', () => {
+        const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        setItemSpy.mockClear();
+
+        // Test that immediate persistence works during state transitions
+        Date.now.mockReturnValue(1020000);
+        act(() => {
+          result.current.resetSubTimer();
+        });
+
+        // Should save with override values, not stale React state
+        const lastCall = setItemSpy.mock.calls[setItemSpy.mock.calls.length - 1];
+        const savedState = JSON.parse(lastCall[1]);
+        
+        expect(savedState.lastSubstitutionTime).toBe(1020000);
+        expect(savedState.pauseStartTime).toBe(null);
+        expect(savedState.totalPausedDuration).toBe(0);
+
+        setItemSpy.mockRestore();
+      });
+
+      it('should persist state immediately during pause operations', () => {
+        const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        setItemSpy.mockClear();
+
+        // Pause should save immediately
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        expect(setItemSpy).toHaveBeenCalledWith(
+          'dif-coach-timer-state',
+          expect.stringContaining('"pauseStartTime":1005000')
+        );
+
+        setItemSpy.mockClear();
+
+        // Resume should save immediately  
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        expect(setItemSpy).toHaveBeenCalledWith(
+          'dif-coach-timer-state',
+          expect.stringContaining('"pauseStartTime":null')
+        );
+
+        setItemSpy.mockRestore();
+      });
+    });
+
+    describe('Performance - localStorage Optimization', () => {
+      it('should only save to localStorage during meaningful events, not every second', () => {
+        const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        setItemSpy.mockClear();
+
+        // Simulate timer running for 10 seconds
+        for (let i = 1; i <= 10; i++) {
+          Date.now.mockReturnValue(1000000 + (i * 1000));
+          act(() => {
+            jest.advanceTimersByTime(1000);
+          });
+        }
+
+        // CRITICAL: No localStorage saves should occur during normal timer updates
+        expect(setItemSpy).not.toHaveBeenCalled();
+
+        setItemSpy.mockRestore();
+      });
+
+      it('should save to localStorage only during meaningful timer events', () => {
+        const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+        const { result } = renderHook(() => useTimers(15));
+
+        setItemSpy.mockClear();
+
+        // These operations should trigger saves
+        act(() => {
+          result.current.startTimers(); // Should save
+        });
+        
+        expect(setItemSpy).toHaveBeenCalledTimes(1);
+
+        act(() => {
+          result.current.pauseSubTimer(); // Should save
+        });
+        
+        expect(setItemSpy).toHaveBeenCalledTimes(2);
+
+        act(() => {
+          result.current.resumeSubTimer(); // Should save
+        });
+        
+        expect(setItemSpy).toHaveBeenCalledTimes(3);
+
+        act(() => {
+          result.current.resetSubTimer(); // Should save
+        });
+        
+        expect(setItemSpy).toHaveBeenCalledTimes(4);
+
+        setItemSpy.mockRestore();
+      });
+
+      it('should not save to localStorage during forceUpdateCounter changes', () => {
+        const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        setItemSpy.mockClear();
+
+        // Force multiple timer display updates
+        act(() => {
+          jest.advanceTimersByTime(5000); // 5 timer ticks
+        });
+
+        // Should not trigger any localStorage saves
+        expect(setItemSpy).not.toHaveBeenCalled();
+
+        setItemSpy.mockRestore();
+      });
+    });
+  });
+
+  describe('Timestamp Architecture Tests', () => {
+    describe('Timestamp Calculation Accuracy', () => {
+      it('should calculate timer values accurately from timestamps', () => {
+        const { result } = renderHook(() => useTimers(10));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Test specific timestamp calculations
+        Date.now.mockReturnValue(1015000); // 15 seconds later
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Match timer: 600 - 15 = 585
+        expect(result.current.matchTimerSeconds).toBe(585);
+        // Sub timer: 15 seconds from start
+        expect(result.current.subTimerSeconds).toBe(15);
+      });
+
+      it('should handle timestamp-based calculations during restore operations', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Restore to specific value (simulates undo operation)
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          result.current.restoreSubTimer(120); // 2 minutes
+        });
+
+        // Should show exactly 120 seconds
+        expect(result.current.subTimerSeconds).toBe(120);
+        
+        // Advance time by 10 seconds
+        Date.now.mockReturnValue(1015000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Should now show 130 seconds
+        expect(result.current.subTimerSeconds).toBe(130);
+      });
+
+      it('should maintain accuracy with large timestamp values', () => {
+        // Test with large timestamp values (year 2030)
+        const futureTimestamp = 1893456000000;
+        Date.now.mockReturnValue(futureTimestamp);
+        
+        const { result } = renderHook(() => useTimers(5));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Advance by 30 seconds
+        Date.now.mockReturnValue(futureTimestamp + 30000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        expect(result.current.matchTimerSeconds).toBe(270); // 300 - 30
+        expect(result.current.subTimerSeconds).toBe(30);
+      });
+    });
+
+    describe('Time Jump Handling', () => {
+      it('should handle system clock changes correctly', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Simulate system clock jumping forward by 1 hour
+        Date.now.mockReturnValue(1000000 + 3600000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Should handle the large time jump
+        expect(result.current.matchTimerSeconds).toBe(-2700); // Negative (overtime)
+        expect(result.current.subTimerSeconds).toBe(3600); // 1 hour
+      });
+
+      it('should handle backward time changes', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Advance normally first
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        expect(result.current.subTimerSeconds).toBe(10);
+
+        // Simulate clock going backward (daylight saving, etc.)
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Sub timer should handle negative elapsed time gracefully
+        expect(result.current.subTimerSeconds).toBe(5);
+      });
+    });
+
+    describe('Pause Duration Accumulation', () => {
+      it('should accurately accumulate pause durations across multiple cycles', () => {
+        const { result } = renderHook(() => useTimers(10));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // First pause cycle: run 5s, pause 3s, resume
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1008000); // 3s pause
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Second pause cycle: run 4s, pause 2s, resume  
+        Date.now.mockReturnValue(1012000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1014000); // 2s pause
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Final run: 3s
+        Date.now.mockReturnValue(1017000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Total: 5s + 4s + 3s = 12s (ignoring 5s total pause)
+        expect(result.current.subTimerSeconds).toBe(12);
+        // Match timer: 17s total (ignoring pauses)
+        expect(result.current.matchTimerSeconds).toBe(583); // 600 - 17
+      });
+
+      it('should reset pause accumulation on resetSubTimer', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Build up some pause time
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Now reset - should clear all pause accumulation
+        Date.now.mockReturnValue(1015000);
+        act(() => {
+          result.current.resetSubTimer();
+        });
+
+        // Advance time after reset
+        Date.now.mockReturnValue(1020000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Should show 5 seconds from reset, not affected by previous pause
+        expect(result.current.subTimerSeconds).toBe(5);
+      });
+    });
+
+    describe('Boundary Conditions', () => {
+      it('should handle zero elapsed time correctly', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // No time advance - should show zero
+        expect(result.current.subTimerSeconds).toBe(0);
+        expect(result.current.matchTimerSeconds).toBe(900);
+      });
+
+      it('should handle fractional seconds correctly', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Advance by 1.7 seconds
+        Date.now.mockReturnValue(1001700);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Should floor to 1 second
+        expect(result.current.subTimerSeconds).toBe(1);
+        expect(result.current.matchTimerSeconds).toBe(899);
+      });
+
+      it('should handle null timestamps gracefully', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        // Don't start timers - timestamps should be null
+        expect(result.current.matchTimerSeconds).toBe(900); // Default duration
+        expect(result.current.subTimerSeconds).toBe(0); // Default for null timestamp
+      });
+    });
+  });
 });

@@ -851,4 +851,166 @@ describe('Session Persistence Integration', () => {
       });
     }, 10000); // Increase timeout to 10 seconds
   });
+
+  describe('Timer State Persistence', () => {
+    it('should persist lastSubstitutionTime across browser sessions', async () => {
+      // Arrange - create app with timer state
+      const initialTimerState = {
+        isPeriodActive: true,
+        periodStartTime: Date.now() - 60000, // Started 1 minute ago
+        lastSubstitutionTime: Date.now() - 30000, // Substitution 30 seconds ago
+        pauseStartTime: null,
+        totalPausedDuration: 0
+      };
+
+      localStorage.setItem('dif-coach-timer-state', JSON.stringify(initialTimerState));
+
+      const { unmount } = render(<TestApp />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('test-app-loaded')).toBeInTheDocument();
+      });
+
+      // Act - simulate browser session end/restart
+      unmount();
+      cleanup();
+
+      // Verify localStorage preservation
+      const savedState = JSON.parse(localStorage.getItem('dif-coach-timer-state'));
+      expect(savedState.lastSubstitutionTime).toBe(initialTimerState.lastSubstitutionTime);
+
+      // Restart app
+      render(<TestApp />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('test-app-loaded')).toBeInTheDocument();
+      });
+
+      // Assert - timer state should be preserved
+      const restoredState = JSON.parse(localStorage.getItem('dif-coach-timer-state'));
+      expect(restoredState.lastSubstitutionTime).toBe(initialTimerState.lastSubstitutionTime);
+    });
+
+    it('should handle timer localStorage quota exceeded gracefully', async () => {
+      // Arrange - mock localStorage to simulate quota exceeded
+      const originalSetItem = localStorage.setItem;
+      let quotaExceeded = false;
+
+      localStorage.setItem = jest.fn((key, value) => {
+        if (key === 'dif-coach-timer-state' && !quotaExceeded) {
+          quotaExceeded = true;
+          throw new Error('QuotaExceededError: LocalStorage quota exceeded');
+        }
+        return originalSetItem.call(localStorage, key, value);
+      });
+
+      // Act & Assert - should not crash
+      let component;
+      expect(() => {
+        component = render(<TestApp />);
+      }).not.toThrow();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('test-app-loaded')).toBeInTheDocument();
+      });
+
+      // Should continue functioning despite localStorage error
+      expect(component).toBeDefined();
+
+      // Restore original localStorage
+      localStorage.setItem = originalSetItem;
+    });
+
+    it('should maintain timer consistency across screen transitions', async () => {
+      // Arrange - setup initial timer state
+      const timerState = {
+        isPeriodActive: true,
+        periodStartTime: Date.now() - 45000, // 45 seconds ago
+        lastSubstitutionTime: Date.now() - 20000, // 20 seconds ago
+        pauseStartTime: Date.now() - 10000, // Paused 10 seconds ago
+        totalPausedDuration: 5000 // 5 seconds total pause
+      };
+
+      localStorage.setItem('dif-coach-timer-state', JSON.stringify(timerState));
+
+      const { unmount } = render(<TestApp />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('test-app-loaded')).toBeInTheDocument();
+      });
+
+      // Act - navigate through different screens
+      const navButtons = ['config', 'setup', 'game', 'stats'];
+      
+      for (const screen of navButtons) {
+        const navButton = screen.getByTestId(`nav-${screen}`);
+        if (navButton) {
+          fireEvent.click(navButton);
+          
+          await waitFor(() => {
+            expect(screen.getByTestId('current-screen')).toHaveTextContent(screen);
+          });
+        }
+      }
+
+      // Assert - timer state should remain consistent
+      const finalState = JSON.parse(localStorage.getItem('dif-coach-timer-state'));
+      expect(finalState.lastSubstitutionTime).toBe(timerState.lastSubstitutionTime);
+      expect(finalState.pauseStartTime).toBe(timerState.pauseStartTime);
+      expect(finalState.totalPausedDuration).toBe(timerState.totalPausedDuration);
+    });
+
+    it('should handle corrupted timer state gracefully', async () => {
+      // Arrange - corrupt timer state data
+      localStorage.setItem('dif-coach-timer-state', '{"lastSubstitutionTime": "invalid-timestamp", "isPeriodActive": "not-boolean"}');
+
+      // Act & Assert - should not crash
+      let component;
+      expect(() => {
+        component = render(<TestApp />);
+      }).not.toThrow();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('test-app-loaded')).toBeInTheDocument();
+      });
+
+      // Should gracefully handle corrupted data
+      expect(component).toBeDefined();
+    });
+
+    it('should preserve timer state during React component unmount/remount cycles', async () => {
+      // Arrange - timer state with specific values
+      const specificTimerState = {
+        isPeriodActive: false,
+        periodStartTime: 1640995200000, // Fixed timestamp
+        lastSubstitutionTime: 1640995260000, // 1 minute after start
+        secondLastSubstitutionTime: 1640995230000, // 30 seconds after start
+        pauseStartTime: null,
+        totalPausedDuration: 15000 // 15 seconds total
+      };
+
+      localStorage.setItem('dif-coach-timer-state', JSON.stringify(specificTimerState));
+
+      // Act - multiple mount/unmount cycles
+      for (let cycle = 0; cycle < 3; cycle++) {
+        const { unmount } = render(<TestApp />);
+
+        await waitFor(() => {
+          expect(screen.getByTestId('test-app-loaded')).toBeInTheDocument();
+        });
+
+        unmount();
+        cleanup();
+
+        // Verify state persistence between cycles
+        const persistedState = JSON.parse(localStorage.getItem('dif-coach-timer-state'));
+        expect(persistedState.lastSubstitutionTime).toBe(specificTimerState.lastSubstitutionTime);
+        expect(persistedState.totalPausedDuration).toBe(specificTimerState.totalPausedDuration);
+      }
+
+      // Final verification
+      const finalPersistedState = JSON.parse(localStorage.getItem('dif-coach-timer-state'));
+      expect(finalPersistedState).toEqual(expect.objectContaining(specificTimerState));
+    });
+  });
 });
