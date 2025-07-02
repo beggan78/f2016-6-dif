@@ -124,6 +124,11 @@ export const captureAllPlayerPositions = (periodFormation, allPlayers, teamMode)
 export const calculateAllPlayerAnimations = (beforePositions, afterPositions, teamMode) => {
   const animations = {};
   
+  // Handle null/undefined position data gracefully
+  if (!beforePositions || !afterPositions) {
+    return animations;
+  }
+  
   // Find all players that need to move
   const allPlayerIds = new Set([
     ...Object.keys(beforePositions),
