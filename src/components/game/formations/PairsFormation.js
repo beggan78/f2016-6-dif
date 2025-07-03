@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Shield, Sword } from 'lucide-react';
 import { getPositionEvents } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
-import { getPairAnimation } from '../../../game/ui/playerAnimation';
+import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES, HELP_MESSAGES } from './constants';
 
@@ -14,6 +14,7 @@ export function PairsFormation({
   hideNextOffIndicator,
   nextPhysicalPairToSubOut,
   longPressHandlers,
+  goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
   ...domProps
@@ -91,8 +92,47 @@ export function PairsFormation({
     );
   };
 
+  const renderGoalie = () => {
+    const goalieId = periodFormation.goalie;
+    if (!goalieId) return null;
+
+    // Check if goalie was recently substituted
+    const isRecentlySubstituted = recentlySubstitutedPlayers.has(goalieId);
+
+    // Get styling and animation using utilities
+    const { animationClass, zIndexClass, styleProps } = getPlayerAnimation(goalieId, animationState);
+    const { bgColor, textColor, borderColor, glowClass } = getPlayerStyling({
+      isFieldPosition: false, // Goalie is not a field position
+      isInactive: false,
+      isNextOff: false,
+      isNextOn: false,
+      isRecentlySubstituted,
+      hideNextOffIndicator,
+      supportsInactivePlayers: false
+    });
+
+    const longPressEvents = goalieHandlers ? goalieHandlers.goalieEvents : {};
+
+    return (
+      <div 
+        key="goalie"
+        className={`${FORMATION_STYLES.containerBase} ${borderColor} ${bgColor} ${textColor} ${glowClass} ${animationClass} ${zIndexClass} transition-all duration-300 cursor-pointer select-none hover:bg-slate-600`}
+        style={styleProps}
+        {...longPressEvents}
+      >
+        <h3 className="text-sm font-semibold mb-1">Goalie</h3>
+        <div className="flex items-center justify-between">
+          <div>{getPlayerNameById ? getPlayerNameById(goalieId) : goalieId}</div>
+          <PlayerStatsDisplay playerId={goalieId} getPlayerTimeStats={getPlayerTimeStats} />
+        </div>
+        <p className={FORMATION_STYLES.helpText}>Hold to replace goalie</p>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-2" {...domProps}>
+      {renderGoalie()}
       {renderPair('leftPair', 'Left', 0)}
       {renderPair('rightPair', 'Right', 1)}
       {renderPair('subPair', 'Substitutes', 2)}

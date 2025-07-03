@@ -307,16 +307,6 @@ export function GameScreen({
       </div>
 
       {/* Field & Subs Visualization */}
-      <div 
-        className="p-2 bg-slate-700 rounded-lg text-center transition-all duration-300 cursor-pointer select-none hover:bg-slate-600"
-        {...goalieHandlers.goalieEvents}
-      >
-        <p className="text-center my-1 text-sky-200">
-          Goalie: <span className="font-semibold">{periodFormation?.goalie ? getPlayerNameById(periodFormation.goalie) : 'None'}</span>
-        </p>
-        <p className="text-xs text-slate-400 text-center">Hold to replace goalie</p>
-      </div>
-
       <FormationRenderer
           teamMode={teamMode}
           periodFormation={periodFormation}
@@ -328,6 +318,7 @@ export function GameScreen({
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
           longPressHandlers={longPressHandlers}
+          goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
           getPlayerTimeStats={getPlayerTimeStats}
         />

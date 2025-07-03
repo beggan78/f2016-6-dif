@@ -111,7 +111,7 @@ describe('GameScreen Integration Tests', () => {
       expect(screen.getByText(/Period 1/)).toBeInTheDocument();
       expect(screen.getByText(/Match Clock/)).toBeInTheDocument();
       expect(screen.getByText(/Substitution Timer/)).toBeInTheDocument();
-      expect(screen.getByText(/Goalie:/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/)[0]).toBeInTheDocument();
       
       // Verify formation is displayed
       expect(screen.getAllByText(/Substitute/)).toHaveLength(2); // INDIVIDUAL_7 has 2 substitutes
@@ -164,7 +164,7 @@ describe('GameScreen Integration Tests', () => {
       expect(screen.getByText(/Period 1/)).toBeInTheDocument();
       expect(screen.getByText(/Match Clock/)).toBeInTheDocument();
       expect(screen.getByText(/Substitution Timer/)).toBeInTheDocument();
-      expect(screen.getByText(/Goalie:/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/)[0]).toBeInTheDocument();
       
       // Verify PAIRS_7 specific formation display
       // PAIRS_7 should have 1 "Substitutes" heading for the substitute pair
@@ -214,7 +214,7 @@ describe('GameScreen Integration Tests', () => {
       expect(screen.getByText(/Period 1/)).toBeInTheDocument();
       expect(screen.getByText(/Match Clock/)).toBeInTheDocument();
       expect(screen.getByText(/Substitution Timer/)).toBeInTheDocument();
-      expect(screen.getByText(/Goalie:/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/)[0]).toBeInTheDocument();
       
       // Verify INDIVIDUAL_6 specific formation display
       // INDIVIDUAL_6 should have 1 substitute (6 players total: 4 field + 1 sub + 1 goalie)
@@ -594,7 +594,7 @@ describe('GameScreen Integration Tests', () => {
       
       // Verify formation structure for INDIVIDUAL_7
       expect(screen.getAllByText(/Substitute/)).toHaveLength(2);
-      expect(screen.getByText(/Goalie:/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/)[0]).toBeInTheDocument();
       
       // Assert - Player is in correct position
       const playerElement = screen.getByTestId(`player-${testPlayer.id}`);

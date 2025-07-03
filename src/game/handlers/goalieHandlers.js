@@ -33,7 +33,8 @@ export const createGoalieHandlers = (
     const currentGoalieName = getPlayerNameById(periodFormation.goalie);
     
     // Get available players for goalie replacement (outfield squad players)
-    const outfieldPlayers = getOutfieldPlayers(selectedSquadPlayers);
+    const selectedSquadIds = selectedSquadPlayers.map(p => p.id);
+    const outfieldPlayers = getOutfieldPlayers(allPlayers, selectedSquadIds, periodFormation.goalie);
     const availablePlayers = outfieldPlayers.map(player => ({
       id: player.id,
       name: player.name

@@ -72,8 +72,8 @@ describe('playerAnimation', () => {
       
       expect(result).toEqual({
         animationClass: 'animate-move-down-50',
-        zIndexClass: undefined,
-        styleProps: undefined
+        zIndexClass: '',
+        styleProps: {}
       });
     });
 

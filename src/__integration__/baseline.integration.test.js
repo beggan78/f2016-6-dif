@@ -118,7 +118,7 @@ describe('Baseline Integration Tests', () => {
       expect(screen.getByText('Period 1')).toBeInTheDocument();
       expect(screen.getByText('Match Clock')).toBeInTheDocument();
       expect(screen.getByText('Substitution Timer')).toBeInTheDocument();
-      expect(screen.getByText(/Goalie:/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/)[0]).toBeInTheDocument();
       
       // Verify team mode-specific elements
       await assertTeamModeSpecificRendering(teamMode, screen);
@@ -232,7 +232,7 @@ describe('Baseline Integration Tests', () => {
     }
     
     // Verify goalie is properly identified
-    expect(screen.getByText(/Goalie:/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Goalie/)[0]).toBeInTheDocument();
   };
   
   // Helper function for timer coordination validation
@@ -4413,7 +4413,7 @@ describe('Baseline Integration Tests', () => {
       expect(() => {
         // Should not throw errors when accessing component elements
         screen.getByText(/Period 1/i);
-        screen.getByText(/Goalie:/i);
+        screen.getAllByText(/Goalie/i)[0];
       }).not.toThrow();
     });
     
@@ -4753,7 +4753,7 @@ describe('Baseline Integration Tests', () => {
       expect(formationAfterErrors.substitute7_2).toBe('player-7');
       
       // Formation should still be renderable despite UI errors
-      expect(screen.getByText(/Goalie:/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/i)[0]).toBeInTheDocument();
       
       // Formation players should be visible (check data-testid attributes)
       const playerElements = screen.getAllByTestId(/^player-/);
@@ -4985,7 +4985,7 @@ describe('Baseline Integration Tests', () => {
       // Game should continue to be playable despite timer issues
       const timerIssuesPeriodHeaders = screen.getAllByText(/Period 1/i);
       expect(timerIssuesPeriodHeaders.length).toBeGreaterThan(0);
-      expect(screen.getByText(/Goalie:/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/i)[0]).toBeInTheDocument();
       
       // Score updates should still work (most critical functionality)
       const gameStateBefore = mockHooks.useGameState._getMockState();
@@ -5009,7 +5009,7 @@ describe('Baseline Integration Tests', () => {
       expect(screen.getByText(/End Period/i)).toBeInTheDocument();
       
       // 3. Formation display
-      expect(screen.getByText(/Goalie:/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Goalie/i)[0]).toBeInTheDocument();
       const playerElements = screen.getAllByTestId(/^player-/);
       expect(playerElements.length).toBeGreaterThan(0);
       
@@ -5120,7 +5120,7 @@ describe('Baseline Integration Tests', () => {
       }
       
       // User tries formation interaction
-      const formationArea = screen.getByText(/Goalie:/i).closest('div');
+      const formationArea = screen.getAllByText(/Goalie/i)[0].closest('div');
       expect(formationArea).toBeInTheDocument();
       
       // User can click on formation elements without crashes
@@ -5161,7 +5161,7 @@ describe('Baseline Integration Tests', () => {
       expect(() => {
         screen.getAllByText(/Period/i);
         screen.getByText(/5 - 4/); // Updated score
-        screen.getByText(/Goalie:/i);
+        screen.getAllByText(/Goalie/i)[0];
       }).not.toThrow();
     });
   });

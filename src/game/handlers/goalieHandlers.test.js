@@ -32,8 +32,10 @@ describe('createGoalieHandlers', () => {
       players.find(p => p.id === id)?.name || `Player ${id}`
     );
     
-    getOutfieldPlayers.mockImplementation((players) => 
-      players.filter(p => p.stats.currentPeriodStatus !== 'GOALIE')
+    getOutfieldPlayers.mockImplementation((allPlayers, selectedSquadIds, goalieId) => 
+      allPlayers.filter(p => 
+        selectedSquadIds.includes(p.id) && p.id !== goalieId
+      )
     );
 
     animateStateChange.mockImplementation((gameState, calculateFn, applyFn) => {
@@ -86,7 +88,7 @@ describe('createGoalieHandlers', () => {
       handlers.handleGoalieLongPress(mockFormation);
 
       expect(getPlayerName).toHaveBeenCalledWith(mockPlayers, '7');
-      expect(getOutfieldPlayers).toHaveBeenCalledWith(mockPlayers);
+      expect(getOutfieldPlayers).toHaveBeenCalledWith(mockPlayers, expect.any(Array), '7');
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
         availablePlayers: expect.arrayContaining([

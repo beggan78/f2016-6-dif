@@ -26,6 +26,7 @@ export function IndividualFormation({
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
   longPressHandlers,
+  goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
   ...domProps
@@ -38,7 +39,7 @@ export function IndividualFormation({
   // Get formation-specific position lists from formation definitions
   const fieldPositions = getFieldPositions(teamMode);
   const substitutePositions = getSubstitutePositions(teamMode);
-  const allPositions = getAllPositions(teamMode).filter(pos => pos !== 'goalie');
+  const allPositions = getAllPositions(teamMode); // Include goalie in formation rendering
   
   // Formation capabilities
   const formationSupportsInactive = supportsInactivePlayers(teamMode);
@@ -50,6 +51,7 @@ export function IndividualFormation({
     
     const isFieldPosition = fieldPositions.includes(position);
     const isSubstitutePosition = substitutePositions.includes(position);
+    const isGoaliePosition = position === 'goalie';
     const canBeSelected = isFieldPosition;
 
     // Check if this player was recently substituted
@@ -77,8 +79,8 @@ export function IndividualFormation({
     });
 
     // Get utilities
-    const longPressEvents = getPositionEvents(longPressHandlers, position);
-    const positionDisplayName = getPositionDisplayName(position, player, teamMode, substitutePositions);
+    const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(longPressHandlers, position);
+    const positionDisplayName = isGoaliePosition ? 'Goalie' : getPositionDisplayName(position, player, teamMode, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
 
     return (
@@ -109,6 +111,9 @@ export function IndividualFormation({
         )}
         {isSubstitutePosition && formationSupportsInactive && (
           <p className={FORMATION_STYLES.helpText}>{HELP_MESSAGES.substituteToggle(isInactive)}</p>
+        )}
+        {isGoaliePosition && (
+          <p className={FORMATION_STYLES.helpText}>Hold to replace goalie</p>
         )}
       </div>
     );

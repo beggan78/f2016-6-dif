@@ -64,6 +64,13 @@ describe('PairsFormation', () => {
       hideNextOffIndicator: false,
       nextPhysicalPairToSubOut: 'leftPair',
       longPressHandlers: mockLongPressHandlers,
+      goalieHandlers: {
+        goalieEvents: {
+          onTouchStart: jest.fn(),
+          onTouchEnd: jest.fn(),
+          onClick: jest.fn()
+        }
+      },
       getPlayerNameById: jest.fn((id) => `Player ${id}`),
       getPlayerTimeStats: jest.fn(() => ({ totalOutfieldTime: 300, attackDefenderDiff: 0 }))
     };
@@ -74,7 +81,7 @@ describe('PairsFormation', () => {
     // Setup mock implementations
     const { getPositionEvents } = require('../../../../game/ui/positionUtils');
     const { getPlayerStyling } = require('../../../../game/ui/playerStyling');
-    const { getPairAnimation } = require('../../../../game/ui/playerAnimation');
+    const { getPairAnimation, getPlayerAnimation } = require('../../../../game/ui/playerAnimation');
     
     getPositionEvents.mockImplementation((handlers, pairKey) => ({
       onTouchStart: jest.fn(),
@@ -96,12 +103,19 @@ describe('PairsFormation', () => {
       zIndexClass: 'z-auto',
       styleProps: {}
     });
+    
+    getPlayerAnimation.mockReturnValue({
+      animationClass: '',
+      zIndexClass: 'z-auto',
+      styleProps: {}
+    });
   });
 
   describe('Core Rendering', () => {
-    it('should render all three pairs (leftPair, rightPair, subPair)', () => {
+    it('should render goalie and all three pairs (leftPair, rightPair, subPair)', () => {
       render(<PairsFormation {...defaultProps} />);
       
+      expect(screen.getByText('Goalie')).toBeInTheDocument();
       expect(screen.getByText('Left')).toBeInTheDocument();
       expect(screen.getByText('Right')).toBeInTheDocument();
       expect(screen.getByText('Substitutes')).toBeInTheDocument();
