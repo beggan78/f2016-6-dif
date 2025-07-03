@@ -216,6 +216,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
  */
 export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   const { allPlayers, periodFormation, teamMode, isSubTimerPaused = false } = gameState;
+  console.log('calculateGoalieSwitch: Initial allPlayers:', allPlayers);
 
   if (!newGoalieId || newGoalieId === periodFormation.goalie) {
     console.warn('Invalid new goalie ID or same as current goalie');
@@ -343,6 +344,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
     }
     return p;
   });
+  console.log('calculateGoalieSwitch: newAllPlayers before return:', newAllPlayers);
 
   // Update rotation queue - remove new goalie from queue and add old goalie
   const queueManager = createRotationQueue(gameState.rotationQueue, createPlayerLookup(allPlayers));

@@ -51,6 +51,7 @@ export const createGoalieHandlers = (
       gameStateFactory(),
       (gameState) => calculateGoalieSwitch(gameState, newGoalieId),
       (newGameState) => {
+        console.log('newGameState.allPlayers after calculateGoalieSwitch:', newGameState.allPlayers);
         setPeriodFormation(newGameState.periodFormation);
         setAllPlayers(newGameState.allPlayers);
       },
