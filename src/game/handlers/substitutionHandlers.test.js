@@ -485,7 +485,7 @@ describe('createSubstitutionHandlers', () => {
 
       expect(animateStateChange).toHaveBeenCalled();
       expect(calculateUndo).toHaveBeenCalledWith(mockGameState, mockLastSubstitution);
-      expect(mockDependencies.stateUpdaters.handleUndoSubstitutionTimer).toHaveBeenCalledWith(120);
+      expect(mockDependencies.stateUpdaters.handleUndoSubstitutionTimer).toHaveBeenCalledWith(120, 1000);
     });
 
     it('should handle missing lastSubstitution gracefully', () => {

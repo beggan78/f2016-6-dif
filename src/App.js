@@ -83,10 +83,10 @@ function App() {
   };
 
 
-  const handleUndoSubstitution = (subTimerSecondsAtSubstitution) => {
+  const handleUndoSubstitution = (subTimerSecondsAtSubstitution, substitutionTimestamp) => {
     const targetSubTimerSeconds = calculateUndoTimerTarget(
       subTimerSecondsAtSubstitution,
-      gameState.lastSubstitutionTimestamp
+      substitutionTimestamp || gameState.lastSubstitutionTimestamp
     );
     
     timers.restoreSubTimer(targetSubTimerSeconds);

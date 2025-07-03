@@ -262,6 +262,7 @@ export const createSubstitutionHandlers = (
           subTimerSecondsAtSubstitution
         };
         
+        
         // Store last substitution for undo
         setLastSubstitution(lastSubstitutionData);
         setLastSubstitutionTimestamp(substitutionTimestamp);
@@ -382,6 +383,7 @@ export const createSubstitutionHandlers = (
       return;
     }
 
+
     // Use the animation system for undo
     animateStateChange(
       gameStateFactory(),
@@ -400,7 +402,8 @@ export const createSubstitutionHandlers = (
 
         // Restore substitution timer with the saved value
         if (handleUndoSubstitutionTimer && lastSubstitution.subTimerSecondsAtSubstitution !== undefined) {
-          handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution);
+          // Pass both the timer value and the timestamp from the substitution being undone
+          handleUndoSubstitutionTimer(lastSubstitution.subTimerSecondsAtSubstitution, lastSubstitution.timestamp);
         }
       },
       setAnimationState,
