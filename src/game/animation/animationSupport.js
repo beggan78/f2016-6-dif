@@ -1,6 +1,157 @@
 /**
- * New generic animation support utilities
- * Provides a unified approach for calculating and managing player position animations
+ * Animation Support Module - Unified Player Movement System
+ * 
+ * This module provides a comprehensive animation system for smooth player position transitions
+ * across all team modes and formation types. It handles:
+ * 
+ * - Position-based movement calculations
+ * - CSS animation orchestration with precise timing
+ * - Glow effect coordination for visual feedback
+ * - Hardware-accelerated smooth transitions
+ * 
+ * ============================================================================
+ * SYSTEM ARCHITECTURE DIAGRAM
+ * ============================================================================
+ * 
+ * User Interaction Flow:
+ * ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
+ * │ User Action     │ -> │ Handler Function │ -> │ animateStateChange  │
+ * │ (Click, Touch)  │    │ (handleSub, etc) │    │ (Main Orchestrator) │
+ * └─────────────────┘    └──────────────────┘    └─────────────────────┘
+ *                                                          │
+ *                                ┌─────────────────────────┴─────────────────────────┐
+ *                                │                                                   │
+ *                                ▼                                                   ▼
+ * ┌─────────────────────────────────────────────────────────────┐    ┌─────────────────────────┐
+ * │ PHASE 1: Position Capture & Calculation (0ms)              │    │ PHASE 2: Animation      │
+ * │                                                             │    │ Decision Logic          │
+ * │ 1. captureAllPlayerPositions(BEFORE)                       │    │                         │
+ * │ 2. pureLogicFunction(gameState) -> newGameState             │    │ calculateAnimations()   │
+ * │ 3. captureAllPlayerPositions(AFTER)                        │    │ ↓                       │
+ * │ 4. calculateAllPlayerAnimations(before, after)             │    │ Has movements?          │
+ * └─────────────────────────────────────────────────────────────┘    └─────────────────────────┘
+ *                                │                                                   │
+ *                                ▼                                                   ▼
+ * ┌─────────────────────────────────────────────────────────────┐    ┌─────────────────────────┐
+ * │ PHASE 3: CSS Animation Start (0ms - 1000ms)                │    │ PHASE 4: Direct Apply  │
+ * │                                                             │    │ (No animations needed)  │
+ * │ setAnimationState({ type: 'generic', phase: 'switching' }) │    │                         │
+ * │ setHideNextOffIndicator(true)                              │    │ applyStateFunction()    │
+ * │ Apply CSS classes: animate-dynamic-up/down                  │    │ Apply glow effects      │
+ * │ Set CSS variables: --move-distance                          │    │ Auto-cleanup after     │
+ * │ Players move visually to new positions                      │    │ GLOW_DURATION           │
+ * └─────────────────────────────────────────────────────────────┘    └─────────────────────────┘
+ *                                │
+ *                                ▼ (After ANIMATION_DURATION)
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ PHASE 5: State Update & Glow (1000ms - 1900ms)             │
+ * │                                                             │
+ * │ applyStateFunction(newGameState)                           │
+ * │ setRecentlySubstitutedPlayers(playersToHighlight)         │
+ * │ setAnimationState({ phase: 'completing' })                 │
+ * │ Apply glow effect CSS classes                               │
+ * └─────────────────────────────────────────────────────────────┘
+ *                                │
+ *                                ▼ (After GLOW_DURATION)
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ PHASE 6: Cleanup (1900ms)                                  │
+ * │                                                             │
+ * │ setAnimationState({ type: 'none', phase: 'idle' })        │
+ * │ setRecentlySubstitutedPlayers(new Set())                  │
+ * │ setHideNextOffIndicator(false)                            │
+ * │ Animation cycle complete                                    │
+ * └─────────────────────────────────────────────────────────────┘
+ * 
+ * ============================================================================
+ * COMPONENT INTEGRATION ARCHITECTURE
+ * ============================================================================
+ * 
+ * React Component Tree:
+ * ┌──────────────────────┐
+ * │ GameScreen           │ <- Main component with animation state
+ * │ (Has animation hooks)│
+ * └──────────┬───────────┘
+ *            │
+ *            ▼
+ * ┌──────────────────────┐    ┌─────────────────────┐
+ * │ Formation Components │ -> │ Animation Utilities │
+ * │ - IndividualFormation│    │ - getPlayerAnimation│
+ * │ - PairsFormation     │    │ - getPairAnimation  │
+ * └──────────┬───────────┘    └─────────────────────┘
+ *            │
+ *            ▼
+ * ┌──────────────────────┐    ┌─────────────────────┐
+ * │ Player Components    │ -> │ CSS Classes Applied │
+ * │ - PlayerBox          │    │ - animate-dynamic-* │
+ * │ - PairBox            │    │ - z-index classes   │
+ * └──────────────────────┘    │ - glow effect CSS   │
+ *                             └─────────────────────┘
+ * 
+ * ============================================================================
+ * POSITION INDEX MAPPING SYSTEM
+ * ============================================================================
+ * 
+ * Individual 6-Player Mode Visual Layout:
+ * ┌─────────────────┐ Index 0
+ * │ Goalie          │
+ * ├─────────────────┤ Index 1  
+ * │ Left Defender   │
+ * ├─────────────────┤ Index 2
+ * │ Right Defender  │
+ * ├─────────────────┤ Index 3
+ * │ Left Attacker   │
+ * ├─────────────────┤ Index 4
+ * │ Right Attacker  │ 
+ * ├─────────────────┤ Index 5
+ * │ Substitute      │
+ * └─────────────────┘
+ * 
+ * Distance Calculation Example:
+ * Player moving from leftDefender(1) to substitute(5):
+ * - Index difference: 5 - 1 = 4 positions
+ * - Distance: 4 × 104px = 416px downward
+ * - CSS: transform: translateY(416px)
+ * 
+ * ============================================================================
+ * CSS ANIMATION COORDINATION
+ * ============================================================================
+ * 
+ * Timing Synchronization:
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ JavaScript                                                  │
+ * │ ┌─────┐         ┌──────────────┐         ┌──────────────┐  │
+ * │ │ 0ms │ -----> │ 1000ms       │ -----> │ 1900ms       │  │
+ * │ │Start│         │State Update  │         │Cleanup       │  │
+ * │ └─────┘         └──────────────┘         └──────────────┘  │
+ * └─────────────────────────────────────────────────────────────┘
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ CSS Animations                                              │
+ * │ ┌─────────────────────────────────┐   ┌───────────────────┐ │
+ * │ │ Position Animation (1000ms)     │   │ Glow Effect       │ │
+ * │ │ - animate-dynamic-up/down       │   │ - animate-pulse   │ │
+ * │ │ - translateY(distance)          │   │ - shadow effects  │ │
+ * │ │ - z-index management            │   │ (900ms)           │ │
+ * │ └─────────────────────────────────┘   └───────────────────┘ │
+ * └─────────────────────────────────────────────────────────────┘
+ * 
+ * ARCHITECTURE:
+ * The system follows a pure function approach where game logic is separated from visual effects.
+ * All movements use the same `animateStateChange()` entry point for consistency.
+ * 
+ * USAGE PATTERN:
+ * ```javascript
+ * animateStateChange(
+ *   gameState,                    // Current state
+ *   calculateOperation,           // Pure logic function
+ *   applyStateChanges,           // State update function
+ *   setAnimationState,           // Animation management
+ *   setHideNextOffIndicator,     // UI control
+ *   setRecentlySubstitutedPlayers // Glow effects
+ * );
+ * ```
+ * 
+ * @see README.md for complete documentation
+ * @see QUICK_REFERENCE.md for common usage patterns
  */
 // No longer using findPlayerById in this file
 import { TEAM_MODES } from '../../constants/playerConstants';
@@ -24,6 +175,16 @@ const MEASUREMENTS = {
 
 /**
  * Get the total height of a position box including padding, border, and gap
+ * 
+ * This calculation is critical for accurate animation distances. It must match
+ * the actual rendered heights of player/pair components in the UI.
+ * 
+ * @param {string} mode - 'pairs' or 'individual' based on team mode
+ * @returns {number} Total height in pixels including all spacing
+ * 
+ * @example
+ * const height = getBoxHeight('individual'); // Returns 104px total
+ * // Breakdown: 16px padding + 4px border + 76px content + 8px gap = 104px
  */
 const getBoxHeight = (mode) => {
   const contentHeight = mode === 'pairs' ? MEASUREMENTS.contentHeight.pairs : MEASUREMENTS.contentHeight.individual;
@@ -32,6 +193,19 @@ const getBoxHeight = (mode) => {
 
 /**
  * Get the visual order index of a position in the UI layout
+ * 
+ * Maps logical position keys to their visual rendering order. This determines
+ * animation distances by calculating index differences.
+ * 
+ * @param {string} position - Position key (e.g., 'leftDefender', 'goalie', 'leftPair')
+ * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+ * @returns {number} Zero-based index representing visual order (-1 if not found)
+ * 
+ * @example
+ * // Individual 6-player mode position order:
+ * // goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute(5)
+ * getPositionIndex('leftDefender', TEAM_MODES.INDIVIDUAL_6); // Returns 1
+ * getPositionIndex('substitute', TEAM_MODES.INDIVIDUAL_6);   // Returns 5
  */
 const getPositionIndex = (position, teamMode) => {
   const positions = getFormationPositionsWithGoalie(teamMode);
@@ -40,6 +214,22 @@ const getPositionIndex = (position, teamMode) => {
 
 /**
  * Calculate pixel distance between two position indices
+ * 
+ * Determines the exact pixel distance for CSS transform animations based on
+ * visual position differences. Positive values = downward movement,
+ * negative values = upward movement.
+ * 
+ * @param {number} fromIndex - Starting position index
+ * @param {number} toIndex - Ending position index  
+ * @param {string} teamMode - Team mode for height calculations
+ * @returns {number} Signed pixel distance (+ = down, - = up, 0 = no movement)
+ * 
+ * @example
+ * // Player moving from leftDefender(1) to substitute(5) in Individual 6-player
+ * calculateDistance(1, 5, TEAM_MODES.INDIVIDUAL_6); // Returns +416px (4 positions down)
+ * 
+ * // Player moving from substitute(5) to leftDefender(1) 
+ * calculateDistance(5, 1, TEAM_MODES.INDIVIDUAL_6); // Returns -416px (4 positions up)
  */
 const calculateDistance = (fromIndex, toIndex, teamMode) => {
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return 0;
@@ -52,6 +242,28 @@ const calculateDistance = (fromIndex, toIndex, teamMode) => {
 
 /**
  * Capture current positions of all players including goalie
+ * 
+ * Creates a snapshot of where all players are currently positioned in the formation.
+ * This is used to calculate animation requirements by comparing before/after states.
+ * 
+ * @param {Object} periodFormation - Current formation with player assignments
+ * @param {Array} allPlayers - Complete player data array
+ * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+ * @returns {Object} Position snapshot: { [playerId]: PositionData }
+ * 
+ * PositionData structure:
+ * - playerId: string - Player's unique identifier
+ * - position: string - Position key (e.g., 'leftDefender', 'goalie')  
+ * - positionIndex: number - Visual order index for animation calculations
+ * - role?: string - Player role for pairs mode ('defender' or 'attacker')
+ * 
+ * @example
+ * const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.INDIVIDUAL_6);
+ * // Returns: {
+ * //   "player1": { playerId: "player1", position: "goalie", positionIndex: 0 },
+ * //   "player2": { playerId: "player2", position: "leftDefender", positionIndex: 1 },
+ * //   ...
+ * // }
  */
 export const captureAllPlayerPositions = (periodFormation, allPlayers, teamMode) => {
   const positions = {};
@@ -120,6 +332,33 @@ export const captureAllPlayerPositions = (periodFormation, allPlayers, teamMode)
 
 /**
  * Calculate animations needed to move players from before to after positions
+ * 
+ * Compares position snapshots to determine which players need to move and how.
+ * Only calculates animations for players whose positions actually changed.
+ * 
+ * @param {Object} beforePositions - Position snapshot before state change
+ * @param {Object} afterPositions - Position snapshot after state change  
+ * @param {string} teamMode - Team mode for distance calculations
+ * @returns {Object} Animation data: { [playerId]: AnimationData }
+ * 
+ * AnimationData structure:
+ * - playerId: string - Player's unique identifier
+ * - distance: number - Signed pixel distance to move (+ = down, - = up)
+ * - direction: string - 'up' or 'down' movement direction
+ * - fromPosition: string - Starting position key
+ * - toPosition: string - Ending position key
+ * 
+ * @example
+ * const animations = calculateAllPlayerAnimations(before, after, teamMode);
+ * // Returns: {
+ * //   "player1": {
+ * //     playerId: "player1",
+ * //     distance: 208,
+ * //     direction: "down", 
+ * //     fromPosition: "leftDefender",
+ * //     toPosition: "substitute"
+ * //   }
+ * // }
  */
 export const calculateAllPlayerAnimations = (beforePositions, afterPositions, teamMode) => {
   const animations = {};
@@ -175,8 +414,63 @@ export const previewStateChange = (currentState, logicFunction) => {
 };
 
 /**
- * Main animation orchestrator - handles the complete animation flow
- * This is the new unified approach that calculates before/after positions and animates the differences
+ * Main Animation Orchestrator - Unified Entry Point for All Player Movements
+ * 
+ * This is the core function that handles the complete animation lifecycle for any
+ * player position changes. It provides a consistent interface for all movement types
+ * and coordinates timing between visual animations and state updates.
+ * 
+ * ANIMATION FLOW:
+ * 1. Capture current player positions (0ms)
+ * 2. Calculate new state using pure logic function (0ms)
+ * 3. Calculate required animations by comparing positions (0ms)
+ * 4. Start CSS animations if needed (0ms - 1000ms)
+ * 5. Apply state changes after animations complete (1000ms)
+ * 6. Show glow effects on affected players (1000ms - 1900ms)
+ * 7. Clean up animation state (1900ms)
+ * 
+ * @param {Object} gameState - Current complete game state
+ * @param {Function} pureLogicFunction - Pure function that calculates new state
+ *   - Must return new state object with `playersToHighlight` array for glow effects
+ *   - Should not modify input state (pure function requirement)
+ * @param {Function} applyStateFunction - Function to apply calculated state changes
+ *   - Called after animations complete to update React state
+ *   - Should apply ALL necessary state updates (formation, players, queues, etc.)
+ * @param {Function} setAnimationState - Animation state management function
+ * @param {Function} setHideNextOffIndicator - Function to hide UI indicators during animation
+ * @param {Function} setRecentlySubstitutedPlayers - Function to manage glow effects
+ * 
+ * @example
+ * // Basic substitution
+ * animateStateChange(
+ *   gameState,
+ *   calculateSubstitution,
+ *   (newState) => {
+ *     setPeriodFormation(newState.periodFormation);
+ *     setAllPlayers(newState.allPlayers);
+ *     setRotationQueue(newState.rotationQueue);
+ *   },
+ *   setAnimationState,
+ *   setHideNextOffIndicator,
+ *   setRecentlySubstitutedPlayers
+ * );
+ * 
+ * @example
+ * // Position switch with parameters
+ * animateStateChange(
+ *   gameState,
+ *   (state) => calculatePositionSwitch(state, player1Id, player2Id),
+ *   (newState) => {
+ *     setPeriodFormation(newState.periodFormation);
+ *     setAllPlayers(newState.allPlayers);
+ *   },
+ *   setAnimationState,
+ *   setHideNextOffIndicator,
+ *   setRecentlySubstitutedPlayers
+ * );
+ * 
+ * @see README.md for complete usage guide
+ * @see QUICK_REFERENCE.md for common patterns
  */
 export const animateStateChange = (
   gameState,
