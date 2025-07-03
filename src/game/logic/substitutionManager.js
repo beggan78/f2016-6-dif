@@ -80,7 +80,8 @@ export class SubstitutionManager {
     return {
       newFormation,
       updatedPlayers,
-      newNextPhysicalPairToSubOut: newNextPair
+      newNextPhysicalPairToSubOut: newNextPair,
+      playersComingOnIds: playersComingOnIds
     };
   }
 
