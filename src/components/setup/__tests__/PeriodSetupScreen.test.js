@@ -92,7 +92,8 @@ describe('PeriodSetupScreen', () => {
       setPeriodFormation: jest.fn(),
       handleStartGame: jest.fn(),
       setPeriodGoalieIds: jest.fn(),
-      setView: jest.fn()
+      setView: jest.fn(),
+      setRotationQueue: jest.fn()
     };
 
     defaultProps = {
@@ -113,6 +114,7 @@ describe('PeriodSetupScreen', () => {
       homeScore: 0,
       awayScore: 0,
       opponentTeamName: 'Test Opponent',
+      rotationQueue: [],
       ...mockSetters
     };
 
@@ -226,6 +228,34 @@ describe('PeriodSetupScreen', () => {
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
       expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
     });
+
+    it('should update rotation queue when goalie is changed in individual mode for period 2+', () => {
+      const props = {
+        ...defaultProps,
+        currentPeriodNumber: 2,
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        periodFormation: { 
+          ...defaultProps.periodFormation, 
+          goalie: null,  // No current goalie (dropdown visible)
+          leftDefender: '1',
+          rightDefender: '2',
+          leftAttacker: '3',
+          rightAttacker: '4',
+          substitute: '5'
+        },
+        rotationQueue: ['1', '2', '3', '4', '5', '6', '7'], // All players in queue initially
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Select player 6 as goalie from the dropdown
+      const selects = screen.getAllByTestId('select');
+      fireEvent.change(selects[0], { target: { value: '6' } });
+      
+      // Should update rotation queue: player 6 should be removed, no former goalie to add
+      expect(mockSetters.setRotationQueue).toHaveBeenCalledWith(['1', '2', '3', '4', '5', '7']);
+    });
+
 
     it('should show enhanced player labels for period 2+', () => {
       const props = { 

@@ -233,6 +233,8 @@ function App() {
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             opponentTeamName={gameState.opponentTeamName}
+            rotationQueue={gameState.rotationQueue}
+            setRotationQueue={gameState.setRotationQueue}
           />
         );
       case 'game':

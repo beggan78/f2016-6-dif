@@ -21,7 +21,9 @@ export function PeriodSetupScreen({
   setView,
   homeScore,
   awayScore,
-  opponentTeamName
+  opponentTeamName,
+  rotationQueue,
+  setRotationQueue
 }) {
   // Determine formation mode
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
@@ -199,6 +201,8 @@ export function PeriodSetupScreen({
   };
 
   const handleGoalieChangeForCurrentPeriod = (playerId) => {
+    const formerGoalieId = periodFormation.goalie;
+    
     setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
     // Also update the periodFormation.goalie immediately
     setPeriodFormation(prev => ({
@@ -207,6 +211,33 @@ export function PeriodSetupScreen({
       // Potentially clear pairs if new goalie was in one, or let user resolve
       // For simplicity, just update goalie. User must re-evaluate pairs.
     }));
+
+    // Update rotation queue if it exists and we're in individual modes (periods 2+)
+    if (rotationQueue && rotationQueue.length > 0 && (isIndividual6Mode || isIndividual7Mode)) {
+      const newGoalieIndex = rotationQueue.findIndex(id => id === playerId);
+      
+      if (newGoalieIndex !== -1) {
+        // New goalie is in the rotation queue
+        const updatedQueue = [...rotationQueue];
+        
+        if (formerGoalieId) {
+          // Replace new goalie with former goalie at same position
+          updatedQueue[newGoalieIndex] = formerGoalieId;
+          console.log(`🔄 Period Setup - Updated rotation queue: new goalie ${playerId} replaced with former goalie ${formerGoalieId} at position ${newGoalieIndex}`);
+        } else {
+          // No former goalie, just remove new goalie from queue
+          updatedQueue.splice(newGoalieIndex, 1);
+          console.log(`🔄 Period Setup - Removed new goalie ${playerId} from rotation queue at position ${newGoalieIndex}`);
+        }
+        
+        setRotationQueue(updatedQueue);
+      } else if (formerGoalieId) {
+        // New goalie is not in queue but we had a former goalie - add former goalie to end
+        const updatedQueue = [...rotationQueue, formerGoalieId];
+        setRotationQueue(updatedQueue);
+        console.log(`🔄 Period Setup - Added former goalie ${formerGoalieId} to end of rotation queue`);
+      }
+    }
   };
 
   const getAvailableForIndividualSelect = (currentPosition) => {
