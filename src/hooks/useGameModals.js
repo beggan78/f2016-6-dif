@@ -47,7 +47,7 @@ export function useGameModals(pushModalState, removeModalFromStack) {
         closeModal(modalType);
       });
     }
-  }, [pushModalState]);
+  }, [pushModalState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const closeModal = useCallback((modalType) => {
     setModals(prev => ({

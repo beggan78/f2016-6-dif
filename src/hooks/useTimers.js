@@ -80,6 +80,7 @@ export function useTimers(periodDurationMinutes) {
   const [totalPausedDuration, setTotalPausedDuration] = useState(initialTimerState.totalPausedDuration);
   
   // Force re-render trigger for timer display updates
+  // eslint-disable-next-line no-unused-vars
   const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
   const [updateIntervalId, setUpdateIntervalId] = useState(null);
   
@@ -89,11 +90,11 @@ export function useTimers(periodDurationMinutes) {
   // Calculate current timer values on-demand
   const matchTimerSeconds = useMemo(() => {
     return calculateMatchTimer(periodStartTime, periodDurationMinutes);
-  }, [periodStartTime, periodDurationMinutes, forceUpdateCounter]);
+  }, [periodStartTime, periodDurationMinutes]);
   
   const subTimerSeconds = useMemo(() => {
     return calculateSubTimer(lastSubstitutionTime, totalPausedDuration, pauseStartTime);
-  }, [lastSubstitutionTime, totalPausedDuration, pauseStartTime, forceUpdateCounter]);
+  }, [lastSubstitutionTime, totalPausedDuration, pauseStartTime]);
   
   // Derived state
   const isSubTimerPaused = pauseStartTime !== null;
@@ -131,7 +132,7 @@ export function useTimers(periodDurationMinutes) {
         setUpdateIntervalId(null);
       }
     }
-  }, [isPeriodActive, periodStartTime]);
+  }, [isPeriodActive, periodStartTime, updateIntervalId]);
 
   // Save timer state to localStorage with specific values (handles async state updates)
   const saveTimerStateWithOverrides = useCallback((overrides = {}) => {
@@ -147,8 +148,8 @@ export function useTimers(periodDurationMinutes) {
     saveTimerState(currentTimerState);
   }, [isPeriodActive, periodStartTime, lastSubstitutionTime, secondLastSubstitutionTime, pauseStartTime, totalPausedDuration]);
   
-  // Legacy saveCurrentState for other functions
-  const saveCurrentState = saveTimerStateWithOverrides;
+  // Legacy saveCurrentState for other functions (unused)
+  // const saveCurrentState = saveTimerStateWithOverrides;
 
   const resetSubTimer = useCallback(() => {
     const now = Date.now();

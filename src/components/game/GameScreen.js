@@ -277,7 +277,7 @@ export function GameScreen({
       uiState.setShouldSubstituteNow(false);
       substitutionHandlers.handleSubstitutionWithHighlight();
     }
-  }, [uiState.shouldSubstituteNow, uiState.setShouldSubstituteNow, substitutionHandlers]);
+  }, [uiState.shouldSubstituteNow, uiState.setShouldSubstituteNow, substitutionHandlers, uiState]);
 
   // Handle undo substitution using handler pattern
   const handleUndoSubstitutionClick = () => {
