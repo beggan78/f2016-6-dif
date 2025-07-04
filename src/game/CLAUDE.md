@@ -96,6 +96,8 @@ const handleOperation = () => {
       // Apply state updates
       setPeriodFormation(newState.periodFormation);
       setAllPlayers(newState.allPlayers);
+      setRotationQueue(newState.rotationQueue);
+      // Apply other state updates as needed
     },
     setAnimationState,
     setHideNextOffIndicator,

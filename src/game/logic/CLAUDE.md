@@ -35,6 +35,7 @@ Contains pure functions for all game state transitions and calculations. Handles
 - Updates player stats and role tracking
 - Manages formation structure changes
 - Handles inactive player edge cases (7-player mode)
+- **Handler Requirements**: All game state changes must be applied via state updaters (setPeriodFormation, setAllPlayers, setRotationQueue, etc.)
 
 ### `positionUtils.js` - Position and Formation Utilities
 **Core Functions**:
@@ -145,7 +146,27 @@ expect(result.periodFormation).toBe(/* expected formation */);
 ```
 
 ## Recent Fixes
-- **Goalie Switch Bug**: Fixed queue management so former goalie takes new goalie's exact position
+
+### Goalie Queue Fairness Fix (2025-01-04)
+**Problem**: Former goalie was always sent to end of rotation queue during switches, creating unfair rotation patterns.
+
+**Root Cause**: Handler layer was not applying `rotationQueue` updates from `calculateGoalieSwitch()`.
+
+**Solution**:
+- **Logic Layer**: Enhanced `calculateGoalieSwitch()` to capture new goalie's queue position before removal
+- **Handler Layer**: Added `setRotationQueue(newGameState.rotationQueue)` call in `goalieHandlers.js` 
+- **Queue Algorithm**: Former goalie takes new goalie's exact position, preserving fairness
+- **Debug Support**: Added comprehensive logging for queue position tracking
+
+**Test Coverage**:
+- Unit tests: Handler state updater integration
+- Logic tests: Pure function queue calculations  
+- Integration tests: End-to-end workflow verification across all team modes
+- State update tests: Verification that queue changes are actually applied
+
+**Impact**: Ensures fair rotation for all players during goalie switches across all team modes.
+
+### Previous Fixes
 - **Time Field Initialization**: Added defensive initialization for former goalies' time fields
 - **Role Assignment**: Simplified role assignment to directly use new goalie's current role/status
 

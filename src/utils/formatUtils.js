@@ -7,8 +7,17 @@ import { PLAYER_ROLES } from '../constants/playerConstants';
  * @returns {string} Formatted time (e.g., "05:30")
  */
 export const formatTime = (totalSeconds) => {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
+  // Debug logging and validation for NaN time values
+  if (totalSeconds === undefined || totalSeconds === null || isNaN(totalSeconds)) {
+    console.warn('formatTime received invalid value:', totalSeconds, 'returning "00:00"');
+    return '00:00';
+  }
+  
+  // Ensure we have a valid non-negative number
+  const validSeconds = Math.max(0, Math.floor(totalSeconds));
+  
+  const minutes = Math.floor(validSeconds / 60);
+  const seconds = validSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
@@ -18,6 +27,12 @@ export const formatTime = (totalSeconds) => {
  * @returns {string} Formatted time difference (e.g., "+02:30" or "-01:15")
  */
 export const formatTimeDifference = (diffSeconds) => {
+  // Debug logging and validation for NaN time difference values
+  if (diffSeconds === undefined || diffSeconds === null || isNaN(diffSeconds)) {
+    console.warn('formatTimeDifference received invalid value:', diffSeconds, 'returning "+00:00"');
+    return '+00:00';
+  }
+  
   const sign = diffSeconds >= 0 ? '+' : '-';
   const absSeconds = Math.abs(diffSeconds);
   return sign + formatTime(absSeconds);

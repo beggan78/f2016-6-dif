@@ -16,8 +16,20 @@ import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 export const updatePlayerTimeStats = (player, currentTimeEpoch, isSubTimerPaused = false) => {
   const stats = { ...player.stats };
   
+  console.log(`updatePlayerTimeStats for player ${player.id}:`, {
+    currentTimeEpoch,
+    isSubTimerPaused,
+    lastStintStartTimeEpoch: stats.lastStintStartTimeEpoch,
+    currentPeriodStatus: stats.currentPeriodStatus,
+    currentPeriodRole: stats.currentPeriodRole,
+    timeOnFieldSeconds: stats.timeOnFieldSeconds,
+    timeAsAttackerSeconds: stats.timeAsAttackerSeconds,
+    timeAsDefenderSeconds: stats.timeAsDefenderSeconds
+  });
+  
   // Skip time calculation if timer is paused or stint hasn't started
   if (shouldSkipTimeCalculation(isSubTimerPaused, stats.lastStintStartTimeEpoch)) {
+    console.log(`updatePlayerTimeStats: Skipping calculation for player ${player.id} - timer paused or invalid stint`);
     return {
       ...stats
       // Don't update lastStintStartTimeEpoch when paused or invalid
@@ -26,9 +38,17 @@ export const updatePlayerTimeStats = (player, currentTimeEpoch, isSubTimerPaused
   
   // Calculate time spent in current stint
   const stintDuration = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, currentTimeEpoch);
+  console.log(`updatePlayerTimeStats: Stint duration for player ${player.id}:`, stintDuration);
   
   // Apply time to appropriate counters based on current status and role
   const updatedStats = applyStintTimeToCounters(stats, stintDuration);
+  
+  console.log(`updatePlayerTimeStats: Updated stats for player ${player.id}:`, {
+    timeOnFieldSeconds: updatedStats.timeOnFieldSeconds,
+    timeAsAttackerSeconds: updatedStats.timeAsAttackerSeconds,
+    timeAsDefenderSeconds: updatedStats.timeAsDefenderSeconds,
+    newLastStintStartTimeEpoch: currentTimeEpoch
+  });
   
   return {
     ...updatedStats,
@@ -43,7 +63,30 @@ export const updatePlayerTimeStats = (player, currentTimeEpoch, isSubTimerPaused
  * @returns {Object} Updated stats with time added to appropriate counters
  */
 const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
-  const updatedStats = { ...stats };
+  // Defensive initialization - ensure all time fields exist and are valid numbers
+  const updatedStats = {
+    ...stats,
+    timeOnFieldSeconds: stats.timeOnFieldSeconds || 0,
+    timeAsAttackerSeconds: stats.timeAsAttackerSeconds || 0,
+    timeAsDefenderSeconds: stats.timeAsDefenderSeconds || 0,
+    timeAsSubSeconds: stats.timeAsSubSeconds || 0,
+    timeAsGoalieSeconds: stats.timeAsGoalieSeconds || 0
+  };
+  
+  // Validate stint duration
+  if (isNaN(stintDurationSeconds) || stintDurationSeconds < 0) {
+    console.warn('applyStintTimeToCounters: Invalid stint duration:', stintDurationSeconds);
+    return updatedStats;
+  }
+  
+  console.log('applyStintTimeToCounters: Before update:', {
+    status: stats.currentPeriodStatus,
+    role: stats.currentPeriodRole,
+    stintDurationSeconds,
+    timeOnFieldSeconds: updatedStats.timeOnFieldSeconds,
+    timeAsAttackerSeconds: updatedStats.timeAsAttackerSeconds,
+    timeAsDefenderSeconds: updatedStats.timeAsDefenderSeconds
+  });
   
   // Allocate time based on current period status
   switch (stats.currentPeriodStatus) {
@@ -72,6 +115,12 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
       break;
   }
   
+  console.log('applyStintTimeToCounters: After update:', {
+    timeOnFieldSeconds: updatedStats.timeOnFieldSeconds,
+    timeAsAttackerSeconds: updatedStats.timeAsAttackerSeconds,
+    timeAsDefenderSeconds: updatedStats.timeAsDefenderSeconds
+  });
+  
   return updatedStats;
 };
 
@@ -82,13 +131,41 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
  * @returns {Object} Player object with updated stint start time
  */
 export const startNewStint = (player, currentTimeEpoch) => {
-  return {
+  // Validation
+  if (!currentTimeEpoch || currentTimeEpoch <= 0) {
+    console.warn(`startNewStint: Invalid currentTimeEpoch for player ${player.id}:`, currentTimeEpoch);
+    currentTimeEpoch = Date.now(); // Fallback to current time
+  }
+  
+  console.log(`startNewStint for player ${player.id}:`, {
+    oldLastStintStartTimeEpoch: player.stats.lastStintStartTimeEpoch,
+    newLastStintStartTimeEpoch: currentTimeEpoch,
+    currentPeriodStatus: player.stats.currentPeriodStatus,
+    currentPeriodRole: player.stats.currentPeriodRole
+  });
+  
+  // Ensure time fields are properly initialized before starting new stint
+  const playerWithInitializedTimeFields = {
     ...player,
     stats: {
       ...player.stats,
+      timeOnFieldSeconds: player.stats.timeOnFieldSeconds || 0,
+      timeAsAttackerSeconds: player.stats.timeAsAttackerSeconds || 0,
+      timeAsDefenderSeconds: player.stats.timeAsDefenderSeconds || 0,
+      timeAsSubSeconds: player.stats.timeAsSubSeconds || 0,
+      timeAsGoalieSeconds: player.stats.timeAsGoalieSeconds || 0,
       lastStintStartTimeEpoch: currentTimeEpoch
     }
   };
+  
+  console.log(`startNewStint: Initialized time fields for player ${player.id}:`, {
+    timeOnFieldSeconds: playerWithInitializedTimeFields.stats.timeOnFieldSeconds,
+    timeAsAttackerSeconds: playerWithInitializedTimeFields.stats.timeAsAttackerSeconds,
+    timeAsDefenderSeconds: playerWithInitializedTimeFields.stats.timeAsDefenderSeconds,
+    lastStintStartTimeEpoch: playerWithInitializedTimeFields.stats.lastStintStartTimeEpoch
+  });
+  
+  return playerWithInitializedTimeFields;
 };
 
 /**

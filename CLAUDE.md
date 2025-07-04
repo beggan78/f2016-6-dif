@@ -6,7 +6,7 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 ## Key Commands
 - **Development**: `npm start`
 - **Build**: `npm run build` 
-- **Test**: `npm test` (345+ tests across comprehensive test suite)
+- **Test**: `npm test` (comprehensive test suite)
 - **Test Coverage**: `npm test -- --coverage` (90%+ coverage achieved)
 
 ## Development Guidelines
@@ -68,11 +68,11 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 ## Testing Architecture
 
 ### Test Coverage Status (Phase 2 Complete)
-- **Total Tests**: 345+ tests across 11 test suites
-- **Component Tests**: 9/9 major components tested (100%)
-- **Hook Tests**: 3/3 critical hooks tested (100%) 
+- **Component Tests**: All major components tested (100%)
+- **Hook Tests**: All critical hooks tested (100%) 
 - **Utility Tests**: All core utilities tested (100%)
 - **Game Logic Tests**: Complete coverage (100%)
+- **Integration Tests**: Comprehensive workflow coverage including goalie queue fairness
 
 ### Key Test Patterns
 - **Component Testing**: Rendering, user interactions, props validation, edge cases
@@ -91,6 +91,13 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Suspected Issues**: If you suspect that the code is not functioning properly and needs changing, please pause and describe what you perceive the error to be. The user can then run the application to confirm or dismiss the hypothesis
 - **Test-First Approach**: Focus on making tests accurately reflect actual application behavior rather than changing production code to match test expectations
 
+## Recent Achievements
+- **Goalie Queue Fairness Fix**: Implemented fair rotation queue positioning during goalie switches
+  - Former goalie now takes new goalie's exact position in rotation queue
+  - Prevents unfair penalties by maintaining queue position fairness
+  - Comprehensive test coverage across all team modes
+  - Fixed missing state updater calls in handler layer
+
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing
 - Follow pure function architecture for all game logic
@@ -99,3 +106,4 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - Always run the whole test suite after having completed a feature or a change to make sure nothing has broken
 - **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
 - **New components**: Write tests first, following established patterns in `__tests__` directories
+- **State Updates**: Ensure all calculated state changes are properly applied via handler state updaters

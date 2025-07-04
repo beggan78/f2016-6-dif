@@ -306,6 +306,15 @@ export class SubstitutionManager {
  * This calculates time for the previous role and updates the player's current role
  */
 export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPaused = false) {
+  console.log(`handleRoleChange for player ${player.id}:`, {
+    oldRole: player.stats.currentPeriodRole,
+    newRole,
+    currentTimeEpoch,
+    isSubTimerPaused,
+    lastStintStartTimeEpoch: player.stats.lastStintStartTimeEpoch,
+    currentPeriodStatus: player.stats.currentPeriodStatus
+  });
+  
   // First calculate stats for the time spent in the previous role
   const updatedStats = updatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
   
@@ -318,9 +327,21 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
     }
   };
   
+  console.log(`handleRoleChange: After role change for player ${player.id}:`, {
+    newRole,
+    timeOnFieldSeconds: updatedStats.timeOnFieldSeconds,
+    timeAsAttackerSeconds: updatedStats.timeAsAttackerSeconds,
+    timeAsDefenderSeconds: updatedStats.timeAsDefenderSeconds,
+    lastStintStartTimeEpoch: updatedStats.lastStintStartTimeEpoch
+  });
+  
   // Start new stint if timer is not paused
   if (!isSubTimerPaused) {
-    return startNewStint(playerWithUpdatedStats, currentTimeEpoch);
+    const playerWithNewStint = startNewStint(playerWithUpdatedStats, currentTimeEpoch);
+    console.log(`handleRoleChange: Started new stint for player ${player.id}:`, {
+      newLastStintStartTimeEpoch: playerWithNewStint.stats.lastStintStartTimeEpoch
+    });
+    return playerWithNewStint;
   }
   
   return playerWithUpdatedStats;

@@ -191,14 +191,18 @@ describe('gameStateLogic', () => {
     test('should update rotation queue correctly', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const newGoalieId = '1';
+      const originalQueuePosition = gameState.rotationQueue.indexOf(newGoalieId);
       
       const result = calculateGoalieSwitch(gameState, newGoalieId);
       
       // New goalie should be removed from rotation queue
       expect(result.rotationQueue).not.toContain(newGoalieId);
       
-      // Former goalie should be added to end of queue
+      // Former goalie should take new goalie's exact position in queue
       expect(result.rotationQueue).toContain(gameState.periodFormation.goalie);
+      if (originalQueuePosition >= 0) {
+        expect(result.rotationQueue[originalQueuePosition]).toBe(gameState.periodFormation.goalie);
+      }
     });
 
     test('should return unchanged state for invalid inputs', () => {

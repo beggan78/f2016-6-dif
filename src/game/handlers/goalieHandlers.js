@@ -12,7 +12,8 @@ export const createGoalieHandlers = (
 ) => {
   const {
     setPeriodFormation,
-    setAllPlayers
+    setAllPlayers,
+    setRotationQueue
   } = stateUpdaters;
 
   const {
@@ -52,8 +53,10 @@ export const createGoalieHandlers = (
       (gameState) => calculateGoalieSwitch(gameState, newGoalieId),
       (newGameState) => {
         console.log('newGameState.allPlayers after calculateGoalieSwitch:', newGameState.allPlayers);
+        console.log('newGameState.rotationQueue after calculateGoalieSwitch:', newGameState.rotationQueue);
         setPeriodFormation(newGameState.periodFormation);
         setAllPlayers(newGameState.allPlayers);
+        setRotationQueue(newGameState.rotationQueue);
       },
       setAnimationState,
       setHideNextOffIndicator,

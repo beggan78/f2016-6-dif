@@ -196,30 +196,57 @@ export function GameScreen({
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
-    if (!player) return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
+    if (!player) {
+      console.warn(`getPlayerTimeStats: Player not found for ID: ${playerId}`);
+      return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
+    }
     
     const stats = player.stats;
     
+    // Debug logging for time field validation
+    const timeFields = {
+      timeOnFieldSeconds: stats.timeOnFieldSeconds,
+      timeAsAttackerSeconds: stats.timeAsAttackerSeconds,
+      timeAsDefenderSeconds: stats.timeAsDefenderSeconds,
+      lastStintStartTimeEpoch: stats.lastStintStartTimeEpoch
+    };
+    
+    // Check for undefined/NaN time fields
+    Object.entries(timeFields).forEach(([field, value]) => {
+      if (value === undefined || value === null || isNaN(value)) {
+        console.warn(`getPlayerTimeStats: Invalid ${field} for player ${playerId}:`, value);
+      }
+    });
+    
     // When timer is paused, only use the stored stats without calculating current stint
     if (isSubTimerPaused) {
-      return { 
-        totalOutfieldTime: stats.timeOnFieldSeconds, 
-        attackDefenderDiff: stats.timeAsAttackerSeconds - stats.timeAsDefenderSeconds 
-      };
+      const totalOutfieldTime = stats.timeOnFieldSeconds || 0;
+      const attackDefenderDiff = (stats.timeAsAttackerSeconds || 0) - (stats.timeAsDefenderSeconds || 0);
+      
+      console.log(`getPlayerTimeStats (paused) for ${playerId}:`, {
+        totalOutfieldTime,
+        attackDefenderDiff,
+        timeOnFieldSeconds: stats.timeOnFieldSeconds,
+        timeAsAttackerSeconds: stats.timeAsAttackerSeconds,
+        timeAsDefenderSeconds: stats.timeAsDefenderSeconds
+      });
+      
+      return { totalOutfieldTime, attackDefenderDiff };
     }
     
     // Calculate current stint time using time module
     let currentStintTime = 0;
     if (stats.currentPeriodStatus === 'on_field') {
       currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, Date.now());
+      console.log(`getPlayerTimeStats: Current stint time for ${playerId}:`, currentStintTime, 'lastStintStartTimeEpoch:', stats.lastStintStartTimeEpoch);
     }
     
     // Total outfield time includes completed time plus current stint if on field
-    const totalOutfieldTime = stats.timeOnFieldSeconds + currentStintTime;
+    const totalOutfieldTime = (stats.timeOnFieldSeconds || 0) + currentStintTime;
     
     // Calculate attacker-defender difference with current stint
-    let attackerTime = stats.timeAsAttackerSeconds;
-    let defenderTime = stats.timeAsDefenderSeconds;
+    let attackerTime = stats.timeAsAttackerSeconds || 0;
+    let defenderTime = stats.timeAsDefenderSeconds || 0;
     
     if (stats.currentPeriodStatus === 'on_field' && stats.currentPeriodRole) {
       if (stats.currentPeriodRole === 'Attacker') {
@@ -230,6 +257,16 @@ export function GameScreen({
     }
     
     const attackDefenderDiff = attackerTime - defenderTime;
+    
+    console.log(`getPlayerTimeStats (active) for ${playerId}:`, {
+      totalOutfieldTime,
+      attackDefenderDiff,
+      currentStintTime,
+      attackerTime,
+      defenderTime,
+      currentPeriodStatus: stats.currentPeriodStatus,
+      currentPeriodRole: stats.currentPeriodRole
+    });
     
     return { totalOutfieldTime, attackDefenderDiff };
   }, [allPlayers, isSubTimerPaused]);
