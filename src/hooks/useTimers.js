@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 // localStorage utilities for timers - NOTE: Essential for preventing timer loss on page refresh
 const TIMER_STORAGE_KEY = 'dif-coach-timer-state';
@@ -82,7 +82,7 @@ export function useTimers(periodDurationMinutes) {
   // Force re-render trigger for timer display updates
   // eslint-disable-next-line no-unused-vars
   const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
-  const [updateIntervalId, setUpdateIntervalId] = useState(null);
+  const updateIntervalRef = useRef(null);
   
   // For backward compatibility with tests - computed from lastSubstitutionTime
   const lastSubTime = lastSubstitutionTime;
@@ -90,17 +90,23 @@ export function useTimers(periodDurationMinutes) {
   // Calculate current timer values on-demand
   const matchTimerSeconds = useMemo(() => {
     return calculateMatchTimer(periodStartTime, periodDurationMinutes);
-  }, [periodStartTime, periodDurationMinutes]);
+  }, [periodStartTime, periodDurationMinutes, forceUpdateCounter]);
   
   const subTimerSeconds = useMemo(() => {
     return calculateSubTimer(lastSubstitutionTime, totalPausedDuration, pauseStartTime);
-  }, [lastSubstitutionTime, totalPausedDuration, pauseStartTime]);
+  }, [lastSubstitutionTime, totalPausedDuration, pauseStartTime, forceUpdateCounter]);
   
   // Derived state
   const isSubTimerPaused = pauseStartTime !== null;
 
   // Timer display update effect - only triggers re-renders, doesn't save to localStorage
   useEffect(() => {
+    // Clear any existing interval first
+    if (updateIntervalRef.current) {
+      clearInterval(updateIntervalRef.current);
+      updateIntervalRef.current = null;
+    }
+    
     if (isPeriodActive && periodStartTime) {
       const updateDisplay = () => {
         setForceUpdateCounter(prev => prev + 1);
@@ -111,7 +117,7 @@ export function useTimers(periodDurationMinutes) {
       
       // Then update every second for display
       const interval = setInterval(updateDisplay, 1000);
-      setUpdateIntervalId(interval);
+      updateIntervalRef.current = interval;
       
       // Handle page visibility changes to force updates when coming back
       const handleVisibilityChange = () => {
@@ -126,13 +132,8 @@ export function useTimers(periodDurationMinutes) {
         clearInterval(interval);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
-    } else {
-      if (updateIntervalId) {
-        clearInterval(updateIntervalId);
-        setUpdateIntervalId(null);
-      }
     }
-  }, [isPeriodActive, periodStartTime, updateIntervalId]);
+  }, [isPeriodActive, periodStartTime]);
 
   // Save timer state to localStorage with specific values (handles async state updates)
   const saveTimerStateWithOverrides = useCallback((overrides = {}) => {
@@ -248,16 +249,16 @@ export function useTimers(periodDurationMinutes) {
 
   const stopTimers = useCallback(() => {
     setIsPeriodActive(false);
-    if (updateIntervalId) {
-      clearInterval(updateIntervalId);
-      setUpdateIntervalId(null);
+    if (updateIntervalRef.current) {
+      clearInterval(updateIntervalRef.current);
+      updateIntervalRef.current = null;
     }
     
     // Save immediately with isPeriodActive: false
     saveTimerStateWithOverrides({
       isPeriodActive: false
     });
-  }, [updateIntervalId, saveTimerStateWithOverrides]);
+  }, [saveTimerStateWithOverrides]);
 
   // Clear stored timer state - useful for starting fresh
   const clearTimerState = useCallback(() => {
@@ -278,14 +279,14 @@ export function useTimers(periodDurationMinutes) {
     setTotalPausedDuration(0);
     
     // Clear any running interval
-    if (updateIntervalId) {
-      clearInterval(updateIntervalId);
-      setUpdateIntervalId(null);
+    if (updateIntervalRef.current) {
+      clearInterval(updateIntervalRef.current);
+      updateIntervalRef.current = null;
     }
     
     // Clear localStorage
     clearTimerState();
-  }, [updateIntervalId, clearTimerState]);
+  }, [clearTimerState]);
 
   return {
     // Calculated timer values (read-only)
