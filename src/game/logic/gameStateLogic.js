@@ -217,11 +217,6 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
 export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   const { allPlayers, periodFormation, teamMode, isSubTimerPaused = false } = gameState;
   
-  console.log('=== calculateGoalieSwitch START ===');
-  console.log('calculateGoalieSwitch: newGoalieId:', newGoalieId);
-  console.log('calculateGoalieSwitch: currentGoalieId:', periodFormation.goalie);
-  console.log('calculateGoalieSwitch: teamMode:', teamMode);
-  console.log('calculateGoalieSwitch: isSubTimerPaused:', isSubTimerPaused);
 
   if (!newGoalieId || newGoalieId === periodFormation.goalie) {
     console.warn('Invalid new goalie ID or same as current goalie');
@@ -230,26 +225,6 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
 
   const currentGoalie = findPlayerById(allPlayers, periodFormation.goalie);
   const newGoalie = findPlayerById(allPlayers, newGoalieId);
-  
-  console.log('calculateGoalieSwitch: currentGoalie stats:', {
-    id: currentGoalie?.id,
-    timeOnFieldSeconds: currentGoalie?.stats.timeOnFieldSeconds,
-    timeAsAttackerSeconds: currentGoalie?.stats.timeAsAttackerSeconds,
-    timeAsDefenderSeconds: currentGoalie?.stats.timeAsDefenderSeconds,
-    lastStintStartTimeEpoch: currentGoalie?.stats.lastStintStartTimeEpoch,
-    currentPeriodStatus: currentGoalie?.stats.currentPeriodStatus,
-    currentPeriodRole: currentGoalie?.stats.currentPeriodRole
-  });
-  
-  console.log('calculateGoalieSwitch: newGoalie stats:', {
-    id: newGoalie?.id,
-    timeOnFieldSeconds: newGoalie?.stats.timeOnFieldSeconds,
-    timeAsAttackerSeconds: newGoalie?.stats.timeAsAttackerSeconds,
-    timeAsDefenderSeconds: newGoalie?.stats.timeAsDefenderSeconds,
-    lastStintStartTimeEpoch: newGoalie?.stats.lastStintStartTimeEpoch,
-    currentPeriodStatus: newGoalie?.stats.currentPeriodStatus,
-    currentPeriodRole: newGoalie?.stats.currentPeriodRole
-  });
   
   if (!currentGoalie || !newGoalie) {
     console.warn('Goalie not found for switch');
@@ -264,7 +239,6 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
 
   const newGoaliePosition = newGoalie.stats.currentPairKey;
   
-  console.log(`calculateGoalieSwitch: newGoaliePosition for ${newGoalieId}:`, newGoaliePosition);
 
   // Create new formation
   const newFormation = { ...periodFormation };
@@ -353,15 +327,6 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
         currentPairKey: newGoaliePosition
       };
       
-      console.log(`calculateGoalieSwitch: Former goalie ${p.id} final stats:`, {
-        currentPeriodStatus: finalStats.currentPeriodStatus,
-        currentPeriodRole: finalStats.currentPeriodRole,
-        lastStintStartTimeEpoch: finalStats.lastStintStartTimeEpoch,
-        timeOnFieldSeconds: finalStats.timeOnFieldSeconds,
-        timeAsAttackerSeconds: finalStats.timeAsAttackerSeconds,
-        timeAsDefenderSeconds: finalStats.timeAsDefenderSeconds
-      });
-      
       return { ...p, stats: finalStats };
     } else if (p.id === newGoalieId) {
       // New goalie - calculate accumulated time for their field stint
@@ -382,20 +347,10 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
         currentPairKey: POSITION_KEYS.GOALIE
       };
       
-      console.log(`calculateGoalieSwitch: New goalie ${p.id} final stats:`, {
-        currentPeriodStatus: finalStats.currentPeriodStatus,
-        currentPeriodRole: finalStats.currentPeriodRole,
-        lastStintStartTimeEpoch: finalStats.lastStintStartTimeEpoch,
-        timeOnFieldSeconds: finalStats.timeOnFieldSeconds,
-        timeAsAttackerSeconds: finalStats.timeAsAttackerSeconds,
-        timeAsDefenderSeconds: finalStats.timeAsDefenderSeconds
-      });
-      
       return { ...p, stats: finalStats };
     }
     return p;
   });
-  console.log('calculateGoalieSwitch: newAllPlayers before return:', newAllPlayers);
 
   // Update rotation queue - remove new goalie from queue and add old goalie
   const queueManager = createRotationQueue(gameState.rotationQueue, createPlayerLookup(allPlayers));
@@ -403,19 +358,16 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   
   // Get new goalie's position BEFORE removing them
   const newGoalieQueuePosition = queueManager.getPosition(newGoalieId);
-  console.log(`Goalie switch queue update: newGoalie ${newGoalieId} was at position ${newGoalieQueuePosition}`);
-  
+
   // Remove new goalie from queue (they're now goalie, not in rotation)
   queueManager.removePlayer(newGoalieId);
   
   // Former goalie takes new goalie's exact queue position (maintains fair rotation)
   if (newGoalieQueuePosition >= 0) {
     queueManager.addPlayer(periodFormation.goalie, newGoalieQueuePosition);
-    console.log(`Former goalie ${periodFormation.goalie} takes position ${newGoalieQueuePosition}`);
   } else {
     // Fallback: if new goalie wasn't in queue, add to end
     queueManager.addPlayer(periodFormation.goalie, 'end');
-    console.log(`Former goalie ${periodFormation.goalie} added to end (new goalie wasn't in queue)`);
   }
 
   return {

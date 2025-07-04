@@ -38,7 +38,11 @@ const calculateSubTimer = (lastSubstitutionTime, totalPausedDuration, pauseStart
   const now = Date.now();
   const effectiveNow = pauseStartTime ? pauseStartTime : now;
   const elapsedSeconds = Math.floor((effectiveNow - lastSubstitutionTime - totalPausedDuration) / 1000);
-  
+
+//  console.log('== calculateSubTimer invoked ==');
+//  console.log('effectiveNow ' + ((now - effectiveNow) / 1000) + 's ago');
+//  console.log('totalPausedDuration: ' + totalPausedDuration + 's');
+//  console.log('elapsedSeconds: ' + elapsedSeconds + 's');
   return Math.max(0, elapsedSeconds);
 };
 
@@ -153,41 +157,46 @@ export function useTimers(periodDurationMinutes) {
   // const saveCurrentState = saveTimerStateWithOverrides;
 
   const resetSubTimer = useCallback(() => {
+    console.log('Reset Sub Timer invoked')
     const now = Date.now();
     // Store previous substitution time for undo functionality
     setSecondLastSubstitutionTime(lastSubstitutionTime);
     setLastSubstitutionTime(now);
-    setPauseStartTime(null);
-    setTotalPausedDuration(0);
-    
+    if (!isSubTimerPaused) {
+      setPauseStartTime(null);
+      setTotalPausedDuration(0);
+    }
+
     // Save immediately with the new timestamp to fix async state issue
     saveTimerStateWithOverrides({ 
       lastSubstitutionTime: now,
-      secondLastSubstitutionTime: lastSubstitutionTime,
-      pauseStartTime: null,
-      totalPausedDuration: 0
+      secondLastSubstitutionTime: lastSubstitutionTime
+//      pauseStartTime: null,
+//      totalPausedDuration: 0
     });
   }, [lastSubstitutionTime, saveTimerStateWithOverrides]);
 
   const restoreSubTimer = useCallback((targetSeconds) => {
+    console.log('Restore Sub Timer invoked')
     // Restore sub timer to a specific value (for undo functionality)
     const now = Date.now();
     const calculatedLastSubTime = now - (targetSeconds * 1000);
     
     // Set the last sub time to be in the past so that the timer shows the target seconds
     setLastSubstitutionTime(calculatedLastSubTime);
-    setPauseStartTime(null);
     setTotalPausedDuration(0);
-    
+//    setPauseStartTime(null);
+
     // Save immediately with the calculated timestamp
     saveTimerStateWithOverrides({
       lastSubstitutionTime: calculatedLastSubTime,
-      pauseStartTime: null,
       totalPausedDuration: 0
+//      pauseStartTime: null,
     });
   }, [saveTimerStateWithOverrides]);
 
   const pauseSubTimer = useCallback((updatePlayerStats) => {
+    console.log('Pause Sub Timer invoked')
     if (!isSubTimerPaused && lastSubstitutionTime) {
       const now = Date.now();
       setPauseStartTime(now);
@@ -205,12 +214,13 @@ export function useTimers(periodDurationMinutes) {
   }, [isSubTimerPaused, lastSubstitutionTime, saveTimerStateWithOverrides]);
 
   const resumeSubTimer = useCallback((updatePlayerStats) => {
+    console.log('Resume Sub Timer invoked')
     if (isSubTimerPaused && pauseStartTime) {
       const now = Date.now();
       // Add pause duration to total accumulated pause time
       const pauseDuration = now - pauseStartTime;
       const newTotalPausedDuration = totalPausedDuration + pauseDuration;
-      
+
       setTotalPausedDuration(newTotalPausedDuration);
       setPauseStartTime(null);
       
@@ -228,6 +238,7 @@ export function useTimers(periodDurationMinutes) {
   }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides]);
 
   const startTimers = useCallback(() => {
+    console.log('Start timers invoked')
     const now = Date.now();
     setPeriodStartTime(now);
     setLastSubstitutionTime(now);
@@ -248,6 +259,7 @@ export function useTimers(periodDurationMinutes) {
   }, [saveTimerStateWithOverrides]);
 
   const stopTimers = useCallback(() => {
+    console.log('Stop timers invoked')
     setIsPeriodActive(false);
     if (updateIntervalRef.current) {
       clearInterval(updateIntervalRef.current);
@@ -262,6 +274,7 @@ export function useTimers(periodDurationMinutes) {
 
   // Clear stored timer state - useful for starting fresh
   const clearTimerState = useCallback(() => {
+    console.log('Clear timer stats invoked')
     try {
       localStorage.removeItem(TIMER_STORAGE_KEY);
     } catch (error) {

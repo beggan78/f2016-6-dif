@@ -223,11 +223,9 @@ export function PeriodSetupScreen({
         if (formerGoalieId) {
           // Replace new goalie with former goalie at same position
           updatedQueue[newGoalieIndex] = formerGoalieId;
-          console.log(`🔄 Period Setup - Updated rotation queue: new goalie ${playerId} replaced with former goalie ${formerGoalieId} at position ${newGoalieIndex}`);
         } else {
           // No former goalie, just remove new goalie from queue
           updatedQueue.splice(newGoalieIndex, 1);
-          console.log(`🔄 Period Setup - Removed new goalie ${playerId} from rotation queue at position ${newGoalieIndex}`);
         }
         
         setRotationQueue(updatedQueue);
@@ -235,7 +233,6 @@ export function PeriodSetupScreen({
         // New goalie is not in queue but we had a former goalie - add former goalie to end
         const updatedQueue = [...rotationQueue, formerGoalieId];
         setRotationQueue(updatedQueue);
-        console.log(`🔄 Period Setup - Added former goalie ${formerGoalieId} to end of rotation queue`);
       }
     }
   };

@@ -53,7 +53,6 @@ export function useGameState() {
       try {
         const newWakeLock = await navigator.wakeLock.request('screen');
         setWakeLock(newWakeLock);
-        console.log('Wake lock acquired');
       } catch (err) {
         console.warn('Wake lock request failed:', err);
       }
@@ -65,7 +64,6 @@ export function useGameState() {
       try {
         await wakeLock.release();
         setWakeLock(null);
-        console.log('Wake lock released');
       } catch (err) {
         console.warn('Wake lock release failed:', err);
       }
@@ -88,7 +86,6 @@ export function useGameState() {
         if ('vibrate' in navigator) {
           navigator.vibrate([1000, 200, 1000]);
         }
-        console.log('Substitution alert triggered');
       }, timeoutMs);
       setAlertTimer(newTimer);
     }
@@ -215,7 +212,6 @@ export function useGameState() {
         setNextPlayerToSubOut(playerPosition || 'leftDefender');
         
         // Set rotation queue
-        console.log('🔄 Period Start - Initial rotation queue for INDIVIDUAL_6:', result.rotationQueue);
         setRotationQueue(result.rotationQueue);
       } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
         // 7-player individual formation generation using new logic
@@ -255,7 +251,6 @@ export function useGameState() {
         setNextPlayerToSubOut(playerPosition || 'leftDefender7');
         
         // Set rotation queue
-        console.log('🔄 Period Start - Initial rotation queue for INDIVIDUAL_7:', result.rotationQueue);
         setRotationQueue(result.rotationQueue);
         
         // Set next-next player (second in rotation queue)
@@ -461,7 +456,6 @@ export function useGameState() {
       // Fallback: Initialize rotation queue with basic positional order for Period 1
       const outfieldPositions = ['leftDefender', 'leftAttacker', 'rightDefender', 'rightAttacker', 'substitute'];
       const initialQueue = outfieldPositions.map(pos => periodFormation[pos]).filter(Boolean);
-      console.log('🎮 Game Start - Fallback initialization for INDIVIDUAL_6 (Period 1):', initialQueue);
       setRotationQueue(initialQueue);
     } else if (teamMode === TEAM_MODES.INDIVIDUAL_7 && nextPlayerToSubOut && rotationQueue.length === 0) {
       // Fallback: Initialize for 7-player individual mode only if formation generator hasn't set it
@@ -474,7 +468,6 @@ export function useGameState() {
       // Only set values if we have a complete formation
       if (initialPlayerToSubOut && initialQueue.length === 6) {
         setNextPlayerIdToSubOut(initialPlayerToSubOut);
-        console.log('🎮 Game Start - Fallback initialization for INDIVIDUAL_7 (Period 1):', initialQueue);
         setRotationQueue(initialQueue);
         
         // Set next-next player (second in queue) for 7-player individual mode
@@ -518,8 +511,6 @@ export function useGameState() {
         setNextPhysicalPairToSubOut(result.newNextPhysicalPairToSubOut);
       }
       if (result.newRotationQueue) {
-        console.log('🔄 After Substitution - New rotation queue:', result.newRotationQueue);
-        console.log('🔄 Next player to substitute out (ID):', result.newNextPlayerIdToSubOut);
         setRotationQueue(result.newRotationQueue);
       }
       if (result.newNextPlayerIdToSubOut !== undefined) {
@@ -610,10 +601,6 @@ export function useGameState() {
   const clearStoredState = useCallback(() => {
     // Create backup before clearing
     const backupKey = persistenceManager.createBackup();
-    if (backupKey) {
-      console.log('Created backup before clearing:', backupKey);
-    }
-    
     // Clear the state
     const result = persistenceManager.clearState();
     if (result) {
@@ -629,7 +616,6 @@ export function useGameState() {
   const createManualBackup = useCallback(() => {
     const backupKey = persistenceManager.createBackup();
     if (backupKey) {
-      console.log('Manual backup created:', backupKey);
       // Clean up old backups, keep 5 most recent
       persistenceManager.cleanupBackups(5);
     }
@@ -803,23 +789,17 @@ export function useGameState() {
 
   // Enhanced setters for manual selection - rotation logic already handles sequence correctly
   const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
-    console.log('Manually setting next pair to substitute:', newPairKey);
     setNextPhysicalPairToSubOut(newPairKey);
     // The existing rotation logic in handleSubstitution will continue from this selection
   }, []);
 
   const setNextPlayerToSubOutWithRotation = useCallback((newPosition, isAutomaticUpdate = false) => {
-    console.log('Manually setting next player to substitute:', newPosition);
     setNextPlayerToSubOut(newPosition);
     
     // Only auto-update player ID for manual user selection, not during automatic substitution calculations
     if (!isAutomaticUpdate && periodFormation && periodFormation[newPosition]) {
       const selectedPlayerId = periodFormation[newPosition];
       setNextPlayerIdToSubOut(selectedPlayerId);
-      console.log('Set next player ID to substitute (manual selection):', selectedPlayerId);
-      console.log('Note: Rotation queue order preserved for round-robin rotation');
-    } else if (isAutomaticUpdate) {
-      console.log('Note: Player ID will be managed by rotation queue logic during substitutions');
     }
   }, [periodFormation]);
 
@@ -1123,7 +1103,6 @@ export function useGameState() {
     // The rotation queue order remains intact - no changes needed
     // Players keep their position in the queue, just their on-field positions change
     
-    console.log(`Successfully switched positions: ${player1.name} (${player1Position}) <-> ${player2.name} (${player2Position})`);
     return true;
   }, [allPlayers, periodFormation, teamMode]);
 
@@ -1277,7 +1256,6 @@ export function useGameState() {
       return queueManager.toArray();
     });
 
-    console.log(`Successfully switched goalie: ${currentGoalie.name} -> ${newGoalie.name}`);
     return true;
   }, [allPlayers, periodFormation, teamMode, setAllPlayers, setPeriodFormation, setRotationQueue]);
 
