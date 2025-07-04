@@ -65,6 +65,12 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Animation glitches**: Ensure proper before/after position capture
 - **State inconsistency**: Verify pure functions return consistent results
 
+### Timer Display Issues
+- **Frozen Display**: If timers display but don't update, check that `forceUpdateCounter` is included in `useMemo` dependencies for timer calculations in `useTimers.js`
+- **Infinite Loops**: If timer updates cause memory issues, ensure interval IDs are stored in `useRef` not `useState`, and remove interval IDs from `useEffect` dependencies
+- **Architecture**: Timer display works via `setInterval` → `setForceUpdateCounter` → `useMemo` recalculation → React re-render
+- **Key Dependencies**: Both `matchTimerSeconds` and `subTimerSeconds` must depend on `forceUpdateCounter` for real-time updates
+
 ## Testing Architecture
 
 ### Test Coverage Status (Phase 2 Complete)
@@ -92,6 +98,12 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Test-First Approach**: Focus on making tests accurately reflect actual application behavior rather than changing production code to match test expectations
 
 ## Recent Achievements
+- **Timer Display Fix**: Resolved timer display freezing issue that prevented real-time updates
+  - Fixed missing `forceUpdateCounter` dependencies in `useMemo` hooks for timer calculations
+  - Replaced `useState` interval management with `useRef` to prevent infinite loops
+  - Timers now update correctly every second during active periods
+  - Added comprehensive debugging documentation and regression tests
+  
 - **Goalie Queue Fairness Fix**: Implemented fair rotation queue positioning during goalie switches
   - Former goalie now takes new goalie's exact position in rotation queue
   - Prevents unfair penalties by maintaining queue position fairness

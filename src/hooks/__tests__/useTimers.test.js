@@ -213,6 +213,52 @@ describe('useTimers', () => {
       expect(clearIntervalSpy).toHaveBeenCalled();
     });
 
+    // Regression test for timer display freezing issue
+    it('should recalculate timer values when forceUpdateCounter changes', () => {
+      const { result } = renderHook(() => useTimers(15));
+      
+      act(() => {
+        result.current.startTimers();
+      });
+
+      const initialMatchTimer = result.current.matchTimerSeconds;
+      const initialSubTimer = result.current.subTimerSeconds;
+
+      // Advance time and trigger interval callback
+      act(() => {
+        Date.now.mockReturnValue(1005000); // +5 seconds from initial 1000000
+        jest.advanceTimersByTime(1000); // Trigger setInterval callback
+      });
+
+      // Verify timer values actually changed (this would fail with the original bug)
+      expect(result.current.matchTimerSeconds).not.toBe(initialMatchTimer);
+      expect(result.current.subTimerSeconds).not.toBe(initialSubTimer);
+      expect(result.current.matchTimerSeconds).toBe(895); // 900 - 5
+      expect(result.current.subTimerSeconds).toBe(5);
+    });
+
+    // Regression test for infinite interval creation
+    it('should not create infinite intervals during updates', () => {
+      const setIntervalSpy = jest.spyOn(global, 'setInterval');
+      const { result } = renderHook(() => useTimers(15));
+      
+      act(() => {
+        result.current.startTimers();
+      });
+
+      const initialCallCount = setIntervalSpy.mock.calls.length;
+      
+      // Trigger multiple timer updates
+      act(() => {
+        jest.advanceTimersByTime(3000); // 3 seconds of updates
+      });
+
+      // Should not create additional intervals beyond the initial one
+      expect(setIntervalSpy.mock.calls.length).toBe(initialCallCount);
+      
+      setIntervalSpy.mockRestore();
+    });
+
     it('should handle page visibility changes', () => {
       const { result } = renderHook(() => useTimers(15));
 
