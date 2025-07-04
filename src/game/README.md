@@ -7,12 +7,15 @@ This folder contains all game-specific logic, state management, and systems for 
 ```
 src/
 ├── constants/                   # Domain constants and configuration options
-│   ├── playerConstants.js      # PLAYER_ROLES, FORMATION_TYPES
+│   ├── playerConstants.js      # PLAYER_ROLES, TEAM_MODES
 │   ├── gameConfig.js           # PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS
 │   └── defaultData.js          # initialRoster and other default data
 ├── utils/                      # Utilities used across multiple screens
 │   ├── rolePointUtils.js      # calculateRolePoints() for stats calculations
 │   └── playerUtils.js         # Player operations, now includes initializePlayers()
+├── hooks/                      # React hooks for UI integration
+│   ├── useLongPressWithScrollDetection.js # Universal long press with scroll detection
+│   └── useFieldPositionHandlers.js        # Hook for field position event handlers
 └── game/                       # Game screen specific logic and systems
     ├── README.md               # This file - game screen architecture documentation
     ├── index.js                # Main barrel exports for the game module
@@ -28,9 +31,20 @@ src/
     ├── animation/              # Animation system for visual transitions
     │   ├── index.js           # Animation module barrel exports
     │   └── animationSupport.js # Unified animation calculation and orchestration
-    └── queue/                  # Player rotation queue management
-        ├── index.js           # Queue module barrel exports
-        └── rotationQueue.js   # Player rotation and activation state management
+    ├── queue/                  # Player rotation queue management
+    │   ├── index.js           # Queue module barrel exports
+    │   └── rotationQueue.js   # Player rotation and activation state management
+    ├── handlers/               # Event handler factories with domain-based organization
+    │   ├── fieldPositionHandlers.js # Field position long press logic
+    │   ├── goalieHandlers.js       # Goalie replacement logic
+    │   ├── substitutionHandlers.js # Player substitution operations
+    │   ├── scoreHandlers.js        # Score tracking and editing
+    │   └── timerHandlers.js        # Timer pause/resume functionality
+    └── ui/                     # UI-specific utilities for game screen rendering
+        ├── index.js           # UI module barrel exports
+        ├── positionUtils.js   # Position icons, names, indicators, and event extraction
+        ├── playerStyling.js   # Player styling calculations (colors, borders, glow)
+        └── playerAnimation.js # Player animation property extraction
 ```
 
 ## Design Principles
@@ -45,6 +59,8 @@ All state transition logic is implemented as pure functions that:
 
 ### 2. Separation of Concerns
 - **Logic**: Pure business rules and state calculations
+- **Handlers**: Event handling and UI integration with domain-based organization
+- **UI Utilities**: Rendering support functions separated from business logic
 - **Animation**: Visual transition management and timing
 - **Queue**: Player rotation and ordering algorithms
 - **State Management**: React state updates and UI integration (handled in components)
@@ -57,6 +73,18 @@ The animation system works by:
 4. Orchestrating timing and applying state changes
 
 This separation allows logic changes without breaking animations and vice versa.
+
+### 4. Domain-Based Organization
+- **Handler factories** organized by game domain (field positions, goalie, substitutions, etc.)
+- **Consistent naming** reflecting actual responsibilities rather than technical implementation
+- **Dependency injection** for testability and flexibility
+- **Single responsibility** principle applied to each module
+
+### 5. Universal Interaction Patterns
+- **Scroll detection** integrated into all long press interactions to prevent accidental triggers
+- **Consistent event handling** through universal `useLongPressWithScrollDetection` hook
+- **React hooks compliance** with proper separation of callback creation and hook usage
+- **DRY principle** applied to eliminate duplicated interaction logic
 
 ---
 
@@ -81,7 +109,7 @@ This separation allows logic changes without breaking animations and vice versa.
 **Purpose**: Core player and formation constants used across all screens  
 **Responsibilities**:
 - `PLAYER_ROLES`: Defines valid player roles (Goalie, Defender, Attacker, Substitute, On Field)
-- `FORMATION_TYPES`: Supported formation modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+- `TEAM_MODES`: Supported team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
 
 ### `constants/gameConfig.js`
 **Purpose**: Game configuration options for setup screens  
@@ -109,7 +137,7 @@ This separation allows logic changes without breaking animations and vice versa.
 - Other existing player utility functions
 
 **When to modify constants/utils**: 
-- Adding new formation types (update `playerConstants.js`)
+- Adding new team modes (update `playerConstants.js`)
 - Changing point calculation rules (update `rolePointUtils.js`)
 - Adding new player roles or statuses (update `playerConstants.js`)
 - Modifying game configuration options (update `gameConfig.js`)
@@ -159,18 +187,18 @@ This separation allows logic changes without breaking animations and vice versa.
 - Changing substitution rules for specific formations
 - Adding time calculation logic
 - Modifying rotation queue integration
-- Adding support for new formation types
+- Adding support for new team modes
 
 ### `logic/positionUtils.js`
 **Purpose**: Position and formation utilities for game logic  
 **Responsibilities**:
 - `getPositionRole(position)`: Maps position strings to player roles
-- `getOutfieldPositions(formationType)`: Gets outfield position lists by formation
-- `getFieldPositions(formationType)`: Gets field positions (excludes substitutes)
-- `getSubstitutePositions(formationType)`: Gets substitute position lists
-- `isFieldPosition(position, formationType)`: Checks if position is field position
-- `isSubstitutePosition(position, formationType)`: Checks if position is substitute
-- `getExpectedOutfieldPlayerCount(formationType)`: Gets expected player counts
+- `getOutfieldPositions(teamMode)`: Gets outfield position lists by team mode
+- `getFieldPositions(teamMode)`: Gets field positions (excludes substitutes)
+- `getSubstitutePositions(teamMode)`: Gets substitute position lists
+- `isFieldPosition(position, teamMode)`: Checks if position is field position
+- `isSubstitutePosition(position, teamMode)`: Checks if position is substitute
+- `getExpectedOutfieldPlayerCount(teamMode)`: Gets expected player counts
 
 **Key characteristics**:
 - Pure functions with no side effects
@@ -179,7 +207,7 @@ This separation allows logic changes without breaking animations and vice versa.
 - Used throughout game logic for position validation and role determination
 
 **When to modify**:
-- Adding new formation types (update all position list functions)
+- Adding new team modes (update all position list functions)
 - Changing position naming conventions
 - Adding new position validation rules
 - Modifying role assignment logic
@@ -229,7 +257,7 @@ This separation allows logic changes without breaking animations and vice versa.
 ### `animation/animationSupport.js`
 **Purpose**: Complete animation calculation and orchestration system  
 **Responsibilities**:
-- Position capture and mapping for all formation types
+- Position capture and mapping for all team modes
 - Distance calculation between UI positions
 - Animation timing and orchestration
 - Integration with pure logic functions
@@ -237,13 +265,13 @@ This separation allows logic changes without breaking animations and vice versa.
 
 #### Core Functions
 
-**`captureAllPlayerPositions(periodFormation, allPlayers, formationType)`**
+**`captureAllPlayerPositions(periodFormation, allPlayers, teamMode)`**
 - Captures current positions of all players including goalie
 - Maps each player to their UI position index and role
 - Returns position snapshot for before/after comparison
-- Supports all formation types (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+- Supports all team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
 
-**`calculateAllPlayerAnimations(beforePositions, afterPositions, formationType)`**
+**`calculateAllPlayerAnimations(beforePositions, afterPositions, teamMode)`**
 - Compares before/after position snapshots
 - Calculates pixel distance each player needs to move
 - Determines animation direction (up/down)
@@ -282,10 +310,149 @@ const MEASUREMENTS = {
 ```
 
 **When to modify**:
-- Adding new formation types (update position mappings)
+- Adding new team modes (update position mappings)
 - Changing UI layout (update measurement constants)
 - Adding new animation types (extend animation calculation)
 - Modifying timing behavior (adjust duration constants)
+
+---
+
+## Handlers Module (`/handlers/`) - Event Handler Factories
+
+The handlers module contains domain-organized event handler factories that integrate game logic with UI interactions. Each handler file focuses on a specific domain and follows consistent patterns for state management and animation integration.
+
+### `handlers/fieldPositionHandlers.js`
+**Purpose**: Field position interaction logic (formerly longPressHandlers.js)  
+**Responsibilities**:
+- `createFieldPositionHandlers()`: Creates callbacks for field position long press interactions
+- `handleFieldPlayerLongPress()`: Opens field player modal for pairs/individual modes
+- `handleSubstituteLongPress()`: Opens substitute modal for 7-player individual mode
+- `createPositionCallback()`: Creates position-specific callback functions
+
+**Key characteristics**:
+- Domain-based naming (field positions, not technical implementation)
+- Returns callback functions for integration with `useLongPressWithScrollDetection` hook
+- Formation-aware logic for pairs vs individual modes
+- Modal integration through modalHandlers dependency
+
+**Integration with scroll detection**:
+- Callbacks are consumed by `useFieldPositionHandlers` hook
+- Universal scroll detection prevents accidental modal triggers during scrolling
+- Follows React hooks rules by separating callback creation from hook usage
+
+### `handlers/goalieHandlers.js`
+**Purpose**: Goalie replacement and interaction logic  
+**Responsibilities**:
+- `createGoalieHandlers()`: Creates goalie interaction handlers
+- `handleGoalieLongPress()`: Opens goalie replacement modal
+- `handleSelectNewGoalie()`: Performs animated goalie switch using game logic
+- `handleCancelGoalieModal()`: Modal cancellation with browser back integration
+- `goalieCallback`: Long press callback for integration with scroll detection
+
+**Integration points**:
+- Uses `calculateGoalieSwitch` from game logic for state transitions
+- Integrates with animation system for smooth goalie changes
+- Modal management with browser back button support
+
+### `handlers/substitutionHandlers.js`
+**Purpose**: Player substitution operations and game state transitions  
+**Responsibilities**:
+- `createSubstitutionHandlers()`: Creates substitution-related handlers
+- `handleSubstitutionWithHighlight()`: Animated substitution with time tracking
+- `handleSetNextSubstitution()` / `handleSubstituteNow()`: Next substitution management
+- `handleChangePosition()`: Position switching between field players
+- `handleUndo()`: Substitution undo with animation and time restoration
+- Modal handlers for field player and substitute interactions
+
+**Key features**:
+- Formation-aware substitution logic (pairs vs individual modes)
+- Integration with animation system using `animateStateChange`
+- Time tracking and undo functionality
+- Complex modal workflows for position changes
+
+### `handlers/scoreHandlers.js`
+**Purpose**: Score tracking and editing functionality  
+**Responsibilities**:
+- `createScoreHandlers()`: Creates score-related handlers
+- `handleAddHomeGoal()` / `handleAddAwayGoal()`: Goal increment actions
+- `handleScoreEdit()`: Manual score editing
+- `handleOpenScoreEdit()`: Score editing modal management
+
+**Integration points**:
+- Direct state updates through stateUpdaters
+- Modal management for score editing interface
+
+### `handlers/timerHandlers.js`
+**Purpose**: Timer pause/resume functionality with player time tracking  
+**Responsibilities**:
+- `createTimerHandlers()`: Creates timer control handlers
+- `handlePauseTimer()` / `handleResumeTimer()`: Timer state management
+- `updatePlayerStatsForPause()`: Player stint time updates during pause/resume
+
+**Integration points**:
+- Uses `handlePauseResumeTime` from time module for stint calculations
+- Updates player stats when timer state changes
+- Integrates with timer controls from parent component
+
+**Handler Architecture Benefits**:
+- **Domain Organization**: Each handler focuses on a specific game domain
+- **Dependency Injection**: Handlers receive dependencies (state updaters, modal handlers, animation hooks)
+- **Pure Logic Integration**: Handlers orchestrate pure game logic functions with UI state
+- **Consistent Patterns**: All handlers follow similar factory function patterns
+- **Testability**: Handler factories can be tested in isolation with mock dependencies
+
+---
+
+## UI Module (`/ui/`) - Game Screen UI Utilities
+
+The UI module contains focused utilities for game screen rendering, separated from business logic to maintain clean architecture and reusability.
+
+### `ui/positionUtils.js`
+**Purpose**: Position-related UI utilities for rendering consistency  
+**Responsibilities**:
+- `getPositionIcon()`: Returns appropriate icon (Shield/Sword/RotateCcw) for positions
+- `getPositionDisplayName()`: Position names with inactive player support
+- `getIndicatorProps()`: Next/nextNext indicator logic for different team modes
+- `getPositionEvents()`: Extracts long press event handlers from position key
+- `supportsInactivePlayers()` / `supportsNextNextIndicators()`: Formation capability checks
+
+**Key features**:
+- Formation-aware UI logic (handles differences between team modes)
+- Inactive player status integration for 7-player individual mode
+- Consistent icon and naming across different formation renderers
+
+### `ui/playerStyling.js`
+**Purpose**: Player styling calculations for visual consistency  
+**Responsibilities**:
+- `getPlayerStyling()`: Calculates background, text, border colors and glow effects
+- Handles field vs substitute vs inactive player appearance
+- Next/nextNext indicator styling with formation support
+- Recently substituted player glow effects
+
+**Styling logic**:
+- **Background colors**: Field (sky-500), substitute (slate-600), inactive (slate-700)
+- **Border indicators**: Next off (rose), next on (emerald), recently substituted (yellow glow)
+- **Formation support**: Inactive styling only for formations that support it
+- **State priority**: Recently substituted overrides other indicators
+
+### `ui/playerAnimation.js`
+**Purpose**: Animation property extraction and management  
+**Responsibilities**:
+- `getPlayerAnimation()`: Individual player animation properties
+- `getPairAnimation()`: Pair formation animation (checks both defender and attacker)
+- Animation class, z-index, and style prop extraction
+
+**Integration points**:
+- Uses `getPlayerAnimationProps` from animation module
+- Handles both individual and pair animation scenarios
+- Returns consistent animation property structure
+
+**UI Module Benefits**:
+- **Separation of Concerns**: UI logic separated from business logic
+- **Reusability**: UI utilities can be shared across formation renderers
+- **Consistency**: Centralized styling and display logic ensures visual consistency
+- **Formation Awareness**: All utilities handle differences between team modes
+- **Maintainability**: UI changes isolated from game logic changes
 
 ---
 
@@ -355,13 +522,13 @@ The central `gameState` object contains:
 - `periodFormation`: Current player positions and formation structure
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
-- `formationType`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
+- `teamMode`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
 - `playersToHighlight`: Players to show glow effects
 - Various timing and metadata fields
 
-## Formation Types
-Three supported formation types:
+## Team Modes
+Three supported team modes:
 - **PAIRS_7**: 7-player pairs mode (2 field pairs + 1 substitute pair + goalie)
 - **INDIVIDUAL_6**: 6-player individual mode (4 field players + 1 substitute + goalie)  
 - **INDIVIDUAL_7**: 7-player individual mode (4 field players + 2 substitutes + goalie)
@@ -430,19 +597,57 @@ Player time tracking follows this approach:
    };
    ```
 
-2. **Use unified animation system** in GameScreen component:
+2. **Create or extend handler factory** in appropriate `handlers/` file:
    ```javascript
-   animateStateChange(
-     createGameState(),
-     calculateNewOperation,
-     applyStateChanges,
-     setAnimationState,
-     setHideNextOffIndicator,
-     setRecentlySubstitutedPlayers
+   export const createNewOperationHandlers = (dependencies) => {
+     const handleNewOperation = () => {
+       animateStateChange(
+         gameStateFactory(),
+         calculateNewOperation,
+         applyStateChanges,
+         setAnimationState,
+         setHideNextOffIndicator,
+         setRecentlySubstitutedPlayers
+       );
+     };
+     
+     return { handleNewOperation };
+   };
+   ```
+
+3. **Integrate handlers in GameScreen** with dependency injection:
+   ```javascript
+   const newOperationHandlers = React.useMemo(() =>
+     createNewOperationHandlers(dependencies),
+     [dependencies]
    );
    ```
 
-## Extending Formation Types
+## Adding New Long Press Interactions
+1. **Add callback to appropriate handler factory** (e.g., `fieldPositionHandlers.js`):
+   ```javascript
+   const newPositionCallback = () => {
+     // Handle new position interaction
+   };
+   
+   return { ...existingCallbacks, newPositionCallback };
+   ```
+
+2. **Extend `useFieldPositionHandlers` hook** to include new callback:
+   ```javascript
+   const newPositionEvents = useLongPressWithScrollDetection(
+     fieldPositionCallbacks.newPositionCallback || (() => {}), 500
+   );
+   ```
+
+3. **Use in formation renderer**:
+   ```javascript
+   <div {...longPressHandlers.newPositionEvents}>
+     {/* Position content */}
+   </div>
+   ```
+
+## Extending Team Modes
 - Add new formation constants to `constants/playerConstants.js`
 - Update position utilities in `utils/positionUtils.js` 
 - Extend animation position mappings in `animationSupport.js`
@@ -530,12 +735,13 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 # Integration Points
 
 ## Components
-- `components/game/GameScreen.js`: Main consumer, orchestrates UI and game state
+- `components/game/GameScreen.js`: Main consumer, orchestrates UI and game state using handler factories
+- `components/game/formations/`: Formation renderers using UI utilities for consistent styling
 - `components/setup/`: Initialize game state and player data (uses constants and utils)
 - `components/stats/`: Read game state for reporting (uses rolePointUtils)
 
 ## Constants & Utilities (Cross-Screen)
-- `constants/playerConstants.js`: Core domain constants (PLAYER_ROLES, FORMATION_TYPES)
+- `constants/playerConstants.js`: Core domain constants (PLAYER_ROLES, TEAM_MODES)
 - `constants/gameConfig.js`: Configuration options for setup screens
 - `constants/defaultData.js`: Default data for initialization
 - `utils/playerUtils.js`: Player data operations and queries (now includes initializePlayers)
@@ -546,6 +752,17 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 ## Hooks
 - `hooks/useGameState.js`: React state management for game data
 - `hooks/useTimers.js`: Time tracking integration
+- `hooks/useLongPressWithScrollDetection.js`: Universal long press with scroll detection
+- `hooks/useFieldPositionHandlers.js`: Field position event handler integration with React hooks
+
+## Game Modules Integration Flow
+1. **GameScreen** creates handler factories (`handlers/`) with dependency injection
+2. **Handler factories** return callbacks and action handlers
+3. **React hooks** integrate callbacks with `useLongPressWithScrollDetection` for event handling
+4. **Formation renderers** use UI utilities (`ui/`) for consistent styling and behavior
+5. **Game logic** (`logic/`) provides pure functions for state transitions
+6. **Animation system** (`animation/`) orchestrates visual transitions
+7. **Time tracking** (`time/`) manages player stint calculations
 
 ---
 
@@ -557,7 +774,7 @@ All logic functions can be tested in isolation:
 const testState = {
   periodFormation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
-  formationType: 'INDIVIDUAL_6'
+  teamMode: 'INDIVIDUAL_6'
 };
 
 const result = calculateSubstitution(testState);
@@ -567,7 +784,7 @@ expect(result.periodFormation).toBe(/* expected formation */);
 ## Animation Debugging
 ```javascript
 // Enable debug logging
-const animations = calculateAllPlayerAnimations(before, after, formationType);
+const animations = calculateAllPlayerAnimations(before, after, teamMode);
 console.log('Animation data:', animations);
 ```
 

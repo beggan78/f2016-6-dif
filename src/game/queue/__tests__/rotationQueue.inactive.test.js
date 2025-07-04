@@ -1,4 +1,4 @@
-import { createRotationQueue } from './rotationQueue';
+import { createRotationQueue } from '../rotationQueue';
 
 describe('RotationQueue - Inactive Player Bug Prevention', () => {
   let queue;

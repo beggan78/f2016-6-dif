@@ -6,11 +6,13 @@ export const PLAYER_ROLES = {
   ON_FIELD: 'On Field' // Used for initial status
 };
 
-export const FORMATION_TYPES = {
-  PAIRS_7: 'pairs_7',
-  INDIVIDUAL_6: 'individual_6', 
-  INDIVIDUAL_7: 'individual_7'
+// Team management modes - how players are organized and managed
+export const TEAM_MODES = {
+  PAIRS_7: 'pairs_7',        // 7 players managed in pairs (3 pairs + goalie)
+  INDIVIDUAL_6: 'individual_6', // 6 players managed individually (4 field + 1 sub + goalie)
+  INDIVIDUAL_7: 'individual_7'  // 7 players managed individually (4 field + 2 subs + goalie)
 };
+
 
 export const PLAYER_STATUS = {
   ON_FIELD: 'on_field',
@@ -18,4 +20,4 @@ export const PLAYER_STATUS = {
   GOALIE: 'goalie'
 };
 
-// EXPECTED_PLAYER_COUNTS moved to constants/formations.js to eliminate duplication
+// EXPECTED_PLAYER_COUNTS moved to constants/gameModes.js to eliminate duplication

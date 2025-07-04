@@ -1,6 +1,6 @@
 /**
  * Basic position key constants - Raw string values only
- * Formation-specific logic moved to constants/formations.js
+ * Formation-specific logic moved to constants/gameModes.js
  */
 export const POSITION_KEYS = {
   // Pairs formation
@@ -8,7 +8,7 @@ export const POSITION_KEYS = {
   RIGHT_PAIR: 'rightPair', 
   SUB_PAIR: 'subPair',
   
-  // Individual formations
+  // 6-player Individual
   LEFT_DEFENDER: 'leftDefender',
   RIGHT_DEFENDER: 'rightDefender',
   LEFT_ATTACKER: 'leftAttacker', 

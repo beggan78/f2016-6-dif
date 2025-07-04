@@ -83,10 +83,10 @@ function App() {
   };
 
 
-  const handleUndoSubstitution = (subTimerSecondsAtSubstitution) => {
+  const handleUndoSubstitution = (subTimerSecondsAtSubstitution, substitutionTimestamp) => {
     const targetSubTimerSeconds = calculateUndoTimerTarget(
       subTimerSecondsAtSubstitution,
-      gameState.lastSubstitutionTimestamp
+      substitutionTimestamp || gameState.lastSubstitutionTimestamp
     );
     
     timers.restoreSubTimer(targetSubTimerSeconds);
@@ -204,8 +204,8 @@ function App() {
             setPeriodDurationMinutes={gameState.setPeriodDurationMinutes}
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
-            formationType={gameState.formationType}
-            setFormationType={gameState.setFormationType}
+            teamMode={gameState.teamMode}
+            setTeamMode={gameState.setTeamMode}
             alertMinutes={gameState.alertMinutes}
             setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
@@ -228,7 +228,7 @@ function App() {
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             numPeriods={gameState.numPeriods}
-            formationType={gameState.formationType}
+            teamMode={gameState.teamMode}
             setView={gameState.setView}
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
@@ -261,7 +261,7 @@ function App() {
             setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}
-            formationType={gameState.formationType}
+            teamMode={gameState.teamMode}
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
             switchPlayerPositions={gameState.switchPlayerPositions}
@@ -314,7 +314,7 @@ function App() {
             onRestartMatch={handleRestartMatch} 
             onAddPlayer={handleAddPlayer}
             currentView={gameState.view}
-            formationType={gameState.formationType}
+            teamMode={gameState.teamMode}
             onSplitPairs={gameState.splitPairs}
             onFormPairs={gameState.formPairs}
             allPlayers={gameState.allPlayers}

@@ -1,6 +1,6 @@
-import { createSubstitutionManager, SubstitutionManager } from './substitutionManager';
-import { updatePlayerTimeStats } from '../time/stintManager';
-import { FORMATION_TYPES, PLAYER_ROLES } from '../../constants/playerConstants';
+import { createSubstitutionManager, SubstitutionManager } from '../substitutionManager';
+import { updatePlayerTimeStats } from '../../time/stintManager';
+import { TEAM_MODES, PLAYER_ROLES } from '../../../constants/playerConstants';
 
 describe('SubstitutionManager', () => {
   let manager;
@@ -15,9 +15,9 @@ describe('SubstitutionManager', () => {
     ];
   });
 
-  describe('7-player pairs formation', () => {
+  describe('7-player pair mode', () => {
     beforeEach(() => {
-      manager = new SubstitutionManager(FORMATION_TYPES.PAIRS_7);
+      manager = new SubstitutionManager(TEAM_MODES.PAIRS_7);
       mockFormation = {
         leftPair: { defender: '1', attacker: '2' },
         rightPair: { defender: '4', attacker: '5' },
@@ -46,7 +46,7 @@ describe('SubstitutionManager', () => {
 
   describe('6-player individual formation', () => {
     beforeEach(() => {
-      manager = new SubstitutionManager(FORMATION_TYPES.INDIVIDUAL_6);
+      manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
       mockFormation = {
         leftDefender: '1',
         rightDefender: '2',
@@ -96,32 +96,15 @@ describe('SubstitutionManager', () => {
 
   describe('utility functions', () => {
     beforeEach(() => {
-      manager = new SubstitutionManager(FORMATION_TYPES.PAIRS_7);
+      manager = new SubstitutionManager(TEAM_MODES.PAIRS_7);
     });
 
-    test('getPositionRole returns correct roles', () => {
+    test('getPositionRole delegates to shared utility', () => {
       expect(manager.getPositionRole('leftDefender')).toBe(PLAYER_ROLES.DEFENDER);
       expect(manager.getPositionRole('rightAttacker')).toBe(PLAYER_ROLES.ATTACKER);
       expect(manager.getPositionRole('substitute')).toBe(PLAYER_ROLES.SUBSTITUTE);
+      // Note: goalie and pairs don't have direct role mapping
       expect(manager.getPositionRole('goalie')).toBe(PLAYER_ROLES.GOALIE);
-    });
-
-    test('calculateTimeStats updates time correctly', () => {
-      const player = {
-        stats: {
-          currentPeriodStatus: 'on_field',
-          currentPeriodRole: PLAYER_ROLES.DEFENDER,
-          lastStintStartTimeEpoch: 1000,
-          timeOnFieldSeconds: 0,
-          timeAsDefenderSeconds: 0
-        }
-      };
-
-      const updatedStats = manager.calculateTimeStats(player, 2000);
-
-      expect(updatedStats.timeOnFieldSeconds).toBe(1);
-      expect(updatedStats.timeAsDefenderSeconds).toBe(1);
-      expect(updatedStats.lastStintStartTimeEpoch).toBe(2000);
     });
 
     test('updatePlayerTimeStats from time module works', () => {
@@ -142,8 +125,8 @@ describe('SubstitutionManager', () => {
   });
 
   test('createSubstitutionManager factory function works', () => {
-    const manager = createSubstitutionManager(FORMATION_TYPES.INDIVIDUAL_6);
+    const manager = createSubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
     expect(manager).toBeInstanceOf(SubstitutionManager);
-    expect(manager.formationType).toBe(FORMATION_TYPES.INDIVIDUAL_6);
+    expect(manager.teamMode).toBe(TEAM_MODES.INDIVIDUAL_6);
   });
 });

@@ -1,16 +1,16 @@
-import { PLAYER_ROLES, FORMATION_TYPES } from '../../constants/playerConstants';
+import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
-import { getPositionRole, getFieldPositions } from '../../utils/formationUtils';
+import { getPositionRole, getFieldPositions } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint } from '../time/stintManager';
 
 
 /**
- * Manages substitution logic for different formation types
+ * Manages substitution logic for different team modes
  */
 export class SubstitutionManager {
-  constructor(formationType) {
-    this.formationType = formationType;
+  constructor(teamMode) {
+    this.teamMode = teamMode;
   }
 
 
@@ -80,7 +80,8 @@ export class SubstitutionManager {
     return {
       newFormation,
       updatedPlayers,
-      newNextPhysicalPairToSubOut: newNextPair
+      newNextPhysicalPairToSubOut: newNextPair,
+      playersComingOnIds: playersComingOnIds
     };
   }
 
@@ -155,7 +156,7 @@ export class SubstitutionManager {
     console.log('🔄 INDIVIDUAL_6 Substitution - Rotated queue:', newRotationQueue);
     console.log('🔄 INDIVIDUAL_6 Substitution - Next player to sub out:', nextPlayerToSubOutId);
     
-    const fieldPositions = getFieldPositions(this.formationType);
+    const fieldPositions = getFieldPositions(this.teamMode);
     const nextPlayerPosition = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
@@ -165,7 +166,8 @@ export class SubstitutionManager {
       updatedPlayers,
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
-      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender'
+      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender',
+      playersComingOnIds: [playerComingOnId]
     };
   }
 
@@ -266,7 +268,7 @@ export class SubstitutionManager {
     const nextNextPlayerIdToSubOut = newRotationQueue[1] || null;
 
 
-    const fieldPositions = getFieldPositions(this.formationType);
+    const fieldPositions = getFieldPositions(this.teamMode);
     const nextPlayerPosition = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
@@ -277,23 +279,24 @@ export class SubstitutionManager {
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextNextPlayerIdToSubOut: nextNextPlayerIdToSubOut,
-      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7'
+      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7',
+      playersComingOnIds: [playerComingOnId]
     };
   }
 
   /**
-   * Main substitution handler - delegates to appropriate method based on formation type
+   * Main substitution handler - delegates to appropriate method based on team mode
    */
   executeSubstitution(context) {
-    switch (this.formationType) {
-      case FORMATION_TYPES.PAIRS_7:
+    switch (this.teamMode) {
+      case TEAM_MODES.PAIRS_7:
         return this.handlePairsSubstitution(context);
-      case FORMATION_TYPES.INDIVIDUAL_6:
+      case TEAM_MODES.INDIVIDUAL_6:
         return this.handleIndividualSubstitution(context);
-      case FORMATION_TYPES.INDIVIDUAL_7:
+      case TEAM_MODES.INDIVIDUAL_7:
         return this.handleIndividual7Substitution(context);
       default:
-        throw new Error(`Unknown formation type: ${this.formationType}`);
+        throw new Error(`Unknown team mode: ${this.teamMode}`);
     }
   }
 }
@@ -303,6 +306,15 @@ export class SubstitutionManager {
  * This calculates time for the previous role and updates the player's current role
  */
 export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPaused = false) {
+  console.log(`handleRoleChange for player ${player.id}:`, {
+    oldRole: player.stats.currentPeriodRole,
+    newRole,
+    currentTimeEpoch,
+    isSubTimerPaused,
+    lastStintStartTimeEpoch: player.stats.lastStintStartTimeEpoch,
+    currentPeriodStatus: player.stats.currentPeriodStatus
+  });
+  
   // First calculate stats for the time spent in the previous role
   const updatedStats = updatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
   
@@ -315,9 +327,21 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
     }
   };
   
+  console.log(`handleRoleChange: After role change for player ${player.id}:`, {
+    newRole,
+    timeOnFieldSeconds: updatedStats.timeOnFieldSeconds,
+    timeAsAttackerSeconds: updatedStats.timeAsAttackerSeconds,
+    timeAsDefenderSeconds: updatedStats.timeAsDefenderSeconds,
+    lastStintStartTimeEpoch: updatedStats.lastStintStartTimeEpoch
+  });
+  
   // Start new stint if timer is not paused
   if (!isSubTimerPaused) {
-    return startNewStint(playerWithUpdatedStats, currentTimeEpoch);
+    const playerWithNewStint = startNewStint(playerWithUpdatedStats, currentTimeEpoch);
+    console.log(`handleRoleChange: Started new stint for player ${player.id}:`, {
+      newLastStintStartTimeEpoch: playerWithNewStint.stats.lastStintStartTimeEpoch
+    });
+    return playerWithNewStint;
   }
   
   return playerWithUpdatedStats;
@@ -326,6 +350,6 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
 /**
  * Factory function to create substitution manager
  */
-export function createSubstitutionManager(formationType) {
-  return new SubstitutionManager(formationType);
+export function createSubstitutionManager(teamMode) {
+  return new SubstitutionManager(teamMode);
 }

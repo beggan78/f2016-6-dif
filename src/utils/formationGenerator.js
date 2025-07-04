@@ -251,7 +251,7 @@ function determineSubstituteRecommendations(finalPairs, outfieldersWithStats) {
  * For Period 1 (no stats), creates basic positional rotation queue
  * For Period 2+, creates time-based rotation queue
  */
-const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, formationType) => {
+const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, teamMode) => {
   const outfielders = squad.filter(p => p.id !== currentGoalieId);
   
   // Get stats for all outfielders
@@ -305,12 +305,12 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
   const defenders = fieldPlayersByAttackerSurplus.slice(0, 2); // Top 2 with most surplus attacker time
   const attackers = fieldPlayersByAttackerSurplus.slice(2, 4); // Bottom 2
 
-  // Create formation object based on formation type
+  // Create formation object based on team mode
   let formation = {
     goalie: currentGoalieId
   };
 
-  if (formationType === 'INDIVIDUAL_6') {
+  if (teamMode === 'INDIVIDUAL_6') {
     formation = {
       ...formation,
       leftDefender: defenders[0]?.id || null,
@@ -319,7 +319,7 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
       rightAttacker: attackers[1]?.id || null,
       substitute: rotationQueue[4]?.id || null // 5th player in rotation queue
     };
-  } else if (formationType === 'INDIVIDUAL_7') {
+  } else if (teamMode === 'INDIVIDUAL_7') {
     // For 7-player mode, inactive player goes to substitute7_2, active substitutes fill remaining positions
     const activeSubstitutes = rotationQueue.slice(4); // Players beyond the first 4
     
@@ -332,7 +332,7 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
       substitute7_1: activeSubstitutes[0]?.id || null, // 5th player in rotation queue
       substitute7_2: inactivePlayers[0]?.id || activeSubstitutes[1]?.id || null // Inactive player or 6th in queue
     };
-  } else if (formationType === 'INDIVIDUAL_8') {
+  } else if (teamMode === 'INDIVIDUAL_8') {
     // For future 8-player mode support
     const activeSubstitutes = rotationQueue.slice(4);
     
