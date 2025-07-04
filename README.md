@@ -56,6 +56,7 @@ DIF F16-6 Coach is built specifically for managing a soccer team of 14 players w
 - Configure team formation for the start of the current period
 - AI recommendations based on intelligent formation logic (for periods 2-3)
 - Manual override available for all positions
+- **Rotation Queue Management**: For periods 2+, manual goalie changes automatically update the rotation queue to maintain fairness (former goalie takes new goalie's position)
 
 ### 3. Live Game Management
 - **Match Timer**: Counts down from period duration
