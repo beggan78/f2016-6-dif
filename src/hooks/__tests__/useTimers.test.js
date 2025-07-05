@@ -1153,5 +1153,212 @@ describe('useTimers', () => {
         expect(result.current.subTimerSeconds).toBe(0); // Default for null timestamp
       });
     });
+
+    describe('Pause-Substitute-Resume Scenarios', () => {
+      it('should handle pause → substitute → resume correctly', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        // Start timers
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Run for 5 seconds
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(5);
+
+        // Pause timer
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+        expect(result.current.isSubTimerPaused).toBe(true);
+
+        // Wait 5 seconds while paused (timer should stay at 5)
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(5); // Should stay frozen
+
+        // Substitute (reset timer but keep pause state)
+        act(() => {
+          result.current.resetSubTimer();
+        });
+        expect(result.current.subTimerSeconds).toBe(0); // Timer reset to 0
+        expect(result.current.isSubTimerPaused).toBe(true); // Still paused
+
+        // Wait 3 more seconds while paused (timer should stay at 0)
+        Date.now.mockReturnValue(1013000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(0); // Should stay at 0
+
+        // Resume timer
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+        expect(result.current.isSubTimerPaused).toBe(false);
+
+        // Run for 7 more seconds
+        Date.now.mockReturnValue(1020000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(7); // Should count from 0 after resume
+      });
+
+      it('should handle pause → substitute → undo → resume correctly', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        // Start timers
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Run for 8 seconds
+        Date.now.mockReturnValue(1008000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(8);
+
+        // Pause timer
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+        expect(result.current.isSubTimerPaused).toBe(true);
+
+        // Substitute (reset timer but keep pause state)
+        act(() => {
+          result.current.resetSubTimer();
+        });
+        expect(result.current.subTimerSeconds).toBe(0);
+        expect(result.current.isSubTimerPaused).toBe(true);
+
+        // Resume first to clear pause state, then test undo
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Now undo - restore to 8 seconds 
+        Date.now.mockReturnValue(1015000);
+        act(() => {
+          result.current.restoreSubTimer(8);
+        });
+        expect(result.current.subTimerSeconds).toBe(8); // Shows 8 seconds
+
+        // Run for 4 more seconds
+        Date.now.mockReturnValue(1019000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(12); // 8 + 4
+      });
+
+      it('should handle multiple pause-resume cycles with substitutions', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        // Start timers
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // First cycle: run 3s, pause 2s, resume 2s
+        Date.now.mockReturnValue(1003000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(3);
+
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        Date.now.mockReturnValue(1007000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(5); // 3 + 2 (ignoring 2s pause)
+
+        // Pause again
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        // Substitute during pause
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          result.current.resetSubTimer();
+        });
+        expect(result.current.subTimerSeconds).toBe(0);
+        expect(result.current.isSubTimerPaused).toBe(true);
+
+        // Resume after substitution
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Run for 6 more seconds
+        Date.now.mockReturnValue(1016000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+        expect(result.current.subTimerSeconds).toBe(6); // Fresh start from substitution
+      });
+
+      it('should reset totalPausedDuration to zero during resetSubTimer', () => {
+        const { result } = renderHook(() => useTimers(15));
+
+        // Start timers
+        act(() => {
+          result.current.startTimers();
+        });
+
+        // Build up some pause duration
+        Date.now.mockReturnValue(1005000);
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        Date.now.mockReturnValue(1010000);
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        // Pause again and substitute
+        Date.now.mockReturnValue(1012000);
+        act(() => {
+          result.current.pauseSubTimer();
+        });
+
+        // This should reset totalPausedDuration to 0 regardless of pause state
+        act(() => {
+          result.current.resetSubTimer();
+        });
+
+        // Resume and verify clean slate
+        Date.now.mockReturnValue(1015000);
+        act(() => {
+          result.current.resumeSubTimer();
+        });
+
+        Date.now.mockReturnValue(1020000);
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        // Should show 5 seconds, not affected by previous pause accumulation
+        expect(result.current.subTimerSeconds).toBe(5);
+      });
+    });
   });
 });
