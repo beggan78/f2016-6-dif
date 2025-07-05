@@ -60,6 +60,7 @@ export function useTimers(periodDurationMinutes) {
           secondLastSubstitutionTime: saved.secondLastSubstitutionTime ?? null,
           pauseStartTime: saved.pauseStartTime ?? saved.subPauseStartTime ?? null,
           totalPausedDuration: saved.totalPausedDuration ?? (saved.pausedSubTime ? saved.pausedSubTime * 1000 : 0),
+          lastSubDuringPause: saved.lastSubDuringPause ?? false,
         };
       }
     }
@@ -70,6 +71,7 @@ export function useTimers(periodDurationMinutes) {
       secondLastSubstitutionTime: null,
       pauseStartTime: null,
       totalPausedDuration: 0,
+      lastSubDuringPause: false,
     };
   };
 
@@ -82,6 +84,7 @@ export function useTimers(periodDurationMinutes) {
   const [secondLastSubstitutionTime, setSecondLastSubstitutionTime] = useState(initialTimerState.secondLastSubstitutionTime);
   const [pauseStartTime, setPauseStartTime] = useState(initialTimerState.pauseStartTime);
   const [totalPausedDuration, setTotalPausedDuration] = useState(initialTimerState.totalPausedDuration);
+  const [lastSubDuringPause, setLastSubDuringPause] = useState(initialTimerState.lastSubDuringPause);
   
   // Force re-render trigger for timer display updates
   // eslint-disable-next-line no-unused-vars
@@ -148,10 +151,11 @@ export function useTimers(periodDurationMinutes) {
       secondLastSubstitutionTime,
       pauseStartTime,
       totalPausedDuration,
+      lastSubDuringPause,
       ...overrides // Allow overriding specific values for immediate persistence
     };
     saveTimerState(currentTimerState);
-  }, [isPeriodActive, periodStartTime, lastSubstitutionTime, secondLastSubstitutionTime, pauseStartTime, totalPausedDuration]);
+  }, [isPeriodActive, periodStartTime, lastSubstitutionTime, secondLastSubstitutionTime, pauseStartTime, totalPausedDuration, lastSubDuringPause]);
   
   // Legacy saveCurrentState for other functions (unused)
   // const saveCurrentState = saveTimerStateWithOverrides;
@@ -162,19 +166,25 @@ export function useTimers(periodDurationMinutes) {
     // Store previous substitution time for undo functionality
     setSecondLastSubstitutionTime(lastSubstitutionTime);
     setLastSubstitutionTime(now);
-    if (!isSubTimerPaused) {
-      setPauseStartTime(null);
-      setTotalPausedDuration(0);
+    setTotalPausedDuration(0);
+    const newStartPauseTime = isSubTimerPaused ? now : null;
+    setPauseStartTime(newStartPauseTime);
+    if (isSubTimerPaused) {
+      // Flag that this substitution happened during pause
+      setLastSubDuringPause(true);
+    } else {
+      setLastSubDuringPause(false);
     }
 
     // Save immediately with the new timestamp to fix async state issue
     saveTimerStateWithOverrides({ 
       lastSubstitutionTime: now,
-      secondLastSubstitutionTime: lastSubstitutionTime
-//      pauseStartTime: null,
-//      totalPausedDuration: 0
+      secondLastSubstitutionTime: lastSubstitutionTime,
+      lastSubDuringPause: isSubTimerPaused,
+      totalPausedDuration: 0,
+      pauseStartTime: newStartPauseTime
     });
-  }, [lastSubstitutionTime, saveTimerStateWithOverrides]);
+  }, [lastSubstitutionTime, isSubTimerPaused, saveTimerStateWithOverrides]);
 
   const restoreSubTimer = useCallback((targetSeconds) => {
     console.log('Restore Sub Timer invoked')
@@ -219,11 +229,13 @@ export function useTimers(periodDurationMinutes) {
       const now = Date.now();
       // Add pause duration to total accumulated pause time
       const pauseDuration = now - pauseStartTime;
+      
+      // Reset totalPausedDuration if last substitution was during pause
       const newTotalPausedDuration = totalPausedDuration + pauseDuration;
 
-      setTotalPausedDuration(newTotalPausedDuration);
       setPauseStartTime(null);
-      
+      setTotalPausedDuration(newTotalPausedDuration);
+
       // Reset all active player stint timers
       if (updatePlayerStats) {
         updatePlayerStats(now, false); // false = resuming
@@ -235,7 +247,7 @@ export function useTimers(periodDurationMinutes) {
         pauseStartTime: null
       });
     }
-  }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides]);
+  }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, lastSubDuringPause, saveTimerStateWithOverrides]);
 
   const startTimers = useCallback(() => {
     console.log('Start timers invoked')
@@ -246,6 +258,7 @@ export function useTimers(periodDurationMinutes) {
     setIsPeriodActive(true);
     setPauseStartTime(null);
     setTotalPausedDuration(0);
+    setLastSubDuringPause(false);
     
     // Save immediately with all new values
     saveTimerStateWithOverrides({
@@ -254,7 +267,8 @@ export function useTimers(periodDurationMinutes) {
       secondLastSubstitutionTime: null,
       isPeriodActive: true,
       pauseStartTime: null,
-      totalPausedDuration: 0
+      totalPausedDuration: 0,
+      lastSubDuringPause: false
     });
   }, [saveTimerStateWithOverrides]);
 
@@ -290,6 +304,7 @@ export function useTimers(periodDurationMinutes) {
     setSecondLastSubstitutionTime(null);
     setPauseStartTime(null);
     setTotalPausedDuration(0);
+    setLastSubDuringPause(false);
     
     // Clear any running interval
     if (updateIntervalRef.current) {
