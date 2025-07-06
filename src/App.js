@@ -15,11 +15,15 @@ import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
+import { isDebugMode } from './utils/debugUtils';
 
 // Main App Component
 function App() {
   const gameState = useGameState();
   const timers = useTimers(gameState.periodDurationMinutes);
+  
+  // Debug mode detection
+  const debugMode = isDebugMode();
   
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
@@ -212,6 +216,7 @@ function App() {
             selectedSquadPlayers={selectedSquadPlayers}
             opponentTeamName={gameState.opponentTeamName}
             setOpponentTeamName={gameState.setOpponentTeamName}
+            debugMode={debugMode}
           />
         );
       case 'periodSetup':
@@ -235,6 +240,7 @@ function App() {
             opponentTeamName={gameState.opponentTeamName}
             rotationQueue={gameState.rotationQueue}
             setRotationQueue={gameState.setRotationQueue}
+            debugMode={debugMode}
           />
         );
       case 'game':

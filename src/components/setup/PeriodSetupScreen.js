@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { Users, Play, Edit3, ArrowLeft } from 'lucide-react';
+import { Users, Play, Edit3, ArrowLeft, Shuffle } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { findPlayerById } from '../../utils/playerUtils';
+import { randomizeFormationPositions } from '../../utils/debugUtils';
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
@@ -23,7 +24,8 @@ export function PeriodSetupScreen({
   awayScore,
   opponentTeamName,
   rotationQueue,
-  setRotationQueue
+  setRotationQueue,
+  debugMode = false
 }) {
   // Determine formation mode
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
@@ -295,6 +297,40 @@ export function PeriodSetupScreen({
     return false;
   };
 
+  const randomizeFormation = () => {
+    if (!periodFormation.goalie) {
+      alert('Please select a goalie first before randomizing the formation.');
+      return;
+    }
+
+    // Get players available for positioning (excluding goalie)
+    const availablePlayers = availableForPairing;
+    
+    if (availablePlayers.length === 0) {
+      alert('No players available for positioning.');
+      return;
+    }
+
+    // Generate random formation based on team mode
+    const randomFormation = randomizeFormationPositions(availablePlayers, teamMode);
+    
+    // Validate that we got a valid formation
+    const formationKeys = Object.keys(randomFormation);
+    if (formationKeys.length === 0) {
+      alert('Failed to generate random formation.');
+      return;
+    }
+    
+    // Update formation while preserving goalie
+    const newFormation = {
+      ...periodFormation,  // Start with current formation
+      ...randomFormation,  // Apply randomized positions
+      goalie: periodFormation.goalie  // Keep existing goalie
+    };
+    
+    setPeriodFormation(newFormation);
+  };
+
   return (
     <div className="space-y-3">
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
@@ -464,6 +500,18 @@ export function PeriodSetupScreen({
       <Button onClick={handleStartGame} disabled={!isFormationComplete()} Icon={Play}>
         Start Period {currentPeriodNumber}
       </Button>
+
+      {/* Debug Mode Randomize Formation Button - Only for first period */}
+      {debugMode && currentPeriodNumber === 1 && (
+        <Button 
+          onClick={randomizeFormation} 
+          variant="accent"
+          Icon={Shuffle}
+          className="bg-amber-600 hover:bg-amber-700 text-white"
+        >
+          🎲 Randomize Formation (Debug)
+        </Button>
+      )}
       
       {currentPeriodNumber === 1 && (
         <Button onClick={() => setView('config')} Icon={ArrowLeft}>

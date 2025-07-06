@@ -1,9 +1,10 @@
     import React from 'react';
-import { Settings, Play } from 'lucide-react';
+import { Settings, Play, Shuffle } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
+import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -22,7 +23,8 @@ export function ConfigurationScreen({
   handleStartPeriodSetup, 
   selectedSquadPlayers,
   opponentTeamName,
-  setOpponentTeamName
+  setOpponentTeamName,
+  debugMode = false
 }) {
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {
@@ -41,6 +43,29 @@ export function ConfigurationScreen({
 
   const handleGoalieChange = (period, playerId) => {
     setPeriodGoalieIds(prev => ({ ...prev, [period]: playerId }));
+  };
+
+  const randomizeConfiguration = () => {
+    // Clear existing selections
+    setSelectedSquadIds([]);
+    setPeriodGoalieIds({});
+    
+    // Randomly select 7 players from roster
+    const randomPlayers = getRandomPlayers(allPlayers, 7);
+    const randomPlayerIds = randomPlayers.map(p => p.id);
+    setSelectedSquadIds(randomPlayerIds);
+    
+    // Set team mode to PAIRS_7 (default for 7 players)
+    setTeamMode(TEAM_MODES.PAIRS_7);
+    
+    // Randomize goalie assignments (use current numPeriods setting)
+    const goalieAssignments = randomizeGoalieAssignments(randomPlayers, numPeriods);
+    setPeriodGoalieIds(goalieAssignments);
+    
+    // Set a random opponent name
+    const opponentNames = ['Lions FC', 'Eagles United', 'Sharks', 'Thunder', 'Storm', 'Wildcats'];
+    const randomOpponent = opponentNames[Math.floor(Math.random() * opponentNames.length)];
+    setOpponentTeamName(randomOpponent);
   };
 
   return (
@@ -162,6 +187,18 @@ export function ConfigurationScreen({
       >
         Proceed to Period Setup
       </Button>
+
+      {/* Debug Mode Randomize Button */}
+      {debugMode && (
+        <Button 
+          onClick={randomizeConfiguration} 
+          variant="warning"
+          Icon={Shuffle}
+          className="bg-amber-600 hover:bg-amber-700 text-white"
+        >
+          🎲 Randomize Configuration (Debug)
+        </Button>
+      )}
     </div>
   );
 }
