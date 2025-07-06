@@ -94,10 +94,12 @@ export function useTimers(periodDurationMinutes) {
   // Calculate current timer values on-demand
   const matchTimerSeconds = useMemo(() => {
     return calculateMatchTimer(periodStartTime, periodDurationMinutes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodStartTime, periodDurationMinutes, forceUpdateCounter]);
   
   const subTimerSeconds = useMemo(() => {
     return calculateSubTimer(lastSubstitutionTime, totalPausedDuration, pauseStartTime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastSubstitutionTime, totalPausedDuration, pauseStartTime, forceUpdateCounter]);
   
   // Derived state

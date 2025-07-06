@@ -600,7 +600,7 @@ export function useGameState() {
   // Enhanced clear stored state with backup
   const clearStoredState = useCallback(() => {
     // Create backup before clearing
-    const backupKey = persistenceManager.createBackup();
+    persistenceManager.createBackup();
     // Clear the state
     const result = persistenceManager.clearState();
     if (result) {
