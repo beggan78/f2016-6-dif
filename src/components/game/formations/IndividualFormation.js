@@ -41,9 +41,9 @@ export function IndividualFormation({
   const substitutePositions = getSubstitutePositions(teamMode);
   const allPositions = getAllPositions(teamMode); // Include goalie in formation rendering
   
-  // Formation capabilities
-  const formationSupportsInactive = supportsInactivePlayers(teamMode);
-  const formationSupportsNextNext = supportsNextNextIndicators(teamMode);
+  // Mode capabilities
+  const modeSupportsInactive = supportsInactivePlayers(teamMode);
+  const modeSupportsNextNext = supportsNextNextIndicators(teamMode);
 
   const renderIndividualPosition = (position, renderIndex) => {
     const playerId = periodFormation[position];
@@ -57,9 +57,10 @@ export function IndividualFormation({
     // Check if this player was recently substituted
     const isRecentlySubstituted = recentlySubstitutedPlayers.has(playerId);
 
-    // Check if player is inactive (only for formations that support it)
-    const player = formationSupportsInactive ? findPlayerById(allPlayers, playerId) : null;
-    const isInactive = player?.stats.isInactive || false;
+    // Get player object (needed for next-off indicator logic)
+    const player = findPlayerById(allPlayers, playerId);
+    // Check if player is inactive (only for modes that support it)
+    const isInactive = modeSupportsInactive ? (player?.stats.isInactive || false) : false;
 
     // Get indicator props using utility
     const { isNextOff, isNextOn, isNextNextOff, isNextNextOn } = getIndicatorProps(
@@ -75,7 +76,7 @@ export function IndividualFormation({
       isNextOn,
       isRecentlySubstituted,
       hideNextOffIndicator,
-      supportsInactivePlayers: formationSupportsInactive
+      supportsInactivePlayers: modeSupportsInactive
     });
 
     // Get utilities
@@ -92,14 +93,14 @@ export function IndividualFormation({
         {...longPressEvents}
       >
         <h3 className="text-sm font-semibold mb-1 flex items-center justify-between">
-          {positionDisplayName} {formationSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
+          {positionDisplayName} {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
           <div className="flex space-x-1">
             {/* Primary indicators (full opacity) - only show for active players */}
-            {(!formationSupportsInactive || !isInactive) && isNextOff && !hideNextOffIndicator && <ArrowDownCircle className={`${ICON_STYLES.large} ${ICON_STYLES.indicators.nextOff} inline-block`} />}
-            {(!formationSupportsInactive || !isInactive) && isNextOn && !hideNextOffIndicator && <ArrowUpCircle className={`${ICON_STYLES.large} ${ICON_STYLES.indicators.nextOn} inline-block`} />}
-            {/* Secondary indicators (very dimmed) - only show for active players and formations that support it */}
-            {formationSupportsNextNext && (!isInactive) && isNextNextOff && !hideNextOffIndicator && <ArrowDownCircle className={`${ICON_STYLES.medium} ${ICON_STYLES.indicators.nextNextOff} inline-block`} />}
-            {formationSupportsNextNext && (!isInactive) && isNextNextOn && !hideNextOffIndicator && <ArrowUpCircle className={`${ICON_STYLES.medium} ${ICON_STYLES.indicators.nextNextOn} inline-block`} />}
+            {(!modeSupportsInactive || !isInactive) && isNextOff && !hideNextOffIndicator && <ArrowDownCircle className={`${ICON_STYLES.large} ${ICON_STYLES.indicators.nextOff} inline-block`} />}
+            {(!modeSupportsInactive || !isInactive) && isNextOn && !hideNextOffIndicator && <ArrowUpCircle className={`${ICON_STYLES.large} ${ICON_STYLES.indicators.nextOn} inline-block`} />}
+            {/* Secondary indicators (very dimmed) - only show for active players and modes that support it */}
+            {modeSupportsNextNext && (!isInactive) && isNextNextOff && !hideNextOffIndicator && <ArrowDownCircle className={`${ICON_STYLES.medium} ${ICON_STYLES.indicators.nextNextOff} inline-block`} />}
+            {modeSupportsNextNext && (!isInactive) && isNextNextOn && !hideNextOffIndicator && <ArrowUpCircle className={`${ICON_STYLES.medium} ${ICON_STYLES.indicators.nextNextOn} inline-block`} />}
           </div>
         </h3>
         <div className="flex items-center justify-between">
@@ -109,7 +110,7 @@ export function IndividualFormation({
         {canBeSelected && (
           <p className={FORMATION_STYLES.helpText}>{HELP_MESSAGES.fieldPlayerOptions}</p>
         )}
-        {isSubstitutePosition && formationSupportsInactive && (
+        {isSubstitutePosition && modeSupportsInactive && (
           <p className={FORMATION_STYLES.helpText}>{HELP_MESSAGES.substituteToggle(isInactive)}</p>
         )}
         {isGoaliePosition && (
