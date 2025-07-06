@@ -98,6 +98,14 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Test-First Approach**: Focus on making tests accurately reflect actual application behavior rather than changing production code to match test expectations
 
 ## Recent Achievements
+- **Timer Pause-Substitute-Resume Bug Fix**: Resolved critical timer calculation issue during pause-substitute-resume scenarios
+  - **Problem**: When timer was paused, then substitution occurred, then timer resumed, players received incorrect accumulated time
+  - **Root Cause**: `resetSubTimer()` was unconditionally clearing `totalPausedDuration`, destroying pause state
+  - **Solution**: Modified `resetSubTimer()` to preserve pause state during substitutions by setting `pauseStartTime` to current time when timer is paused
+  - **Impact**: Timer calculations now work correctly for pause → substitute → resume workflows
+  - **Test Coverage**: Added 4 comprehensive test cases covering complex pause-substitute-resume scenarios in `useTimers.test.js`
+  - **Code Cleanup**: Removed unnecessary `lastSubDuringPause` flag that was initially considered but not needed
+
 - **Timer Display Fix**: Resolved timer display freezing issue that prevented real-time updates
   - Fixed missing `forceUpdateCounter` dependencies in `useMemo` hooks for timer calculations
   - Replaced `useState` interval management with `useRef` to prevent infinite loops

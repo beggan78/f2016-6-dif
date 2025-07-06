@@ -20,9 +20,10 @@ Coordinates UI event handling with game logic and animation systems. Provides cl
 ### `substitutionHandlers.js` - Player Substitutions
 **Responsibilities**:
 - Regular player substitutions across all team modes
-- Timer integration and pause/resume logic
+- Timer integration and pause/resume logic (preserves pause state during substitutions)
 - Animation coordination
 - Queue rotation management
+- Undo functionality with timer restoration
 
 ### `fieldPositionHandlers.js` - Position Management
 **Responsibilities**:

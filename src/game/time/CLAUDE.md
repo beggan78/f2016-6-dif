@@ -161,6 +161,8 @@ if (shouldSkipTimeCalculation(isSubTimerPaused, stats.lastStintStartTimeEpoch)) 
 - **NaN times**: Usually caused by undefined time fields
 - **Incorrect accumulation**: Check role assignment and status transitions
 - **Pause/resume bugs**: Verify stint timer handling during pause/resume cycles
+- **Pause-substitute-resume issues**: Ensure `resetSubTimer()` preserves pause state by setting `pauseStartTime` when timer is paused
+- **Incorrect time after substitution**: Check that `totalPausedDuration` is reset to 0 in `resetSubTimer()` but pause state is maintained
 
 ## Integration with Game Logic
 

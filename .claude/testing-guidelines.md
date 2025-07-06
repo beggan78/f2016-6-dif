@@ -199,9 +199,10 @@ Test complete user journeys:
 
 ### 3. Business Logic Testing
 - Game rule enforcement
-- Time calculations
+- Time calculations (including pause-substitute-resume scenarios)
 - Substitution logic
 - Formation management
+- Timer state persistence and pause handling
 
 ## Performance Testing Considerations
 
