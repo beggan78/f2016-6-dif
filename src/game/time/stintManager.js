@@ -136,6 +136,29 @@ export const completeCurrentStint = (player, currentTimeEpoch, isSubTimerPaused 
 };
 
 /**
+ * Reset a player's stint timer without adding time to counters
+ * Used during substitutions to stop timing without adding more time
+ * @param {Object} player - Player object
+ * @param {number} currentTimeEpoch - Current time in milliseconds since epoch
+ * @returns {Object} Player object with reset stint timer
+ */
+export const resetPlayerStintTimer = (player, currentTimeEpoch) => {
+  // Validation
+  if (!currentTimeEpoch || currentTimeEpoch <= 0) {
+    console.warn(`resetPlayerStintTimer: Invalid currentTimeEpoch for player ${player.id}:`, currentTimeEpoch);
+    currentTimeEpoch = Date.now(); // Fallback to current time
+  }
+
+  return {
+    ...player,
+    stats: {
+      ...player.stats,
+      lastStintStartTimeEpoch: currentTimeEpoch
+    }
+  };
+};
+
+/**
  * Handle pause/resume time calculations for a player
  * @param {Object} player - Player object
  * @param {number} currentTimeEpoch - Current time in milliseconds since epoch

@@ -2,7 +2,7 @@ import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
 import { getPositionRole, getFieldPositions } from './positionUtils';
-import { updatePlayerTimeStats, startNewStint } from '../time/stintManager';
+import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
 
 
 /**
@@ -30,8 +30,7 @@ export class SubstitutionManager {
       periodFormation, 
       nextPhysicalPairToSubOut, 
       allPlayers, 
-      currentTimeEpoch,
-      isSubTimerPaused = false
+      currentTimeEpoch
     } = context;
 
     const pairToSubOutKey = nextPhysicalPairToSubOut;
@@ -56,7 +55,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused),
+            ...resetPlayerStintTimer(p, currentTimeEpoch).stats,
             currentPeriodStatus: 'substitute',
             currentPairKey: pairToSubInKey
           }
@@ -66,7 +65,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused),
+            ...resetPlayerStintTimer(p, currentTimeEpoch).stats,
             currentPeriodStatus: 'on_field',
             currentPairKey: pairToSubOutKey
           }
@@ -94,8 +93,7 @@ export class SubstitutionManager {
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
-      currentTimeEpoch,
-      isSubTimerPaused = false
+      currentTimeEpoch
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
@@ -123,7 +121,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused),
+            ...resetPlayerStintTimer(p, currentTimeEpoch).stats,
             currentPeriodStatus: 'substitute',
             currentPairKey: 'substitute',
             currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
@@ -134,7 +132,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused),
+            ...resetPlayerStintTimer(p, currentTimeEpoch).stats,
             currentPeriodStatus: 'on_field',
             currentPairKey: playerToSubOutKey,
             currentPeriodRole: newRole
@@ -177,8 +175,7 @@ export class SubstitutionManager {
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
-      currentTimeEpoch,
-      isSubTimerPaused = false
+      currentTimeEpoch
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
@@ -223,7 +220,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused),
+            ...resetPlayerStintTimer(p, currentTimeEpoch).stats,
             currentPeriodStatus: 'substitute',
             currentPairKey: newPairKey,
             currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
@@ -234,7 +231,7 @@ export class SubstitutionManager {
         return {
           ...p,
           stats: {
-            ...updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused),
+            ...resetPlayerStintTimer(p, currentTimeEpoch).stats,
             currentPeriodStatus: 'on_field',
             currentPairKey: playerToSubOutKey,
             currentPeriodRole: newRole
