@@ -129,4 +129,218 @@ describe('SubstitutionManager', () => {
     expect(manager).toBeInstanceOf(SubstitutionManager);
     expect(manager.teamMode).toBe(TEAM_MODES.INDIVIDUAL_6);
   });
+
+  describe('conditional time tracking fix', () => {
+    describe('normal substitution (timer not paused)', () => {
+      test('should accumulate time during pairs substitution', () => {
+        const manager = new SubstitutionManager(TEAM_MODES.PAIRS_7);
+        const mockPlayersWithTime = [
+          { 
+            id: '1', 
+            stats: { 
+              currentPeriodStatus: 'on_field', 
+              currentPeriodRole: PLAYER_ROLES.DEFENDER, 
+              lastStintStartTimeEpoch: 1000,
+              timeOnFieldSeconds: 50,
+              timeAsDefenderSeconds: 30
+            } 
+          },
+          { 
+            id: '2', 
+            stats: { 
+              currentPeriodStatus: 'on_field', 
+              currentPeriodRole: PLAYER_ROLES.ATTACKER, 
+              lastStintStartTimeEpoch: 1000,
+              timeOnFieldSeconds: 40,
+              timeAsAttackerSeconds: 25
+            } 
+          },
+          { 
+            id: '3', 
+            stats: { 
+              currentPeriodStatus: 'substitute', 
+              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              lastStintStartTimeEpoch: 1000,
+              timeOnFieldSeconds: 20,
+              timeAsSubSeconds: 15
+            } 
+          },
+        ];
+
+        const context = {
+          periodFormation: {
+            leftPair: { defender: '1', attacker: '2' },
+            rightPair: { defender: '4', attacker: '5' },
+            subPair: { defender: '3', attacker: '6' },
+            goalie: '7'
+          },
+          nextPhysicalPairToSubOut: 'leftPair',
+          allPlayers: mockPlayersWithTime,
+          currentTimeEpoch: 11000, // 10 seconds later
+          isSubTimerPaused: false // Normal substitution
+        };
+
+        const result = manager.executeSubstitution(context);
+
+        // Player 1 (going off) should have accumulated 10 seconds
+        const player1 = result.updatedPlayers.find(p => p.id === '1');
+        expect(player1.stats.timeOnFieldSeconds).toBe(60); // 50 + 10
+        expect(player1.stats.timeAsDefenderSeconds).toBe(40); // 30 + 10
+
+        // Player 3 (coming on) should have accumulated substitute time
+        const player3 = result.updatedPlayers.find(p => p.id === '3');
+        expect(player3.stats.timeAsSubSeconds).toBe(25); // 15 + 10
+      });
+
+      test('should accumulate time during individual6 substitution', () => {
+        const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
+        const mockPlayersWithTime = [
+          { 
+            id: '1', 
+            stats: { 
+              currentPeriodStatus: 'on_field', 
+              currentPeriodRole: PLAYER_ROLES.DEFENDER, 
+              lastStintStartTimeEpoch: 2000,
+              timeOnFieldSeconds: 120,
+              timeAsDefenderSeconds: 80
+            } 
+          },
+          { 
+            id: '5', 
+            stats: { 
+              currentPeriodStatus: 'substitute', 
+              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              lastStintStartTimeEpoch: 2000,
+              timeAsSubSeconds: 60
+            } 
+          },
+        ];
+
+        const context = {
+          periodFormation: {
+            leftDefender: '1',
+            rightDefender: '2',
+            leftAttacker: '3',
+            rightAttacker: '4',
+            substitute: '5',
+            goalie: '6'
+          },
+          nextPlayerIdToSubOut: '1',
+          allPlayers: mockPlayersWithTime,
+          rotationQueue: ['1', '2', '3', '4', '5'],
+          currentTimeEpoch: 17000, // 15 seconds later
+          isSubTimerPaused: false
+        };
+
+        const result = manager.executeSubstitution(context);
+
+        // Player 1 (going off) should have accumulated 15 seconds
+        const player1 = result.updatedPlayers.find(p => p.id === '1');
+        expect(player1.stats.timeOnFieldSeconds).toBe(135); // 120 + 15
+        expect(player1.stats.timeAsDefenderSeconds).toBe(95); // 80 + 15
+
+        // Player 5 (coming on) should have accumulated substitute time
+        const player5 = result.updatedPlayers.find(p => p.id === '5');
+        expect(player5.stats.timeAsSubSeconds).toBe(75); // 60 + 15
+      });
+    });
+
+    describe('pause substitution (timer paused)', () => {
+      test('should NOT accumulate time during pairs substitution when paused', () => {
+        const manager = new SubstitutionManager(TEAM_MODES.PAIRS_7);
+        const mockPlayersWithTime = [
+          { 
+            id: '1', 
+            stats: { 
+              currentPeriodStatus: 'on_field', 
+              currentPeriodRole: PLAYER_ROLES.DEFENDER, 
+              lastStintStartTimeEpoch: 1000,
+              timeOnFieldSeconds: 100,
+              timeAsDefenderSeconds: 70
+            } 
+          },
+          { 
+            id: '3', 
+            stats: { 
+              currentPeriodStatus: 'substitute', 
+              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              lastStintStartTimeEpoch: 1000,
+              timeAsSubSeconds: 30
+            } 
+          },
+        ];
+
+        const context = {
+          periodFormation: {
+            leftPair: { defender: '1', attacker: '2' },
+            subPair: { defender: '3', attacker: '6' }
+          },
+          nextPhysicalPairToSubOut: 'leftPair',
+          allPlayers: mockPlayersWithTime,
+          currentTimeEpoch: 31000, // 30 seconds later (during pause)
+          isSubTimerPaused: true // Pause substitution
+        };
+
+        const result = manager.executeSubstitution(context);
+
+        // Player 1 (going off) should NOT have accumulated the 30 seconds
+        const player1 = result.updatedPlayers.find(p => p.id === '1');
+        expect(player1.stats.timeOnFieldSeconds).toBe(100); // unchanged
+        expect(player1.stats.timeAsDefenderSeconds).toBe(70); // unchanged
+
+        // Player 3 (coming on) should NOT have accumulated substitute time
+        const player3 = result.updatedPlayers.find(p => p.id === '3');
+        expect(player3.stats.timeAsSubSeconds).toBe(30); // unchanged
+      });
+
+      test('should NOT accumulate time during individual7 substitution when paused', () => {
+        const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_7);
+        const mockPlayersWithTime = [
+          { 
+            id: '1', 
+            stats: { 
+              currentPeriodStatus: 'on_field', 
+              currentPeriodRole: PLAYER_ROLES.ATTACKER, 
+              lastStintStartTimeEpoch: 5000,
+              timeOnFieldSeconds: 200,
+              timeAsAttackerSeconds: 150
+            } 
+          },
+          { 
+            id: '8', 
+            stats: { 
+              currentPeriodStatus: 'substitute', 
+              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              lastStintStartTimeEpoch: 5000,
+              timeAsSubSeconds: 50
+            } 
+          },
+        ];
+
+        const context = {
+          periodFormation: {
+            leftDefender7: '1',
+            substitute7_1: '8',
+            substitute7_2: '9'
+          },
+          nextPlayerIdToSubOut: '1',
+          allPlayers: mockPlayersWithTime,
+          rotationQueue: ['1', '2', '3', '4', '8', '9'],
+          currentTimeEpoch: 25000, // 20 seconds later (during pause)
+          isSubTimerPaused: true // Pause substitution
+        };
+
+        const result = manager.executeSubstitution(context);
+
+        // Player 1 (going off) should NOT have accumulated the 20 seconds
+        const player1 = result.updatedPlayers.find(p => p.id === '1');
+        expect(player1.stats.timeOnFieldSeconds).toBe(200); // unchanged
+        expect(player1.stats.timeAsAttackerSeconds).toBe(150); // unchanged
+
+        // Player 8 (coming on) should NOT have accumulated substitute time
+        const player8 = result.updatedPlayers.find(p => p.id === '8');
+        expect(player8.stats.timeAsSubSeconds).toBe(50); // unchanged
+      });
+    });
+  });
 });
