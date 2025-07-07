@@ -37,7 +37,9 @@ describe('Goalie Queue State Update Integration', () => {
       setRotationQueue: jest.fn((newQueue) => {
         updatedRotationQueue = newQueue;
         console.log('setRotationQueue called with:', newQueue);
-      })
+      }),
+      setNextPlayerIdToSubOut: jest.fn(),
+      setNextNextPlayerIdToSubOut: jest.fn()
     };
     
     // Mock animation hooks
@@ -111,7 +113,9 @@ describe('Goalie Queue State Update Integration', () => {
         setAllPlayers: jest.fn(),
         setRotationQueue: jest.fn((newQueue) => {
           updatedRotationQueue = newQueue;
-        })
+        }),
+        setNextPlayerIdToSubOut: jest.fn(),
+        setNextNextPlayerIdToSubOut: jest.fn()
       };
       
       const mockAnimationHooks = {
