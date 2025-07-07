@@ -370,11 +370,36 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
     queueManager.addPlayer(periodFormation.goalie, 'end');
   }
 
+  // Recalculate next player tracking if the new goalie was next to come off
+  let newNextPlayerIdToSubOut = gameState.nextPlayerIdToSubOut;
+  let newNextNextPlayerIdToSubOut = gameState.nextNextPlayerIdToSubOut;
+  
+  if (newGoalieId === gameState.nextPlayerIdToSubOut) {
+    // New goalie was next to come off, so update tracking to next player in queue
+    const updatedQueue = queueManager.toArray();
+    newNextPlayerIdToSubOut = updatedQueue[0] || null;
+    
+    // For 7-player mode, also update next-next tracking
+    if (teamMode === TEAM_MODES.INDIVIDUAL_7 && updatedQueue.length >= 2) {
+      newNextNextPlayerIdToSubOut = updatedQueue[1];
+    }
+  } else if (newGoalieId === gameState.nextNextPlayerIdToSubOut && teamMode === TEAM_MODES.INDIVIDUAL_7) {
+    // New goalie was next-next to come off in 7-player mode
+    const updatedQueue = queueManager.toArray();
+    if (updatedQueue.length >= 2) {
+      newNextNextPlayerIdToSubOut = updatedQueue[1];
+    } else {
+      newNextNextPlayerIdToSubOut = null;
+    }
+  }
+
   return {
     ...gameState,
     periodFormation: newFormation,
     allPlayers: newAllPlayers,
     rotationQueue: queueManager.toArray(),
+    nextPlayerIdToSubOut: newNextPlayerIdToSubOut,
+    nextNextPlayerIdToSubOut: newNextNextPlayerIdToSubOut,
     playersToHighlight: [periodFormation.goalie, newGoalieId]
   };
 };

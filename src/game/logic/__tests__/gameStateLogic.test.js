@@ -226,6 +226,75 @@ describe('gameStateLogic', () => {
       
       expect(result).toBe(gameState);
     });
+
+    test('should update nextPlayerIdToSubOut when new goalie was next to come off (6-player mode)', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
+      const nextPlayerToSubOut = gameState.rotationQueue[0]; // First player in queue is next off
+      gameState.nextPlayerIdToSubOut = nextPlayerToSubOut;
+      
+      // Make the next player to sub out become the new goalie
+      const result = calculateGoalieSwitch(gameState, nextPlayerToSubOut);
+      
+      // nextPlayerIdToSubOut should now point to the new first player in queue
+      expect(result.nextPlayerIdToSubOut).toBe(result.rotationQueue[0]);
+      expect(result.nextPlayerIdToSubOut).not.toBe(nextPlayerToSubOut);
+      expect(result.nextPlayerIdToSubOut).not.toBe(result.periodFormation.goalie);
+    });
+
+    test('should update nextPlayerIdToSubOut when new goalie was next to come off (7-player mode)', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      const nextPlayerToSubOut = gameState.rotationQueue[0]; // First player in queue is next off
+      gameState.nextPlayerIdToSubOut = nextPlayerToSubOut;
+      gameState.nextNextPlayerIdToSubOut = gameState.rotationQueue[1];
+      
+      // Make the next player to sub out become the new goalie
+      const result = calculateGoalieSwitch(gameState, nextPlayerToSubOut);
+      
+      // nextPlayerIdToSubOut should now point to the new first player in queue
+      expect(result.nextPlayerIdToSubOut).toBe(result.rotationQueue[0]);
+      expect(result.nextPlayerIdToSubOut).not.toBe(nextPlayerToSubOut);
+      expect(result.nextPlayerIdToSubOut).not.toBe(result.periodFormation.goalie);
+      
+      // nextNextPlayerIdToSubOut should be updated too
+      if (result.rotationQueue.length >= 2) {
+        expect(result.nextNextPlayerIdToSubOut).toBe(result.rotationQueue[1]);
+      }
+    });
+
+    test('should update nextNextPlayerIdToSubOut when new goalie was next-next to come off (7-player mode)', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      const nextNextPlayerToSubOut = gameState.rotationQueue[1]; // Second player in queue is next-next off
+      gameState.nextPlayerIdToSubOut = gameState.rotationQueue[0];
+      gameState.nextNextPlayerIdToSubOut = nextNextPlayerToSubOut;
+      
+      // Make the next-next player to sub out become the new goalie
+      const result = calculateGoalieSwitch(gameState, nextNextPlayerToSubOut);
+      
+      // nextPlayerIdToSubOut should remain the same
+      expect(result.nextPlayerIdToSubOut).toBe(gameState.nextPlayerIdToSubOut);
+      
+      // nextNextPlayerIdToSubOut should now point to the new second player in queue
+      if (result.rotationQueue.length >= 2) {
+        expect(result.nextNextPlayerIdToSubOut).toBe(result.rotationQueue[1]);
+        expect(result.nextNextPlayerIdToSubOut).not.toBe(nextNextPlayerToSubOut);
+      } else {
+        expect(result.nextNextPlayerIdToSubOut).toBeNull();
+      }
+    });
+
+    test('should not change next tracking when new goalie was not in next positions', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      const someOtherPlayer = gameState.rotationQueue[2] || gameState.rotationQueue[0]; // Get a player not in next positions
+      gameState.nextPlayerIdToSubOut = gameState.rotationQueue[0];
+      gameState.nextNextPlayerIdToSubOut = gameState.rotationQueue[1];
+      
+      // Make a player who wasn't next or next-next become the new goalie
+      const result = calculateGoalieSwitch(gameState, someOtherPlayer);
+      
+      // next tracking should remain unchanged
+      expect(result.nextPlayerIdToSubOut).toBe(gameState.nextPlayerIdToSubOut);
+      expect(result.nextNextPlayerIdToSubOut).toBe(gameState.nextNextPlayerIdToSubOut);
+    });
   });
 
   describe('calculateUndo', () => {

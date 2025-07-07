@@ -98,6 +98,15 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Test-First Approach**: Focus on making tests accurately reflect actual application behavior rather than changing production code to match test expectations
 
 ## Recent Achievements
+- **Goalie Switch Next-Off Indicator Bug Fix**: Fixed critical issue where player marked as "next to come off" becomes new goalie but retains "next off" status, causing display problems
+  - **Problem**: When a player marked as "next off" became the new goalie, the `nextPlayerIdToSubOut` still pointed to them, causing the UI to show the goalie as both goalie and next to substitute
+  - **Root Cause**: `calculateGoalieSwitch()` updated rotation queue but didn't update next-player tracking variables
+  - **Solution**: 
+    - **Logic Layer**: Enhanced `calculateGoalieSwitch()` to recalculate `nextPlayerIdToSubOut` and `nextNextPlayerIdToSubOut` when affected players become goalie
+    - **Handler Layer**: Added missing state updaters in `goalieHandlers.js` to apply tracking variable changes
+  - **Impact**: Goalie switches now correctly update next-off indicators across all team modes
+  - **Test Coverage**: Added 4 comprehensive test cases covering all scenarios (6-player, 7-player, next/next-next positions)
+
 - **Timer Pause-Substitute-Resume Bug Fix**: Resolved critical timer calculation issue during pause-substitute-resume scenarios
   - **Problem**: When timer was paused, then substitution occurred, then timer resumed, players received incorrect accumulated time
   - **Root Cause**: `resetSubTimer()` was unconditionally clearing `totalPausedDuration`, destroying pause state
