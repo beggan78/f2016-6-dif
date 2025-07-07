@@ -793,15 +793,41 @@ export function useGameState() {
     // The existing rotation logic in handleSubstitution will continue from this selection
   }, []);
 
-  const setNextPlayerToSubOutWithRotation = useCallback((newPosition, isAutomaticUpdate = false) => {
+  const setNextPlayerToSubOutWithRotation = useCallback((newPosition, isAutomaticUpdate = true) => {
     setNextPlayerToSubOut(newPosition);
     
     // Only auto-update player ID for manual user selection, not during automatic substitution calculations
     if (!isAutomaticUpdate && periodFormation && periodFormation[newPosition]) {
       const selectedPlayerId = periodFormation[newPosition];
+      const currentNextPlayerId = nextPlayerIdToSubOut;
+      
       setNextPlayerIdToSubOut(selectedPlayerId);
+      
+      // For 7-player individual mode, update rotation queue and next-next tracking
+      if (teamMode === TEAM_MODES.INDIVIDUAL_7 && selectedPlayerId !== currentNextPlayerId) {
+        // Update rotation queue to put selected player first
+        setRotationQueue(prev => {
+          const queueManager = createRotationQueue(prev, createPlayerLookup(allPlayers));
+          queueManager.initialize();
+          
+          // Move selected player to front of rotation queue
+          queueManager.removePlayer(selectedPlayerId);
+          queueManager.addPlayer(selectedPlayerId, 0); // Add to front
+          
+          const updatedQueue = queueManager.toArray();
+          
+          // Update next-next tracking to reflect new queue order
+          if (updatedQueue.length >= 2) {
+            setNextNextPlayerIdToSubOut(updatedQueue[1]); // Second in queue
+          } else {
+            setNextNextPlayerIdToSubOut(null);
+          }
+          
+          return updatedQueue;
+        });
+      }
     }
-  }, [periodFormation]);
+  }, [periodFormation, teamMode, nextPlayerIdToSubOut, allPlayers]);
 
   // Player inactivation/activation functions for 7-player individual mode
   const togglePlayerInactive = useCallback((playerId, animationCallback = null, delayMs = 0) => {

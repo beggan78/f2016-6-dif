@@ -50,7 +50,7 @@ export const createSubstitutionHandlers = (
     if (fieldPlayerModal.type === 'pair') {
       setNextPhysicalPairToSubOut(fieldPlayerModal.target);
     } else if (fieldPlayerModal.type === 'player') {
-      setNextPlayerToSubOut(fieldPlayerModal.target);
+      setNextPlayerToSubOut(fieldPlayerModal.target, false); // Manual user selection
     }
     closeFieldPlayerModal();
   };
@@ -60,7 +60,7 @@ export const createSubstitutionHandlers = (
     if (fieldPlayerModal.type === 'pair') {
       setNextPhysicalPairToSubOut(fieldPlayerModal.target);
     } else if (fieldPlayerModal.type === 'player') {
-      setNextPlayerToSubOut(fieldPlayerModal.target);
+      setNextPlayerToSubOut(fieldPlayerModal.target, false); // Manual user selection
     }
     // Set flag to trigger substitution after state update
     setShouldSubstituteNow(true);

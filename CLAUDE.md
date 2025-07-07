@@ -127,6 +127,14 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
   - Comprehensive test coverage across all team modes
   - Fixed missing state updater calls in handler layer
 
+- **Manual Next-Sub Selection Fix**: Fixed next-next tracking bug in 7-player individual mode
+  - **Problem**: When a field player was manually "set as next sub", the next-off indicator correctly updated but the next-next-off indicator remained unchanged, pointing to the wrong player
+  - **Root Cause**: `setNextPlayerToSubOutWithRotation()` in `useGameState.js` only updated `nextPlayerIdToSubOut` but not `nextNextPlayerIdToSubOut` for 7-player individual mode
+  - **Solution**: Enhanced `setNextPlayerToSubOutWithRotation()` to update rotation queue and recalculate both tracking variables from queue order
+  - **Key Principle**: Next-off indicators must reflect rotation queue order (`nextPlayerIdToSubOut` = queue[0], `nextNextPlayerIdToSubOut` = queue[1])
+  - **Follow-up Fix**: Reversed default parameter logic - `isAutomaticUpdate = true` by default, manual selections explicitly pass `false`
+  - **Impact**: Manual "set as next sub" now correctly updates both next-off and next-next-off tracking in 7-player individual mode, without affecting normal substitutions
+
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing
 - Follow pure function architecture for all game logic

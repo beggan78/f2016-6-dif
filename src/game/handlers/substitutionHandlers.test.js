@@ -137,7 +137,7 @@ describe('createSubstitutionHandlers', () => {
       const fieldPlayerModal = { type: 'player', target: 'leftDefender7' };
       handlers.handleSetNextSubstitution(fieldPlayerModal);
 
-      expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith('leftDefender7');
+      expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith('leftDefender7', false);
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });
   });
@@ -155,7 +155,7 @@ describe('createSubstitutionHandlers', () => {
       const fieldPlayerModal = { type: 'player', target: 'leftDefender7' };
       handlers.handleSubstituteNow(fieldPlayerModal);
 
-      expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith('leftDefender7');
+      expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith('leftDefender7', false);
       expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });
