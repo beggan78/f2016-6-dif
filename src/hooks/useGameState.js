@@ -643,6 +643,12 @@ export function useGameState() {
   const splitPairs = useCallback(() => {
     if (teamMode !== TEAM_MODES.PAIRS_7) return;
     
+    // Import queue state utilities
+    const { analyzePairsRotationState, createIndividualQueueFromPairs } = require('../game/utils/queueStateUtils');
+    
+    // Analyze current pairs rotation state to preserve order
+    const pairsAnalysis = analyzePairsRotationState(nextPhysicalPairToSubOut, periodFormation);
+    
     setPeriodFormation(prev => {
       const newFormation = {
         goalie: prev.goalie,
@@ -697,27 +703,18 @@ export function useGameState() {
     // Update team mode
     setTeamMode(TEAM_MODES.INDIVIDUAL_7);
     
-    // Update next player tracking for individual mode
-    const firstSubId = periodFormation.substitute7_1 || periodFormation.subPair.defender;
-    const secondSubId = periodFormation.substitute7_2 || periodFormation.subPair.attacker;
+    // Create individual rotation queue that preserves pairs rotation order
+    const individualQueue = createIndividualQueueFromPairs(pairsAnalysis, {
+      leftPair: periodFormation.leftPair,
+      rightPair: periodFormation.rightPair,
+      subPair: periodFormation.subPair
+    });
     
-    // Set up rotation queue for 7-player individual mode
-    const positions = ['leftDefender7', 'leftAttacker7', 'rightDefender7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
-    const currentQueue = positions.map(pos => {
-      if (pos === 'leftDefender7') return periodFormation.leftPair?.defender;
-      if (pos === 'leftAttacker7') return periodFormation.leftPair?.attacker;
-      if (pos === 'rightDefender7') return periodFormation.rightPair?.defender;
-      if (pos === 'rightAttacker7') return periodFormation.rightPair?.attacker;
-      if (pos === 'substitute7_1') return firstSubId;
-      if (pos === 'substitute7_2') return secondSubId;
-      return null;
-    }).filter(Boolean);
-    
-    setRotationQueue(currentQueue);
-    setNextPlayerIdToSubOut(currentQueue[0] || null);
-    setNextNextPlayerIdToSubOut(currentQueue[1] || null);
+    setRotationQueue(individualQueue.queue);
+    setNextPlayerIdToSubOut(individualQueue.nextPlayerId);
+    setNextNextPlayerIdToSubOut(individualQueue.nextNextPlayerId);
     setNextPlayerToSubOut('leftDefender7');
-  }, [teamMode, selectedSquadIds, periodFormation.leftPair, periodFormation.rightPair, periodFormation.subPair, periodFormation.substitute7_1, periodFormation.substitute7_2]);
+  }, [teamMode, selectedSquadIds, periodFormation.leftPair, periodFormation.rightPair, periodFormation.subPair, periodFormation.substitute7_1, periodFormation.substitute7_2, nextPhysicalPairToSubOut]);
 
   const formPairs = useCallback(() => {
     if (teamMode !== TEAM_MODES.INDIVIDUAL_7) return;
@@ -727,6 +724,13 @@ export function useGameState() {
       alert('Cannot form pairs while there are inactive players. Please activate all players first.');
       return;
     }
+    
+    // Import queue state utilities
+    const { analyzePairsFromIndividualQueue, convertToPairFormation } = require('../game/utils/queueStateUtils');
+    
+    // Analyze current individual rotation queue to determine pairs rotation
+    const pairFormation = convertToPairFormation(periodFormation);
+    const pairsAnalysis = analyzePairsFromIndividualQueue(rotationQueue, periodFormation);
     
     setPeriodFormation(prev => {
       const newFormation = {
@@ -779,13 +783,13 @@ export function useGameState() {
     // Update team mode
     setTeamMode(TEAM_MODES.PAIRS_7);
     
-    // Update next pair tracking for pairs mode
-    setNextPhysicalPairToSubOut('leftPair');
+    // Set the next pair to rotate based on individual queue analysis
+    setNextPhysicalPairToSubOut(pairsAnalysis.nextPair);
     setRotationQueue([]);
     setNextPlayerIdToSubOut(null);
     setNextNextPlayerIdToSubOut(null);
     setNextPlayerToSubOut(null);
-  }, [teamMode, selectedSquadIds, allPlayers]);
+  }, [teamMode, selectedSquadIds, allPlayers, rotationQueue, periodFormation]);
 
   // Enhanced setters for manual selection - rotation logic already handles sequence correctly
   const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
