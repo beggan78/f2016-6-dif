@@ -98,42 +98,16 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Test-First Approach**: Focus on making tests accurately reflect actual application behavior rather than changing production code to match test expectations
 
 ## Recent Achievements
-- **Goalie Switch Next-Off Indicator Bug Fix**: Fixed critical issue where player marked as "next to come off" becomes new goalie but retains "next off" status, causing display problems
-  - **Problem**: When a player marked as "next off" became the new goalie, the `nextPlayerIdToSubOut` still pointed to them, causing the UI to show the goalie as both goalie and next to substitute
-  - **Root Cause**: `calculateGoalieSwitch()` updated rotation queue but didn't update next-player tracking variables
+- **Time Reset During Normal Substitution Bug Fix**: Fixed critical issue where players' accumulated time was reset to 0 during normal substitutions after a previous fix for pause scenarios
+  - **Problem**: Commit 9bac94b correctly fixed pause-substitution scenarios but broke normal substitutions by unconditionally calling `resetPlayerStintTimer()` instead of `updatePlayerTimeStats()`
+  - **Root Cause**: Substitution manager was not respecting timer pause state - always using reset function regardless of whether timer was paused
   - **Solution**: 
-    - **Logic Layer**: Enhanced `calculateGoalieSwitch()` to recalculate `nextPlayerIdToSubOut` and `nextNextPlayerIdToSubOut` when affected players become goalie
-    - **Handler Layer**: Added missing state updaters in `goalieHandlers.js` to apply tracking variable changes
-  - **Impact**: Goalie switches now correctly update next-off indicators across all team modes
-  - **Test Coverage**: Added 4 comprehensive test cases covering all scenarios (6-player, 7-player, next/next-next positions)
+    - **Logic Layer**: Implemented conditional time tracking in all three substitution methods: `const timeResult = isSubTimerPaused ? resetPlayerStintTimer(p, currentTimeEpoch) : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) };`
+    - **Handler Layer**: Fixed missing `isSubTimerPaused` property in `createGameState()` callback in GameScreen.js
+  - **Impact**: Normal substitutions now correctly accumulate player time while pause substitutions preserve time without adding paused duration
+  - **Test Coverage**: Added 4 comprehensive test cases covering both normal time accumulation and pause time preservation across different team modes
+  - **Documentation**: Updated substitutionManager.js with JSDoc comments documenting conditional time tracking logic
 
-- **Timer Pause-Substitute-Resume Bug Fix**: Resolved critical timer calculation issue during pause-substitute-resume scenarios
-  - **Problem**: When timer was paused, then substitution occurred, then timer resumed, players received incorrect accumulated time
-  - **Root Cause**: `resetSubTimer()` was unconditionally clearing `totalPausedDuration`, destroying pause state
-  - **Solution**: Modified `resetSubTimer()` to preserve pause state during substitutions by setting `pauseStartTime` to current time when timer is paused
-  - **Impact**: Timer calculations now work correctly for pause → substitute → resume workflows
-  - **Test Coverage**: Added 4 comprehensive test cases covering complex pause-substitute-resume scenarios in `useTimers.test.js`
-  - **Code Cleanup**: Removed unnecessary `lastSubDuringPause` flag that was initially considered but not needed
-
-- **Timer Display Fix**: Resolved timer display freezing issue that prevented real-time updates
-  - Fixed missing `forceUpdateCounter` dependencies in `useMemo` hooks for timer calculations
-  - Replaced `useState` interval management with `useRef` to prevent infinite loops
-  - Timers now update correctly every second during active periods
-  - Added comprehensive debugging documentation and regression tests
-  
-- **Goalie Queue Fairness Fix**: Implemented fair rotation queue positioning during goalie switches
-  - Former goalie now takes new goalie's exact position in rotation queue
-  - Prevents unfair penalties by maintaining queue position fairness
-  - Comprehensive test coverage across all team modes
-  - Fixed missing state updater calls in handler layer
-
-- **Manual Next-Sub Selection Fix**: Fixed next-next tracking bug in 7-player individual mode
-  - **Problem**: When a field player was manually "set as next sub", the next-off indicator correctly updated but the next-next-off indicator remained unchanged, pointing to the wrong player
-  - **Root Cause**: `setNextPlayerToSubOutWithRotation()` in `useGameState.js` only updated `nextPlayerIdToSubOut` but not `nextNextPlayerIdToSubOut` for 7-player individual mode
-  - **Solution**: Enhanced `setNextPlayerToSubOutWithRotation()` to update rotation queue and recalculate both tracking variables from queue order
-  - **Key Principle**: Next-off indicators must reflect rotation queue order (`nextPlayerIdToSubOut` = queue[0], `nextNextPlayerIdToSubOut` = queue[1])
-  - **Follow-up Fix**: Reversed default parameter logic - `isAutomaticUpdate = true` by default, manual selections explicitly pass `false`
-  - **Impact**: Manual "set as next sub" now correctly updates both next-off and next-next-off tracking in 7-player individual mode, without affecting normal substitutions
 
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing

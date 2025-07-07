@@ -156,6 +156,7 @@ if (shouldSkipTimeCalculation(isSubTimerPaused, stats.lastStintStartTimeEpoch)) 
 - Verify stint start times are set when players change roles
 - Ensure pause state is properly handled
 - Trace through stint manager flow for time calculations
+- **Conditional Time Tracking**: Verify `isSubTimerPaused` parameter is correctly passed to substitution functions
 
 ### Common Problems
 - **NaN times**: Usually caused by undefined time fields
@@ -163,12 +164,18 @@ if (shouldSkipTimeCalculation(isSubTimerPaused, stats.lastStintStartTimeEpoch)) 
 - **Pause/resume bugs**: Verify stint timer handling during pause/resume cycles
 - **Pause-substitute-resume issues**: Ensure `resetSubTimer()` preserves pause state by setting `pauseStartTime` when timer is paused
 - **Incorrect time after substitution**: Check that `totalPausedDuration` is reset to 0 in `resetSubTimer()` but pause state is maintained
+- **Time reset during normal substitution**: Ensure substitution functions use `updatePlayerTimeStats()` for normal substitutions and `resetPlayerStintTimer()` only during pause substitutions
 
 ## Integration with Game Logic
 
 ### During Substitutions
 ```javascript
-// In gameStateLogic.js
+// In substitutionManager.js - Conditional time tracking
+const timeResult = isSubTimerPaused 
+  ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
+  : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
+
+// In gameStateLogic.js - Role changes
 const updatedStats = updatePlayerTimeStats(player, currentTimeEpoch, isSubTimerPaused);
 
 // Handle role change from goalie to field player

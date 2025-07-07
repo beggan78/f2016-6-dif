@@ -14,15 +14,10 @@ import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
  * @returns {Object} Updated player stats object
  */
 export const updatePlayerTimeStats = (player, currentTimeEpoch, isSubTimerPaused = false) => {
-  console.log(`🔍 DEBUG updatePlayerTimeStats - Player ${player.id} (${player.name}):`);
-  console.log(`  📊 Input: timeOnField=${player.stats.timeOnFieldSeconds}s, timeAsAttacker=${player.stats.timeAsAttackerSeconds}s, timeAsDefender=${player.stats.timeAsDefenderSeconds}s`);
-  console.log(`  ⏱️ isSubTimerPaused: ${isSubTimerPaused}, lastStintStart: ${player.stats.lastStintStartTimeEpoch}, currentTime: ${currentTimeEpoch}`);
-  
   const stats = { ...player.stats };
   
   // Skip time calculation if timer is paused or stint hasn't started
   if (shouldSkipTimeCalculation(isSubTimerPaused, stats.lastStintStartTimeEpoch)) {
-    console.log(`  ⏸️ SKIPPING time calculation (timer paused or invalid stint start)`);
     return {
       ...stats
       // Don't update lastStintStartTimeEpoch when paused or invalid
@@ -31,19 +26,14 @@ export const updatePlayerTimeStats = (player, currentTimeEpoch, isSubTimerPaused
   
   // Calculate time spent in current stint
   const stintDuration = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, currentTimeEpoch);
-  console.log(`  ⏰ Calculated stint duration: ${stintDuration}s`);
 
   // Apply time to appropriate counters based on current status and role
   const updatedStats = applyStintTimeToCounters(stats, stintDuration);
-  console.log(`  📊 After applying time: timeOnField=${updatedStats.timeOnFieldSeconds}s, timeAsAttacker=${updatedStats.timeAsAttackerSeconds}s, timeAsDefender=${updatedStats.timeAsDefenderSeconds}s`);
   
-  const result = {
+  return {
     ...updatedStats,
     lastStintStartTimeEpoch: currentTimeEpoch
   };
-  
-  console.log(`  ✅ Final result: timeOnField=${result.timeOnFieldSeconds}s, timeAsAttacker=${result.timeAsAttackerSeconds}s, timeAsDefender=${result.timeAsDefenderSeconds}s`);
-  return result;
 };
 
 /**
@@ -153,32 +143,19 @@ export const completeCurrentStint = (player, currentTimeEpoch, isSubTimerPaused 
  * @returns {Object} Player object with reset stint timer
  */
 export const resetPlayerStintTimer = (player, currentTimeEpoch) => {
-  console.log(`🔄 DEBUG resetPlayerStintTimer - Player ${player.id} (${player.name}):`);
-  console.log(`  📊 Input: timeOnField=${player.stats.timeOnFieldSeconds}s, timeAsAttacker=${player.stats.timeAsAttackerSeconds}s, timeAsDefender=${player.stats.timeAsDefenderSeconds}s`);
-  console.log(`  ⏱️ lastStintStart: ${player.stats.lastStintStartTimeEpoch}, newCurrentTime: ${currentTimeEpoch}`);
-  
-  // Calculate potential stint duration that is being ignored
-  const stintDuration = player.stats.lastStintStartTimeEpoch ? Math.round((currentTimeEpoch - player.stats.lastStintStartTimeEpoch) / 1000) : 0;
-  console.log(`  ⏰ Stint duration being IGNORED: ${stintDuration}s`);
-  
   // Validation
   if (!currentTimeEpoch || currentTimeEpoch <= 0) {
     console.warn(`resetPlayerStintTimer: Invalid currentTimeEpoch for player ${player.id}:`, currentTimeEpoch);
     currentTimeEpoch = Date.now(); // Fallback to current time
   }
 
-  const result = {
+  return {
     ...player,
     stats: {
       ...player.stats,
       lastStintStartTimeEpoch: currentTimeEpoch
     }
   };
-  
-  console.log(`  📊 Output (UNCHANGED): timeOnField=${result.stats.timeOnFieldSeconds}s, timeAsAttacker=${result.stats.timeAsAttackerSeconds}s, timeAsDefender=${result.stats.timeAsDefenderSeconds}s`);
-  console.log(`  ❌ PROBLEM: ${stintDuration}s of time was NOT added to accumulated stats`);
-  
-  return result;
 };
 
 /**

@@ -28,12 +28,6 @@ export const calculateSubstitution = (gameState) => {
     isSubTimerPaused = false
   } = gameState;
 
-  console.log(`🚀 DEBUG calculateSubstitution - Starting substitution calculation:`);
-  console.log(`  🏟️ Team mode: ${teamMode}`);
-  console.log(`  ⏸️ isSubTimerPaused: ${isSubTimerPaused}`);
-  console.log(`  👤 nextPlayerIdToSubOut: ${nextPlayerIdToSubOut}`);
-  console.log(`  🥅 nextPhysicalPairToSubOut: ${nextPhysicalPairToSubOut}`);
-
   const currentTimeEpoch = Date.now();
   const substitutionManager = createSubstitutionManager(teamMode);
   
@@ -46,9 +40,6 @@ export const calculateSubstitution = (gameState) => {
     currentTimeEpoch,
     isSubTimerPaused
   };
-  
-  console.log(`  📤 Passing isSubTimerPaused=${isSubTimerPaused} to substitution manager`);
-  console.log(`  ⏰ Current time epoch: ${currentTimeEpoch}`);
 
   try {
     const result = substitutionManager.executeSubstitution(context);

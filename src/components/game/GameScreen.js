@@ -76,29 +76,21 @@ export function GameScreen({
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
 
   // Helper to create game state object for pure logic functions
-  const createGameState = React.useCallback(() => {
-    const gameState = {
-      periodFormation,
-      allPlayers,
-      teamMode,
-      nextPhysicalPairToSubOut,
-      nextPlayerToSubOut,
-      nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut,
-      rotationQueue,
-      selectedSquadPlayers,
-      fieldPlayerModal: modalHandlers.modals.fieldPlayer,
-      lastSubstitution: uiState.lastSubstitution,
-      subTimerSeconds,
-      isSubTimerPaused
-    };
-    
-    console.log(`🎯 DEBUG createGameState - Timer state for substitution:`);
-    console.log(`  ⏸️ isSubTimerPaused: ${isSubTimerPaused}`);
-    console.log(`  🕐 subTimerSeconds: ${subTimerSeconds}`);
-    
-    return gameState;
-  }, [
+  const createGameState = React.useCallback(() => ({
+    periodFormation,
+    allPlayers,
+    teamMode,
+    nextPhysicalPairToSubOut,
+    nextPlayerToSubOut,
+    nextPlayerIdToSubOut,
+    nextNextPlayerIdToSubOut,
+    rotationQueue,
+    selectedSquadPlayers,
+    fieldPlayerModal: modalHandlers.modals.fieldPlayer,
+    lastSubstitution: uiState.lastSubstitution,
+    subTimerSeconds,
+    isSubTimerPaused
+  }), [
     periodFormation, allPlayers, teamMode, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
