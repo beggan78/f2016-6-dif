@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 
 export function useGameModals(pushModalState, removeModalFromStack) {
+  // Pending goal state management
+  const [pendingGoal, setPendingGoal] = useState(null);
+  
   const [modals, setModals] = useState({
     fieldPlayer: {
       isOpen: false,
@@ -133,6 +136,22 @@ export function useGameModals(pushModalState, removeModalFromStack) {
   const closeGoalScorerModal = useCallback(() => {
     closeModal('goalScorer');
   }, [closeModal]);
+  
+  // Pending goal management functions
+  const setPendingGoalData = useCallback((goalData) => {
+    console.log('[DEBUG] useGameModals - Setting pending goal:', goalData);
+    setPendingGoal(goalData);
+  }, []);
+  
+  const getPendingGoalData = useCallback(() => {
+    console.log('[DEBUG] useGameModals - Getting pending goal:', pendingGoal);
+    return pendingGoal;
+  }, [pendingGoal]);
+  
+  const clearPendingGoal = useCallback(() => {
+    console.log('[DEBUG] useGameModals - Clearing pending goal');
+    setPendingGoal(null);
+  }, []);
 
   return {
     modals,
@@ -153,6 +172,10 @@ export function useGameModals(pushModalState, removeModalFromStack) {
     openUndoConfirmModal,
     closeUndoConfirmModal,
     openGoalScorerModal,
-    closeGoalScorerModal
+    closeGoalScorerModal,
+    // Pending goal operations
+    setPendingGoalData,
+    getPendingGoalData,
+    clearPendingGoal
   };
 }

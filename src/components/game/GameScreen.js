@@ -178,7 +178,12 @@ export function GameScreen({
   const scoreHandlers = React.useMemo(() =>
     createScoreHandlers(
       stateUpdaters,
-      modalHandlers
+      {
+        ...modalHandlers,
+        setPendingGoalData: modalHandlers.setPendingGoalData,
+        getPendingGoalData: modalHandlers.getPendingGoalData,
+        clearPendingGoal: modalHandlers.clearPendingGoal
+      }
     ), [stateUpdaters, modalHandlers]
   );
 
@@ -428,7 +433,7 @@ export function GameScreen({
       {/* Goal Scorer Modal */}
       <GoalScorerModal
         isOpen={modalHandlers.modals.goalScorer.isOpen}
-        onClose={modalHandlers.closeGoalScorerModal}
+        onClose={scoreHandlers.handleCancelGoalScorer}
         onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
         onUndoGoal={(eventId) => scoreHandlers.handleUndoGoal(eventId)}

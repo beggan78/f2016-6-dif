@@ -10,7 +10,15 @@ export const createScoreHandlers = (
     addAwayGoal 
   } = stateUpdaters;
   
-  const { openScoreEditModal, closeScoreEditModal, openGoalScorerModal, closeGoalScorerModal } = modalHandlers;
+  const { 
+    openScoreEditModal, 
+    closeScoreEditModal, 
+    openGoalScorerModal, 
+    closeGoalScorerModal,
+    setPendingGoalData,
+    getPendingGoalData,
+    clearPendingGoal
+  } = modalHandlers;
 
   // Generate unique event ID for goals
   const generateEventId = () => {
@@ -20,35 +28,44 @@ export const createScoreHandlers = (
   };
 
   const handleAddHomeGoal = (gameState = null) => {
-    // Update score immediately (backward compatibility)
-    addHomeGoal();
+    console.log('[DEBUG] handleAddHomeGoal called with gameState:', gameState);
     
-    // Only do event logging if gameState is provided (new functionality)
-    if (gameState) {
-      const eventId = generateEventId();
-      const now = Date.now();
-      const { homeScore, awayScore, currentPeriodNumber } = gameState;
-      
-      // Log goal event
-      logEvent(EVENT_TYPES.GOAL_HOME, {
+    // For backward compatibility, if no gameState provided, just add goal immediately
+    if (!gameState) {
+      console.log('[DEBUG] No gameState provided, adding goal immediately');
+      addHomeGoal();
+      return;
+    }
+    
+    // New flow: Store as pending goal, don't increment score yet
+    const eventId = generateEventId();
+    const now = Date.now();
+    const { homeScore, awayScore, currentPeriodNumber } = gameState;
+    
+    // Store pending goal data
+    const pendingGoalData = {
+      eventId,
+      type: EVENT_TYPES.GOAL_HOME,
+      periodNumber: currentPeriodNumber,
+      homeScore: homeScore + 1,
+      awayScore,
+      teamName: 'home',
+      timestamp: now
+    };
+    
+    console.log('[DEBUG] Storing pending goal data:', pendingGoalData);
+    setPendingGoalData(pendingGoalData);
+    
+    // Show goal scorer modal for attribution
+    if (openGoalScorerModal) {
+      console.log('[DEBUG] Opening goal scorer modal');
+      openGoalScorerModal({
         eventId,
-        periodNumber: currentPeriodNumber,
-        homeScore: homeScore + 1,
-        awayScore,
-        scorerId: null, // To be filled by modal
-        teamName: 'home'
+        team: 'home',
+        mode: 'new',
+        matchTime: calculateMatchTime(now),
+        periodNumber: currentPeriodNumber
       });
-      
-      // Show goal scorer modal for attribution
-      if (openGoalScorerModal) {
-        openGoalScorerModal({
-          eventId,
-          team: 'home',
-          mode: 'new',
-          matchTime: calculateMatchTime(now),
-          periodNumber: currentPeriodNumber
-        });
-      }
     }
   };
 
@@ -59,7 +76,6 @@ export const createScoreHandlers = (
     // Only do event logging if gameState is provided (new functionality)
     if (gameState) {
       const eventId = generateEventId();
-      const now = Date.now();
       const { homeScore, awayScore, currentPeriodNumber } = gameState;
       
       // Log goal event
@@ -77,15 +93,62 @@ export const createScoreHandlers = (
   };
 
   const handleSelectGoalScorer = (eventId, scorerId) => {
-    if (scorerId) {
-      // Log scorer correction event
-      logEvent(EVENT_TYPES.GOAL_CORRECTED, {
-        originalEventId: eventId,
-        scorerId,
-        correctionType: 'initial_attribution'
+    console.log('[DEBUG] handleSelectGoalScorer called with eventId:', eventId, 'scorerId:', scorerId);
+    
+    // Get pending goal data
+    const pendingGoal = getPendingGoalData();
+    console.log('[DEBUG] Retrieved pending goal:', pendingGoal);
+    
+    // If there's a pending goal, confirm it now
+    if (pendingGoal && pendingGoal.eventId === eventId) {
+      console.log('[DEBUG] Confirming pending goal');
+      
+      // Increment the score
+      if (pendingGoal.type === EVENT_TYPES.GOAL_HOME) {
+        console.log('[DEBUG] Adding home goal to score');
+        addHomeGoal();
+      } else if (pendingGoal.type === EVENT_TYPES.GOAL_AWAY) {
+        console.log('[DEBUG] Adding away goal to score');
+        addAwayGoal();
+      }
+      
+      // Log the goal event
+      console.log('[DEBUG] Logging goal event');
+      logEvent(pendingGoal.type, {
+        eventId: pendingGoal.eventId,
+        periodNumber: pendingGoal.periodNumber,
+        homeScore: pendingGoal.homeScore,
+        awayScore: pendingGoal.awayScore,
+        scorerId: scorerId || null,
+        teamName: pendingGoal.teamName
       });
+      
+      // If scorer is provided, also log the attribution
+      if (scorerId) {
+        console.log('[DEBUG] Logging scorer attribution');
+        logEvent(EVENT_TYPES.GOAL_CORRECTED, {
+          originalEventId: eventId,
+          scorerId,
+          correctionType: 'initial_attribution'
+        });
+      }
+      
+      // Clear pending goal
+      console.log('[DEBUG] Clearing pending goal');
+      clearPendingGoal();
+    } else {
+      console.log('[DEBUG] No matching pending goal, handling as existing goal correction');
+      // Handle existing goal correction (non-pending)
+      if (scorerId) {
+        logEvent(EVENT_TYPES.GOAL_CORRECTED, {
+          originalEventId: eventId,
+          scorerId,
+          correctionType: 'initial_attribution'
+        });
+      }
     }
     
+    console.log('[DEBUG] Closing goal scorer modal');
     closeGoalScorerModal();
   };
 
@@ -144,6 +207,22 @@ export const createScoreHandlers = (
     handleOpenScoreEdit();
   };
 
+  const handleCancelGoalScorer = () => {
+    console.log('[DEBUG] handleCancelGoalScorer called');
+    
+    // Get and clear pending goal data
+    const pendingGoal = getPendingGoalData();
+    console.log('[DEBUG] Cancelling pending goal:', pendingGoal);
+    
+    if (pendingGoal) {
+      console.log('[DEBUG] Clearing pending goal data');
+      clearPendingGoal();
+    }
+    
+    console.log('[DEBUG] Closing goal scorer modal');
+    closeGoalScorerModal();
+  };
+  
   return {
     handleAddHomeGoal,
     handleAddAwayGoal,
@@ -152,6 +231,7 @@ export const createScoreHandlers = (
     handleUndoGoal,
     handleScoreEdit,
     handleOpenScoreEdit,
+    handleCancelGoalScorer,
     scoreCallback
   };
 };
