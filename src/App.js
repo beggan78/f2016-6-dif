@@ -7,10 +7,12 @@ import { formatTime } from './utils/formatUtils';
 import { calculateUndoTimerTarget } from './game/time/timeCalculator';
 import { initializePlayers } from './utils/playerUtils';
 import { initialRoster } from './constants/defaultData';
+import { VIEWS } from './constants/viewConstants';
 import { ConfigurationScreen } from './components/setup/ConfigurationScreen';
 import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
+import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -36,9 +38,9 @@ function App() {
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
     // Check current view and handle accordingly
-    if (gameState.view === 'periodSetup' && gameState.currentPeriodNumber === 1) {
+    if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1) {
       // Exception: PeriodSetupScreen -> ConfigurationScreen
-      gameState.setView('config');
+      gameState.setView(VIEWS.CONFIG);
     } else {
       // Default: Show "Start a new game?" confirmation modal
       setShowNewGameModal(true);
@@ -215,7 +217,7 @@ function App() {
   // Render logic
   const renderView = () => {
     switch (gameState.view) {
-      case 'config':
+      case VIEWS.CONFIG:
         return (
           <ConfigurationScreen 
             allPlayers={gameState.allPlayers}
@@ -238,7 +240,7 @@ function App() {
             debugMode={debugMode}
           />
         );
-      case 'periodSetup':
+      case VIEWS.PERIOD_SETUP:
         return (
           <PeriodSetupScreen 
             currentPeriodNumber={gameState.currentPeriodNumber}
@@ -262,7 +264,7 @@ function App() {
             debugMode={debugMode}
           />
         );
-      case 'game':
+      case VIEWS.GAME:
         return (
           <GameScreen 
             currentPeriodNumber={gameState.currentPeriodNumber}
@@ -307,7 +309,7 @@ function App() {
             setScore={gameState.setScore}
           />
         );
-      case 'stats':
+      case VIEWS.STATS:
         return (
           <StatsScreen 
             allPlayers={gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
@@ -326,6 +328,31 @@ function App() {
             opponentTeamName={gameState.opponentTeamName}
             resetScore={gameState.resetScore}
             setOpponentTeamName={gameState.setOpponentTeamName}
+            navigateToMatchReport={gameState.navigateToMatchReport}
+          />
+        );
+      case VIEWS.MATCH_REPORT:
+        return (
+          <MatchReportScreen 
+            matchEvents={gameState.matchEvents || []}
+            matchStartTime={gameState.matchStartTime}
+            allPlayers={gameState.allPlayers}
+            gameLog={gameState.gameLog}
+            homeScore={gameState.homeScore}
+            awayScore={gameState.awayScore}
+            periodDurationMinutes={gameState.periodDurationMinutes}
+            teamMode={gameState.teamMode}
+            homeTeamName={selectedSquadPlayers ? 'Djurgården' : 'Home'}
+            awayTeamName={gameState.opponentTeamName || 'Opponent'}
+            onNavigateToStats={() => gameState.setView(VIEWS.STATS)}
+            onBackToGame={() => gameState.setView(VIEWS.GAME)}
+            goalScorers={gameState.goalScorers || {}}
+            getPlayerName={(playerId) => {
+              const player = gameState.allPlayers.find(p => p.id === playerId);
+              return player ? player.name : 'Unknown Player';
+            }}
+            formatTime={formatTime}
+            selectedSquadIds={gameState.selectedSquadIds}
           />
         );
       default:

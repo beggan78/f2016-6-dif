@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
 import { PLAYER_ROLES, TEAM_MODES } from '../constants/playerConstants';
+import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
@@ -350,7 +351,7 @@ export function useGameState() {
     setCurrentPeriodNumber(1);
     setGameLog([]); // Clear game log for new game
     preparePeriod(1);
-    setView('periodSetup');
+    setView(VIEWS.PERIOD_SETUP);
   }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod]);
 
   const handleStartGame = () => {
@@ -500,7 +501,7 @@ export function useGameState() {
       }
     }
 
-    setView('game');
+    setView(VIEWS.GAME);
   };
 
   const handleSubstitution = (isSubTimerPaused = false) => {
@@ -598,12 +599,12 @@ export function useGameState() {
     if (currentPeriodNumber < numPeriods) {
       setCurrentPeriodNumber(prev => prev + 1);
       preparePeriodWithGameLog(currentPeriodNumber + 1, updatedGameLog);
-      setView('periodSetup');
+      setView(VIEWS.PERIOD_SETUP);
     } else {
       // Release wake lock when game ends
       clearAlertTimer();
       releaseWakeLock();
-      setView('stats');
+      setView(VIEWS.STATS);
     }
   };
 
@@ -1336,6 +1337,11 @@ export function useGameState() {
     setAwayScore(0);
   }, []);
 
+  // Navigation to match report
+  const navigateToMatchReport = useCallback(() => {
+    setView(VIEWS.MATCH_REPORT);
+  }, []);
+
   return {
     // State
     allPlayers,
@@ -1413,6 +1419,7 @@ export function useGameState() {
     addAwayGoal,
     setScore,
     resetScore,
+    navigateToMatchReport,
     
     // Enhanced persistence actions
     createManualBackup,

@@ -1,0 +1,385 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  Play, 
+  Square, 
+  Trophy, 
+  RotateCcw, 
+  Shield, 
+  Pause, 
+  Clock, 
+  ArrowUpDown,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  ChevronUp,
+  ChevronDown
+} from 'lucide-react';
+import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
+import { formatTime } from '../../utils/formatUtils';
+
+/**
+ * GameEventTimeline - Timeline component for displaying match events
+ * 
+ * @param {Object} props - Component props
+ * @param {Array} props.events - Array of event objects from gameEventLogger
+ * @param {boolean} props.showSubstitutions - Whether to show substitution events
+ * @param {Function} props.onEventFilter - Callback for filter changes
+ * @param {Object} props.goalScorers - Object mapping event IDs to player IDs
+ * @param {Function} props.getPlayerName - Function to get player name by ID
+ * @param {Function} props.onGoalClick - Callback for goal events, for editing
+ * @param {string} props.homeTeamName - Home team name
+ * @param {string} props.awayTeamName - Away team name
+ * @param {number} props.matchStartTime - Match start timestamp
+ * @param {string} props.filterType - Current filter type
+ */
+export function GameEventTimeline({
+  events = [],
+  showSubstitutions = false,
+  onEventFilter,
+  goalScorers = {},
+  getPlayerName,
+  onGoalClick,
+  homeTeamName = "Djurgården",
+  awayTeamName = "Opponent",
+  matchStartTime,
+  filterType = 'all'
+}) {
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first, 'asc' for oldest first
+  const [expandedEvents, setExpandedEvents] = useState(new Set());
+
+  // Filter and sort events
+  const filteredAndSortedEvents = useMemo(() => {
+    let filtered = [...events];
+
+    // Filter out undone events unless they're marked as corrections
+    filtered = filtered.filter(event => 
+      !event.undone || event.type === EVENT_TYPES.GOAL_CORRECTED
+    );
+
+    // Sort by timestamp
+    filtered.sort((a, b) => {
+      const comparison = a.timestamp - b.timestamp;
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+
+    return filtered;
+  }, [events, sortOrder]);
+
+  // Get event icon based on type
+  const getEventIcon = (eventType) => {
+    switch (eventType) {
+      case EVENT_TYPES.MATCH_START:
+      case EVENT_TYPES.PERIOD_START:
+        return Play;
+      case EVENT_TYPES.MATCH_END:
+      case EVENT_TYPES.PERIOD_END:
+        return Square;
+      case EVENT_TYPES.GOAL_HOME:
+      case EVENT_TYPES.GOAL_AWAY:
+        return Trophy;
+      case EVENT_TYPES.SUBSTITUTION:
+        return RotateCcw;
+      case EVENT_TYPES.GOALIE_SWITCH:
+        return Shield;
+      case EVENT_TYPES.TIMER_PAUSED:
+      case EVENT_TYPES.PERIOD_PAUSED:
+        return Pause;
+      case EVENT_TYPES.TIMER_RESUMED:
+      case EVENT_TYPES.PERIOD_RESUMED:
+        return Play;
+      case EVENT_TYPES.POSITION_CHANGE:
+        return ArrowUpDown;
+      case EVENT_TYPES.GOAL_CORRECTED:
+        return CheckCircle;
+      case EVENT_TYPES.GOAL_UNDONE:
+        return XCircle;
+      case EVENT_TYPES.SUBSTITUTION_UNDONE:
+        return XCircle;
+      case EVENT_TYPES.TECHNICAL_TIMEOUT:
+        return AlertCircle;
+      default:
+        return Clock;
+    }
+  };
+
+  // Get event color based on type
+  const getEventColor = (eventType, isUndone = false) => {
+    if (isUndone) return 'text-slate-500';
+    
+    switch (eventType) {
+      case EVENT_TYPES.MATCH_START:
+      case EVENT_TYPES.MATCH_END:
+        return 'text-sky-400';
+      case EVENT_TYPES.PERIOD_START:
+      case EVENT_TYPES.PERIOD_END:
+        return 'text-blue-400';
+      case EVENT_TYPES.GOAL_HOME:
+      case EVENT_TYPES.GOAL_AWAY:
+        return 'text-emerald-400';
+      case EVENT_TYPES.SUBSTITUTION:
+      case EVENT_TYPES.POSITION_CHANGE:
+        return 'text-amber-400';
+      case EVENT_TYPES.GOALIE_SWITCH:
+        return 'text-purple-400';
+      case EVENT_TYPES.TIMER_PAUSED:
+      case EVENT_TYPES.PERIOD_PAUSED:
+        return 'text-orange-400';
+      case EVENT_TYPES.TIMER_RESUMED:
+      case EVENT_TYPES.PERIOD_RESUMED:
+        return 'text-green-400';
+      case EVENT_TYPES.GOAL_CORRECTED:
+        return 'text-green-400';
+      case EVENT_TYPES.GOAL_UNDONE:
+      case EVENT_TYPES.SUBSTITUTION_UNDONE:
+        return 'text-red-400';
+      case EVENT_TYPES.TECHNICAL_TIMEOUT:
+        return 'text-yellow-400';
+      default:
+        return 'text-slate-400';
+    }
+  };
+
+  // Get event background color for the container
+  const getEventBackgroundColor = (eventType, isUndone = false) => {
+    if (isUndone) return 'bg-slate-700/50';
+    
+    switch (eventType) {
+      case EVENT_TYPES.GOAL_HOME:
+      case EVENT_TYPES.GOAL_AWAY:
+        return 'bg-emerald-900/20 border-emerald-700/30';
+      case EVENT_TYPES.SUBSTITUTION:
+      case EVENT_TYPES.POSITION_CHANGE:
+        return 'bg-amber-900/20 border-amber-700/30';
+      case EVENT_TYPES.GOALIE_SWITCH:
+        return 'bg-purple-900/20 border-purple-700/30';
+      default:
+        return 'bg-slate-700/30 border-slate-600/30';
+    }
+  };
+
+  // Format event description
+  const formatEventDescription = (event) => {
+    const { type, data = {} } = event;
+    
+    switch (type) {
+      case EVENT_TYPES.MATCH_START:
+        return `Match started`;
+      case EVENT_TYPES.MATCH_END:
+        return `Match ended`;
+      case EVENT_TYPES.PERIOD_START:
+        return `Period ${data.periodNumber || 'Unknown'} started`;
+      case EVENT_TYPES.PERIOD_END:
+        return `Period ${data.periodNumber || 'Unknown'} ended`;
+      case EVENT_TYPES.GOAL_HOME:
+        const homeScorer = goalScorers[event.id] 
+          ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || 'Unknown player') : 'Unknown player')
+          : 'Unknown scorer';
+        return `Goal for ${homeTeamName} - ${homeScorer}`;
+      case EVENT_TYPES.GOAL_AWAY:
+        const awayScorer = goalScorers[event.id] 
+          ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || 'Unknown player') : 'Unknown player')
+          : 'Unknown scorer';
+        return `Goal for ${awayTeamName} - ${awayScorer}`;
+      case EVENT_TYPES.SUBSTITUTION:
+        const outPlayer = data.outPlayerId ? (getPlayerName ? (getPlayerName(data.outPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const inPlayer = data.inPlayerId ? (getPlayerName ? (getPlayerName(data.inPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        return `Substitution: ${outPlayer} ↔ ${inPlayer}`;
+      case EVENT_TYPES.GOALIE_SWITCH:
+        const oldGoalie = data.oldGoalieId ? (getPlayerName ? (getPlayerName(data.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const newGoalie = data.newGoalieId ? (getPlayerName ? (getPlayerName(data.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        return `Goalie change: ${oldGoalie} → ${newGoalie}`;
+      case EVENT_TYPES.POSITION_CHANGE:
+        const player1 = data.player1Id ? (getPlayerName ? (getPlayerName(data.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
+        const player2 = data.player2Id ? (getPlayerName ? (getPlayerName(data.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
+        return `Position switch: ${player1} ↔ ${player2}`;
+      case EVENT_TYPES.TIMER_PAUSED:
+        return `Timer paused`;
+      case EVENT_TYPES.TIMER_RESUMED:
+        return `Timer resumed`;
+      case EVENT_TYPES.PERIOD_PAUSED:
+        return `Period paused`;
+      case EVENT_TYPES.PERIOD_RESUMED:
+        return `Period resumed`;
+      case EVENT_TYPES.GOAL_CORRECTED:
+        return `Goal corrected`;
+      case EVENT_TYPES.GOAL_UNDONE:
+        return `Goal undone`;
+      case EVENT_TYPES.SUBSTITUTION_UNDONE:
+        return `Substitution undone`;
+      case EVENT_TYPES.TECHNICAL_TIMEOUT:
+        return `Technical timeout`;
+      default:
+        return `${type.replace(/_/g, ' ')}`;
+    }
+  };
+
+  // Toggle event expansion for details
+  const toggleEventExpansion = (eventId) => {
+    const newExpanded = new Set(expandedEvents);
+    if (newExpanded.has(eventId)) {
+      newExpanded.delete(eventId);
+    } else {
+      newExpanded.add(eventId);
+    }
+    setExpandedEvents(newExpanded);
+  };
+
+  // Handle goal event click
+  const handleGoalEventClick = (event) => {
+    if (onGoalClick && (event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY)) {
+      onGoalClick(event);
+    }
+  };
+
+  // Determine if event should be clickable
+  const isEventClickable = (event) => {
+    return onGoalClick && (event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY);
+  };
+
+  // Format event time
+  const formatEventTime = (event) => {
+    return event.matchTime || calculateMatchTime(event.timestamp, matchStartTime);
+  };
+
+  // Render event details
+  const renderEventDetails = (event) => {
+    const { data = {} } = event;
+    const details = [];
+
+    if (event.periodNumber) {
+      details.push(`Period: ${event.periodNumber}`);
+    }
+
+    if (data.homeScore !== undefined && data.awayScore !== undefined) {
+      details.push(`Score: ${data.homeScore} - ${data.awayScore}`);
+    }
+
+    if (event.undone) {
+      details.push(`Undone: ${event.undoReason || 'user action'}`);
+      if (event.undoTimestamp) {
+        details.push(`Undone at: ${calculateMatchTime(event.undoTimestamp, matchStartTime)}`);
+      }
+    }
+
+    if (event.relatedEventId) {
+      details.push(`Related to: ${event.relatedEventId}`);
+    }
+
+    return details;
+  };
+
+  if (!events || events.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Clock className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+        <p className="text-slate-400">No events recorded</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Timeline Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-slate-400">
+            {filteredAndSortedEvents.length} events
+          </span>
+        </div>
+        <button
+          onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+          className="flex items-center space-x-1 text-sm text-slate-400 hover:text-slate-300 transition-colors"
+        >
+          <span>{sortOrder === 'desc' ? 'Newest first' : 'Oldest first'}</span>
+          {sortOrder === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+        </button>
+      </div>
+
+      {/* Timeline */}
+      <div className="relative">
+        {/* Timeline line */}
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
+        
+        {/* Events */}
+        <div className="space-y-4">
+          {filteredAndSortedEvents.map((event, index) => {
+            const Icon = getEventIcon(event.type);
+            const iconColor = getEventColor(event.type, event.undone);
+            const bgColor = getEventBackgroundColor(event.type, event.undone);
+            const isClickable = isEventClickable(event);
+            const isExpanded = expandedEvents.has(event.id);
+            const details = renderEventDetails(event);
+            
+            return (
+              <div key={event.id} className="relative flex items-start">
+                {/* Timeline dot */}
+                <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border-2 ${iconColor.replace('text-', 'border-')}`}>
+                  <Icon className={`h-5 w-5 ${iconColor}`} />
+                </div>
+                
+                {/* Event content */}
+                <div className="ml-4 flex-1">
+                  <div
+                    className={`rounded-lg border p-4 ${bgColor} ${
+                      isClickable ? 'cursor-pointer hover:bg-opacity-80 transition-colors' : ''
+                    } ${event.undone ? 'opacity-60' : ''}`}
+                    onClick={() => handleGoalEventClick(event)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-mono text-slate-400">
+                            {formatEventTime(event)}
+                          </span>
+                          {event.undone && (
+                            <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded">
+                              UNDONE
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-sm font-medium mt-1 ${event.undone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                          {formatEventDescription(event)}
+                        </p>
+                        {isClickable && (
+                          <p className="text-xs text-slate-400 mt-1">
+                            Click to edit scorer
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Expand button for events with details */}
+                      {details.length > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleEventExpansion(event.id);
+                          }}
+                          className="ml-2 text-slate-400 hover:text-slate-300 transition-colors"
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Event details (expandable) */}
+                    {isExpanded && details.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-600/50">
+                        <dl className="space-y-1">
+                          {details.map((detail, idx) => (
+                            <dd key={idx} className="text-xs text-slate-400">
+                              {detail}
+                            </dd>
+                          ))}
+                        </dl>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

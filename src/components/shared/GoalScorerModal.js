@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { X, Users, Trophy, AlertTriangle, Undo } from 'lucide-react';
+import { X, Users, Trophy, AlertTriangle, Undo, Sword, Shield, Goal, RotateCcw } from 'lucide-react';
 import { getPlayerName } from '../../utils/playerUtils';
+import { getPlayerPositionDisplay, isPlayerOnField } from '../../utils/playerSortingUtils';
 
 const GoalScorerModal = ({
   isOpen,
@@ -17,13 +18,43 @@ const GoalScorerModal = ({
   mode = 'new', // 'new', 'correct', 'view'
   existingGoalData = null,
   matchTime = '00:00',
-  team = 'home'
+  team = 'home',
+  periodFormation = null,
+  teamMode = null
 }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState(
     existingGoalData?.scorerId || null
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+
+  // Get position icon for a player
+  const getPositionIcon = (playerId) => {
+    if (!periodFormation || !teamMode) return RotateCcw;
+    
+    const position = getPlayerPositionDisplay(playerId, periodFormation, teamMode);
+    const onField = isPlayerOnField(playerId, periodFormation, teamMode);
+    
+    if (!onField) return RotateCcw; // Substitute
+    if (position.includes('Attacker')) return Sword;
+    if (position.includes('Defender')) return Shield;
+    if (position.includes('Goalie')) return Goal;
+    return RotateCcw;
+  };
+
+  // Get position color classes
+  const getPositionColorClasses = (playerId) => {
+    if (!periodFormation || !teamMode) return 'text-gray-400';
+    
+    const position = getPlayerPositionDisplay(playerId, periodFormation, teamMode);
+    const onField = isPlayerOnField(playerId, periodFormation, teamMode);
+    
+    if (!onField) return 'text-gray-400';
+    if (position.includes('Attacker')) return 'text-red-500';
+    if (position.includes('Defender')) return 'text-blue-500';
+    if (position.includes('Goalie')) return 'text-green-500';
+    return 'text-gray-400';
+  };
 
   // Determine modal title and primary action based on mode
   const modalConfig = useMemo(() => {
@@ -206,24 +237,30 @@ const GoalScorerModal = ({
               </h3>
               
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {eligiblePlayers.map((player) => (
-                  <button
-                    key={player.id}
-                    onClick={() => handlePlayerSelect(player.id)}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      selectedPlayerId === player.id
-                        ? 'bg-blue-50 border-blue-300 text-blue-900'
-                        : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        selectedPlayerId === player.id ? 'bg-blue-500' : 'bg-gray-300'
-                      }`} />
-                      <span className="font-medium">{getPlayerName([player], player.id)}</span>
-                    </div>
-                  </button>
-                ))}
+                {eligiblePlayers.map((player) => {
+                  const PositionIcon = getPositionIcon(player.id);
+                  const positionColorClass = getPositionColorClasses(player.id);
+                  
+                  return (
+                    <button
+                      key={player.id}
+                      onClick={() => handlePlayerSelect(player.id)}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        selectedPlayerId === player.id
+                          ? 'bg-blue-50 border-blue-300 text-blue-900'
+                          : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          selectedPlayerId === player.id ? 'bg-blue-500' : 'bg-gray-300'
+                        }`} />
+                        <PositionIcon className={`w-4 h-4 ${positionColorClass}`} />
+                        <span className="font-medium">{getPlayerName([player], player.id)}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* No scorer option for new goals */}
@@ -256,7 +293,19 @@ const GoalScorerModal = ({
                   <div>Team: <span className="font-medium">{team === 'home' ? 'Home' : 'Away'}</span></div>
                   <div>Time: <span className="font-medium">{matchTime}</span></div>
                   <div>Period: <span className="font-medium">{existingGoalData?.period || 'Unknown'}</span></div>
+                  <div>Scorer: <span className="font-medium">
+                    {existingGoalData?.scorerId 
+                      ? getPlayerName(eligiblePlayers, existingGoalData.scorerId)
+                      : 'No scorer recorded'
+                    }
+                  </span></div>
                 </div>
+              </div>
+              
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  This goal information is read-only. Use the correction mode to make changes.
+                </p>
               </div>
             </div>
           )}

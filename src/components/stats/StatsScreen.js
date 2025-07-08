@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListChecks, PlusCircle, Copy } from 'lucide-react';
+import { ListChecks, PlusCircle, Copy, FileText } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
@@ -21,7 +21,8 @@ export function StatsScreen({
   awayScore,
   opponentTeamName,
   resetScore,
-  setOpponentTeamName
+  setOpponentTeamName,
+  navigateToMatchReport
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
@@ -130,6 +131,10 @@ export function StatsScreen({
           </span>
         )}
       </div>
+
+      <Button onClick={navigateToMatchReport} Icon={FileText} variant="primary">
+        View Match Report
+      </Button>
 
       <Button onClick={handleNewGame} Icon={PlusCircle}>
         Start New Game Configuration

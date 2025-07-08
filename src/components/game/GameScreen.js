@@ -19,6 +19,7 @@ import { useLongPressWithScrollDetection } from '../../hooks/useLongPressWithScr
 import { createTimerHandlers } from '../../game/handlers/timerHandlers';
 import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
+import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtils';
 
 // Animation timing constants are now imported from animationSupport
 
@@ -431,11 +432,17 @@ export function GameScreen({
         onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
         onUndoGoal={(eventId) => scoreHandlers.handleUndoGoal(eventId)}
-        eligiblePlayers={selectedSquadPlayers.filter(p => p.currentPeriodStatus !== 'inactive')}
+        eligiblePlayers={sortPlayersByGoalScoringRelevance(
+          selectedSquadPlayers.filter(p => p.currentPeriodStatus !== 'inactive'),
+          periodFormation,
+          teamMode
+        )}
         mode={modalHandlers.modals.goalScorer.mode}
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}
         team={modalHandlers.modals.goalScorer.team}
+        periodFormation={periodFormation}
+        teamMode={teamMode}
       />
     </div>
   );
