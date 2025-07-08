@@ -3,7 +3,7 @@
  * Enhanced modal component for goal attribution and correction
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Users, Trophy, AlertTriangle, Undo, Sword, Shield, Goal, RotateCcw } from 'lucide-react';
 import { getPlayerName } from '../../utils/playerUtils';
 import { getPlayerPositionDisplay, isPlayerOnField } from '../../utils/playerSortingUtils';
@@ -27,6 +27,21 @@ const GoalScorerModal = ({
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  
+  // Reset selection when modal opens or when existingGoalData changes
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedPlayerId(existingGoalData?.scorerId || null);
+    }
+  }, [isOpen, existingGoalData]);
+  
+  // Reset confirmation state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setShowConfirmation(false);
+      setPendingAction(null);
+    }
+  }, [isOpen]);
 
   // Get position icon for a player
   const getPositionIcon = (playerId) => {
