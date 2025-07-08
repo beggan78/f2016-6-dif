@@ -1,4 +1,4 @@
-import { logEvent, EVENT_TYPES, calculateMatchTime, getEventById, removeEvent } from '../../utils/gameEventLogger';
+import { logEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createScoreHandlers = (
   stateUpdaters,
@@ -163,36 +163,7 @@ export const createScoreHandlers = (
     closeGoalScorerModal();
   };
 
-  const handleUndoGoal = (eventId) => {
-    const goalEvent = getEventById(eventId);
-    
-    if (goalEvent) {
-      // Mark the goal event as undone
-      logEvent(EVENT_TYPES.GOAL_UNDONE, {
-        originalEventId: eventId,
-        originalType: goalEvent.type,
-        reason: 'user_correction'
-      });
-      
-      // Remove the goal event from the timeline
-      removeEvent(eventId);
-      
-      // Update score
-      if (goalEvent.type === EVENT_TYPES.GOAL_HOME) {
-        // Decrease home score by 1
-        const currentHomeScore = goalEvent.data.homeScore;
-        const currentAwayScore = goalEvent.data.awayScore;
-        setScore(currentHomeScore - 1, currentAwayScore);
-      } else if (goalEvent.type === EVENT_TYPES.GOAL_AWAY) {
-        // Decrease away score by 1
-        const currentHomeScore = goalEvent.data.homeScore;
-        const currentAwayScore = goalEvent.data.awayScore;
-        setScore(currentHomeScore, currentAwayScore - 1);
-      }
-    }
-    
-    closeGoalScorerModal();
-  };
+  // Removed: handleUndoGoal function
 
   const handleScoreEdit = (newHomeScore, newAwayScore) => {
     setScore(newHomeScore, newAwayScore);
@@ -228,7 +199,6 @@ export const createScoreHandlers = (
     handleAddAwayGoal,
     handleSelectGoalScorer,
     handleCorrectGoalScorer,
-    handleUndoGoal,
     handleScoreEdit,
     handleOpenScoreEdit,
     handleCancelGoalScorer,

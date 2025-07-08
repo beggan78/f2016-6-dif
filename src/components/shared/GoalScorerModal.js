@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Users, Trophy, AlertTriangle, Undo, Sword, Shield, Goal, RotateCcw } from 'lucide-react';
+import { X, Users, Trophy, Sword, Shield, Goal, RotateCcw } from 'lucide-react';
 import { getPlayerName } from '../../utils/playerUtils';
 import { getPlayerPositionDisplay, isPlayerOnField } from '../../utils/playerSortingUtils';
 
@@ -13,7 +13,6 @@ const GoalScorerModal = ({
   onClose,
   onSelectScorer,
   onCorrectGoal,
-  onUndoGoal,
   eligiblePlayers = [],
   mode = 'new', // 'new', 'correct', 'view'
   existingGoalData = null,
@@ -22,26 +21,18 @@ const GoalScorerModal = ({
   periodFormation = null,
   teamMode = null
 }) => {
+  // Default to "No specific scorer" for new goals, existing scorer for corrections
   const [selectedPlayerId, setSelectedPlayerId] = useState(
-    existingGoalData?.scorerId || null
+    mode === 'new' ? null : (existingGoalData?.scorerId || null)
   );
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null);
   
   // Reset selection when modal opens or when existingGoalData changes
   useEffect(() => {
     if (isOpen) {
-      setSelectedPlayerId(existingGoalData?.scorerId || null);
+      // For new goals, default to "No specific scorer", for corrections use existing scorer
+      setSelectedPlayerId(mode === 'new' ? null : (existingGoalData?.scorerId || null));
     }
-  }, [isOpen, existingGoalData]);
-  
-  // Reset confirmation state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setShowConfirmation(false);
-      setPendingAction(null);
-    }
-  }, [isOpen]);
+  }, [isOpen, existingGoalData, mode]);
 
   // Get position icon for a player
   const getPositionIcon = (playerId) => {
@@ -79,24 +70,21 @@ const GoalScorerModal = ({
           title: 'Correct Goal Scorer',
           subtitle: `Goal at ${matchTime}`,
           primaryAction: 'Update Scorer',
-          primaryColor: 'bg-amber-600 hover:bg-amber-700',
-          showUndo: true
+          primaryColor: 'bg-amber-600 hover:bg-amber-700'
         };
       case 'view':
         return {
           title: 'Goal Information',
           subtitle: `Goal at ${matchTime}`,
           primaryAction: 'Close',
-          primaryColor: 'bg-gray-600 hover:bg-gray-700',
-          showUndo: true
+          primaryColor: 'bg-gray-600 hover:bg-gray-700'
         };
       default: // 'new'
         return {
           title: 'Who Scored?',
           subtitle: `${team === 'home' ? 'Home' : 'Away'} goal at ${matchTime}`,
           primaryAction: 'Confirm Scorer',
-          primaryColor: 'bg-emerald-600 hover:bg-emerald-700',
-          showUndo: false
+          primaryColor: 'bg-emerald-600 hover:bg-emerald-700'
         };
     }
   }, [mode, matchTime, team]);
@@ -111,18 +99,8 @@ const GoalScorerModal = ({
       return;
     }
 
-    if (!selectedPlayerId && mode !== 'view') {
-      // Allow skipping scorer selection for new goals
-      if (mode === 'new') {
-        setPendingAction('skip');
-        setShowConfirmation(true);
-        return;
-      }
-      return; // Don't allow empty selection for corrections
-    }
-
     if (mode === 'new') {
-      onSelectScorer(selectedPlayerId);
+      onSelectScorer(selectedPlayerId); // Can be null ("No specific scorer") or player ID
     } else if (mode === 'correct') {
       onCorrectGoal(existingGoalData.eventId, selectedPlayerId);
     }
@@ -130,78 +108,9 @@ const GoalScorerModal = ({
     onClose();
   };
 
-  const handleSkipScorer = () => {
-    if (mode === 'new') {
-      setPendingAction('skip');
-      setShowConfirmation(true);
-    }
-  };
-
-  const handleUndoGoal = () => {
-    setPendingAction('undo');
-    setShowConfirmation(true);
-  };
-
-  const handleConfirmAction = () => {
-    if (pendingAction === 'skip') {
-      onSelectScorer(null); // No scorer selected
-    } else if (pendingAction === 'undo') {
-      onUndoGoal(existingGoalData.eventId);
-    }
-    
-    setShowConfirmation(false);
-    setPendingAction(null);
-    onClose();
-  };
-
-  const handleCancelAction = () => {
-    setShowConfirmation(false);
-    setPendingAction(null);
-  };
+  // Removed: handleSkipScorer, handleUndoGoal, handleConfirmAction, handleCancelAction
 
   if (!isOpen) return null;
-
-  // Confirmation dialog
-  if (showConfirmation) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-md w-full p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <AlertTriangle className="w-6 h-6 text-amber-500" />
-            <h3 className="text-lg font-semibold text-gray-900">
-              {pendingAction === 'skip' ? 'Skip Scorer Selection?' : 'Undo Goal?'}
-            </h3>
-          </div>
-          
-          <p className="text-gray-600 mb-6">
-            {pendingAction === 'skip'
-              ? 'The goal will be recorded without a specific scorer. You can add the scorer later if needed.'
-              : 'This will remove the goal from the match. The score will be decreased by 1. This action cannot be undone.'
-            }
-          </p>
-          
-          <div className="flex space-x-3">
-            <button
-              onClick={handleCancelAction}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirmAction}
-              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors ${
-                pendingAction === 'skip' 
-                  ? 'bg-blue-600 hover:bg-blue-700' 
-                  : 'bg-red-600 hover:bg-red-700'
-              }`}
-            >
-              {pendingAction === 'skip' ? 'Skip Scorer' : 'Undo Goal'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Main modal
   return (
@@ -328,28 +237,7 @@ const GoalScorerModal = ({
 
         {/* Footer */}
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <div className="flex space-x-3">
-            {modalConfig.showUndo && mode !== 'new' && (
-              <button
-                onClick={handleUndoGoal}
-                className="flex items-center space-x-2 px-4 py-2 text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
-              >
-                <Undo className="w-4 h-4" />
-                <span>Undo Goal</span>
-              </button>
-            )}
-            
-            <div className="flex-1" />
-            
-            {mode === 'new' && (
-              <button
-                onClick={handleSkipScorer}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Skip
-              </button>
-            )}
-            
+          <div className="flex justify-end space-x-3">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
@@ -360,12 +248,7 @@ const GoalScorerModal = ({
             {mode !== 'view' && (
               <button
                 onClick={handlePrimaryAction}
-                disabled={!selectedPlayerId && mode === 'correct'}
-                className={`px-4 py-2 text-white rounded-lg transition-colors ${modalConfig.primaryColor} ${
-                  (!selectedPlayerId && mode === 'correct') 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : ''
-                }`}
+                className={`px-4 py-2 text-white rounded-lg transition-colors ${modalConfig.primaryColor}`}
               >
                 {modalConfig.primaryAction}
               </button>

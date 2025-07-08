@@ -436,7 +436,6 @@ export function GameScreen({
         onClose={scoreHandlers.handleCancelGoalScorer}
         onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
-        onUndoGoal={(eventId) => scoreHandlers.handleUndoGoal(eventId)}
         eligiblePlayers={sortPlayersByGoalScoringRelevance(
           selectedSquadPlayers.filter(p => p.currentPeriodStatus !== 'inactive'),
           periodFormation,
