@@ -127,7 +127,7 @@ export function PlayerStatsTable({
 
   // Handle column header click for sorting
   const handleSort = (columnKey) => {
-    const newOrder = sortBy === columnKey && sortOrder === 'asc' ? 'desc' : 'asc';
+    const newOrder = sortBy === columnKey && sortOrder === 'desc' ? 'asc' : 'desc';
     setSortBy(columnKey);
     setSortOrder(newOrder);
   };
@@ -137,9 +137,9 @@ export function PlayerStatsTable({
     if (sortBy !== columnKey) return null;
     
     return sortOrder === 'asc' ? (
-      <ChevronUp className="h-4 w-4 inline-block ml-1" />
+      <ChevronUp className="h-5 w-5 inline-block ml-1" />
     ) : (
-      <ChevronDown className="h-4 w-4 inline-block ml-1" />
+      <ChevronDown className="h-5 w-5 inline-block ml-1" />
     );
   };
 
