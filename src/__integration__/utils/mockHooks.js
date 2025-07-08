@@ -396,11 +396,37 @@ export const createMockUseGameModals = (initialModalState = {}) => {
       },
       undoConfirm: {
         isOpen: false
+      },
+      goalScorer: {
+        isOpen: false,
+        eventId: null,
+        team: 'home',
+        mode: 'new',
+        matchTime: '00:00',
+        periodNumber: 1,
+        existingGoalData: null
       }
     },
     
     // Modal actions
     ...modalActions,
+    
+    // Specific modal handlers expected by GameScreen
+    openModal: jest.fn(),
+    closeModal: jest.fn(),
+    closeModalWithNavigation: jest.fn(),
+    openFieldPlayerModal: jest.fn(),
+    closeFieldPlayerModal: jest.fn(),
+    openSubstituteModal: jest.fn(),
+    closeSubstituteModal: jest.fn(),
+    openGoalieModal: jest.fn(),
+    closeGoalieModal: jest.fn(),
+    openScoreEditModal: jest.fn(),
+    closeScoreEditModal: jest.fn(),
+    openUndoConfirmModal: jest.fn(),
+    closeUndoConfirmModal: jest.fn(),
+    openGoalScorerModal: jest.fn(),
+    closeGoalScorerModal: jest.fn(),
     
     // Test utilities
     _getMockModalState: () => ({ ...mockModalState }),

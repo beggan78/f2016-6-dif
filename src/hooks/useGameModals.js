@@ -28,6 +28,15 @@ export function useGameModals(pushModalState, removeModalFromStack) {
     },
     undoConfirm: {
       isOpen: false
+    },
+    goalScorer: {
+      isOpen: false,
+      eventId: null,
+      team: 'home',
+      mode: 'new', // 'new', 'correct', 'view'
+      matchTime: '00:00',
+      periodNumber: 1,
+      existingGoalData: null
     }
   });
 
@@ -117,6 +126,14 @@ export function useGameModals(pushModalState, removeModalFromStack) {
     closeModal('undoConfirm');
   }, [closeModal]);
 
+  const openGoalScorerModal = useCallback((modalData) => {
+    openModal('goalScorer', modalData);
+  }, [openModal]);
+
+  const closeGoalScorerModal = useCallback(() => {
+    closeModal('goalScorer');
+  }, [closeModal]);
+
   return {
     modals,
     // Generic modal operations
@@ -134,6 +151,8 @@ export function useGameModals(pushModalState, removeModalFromStack) {
     openScoreEditModal,
     closeScoreEditModal,
     openUndoConfirmModal,
-    closeUndoConfirmModal
+    closeUndoConfirmModal,
+    openGoalScorerModal,
+    closeGoalScorerModal
   };
 }

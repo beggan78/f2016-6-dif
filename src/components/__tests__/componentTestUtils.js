@@ -142,6 +142,60 @@ export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
  */
 export const createMockHooks = () => ({
   useGameModals: jest.fn(() => ({
+    modals: {
+      fieldPlayer: {
+        isOpen: false,
+        type: null,
+        target: null,
+        playerName: '',
+        sourcePlayerId: null,
+        availablePlayers: [],
+        showPositionOptions: false
+      },
+      substitute: {
+        isOpen: false,
+        playerId: null,
+        playerName: '',
+        isCurrentlyInactive: false,
+        canSetAsNextToGoIn: false
+      },
+      goalie: {
+        isOpen: false,
+        currentGoalieName: '',
+        availablePlayers: []
+      },
+      scoreEdit: {
+        isOpen: false
+      },
+      undoConfirm: {
+        isOpen: false
+      },
+      goalScorer: {
+        isOpen: false,
+        eventId: null,
+        team: 'home',
+        mode: 'new',
+        matchTime: '00:00',
+        periodNumber: 1,
+        existingGoalData: null
+      }
+    },
+    openModal: jest.fn(),
+    closeModal: jest.fn(),
+    closeModalWithNavigation: jest.fn(),
+    closeAllModals: jest.fn(),
+    openFieldPlayerModal: jest.fn(),
+    closeFieldPlayerModal: jest.fn(),
+    openSubstituteModal: jest.fn(),
+    closeSubstituteModal: jest.fn(),
+    openGoalieModal: jest.fn(),
+    closeGoalieModal: jest.fn(),
+    openScoreEditModal: jest.fn(),
+    closeScoreEditModal: jest.fn(),
+    openUndoConfirmModal: jest.fn(),
+    closeUndoConfirmModal: jest.fn(),
+    openGoalScorerModal: jest.fn(),
+    closeGoalScorerModal: jest.fn(),
     showFieldPlayerModal: jest.fn(),
     showSubstitutePlayerModal: jest.fn(),
     showGoalieModal: jest.fn(),
@@ -202,7 +256,12 @@ export const createMockHandlers = () => ({
   createScoreHandlers: jest.fn(() => ({
     handleAddHomeGoal: jest.fn(),
     handleAddAwayGoal: jest.fn(),
-    handleEditScore: jest.fn()
+    handleSelectGoalScorer: jest.fn(),
+    handleCorrectGoalScorer: jest.fn(),
+    handleUndoGoal: jest.fn(),
+    handleScoreEdit: jest.fn(),
+    handleOpenScoreEdit: jest.fn(),
+    scoreCallback: jest.fn()
   })),
   
   createGoalieHandlers: jest.fn(() => ({

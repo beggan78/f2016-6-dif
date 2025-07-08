@@ -9,6 +9,7 @@ import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
+import { initializeEventLogger, addEventListener as addEventLoggerListener } from '../utils/gameEventLogger';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -21,6 +22,11 @@ export function useGameState() {
   if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
     initialState.allPlayers = initializePlayers(initialRoster);
   }
+  
+  // Initialize event logger on hook initialization
+  useEffect(() => {
+    initializeEventLogger();
+  }, []);
   
   const [allPlayers, setAllPlayers] = useState(initialState.allPlayers);
   const [view, setView] = useState(initialState.view);
@@ -42,6 +48,15 @@ export function useGameState() {
   const [homeScore, setHomeScore] = useState(initialState.homeScore || 0); // Djurgården score
   const [awayScore, setAwayScore] = useState(initialState.awayScore || 0); // Opponent score
   const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
+
+  // Match event tracking state - NEW for match report feature
+  const [matchEvents, setMatchEvents] = useState(initialState.matchEvents || []);
+  const [matchStartTime, setMatchStartTime] = useState(initialState.matchStartTime || null);
+  const [goalScorers, setGoalScorers] = useState(initialState.goalScorers || {}); // { eventId: playerId }
+  const [eventSequenceNumber, setEventSequenceNumber] = useState(initialState.eventSequenceNumber || 0);
+  const [lastEventBackup, setLastEventBackup] = useState(initialState.lastEventBackup || null);
+  const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
+  const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
 
   // Wake lock and alert management
   const [wakeLock, setWakeLock] = useState(null);
@@ -114,11 +129,19 @@ export function useGameState() {
       homeScore,
       awayScore,
       lastSubstitutionTimestamp,
+      // NEW: Match event tracking state
+      matchEvents,
+      matchStartTime,
+      goalScorers,
+      eventSequenceNumber,
+      lastEventBackup,
+      timerPauseStartTime,
+      totalMatchPausedDuration,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamMode, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamMode, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration]);
 
 
 
@@ -1353,6 +1376,22 @@ export function useGameState() {
     awayScore,
     lastSubstitutionTimestamp,
     setLastSubstitutionTimestamp,
+    
+    // NEW: Match event tracking state and setters
+    matchEvents,
+    setMatchEvents,
+    matchStartTime,
+    setMatchStartTime,
+    goalScorers,
+    setGoalScorers,
+    eventSequenceNumber,
+    setEventSequenceNumber,
+    lastEventBackup,
+    setLastEventBackup,
+    timerPauseStartTime,
+    setTimerPauseStartTime,
+    totalMatchPausedDuration,
+    setTotalMatchPausedDuration,
     
     // Actions
     preparePeriod,

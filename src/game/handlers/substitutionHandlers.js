@@ -8,6 +8,7 @@ import {
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
+import { logEvent, removeEvent, markEventAsUndone, EVENT_TYPES, calculateMatchTime, getMatchEvents } from '../../utils/gameEventLogger';
 
 export const createSubstitutionHandlers = (
   gameStateFactory,
@@ -45,6 +46,151 @@ export const createSubstitutionHandlers = (
   } = modalHandlers;
 
   const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
+
+  /**
+   * Generate unique event ID for substitution tracking
+   */
+  const generateEventId = () => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    return `sub_${timestamp}_${random}`;
+  };
+
+  /**
+   * Get formation description for event logging
+   */
+  const getFormationDescription = (formation, teamMode) => {
+    if (teamMode === TEAM_MODES.PAIRS_7) {
+      return {
+        leftPair: formation.leftPair,
+        rightPair: formation.rightPair,
+        subPair: formation.subPair,
+        goalie: formation.goalie
+      };
+    } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
+      return {
+        leftDefender: formation.leftDefender,
+        rightDefender: formation.rightDefender,
+        leftAttacker: formation.leftAttacker,
+        rightAttacker: formation.rightAttacker,
+        substitute: formation.substitute,
+        goalie: formation.goalie
+      };
+    } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
+      return {
+        leftDefender7: formation.leftDefender7,
+        rightDefender7: formation.rightDefender7,
+        leftAttacker7: formation.leftAttacker7,
+        rightAttacker7: formation.rightAttacker7,
+        substitute7_1: formation.substitute7_1,
+        substitute7_2: formation.substitute7_2,
+        goalie: formation.goalie
+      };
+    }
+    return formation;
+  };
+
+  /**
+   * Get player names for event logging
+   */
+  const getPlayerNames = (playerIds, allPlayers) => {
+    return playerIds.map(id => {
+      const player = allPlayers.find(p => p.id === id);
+      return player ? player.name : 'Unknown';
+    }).filter(name => name !== 'Unknown');
+  };
+
+  /**
+   * Detect if a substitution is an undo operation by analyzing recent events
+   */
+  const detectUndoSubstitution = (playersGoingOff, playersComingOn, currentTime) => {
+    try {
+      // Get recent substitution events from the last 2 minutes
+      const twoMinutesAgo = currentTime - (2 * 60 * 1000);
+      const recentEvents = getMatchEvents({
+        includeUndone: false,
+        eventTypes: [EVENT_TYPES.SUBSTITUTION],
+        startTime: twoMinutesAgo
+      });
+
+      // Check if this substitution reverses a recent substitution
+      for (const event of recentEvents.reverse()) { // Check most recent first
+        const eventData = event.data;
+        if (eventData.playersOff && eventData.playersOn) {
+          // Check if the players are being swapped back
+          const isUndo = playersGoingOff.some(id => eventData.playersOn.includes(id)) &&
+                         playersComingOn.some(id => eventData.playersOff.includes(id));
+          
+          if (isUndo) {
+            return {
+              isUndo: true,
+              originalEventId: event.id,
+              originalEventTime: event.matchTime,
+              timeSinceOriginal: currentTime - event.timestamp
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Error detecting undo substitution:', error);
+    }
+    
+    return { isUndo: false };
+  };
+
+  /**
+   * Log substitution event with comprehensive data
+   */
+  const logSubstitutionEvent = (
+    playersGoingOff, 
+    playersComingOn, 
+    beforeFormation, 
+    afterFormation, 
+    teamMode, 
+    allPlayers, 
+    currentTime,
+    periodNumber = 1
+  ) => {
+    try {
+      const eventId = generateEventId();
+      
+      // Detect if this is an undo operation
+      const undoDetection = detectUndoSubstitution(playersGoingOff, playersComingOn, currentTime);
+      
+      const eventData = {
+        eventId,
+        playersOff: playersGoingOff,
+        playersOn: playersComingOn,
+        playersOffNames: getPlayerNames(playersGoingOff, allPlayers),
+        playersOnNames: getPlayerNames(playersComingOn, allPlayers),
+        teamMode,
+        beforeFormation: getFormationDescription(beforeFormation, teamMode),
+        afterFormation: getFormationDescription(afterFormation, teamMode),
+        periodNumber,
+        matchTime: calculateMatchTime(currentTime),
+        timestamp: currentTime,
+        isUndo: undoDetection.isUndo,
+        originalEventId: undoDetection.originalEventId,
+        originalEventTime: undoDetection.originalEventTime,
+        timeSinceOriginal: undoDetection.timeSinceOriginal
+      };
+
+      // Log the appropriate event type
+      if (undoDetection.isUndo) {
+        const undoEvent = logEvent(EVENT_TYPES.SUBSTITUTION_UNDONE, eventData);
+        console.log(`Undo substitution logged: ${playersGoingOff.join(', ')} ← → ${playersComingOn.join(', ')}`);
+        return undoEvent;
+      } else {
+        const substitutionEvent = logEvent(EVENT_TYPES.SUBSTITUTION, eventData);
+        console.log(`Substitution logged: ${playersGoingOff.join(', ')} off, ${playersComingOn.join(', ')} on`);
+        return substitutionEvent;
+      }
+    } catch (error) {
+      console.error('Failed to log substitution event:', error);
+      // Don't throw - substitution should continue even if logging fails
+      return null;
+    }
+  };
 
   const handleSetNextSubstitution = (fieldPlayerModal) => {
     if (fieldPlayerModal.type === 'pair') {
@@ -84,14 +230,42 @@ export const createSubstitutionHandlers = (
       
       // Only proceed if the player is substitute7_2 (next-next to go in)
       if (playerId === substitute7_2Id) {
+        const currentTime = Date.now();
+        const gameState = gameStateFactory();
+        
         // Use the new animation system for substitute swap
         animateStateChange(
-          gameStateFactory(),
-          (gameState) => calculateSubstituteSwap(gameState, substitute7_1Id, substitute7_2Id),
+          gameState,
+          (state) => calculateSubstituteSwap(state, substitute7_1Id, substitute7_2Id),
           (newGameState) => {
             // Apply the state changes
             setPeriodFormation(newGameState.periodFormation);
             setAllPlayers(newGameState.allPlayers);
+
+            // Log substitute order change event
+            try {
+              const player1 = gameState.allPlayers.find(p => p.id === substitute7_1Id);
+              const player2 = gameState.allPlayers.find(p => p.id === substitute7_2Id);
+              
+              if (player1 && player2) {
+                logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                  type: 'substitute_order_swap',
+                  player1Id: substitute7_1Id,
+                  player2Id: substitute7_2Id,
+                  player1Name: player1.name,
+                  player2Name: player2.name,
+                  description: `${player2.name} moved to next-to-go-in position`,
+                  beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
+                  afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                  teamMode,
+                  matchTime: calculateMatchTime(currentTime),
+                  timestamp: currentTime,
+                  periodNumber: gameState.currentPeriodNumber || 1
+                });
+              }
+            } catch (error) {
+              console.error('Failed to log substitute swap event:', error);
+            }
           },
           setAnimationState,
           setHideNextOffIndicator,
@@ -107,14 +281,14 @@ export const createSubstitutionHandlers = (
 
   const handleInactivatePlayer = (substituteModal, allPlayers, periodFormation) => {
     if (substituteModal.playerId && isIndividual7Mode) {
-      // Check if substitute7_2 is being inactivated
+      const currentTime = Date.now();
+      const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
       const isSubstitute7_2BeingInactivated = playerBeingInactivated?.stats.currentPairKey === 'substitute7_2';
       
       if (isSubstitute7_2BeingInactivated) {
         // No animation needed - substitute7_2 is already in the correct position for inactive players
         // Call togglePlayerInactive directly
-        const gameState = gameStateFactory();
         const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
         
         setPeriodFormation(newGameState.periodFormation);
@@ -124,11 +298,31 @@ export const createSubstitutionHandlers = (
         if (newGameState.rotationQueue) {
           setRotationQueue(newGameState.rotationQueue);
         }
+
+        // Log player inactivation event
+        try {
+          if (playerBeingInactivated) {
+            logEvent(EVENT_TYPES.POSITION_CHANGE, {
+              type: 'player_inactivated',
+              playerId: substituteModal.playerId,
+              playerName: playerBeingInactivated.name,
+              previousStatus: 'active_substitute',
+              newStatus: 'inactive',
+              description: `${playerBeingInactivated.name} marked as inactive`,
+              teamMode,
+              matchTime: calculateMatchTime(currentTime),
+              timestamp: currentTime,
+              periodNumber: gameState.currentPeriodNumber || 1
+            });
+          }
+        } catch (error) {
+          console.error('Failed to log player inactivation event:', error);
+        }
       } else {
         // Use animation system for substitute position swap during inactivation
         animateStateChange(
-          gameStateFactory(),
-          (gameState) => calculatePlayerToggleInactive(gameState, substituteModal.playerId),
+          gameState,
+          (state) => calculatePlayerToggleInactive(state, substituteModal.playerId),
           (newGameState) => {
             // Apply the state changes
             setPeriodFormation(newGameState.periodFormation);
@@ -137,6 +331,28 @@ export const createSubstitutionHandlers = (
             setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
             if (newGameState.rotationQueue) {
               setRotationQueue(newGameState.rotationQueue);
+            }
+
+            // Log player inactivation event with position swap
+            try {
+              if (playerBeingInactivated) {
+                logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                  type: 'player_inactivated_with_swap',
+                  playerId: substituteModal.playerId,
+                  playerName: playerBeingInactivated.name,
+                  previousStatus: 'active_substitute',
+                  newStatus: 'inactive',
+                  description: `${playerBeingInactivated.name} marked as inactive (with position swap)`,
+                  beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
+                  afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                  teamMode,
+                  matchTime: calculateMatchTime(currentTime),
+                  timestamp: currentTime,
+                  periodNumber: gameState.currentPeriodNumber || 1
+                });
+              }
+            } catch (error) {
+              console.error('Failed to log player inactivation event:', error);
             }
           },
           setAnimationState,
@@ -165,10 +381,14 @@ export const createSubstitutionHandlers = (
 
   const handleActivatePlayer = (substituteModal) => {
     if (substituteModal.playerId && isIndividual7Mode) {
+      const currentTime = Date.now();
+      const gameState = gameStateFactory();
+      const playerBeingActivated = findPlayerById(gameState.allPlayers, substituteModal.playerId);
+      
       // Use animation system for substitute position swap during activation
       animateStateChange(
-        gameStateFactory(),
-        (gameState) => calculatePlayerToggleInactive(gameState, substituteModal.playerId),
+        gameState,
+        (state) => calculatePlayerToggleInactive(state, substituteModal.playerId),
         (newGameState) => {
           // Apply the state changes
           setPeriodFormation(newGameState.periodFormation);
@@ -177,6 +397,28 @@ export const createSubstitutionHandlers = (
           setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
           if (newGameState.rotationQueue) {
             setRotationQueue(newGameState.rotationQueue);
+          }
+
+          // Log player activation event
+          try {
+            if (playerBeingActivated) {
+              logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                type: 'player_activated',
+                playerId: substituteModal.playerId,
+                playerName: playerBeingActivated.name,
+                previousStatus: 'inactive',
+                newStatus: 'active_substitute',
+                description: `${playerBeingActivated.name} reactivated`,
+                beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
+                afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                teamMode,
+                matchTime: calculateMatchTime(currentTime),
+                timestamp: currentTime,
+                periodNumber: gameState.currentPeriodNumber || 1
+              });
+            }
+          } catch (error) {
+            console.error('Failed to log player activation event:', error);
           }
         },
         setAnimationState,
@@ -247,6 +489,18 @@ export const createSubstitutionHandlers = (
           return player ? { id: player.id, stats: { ...player.stats } } : null;
         }).filter(Boolean);
         
+        // Log substitution event with comprehensive data
+        const substitutionEvent = logSubstitutionEvent(
+          playersGoingOffIds,
+          playersComingOnIds,
+          beforeFormation,
+          newGameState.periodFormation,
+          teamMode,
+          gameState.allPlayers,
+          substitutionTimestamp,
+          gameState.currentPeriodNumber || 1
+        );
+        
         // Create lastSubstitution object for undo functionality
         const lastSubstitutionData = {
           timestamp: substitutionTimestamp,
@@ -259,7 +513,8 @@ export const createSubstitutionHandlers = (
           playersComingOnIds,
           playersGoingOffIds,
           teamMode,
-          subTimerSecondsAtSubstitution
+          subTimerSecondsAtSubstitution,
+          eventId: substitutionEvent?.id || null // Store event ID for potential removal
         };
         
         
@@ -358,6 +613,7 @@ export const createSubstitutionHandlers = (
     } else if (typeof action === 'string' && fieldPlayerModal.sourcePlayerId) {
       // action is a player ID - perform the animated position switch
       const targetPlayerId = action;
+      const currentTime = Date.now();
       
       animateStateChange(
         gameState,
@@ -365,6 +621,32 @@ export const createSubstitutionHandlers = (
         (newGameState) => {
           setPeriodFormation(newGameState.periodFormation);
           setAllPlayers(newGameState.allPlayers);
+
+          // Log position change event
+          try {
+            const sourcePlayer = gameState.allPlayers.find(p => p.id === fieldPlayerModal.sourcePlayerId);
+            const targetPlayer = gameState.allPlayers.find(p => p.id === targetPlayerId);
+            
+            if (sourcePlayer && targetPlayer) {
+              logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                sourcePlayerId: fieldPlayerModal.sourcePlayerId,
+                targetPlayerId: targetPlayerId,
+                sourcePlayerName: sourcePlayer.name,
+                targetPlayerName: targetPlayer.name,
+                sourcePosition: sourcePlayer.stats.currentPairKey,
+                targetPosition: targetPlayer.stats.currentPairKey,
+                beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
+                afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                teamMode,
+                matchTime: calculateMatchTime(currentTime),
+                timestamp: currentTime,
+                periodNumber: gameState.currentPeriodNumber || 1
+              });
+            }
+          } catch (error) {
+            console.error('Failed to log position change event:', error);
+            // Don't throw - position switch should continue even if logging fails
+          }
         },
         setAnimationState,
         setHideNextOffIndicator,
@@ -383,6 +665,7 @@ export const createSubstitutionHandlers = (
       return;
     }
 
+    const currentTime = Date.now();
 
     // Use the animation system for undo
     animateStateChange(
@@ -398,6 +681,37 @@ export const createSubstitutionHandlers = (
         setAllPlayers(newGameState.allPlayers);
         if (newGameState.rotationQueue) {
           setRotationQueue(newGameState.rotationQueue);
+        }
+
+        // Handle event logging for undo
+        try {
+          if (lastSubstitution.eventId) {
+            // Remove the original substitution event from the timeline
+            const removeSuccess = removeEvent(lastSubstitution.eventId);
+            if (removeSuccess) {
+              console.log(`Substitution event ${lastSubstitution.eventId} removed from timeline`);
+            }
+          }
+
+          // Log the undo action itself
+          logEvent(EVENT_TYPES.SUBSTITUTION_UNDONE, {
+            originalEventId: lastSubstitution.eventId,
+            originalTimestamp: lastSubstitution.timestamp,
+            undoTimestamp: currentTime,
+            timeSinceOriginal: currentTime - lastSubstitution.timestamp,
+            playersGoingBackOn: lastSubstitution.playersGoingOffIds,
+            playersComingBackOff: lastSubstitution.playersComingOnIds,
+            playersGoingBackOnNames: getPlayerNames(lastSubstitution.playersGoingOffIds, newGameState.allPlayers),
+            playersComingBackOffNames: getPlayerNames(lastSubstitution.playersComingOnIds, newGameState.allPlayers),
+            teamMode: lastSubstitution.teamMode,
+            beforeFormation: getFormationDescription(newGameState.periodFormation, lastSubstitution.teamMode),
+            afterFormation: getFormationDescription(lastSubstitution.beforeFormation, lastSubstitution.teamMode),
+            reason: 'user_initiated_undo',
+            matchTime: calculateMatchTime(currentTime)
+          });
+        } catch (error) {
+          console.error('Failed to log undo event:', error);
+          // Don't throw - undo should continue even if logging fails
         }
 
         // Restore substitution timer with the saved value

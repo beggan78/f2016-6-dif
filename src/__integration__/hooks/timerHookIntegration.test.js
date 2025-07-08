@@ -37,7 +37,16 @@ jest.mock('../../hooks/useGameModals', () => ({
       substitute: { isOpen: false },
       goalie: { isOpen: false },
       scoreEdit: { isOpen: false },
-      undoConfirm: { isOpen: false }
+      undoConfirm: { isOpen: false },
+      goalScorer: {
+        isOpen: false,
+        eventId: null,
+        team: 'home',
+        mode: 'new',
+        matchTime: '00:00',
+        periodNumber: 1,
+        existingGoalData: null
+      }
     },
     openFieldPlayerModal: jest.fn(),
     closeFieldPlayerModal: jest.fn(),
@@ -48,7 +57,9 @@ jest.mock('../../hooks/useGameModals', () => ({
     openScoreEditModal: jest.fn(),
     closeScoreEditModal: jest.fn(),
     openUndoConfirmModal: jest.fn(),
-    closeUndoConfirmModal: jest.fn()
+    closeUndoConfirmModal: jest.fn(),
+    openGoalScorerModal: jest.fn(),
+    closeGoalScorerModal: jest.fn()
   })
 }));
 

@@ -109,6 +109,15 @@ describe('GameScreen', () => {
         },
         undoConfirm: {
           isOpen: false
+        },
+        goalScorer: {
+          isOpen: false,
+          eventId: null,
+          team: 'home',
+          mode: 'new',
+          matchTime: '00:00',
+          periodNumber: 1,
+          existingGoalData: null
         }
       },
       openFieldPlayerModal: jest.fn(),
@@ -120,7 +129,9 @@ describe('GameScreen', () => {
       openScoreEditModal: jest.fn(),
       closeScoreEditModal: jest.fn(),
       openUndoConfirmModal: jest.fn(),
-      closeUndoConfirmModal: jest.fn()
+      closeUndoConfirmModal: jest.fn(),
+      openGoalScorerModal: jest.fn(),
+      closeGoalScorerModal: jest.fn()
     });
     
     require('../../../hooks/useGameUIState').useGameUIState.mockReturnValue({
@@ -194,8 +205,11 @@ describe('GameScreen', () => {
     require('../../../game/handlers/scoreHandlers').createScoreHandlers.mockReturnValue({
       handleAddHomeGoal: jest.fn(),
       handleAddAwayGoal: jest.fn(),
-      handleEditScore: jest.fn(),
+      handleSelectGoalScorer: jest.fn(),
+      handleCorrectGoalScorer: jest.fn(),
+      handleUndoGoal: jest.fn(),
       handleScoreEdit: jest.fn(),
+      handleOpenScoreEdit: jest.fn(),
       scoreCallback: jest.fn()
     });
 

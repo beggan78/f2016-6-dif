@@ -19,6 +19,29 @@
 import { renderHook, act } from '@testing-library/react';
 import { useTimers } from '../useTimers';
 
+// Mock gameEventLogger functions
+jest.mock('../../utils/gameEventLogger', () => ({
+  logEvent: jest.fn(),
+  EVENT_TYPES: {
+    MATCH_START: 'match_start',
+    MATCH_END: 'match_end',
+    PERIOD_START: 'period_start',
+    PERIOD_END: 'period_end',
+    TIMER_PAUSED: 'timer_paused',
+    TIMER_RESUMED: 'timer_resumed',
+    SUBSTITUTION: 'substitution',
+    GOALIE_SWITCH: 'goalie_switch'
+  },
+  calculateMatchTime: jest.fn().mockReturnValue('00:00'),
+  initializeEventLogger: jest.fn(),
+  clearAllEvents: jest.fn(),
+  loadEvents: jest.fn(),
+  saveEvents: jest.fn(),
+  getMatchEvents: jest.fn().mockReturnValue([]),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn()
+}));
+
 // Mock localStorage
 const localStorageMock = {
   getItem: jest.fn(),
@@ -45,6 +68,11 @@ describe('useTimers', () => {
     // Clear all mocks
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
+    
+    // Reset gameEventLogger mocks
+    const { logEvent, calculateMatchTime } = require('../../utils/gameEventLogger');
+    logEvent.mockClear();
+    calculateMatchTime.mockReturnValue('00:00');
     
     // Mock setInterval and clearInterval
     jest.useFakeTimers();

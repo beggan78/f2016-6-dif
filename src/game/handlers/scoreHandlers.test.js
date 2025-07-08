@@ -1,5 +1,20 @@
 import { createScoreHandlers } from './scoreHandlers';
 import { createMockDependencies } from '../testUtils';
+import { logEvent, EVENT_TYPES, calculateMatchTime, getEventById, removeEvent } from '../../utils/gameEventLogger';
+
+// Mock the gameEventLogger module
+jest.mock('../../utils/gameEventLogger', () => ({
+  logEvent: jest.fn(),
+  EVENT_TYPES: {
+    GOAL_HOME: 'goal_home',
+    GOAL_AWAY: 'goal_away',
+    GOAL_CORRECTED: 'goal_corrected',
+    GOAL_UNDONE: 'goal_undone'
+  },
+  calculateMatchTime: jest.fn(),
+  getEventById: jest.fn(),
+  removeEvent: jest.fn()
+}));
 
 describe('createScoreHandlers', () => {
   let mockDependencies;
@@ -21,8 +36,13 @@ describe('createScoreHandlers', () => {
     mockModalHandlers = {
       ...mockDependencies.modalHandlers,
       openScoreEditModal: jest.fn(),
-      closeScoreEditModal: jest.fn()
+      closeScoreEditModal: jest.fn(),
+      openGoalScorerModal: jest.fn(),
+      closeGoalScorerModal: jest.fn()
     };
+
+    // Reset all mocks before each test
+    jest.clearAllMocks();
   });
 
   describe('handler creation', () => {
@@ -34,10 +54,17 @@ describe('createScoreHandlers', () => {
 
       expect(handlers.handleAddHomeGoal).toBeDefined();
       expect(handlers.handleAddAwayGoal).toBeDefined();
+      expect(handlers.handleSelectGoalScorer).toBeDefined();
+      expect(handlers.handleCorrectGoalScorer).toBeDefined();
+      expect(handlers.handleUndoGoal).toBeDefined();
       expect(handlers.handleScoreEdit).toBeDefined();
       expect(handlers.handleOpenScoreEdit).toBeDefined();
       expect(handlers.scoreCallback).toBeDefined();
       expect(typeof handlers.handleAddHomeGoal).toBe('function');
+      expect(typeof handlers.handleAddAwayGoal).toBe('function');
+      expect(typeof handlers.handleSelectGoalScorer).toBe('function');
+      expect(typeof handlers.handleCorrectGoalScorer).toBe('function');
+      expect(typeof handlers.handleUndoGoal).toBe('function');
       expect(typeof handlers.scoreCallback).toBe('function');
     });
   });
@@ -66,6 +93,51 @@ describe('createScoreHandlers', () => {
       expect(mockStateUpdaters.addAwayGoal).not.toHaveBeenCalled();
       expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
     });
+
+    it('should handle goal with event logging when gameState provided', () => {
+      const mockGameState = {
+        homeScore: 1,
+        awayScore: 2,
+        currentPeriodNumber: 1
+      };
+      
+      calculateMatchTime.mockReturnValue('05:30');
+      
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleAddHomeGoal(mockGameState);
+
+      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_HOME, expect.objectContaining({
+        periodNumber: 1,
+        homeScore: 2,
+        awayScore: 2,
+        scorerId: null,
+        teamName: 'home'
+      }));
+      expect(mockModalHandlers.openGoalScorerModal).toHaveBeenCalledWith(expect.objectContaining({
+        team: 'home',
+        mode: 'new',
+        matchTime: '05:30',
+        periodNumber: 1
+      }));
+    });
+
+    it('should not call event logging when gameState not provided', () => {
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleAddHomeGoal();
+
+      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
+      expect(logEvent).not.toHaveBeenCalled();
+      expect(mockModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
+    });
   });
 
   describe('handleAddAwayGoal', () => {
@@ -91,6 +163,44 @@ describe('createScoreHandlers', () => {
 
       expect(mockStateUpdaters.addHomeGoal).not.toHaveBeenCalled();
       expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
+    });
+
+    it('should handle goal with event logging when gameState provided', () => {
+      const mockGameState = {
+        homeScore: 0,
+        awayScore: 1,
+        currentPeriodNumber: 2
+      };
+      
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleAddAwayGoal(mockGameState);
+
+      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_AWAY, expect.objectContaining({
+        periodNumber: 2,
+        homeScore: 0,
+        awayScore: 2,
+        teamName: 'away'
+      }));
+      // Away goals don't open modal for now
+      expect(mockModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
+    });
+
+    it('should not call event logging when gameState not provided', () => {
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleAddAwayGoal();
+
+      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
+      expect(logEvent).not.toHaveBeenCalled();
+      expect(mockModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
     });
   });
 
@@ -209,6 +319,188 @@ describe('createScoreHandlers', () => {
     });
   });
 
+  describe('handleSelectGoalScorer', () => {
+    it('should log correction event when scorerId provided', () => {
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleSelectGoalScorer('evt_123', 'player_5');
+
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
+        originalEventId: 'evt_123',
+        scorerId: 'player_5',
+        correctionType: 'initial_attribution'
+      });
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not log correction event when scorerId not provided', () => {
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleSelectGoalScorer('evt_123', null);
+
+      expect(logEvent).not.toHaveBeenCalled();
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle empty scorerId', () => {
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleSelectGoalScorer('evt_123', '');
+
+      expect(logEvent).not.toHaveBeenCalled();
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('handleCorrectGoalScorer', () => {
+    it('should log correction event', () => {
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleCorrectGoalScorer('evt_456', 'player_3');
+
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
+        originalEventId: 'evt_456',
+        scorerId: 'player_3',
+        correctionType: 'scorer_correction'
+      });
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle null scorerId', () => {
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleCorrectGoalScorer('evt_456', null);
+
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
+        originalEventId: 'evt_456',
+        scorerId: null,
+        correctionType: 'scorer_correction'
+      });
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('handleUndoGoal', () => {
+    it('should undo home goal and update score', () => {
+      const mockGoalEvent = {
+        type: EVENT_TYPES.GOAL_HOME,
+        data: {
+          homeScore: 3,
+          awayScore: 1
+        }
+      };
+      
+      getEventById.mockReturnValue(mockGoalEvent);
+      
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleUndoGoal('evt_789');
+
+      expect(getEventById).toHaveBeenCalledWith('evt_789');
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_UNDONE, {
+        originalEventId: 'evt_789',
+        originalType: EVENT_TYPES.GOAL_HOME,
+        reason: 'user_correction'
+      });
+      expect(removeEvent).toHaveBeenCalledWith('evt_789');
+      expect(mockStateUpdaters.setScore).toHaveBeenCalledWith(2, 1);
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should undo away goal and update score', () => {
+      const mockGoalEvent = {
+        type: EVENT_TYPES.GOAL_AWAY,
+        data: {
+          homeScore: 2,
+          awayScore: 4
+        }
+      };
+      
+      getEventById.mockReturnValue(mockGoalEvent);
+      
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleUndoGoal('evt_999');
+
+      expect(getEventById).toHaveBeenCalledWith('evt_999');
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_UNDONE, {
+        originalEventId: 'evt_999',
+        originalType: EVENT_TYPES.GOAL_AWAY,
+        reason: 'user_correction'
+      });
+      expect(removeEvent).toHaveBeenCalledWith('evt_999');
+      expect(mockStateUpdaters.setScore).toHaveBeenCalledWith(2, 3);
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle missing goal event gracefully', () => {
+      getEventById.mockReturnValue(null);
+      
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleUndoGoal('evt_nonexistent');
+
+      expect(getEventById).toHaveBeenCalledWith('evt_nonexistent');
+      expect(logEvent).not.toHaveBeenCalled();
+      expect(removeEvent).not.toHaveBeenCalled();
+      expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle unknown goal event type', () => {
+      const mockGoalEvent = {
+        type: 'unknown_type',
+        data: {
+          homeScore: 1,
+          awayScore: 1
+        }
+      };
+      
+      getEventById.mockReturnValue(mockGoalEvent);
+      
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      handlers.handleUndoGoal('evt_unknown');
+
+      expect(getEventById).toHaveBeenCalledWith('evt_unknown');
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_UNDONE, {
+        originalEventId: 'evt_unknown',
+        originalType: 'unknown_type',
+        reason: 'user_correction'
+      });
+      expect(removeEvent).toHaveBeenCalledWith('evt_unknown');
+      expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('integration', () => {
     it('should work with complete score flow', () => {
       const handlers = createScoreHandlers(
@@ -270,6 +562,70 @@ describe('createScoreHandlers', () => {
 
       expect(mockModalHandlers.openScoreEditModal).toHaveBeenCalledTimes(2);
       expect(mockModalHandlers.closeScoreEditModal).toHaveBeenCalledTimes(2);
+    });
+
+    it('should work with complete goal scorer workflow', () => {
+      const mockGameState = {
+        homeScore: 0,
+        awayScore: 1,
+        currentPeriodNumber: 1
+      };
+      
+      const mockGoalEvent = {
+        type: EVENT_TYPES.GOAL_HOME,
+        data: {
+          homeScore: 1,
+          awayScore: 1
+        }
+      };
+      
+      calculateMatchTime.mockReturnValue('12:45');
+      getEventById.mockReturnValue(mockGoalEvent);
+      
+      const handlers = createScoreHandlers(
+        mockStateUpdaters,
+        mockModalHandlers
+      );
+
+      // Add home goal with event logging
+      handlers.handleAddHomeGoal(mockGameState);
+      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_HOME, expect.any(Object));
+      expect(mockModalHandlers.openGoalScorerModal).toHaveBeenCalledWith(expect.objectContaining({
+        team: 'home',
+        mode: 'new',
+        matchTime: '12:45',
+        periodNumber: 1
+      }));
+
+      // Select goal scorer
+      handlers.handleSelectGoalScorer('evt_123', 'player_7');
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
+        originalEventId: 'evt_123',
+        scorerId: 'player_7',
+        correctionType: 'initial_attribution'
+      });
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
+
+      // Correct goal scorer
+      handlers.handleCorrectGoalScorer('evt_123', 'player_9');
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
+        originalEventId: 'evt_123',
+        scorerId: 'player_9',
+        correctionType: 'scorer_correction'
+      });
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(2);
+
+      // Undo goal
+      handlers.handleUndoGoal('evt_123');
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_UNDONE, {
+        originalEventId: 'evt_123',
+        originalType: EVENT_TYPES.GOAL_HOME,
+        reason: 'user_correction'
+      });
+      expect(removeEvent).toHaveBeenCalledWith('evt_123');
+      expect(mockStateUpdaters.setScore).toHaveBeenCalledWith(0, 1);
+      expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(3);
     });
   });
 

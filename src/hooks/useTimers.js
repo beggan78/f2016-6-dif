@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { logEvent, EVENT_TYPES, calculateMatchTime } from '../utils/gameEventLogger';
 
 // localStorage utilities for timers - NOTE: Essential for preventing timer loss on page refresh
 const TIMER_STORAGE_KEY = 'dif-coach-timer-state';
@@ -194,6 +195,28 @@ export function useTimers(periodDurationMinutes) {
   const pauseSubTimer = useCallback((updatePlayerStats) => {
     if (!isSubTimerPaused && lastSubstitutionTime) {
       const now = Date.now();
+      
+      try {
+        // Log pause event with timer state information
+        logEvent(EVENT_TYPES.TIMER_PAUSED, {
+          pauseType: 'substitution',
+          currentMatchTime: calculateMatchTime(now),
+          subTimerSeconds: calculateSubTimer(lastSubstitutionTime, totalPausedDuration, null),
+          matchTimerSeconds: calculateMatchTimer(periodStartTime, periodDurationMinutes),
+          pauseReason: 'substitution_pause',
+          timerState: {
+            beforePause: {
+              isPaused: false,
+              lastSubstitutionTime,
+              totalPausedDuration,
+              pauseStartTime: null
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error logging timer pause event:', error);
+      }
+      
       setPauseStartTime(now);
       
       // Update all player stats to freeze their current time
@@ -206,7 +229,7 @@ export function useTimers(periodDurationMinutes) {
         pauseStartTime: now
       });
     }
-  }, [isSubTimerPaused, lastSubstitutionTime, saveTimerStateWithOverrides]);
+  }, [isSubTimerPaused, lastSubstitutionTime, saveTimerStateWithOverrides, totalPausedDuration, periodStartTime, periodDurationMinutes]);
 
   const resumeSubTimer = useCallback((updatePlayerStats) => {
     if (isSubTimerPaused && pauseStartTime) {
@@ -216,6 +239,35 @@ export function useTimers(periodDurationMinutes) {
       
       // Reset totalPausedDuration if last substitution was during pause
       const newTotalPausedDuration = totalPausedDuration + pauseDuration;
+
+      try {
+        // Log resume event with timer state information
+        logEvent(EVENT_TYPES.TIMER_RESUMED, {
+          pauseType: 'substitution',
+          currentMatchTime: calculateMatchTime(now),
+          pauseDurationMs: pauseDuration,
+          pauseDurationSeconds: Math.floor(pauseDuration / 1000),
+          subTimerSeconds: calculateSubTimer(lastSubstitutionTime, newTotalPausedDuration, null),
+          matchTimerSeconds: calculateMatchTimer(periodStartTime, periodDurationMinutes),
+          resumeReason: 'substitution_resume',
+          timerState: {
+            beforeResume: {
+              isPaused: true,
+              lastSubstitutionTime,
+              totalPausedDuration,
+              pauseStartTime
+            },
+            afterResume: {
+              isPaused: false,
+              lastSubstitutionTime,
+              totalPausedDuration: newTotalPausedDuration,
+              pauseStartTime: null
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error logging timer resume event:', error);
+      }
 
       setPauseStartTime(null);
       setTotalPausedDuration(newTotalPausedDuration);
@@ -231,9 +283,9 @@ export function useTimers(periodDurationMinutes) {
         pauseStartTime: null
       });
     }
-  }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides]);
+  }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides, lastSubstitutionTime, periodStartTime, periodDurationMinutes]);
 
-  const startTimers = useCallback(() => {
+  const startTimers = useCallback((periodNumber = 1, teamMode = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null) => {
     const now = Date.now();
     setPeriodStartTime(now);
     setLastSubstitutionTime(now);
@@ -241,6 +293,44 @@ export function useTimers(periodDurationMinutes) {
     setIsPeriodActive(true);
     setPauseStartTime(null);
     setTotalPausedDuration(0);
+    
+    try {
+      // Log match start event only for period 1
+      if (periodNumber === 1) {
+        logEvent(EVENT_TYPES.MATCH_START, {
+          timestamp: now,
+          periodDurationMinutes,
+          teamMode,
+          homeTeamName: homeTeamName || 'Djurgården',
+          awayTeamName: awayTeamName || 'Opponent',
+          numPeriods: numPeriods || 2, // Total number of periods planned for the match
+          matchMetadata: {
+            startTime: now,
+            venue: null,
+            weather: null,
+            referee: null,
+            plannedPeriods: numPeriods || 2,
+            periodDurationMinutes
+          }
+        });
+      }
+      
+      // Log period start event
+      logEvent(EVENT_TYPES.PERIOD_START, {
+        periodNumber,
+        timestamp: now,
+        periodDurationMinutes,
+        startingFormation: startingFormation ? JSON.parse(JSON.stringify(startingFormation)) : null,
+        teamMode,
+        periodMetadata: {
+          startTime: now,
+          plannedDurationMinutes: periodDurationMinutes,
+          isFirstPeriod: periodNumber === 1
+        }
+      });
+    } catch (error) {
+      console.error('Error logging period/match start events:', error);
+    }
     
     // Save immediately with all new values
     saveTimerStateWithOverrides({
@@ -251,20 +341,63 @@ export function useTimers(periodDurationMinutes) {
       pauseStartTime: null,
       totalPausedDuration: 0
     });
-  }, [saveTimerStateWithOverrides]);
+  }, [saveTimerStateWithOverrides, periodDurationMinutes]);
 
-  const stopTimers = useCallback(() => {
+  const stopTimers = useCallback((periodNumber = null, isMatchEnd = false, finalFormation = null, teamMode = null) => {
+    const now = Date.now();
     setIsPeriodActive(false);
     if (updateIntervalRef.current) {
       clearInterval(updateIntervalRef.current);
       updateIntervalRef.current = null;
     }
     
+    try {
+      // Log period end event
+      if (periodNumber) {
+        const periodDuration = periodStartTime ? now - periodStartTime : 0;
+        logEvent(EVENT_TYPES.PERIOD_END, {
+          periodNumber,
+          timestamp: now,
+          periodDurationMs: periodDuration,
+          periodDurationMinutes: Math.floor(periodDuration / 60000),
+          periodDurationSeconds: Math.floor(periodDuration / 1000),
+          plannedDurationMinutes: periodDurationMinutes,
+          endingFormation: finalFormation ? JSON.parse(JSON.stringify(finalFormation)) : null,
+          teamMode,
+          periodMetadata: {
+            endTime: now,
+            startTime: periodStartTime,
+            actualDurationMs: periodDuration,
+            wasCompleted: true,
+            endReason: 'normal_completion'
+          }
+        });
+      }
+      
+      // Log match end event if this is the final period
+      if (isMatchEnd) {
+        logEvent(EVENT_TYPES.MATCH_END, {
+          timestamp: now,
+          finalPeriodNumber: periodNumber,
+          matchDurationMs: periodStartTime ? now - periodStartTime : 0,
+          teamMode,
+          matchMetadata: {
+            endTime: now,
+            endReason: 'normal_completion',
+            wasCompleted: true,
+            totalPeriods: periodNumber
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error logging period/match end events:', error);
+    }
+    
     // Save immediately with isPeriodActive: false
     saveTimerStateWithOverrides({
       isPeriodActive: false
     });
-  }, [saveTimerStateWithOverrides]);
+  }, [saveTimerStateWithOverrides, periodStartTime, periodDurationMinutes]);
 
   // Clear stored timer state - useful for starting fresh
   const clearTimerState = useCallback(() => {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Square, Pause, Play, Undo2, RotateCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
+import GoalScorerModal from '../shared/GoalScorerModal';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById } from '../../utils/playerUtils';
@@ -89,12 +90,16 @@ export function GameScreen({
     fieldPlayerModal: modalHandlers.modals.fieldPlayer,
     lastSubstitution: uiState.lastSubstitution,
     subTimerSeconds,
-    isSubTimerPaused
+    isSubTimerPaused,
+    currentPeriodNumber,
+    matchTimerSeconds,
+    homeScore,
+    awayScore
   }), [
     periodFormation, allPlayers, teamMode, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
-    subTimerSeconds, isSubTimerPaused
+    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, homeScore, awayScore
   ]);
 
   // State updaters object for handlers
@@ -164,8 +169,9 @@ export function GameScreen({
     createTimerHandlers(
       selectedSquadPlayers,
       stateUpdaters,
-      timerControls
-    ), [selectedSquadPlayers, stateUpdaters, timerControls]
+      timerControls,
+      createGameState
+    ), [selectedSquadPlayers, stateUpdaters, timerControls, createGameState]
   );
 
   const scoreHandlers = React.useMemo(() =>
@@ -291,7 +297,7 @@ export function GameScreen({
       <div className="p-2 bg-slate-700 rounded-lg text-center">
         <div ref={scoreRowRef} className="flex items-center justify-center space-x-2.5">
           <button
-            onClick={scoreHandlers.handleAddHomeGoal}
+            onClick={() => scoreHandlers.handleAddHomeGoal(createGameState())}
             className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors"
           >
             {displayHomeTeam}
@@ -303,7 +309,7 @@ export function GameScreen({
             {homeScore} - {awayScore}
           </div>
           <button
-            onClick={scoreHandlers.handleAddAwayGoal}
+            onClick={() => scoreHandlers.handleAddAwayGoal(createGameState())}
             className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors"
           >
             {displayAwayTeam}
@@ -416,6 +422,20 @@ export function GameScreen({
         confirmText="Undo"
         cancelText="Cancel"
         variant="warning"
+      />
+
+      {/* Goal Scorer Modal */}
+      <GoalScorerModal
+        isOpen={modalHandlers.modals.goalScorer.isOpen}
+        onClose={modalHandlers.closeGoalScorerModal}
+        onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
+        onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
+        onUndoGoal={(eventId) => scoreHandlers.handleUndoGoal(eventId)}
+        eligiblePlayers={selectedSquadPlayers.filter(p => p.currentPeriodStatus !== 'inactive')}
+        mode={modalHandlers.modals.goalScorer.mode}
+        existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
+        matchTime={modalHandlers.modals.goalScorer.matchTime}
+        team={modalHandlers.modals.goalScorer.team}
       />
     </div>
   );

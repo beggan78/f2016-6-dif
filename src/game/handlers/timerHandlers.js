@@ -1,9 +1,11 @@
 import { handlePauseResumeTime } from '../time/stintManager';
+import { logEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createTimerHandlers = (
   selectedSquadPlayers,
   stateUpdaters,
-  timerControls
+  timerControls,
+  gameStateFactory
 ) => {
   const { setAllPlayers } = stateUpdaters;
   const { pauseSubTimer, resumeSubTimer } = timerControls;
@@ -20,11 +22,51 @@ export const createTimerHandlers = (
   };
 
   const handlePauseTimer = () => {
-    pauseSubTimer(updatePlayerStatsForPause);
+    try {
+      const gameState = gameStateFactory();
+      const currentTime = Date.now();
+      
+      // Log pause event with relevant data
+      logEvent(EVENT_TYPES.TIMER_PAUSED, {
+        pauseType: 'substitution',
+        currentMatchTime: calculateMatchTime(currentTime),
+        periodNumber: gameState.currentPeriodNumber || 1,
+        subTimerSeconds: gameState.subTimerSeconds || 0,
+        matchTimerSeconds: gameState.matchTimerSeconds || 0,
+        activePlayerCount: selectedSquadPlayers.filter(p => p.currentStatus === 'on').length,
+        pauseReason: 'user_initiated'
+      });
+      
+      pauseSubTimer(updatePlayerStatsForPause);
+    } catch (error) {
+      console.error('Error logging timer pause event:', error);
+      // Continue with pause operation even if logging fails
+      pauseSubTimer(updatePlayerStatsForPause);
+    }
   };
 
   const handleResumeTimer = () => {
-    resumeSubTimer(updatePlayerStatsForPause);
+    try {
+      const gameState = gameStateFactory();
+      const currentTime = Date.now();
+      
+      // Log resume event with relevant data
+      logEvent(EVENT_TYPES.TIMER_RESUMED, {
+        pauseType: 'substitution',
+        currentMatchTime: calculateMatchTime(currentTime),
+        periodNumber: gameState.currentPeriodNumber || 1,
+        subTimerSeconds: gameState.subTimerSeconds || 0,
+        matchTimerSeconds: gameState.matchTimerSeconds || 0,
+        activePlayerCount: selectedSquadPlayers.filter(p => p.currentStatus === 'on').length,
+        resumeReason: 'user_initiated'
+      });
+      
+      resumeSubTimer(updatePlayerStatsForPause);
+    } catch (error) {
+      console.error('Error logging timer resume event:', error);
+      // Continue with resume operation even if logging fails
+      resumeSubTimer(updatePlayerStatsForPause);
+    }
   };
 
   return {

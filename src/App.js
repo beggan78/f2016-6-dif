@@ -83,7 +83,14 @@ function App() {
   // Enhanced game handlers that integrate with timers
   const handleStartGame = () => {
     gameState.handleStartGame();
-    timers.startTimers();
+    timers.startTimers(
+      gameState.currentPeriodNumber,
+      gameState.teamMode,
+      'Djurgården', // Home team name
+      gameState.opponentTeamName,
+      gameState.periodFormation,
+      gameState.numPeriods
+    );
   };
 
 
@@ -116,14 +123,26 @@ function App() {
     }
     
     // Proceed with ending the period
-    timers.stopTimers();
+    const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
+    timers.stopTimers(
+      gameState.currentPeriodNumber,
+      isMatchEnd,
+      gameState.periodFormation,
+      gameState.teamMode
+    );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
 
   const handleConfirmEndPeriod = () => {
     setShowConfirmModal(false);
     removeModalFromStack();
-    timers.stopTimers();
+    const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
+    timers.stopTimers(
+      gameState.currentPeriodNumber,
+      isMatchEnd,
+      gameState.periodFormation,
+      gameState.teamMode
+    );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
 

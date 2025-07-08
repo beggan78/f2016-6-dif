@@ -14,6 +14,7 @@ describe('createTimerHandlers', () => {
   let mockSelectedSquadPlayers;
   let mockTimerControls;
   let mockStateUpdaters;
+  let mockGameStateFactory;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -32,6 +33,14 @@ describe('createTimerHandlers', () => {
       resumeSubTimer: jest.fn()
     };
 
+    mockGameStateFactory = jest.fn(() => ({
+      currentPeriodNumber: 1,
+      subTimerSeconds: 0,
+      matchTimerSeconds: 900,
+      selectedSquadPlayers: mockSelectedSquadPlayers,
+      allPlayers: mockPlayers
+    }));
+
     handlePauseResumeTime.mockImplementation((player, timeEpoch, isPausing) => ({
       ...player,
       stats: {
@@ -46,7 +55,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       expect(handlers.handlePauseTimer).toBeDefined();
@@ -63,7 +73,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.handlePauseTimer();
@@ -78,7 +89,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.handlePauseTimer();
@@ -93,7 +105,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.handleResumeTimer();
@@ -108,7 +121,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.handleResumeTimer();
@@ -131,7 +145,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.updatePlayerStatsForPause(currentTime, isPausing);
@@ -154,7 +169,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.updatePlayerStatsForPause(currentTime, isPausing);
@@ -185,7 +201,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.updatePlayerStatsForPause(currentTime, isPausing);
@@ -213,7 +230,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.updatePlayerStatsForPause(currentTime, isPausing);
@@ -243,7 +261,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.updatePlayerStatsForPause(2000, true);
@@ -265,7 +284,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.updatePlayerStatsForPause(currentTime, isPausing);
@@ -302,7 +322,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       handlers.updatePlayerStatsForPause(currentTime, isPausing);
@@ -316,7 +337,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       // Simulate the pause flow
@@ -338,7 +360,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       // Simulate the resume flow
@@ -382,7 +405,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       expect(() => handlers.updatePlayerStatsForPause(2000, true)).not.toThrow();
@@ -400,7 +424,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       expect(() => handlers.updatePlayerStatsForPause(2000, true)).not.toThrow();
@@ -410,7 +435,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       expect(() => handlers.updatePlayerStatsForPause(null, true)).not.toThrow();
@@ -433,7 +459,8 @@ describe('createTimerHandlers', () => {
       const handlers = createTimerHandlers(
         mockSelectedSquadPlayers,
         mockStateUpdaters,
-        mockTimerControls
+        mockTimerControls,
+        mockGameStateFactory
       );
 
       // This will throw because of null player access
