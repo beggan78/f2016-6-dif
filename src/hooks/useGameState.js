@@ -10,7 +10,7 @@ import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
-import { initializeEventLogger, addEventListener as addEventLoggerListener } from '../utils/gameEventLogger';
+import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents } from '../utils/gameEventLogger';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -58,6 +58,47 @@ export function useGameState() {
   const [lastEventBackup, setLastEventBackup] = useState(initialState.lastEventBackup || null);
   const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
+
+  // Function to sync match data from gameEventLogger
+  const syncMatchDataFromEventLogger = useCallback(() => {
+    const loggerStartTime = getMatchStartTime();
+    const loggerEvents = getAllEvents();
+    
+    console.log('[DEBUG] Syncing match data from event logger:', {
+      loggerStartTime,
+      eventsCount: loggerEvents.length,
+      currentStateStartTime: matchStartTime,
+      currentStateEventsCount: matchEvents.length
+    });
+    
+    // Special case: If logger has been cleared (no events and no start time), clear local state too
+    if (!loggerStartTime && loggerEvents.length === 0 && (matchStartTime || matchEvents.length > 0)) {
+      console.log('[DEBUG] Event logger appears to be cleared, clearing local state');
+      setMatchStartTime(null);
+      setMatchEvents([]);
+      setGoalScorers({});
+      return;
+    }
+    
+    if (loggerStartTime && loggerStartTime !== matchStartTime) {
+      console.log('[DEBUG] Setting matchStartTime from event logger:', loggerStartTime);
+      setMatchStartTime(loggerStartTime);
+    }
+    
+    if (loggerEvents.length !== matchEvents.length) {
+      console.log('[DEBUG] Setting matchEvents from event logger:', loggerEvents.length, 'events');
+      setMatchEvents(loggerEvents);
+    }
+  }, [matchStartTime, matchEvents]);
+
+  // Periodic sync to ensure data consistency
+  useEffect(() => {
+    const interval = setInterval(() => {
+      syncMatchDataFromEventLogger();
+    }, 5000); // Sync every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [syncMatchDataFromEventLogger]);
 
   // Wake lock and alert management
   const [wakeLock, setWakeLock] = useState(null);
@@ -502,6 +543,11 @@ export function useGameState() {
     }
 
     setView(VIEWS.GAME);
+    
+    // Sync match data after game starts (small delay to ensure events are logged)
+    setTimeout(() => {
+      syncMatchDataFromEventLogger();
+    }, 100);
   };
 
   const handleSubstitution = (isSubTimerPaused = false) => {
@@ -623,6 +669,23 @@ export function useGameState() {
 
   // Enhanced clear stored state with backup
   const clearStoredState = useCallback(() => {
+    // Clear all game events from event logger
+    console.log('[DEBUG] useGameState.clearStoredState - Clearing all game events');
+    const eventsCleared = clearAllEvents();
+    if (eventsCleared) {
+      console.log('[DEBUG] Game events cleared successfully');
+      
+      // Reset local match state variables
+      setMatchEvents([]);
+      setMatchStartTime(null);
+      setGoalScorers({});
+      setEventSequenceNumber(0);
+      setLastEventBackup(null);
+      console.log('[DEBUG] Local match state variables reset');
+    } else {
+      console.warn('[DEBUG] Failed to clear game events');
+    }
+    
     // Create backup before clearing
     persistenceManager.createBackup();
     // Clear the state
@@ -1339,8 +1402,10 @@ export function useGameState() {
 
   // Navigation to match report
   const navigateToMatchReport = useCallback(() => {
+    // Sync match data before showing report
+    syncMatchDataFromEventLogger();
     setView(VIEWS.MATCH_REPORT);
-  }, []);
+  }, [syncMatchDataFromEventLogger]);
 
   return {
     // State

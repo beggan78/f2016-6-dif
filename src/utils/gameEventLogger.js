@@ -524,6 +524,20 @@ export const clearAllEvents = () => {
 };
 
 /**
+ * Get the match start time
+ */
+export const getMatchStartTime = () => {
+  return matchStartTime;
+};
+
+/**
+ * Get all current events
+ */
+export const getAllEvents = () => {
+  return [...currentEvents];
+};
+
+/**
  * Initialize event logger
  */
 export const initializeEventLogger = () => {

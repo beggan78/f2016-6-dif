@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatTime } from '../../utils/formatUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -8,18 +8,14 @@ import { PLAYER_ROLES } from '../../constants/playerConstants';
  * 
  * @param {Object} props - Component props
  * @param {Array} props.players - Array of player objects with stats
- * @param {string} props.sortBy - Current sort field ('name', 'timeOnField', 'timeAsAttacker', 'timeAsDefender', 'timeAsGoalie')
- * @param {string} props.sortOrder - Sort order ('asc' or 'desc')
- * @param {Function} props.onSort - Callback function for sort changes
  * @param {string} props.teamMode - Team mode for context (PAIRS_7, INDIVIDUAL_6, etc.)
  */
 export function PlayerStatsTable({
   players = [],
-  sortBy = 'name',
-  sortOrder = 'asc',
-  onSort,
   teamMode
 }) {
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
   // Define column configuration
   const columns = useMemo(() => [
     {
@@ -131,10 +127,9 @@ export function PlayerStatsTable({
 
   // Handle column header click for sorting
   const handleSort = (columnKey) => {
-    if (!onSort) return;
-    
     const newOrder = sortBy === columnKey && sortOrder === 'asc' ? 'desc' : 'asc';
-    onSort(columnKey, newOrder);
+    setSortBy(columnKey);
+    setSortOrder(newOrder);
   };
 
   // Render sort indicator

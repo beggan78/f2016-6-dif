@@ -28,9 +28,22 @@ export function MatchSummaryHeader({
   
   // Format match start time
   const formatMatchStartTime = () => {
+    console.log('[DEBUG] MatchSummaryHeader - Formatting start time:', {
+      matchStartTime,
+      type: typeof matchStartTime,
+      isNull: matchStartTime === null,
+      isUndefined: matchStartTime === undefined
+    });
+    
     if (!matchStartTime) return "No start time recorded";
     
     const date = new Date(matchStartTime);
+    console.log('[DEBUG] MatchSummaryHeader - Date object:', {
+      date,
+      isValidDate: !isNaN(date.getTime()),
+      timestamp: date.getTime()
+    });
+    
     const dateStr = date.toLocaleDateString('sv-SE', { 
       year: 'numeric', 
       month: '2-digit', 
@@ -41,13 +54,26 @@ export function MatchSummaryHeader({
       minute: '2-digit' 
     });
     
-    return `${dateStr} ${timeStr}`;
+    const formatted = `${dateStr} ${timeStr}`;
+    console.log('[DEBUG] MatchSummaryHeader - Formatted time:', formatted);
+    
+    return formatted;
   };
 
   // Format match duration
   const formatMatchDuration = () => {
+    console.log('[DEBUG] MatchSummaryHeader - Formatting duration:', {
+      matchDuration,
+      type: typeof matchDuration,
+      isZeroOrNegative: matchDuration <= 0
+    });
+    
     if (!matchDuration || matchDuration <= 0) return "Duration unknown";
-    return formatTime(matchDuration);
+    
+    const formatted = formatTime(matchDuration);
+    console.log('[DEBUG] MatchSummaryHeader - Formatted duration:', formatted);
+    
+    return formatted;
   };
 
   // Determine winning team styling

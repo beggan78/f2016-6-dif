@@ -4,11 +4,10 @@
  */
 
 import React from 'react';
-import { ArrowLeft, BarChart, Printer, Share2, Settings } from 'lucide-react';
+import { BarChart, Printer, Share2, Settings } from 'lucide-react';
 import { Button } from '../shared/UI';
 
 const ReportControls = ({
-  onBackToGame,
   onNavigateToStats,
   onPrint,
   onShare,
@@ -52,16 +51,6 @@ const ReportControls = ({
       {/* Navigation Controls */}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex gap-3">
-          {onBackToGame && (
-            <Button
-              onClick={onBackToGame}
-              variant="secondary"
-              size="md"
-              Icon={ArrowLeft}
-            >
-              Back to Game
-            </Button>
-          )}
           {onNavigateToStats && (
             <Button
               onClick={onNavigateToStats}

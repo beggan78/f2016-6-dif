@@ -108,6 +108,8 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
   - **Test Coverage**: Added 4 comprehensive test cases covering both normal time accumulation and pause time preservation across different team modes
   - **Documentation**: Updated substitutionManager.js with JSDoc comments documenting conditional time tracking logic
 
+## Operating Tips
+- **Before Starting**: Before starting the application (npm start). Check if it's already running.
 
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing

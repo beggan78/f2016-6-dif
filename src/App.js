@@ -8,6 +8,7 @@ import { calculateUndoTimerTarget } from './game/time/timeCalculator';
 import { initializePlayers } from './utils/playerUtils';
 import { initialRoster } from './constants/defaultData';
 import { VIEWS } from './constants/viewConstants';
+import { clearAllEvents } from './utils/gameEventLogger';
 import { ConfigurationScreen } from './components/setup/ConfigurationScreen';
 import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
@@ -154,6 +155,10 @@ function App() {
   };
 
   const handleRestartMatch = () => {
+    // Clear all game events from previous games
+    console.log('[DEBUG] App.handleRestartMatch - Clearing all game events');
+    clearAllEvents();
+    
     // Reset all timer state and clear localStorage
     timers.resetAllTimers();
     
