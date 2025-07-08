@@ -170,6 +170,14 @@ export function GameEventTimeline({
   const formatEventDescription = (event) => {
     const { type, data = {} } = event;
     
+    // Debug logging for event data structure
+    console.log('[DEBUG] GameEventTimeline - formatEventDescription:', {
+      eventType: type,
+      eventId: event.id,
+      eventData: data,
+      hasGetPlayerName: !!getPlayerName
+    });
+    
     switch (type) {
       case EVENT_TYPES.MATCH_START:
         return `Match started`;
@@ -182,24 +190,39 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOAL_HOME:
         const homeScorer = goalScorers[event.id] 
           ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || 'Unknown player') : 'Unknown player')
-          : 'Unknown scorer';
+          : (data.scorerId ? (getPlayerName ? (getPlayerName(data.scorerId) || 'Unknown player') : 'Unknown player') : 'Unknown scorer');
+        console.log('[DEBUG] Goal home scorer lookup:', { eventId: event.id, goalScorers, scorerId: data.scorerId, result: homeScorer });
         return `Goal for ${homeTeamName} - ${homeScorer}`;
       case EVENT_TYPES.GOAL_AWAY:
         const awayScorer = goalScorers[event.id] 
           ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || 'Unknown player') : 'Unknown player')
-          : 'Unknown scorer';
+          : (data.scorerId ? (getPlayerName ? (getPlayerName(data.scorerId) || 'Unknown player') : 'Unknown player') : 'Unknown scorer');
+        console.log('[DEBUG] Goal away scorer lookup:', { eventId: event.id, goalScorers, scorerId: data.scorerId, result: awayScorer });
         return `Goal for ${awayTeamName} - ${awayScorer}`;
       case EVENT_TYPES.SUBSTITUTION:
-        const outPlayer = data.outPlayerId ? (getPlayerName ? (getPlayerName(data.outPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const inPlayer = data.inPlayerId ? (getPlayerName ? (getPlayerName(data.inPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        // Fix: Access correct fields - substitution events store arrays playersOff/playersOn
+        const outPlayerId = data.playersOff && data.playersOff.length > 0 ? data.playersOff[0] : data.outPlayerId;
+        const inPlayerId = data.playersOn && data.playersOn.length > 0 ? data.playersOn[0] : data.inPlayerId;
+        const outPlayer = outPlayerId ? (getPlayerName ? (getPlayerName(outPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const inPlayer = inPlayerId ? (getPlayerName ? (getPlayerName(inPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        console.log('[DEBUG] Substitution player lookup:', { 
+          playersOff: data.playersOff, 
+          playersOn: data.playersOn, 
+          outPlayerId, 
+          inPlayerId, 
+          outPlayer, 
+          inPlayer 
+        });
         return `Substitution: ${outPlayer} ↔ ${inPlayer}`;
       case EVENT_TYPES.GOALIE_SWITCH:
         const oldGoalie = data.oldGoalieId ? (getPlayerName ? (getPlayerName(data.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
         const newGoalie = data.newGoalieId ? (getPlayerName ? (getPlayerName(data.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        console.log('[DEBUG] Goalie switch lookup:', { oldGoalieId: data.oldGoalieId, newGoalieId: data.newGoalieId, oldGoalie, newGoalie });
         return `Goalie change: ${oldGoalie} → ${newGoalie}`;
       case EVENT_TYPES.POSITION_CHANGE:
         const player1 = data.player1Id ? (getPlayerName ? (getPlayerName(data.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
         const player2 = data.player2Id ? (getPlayerName ? (getPlayerName(data.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
+        console.log('[DEBUG] Position change lookup:', { player1Id: data.player1Id, player2Id: data.player2Id, player1, player2 });
         return `Position switch: ${player1} ↔ ${player2}`;
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;
