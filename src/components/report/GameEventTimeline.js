@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Play, 
   Square, 
@@ -44,8 +44,17 @@ export function GameEventTimeline({
   matchStartTime,
   filterType = 'all'
 }) {
-  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first, 'asc' for oldest first
+  // Load sort preference from localStorage, default to 'asc' (oldest first)
+  const [sortOrder, setSortOrder] = useState(() => {
+    const saved = localStorage.getItem('dif-coach-timeline-sort-order');
+    return saved || 'asc';
+  });
   const [expandedEvents, setExpandedEvents] = useState(new Set());
+
+  // Save sort preference to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('dif-coach-timeline-sort-order', sortOrder);
+  }, [sortOrder]);
 
   // Filter and sort events
   const filteredAndSortedEvents = useMemo(() => {
