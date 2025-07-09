@@ -124,8 +124,21 @@ export function GameEventTimeline({
   const groupedEventsByPeriod = useMemo(() => {
     const groups = {};
     let intermissionEvents = [];
+    let matchStartEvent = null;
+    let matchEndEvent = null;
     
     filteredAndSortedEvents.forEach(event => {
+      // Handle match-level events specially (not grouped with periods)
+      if (event.type === EVENT_TYPES.MATCH_START) {
+        matchStartEvent = event;
+        return;
+      }
+      
+      if (event.type === EVENT_TYPES.MATCH_END) {
+        matchEndEvent = event;
+        return;
+      }
+      
       // Handle intermission events specially
       if (event.type === EVENT_TYPES.INTERMISSION) {
         intermissionEvents.push(event);
@@ -164,7 +177,7 @@ export function GameEventTimeline({
       }
     });
     
-    return { groups, intermissions: processedIntermissions };
+    return { groups, intermissions: processedIntermissions, matchStartEvent, matchEndEvent };
   }, [filteredAndSortedEvents]);
 
   // Get event icon based on type
@@ -592,8 +605,21 @@ export function GameEventTimeline({
         </button>
       </div>
 
-      {/* Timeline - Period-based with intermissions */}
+      {/* Timeline - Chronological with match-level events */}
       <div className="space-y-6">
+        {/* Match Start Event */}
+        {groupedEventsByPeriod.matchStartEvent && (
+          <div className="space-y-4">
+            <div className="relative">
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
+              <div className="space-y-4">
+                {renderEvent(groupedEventsByPeriod.matchStartEvent)}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Period Events */}
         {Object.keys(groupedEventsByPeriod.groups)
           .sort((a, b) => sortOrder === 'desc' ? b - a : a - b)
           .map((periodNumber) => {
@@ -603,14 +629,16 @@ export function GameEventTimeline({
             
             return (
               <div key={`period-${periodNumber}`} className="space-y-4">
-                {/* Period Header */}
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="h-px bg-slate-600 flex-1"></div>
-                  <h3 className="text-sm font-medium text-slate-300 px-3">
-                    Period {periodNumber}
-                  </h3>
-                  <div className="h-px bg-slate-600 flex-1"></div>
-                </div>
+                {/* Period Header - show for periods > 1, or period 1 when there's no match start event */}
+                {(periodNumber > 1 || (periodNumber == 1 && !groupedEventsByPeriod.matchStartEvent)) && (
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="h-px bg-slate-600 flex-1"></div>
+                    <h3 className="text-sm font-medium text-slate-300 px-3">
+                      Period {periodNumber}
+                    </h3>
+                    <div className="h-px bg-slate-600 flex-1"></div>
+                  </div>
+                )}
                 
                 {/* Period Events */}
                 <div className="relative">
@@ -628,6 +656,18 @@ export function GameEventTimeline({
               </div>
             );
           })}
+          
+        {/* Match End Event */}
+        {groupedEventsByPeriod.matchEndEvent && (
+          <div className="space-y-4">
+            <div className="relative">
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
+              <div className="space-y-4">
+                {renderEvent(groupedEventsByPeriod.matchEndEvent)}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

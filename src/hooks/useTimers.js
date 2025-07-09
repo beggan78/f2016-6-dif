@@ -295,7 +295,7 @@ export function useTimers(periodDurationMinutes) {
     setTotalPausedDuration(0);
     
     try {
-      // Log match start event only for period 1
+      // Log match start event only for period 1 (eliminates redundant MATCH_START + PERIOD_START)
       if (periodNumber === 1) {
         logEvent(EVENT_TYPES.MATCH_START, {
           timestamp: now,
@@ -311,6 +311,20 @@ export function useTimers(periodDurationMinutes) {
             referee: null,
             plannedPeriods: numPeriods || 2,
             periodDurationMinutes
+          }
+        });
+      } else {
+        // Log period start event for periods > 1
+        logEvent(EVENT_TYPES.PERIOD_START, {
+          periodNumber,
+          timestamp: now,
+          periodDurationMinutes,
+          startingFormation: startingFormation ? JSON.parse(JSON.stringify(startingFormation)) : null,
+          teamMode,
+          periodMetadata: {
+            startTime: now,
+            plannedDurationMinutes: periodDurationMinutes,
+            isFirstPeriod: false
           }
         });
       }
@@ -329,20 +343,6 @@ export function useTimers(periodDurationMinutes) {
           }
         });
       }
-      
-      // Log period start event
-      logEvent(EVENT_TYPES.PERIOD_START, {
-        periodNumber,
-        timestamp: now,
-        periodDurationMinutes,
-        startingFormation: startingFormation ? JSON.parse(JSON.stringify(startingFormation)) : null,
-        teamMode,
-        periodMetadata: {
-          startTime: now,
-          plannedDurationMinutes: periodDurationMinutes,
-          isFirstPeriod: periodNumber === 1
-        }
-      });
     } catch (error) {
       console.error('Error logging period/match start events:', error);
     }
@@ -367,26 +367,43 @@ export function useTimers(periodDurationMinutes) {
     }
     
     try {
-      // Log period end event
-      if (periodNumber) {
-        const periodDuration = periodStartTime ? now - periodStartTime : 0;
-        logEvent(EVENT_TYPES.PERIOD_END, {
-          periodNumber,
+      // Log match end event if this is the final period (eliminates redundant PERIOD_END + MATCH_END)
+      if (isMatchEnd) {
+        logEvent(EVENT_TYPES.MATCH_END, {
           timestamp: now,
-          periodDurationMs: periodDuration,
-          periodDurationMinutes: Math.floor(periodDuration / 60000),
-          periodDurationSeconds: Math.floor(periodDuration / 1000),
-          plannedDurationMinutes: periodDurationMinutes,
-          endingFormation: finalFormation ? JSON.parse(JSON.stringify(finalFormation)) : null,
+          finalPeriodNumber: periodNumber,
+          matchDurationMs: periodStartTime ? now - periodStartTime : 0,
           teamMode,
-          periodMetadata: {
+          matchMetadata: {
             endTime: now,
-            startTime: periodStartTime,
-            actualDurationMs: periodDuration,
+            endReason: 'normal_completion',
             wasCompleted: true,
-            endReason: 'normal_completion'
+            totalPeriods: periodNumber
           }
+          // Note: No periodNumber passed to avoid grouping with periods
         });
+      } else {
+        // Log period end event for non-final periods
+        if (periodNumber) {
+          const periodDuration = periodStartTime ? now - periodStartTime : 0;
+          logEvent(EVENT_TYPES.PERIOD_END, {
+            periodNumber,
+            timestamp: now,
+            periodDurationMs: periodDuration,
+            periodDurationMinutes: Math.floor(periodDuration / 60000),
+            periodDurationSeconds: Math.floor(periodDuration / 1000),
+            plannedDurationMinutes: periodDurationMinutes,
+            endingFormation: finalFormation ? JSON.parse(JSON.stringify(finalFormation)) : null,
+            teamMode,
+            periodMetadata: {
+              endTime: now,
+              startTime: periodStartTime,
+              actualDurationMs: periodDuration,
+              wasCompleted: true,
+              endReason: 'normal_completion'
+            }
+          });
+        }
       }
       
       // Log intermission start if this is not the final period
@@ -400,22 +417,6 @@ export function useTimers(periodDurationMinutes) {
             startTime: now,
             endingPeriod: periodNumber,
             nextPeriod: periodNumber + 1
-          }
-        });
-      }
-      
-      // Log match end event if this is the final period
-      if (isMatchEnd) {
-        logEvent(EVENT_TYPES.MATCH_END, {
-          timestamp: now,
-          finalPeriodNumber: periodNumber,
-          matchDurationMs: periodStartTime ? now - periodStartTime : 0,
-          teamMode,
-          matchMetadata: {
-            endTime: now,
-            endReason: 'normal_completion',
-            wasCompleted: true,
-            totalPeriods: periodNumber
           }
         });
       }
