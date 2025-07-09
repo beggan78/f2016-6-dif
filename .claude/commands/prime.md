@@ -1,5 +1,4 @@
 First read the documentation in the following files:
-README.md
 CLAUDE.md
 
 When making changes, make sure to first understand the separation of concerns between files in the `src/game` directory.

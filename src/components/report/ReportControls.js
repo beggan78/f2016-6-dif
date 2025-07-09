@@ -58,7 +58,7 @@ const ReportControls = ({
               size="md"
               Icon={BarChart}
             >
-              Final Stats
+              Quick Stats
             </Button>
           )}
         </div>

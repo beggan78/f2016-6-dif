@@ -136,7 +136,7 @@ export function MatchReportScreen({
             <div className="text-center py-8">
               <p className="text-slate-400 mb-4">No match data available</p>
               <Button onClick={onNavigateToStats} variant="secondary" Icon={BarChart3}>
-                View Stats
+                Quick Stats
               </Button>
             </div>
           </div>
@@ -165,7 +165,7 @@ export function MatchReportScreen({
                 Icon={BarChart3}
                 size="sm"
               >
-                View Stats
+                Quick Stats
               </Button>
             )}
           </div>

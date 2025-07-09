@@ -269,7 +269,7 @@ describe('MatchReportScreen', () => {
       // Should show error state
       expect(screen.getByText('Match Report')).toBeInTheDocument();
       expect(screen.getByText('No match data available')).toBeInTheDocument();
-      expect(screen.getByText('View Stats')).toBeInTheDocument();
+      expect(screen.getByText('Quick Stats')).toBeInTheDocument();
     });
 
     it('handles null allPlayers prop', () => {
@@ -298,11 +298,11 @@ describe('MatchReportScreen', () => {
   });
 
   describe('Navigation callbacks', () => {
-    it('calls onNavigateToStats when View Stats button is clicked', () => {
+    it('calls onNavigateToStats when Quick Stats button is clicked', () => {
       const mockOnNavigateToStats = jest.fn();
       render(<MatchReportScreen {...defaultProps} onNavigateToStats={mockOnNavigateToStats} />);
 
-      const viewStatsButton = screen.getByText('View Stats');
+      const viewStatsButton = screen.getByText('Quick Stats');
       fireEvent.click(viewStatsButton);
 
       expect(mockOnNavigateToStats).toHaveBeenCalledTimes(1);
@@ -318,13 +318,13 @@ describe('MatchReportScreen', () => {
 
       render(<MatchReportScreen {...propsWithoutPlayers} />);
 
-      const viewStatsButton = screen.getByText('View Stats');
+      const viewStatsButton = screen.getByText('Quick Stats');
       fireEvent.click(viewStatsButton);
 
       expect(mockOnNavigateToStats).toHaveBeenCalledTimes(1);
     });
 
-    it('does not render View Stats button when onNavigateToStats is not provided', () => {
+    it('does not render Quick Stats button when onNavigateToStats is not provided', () => {
       const propsWithoutCallback = {
         ...defaultProps,
         onNavigateToStats: undefined
@@ -332,7 +332,7 @@ describe('MatchReportScreen', () => {
 
       render(<MatchReportScreen {...propsWithoutCallback} />);
 
-      expect(screen.queryByText('View Stats')).not.toBeInTheDocument();
+      expect(screen.queryByText('Quick Stats')).not.toBeInTheDocument();
     });
 
     it('calls onBackToGame when provided', () => {

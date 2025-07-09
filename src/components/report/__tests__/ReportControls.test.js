@@ -96,7 +96,7 @@ describe('ReportControls', () => {
     it('renders all control buttons', () => {
       render(<ReportControls {...defaultProps} />);
 
-      expect(screen.getByTestId('button-final-stats')).toBeInTheDocument();
+      expect(screen.getByTestId('button-quick-stats')).toBeInTheDocument();
       expect(screen.getByTestId('button-print')).toBeInTheDocument();
       expect(screen.getByTestId('button-share')).toBeInTheDocument();
       expect(screen.getByTestId('bar-chart-icon')).toBeInTheDocument();
@@ -129,11 +129,11 @@ describe('ReportControls', () => {
       expect(checkbox).toBeChecked();
     });
 
-    it('does not render Final Stats button when onNavigateToStats is not provided', () => {
+    it('does not render Quick Stats button when onNavigateToStats is not provided', () => {
       const props = { ...defaultProps, onNavigateToStats: undefined };
       render(<ReportControls {...props} />);
 
-      expect(screen.queryByTestId('button-final-stats')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('button-quick-stats')).not.toBeInTheDocument();
     });
 
     it('renders sort order select when onSortOrderChange is provided', () => {
@@ -347,28 +347,28 @@ describe('ReportControls', () => {
   });
 
   describe('Navigation Functionality', () => {
-    it('calls onNavigateToStats when Final Stats button is clicked', () => {
+    it('calls onNavigateToStats when Quick Stats button is clicked', () => {
       render(<ReportControls {...defaultProps} />);
 
-      const statsButton = screen.getByTestId('button-final-stats');
+      const statsButton = screen.getByTestId('button-quick-stats');
       fireEvent.click(statsButton);
 
       expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(1);
     });
 
-    it('has correct button variant and size for Final Stats button', () => {
+    it('has correct button variant and size for Quick Stats button', () => {
       render(<ReportControls {...defaultProps} />);
 
-      const statsButton = screen.getByTestId('button-final-stats');
+      const statsButton = screen.getByTestId('button-quick-stats');
       expect(statsButton).toHaveAttribute('data-variant', 'primary');
       expect(statsButton).toHaveAttribute('data-size', 'md');
     });
 
-    it('displays Final Stats icon and text', () => {
+    it('displays Quick Stats icon and text', () => {
       render(<ReportControls {...defaultProps} />);
 
-      const statsButton = screen.getByTestId('button-final-stats');
-      expect(statsButton).toHaveTextContent('Final Stats');
+      const statsButton = screen.getByTestId('button-quick-stats');
+      expect(statsButton).toHaveTextContent('Quick Stats');
       expect(screen.getByTestId('bar-chart-icon')).toBeInTheDocument();
     });
   });
@@ -542,14 +542,14 @@ describe('ReportControls', () => {
     it('has correct container styling', () => {
       render(<ReportControls {...defaultProps} />);
 
-      const container = screen.getByTestId('button-final-stats').closest('.space-y-4');
+      const container = screen.getByTestId('button-quick-stats').closest('.space-y-4');
       expect(container).toHaveClass('space-y-4', 'no-print');
     });
 
     it('has correct navigation controls layout', () => {
       render(<ReportControls {...defaultProps} />);
 
-      const navContainer = screen.getByTestId('button-final-stats').closest('div');
+      const navContainer = screen.getByTestId('button-quick-stats').closest('div');
       expect(navContainer).toHaveClass('flex', 'gap-3');
     });
 
@@ -683,7 +683,7 @@ describe('ReportControls', () => {
       render(<ReportControls {...defaultProps} />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(3); // Final Stats, Print, Share
+      expect(buttons).toHaveLength(3); // Quick Stats, Print, Share
       
       buttons.forEach(button => {
         expect(button).toBeEnabled();
