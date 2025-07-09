@@ -315,6 +315,21 @@ export function useTimers(periodDurationMinutes) {
         });
       }
       
+      // Log intermission end if this is not the first period
+      if (periodNumber > 1) {
+        logEvent(EVENT_TYPES.INTERMISSION, {
+          intermissionType: 'end',
+          precedingPeriodNumber: periodNumber - 1,
+          timestamp: now,
+          matchTime: calculateMatchTime(now),
+          periodMetadata: {
+            endTime: now,
+            previousPeriod: periodNumber - 1,
+            startingPeriod: periodNumber
+          }
+        });
+      }
+      
       // Log period start event
       logEvent(EVENT_TYPES.PERIOD_START, {
         periodNumber,
@@ -370,6 +385,21 @@ export function useTimers(periodDurationMinutes) {
             actualDurationMs: periodDuration,
             wasCompleted: true,
             endReason: 'normal_completion'
+          }
+        });
+      }
+      
+      // Log intermission start if this is not the final period
+      if (!isMatchEnd && periodNumber) {
+        logEvent(EVENT_TYPES.INTERMISSION, {
+          intermissionType: 'start',
+          followingPeriodNumber: periodNumber + 1,
+          timestamp: now,
+          matchTime: calculateMatchTime(now),
+          periodMetadata: {
+            startTime: now,
+            endingPeriod: periodNumber,
+            nextPeriod: periodNumber + 1
           }
         });
       }

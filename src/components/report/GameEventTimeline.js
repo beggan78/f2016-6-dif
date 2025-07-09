@@ -74,6 +74,53 @@ export function GameEventTimeline({
     return filtered;
   }, [events, sortOrder]);
 
+  // Group events by periods and process intermissions
+  const groupedEventsByPeriod = useMemo(() => {
+    const groups = {};
+    let intermissionEvents = [];
+    
+    filteredAndSortedEvents.forEach(event => {
+      // Handle intermission events specially
+      if (event.type === EVENT_TYPES.INTERMISSION) {
+        intermissionEvents.push(event);
+        return;
+      }
+      
+      // Get period number from event data or default to 1
+      const periodNumber = event.periodNumber || event.data?.periodNumber || 1;
+      
+      if (!groups[periodNumber]) {
+        groups[periodNumber] = [];
+      }
+      
+      groups[periodNumber].push(event);
+    });
+    
+    // Process intermissions to calculate durations
+    const processedIntermissions = {};
+    const intermissionStarts = intermissionEvents.filter(e => e.data?.intermissionType === 'start');
+    const intermissionEnds = intermissionEvents.filter(e => e.data?.intermissionType === 'end');
+    
+    intermissionStarts.forEach(startEvent => {
+      const followingPeriod = startEvent.data?.followingPeriodNumber;
+      if (followingPeriod) {
+        const endEvent = intermissionEnds.find(e => e.data?.precedingPeriodNumber === followingPeriod - 1);
+        if (endEvent) {
+          const duration = endEvent.timestamp - startEvent.timestamp;
+          processedIntermissions[followingPeriod] = {
+            startEvent,
+            endEvent,
+            duration,
+            durationMinutes: Math.floor(duration / 60000),
+            durationSeconds: Math.floor((duration % 60000) / 1000)
+          };
+        }
+      }
+    });
+    
+    return { groups, intermissions: processedIntermissions };
+  }, [filteredAndSortedEvents]);
+
   // Get event icon based on type
   const getEventIcon = (eventType) => {
     switch (eventType) {
@@ -83,6 +130,8 @@ export function GameEventTimeline({
       case EVENT_TYPES.MATCH_END:
       case EVENT_TYPES.PERIOD_END:
         return Square;
+      case EVENT_TYPES.INTERMISSION:
+        return Clock;
       case EVENT_TYPES.GOAL_HOME:
       case EVENT_TYPES.GOAL_AWAY:
         return Trophy;
@@ -122,6 +171,8 @@ export function GameEventTimeline({
       case EVENT_TYPES.PERIOD_START:
       case EVENT_TYPES.PERIOD_END:
         return 'text-blue-400';
+      case EVENT_TYPES.INTERMISSION:
+        return 'text-slate-400';
       case EVENT_TYPES.GOAL_HOME:
       case EVENT_TYPES.GOAL_AWAY:
         return 'text-emerald-400';
@@ -265,6 +316,8 @@ export function GameEventTimeline({
         return `Period paused`;
       case EVENT_TYPES.PERIOD_RESUMED:
         return `Period resumed`;
+      case EVENT_TYPES.INTERMISSION:
+        return `Intermission`;
       case EVENT_TYPES.GOAL_CORRECTED:
         return `Goal corrected`;
       case EVENT_TYPES.GOAL_UNDONE:
@@ -304,6 +357,106 @@ export function GameEventTimeline({
   // Format event time
   const formatEventTime = (event) => {
     return event.matchTime || calculateMatchTime(event.timestamp, matchStartTime);
+  };
+
+  // Render a single event
+  const renderEvent = (event) => {
+    const Icon = getEventIcon(event.type);
+    const iconColor = getEventColor(event.type, event.undone);
+    const bgColor = getEventBackgroundColor(event.type, event.undone);
+    const isClickable = isEventClickable(event);
+    const isExpanded = expandedEvents.has(event.id);
+    const details = renderEventDetails(event);
+    
+    return (
+      <div key={event.id} className="relative flex items-start">
+        {/* Timeline dot */}
+        <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border-2 ${iconColor.replace('text-', 'border-')}`}>
+          <Icon className={`h-5 w-5 ${iconColor}`} />
+        </div>
+        
+        {/* Event content */}
+        <div className="ml-4 flex-1">
+          <div
+            className={`rounded-lg border p-4 ${bgColor} ${
+              isClickable ? 'cursor-pointer hover:bg-opacity-80 transition-colors' : ''
+            } ${event.undone ? 'opacity-60' : ''}`}
+            onClick={() => handleGoalEventClick(event)}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-mono text-slate-400">
+                    {formatEventTime(event)}
+                  </span>
+                  {event.undone && (
+                    <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded">
+                      UNDONE
+                    </span>
+                  )}
+                </div>
+                <p className={`text-sm font-medium mt-1 ${event.undone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                  {formatEventDescription(event)}
+                </p>
+                {isClickable && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    Click to edit scorer
+                  </p>
+                )}
+              </div>
+              
+              {/* Expand button for events with details */}
+              {details.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleEventExpansion(event.id);
+                  }}
+                  className="ml-2 text-slate-400 hover:text-slate-300 transition-colors"
+                >
+                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </button>
+              )}
+            </div>
+            
+            {/* Event details (expandable) */}
+            {isExpanded && details.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-600/50">
+                <dl className="space-y-1">
+                  {details.map((detail, idx) => (
+                    <dd key={idx} className="text-xs text-slate-400">
+                      {detail}
+                    </dd>
+                  ))}
+                </dl>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render intermission section
+  const renderIntermission = (intermission) => {
+    const minutes = intermission.durationMinutes;
+    const seconds = intermission.durationSeconds;
+    
+    return (
+      <div key={`intermission-${intermission.startEvent.id}`} className="py-8 flex justify-center">
+        <div className="bg-slate-700/50 rounded-lg px-6 py-4 border border-slate-600/50">
+          <div className="flex items-center space-x-3">
+            <Clock className="h-5 w-5 text-slate-400" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-slate-300">Intermission</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Render event details
@@ -360,90 +513,42 @@ export function GameEventTimeline({
         </button>
       </div>
 
-      {/* Timeline */}
-      <div className="relative">
-        {/* Timeline line */}
-        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
-        
-        {/* Events */}
-        <div className="space-y-4">
-          {filteredAndSortedEvents.map((event, index) => {
-            const Icon = getEventIcon(event.type);
-            const iconColor = getEventColor(event.type, event.undone);
-            const bgColor = getEventBackgroundColor(event.type, event.undone);
-            const isClickable = isEventClickable(event);
-            const isExpanded = expandedEvents.has(event.id);
-            const details = renderEventDetails(event);
+      {/* Timeline - Period-based with intermissions */}
+      <div className="space-y-6">
+        {Object.keys(groupedEventsByPeriod.groups)
+          .sort((a, b) => sortOrder === 'desc' ? b - a : a - b)
+          .map((periodNumber) => {
+            const periodEvents = groupedEventsByPeriod.groups[periodNumber];
+            const nextPeriod = parseInt(periodNumber) + 1;
+            const intermission = groupedEventsByPeriod.intermissions[nextPeriod];
             
             return (
-              <div key={event.id} className="relative flex items-start">
-                {/* Timeline dot */}
-                <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border-2 ${iconColor.replace('text-', 'border-')}`}>
-                  <Icon className={`h-5 w-5 ${iconColor}`} />
+              <div key={`period-${periodNumber}`} className="space-y-4">
+                {/* Period Header */}
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="h-px bg-slate-600 flex-1"></div>
+                  <h3 className="text-sm font-medium text-slate-300 px-3">
+                    Period {periodNumber}
+                  </h3>
+                  <div className="h-px bg-slate-600 flex-1"></div>
                 </div>
                 
-                {/* Event content */}
-                <div className="ml-4 flex-1">
-                  <div
-                    className={`rounded-lg border p-4 ${bgColor} ${
-                      isClickable ? 'cursor-pointer hover:bg-opacity-80 transition-colors' : ''
-                    } ${event.undone ? 'opacity-60' : ''}`}
-                    onClick={() => handleGoalEventClick(event)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-mono text-slate-400">
-                            {formatEventTime(event)}
-                          </span>
-                          {event.undone && (
-                            <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded">
-                              UNDONE
-                            </span>
-                          )}
-                        </div>
-                        <p className={`text-sm font-medium mt-1 ${event.undone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
-                          {formatEventDescription(event)}
-                        </p>
-                        {isClickable && (
-                          <p className="text-xs text-slate-400 mt-1">
-                            Click to edit scorer
-                          </p>
-                        )}
-                      </div>
-                      
-                      {/* Expand button for events with details */}
-                      {details.length > 0 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleEventExpansion(event.id);
-                          }}
-                          className="ml-2 text-slate-400 hover:text-slate-300 transition-colors"
-                        >
-                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Event details (expandable) */}
-                    {isExpanded && details.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-slate-600/50">
-                        <dl className="space-y-1">
-                          {details.map((detail, idx) => (
-                            <dd key={idx} className="text-xs text-slate-400">
-                              {detail}
-                            </dd>
-                          ))}
-                        </dl>
-                      </div>
-                    )}
+                {/* Period Events */}
+                <div className="relative">
+                  {/* Timeline line for this period */}
+                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
+                  
+                  {/* Events in this period */}
+                  <div className="space-y-4">
+                    {periodEvents.map((event) => renderEvent(event))}
                   </div>
                 </div>
+                
+                {/* Intermission after this period (if exists) */}
+                {intermission && renderIntermission(intermission)}
               </div>
             );
           })}
-        </div>
       </div>
     </div>
   );

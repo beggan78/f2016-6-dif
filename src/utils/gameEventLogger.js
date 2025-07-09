@@ -16,6 +16,7 @@ export const EVENT_TYPES = {
   PERIOD_END: 'period_end',
   PERIOD_PAUSED: 'period_paused',
   PERIOD_RESUMED: 'period_resumed',
+  INTERMISSION: 'intermission',
   
   // Player events
   SUBSTITUTION: 'substitution',

@@ -33,7 +33,10 @@ describe('GameEventTimeline', () => {
 
   const mockGoalScorers = {
     'goal-event-1': 'player1',
-    'goal-event-2': 'player2'
+    'goal-event-2': 'player2',
+    'goal-p1': 'player1',
+    'goal-p2': 'player2',
+    'goal-no-period': 'player1'
   };
 
   const sampleEvents = [
@@ -328,5 +331,245 @@ describe('GameEventTimeline', () => {
 
     // Should still render but with "Unknown scorer"
     expect(screen.getByText('Goal for Djurgården - Unknown scorer')).toBeInTheDocument();
+  });
+
+  it('displays periods with headers and intermissions', () => {
+    // Reset the mock for this test
+    mockGetPlayerName.mockClear();
+    mockGetPlayerName.mockImplementation((playerId) => {
+      const playerNames = {
+        'player1': 'Alice',
+        'player2': 'Bob',
+        'player3': 'Charlie'
+      };
+      return playerNames[playerId] || null;
+    });
+
+    const multiPeriodEvents = [
+      // Period 1 events
+      {
+        id: 'period-1-start',
+        type: EVENT_TYPES.PERIOD_START,
+        timestamp: 1000000000000,
+        matchTime: '00:00',
+        periodNumber: 1,
+        sequence: 1,
+        data: { periodNumber: 1 },
+        undone: false
+      },
+      {
+        id: 'goal-p1',
+        type: EVENT_TYPES.GOAL_HOME,
+        timestamp: 1000000060000,
+        matchTime: '01:00',
+        periodNumber: 1,
+        sequence: 2,
+        data: { homeScore: 1, awayScore: 0 },
+        undone: false
+      },
+      {
+        id: 'period-1-end',
+        type: EVENT_TYPES.PERIOD_END,
+        timestamp: 1000000900000,
+        matchTime: '15:00',
+        periodNumber: 1,
+        sequence: 3,
+        data: { periodNumber: 1 },
+        undone: false
+      },
+      // Intermission events
+      {
+        id: 'intermission-start',
+        type: EVENT_TYPES.INTERMISSION,
+        timestamp: 1000000900000,
+        matchTime: '15:00',
+        sequence: 4,
+        data: { 
+          intermissionType: 'start',
+          followingPeriodNumber: 2,
+          endingPeriod: 1,
+          nextPeriod: 2
+        },
+        undone: false
+      },
+      {
+        id: 'intermission-end',
+        type: EVENT_TYPES.INTERMISSION,
+        timestamp: 1000001080000, // 3 minutes later
+        matchTime: '18:00',
+        sequence: 5,
+        data: { 
+          intermissionType: 'end',
+          precedingPeriodNumber: 1,
+          previousPeriod: 1,
+          startingPeriod: 2
+        },
+        undone: false
+      },
+      // Period 2 events
+      {
+        id: 'period-2-start',
+        type: EVENT_TYPES.PERIOD_START,
+        timestamp: 1000001080000,
+        matchTime: '18:00',
+        periodNumber: 2,
+        sequence: 6,
+        data: { periodNumber: 2 },
+        undone: false
+      },
+      {
+        id: 'goal-p2',
+        type: EVENT_TYPES.GOAL_AWAY,
+        timestamp: 1000001140000,
+        matchTime: '19:00',
+        periodNumber: 2,
+        sequence: 7,
+        data: { homeScore: 1, awayScore: 1 },
+        undone: false
+      }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={multiPeriodEvents}
+        getPlayerName={mockGetPlayerName}
+        goalScorers={mockGoalScorers}
+        homeTeamName="Djurgården"
+        awayTeamName="Opponent"
+      />
+    );
+
+    // Check for period headers
+    expect(screen.getByText('Period 1')).toBeInTheDocument();
+    expect(screen.getByText('Period 2')).toBeInTheDocument();
+
+    // Check for intermission display
+    expect(screen.getByText('Intermission')).toBeInTheDocument();
+    expect(screen.getByText('3:00')).toBeInTheDocument(); // 3 minutes duration
+
+    // Check that events are properly grouped
+    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument(); // Period 1 goal
+    expect(screen.getByText('1-1 Opponent Scored')).toBeInTheDocument(); // Period 2 goal
+  });
+
+  it('handles intermission duration formatting correctly', () => {
+    // Reset the mock for this test
+    mockGetPlayerName.mockClear();
+    mockGetPlayerName.mockImplementation((playerId) => {
+      const playerNames = {
+        'player1': 'Alice',
+        'player2': 'Bob',
+        'player3': 'Charlie'
+      };
+      return playerNames[playerId] || null;
+    });
+
+    const shortIntermissionEvents = [
+      {
+        id: 'period-1-end',
+        type: EVENT_TYPES.PERIOD_END,
+        timestamp: 1000000000000,
+        matchTime: '15:00',
+        periodNumber: 1,
+        sequence: 1,
+        data: { periodNumber: 1 },
+        undone: false
+      },
+      {
+        id: 'intermission-start',
+        type: EVENT_TYPES.INTERMISSION,
+        timestamp: 1000000000000,
+        matchTime: '15:00',
+        sequence: 2,
+        data: { 
+          intermissionType: 'start',
+          followingPeriodNumber: 2
+        },
+        undone: false
+      },
+      {
+        id: 'intermission-end',
+        type: EVENT_TYPES.INTERMISSION,
+        timestamp: 1000000045000, // 45 seconds later
+        matchTime: '15:45',
+        sequence: 3,
+        data: { 
+          intermissionType: 'end',
+          precedingPeriodNumber: 1
+        },
+        undone: false
+      },
+      {
+        id: 'period-2-start',
+        type: EVENT_TYPES.PERIOD_START,
+        timestamp: 1000000045000,
+        matchTime: '15:45',
+        periodNumber: 2,
+        sequence: 4,
+        data: { periodNumber: 2 },
+        undone: false
+      }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={shortIntermissionEvents}
+        getPlayerName={mockGetPlayerName}
+        homeTeamName="Djurgården"
+      />
+    );
+
+    // Check for intermission with short duration (should show seconds)
+    expect(screen.getByText('Intermission')).toBeInTheDocument();
+    expect(screen.getByText('45s')).toBeInTheDocument(); // 45 seconds duration
+  });
+
+  it('handles events without period numbers gracefully', () => {
+    // Reset the mock for this test
+    mockGetPlayerName.mockClear();
+    mockGetPlayerName.mockImplementation((playerId) => {
+      const playerNames = {
+        'player1': 'Alice',
+        'player2': 'Bob',
+        'player3': 'Charlie'
+      };
+      return playerNames[playerId] || null;
+    });
+
+    const eventsWithoutPeriods = [
+      {
+        id: 'match-start',
+        type: EVENT_TYPES.MATCH_START,
+        timestamp: 1000000000000,
+        matchTime: '00:00',
+        sequence: 1,
+        data: {},
+        undone: false
+        // No periodNumber
+      },
+      {
+        id: 'goal-no-period',
+        type: EVENT_TYPES.GOAL_HOME,
+        timestamp: 1000000060000,
+        matchTime: '01:00',
+        sequence: 2,
+        data: { homeScore: 1, awayScore: 0 },
+        undone: false
+        // No periodNumber
+      }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={eventsWithoutPeriods}
+        getPlayerName={mockGetPlayerName}
+        goalScorers={mockGoalScorers}
+        homeTeamName="Djurgården"
+      />
+    );
+
+    // Should default to Period 1
+    expect(screen.getByText('Period 1')).toBeInTheDocument();
+    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
   });
 });
