@@ -22,6 +22,7 @@ export const EVENT_TYPES = {
   SUBSTITUTION: 'substitution',
   SUBSTITUTION_UNDONE: 'substitution_undone',
   GOALIE_SWITCH: 'goalie_switch',
+  GOALIE_ASSIGNMENT: 'goalie_assignment',
   POSITION_CHANGE: 'position_change',
   
   // Scoring events

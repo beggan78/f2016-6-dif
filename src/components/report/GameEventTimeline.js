@@ -101,6 +101,11 @@ export function GameEventTimeline({
           return data.oldGoalieId === selectedPlayerId || data.newGoalieId === selectedPlayerId;
         }
         
+        // Show goalie assignment events if the selected player is involved
+        if (type === EVENT_TYPES.GOALIE_ASSIGNMENT) {
+          return data.goalieId === selectedPlayerId;
+        }
+        
         // Show position change events if the selected player is involved
         if (type === EVENT_TYPES.POSITION_CHANGE) {
           return data.player1Id === selectedPlayerId || data.player2Id === selectedPlayerId;
@@ -197,6 +202,7 @@ export function GameEventTimeline({
       case EVENT_TYPES.SUBSTITUTION:
         return RotateCcw;
       case EVENT_TYPES.GOALIE_SWITCH:
+      case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return Shield;
       case EVENT_TYPES.TIMER_PAUSED:
       case EVENT_TYPES.PERIOD_PAUSED:
@@ -239,6 +245,7 @@ export function GameEventTimeline({
       case EVENT_TYPES.POSITION_CHANGE:
         return 'text-amber-400';
       case EVENT_TYPES.GOALIE_SWITCH:
+      case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'text-purple-400';
       case EVENT_TYPES.TIMER_PAUSED:
       case EVENT_TYPES.PERIOD_PAUSED:
@@ -270,6 +277,7 @@ export function GameEventTimeline({
       case EVENT_TYPES.POSITION_CHANGE:
         return 'bg-amber-900/20 border-amber-700/30';
       case EVENT_TYPES.GOALIE_SWITCH:
+      case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'bg-purple-900/20 border-purple-700/30';
       default:
         return 'bg-slate-700/30 border-slate-600/30';
@@ -375,6 +383,11 @@ export function GameEventTimeline({
         const newGoalie = data.newGoalieId ? (getPlayerName ? (getPlayerName(data.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
         console.log('[DEBUG] Goalie switch lookup:', { oldGoalieId: data.oldGoalieId, newGoalieId: data.newGoalieId, oldGoalie, newGoalie });
         return `Goalie change: ${oldGoalie} → ${newGoalie}`;
+      case EVENT_TYPES.GOALIE_ASSIGNMENT:
+        const assignedGoalie = data.goalieId ? (getPlayerName ? (getPlayerName(data.goalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const assignedGoalieName = data.goalieName || assignedGoalie;
+        console.log('[DEBUG] Goalie assignment lookup:', { goalieId: data.goalieId, goalieName: data.goalieName, assignedGoalie, assignedGoalieName });
+        return data.description || `${assignedGoalieName} is goalie`;
       case EVENT_TYPES.POSITION_CHANGE:
         const player1 = data.player1Id ? (getPlayerName ? (getPlayerName(data.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
         const player2 = data.player2Id ? (getPlayerName ? (getPlayerName(data.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';

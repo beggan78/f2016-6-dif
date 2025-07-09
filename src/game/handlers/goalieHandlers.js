@@ -1,6 +1,7 @@
 import { animateStateChange } from '../animation/animationSupport';
 import { calculateGoalieSwitch } from '../logic/gameStateLogic';
 import { getPlayerName, getOutfieldPlayers } from '../../utils/playerUtils';
+import { logEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createGoalieHandlers = (
   gameStateFactory,
@@ -50,8 +51,12 @@ export const createGoalieHandlers = (
   };
 
   const handleSelectNewGoalie = (newGoalieId) => {
+    const gameState = gameStateFactory();
+    const currentTime = Date.now();
+    const newGoaliePlayer = allPlayers.find(p => p.id === newGoalieId);
+    
     animateStateChange(
-      gameStateFactory(),
+      gameState,
       (gameState) => calculateGoalieSwitch(gameState, newGoalieId),
       (newGameState) => {
         setPeriodFormation(newGameState.periodFormation);
@@ -63,6 +68,26 @@ export const createGoalieHandlers = (
         }
         if (newGameState.nextNextPlayerIdToSubOut !== undefined) {
           setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
+        }
+
+        // Log goalie assignment event
+        try {
+          if (newGoaliePlayer) {
+            logEvent(EVENT_TYPES.GOALIE_ASSIGNMENT, {
+              goalieId: newGoalieId,
+              goalieName: newGoaliePlayer.name,
+              previousGoalieId: gameState.periodFormation.goalie,
+              previousGoalieName: gameState.periodFormation.goalie ? getPlayerNameById(gameState.periodFormation.goalie) : null,
+              eventType: 'replacement',
+              matchTime: calculateMatchTime(currentTime),
+              timestamp: currentTime,
+              periodNumber: gameState.currentPeriodNumber || 1,
+              teamMode: gameState.teamMode,
+              description: `${newGoaliePlayer.name} is goalie`
+            });
+          }
+        } catch (error) {
+          console.error('Failed to log goalie switch event:', error);
         }
       },
       setAnimationState,

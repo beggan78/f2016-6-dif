@@ -285,7 +285,7 @@ export function useTimers(periodDurationMinutes) {
     }
   }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides, lastSubstitutionTime, periodStartTime, periodDurationMinutes]);
 
-  const startTimers = useCallback((periodNumber = 1, teamMode = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null) => {
+  const startTimers = useCallback((periodNumber = 1, teamMode = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
     const now = Date.now();
     setPeriodStartTime(now);
     setLastSubstitutionTime(now);
@@ -326,6 +326,27 @@ export function useTimers(periodDurationMinutes) {
             plannedDurationMinutes: periodDurationMinutes,
             isFirstPeriod: false
           }
+        });
+      }
+      
+      // Log goalie assignment event at period start
+      if (startingFormation && startingFormation.goalie) {
+        // Find the goalie player to get their name
+        let goalieName = null;
+        if (allPlayers) {
+          const goaliePlayer = allPlayers.find(p => p.id === startingFormation.goalie);
+          goalieName = goaliePlayer ? goaliePlayer.name : null;
+        }
+        
+        logEvent(EVENT_TYPES.GOALIE_ASSIGNMENT, {
+          goalieId: startingFormation.goalie,
+          goalieName: goalieName,
+          eventType: 'period_start',
+          matchTime: calculateMatchTime(now),
+          timestamp: now,
+          periodNumber: periodNumber,
+          teamMode: teamMode,
+          description: goalieName ? `${goalieName} is goalie` : `Goalie assigned for period ${periodNumber}`
         });
       }
       

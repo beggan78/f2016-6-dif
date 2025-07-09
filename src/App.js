@@ -92,7 +92,8 @@ function App() {
       'Djurgården', // Home team name
       gameState.opponentTeamName,
       gameState.periodFormation,
-      gameState.numPeriods
+      gameState.numPeriods,
+      gameState.allPlayers
     );
   };
 
