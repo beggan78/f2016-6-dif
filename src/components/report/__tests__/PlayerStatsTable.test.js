@@ -13,7 +13,8 @@ const mockPlayers = [
       timeOnFieldSeconds: 300,
       timeAsAttackerSeconds: 0,
       timeAsDefenderSeconds: 0,
-      timeAsGoalieSeconds: 720
+      timeAsGoalieSeconds: 720,
+      timeAsSubSeconds: 0
     }
   },
   {
@@ -24,7 +25,8 @@ const mockPlayers = [
       timeOnFieldSeconds: 600,
       timeAsAttackerSeconds: 360,
       timeAsDefenderSeconds: 240,
-      timeAsGoalieSeconds: 0
+      timeAsGoalieSeconds: 0,
+      timeAsSubSeconds: 180
     }
   },
   {
@@ -35,10 +37,48 @@ const mockPlayers = [
       timeOnFieldSeconds: 450,
       timeAsAttackerSeconds: 225,
       timeAsDefenderSeconds: 225,
-      timeAsGoalieSeconds: 0
+      timeAsGoalieSeconds: 0,
+      timeAsSubSeconds: 120
     }
   }
 ];
+
+// Mock formation data for testing
+const mockFormation = {
+  goalie: 'p1',
+  leftPair: { defender: 'p3', attacker: 'p2' },
+  rightPair: { defender: null, attacker: null },
+  subPair: { defender: null, attacker: null }
+};
+
+// Mock match events for testing
+const mockMatchEvents = [
+  {
+    id: 'event1',
+    type: 'goal_home',
+    data: { scorerId: 'p2' },
+    undone: false
+  },
+  {
+    id: 'event2',
+    type: 'goal_home',
+    data: { scorerId: 'p2' },
+    undone: false
+  },
+  {
+    id: 'event3',
+    type: 'goal_home',
+    data: { scorerId: 'p3' },
+    undone: false
+  }
+];
+
+// Mock goal scorers for testing
+const mockGoalScorers = {
+  'event1': 'p2',
+  'event2': 'p2',
+  'event3': 'p3'
+};
 
 describe('PlayerStatsTable', () => {
   it('renders player data correctly', () => {
@@ -46,6 +86,9 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
+        periodFormation={mockFormation}
+        matchEvents={mockMatchEvents}
+        goalScorers={mockGoalScorers}
       />
     );
 
@@ -55,9 +98,9 @@ describe('PlayerStatsTable', () => {
     expect(screen.getByText('Charlie')).toBeInTheDocument();
 
     // Check that starting roles are displayed correctly
-    expect(screen.getByText('Goalie')).toBeInTheDocument();
-    expect(screen.getByText('Field')).toBeInTheDocument();
-    expect(screen.getByText('Sub')).toBeInTheDocument();
+    expect(screen.getByText('Goalie')).toBeInTheDocument(); // Alice (p1) is goalie
+    expect(screen.getByText('Attacker')).toBeInTheDocument(); // Bob (p2) is in leftPair.attacker
+    expect(screen.getByText('Defender')).toBeInTheDocument(); // Charlie (p3) is in leftPair.defender
 
     // Check that time values are formatted correctly
     expect(screen.getByText('05:00')).toBeInTheDocument(); // Alice's field time
@@ -77,7 +120,8 @@ describe('PlayerStatsTable', () => {
         timeOnFieldSeconds: 0,
         timeAsAttackerSeconds: 0,
         timeAsDefenderSeconds: 0,
-        timeAsGoalieSeconds: 0
+        timeAsGoalieSeconds: 0,
+        timeAsSubSeconds: 0
       }
     }];
 
@@ -85,12 +129,15 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={playersWithZeroTime}
         teamMode={TEAM_MODES.PAIRS_7}
+        periodFormation={{}}
+        matchEvents={[]}
+        goalScorers={{}}
       />
     );
 
     // Count all instances of "--" in the table
     const dashElements = screen.getAllByText('--');
-    expect(dashElements).toHaveLength(4); // All time columns should show "--"
+    expect(dashElements).toHaveLength(6); // All time columns + goals column should show "--"
   });
 
   it('renders sortable column headers', () => {
@@ -98,6 +145,9 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
+        periodFormation={mockFormation}
+        matchEvents={mockMatchEvents}
+        goalScorers={mockGoalScorers}
       />
     );
 
@@ -107,6 +157,8 @@ describe('PlayerStatsTable', () => {
     expect(screen.getByText('Time as Attacker')).toBeInTheDocument();
     expect(screen.getByText('Time as Defender')).toBeInTheDocument();
     expect(screen.getByText('Time as Goalie')).toBeInTheDocument();
+    expect(screen.getByText('Time as Substitute')).toBeInTheDocument();
+    expect(screen.getByText('Goals Scored')).toBeInTheDocument();
     expect(screen.getByText('Starting Role')).toBeInTheDocument();
   });
 
@@ -115,6 +167,9 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
+        periodFormation={mockFormation}
+        matchEvents={mockMatchEvents}
+        goalScorers={mockGoalScorers}
       />
     );
 
@@ -148,6 +203,9 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
+        periodFormation={mockFormation}
+        matchEvents={mockMatchEvents}
+        goalScorers={mockGoalScorers}
       />
     );
 
@@ -181,7 +239,8 @@ describe('PlayerStatsTable', () => {
         timeOnFieldSeconds: undefined,
         timeAsAttackerSeconds: null,
         timeAsDefenderSeconds: undefined,
-        timeAsGoalieSeconds: null
+        timeAsGoalieSeconds: null,
+        timeAsSubSeconds: undefined
       }
     }];
 
@@ -189,6 +248,9 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={playersWithUndefinedStats}
         teamMode={TEAM_MODES.PAIRS_7}
+        periodFormation={{}}
+        matchEvents={[]}
+        goalScorers={{}}
       />
     );
 
@@ -204,6 +266,9 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
+        periodFormation={mockFormation}
+        matchEvents={mockMatchEvents}
+        goalScorers={mockGoalScorers}
       />
     );
 

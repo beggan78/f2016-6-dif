@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatTime } from '../../utils/formatUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
+import { getPlayerCurrentRole } from '../../utils/playerSortingUtils';
+import { EVENT_TYPES } from '../../utils/gameEventLogger';
 
 /**
  * PlayerStatsTable - Displays player statistics in a sortable table format
@@ -9,13 +11,37 @@ import { PLAYER_ROLES } from '../../constants/playerConstants';
  * @param {Object} props - Component props
  * @param {Array} props.players - Array of player objects with stats
  * @param {string} props.teamMode - Team mode for context (PAIRS_7, INDIVIDUAL_6, etc.)
+ * @param {Object} props.periodFormation - Formation data for starting role determination
+ * @param {Array} props.matchEvents - Array of match events for goal counting
+ * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
  */
 export function PlayerStatsTable({
   players = [],
-  teamMode
+  teamMode,
+  periodFormation = {},
+  matchEvents = [],
+  goalScorers = {}
 }) {
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+  
+  // Calculate goals scored for each player
+  const playerGoals = useMemo(() => {
+    const goals = {};
+    
+    // Count goals from match events
+    matchEvents.forEach(event => {
+      if ((event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY) && !event.undone) {
+        // Check goalScorers mapping first, then fall back to event data
+        const scorerId = goalScorers[event.id] || event.data?.scorerId;
+        if (scorerId) {
+          goals[scorerId] = (goals[scorerId] || 0) + 1;
+        }
+      }
+    });
+    
+    return goals;
+  }, [matchEvents, goalScorers]);
   // Define column configuration
   const columns = useMemo(() => [
     {
@@ -31,10 +57,18 @@ export function PlayerStatsTable({
       sortable: false,
       className: 'text-center text-slate-300',
       render: (player) => {
+        // First check current role based on formation
+        const currentRole = getPlayerCurrentRole(player.id, periodFormation, teamMode);
+        if (currentRole === 'GOALIE') return 'Goalie';
+        if (currentRole === 'ATTACKER') return 'Attacker';
+        if (currentRole === 'DEFENDER') return 'Defender';
+        if (currentRole === 'SUBSTITUTE') return 'Sub';
+        
+        // Fallback to starting role if we can't determine current role
         const role = player.stats.startedMatchAs;
         if (role === PLAYER_ROLES.GOALIE) return 'Goalie';
-        if (role === PLAYER_ROLES.ON_FIELD) return 'Field';
         if (role === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+        if (role === PLAYER_ROLES.ON_FIELD) return 'Field';
         return '--';
       }
     },
@@ -77,6 +111,26 @@ export function PlayerStatsTable({
         const time = player.stats.timeAsGoalieSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
+    },
+    {
+      key: 'timeAsSubstitute',
+      label: 'Time as Substitute',
+      sortable: true,
+      className: 'text-center text-slate-300 font-mono',
+      render: (player) => {
+        const time = player.stats.timeAsSubSeconds || 0;
+        return time > 0 ? formatTime(time) : '--';
+      }
+    },
+    {
+      key: 'goalsScored',
+      label: 'Goals Scored',
+      sortable: true,
+      className: 'text-center text-slate-300',
+      render: (player) => {
+        const goals = playerGoals[player.id] || 0;
+        return goals > 0 ? goals : '--';
+      }
     }
   ], []);
 
@@ -107,6 +161,14 @@ export function PlayerStatsTable({
         case 'timeAsGoalie':
           aValue = a.stats.timeAsGoalieSeconds || 0;
           bValue = b.stats.timeAsGoalieSeconds || 0;
+          break;
+        case 'timeAsSubstitute':
+          aValue = a.stats.timeAsSubSeconds || 0;
+          bValue = b.stats.timeAsSubSeconds || 0;
+          break;
+        case 'goalsScored':
+          aValue = playerGoals[a.id] || 0;
+          bValue = playerGoals[b.id] || 0;
           break;
         default:
           aValue = a.name || '';

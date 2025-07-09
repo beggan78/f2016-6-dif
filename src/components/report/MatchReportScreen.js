@@ -29,6 +29,7 @@ import { ReportControls } from './ReportControls';
  * @param {Function} props.navigateToMatchReport - Internal navigation callback
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
  * @param {Function} props.onGoalClick - Callback for when goal events are clicked for editing
+ * @param {Object} props.periodFormation - Current period formation for starting role determination
  */
 export function MatchReportScreen({
   matchEvents = [],
@@ -45,7 +46,8 @@ export function MatchReportScreen({
   onNavigateToStats,
   onBackToGame,
   navigateToMatchReport,
-  onGoalClick
+  onGoalClick,
+  periodFormation = {}
 }) {
   // Local state for UI controls
   const [showSubstitutionEvents, setShowSubstitutionEvents] = useState(false);
@@ -201,6 +203,9 @@ export function MatchReportScreen({
             <PlayerStatsTable
               players={squadPlayers}
               teamMode={teamMode}
+              periodFormation={periodFormation}
+              matchEvents={matchEvents}
+              goalScorers={goalScorers}
             />
           </section>
 

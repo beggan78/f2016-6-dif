@@ -359,6 +359,7 @@ function App() {
             }}
             formatTime={formatTime}
             selectedSquadIds={gameState.selectedSquadIds}
+            periodFormation={gameState.periodFormation}
           />
         );
       default:

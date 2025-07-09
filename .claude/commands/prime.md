@@ -1,8 +1,7 @@
 First read the documentation in the following files:
 README.md
-src/game/README.md
+CLAUDE.md
 
-For changes to the game logic:
 When making changes, make sure to first understand the separation of concerns between files in the `src/game` directory.
 Also read the files App.js and GameScreen.js.
 

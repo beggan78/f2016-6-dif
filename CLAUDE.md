@@ -4,7 +4,7 @@
 Mobile-first web application for coaching youth soccer teams. Manages player rotations, tracks playing time, and maintains fair substitution patterns during 5v5 games with 6-7 player squads.
 
 ## Key Commands
-- **Development**: `npm start`
+- **Development**: `npm start` Before starting the application, check if it's already running.
 - **Build**: `npm run build` 
 - **Test**: `npm test` (comprehensive test suite)
 - **Test Coverage**: `npm test -- --coverage` (90%+ coverage achieved)
@@ -108,8 +108,6 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
   - **Test Coverage**: Added 4 comprehensive test cases covering both normal time accumulation and pause time preservation across different team modes
   - **Documentation**: Updated substitutionManager.js with JSDoc comments documenting conditional time tracking logic
 
-## Operating Tips
-- **Before Starting**: Before starting the application (npm start). Check if it's already running.
 
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing
