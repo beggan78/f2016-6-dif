@@ -38,13 +38,15 @@ jest.mock('../PlayerStatsTable', () => ({
 }));
 
 jest.mock('../GameEventTimeline', () => ({
-  GameEventTimeline: ({ events, homeTeamName, awayTeamName, matchStartTime, showSubstitutions, goalScorers, getPlayerName, onGoalClick }) => (
+  GameEventTimeline: ({ events, homeTeamName, awayTeamName, matchStartTime, showSubstitutions, goalScorers, getPlayerName, onGoalClick, selectedPlayerId, availablePlayers, onPlayerFilterChange }) => (
     <div data-testid="game-event-timeline">
       <span data-testid="timeline-events-count">{events ? events.length : 0}</span>
       <span data-testid="timeline-home-team">{homeTeamName}</span>
       <span data-testid="timeline-away-team">{awayTeamName}</span>
       <span data-testid="timeline-match-start-time">{matchStartTime}</span>
       <span data-testid="timeline-show-substitutions">{showSubstitutions.toString()}</span>
+      <span data-testid="timeline-selected-player">{selectedPlayerId || 'null'}</span>
+      <span data-testid="timeline-available-players-count">{availablePlayers ? availablePlayers.length : 0}</span>
       {events && events.map(event => (
         <div key={event.id} data-testid={`event-${event.id}`}>
           {event.type}
@@ -55,6 +57,9 @@ jest.mock('../GameEventTimeline', () => ({
       </button>
       <button data-testid="test-get-player-name" onClick={() => getPlayerName && getPlayerName('test-player')}>
         Test Get Player Name
+      </button>
+      <button data-testid="test-player-filter-change" onClick={() => onPlayerFilterChange && onPlayerFilterChange('test-player')}>
+        Test Player Filter Change
       </button>
     </div>
   )
@@ -706,6 +711,82 @@ describe('MatchReportScreen', () => {
       expect(console.log).toHaveBeenCalledWith(
         '[DEBUG] MatchReportScreen - No matchStartTime, returning 0'
       );
+    });
+  });
+
+  describe('Player filter functionality', () => {
+    it('passes correct player filter props to GameEventTimeline', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Check that player filter props are passed correctly
+      expect(screen.getByTestId('timeline-selected-player')).toHaveTextContent('null');
+      expect(screen.getByTestId('timeline-available-players-count')).toHaveTextContent('2'); // mockPlayers has 2 squad players
+    });
+
+    it('auto-enables substitutions when player is selected', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Initially substitutions should be disabled
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('false');
+
+      // Trigger player filter change
+      fireEvent.click(screen.getByTestId('test-player-filter-change'));
+
+      // Substitutions should now be enabled
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('true');
+    });
+
+    it('updates selected player when filter changes', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Initially no player selected
+      expect(screen.getByTestId('timeline-selected-player')).toHaveTextContent('null');
+
+      // Trigger player filter change
+      fireEvent.click(screen.getByTestId('test-player-filter-change'));
+
+      // Player should now be selected
+      expect(screen.getByTestId('timeline-selected-player')).toHaveTextContent('test-player');
+    });
+
+    it('passes squad players as available players', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Should pass players who started the match (have non-null startedMatchAs)
+      expect(screen.getByTestId('timeline-available-players-count')).toHaveTextContent('2');
+    });
+
+    it('handles empty squad players correctly', () => {
+      const propsWithNoSquadPlayers = {
+        ...defaultProps,
+        allPlayers: [
+          {
+            id: 'p1',
+            name: 'Alice',
+            stats: { startedMatchAs: null } // Not in squad
+          }
+        ]
+      };
+
+      render(<MatchReportScreen {...propsWithNoSquadPlayers} />);
+
+      // Should have 0 available players
+      expect(screen.getByTestId('timeline-available-players-count')).toHaveTextContent('0');
+    });
+
+    it('maintains substitution toggle state independent of player filter', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Initially substitutions are disabled
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('false');
+
+      // Enable substitutions manually
+      fireEvent.click(screen.getByText('Substitutions'));
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('true');
+
+      // Selecting a player should keep substitutions enabled
+      fireEvent.click(screen.getByTestId('test-player-filter-change'));
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('true');
     });
   });
 });

@@ -657,4 +657,219 @@ describe('GameEventTimeline', () => {
     // Check that single player substitution is displayed correctly with text indicators
     expect(screen.getByText('Substitution: Alice (Out) → Bob (In)')).toBeInTheDocument();
   });
+
+  it('displays player filter dropdown when availablePlayers provided', () => {
+    const mockOnPlayerFilterChange = jest.fn();
+    const availablePlayers = [
+      { id: 'player1', name: 'Alice' },
+      { id: 'player2', name: 'Bob' },
+      { id: 'player3', name: 'Charlie' }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={sampleEvents}
+        availablePlayers={availablePlayers}
+        onPlayerFilterChange={mockOnPlayerFilterChange}
+      />
+    );
+
+    // Check that player filter dropdown is rendered
+    expect(screen.getByText('Player:')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByText('All Players')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+    expect(screen.getByText('Charlie')).toBeInTheDocument();
+  });
+
+  it('does not display player filter dropdown when availablePlayers not provided', () => {
+    render(
+      <GameEventTimeline
+        events={sampleEvents}
+      />
+    );
+
+    // Check that player filter dropdown is not rendered
+    expect(screen.queryByText('Player:')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('calls onPlayerFilterChange when player selection changes', () => {
+    const mockOnPlayerFilterChange = jest.fn();
+    const availablePlayers = [
+      { id: 'player1', name: 'Alice' },
+      { id: 'player2', name: 'Bob' }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={sampleEvents}
+        availablePlayers={availablePlayers}
+        onPlayerFilterChange={mockOnPlayerFilterChange}
+      />
+    );
+
+    const dropdown = screen.getByRole('combobox');
+    
+    // Select Alice
+    fireEvent.change(dropdown, { target: { value: 'player1' } });
+    expect(mockOnPlayerFilterChange).toHaveBeenCalledWith('player1');
+
+    // Select All Players
+    fireEvent.change(dropdown, { target: { value: '' } });
+    expect(mockOnPlayerFilterChange).toHaveBeenCalledWith(null);
+  });
+
+  it('filters events for selected player', () => {
+    // Reset the mock for this test
+    mockGetPlayerName.mockClear();
+    mockGetPlayerName.mockImplementation((playerId) => {
+      const playerNames = {
+        'player1': 'Alice',
+        'player2': 'Bob',
+        'player3': 'Charlie'
+      };
+      return playerNames[playerId] || null;
+    });
+
+    const eventsWithSubstitution = [
+      {
+        id: 'match-start-1',
+        type: EVENT_TYPES.MATCH_START,
+        timestamp: 1000000000000,
+        matchTime: '00:00',
+        sequence: 1,
+        data: {},
+        undone: false
+      },
+      {
+        id: 'goal-event-1',
+        type: EVENT_TYPES.GOAL_HOME,
+        timestamp: 1000000060000,
+        matchTime: '01:00',
+        sequence: 2,
+        data: { homeScore: 1, awayScore: 0 },
+        undone: false
+      },
+      {
+        id: 'substitution-1',
+        type: EVENT_TYPES.SUBSTITUTION,
+        timestamp: 1000000120000,
+        matchTime: '02:00',
+        sequence: 3,
+        data: { 
+          playersOff: ['player1'], 
+          playersOn: ['player2'],
+          teamMode: 'INDIVIDUAL_6'
+        },
+        undone: false
+      }
+    ];
+
+    const availablePlayers = [
+      { id: 'player1', name: 'Alice' },
+      { id: 'player2', name: 'Bob' }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={eventsWithSubstitution}
+        getPlayerName={mockGetPlayerName}
+        goalScorers={mockGoalScorers}
+        homeTeamName="Djurgården"
+        awayTeamName="Opponent"
+        selectedPlayerId="player1"
+        availablePlayers={availablePlayers}
+      />
+    );
+
+    // Should show match start (always shown)
+    expect(screen.getByText('Match started')).toBeInTheDocument();
+    
+    // Should show goal scored by Alice (player1)
+    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
+    
+    // Should show substitution involving Alice (player1)
+    expect(screen.getByText('Substitution: Alice (Out) → Bob (In)')).toBeInTheDocument();
+    
+    // Should show correct event count (3 events: match start, goal, substitution)
+    expect(screen.getByText('3 events')).toBeInTheDocument();
+  });
+
+  it('filters out events not involving selected player', () => {
+    // Reset the mock for this test
+    mockGetPlayerName.mockClear();
+    mockGetPlayerName.mockImplementation((playerId) => {
+      const playerNames = {
+        'player1': 'Alice',
+        'player2': 'Bob',
+        'player3': 'Charlie'
+      };
+      return playerNames[playerId] || null;
+    });
+
+    const eventsWithMultipleEvents = [
+      {
+        id: 'match-start-1',
+        type: EVENT_TYPES.MATCH_START,
+        timestamp: 1000000000000,
+        matchTime: '00:00',
+        sequence: 1,
+        data: {},
+        undone: false
+      },
+      {
+        id: 'goal-event-1',
+        type: EVENT_TYPES.GOAL_HOME,
+        timestamp: 1000000060000,
+        matchTime: '01:00',
+        sequence: 2,
+        data: { homeScore: 1, awayScore: 0 },
+        undone: false
+      },
+      {
+        id: 'substitution-1',
+        type: EVENT_TYPES.SUBSTITUTION,
+        timestamp: 1000000120000,
+        matchTime: '02:00',
+        sequence: 3,
+        data: { 
+          playersOff: ['player2'], 
+          playersOn: ['player3'],
+          teamMode: 'INDIVIDUAL_6'
+        },
+        undone: false
+      }
+    ];
+
+    const availablePlayers = [
+      { id: 'player1', name: 'Alice' },
+      { id: 'player2', name: 'Bob' }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={eventsWithMultipleEvents}
+        getPlayerName={mockGetPlayerName}
+        goalScorers={mockGoalScorers}
+        homeTeamName="Djurgården"
+        awayTeamName="Opponent"
+        selectedPlayerId="player1"
+        availablePlayers={availablePlayers}
+      />
+    );
+
+    // Should show match start (always shown)
+    expect(screen.getByText('Match started')).toBeInTheDocument();
+    
+    // Should show goal scored by Alice (player1)
+    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
+    
+    // Should NOT show substitution not involving Alice
+    expect(screen.queryByText('Substitution: Bob (Out) → Charlie (In)')).not.toBeInTheDocument();
+    
+    // Should show correct event count (2 events: match start, goal only)
+    expect(screen.getByText('2 events')).toBeInTheDocument();
+  });
 });

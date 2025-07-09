@@ -49,6 +49,7 @@ export function MatchReportScreen({
 }) {
   // Local state for UI controls
   const [showSubstitutionEvents, setShowSubstitutionEvents] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState(null);
 
   // Memoized calculations
   const matchDuration = useMemo(() => {
@@ -110,6 +111,15 @@ export function MatchReportScreen({
     const player = allPlayers.find(p => p.id === playerId);
     return player ? player.name : null;
   }, [allPlayers]);
+
+  // Handler for player filter changes
+  const handlePlayerFilterChange = useCallback((playerId) => {
+    setSelectedPlayerId(playerId);
+    // Auto-enable substitutions when a specific player is selected
+    if (playerId) {
+      setShowSubstitutionEvents(true);
+    }
+  }, []);
 
   // Error handling for missing data
   if (!allPlayers || allPlayers.length === 0) {
@@ -223,6 +233,9 @@ export function MatchReportScreen({
               goalScorers={goalScorers}
               getPlayerName={getPlayerName}
               onGoalClick={onGoalClick}
+              selectedPlayerId={selectedPlayerId}
+              availablePlayers={squadPlayers}
+              onPlayerFilterChange={handlePlayerFilterChange}
             />
           </section>
 

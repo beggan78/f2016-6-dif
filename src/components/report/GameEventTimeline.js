@@ -31,6 +31,9 @@ import { formatTime } from '../../utils/formatUtils';
  * @param {string} props.awayTeamName - Away team name
  * @param {number} props.matchStartTime - Match start timestamp
  * @param {string} props.filterType - Current filter type
+ * @param {string} props.selectedPlayerId - Currently selected player ID for filtering (null for "All")
+ * @param {Array} props.availablePlayers - Array of available players for the filter dropdown
+ * @param {Function} props.onPlayerFilterChange - Callback when player filter selection changes
  */
 export function GameEventTimeline({
   events = [],
@@ -42,7 +45,10 @@ export function GameEventTimeline({
   homeTeamName = "Djurgården",
   awayTeamName = "Opponent",
   matchStartTime,
-  filterType = 'all'
+  filterType = 'all',
+  selectedPlayerId = null,
+  availablePlayers = [],
+  onPlayerFilterChange
 }) {
   // Load sort preference from localStorage, default to 'asc' (oldest first)
   const [sortOrder, setSortOrder] = useState(() => {
@@ -65,6 +71,46 @@ export function GameEventTimeline({
       !event.undone || event.type === EVENT_TYPES.GOAL_CORRECTED
     );
 
+    // Filter by selected player if one is selected
+    if (selectedPlayerId) {
+      filtered = filtered.filter(event => {
+        const { type, data = {} } = event;
+        
+        // Always show match/period events
+        if (type === EVENT_TYPES.MATCH_START || type === EVENT_TYPES.MATCH_END || 
+            type === EVENT_TYPES.PERIOD_START || type === EVENT_TYPES.PERIOD_END ||
+            type === EVENT_TYPES.INTERMISSION) {
+          return true;
+        }
+        
+        // Show goal events if the selected player is the scorer
+        if (type === EVENT_TYPES.GOAL_HOME || type === EVENT_TYPES.GOAL_AWAY) {
+          const scorerId = goalScorers[event.id] || data.scorerId;
+          return scorerId === selectedPlayerId;
+        }
+        
+        // Show substitution events if the selected player is involved
+        if (type === EVENT_TYPES.SUBSTITUTION) {
+          const playersOff = data.playersOff || (data.outPlayerId ? [data.outPlayerId] : []);
+          const playersOn = data.playersOn || (data.inPlayerId ? [data.inPlayerId] : []);
+          return playersOff.includes(selectedPlayerId) || playersOn.includes(selectedPlayerId);
+        }
+        
+        // Show goalie switch events if the selected player is involved
+        if (type === EVENT_TYPES.GOALIE_SWITCH) {
+          return data.oldGoalieId === selectedPlayerId || data.newGoalieId === selectedPlayerId;
+        }
+        
+        // Show position change events if the selected player is involved
+        if (type === EVENT_TYPES.POSITION_CHANGE) {
+          return data.player1Id === selectedPlayerId || data.player2Id === selectedPlayerId;
+        }
+        
+        // Hide other events for specific player filter
+        return false;
+      });
+    }
+
     // Sort by timestamp
     filtered.sort((a, b) => {
       const comparison = a.timestamp - b.timestamp;
@@ -72,7 +118,7 @@ export function GameEventTimeline({
     });
 
     return filtered;
-  }, [events, sortOrder]);
+  }, [events, sortOrder, selectedPlayerId, goalScorers]);
 
   // Group events by periods and process intermissions
   const groupedEventsByPeriod = useMemo(() => {
@@ -512,11 +558,31 @@ export function GameEventTimeline({
     <div className="space-y-4">
       {/* Timeline Controls */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
           <span className="text-sm text-slate-400">
             {filteredAndSortedEvents.length} events
           </span>
+          
+          {/* Player Filter Dropdown */}
+          {availablePlayers.length > 0 && onPlayerFilterChange && (
+            <div className="flex items-center space-x-2">
+              <label className="text-xs text-slate-400">Player:</label>
+              <select
+                value={selectedPlayerId || ''}
+                onChange={(e) => onPlayerFilterChange(e.target.value || null)}
+                className="text-xs bg-slate-700 border border-slate-600 rounded px-2 py-1 text-slate-300 hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                <option value="">All Players</option>
+                {availablePlayers.map(player => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+        
         <button
           onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
           className="flex items-center space-x-1 text-sm text-slate-400 hover:text-slate-300 transition-colors"
