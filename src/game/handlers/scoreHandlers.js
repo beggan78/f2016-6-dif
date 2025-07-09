@@ -123,29 +123,11 @@ export const createScoreHandlers = (
         teamName: pendingGoal.teamName
       });
       
-      // If scorer is provided, also log the attribution
-      if (scorerId) {
-        console.log('[DEBUG] Logging scorer attribution');
-        logEvent(EVENT_TYPES.GOAL_CORRECTED, {
-          originalEventId: eventId,
-          scorerId,
-          correctionType: 'initial_attribution'
-        });
-      }
-      
       // Clear pending goal
       console.log('[DEBUG] Clearing pending goal');
       clearPendingGoal();
     } else {
-      console.log('[DEBUG] No matching pending goal, handling as existing goal correction');
-      // Handle existing goal correction (non-pending)
-      if (scorerId) {
-        logEvent(EVENT_TYPES.GOAL_CORRECTED, {
-          originalEventId: eventId,
-          scorerId,
-          correctionType: 'initial_attribution'
-        });
-      }
+      console.log('[DEBUG] No matching pending goal - this should not happen for initial scorer selection');
     }
     
     console.log('[DEBUG] Closing goal scorer modal');

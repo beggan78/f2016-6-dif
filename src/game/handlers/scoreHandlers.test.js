@@ -359,11 +359,7 @@ describe('createScoreHandlers', () => {
         scorerId: 'player_5',
         teamName: 'home'
       });
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
-        originalEventId: 'evt_123',
-        scorerId: 'player_5',
-        correctionType: 'initial_attribution'
-      });
+      // No GOAL_CORRECTED event should be logged for initial scorer attribution
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
     });
@@ -438,7 +434,7 @@ describe('createScoreHandlers', () => {
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle existing goal correction when no pending goal', () => {
+    it('should handle case when no pending goal exists', () => {
       mockModalHandlers.getPendingGoalData.mockReturnValue(null);
       
       const handlers = createScoreHandlers(
@@ -450,11 +446,7 @@ describe('createScoreHandlers', () => {
 
       expect(mockModalHandlers.getPendingGoalData).toHaveBeenCalledTimes(1);
       expect(mockStateUpdaters.addHomeGoal).not.toHaveBeenCalled();
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
-        originalEventId: 'evt_123',
-        scorerId: 'player_5',
-        correctionType: 'initial_attribution'
-      });
+      expect(logEvent).not.toHaveBeenCalled(); // No events should be logged
       expect(mockModalHandlers.clearPendingGoal).not.toHaveBeenCalled();
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
     });
@@ -642,11 +634,7 @@ describe('createScoreHandlers', () => {
         eventId: 'evt_123',
         scorerId: 'player_7'
       }));
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, {
-        originalEventId: 'evt_123',
-        scorerId: 'player_7',
-        correctionType: 'initial_attribution'
-      });
+      // No GOAL_CORRECTED event should be logged for initial scorer attribution
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
 
