@@ -284,20 +284,33 @@ export function GameEventTimeline({
           return `Goal for ${awayTeamName}`;
         }
       case EVENT_TYPES.SUBSTITUTION:
-        // Fix: Access correct fields - substitution events store arrays playersOff/playersOn
-        const outPlayerId = data.playersOff && data.playersOff.length > 0 ? data.playersOff[0] : data.outPlayerId;
-        const inPlayerId = data.playersOn && data.playersOn.length > 0 ? data.playersOn[0] : data.inPlayerId;
-        const outPlayer = outPlayerId ? (getPlayerName ? (getPlayerName(outPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const inPlayer = inPlayerId ? (getPlayerName ? (getPlayerName(inPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        // Handle multiple players for pairs mode substitutions
+        const playersOffArray = data.playersOff || (data.outPlayerId ? [data.outPlayerId] : []);
+        const playersOnArray = data.playersOn || (data.inPlayerId ? [data.inPlayerId] : []);
+        
+        // Get player names for all players going off
+        const playersOffNames = playersOffArray.map(playerId => 
+          playerId ? (getPlayerName ? (getPlayerName(playerId) || 'Unknown') : 'Unknown') : 'Unknown'
+        ).filter(name => name !== 'Unknown');
+        
+        // Get player names for all players coming on
+        const playersOnNames = playersOnArray.map(playerId => 
+          playerId ? (getPlayerName ? (getPlayerName(playerId) || 'Unknown') : 'Unknown') : 'Unknown'
+        ).filter(name => name !== 'Unknown');
+        
+        // Create display strings with text indicators for direction
+        const offPlayersDisplay = playersOffNames.length > 0 ? playersOffNames.join(' & ') + ' (Out)' : 'Unknown (Out)';
+        const onPlayersDisplay = playersOnNames.length > 0 ? playersOnNames.join(' & ') + ' (In)' : 'Unknown (In)';
+        
         console.log('[DEBUG] Substitution player lookup:', { 
           playersOff: data.playersOff, 
           playersOn: data.playersOn, 
-          outPlayerId, 
-          inPlayerId, 
-          outPlayer, 
-          inPlayer 
+          playersOffNames, 
+          playersOnNames,
+          teamMode: data.teamMode
         });
-        return `Substitution: ${outPlayer} ↔ ${inPlayer}`;
+        
+        return `Substitution: ${offPlayersDisplay} → ${onPlayersDisplay}`;
       case EVENT_TYPES.GOALIE_SWITCH:
         const oldGoalie = data.oldGoalieId ? (getPlayerName ? (getPlayerName(data.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
         const newGoalie = data.newGoalieId ? (getPlayerName ? (getPlayerName(data.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';

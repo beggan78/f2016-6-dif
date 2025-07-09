@@ -103,7 +103,8 @@ export class SubstitutionManager {
       newFormation,
       updatedPlayers,
       newNextPhysicalPairToSubOut: newNextPair,
-      playersComingOnIds: playersComingOnIds
+      playersComingOnIds: playersComingOnIds,
+      playersGoingOffIds: playersGoingOffIds
     };
   }
 
@@ -209,7 +210,8 @@ export class SubstitutionManager {
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender',
-      playersComingOnIds: [playerComingOnId]
+      playersComingOnIds: [playerComingOnId],
+      playersGoingOffIds: [playerGoingOffId]
     };
   }
 
@@ -345,7 +347,8 @@ export class SubstitutionManager {
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextNextPlayerIdToSubOut: nextNextPlayerIdToSubOut,
       newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7',
-      playersComingOnIds: [playerComingOnId]
+      playersComingOnIds: [playerComingOnId],
+      playersGoingOffIds: [playerGoingOffId]
     };
   }
 

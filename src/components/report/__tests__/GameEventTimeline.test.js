@@ -104,7 +104,7 @@ describe('GameEventTimeline', () => {
     // Check that events are displayed
     expect(screen.getByText('Match started')).toBeInTheDocument();
     expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
-    expect(screen.getByText('Substitution: Bob ↔ Charlie')).toBeInTheDocument();
+    expect(screen.getByText('Substitution: Bob (Out) → Charlie (In)')).toBeInTheDocument();
 
     // Check event count
     expect(screen.getByText('3 events')).toBeInTheDocument();
@@ -571,5 +571,90 @@ describe('GameEventTimeline', () => {
     // Should default to Period 1
     expect(screen.getByText('Period 1')).toBeInTheDocument();
     expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
+  });
+
+  it('displays pairs mode substitutions with multiple players', () => {
+    // Reset the mock for this test
+    mockGetPlayerName.mockClear();
+    mockGetPlayerName.mockImplementation((playerId) => {
+      const playerNames = {
+        'player1': 'Alice',
+        'player2': 'Bob',
+        'player3': 'Charlie',
+        'player4': 'David',
+        'player5': 'Emma',
+        'player6': 'Frank'
+      };
+      return playerNames[playerId] || null;
+    });
+
+    const pairsSubstitutionEvents = [
+      {
+        id: 'pairs-substitution',
+        type: EVENT_TYPES.SUBSTITUTION,
+        timestamp: 1000000060000,
+        matchTime: '01:00',
+        sequence: 1,
+        data: {
+          playersOff: ['player1', 'player2'], // Alice (D), Bob (A)
+          playersOn: ['player3', 'player4'], // Charlie (D), David (A)
+          teamMode: 'PAIRS_7',
+          beforeFormation: { leftPair: { defender: 'player1', attacker: 'player2' } },
+          afterFormation: { leftPair: { defender: 'player3', attacker: 'player4' } }
+        },
+        undone: false
+      }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={pairsSubstitutionEvents}
+        getPlayerName={mockGetPlayerName}
+        homeTeamName="Djurgården"
+      />
+    );
+
+    // Check that both players are displayed in the substitution with text indicators
+    expect(screen.getByText('Substitution: Alice & Bob (Out) → Charlie & David (In)')).toBeInTheDocument();
+  });
+
+  it('displays individual mode substitutions with single players', () => {
+    // Reset the mock for this test
+    mockGetPlayerName.mockClear();
+    mockGetPlayerName.mockImplementation((playerId) => {
+      const playerNames = {
+        'player1': 'Alice',
+        'player2': 'Bob',
+        'player3': 'Charlie'
+      };
+      return playerNames[playerId] || null;
+    });
+
+    const individualSubstitutionEvents = [
+      {
+        id: 'individual-substitution',
+        type: EVENT_TYPES.SUBSTITUTION,
+        timestamp: 1000000060000,
+        matchTime: '01:00',
+        sequence: 1,
+        data: {
+          playersOff: ['player1'], // Alice
+          playersOn: ['player2'], // Bob
+          teamMode: 'INDIVIDUAL_6'
+        },
+        undone: false
+      }
+    ];
+
+    render(
+      <GameEventTimeline
+        events={individualSubstitutionEvents}
+        getPlayerName={mockGetPlayerName}
+        homeTeamName="Djurgården"
+      />
+    );
+
+    // Check that single player substitution is displayed correctly with text indicators
+    expect(screen.getByText('Substitution: Alice (Out) → Bob (In)')).toBeInTheDocument();
   });
 });

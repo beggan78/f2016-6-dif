@@ -479,11 +479,10 @@ export const createSubstitutionHandlers = (
           setRotationQueue(newGameState.rotationQueue);
         }
         
-        // Get players going off for undo data
-        const playersGoingOffIds = [beforeNextPlayerId].filter(Boolean);
-        
-        // Get players coming on and their original stats for undo
-        const playersComingOnIds = newGameState.playersToHighlight || [];
+        // Get players going off and coming on from substitution manager result
+        const substitutionResult = newGameState.substitutionResult || {};
+        const playersGoingOffIds = substitutionResult.playersGoingOffIds || [];
+        const playersComingOnIds = substitutionResult.playersComingOnIds || newGameState.playersToHighlight || [];
         const playersComingOnOriginalStats = playersComingOnIds.map(playerId => {
           const player = gameState.allPlayers.find(p => p.id === playerId);
           return player ? { id: player.id, stats: { ...player.stats } } : null;

@@ -54,7 +54,8 @@ export const calculateSubstitution = (gameState) => {
       nextNextPlayerIdToSubOut: result.newNextNextPlayerIdToSubOut !== undefined ? result.newNextNextPlayerIdToSubOut : gameState.nextNextPlayerIdToSubOut,
       nextPlayerToSubOut: result.newNextPlayerToSubOut || gameState.nextPlayerToSubOut,
       playersToHighlight: result.playersComingOnIds || [],
-      lastSubstitutionTimestamp: currentTimeEpoch
+      lastSubstitutionTimestamp: currentTimeEpoch,
+      substitutionResult: result
     };
 
     return newGameState;
