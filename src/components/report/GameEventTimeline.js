@@ -188,17 +188,50 @@ export function GameEventTimeline({
       case EVENT_TYPES.PERIOD_END:
         return `Period ${data.periodNumber || 'Unknown'} ended`;
       case EVENT_TYPES.GOAL_HOME:
+        // Extract score data for new format: "3-2 - Djurgården Scored - PlayerName"
+        const homeScore = data.homeScore;
+        const awayScore = data.awayScore;
         const homeScorer = goalScorers[event.id] 
-          ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || 'Unknown player') : 'Unknown player')
-          : (data.scorerId ? (getPlayerName ? (getPlayerName(data.scorerId) || 'Unknown player') : 'Unknown player') : 'Unknown scorer');
-        console.log('[DEBUG] Goal home scorer lookup:', { eventId: event.id, goalScorers, scorerId: data.scorerId, result: homeScorer });
-        return `Goal for ${homeTeamName} - ${homeScorer}`;
+          ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || null) : null)
+          : (data.scorerId ? (getPlayerName ? (getPlayerName(data.scorerId) || null) : null) : null);
+        
+        console.log('[DEBUG] Goal home display:', { 
+          eventId: event.id, 
+          homeScore, 
+          awayScore, 
+          goalScorers, 
+          scorerId: data.scorerId, 
+          homeScorer 
+        });
+        
+        // Format with score and team, optionally include scorer
+        if (homeScore !== undefined && awayScore !== undefined) {
+          const baseFormat = `${homeScore}-${awayScore} ${homeTeamName} Scored`;
+          return homeScorer ? `${baseFormat} - ${homeScorer}` : baseFormat;
+        } else {
+          // Fallback to old format if score data missing
+          const fallbackScorer = homeScorer || 'Unknown scorer';
+          return `Goal for ${homeTeamName} - ${fallbackScorer}`;
+        }
+        
       case EVENT_TYPES.GOAL_AWAY:
-        const awayScorer = goalScorers[event.id] 
-          ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || 'Unknown player') : 'Unknown player')
-          : (data.scorerId ? (getPlayerName ? (getPlayerName(data.scorerId) || 'Unknown player') : 'Unknown player') : 'Unknown scorer');
-        console.log('[DEBUG] Goal away scorer lookup:', { eventId: event.id, goalScorers, scorerId: data.scorerId, result: awayScorer });
-        return `Goal for ${awayTeamName} - ${awayScorer}`;
+        // Extract score data for new format: "4-2 - Eagles United Scored" (no scorer)
+        const awayHomeScore = data.homeScore;
+        const awayAwayScore = data.awayScore;
+        
+        console.log('[DEBUG] Goal away display:', { 
+          eventId: event.id, 
+          homeScore: awayHomeScore, 
+          awayScore: awayAwayScore 
+        });
+        
+        // Format with score and team only (no scorer for away team)
+        if (awayHomeScore !== undefined && awayAwayScore !== undefined) {
+          return `${awayHomeScore}-${awayAwayScore} ${awayTeamName} Scored`;
+        } else {
+          // Fallback to old format if score data missing
+          return `Goal for ${awayTeamName}`;
+        }
       case EVENT_TYPES.SUBSTITUTION:
         // Fix: Access correct fields - substitution events store arrays playersOff/playersOn
         const outPlayerId = data.playersOff && data.playersOff.length > 0 ? data.playersOff[0] : data.outPlayerId;

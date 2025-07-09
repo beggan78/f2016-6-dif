@@ -178,12 +178,7 @@ export function GameScreen({
   const scoreHandlers = React.useMemo(() =>
     createScoreHandlers(
       stateUpdaters,
-      {
-        ...modalHandlers,
-        setPendingGoalData: modalHandlers.setPendingGoalData,
-        getPendingGoalData: modalHandlers.getPendingGoalData,
-        clearPendingGoal: modalHandlers.clearPendingGoal
-      }
+      modalHandlers
     ), [stateUpdaters, modalHandlers]
   );
 

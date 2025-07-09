@@ -54,8 +54,8 @@ export function MatchReportScreen({
   const matchDuration = useMemo(() => {
     console.log('[DEBUG] MatchReportScreen - Calculating match duration:', {
       matchStartTime,
-      matchEventsLength: matchEvents.length,
-      matchEvents: matchEvents.slice(0, 3) // Log first 3 events for debugging
+      matchEventsLength: matchEvents ? matchEvents.length : 0,
+      matchEvents: matchEvents ? matchEvents.slice(0, 3) : [] // Log first 3 events for debugging
     });
     
     if (!matchStartTime) {
@@ -63,7 +63,7 @@ export function MatchReportScreen({
       return 0;
     }
     
-    const endTime = matchEvents.length > 0 
+    const endTime = matchEvents && matchEvents.length > 0 
       ? Math.max(...matchEvents.map(e => e.timestamp)) 
       : Date.now();
     
@@ -83,6 +83,7 @@ export function MatchReportScreen({
   }, [gameLog]);
 
   const squadPlayers = useMemo(() => {
+    if (!allPlayers) return [];
     return allPlayers.filter(p => p.stats.startedMatchAs !== null);
   }, [allPlayers]);
 

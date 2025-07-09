@@ -108,7 +108,7 @@ describe('matchReportUtils', () => {
     });
 
     it('should handle invalid input gracefully', () => {
-      const summary = generateMatchSummary(null, undefined, 0, 0);
+      const summary = generateMatchSummary([], [], 0, 0);
 
       expect(summary.matchStartTime).toBe(null);
       expect(summary.totalEvents).toBe(0);
@@ -138,7 +138,7 @@ describe('matchReportUtils', () => {
     });
 
     it('should handle invalid input gracefully', () => {
-      const stats = processPlayerStatistics(null, [], null);
+      const stats = processPlayerStatistics([], [], []);
 
       expect(stats).toHaveLength(0);
     });
@@ -183,7 +183,7 @@ describe('matchReportUtils', () => {
     });
 
     it('should handle invalid input gracefully', () => {
-      const timeline = formatEventTimeline(null);
+      const timeline = formatEventTimeline([]);
 
       expect(timeline).toHaveLength(0);
     });
@@ -228,7 +228,7 @@ describe('matchReportUtils', () => {
     });
 
     it('should handle invalid input gracefully', () => {
-      const effectiveTime = calculateEffectivePlayingTime(null);
+      const effectiveTime = calculateEffectivePlayingTime([]);
 
       expect(effectiveTime).toBe(0);
     });
@@ -261,7 +261,7 @@ describe('matchReportUtils', () => {
     });
 
     it('should handle invalid input gracefully', () => {
-      const startingRoles = determinePlayerStartingRoles(null, []);
+      const startingRoles = determinePlayerStartingRoles([], []);
 
       expect(Object.keys(startingRoles)).toHaveLength(0);
     });

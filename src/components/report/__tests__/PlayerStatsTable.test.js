@@ -45,9 +45,6 @@ describe('PlayerStatsTable', () => {
     render(
       <PlayerStatsTable
         players={mockPlayers}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={jest.fn()}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );
@@ -87,9 +84,6 @@ describe('PlayerStatsTable', () => {
     render(
       <PlayerStatsTable
         players={playersWithZeroTime}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={jest.fn()}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );
@@ -100,14 +94,9 @@ describe('PlayerStatsTable', () => {
   });
 
   it('renders sortable column headers', () => {
-    const mockOnSort = jest.fn();
-    
     render(
       <PlayerStatsTable
         players={mockPlayers}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={mockOnSort}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );
@@ -121,64 +110,61 @@ describe('PlayerStatsTable', () => {
     expect(screen.getByText('Starting Role')).toBeInTheDocument();
   });
 
-  it('calls onSort when sortable headers are clicked', () => {
-    const mockOnSort = jest.fn();
-    
-    render(
+  it('sorts players when sortable headers are clicked', () => {
+    const { container } = render(
       <PlayerStatsTable
         players={mockPlayers}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={mockOnSort}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );
 
-    // Click on the "Time on Field" header
-    fireEvent.click(screen.getByText('Time on Field'));
-    expect(mockOnSort).toHaveBeenCalledWith('timeOnField', 'asc');
+    // Initially sorted by name (default) - should be Alice, Bob, Charlie
+    let rows = container.querySelectorAll('tbody tr');
+    expect(rows[0]).toHaveTextContent('Alice');
+    expect(rows[1]).toHaveTextContent('Bob');
+    expect(rows[2]).toHaveTextContent('Charlie');
 
-    // Click on the "Player" header when it's already sorted
+    // Click on the "Time on Field" header to sort by time
+    fireEvent.click(screen.getByText('Time on Field'));
+    
+    // After clicking, should be sorted by time descending (Bob has most time)
+    rows = container.querySelectorAll('tbody tr');
+    expect(rows[0]).toHaveTextContent('Bob'); // 600s
+    expect(rows[1]).toHaveTextContent('Charlie'); // 450s
+    expect(rows[2]).toHaveTextContent('Alice'); // 300s
+
+    // Click on the "Player" header to sort by name
     fireEvent.click(screen.getByText('Player'));
-    expect(mockOnSort).toHaveBeenCalledWith('name', 'desc');
+    
+    // Should now be sorted by name descending (reverse alphabetical)
+    rows = container.querySelectorAll('tbody tr');
+    expect(rows[0]).toHaveTextContent('Charlie');
+    expect(rows[1]).toHaveTextContent('Bob');
+    expect(rows[2]).toHaveTextContent('Alice');
   });
 
   it('displays sort indicators correctly', () => {
-    const { rerender } = render(
+    render(
       <PlayerStatsTable
         players={mockPlayers}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={jest.fn()}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );
 
-    // Check for ascending sort indicator (ChevronUp)
-    expect(document.querySelector('svg[data-testid="ChevronUp"], svg')).toBeInTheDocument();
+    // Initially sorted by name ascending - should have ChevronUp
+    expect(document.querySelector('svg')).toBeInTheDocument();
 
-    // Rerender with descending sort
-    rerender(
-      <PlayerStatsTable
-        players={mockPlayers}
-        sortBy="name"
-        sortOrder="desc"
-        onSort={jest.fn()}
-        teamMode={TEAM_MODES.PAIRS_7}
-      />
-    );
-
-    // Check that sort indicator is still present (ChevronDown)
-    expect(document.querySelector('svg[data-testid="ChevronDown"], svg')).toBeInTheDocument();
+    // Click on the Player header to toggle to descending
+    fireEvent.click(screen.getByText('Player'));
+    
+    // Should still show sort indicator (ChevronDown)
+    expect(document.querySelector('svg')).toBeInTheDocument();
   });
 
   it('handles empty players array', () => {
     render(
       <PlayerStatsTable
         players={[]}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={jest.fn()}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );
@@ -202,9 +188,6 @@ describe('PlayerStatsTable', () => {
     render(
       <PlayerStatsTable
         players={playersWithUndefinedStats}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={jest.fn()}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );
@@ -216,34 +199,10 @@ describe('PlayerStatsTable', () => {
     expect(dashElements.length).toBeGreaterThan(0);
   });
 
-  it('sorts players correctly', () => {
-    const { container } = render(
-      <PlayerStatsTable
-        players={mockPlayers}
-        sortBy="timeOnField"
-        sortOrder="desc"
-        onSort={jest.fn()}
-        teamMode={TEAM_MODES.PAIRS_7}
-      />
-    );
-
-    // Get all table rows with player data
-    const rows = container.querySelectorAll('tbody tr');
-    
-    // Check that players are sorted by field time descending
-    // Bob (600s) should be first, Charlie (450s) second, Alice (300s) third
-    expect(rows[0]).toHaveTextContent('Bob');
-    expect(rows[1]).toHaveTextContent('Charlie');
-    expect(rows[2]).toHaveTextContent('Alice');
-  });
-
   it('applies hover styles to sortable headers', () => {
     render(
       <PlayerStatsTable
         players={mockPlayers}
-        sortBy="name"
-        sortOrder="asc"
-        onSort={jest.fn()}
         teamMode={TEAM_MODES.PAIRS_7}
       />
     );

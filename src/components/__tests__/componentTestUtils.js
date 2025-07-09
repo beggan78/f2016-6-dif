@@ -258,7 +258,6 @@ export const createMockHandlers = () => ({
     handleAddAwayGoal: jest.fn(),
     handleSelectGoalScorer: jest.fn(),
     handleCorrectGoalScorer: jest.fn(),
-    handleUndoGoal: jest.fn(),
     handleScoreEdit: jest.fn(),
     handleOpenScoreEdit: jest.fn(),
     scoreCallback: jest.fn()

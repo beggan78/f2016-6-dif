@@ -428,6 +428,11 @@ export const createMockUseGameModals = (initialModalState = {}) => {
     openGoalScorerModal: jest.fn(),
     closeGoalScorerModal: jest.fn(),
     
+    // Pending goal management functions
+    setPendingGoalData: jest.fn(),
+    getPendingGoalData: jest.fn(() => null),
+    clearPendingGoal: jest.fn(),
+    
     // Test utilities
     _getMockModalState: () => ({ ...mockModalState }),
     _updateMockModalState: (updates) => Object.assign(mockModalState, updates),

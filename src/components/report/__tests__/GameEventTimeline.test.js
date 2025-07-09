@@ -100,7 +100,7 @@ describe('GameEventTimeline', () => {
 
     // Check that events are displayed
     expect(screen.getByText('Match started')).toBeInTheDocument();
-    expect(screen.getByText('Goal for Djurgården - Alice')).toBeInTheDocument();
+    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
     expect(screen.getByText('Substitution: Bob ↔ Charlie')).toBeInTheDocument();
 
     // Check event count
@@ -150,7 +150,7 @@ describe('GameEventTimeline', () => {
     );
 
     expect(screen.getByText('Goal for Djurgården - Alice')).toBeInTheDocument();
-    expect(screen.getByText('Goal for Opponent - Unknown scorer')).toBeInTheDocument();
+    expect(screen.getByText('Goal for Opponent')).toBeInTheDocument();
   });
 
   it('filters out undone events by default', () => {
@@ -198,14 +198,14 @@ describe('GameEventTimeline', () => {
       />
     );
 
-    // Initially should show "Newest first"
-    expect(screen.getByText('Newest first')).toBeInTheDocument();
+    // Initially should show "Oldest first" (default)
+    expect(screen.getByText('Oldest first')).toBeInTheDocument();
 
     // Click to toggle sort order
-    fireEvent.click(screen.getByText('Newest first'));
+    fireEvent.click(screen.getByText('Oldest first'));
 
-    // Should now show "Oldest first"
-    expect(screen.getByText('Oldest first')).toBeInTheDocument();
+    // Should now show "Newest first"
+    expect(screen.getByText('Newest first')).toBeInTheDocument();
   });
 
   it('calls onGoalClick when goal event is clicked', () => {
@@ -326,7 +326,7 @@ describe('GameEventTimeline', () => {
       />
     );
 
-    // Should still render but with "Unknown player"
-    expect(screen.getByText('Goal for Djurgården - Unknown player')).toBeInTheDocument();
+    // Should still render but with "Unknown scorer"
+    expect(screen.getByText('Goal for Djurgården - Unknown scorer')).toBeInTheDocument();
   });
 });
