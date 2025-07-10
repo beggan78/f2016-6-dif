@@ -360,6 +360,7 @@ function App() {
             formatTime={formatTime}
             selectedSquadIds={gameState.selectedSquadIds}
             periodFormation={gameState.periodFormation}
+            debugMode={debugMode}
           />
         );
       default:

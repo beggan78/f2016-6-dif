@@ -1,0 +1,15 @@
+{
+  "hooks": [
+    {
+      "trigger": {
+        "tool": "Bash",
+        "command_pattern": "/copy-screenshot.*"
+      },
+      "action": {
+        "type": "execute_command",
+        "command": "bash",
+        "args": ["./scripts/copy-screenshot.sh"]
+      }
+    }
+  ]
+}

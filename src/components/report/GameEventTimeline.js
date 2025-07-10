@@ -34,6 +34,7 @@ import { formatTime } from '../../utils/formatUtils';
  * @param {string} props.selectedPlayerId - Currently selected player ID for filtering (null for "All")
  * @param {Array} props.availablePlayers - Array of available players for the filter dropdown
  * @param {Function} props.onPlayerFilterChange - Callback when player filter selection changes
+ * @param {boolean} props.debugMode - Whether debug mode is active (shows SUBSTITUTION_UNDONE events)
  */
 export function GameEventTimeline({
   events = [],
@@ -48,7 +49,8 @@ export function GameEventTimeline({
   filterType = 'all',
   selectedPlayerId = null,
   availablePlayers = [],
-  onPlayerFilterChange
+  onPlayerFilterChange,
+  debugMode = false
 }) {
   // Load sort preference from localStorage, default to 'asc' (oldest first)
   const [sortOrder, setSortOrder] = useState(() => {
@@ -70,6 +72,13 @@ export function GameEventTimeline({
     filtered = filtered.filter(event => 
       !event.undone || event.type === EVENT_TYPES.GOAL_CORRECTED
     );
+
+    // Filter out SUBSTITUTION_UNDONE events unless debug mode is active
+    if (!debugMode) {
+      filtered = filtered.filter(event => 
+        event.type !== EVENT_TYPES.SUBSTITUTION_UNDONE
+      );
+    }
 
     // Filter by selected player if one is selected
     if (selectedPlayerId) {
@@ -123,7 +132,7 @@ export function GameEventTimeline({
     });
 
     return filtered;
-  }, [events, sortOrder, selectedPlayerId, goalScorers]);
+  }, [events, sortOrder, selectedPlayerId, goalScorers, debugMode]);
 
   // Group events by periods and process intermissions
   const groupedEventsByPeriod = useMemo(() => {
@@ -240,10 +249,10 @@ export function GameEventTimeline({
         return 'text-slate-400';
       case EVENT_TYPES.GOAL_HOME:
       case EVENT_TYPES.GOAL_AWAY:
-        return 'text-emerald-400';
+        return 'text-yellow-400';
       case EVENT_TYPES.SUBSTITUTION:
       case EVENT_TYPES.POSITION_CHANGE:
-        return 'text-amber-400';
+        return 'text-cyan-400';
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'text-purple-400';
@@ -272,10 +281,10 @@ export function GameEventTimeline({
     switch (eventType) {
       case EVENT_TYPES.GOAL_HOME:
       case EVENT_TYPES.GOAL_AWAY:
-        return 'bg-emerald-900/20 border-emerald-700/30';
+        return 'bg-yellow-400/40 border-yellow-400/60';
       case EVENT_TYPES.SUBSTITUTION:
       case EVENT_TYPES.POSITION_CHANGE:
-        return 'bg-amber-900/20 border-amber-700/30';
+        return 'bg-cyan-900/20 border-cyan-700/30';
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'bg-purple-900/20 border-purple-700/30';
@@ -452,11 +461,15 @@ export function GameEventTimeline({
     const isClickable = isEventClickable(event);
     const isExpanded = expandedEvents.has(event.id);
     const details = renderEventDetails(event);
+    const isGoalEvent = event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY;
+    const isHomeGoal = event.type === EVENT_TYPES.GOAL_HOME;
     
     return (
       <div key={event.id} className="relative flex items-start">
         {/* Timeline dot */}
-        <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border-2 ${iconColor.replace('text-', 'border-')}`}>
+        <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border-2 ${
+          isGoalEvent ? 'border-yellow-400' : iconColor.replace('text-', 'border-')
+        }`}>
           <Icon className={`h-5 w-5 ${iconColor}`} />
         </div>
         
@@ -465,7 +478,9 @@ export function GameEventTimeline({
           <div
             className={`rounded-lg border p-4 ${bgColor} ${
               isClickable ? 'cursor-pointer hover:bg-opacity-80 transition-colors' : ''
-            } ${event.undone ? 'opacity-60' : ''}`}
+            } ${event.undone ? 'opacity-60' : ''} ${
+              isHomeGoal ? 'shadow-lg shadow-yellow-400/30' : ''
+            }`}
             onClick={() => handleGoalEventClick(event)}
           >
             <div className="flex items-start justify-between">
@@ -480,7 +495,9 @@ export function GameEventTimeline({
                     </span>
                   )}
                 </div>
-                <p className={`text-sm font-medium mt-1 ${event.undone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                <p className={`${
+                  isGoalEvent ? 'text-base font-bold' : 'text-sm font-medium'
+                } mt-1 ${event.undone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
                   {formatEventDescription(event)}
                 </p>
                 {isClickable && (

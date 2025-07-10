@@ -100,43 +100,6 @@ export const createSubstitutionHandlers = (
     }).filter(name => name !== 'Unknown');
   };
 
-  /**
-   * Detect if a substitution is an undo operation by analyzing recent events
-   */
-  const detectUndoSubstitution = (playersGoingOff, playersComingOn, currentTime) => {
-    try {
-      // Get recent substitution events from the last 2 minutes
-      const twoMinutesAgo = currentTime - (2 * 60 * 1000);
-      const recentEvents = getMatchEvents({
-        includeUndone: false,
-        eventTypes: [EVENT_TYPES.SUBSTITUTION],
-        startTime: twoMinutesAgo
-      });
-
-      // Check if this substitution reverses a recent substitution
-      for (const event of recentEvents.reverse()) { // Check most recent first
-        const eventData = event.data;
-        if (eventData.playersOff && eventData.playersOn) {
-          // Check if the players are being swapped back
-          const isUndo = playersGoingOff.some(id => eventData.playersOn.includes(id)) &&
-                         playersComingOn.some(id => eventData.playersOff.includes(id));
-          
-          if (isUndo) {
-            return {
-              isUndo: true,
-              originalEventId: event.id,
-              originalEventTime: event.matchTime,
-              timeSinceOriginal: currentTime - event.timestamp
-            };
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Error detecting undo substitution:', error);
-    }
-    
-    return { isUndo: false };
-  };
 
   /**
    * Log substitution event with comprehensive data
@@ -154,9 +117,6 @@ export const createSubstitutionHandlers = (
     try {
       const eventId = generateEventId();
       
-      // Detect if this is an undo operation
-      const undoDetection = detectUndoSubstitution(playersGoingOff, playersComingOn, currentTime);
-      
       const eventData = {
         eventId,
         playersOff: playersGoingOff,
@@ -168,23 +128,13 @@ export const createSubstitutionHandlers = (
         afterFormation: getFormationDescription(afterFormation, teamMode),
         periodNumber,
         matchTime: calculateMatchTime(currentTime),
-        timestamp: currentTime,
-        isUndo: undoDetection.isUndo,
-        originalEventId: undoDetection.originalEventId,
-        originalEventTime: undoDetection.originalEventTime,
-        timeSinceOriginal: undoDetection.timeSinceOriginal
+        timestamp: currentTime
       };
 
-      // Log the appropriate event type
-      if (undoDetection.isUndo) {
-        const undoEvent = logEvent(EVENT_TYPES.SUBSTITUTION_UNDONE, eventData);
-        console.log(`Undo substitution logged: ${playersGoingOff.join(', ')} ← → ${playersComingOn.join(', ')}`);
-        return undoEvent;
-      } else {
-        const substitutionEvent = logEvent(EVENT_TYPES.SUBSTITUTION, eventData);
-        console.log(`Substitution logged: ${playersGoingOff.join(', ')} off, ${playersComingOn.join(', ')} on`);
-        return substitutionEvent;
-      }
+      // Always log as regular substitution event
+      const substitutionEvent = logEvent(EVENT_TYPES.SUBSTITUTION, eventData);
+      console.log(`Substitution logged: ${playersGoingOff.join(', ')} off, ${playersComingOn.join(', ')} on`);
+      return substitutionEvent;
     } catch (error) {
       console.error('Failed to log substitution event:', error);
       // Don't throw - substitution should continue even if logging fails
@@ -706,7 +656,8 @@ export const createSubstitutionHandlers = (
             beforeFormation: getFormationDescription(newGameState.periodFormation, lastSubstitution.teamMode),
             afterFormation: getFormationDescription(lastSubstitution.beforeFormation, lastSubstitution.teamMode),
             reason: 'user_initiated_undo',
-            matchTime: calculateMatchTime(currentTime)
+            matchTime: calculateMatchTime(currentTime),
+            periodNumber: newGameState.currentPeriodNumber || 1
           });
         } catch (error) {
           console.error('Failed to log undo event:', error);
