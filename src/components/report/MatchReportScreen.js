@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { FileText, BarChart3, Clock, Users, Trophy, Settings, Eye, EyeOff } from 'lucide-react';
-import { Button } from '../shared/UI';
+import { FileText, Clock, Users, Trophy, Settings } from 'lucide-react';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { TEAM_MODES } from '../../constants/playerConstants';
 
@@ -9,6 +8,9 @@ import { MatchSummaryHeader } from './MatchSummaryHeader';
 import { PlayerStatsTable } from './PlayerStatsTable';
 import { GameEventTimeline } from './GameEventTimeline';
 import { ReportControls } from './ReportControls';
+import { ReportSection } from './ReportSection';
+import { EventToggleButton } from './EventToggleButton';
+import { ReportNavigation } from './ReportNavigation';
 
 /**
  * MatchReportScreen - Comprehensive post-match report component
@@ -124,9 +126,11 @@ export function MatchReportScreen({
             </div>
             <div className="text-center py-8">
               <p className="text-slate-400 mb-4">No match data available</p>
-              <Button onClick={onNavigateToStats} variant="secondary" Icon={BarChart3}>
-                Quick Stats
-              </Button>
+              <ReportNavigation 
+                onNavigateToStats={onNavigateToStats}
+                onBackToGame={onBackToGame}
+                className="justify-center"
+              />
             </div>
           </div>
         </div>
@@ -146,29 +150,16 @@ export function MatchReportScreen({
           </div>
           
           {/* Navigation Controls */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {onNavigateToStats && (
-              <Button 
-                onClick={onNavigateToStats} 
-                variant="secondary" 
-                Icon={BarChart3}
-                size="sm"
-              >
-                Quick Stats
-              </Button>
-            )}
-          </div>
+          <ReportNavigation 
+            onNavigateToStats={onNavigateToStats}
+            onBackToGame={onBackToGame}
+          />
         </div>
 
         {/* Report Content */}
         <div className="space-y-6">
           {/* Match Summary Section */}
-          <section className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-center mb-4">
-              <Trophy className="h-5 w-5 text-sky-400 mr-2" />
-              <h2 className="text-xl font-semibold text-sky-300">Match Summary</h2>
-            </div>
-            
+          <ReportSection icon={Trophy} title="Match Summary">
             <MatchSummaryHeader
               homeTeamName={homeTeamName}
               awayTeamName={awayTeamName}
@@ -180,15 +171,10 @@ export function MatchReportScreen({
               teamMode={teamMode}
               matchStartTime={matchStartTime}
             />
-          </section>
+          </ReportSection>
 
           {/* Player Statistics Section */}
-          <section className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-center mb-4">
-              <Users className="h-5 w-5 text-sky-400 mr-2" />
-              <h2 className="text-xl font-semibold text-sky-300">Player Statistics</h2>
-            </div>
-            
+          <ReportSection icon={Users} title="Player Statistics">
             <PlayerStatsTable
               players={squadPlayers}
               teamMode={teamMode}
@@ -196,28 +182,19 @@ export function MatchReportScreen({
               matchEvents={matchEvents}
               goalScorers={goalScorers}
             />
-          </section>
+          </ReportSection>
 
           {/* Game Events Timeline Section */}
-          <section className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <Clock className="h-5 w-5 text-sky-400 mr-2" />
-                <h2 className="text-xl font-semibold text-sky-300">Game Events</h2>
-              </div>
-              <button
-                onClick={() => setShowSubstitutionEvents(!showSubstitutionEvents)}
-                className={`flex items-center space-x-1 text-xs px-2 py-1 rounded transition-colors ${
-                  showSubstitutionEvents 
-                    ? 'bg-sky-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                {showSubstitutionEvents ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                <span>Substitutions</span>
-              </button>
-            </div>
-            
+          <ReportSection 
+            icon={Clock} 
+            title="Game Events"
+            headerExtra={
+              <EventToggleButton
+                isVisible={showSubstitutionEvents}
+                onToggle={() => setShowSubstitutionEvents(!showSubstitutionEvents)}
+              />
+            }
+          >
             <GameEventTimeline
               events={filteredEvents}
               homeTeamName={homeTeamName}
@@ -232,15 +209,10 @@ export function MatchReportScreen({
               onPlayerFilterChange={handlePlayerFilterChange}
               debugMode={debugMode}
             />
-          </section>
+          </ReportSection>
 
           {/* Report Controls Section */}
-          <section className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-center mb-4">
-              <Settings className="h-5 w-5 text-sky-400 mr-2" />
-              <h2 className="text-xl font-semibold text-sky-300">Report Actions</h2>
-            </div>
-            
+          <ReportSection icon={Settings} title="Report Actions">
             <ReportControls
               matchEvents={matchEvents}
               allPlayers={allPlayers}
@@ -254,7 +226,7 @@ export function MatchReportScreen({
               teamMode={teamMode}
               onNavigateToStats={onNavigateToStats}
             />
-          </section>
+          </ReportSection>
         </div>
       </div>
     </div>
