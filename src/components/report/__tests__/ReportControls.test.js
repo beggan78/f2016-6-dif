@@ -83,7 +83,7 @@ describe('ReportControls', () => {
     });
     
     global.alert = jest.fn();
-    global.console.log = jest.fn();
+    global.console.warn = jest.fn();
 
     jest.clearAllMocks();
   });
@@ -261,7 +261,7 @@ describe('ReportControls', () => {
 
       await waitFor(() => {
         expect(mockShare).toHaveBeenCalledTimes(1);
-        expect(global.console.log).toHaveBeenCalledWith('Error sharing:', shareError);
+        expect(global.console.warn).toHaveBeenCalledWith('Failed to share report:', shareError);
       });
     });
 
@@ -307,7 +307,7 @@ describe('ReportControls', () => {
 
       await waitFor(() => {
         expect(global.navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
-        expect(global.console.log).toHaveBeenCalledWith('Error copying to clipboard:', clipboardError);
+        expect(global.console.warn).toHaveBeenCalledWith('Failed to copy to clipboard:', clipboardError);
         expect(global.alert).not.toHaveBeenCalled();
       });
     });
@@ -326,7 +326,7 @@ describe('ReportControls', () => {
 
       // Should not crash and should not call any APIs
       expect(global.alert).not.toHaveBeenCalled();
-      expect(global.console.log).not.toHaveBeenCalled();
+      expect(global.console.warn).not.toHaveBeenCalled();
     });
 
     it('has correct button variant and size for share button', () => {
