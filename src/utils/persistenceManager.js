@@ -312,6 +312,14 @@ export class GamePersistenceManager extends PersistenceManager {
       opponentTeamName: '',
       homeScore: 0,
       awayScore: 0,
+      // Match event tracking state for Match Report feature
+      matchEvents: [],
+      matchStartTime: null,
+      goalScorers: {},
+      eventSequenceNumber: 0,
+      lastEventBackup: null,
+      timerPauseStartTime: null,
+      totalMatchPausedDuration: 0,
     };
 
     super(storageKey, defaultGameState);
@@ -342,6 +350,14 @@ export class GamePersistenceManager extends PersistenceManager {
       opponentTeamName: gameState.opponentTeamName,
       homeScore: gameState.homeScore,
       awayScore: gameState.awayScore,
+      // Match event tracking state for Match Report feature
+      matchEvents: gameState.matchEvents,
+      matchStartTime: gameState.matchStartTime,
+      goalScorers: gameState.goalScorers,
+      eventSequenceNumber: gameState.eventSequenceNumber,
+      lastEventBackup: gameState.lastEventBackup,
+      timerPauseStartTime: gameState.timerPauseStartTime,
+      totalMatchPausedDuration: gameState.totalMatchPausedDuration,
     };
 
     return this.saveState(stateToSave);
