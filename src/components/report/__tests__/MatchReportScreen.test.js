@@ -690,29 +690,6 @@ describe('MatchReportScreen', () => {
     });
   });
 
-  describe('Debug logging', () => {
-    it('logs debug information for match duration calculation', () => {
-      render(<MatchReportScreen {...defaultProps} />);
-
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('[DEBUG] MatchReportScreen - Calculating match duration'),
-        expect.any(Object)
-      );
-    });
-
-    it('logs debug information when no matchStartTime', () => {
-      const propsWithNoStartTime = {
-        ...defaultProps,
-        matchStartTime: null
-      };
-
-      render(<MatchReportScreen {...propsWithNoStartTime} />);
-
-      expect(console.log).toHaveBeenCalledWith(
-        '[DEBUG] MatchReportScreen - No matchStartTime, returning 0'
-      );
-    });
-  });
 
   describe('Player filter functionality', () => {
     it('passes correct player filter props to GameEventTimeline', () => {

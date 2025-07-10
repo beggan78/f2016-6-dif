@@ -37,11 +37,11 @@ const ReportControls = ({
           title: 'Match Report',
           text: 'Check out this match report',
           url: window.location.href
-        }).catch(err => console.log('Error sharing:', err));
+        }).catch(err => console.warn('Failed to share report:', err));
       } else if (navigator.clipboard) {
         navigator.clipboard.writeText(window.location.href).then(() => {
           alert('Report link copied to clipboard!');
-        }).catch(err => console.log('Error copying to clipboard:', err));
+        }).catch(err => console.warn('Failed to copy to clipboard:', err));
       }
     }
   };

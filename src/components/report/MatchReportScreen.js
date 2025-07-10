@@ -57,14 +57,7 @@ export function MatchReportScreen({
 
   // Memoized calculations
   const matchDuration = useMemo(() => {
-    console.log('[DEBUG] MatchReportScreen - Calculating match duration:', {
-      matchStartTime,
-      matchEventsLength: matchEvents ? matchEvents.length : 0,
-      matchEvents: matchEvents ? matchEvents.slice(0, 3) : [] // Log first 3 events for debugging
-    });
-    
     if (!matchStartTime) {
-      console.log('[DEBUG] MatchReportScreen - No matchStartTime, returning 0');
       return 0;
     }
     
@@ -73,12 +66,6 @@ export function MatchReportScreen({
       : Date.now();
     
     const duration = Math.floor((endTime - matchStartTime) / 1000);
-    
-    console.log('[DEBUG] MatchReportScreen - Calculated duration:', {
-      endTime,
-      matchStartTime,
-      durationSeconds: duration
-    });
     
     return duration;
   }, [matchEvents, matchStartTime]);

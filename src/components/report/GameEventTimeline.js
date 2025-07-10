@@ -297,14 +297,6 @@ export function GameEventTimeline({
   const formatEventDescription = (event) => {
     const { type, data = {} } = event;
     
-    // Debug logging for event data structure
-    console.log('[DEBUG] GameEventTimeline - formatEventDescription:', {
-      eventType: type,
-      eventId: event.id,
-      eventData: data,
-      hasGetPlayerName: !!getPlayerName
-    });
-    
     switch (type) {
       case EVENT_TYPES.MATCH_START:
         return `Match started`;
@@ -322,15 +314,6 @@ export function GameEventTimeline({
           ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || null) : null)
           : (data.scorerId ? (getPlayerName ? (getPlayerName(data.scorerId) || null) : null) : null);
         
-        console.log('[DEBUG] Goal home display:', { 
-          eventId: event.id, 
-          homeScore, 
-          awayScore, 
-          goalScorers, 
-          scorerId: data.scorerId, 
-          homeScorer 
-        });
-        
         // Format with score and team, optionally include scorer
         if (homeScore !== undefined && awayScore !== undefined) {
           const baseFormat = `${homeScore}-${awayScore} ${homeTeamName} Scored`;
@@ -345,12 +328,6 @@ export function GameEventTimeline({
         // Extract score data for new format: "4-2 - Eagles United Scored" (no scorer)
         const awayHomeScore = data.homeScore;
         const awayAwayScore = data.awayScore;
-        
-        console.log('[DEBUG] Goal away display:', { 
-          eventId: event.id, 
-          homeScore: awayHomeScore, 
-          awayScore: awayAwayScore 
-        });
         
         // Format with score and team only (no scorer for away team)
         if (awayHomeScore !== undefined && awayAwayScore !== undefined) {
@@ -378,29 +355,18 @@ export function GameEventTimeline({
         const offPlayersDisplay = playersOffNames.length > 0 ? playersOffNames.join(' & ') + ' (Out)' : 'Unknown (Out)';
         const onPlayersDisplay = playersOnNames.length > 0 ? playersOnNames.join(' & ') + ' (In)' : 'Unknown (In)';
         
-        console.log('[DEBUG] Substitution player lookup:', { 
-          playersOff: data.playersOff, 
-          playersOn: data.playersOn, 
-          playersOffNames, 
-          playersOnNames,
-          teamMode: data.teamMode
-        });
-        
         return `Substitution: ${offPlayersDisplay} → ${onPlayersDisplay}`;
       case EVENT_TYPES.GOALIE_SWITCH:
         const oldGoalie = data.oldGoalieId ? (getPlayerName ? (getPlayerName(data.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
         const newGoalie = data.newGoalieId ? (getPlayerName ? (getPlayerName(data.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        console.log('[DEBUG] Goalie switch lookup:', { oldGoalieId: data.oldGoalieId, newGoalieId: data.newGoalieId, oldGoalie, newGoalie });
         return `Goalie change: ${oldGoalie} → ${newGoalie}`;
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         const assignedGoalie = data.goalieId ? (getPlayerName ? (getPlayerName(data.goalieId) || 'Unknown') : 'Unknown') : 'Unknown';
         const assignedGoalieName = data.goalieName || assignedGoalie;
-        console.log('[DEBUG] Goalie assignment lookup:', { goalieId: data.goalieId, goalieName: data.goalieName, assignedGoalie, assignedGoalieName });
         return data.description || `${assignedGoalieName} is goalie`;
       case EVENT_TYPES.POSITION_CHANGE:
         const player1 = data.player1Id ? (getPlayerName ? (getPlayerName(data.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
         const player2 = data.player2Id ? (getPlayerName ? (getPlayerName(data.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        console.log('[DEBUG] Position change lookup:', { player1Id: data.player1Id, player2Id: data.player2Id, player1, player2 });
         return `Position switch: ${player1} ↔ ${player2}`;
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;
