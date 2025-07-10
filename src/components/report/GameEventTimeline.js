@@ -16,6 +16,12 @@ import {
 } from 'lucide-react';
 import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { formatTime } from '../../utils/formatUtils';
+import { createPersistenceManager } from '../../utils/persistenceManager';
+
+// Timeline preferences persistence manager
+const timelinePrefsManager = createPersistenceManager('dif-coach-timeline-preferences', {
+  sortOrder: 'asc'
+});
 
 /**
  * GameEventTimeline - Timeline component for displaying match events
@@ -52,16 +58,16 @@ export function GameEventTimeline({
   onPlayerFilterChange,
   debugMode = false
 }) {
-  // Load sort preference from localStorage, default to 'asc' (oldest first)
+  // Load sort preference using PersistenceManager, default to 'asc' (oldest first)
   const [sortOrder, setSortOrder] = useState(() => {
-    const saved = localStorage.getItem('dif-coach-timeline-sort-order');
-    return saved || 'asc';
+    const preferences = timelinePrefsManager.loadState();
+    return preferences.sortOrder;
   });
   const [expandedEvents, setExpandedEvents] = useState(new Set());
 
-  // Save sort preference to localStorage when it changes
+  // Save sort preference using PersistenceManager when it changes
   useEffect(() => {
-    localStorage.setItem('dif-coach-timeline-sort-order', sortOrder);
+    timelinePrefsManager.saveState({ sortOrder });
   }, [sortOrder]);
 
   // Filter and sort events
