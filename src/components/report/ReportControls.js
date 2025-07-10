@@ -7,7 +7,7 @@ import React from 'react';
 import { BarChart, Printer, Share2, Settings } from 'lucide-react';
 import { Button } from '../shared/UI';
 
-const ReportControls = ({
+export function ReportControls({
   onNavigateToStats,
   onPrint,
   onShare,
@@ -17,7 +17,7 @@ const ReportControls = ({
   onSortOrderChange,
   eventFilter,
   onEventFilterChange
-}) => {
+}) {
   const handlePrint = () => {
     if (onPrint) {
       onPrint();
@@ -141,7 +141,4 @@ const ReportControls = ({
       </div>
     </div>
   );
-};
-
-export default ReportControls;
-export { ReportControls };
+}
