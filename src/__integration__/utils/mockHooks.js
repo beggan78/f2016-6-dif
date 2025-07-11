@@ -30,7 +30,7 @@ export const createMockUseGameState = (initialState = {}) => {
     
     // Game state
     currentPeriodNumber: 1,
-    periodFormation: {},
+    formation: {},
     allPlayers: [],
     rotationQueue: [],
     nextPlayerIdToSubOut: null,

@@ -26,7 +26,7 @@ jest.mock('../PairsFormation', () => ({
   PairsFormation: (props) => (
     <div data-testid="pairs-formation" data-team-mode={props.teamMode || 'none'}>
       <div data-testid="pairs-formation-players">{props.allPlayers?.length || 0} players</div>
-      <div data-testid="pairs-formation-goalie">{props.periodFormation?.goalie || 'No goalie'}</div>
+      <div data-testid="pairs-formation-goalie">{props.formation?.goalie || 'No goalie'}</div>
       Pairs Formation Component
     </div>
   )
@@ -36,7 +36,7 @@ jest.mock('../IndividualFormation', () => ({
   IndividualFormation: (props) => (
     <div data-testid="individual-formation" data-team-mode={props.teamMode || 'none'}>
       <div data-testid="individual-formation-players">{props.allPlayers?.length || 0} players</div>
-      <div data-testid="individual-formation-goalie">{props.periodFormation?.goalie || 'No goalie'}</div>
+      <div data-testid="individual-formation-goalie">{props.formation?.goalie || 'No goalie'}</div>
       Individual Formation Component
     </div>
   )
@@ -48,7 +48,7 @@ describe('FormationRenderer', () => {
   beforeEach(() => {
     defaultProps = {
       teamMode: TEAM_MODES.INDIVIDUAL_7,
-      periodFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
+      formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
       allPlayers: createMockPlayers(),
       animationState: { type: 'none', phase: 'idle', data: {} },
       recentlySubstitutedPlayers: new Set(),
@@ -70,7 +70,7 @@ describe('FormationRenderer', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.PAIRS_7,
-        periodFormation: createMockFormation(TEAM_MODES.PAIRS_7)
+        formation: createMockFormation(TEAM_MODES.PAIRS_7)
       };
       
       render(<FormationRenderer {...props} />);
@@ -86,7 +86,7 @@ describe('FormationRenderer', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_6,
-        periodFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
+        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
       };
       
       render(<FormationRenderer {...props} />);
@@ -101,7 +101,7 @@ describe('FormationRenderer', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_7,
-        periodFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_7)
+        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7)
       };
       
       render(<FormationRenderer {...props} />);
@@ -153,7 +153,7 @@ describe('FormationRenderer', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.PAIRS_7,
-        periodFormation: createMockFormation(TEAM_MODES.PAIRS_7),
+        formation: createMockFormation(TEAM_MODES.PAIRS_7),
         allPlayers: createMockPlayers(7)
       };
       
@@ -168,7 +168,7 @@ describe('FormationRenderer', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.PAIRS_7,
-        periodFormation: createMockFormation(TEAM_MODES.PAIRS_7),
+        formation: createMockFormation(TEAM_MODES.PAIRS_7),
         allPlayers: []
       };
       
@@ -177,11 +177,11 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('pairs-formation-players')).toHaveTextContent('0 players');
     });
 
-    it('should handle missing periodFormation for PairsFormation', () => {
+    it('should handle missing formation for PairsFormation', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.PAIRS_7,
-        periodFormation: null
+        formation: null
       };
       
       render(<FormationRenderer {...props} />);
@@ -195,7 +195,7 @@ describe('FormationRenderer', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_6,
-        periodFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_6),
+        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6),
         allPlayers: createMockPlayers(6)
       };
       
@@ -210,7 +210,7 @@ describe('FormationRenderer', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_7,
-        periodFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
+        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
         allPlayers: createMockPlayers(7)
       };
       
@@ -233,11 +233,11 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('individual-formation-players')).toHaveTextContent('0 players');
     });
 
-    it('should handle missing periodFormation for IndividualFormation', () => {
+    it('should handle missing formation for IndividualFormation', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_7,
-        periodFormation: null
+        formation: null
       };
       
       render(<FormationRenderer {...props} />);

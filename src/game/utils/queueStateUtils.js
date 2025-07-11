@@ -5,10 +5,10 @@
 /**
  * Analyzes the current pairs rotation state and determines priority order
  * @param {string} nextPhysicalPairToSubOut - Current pair next to substitute
- * @param {Object} periodFormation - Current formation
+ * @param {Object} formation - Current formation
  * @returns {Object} Analysis of pair rotation priorities
  */
-export const analyzePairsRotationState = (nextPhysicalPairToSubOut, periodFormation) => {
+export const analyzePairsRotationState = (nextPhysicalPairToSubOut, formation) => {
   const pairOrder = ['leftPair', 'rightPair', 'subPair'];
   const nextIndex = pairOrder.indexOf(nextPhysicalPairToSubOut);
   
@@ -17,7 +17,7 @@ export const analyzePairsRotationState = (nextPhysicalPairToSubOut, periodFormat
     return {
       nextPair: 'leftPair',
       priorityOrder: ['leftPair', 'rightPair', 'subPair'],
-      nextPairPlayers: [periodFormation.leftPair?.defender, periodFormation.leftPair?.attacker].filter(Boolean)
+      nextPairPlayers: [formation.leftPair?.defender, formation.leftPair?.attacker].filter(Boolean)
     };
   }
   
@@ -29,8 +29,8 @@ export const analyzePairsRotationState = (nextPhysicalPairToSubOut, periodFormat
   
   const nextPair = priorityOrder[0];
   const nextPairPlayers = [
-    periodFormation[nextPair]?.defender,
-    periodFormation[nextPair]?.attacker
+    formation[nextPair]?.defender,
+    formation[nextPair]?.attacker
   ].filter(Boolean);
   
   return {
@@ -43,16 +43,16 @@ export const analyzePairsRotationState = (nextPhysicalPairToSubOut, periodFormat
 /**
  * Creates an individual rotation queue that preserves pairs rotation order
  * @param {Object} pairsAnalysis - Result from analyzePairsRotationState
- * @param {Object} periodFormation - Current formation
+ * @param {Object} formation - Current formation
  * @returns {Array} Individual rotation queue maintaining pair rotation order
  */
-export const createIndividualQueueFromPairs = (pairsAnalysis, periodFormation) => {
+export const createIndividualQueueFromPairs = (pairsAnalysis, formation) => {
   const { priorityOrder } = pairsAnalysis;
   const queue = [];
   
   // Add players from each pair in priority order
   priorityOrder.forEach(pairKey => {
-    const pair = periodFormation[pairKey];
+    const pair = formation[pairKey];
     if (pair?.defender) queue.push(pair.defender);
     if (pair?.attacker) queue.push(pair.attacker);
   });
@@ -70,10 +70,10 @@ export const createIndividualQueueFromPairs = (pairsAnalysis, periodFormation) =
 /**
  * Analyzes individual rotation queue to determine pairs rotation state
  * @param {Array} rotationQueue - Current individual rotation queue
- * @param {Object} periodFormation - Current formation
+ * @param {Object} formation - Current formation
  * @returns {Object} Analysis of which pair should be next
  */
-export const analyzePairsFromIndividualQueue = (rotationQueue, periodFormation) => {
+export const analyzePairsFromIndividualQueue = (rotationQueue, formation) => {
   if (!rotationQueue || rotationQueue.length === 0) {
     return {
       nextPair: 'leftPair',
@@ -86,9 +86,9 @@ export const analyzePairsFromIndividualQueue = (rotationQueue, periodFormation) 
   
   // Check which pair contains the next player
   const pairs = [
-    { key: 'leftPair', defender: periodFormation.leftDefender, attacker: periodFormation.leftAttacker },
-    { key: 'rightPair', defender: periodFormation.rightDefender, attacker: periodFormation.rightAttacker },
-    { key: 'subPair', defender: periodFormation.substitute_1, attacker: periodFormation.substitute_2 }
+    { key: 'leftPair', defender: formation.leftDefender, attacker: formation.leftAttacker },
+    { key: 'rightPair', defender: formation.rightDefender, attacker: formation.rightAttacker },
+    { key: 'subPair', defender: formation.substitute_1, attacker: formation.substitute_2 }
   ];
   
   // First check if next two players form a complete pair
@@ -126,10 +126,10 @@ export const analyzePairsFromIndividualQueue = (rotationQueue, periodFormation) 
 /**
  * Creates a rotation queue that prioritizes players from a specific pair
  * @param {string} priorityPair - The pair to prioritize ('leftPair', 'rightPair', 'subPair')
- * @param {Object} periodFormation - Current formation
+ * @param {Object} formation - Current formation
  * @returns {Array} Rotation queue with priority pair first
  */
-export const createPrioritizedRotationQueue = (priorityPair, periodFormation) => {
+export const createPrioritizedRotationQueue = (priorityPair, formation) => {
   const allPairs = ['leftPair', 'rightPair', 'subPair'];
   const priorityIndex = allPairs.indexOf(priorityPair);
   
@@ -143,7 +143,7 @@ export const createPrioritizedRotationQueue = (priorityPair, periodFormation) =>
   
   // Add players from each pair in rotation order
   for (const pairKey of rotationOrder) {
-    const pair = periodFormation[pairKey];
+    const pair = formation[pairKey];
     if (pair?.defender) queue.push(pair.defender);
     if (pair?.attacker) queue.push(pair.attacker);
   }
@@ -153,23 +153,23 @@ export const createPrioritizedRotationQueue = (priorityPair, periodFormation) =>
 
 /**
  * Converts individual positions to pair positions for queue analysis
- * @param {Object} periodFormation - Current formation
+ * @param {Object} formation - Current formation
  * @returns {Object} Pair-based formation structure
  */
-export const convertToPairFormation = (periodFormation) => {
+export const convertToPairFormation = (formation) => {
   return {
     leftPair: {
-      defender: periodFormation.leftDefender,
-      attacker: periodFormation.leftAttacker
+      defender: formation.leftDefender,
+      attacker: formation.leftAttacker
     },
     rightPair: {
-      defender: periodFormation.rightDefender,
-      attacker: periodFormation.rightAttacker
+      defender: formation.rightDefender,
+      attacker: formation.rightAttacker
     },
     subPair: {
-      defender: periodFormation.substitute_1,
-      attacker: periodFormation.substitute_2
+      defender: formation.substitute_1,
+      attacker: formation.substitute_2
     },
-    goalie: periodFormation.goalie
+    goalie: formation.goalie
   };
 };

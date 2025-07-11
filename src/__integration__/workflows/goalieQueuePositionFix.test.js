@@ -19,7 +19,7 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
       console.log(`Testing ${teamMode} queue position preservation`);
       
       const gameState = gameStateScenarios.freshGame(teamMode);
-      const currentGoalieId = gameState.periodFormation.goalie;
+      const currentGoalieId = gameState.formation.goalie;
       
       // Find a suitable replacement goalie that's in the rotation queue
       let newGoalieId;
@@ -37,11 +37,11 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
       // If no player found in queue, use a field player
       if (!newGoalieId) {
         if (teamMode === TEAM_MODES.PAIRS_7) {
-          newGoalieId = gameState.periodFormation.leftPair.defender;
+          newGoalieId = gameState.formation.leftPair.defender;
         } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
-          newGoalieId = gameState.periodFormation.leftDefender;
+          newGoalieId = gameState.formation.leftDefender;
         } else {
-          newGoalieId = gameState.periodFormation.leftDefender;
+          newGoalieId = gameState.formation.leftDefender;
         }
         originalQueuePosition = gameState.rotationQueue.indexOf(newGoalieId);
       }
@@ -74,8 +74,8 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
   
   it('should handle edge case where new goalie is not in rotation queue', () => {
     const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-    const currentGoalieId = gameState.periodFormation.goalie;
-    const newGoalieId = gameState.periodFormation.leftDefender; // Field player not in queue
+    const currentGoalieId = gameState.formation.goalie;
+    const newGoalieId = gameState.formation.leftDefender; // Field player not in queue
     
     // Ensure new goalie is NOT in the rotation queue
     const modifiedGameState = {
@@ -96,7 +96,7 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
   
   it('should maintain queue order for other players', () => {
     const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-    const currentGoalieId = gameState.periodFormation.goalie;
+    const currentGoalieId = gameState.formation.goalie;
     const newGoalieId = gameState.rotationQueue[2]; // Pick player at position 2
     
     const originalQueue = [...gameState.rotationQueue];
@@ -129,13 +129,13 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
     
     // Perform multiple goalie switches
     const switches = [
-      { newGoalie: gameState.periodFormation.leftDefender },
-      { newGoalie: gameState.periodFormation.rightDefender },
-      { newGoalie: gameState.periodFormation.substitute }
+      { newGoalie: gameState.formation.leftDefender },
+      { newGoalie: gameState.formation.rightDefender },
+      { newGoalie: gameState.formation.substitute }
     ];
     
     for (const switchOp of switches) {
-      const previousGoalieId = gameState.periodFormation.goalie;
+      const previousGoalieId = gameState.formation.goalie;
       const newGoalieId = switchOp.newGoalie;
       const originalPosition = gameState.rotationQueue.indexOf(newGoalieId);
       
@@ -155,7 +155,7 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
   
   it('should preserve queue fairness metrics', () => {
     const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-    const currentGoalieId = gameState.periodFormation.goalie;
+    const currentGoalieId = gameState.formation.goalie;
     const newGoalieId = gameState.rotationQueue[1]; // Second player in queue
     
     const originalQueuePosition = 1;

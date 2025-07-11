@@ -106,11 +106,11 @@ jest.mock('../../hooks/useLongPressWithScrollDetection', () => ({
 }));
 
 jest.mock('../../components/game/formations', () => ({
-  FormationRenderer: ({ teamMode, periodFormation, allPlayers }) => (
+  FormationRenderer: ({ teamMode, formation, allPlayers }) => (
     <div data-testid="formation-renderer">
       <div data-testid="team-mode">{teamMode}</div>
       <div data-testid="player-count">{allPlayers?.length || 0}</div>
-      <div data-testid="formation-data">{JSON.stringify(periodFormation)}</div>
+      <div data-testid="formation-data">{JSON.stringify(formation)}</div>
     </div>
   )
 }));
@@ -133,8 +133,8 @@ describe('Timer + GameScreen Integration', () => {
     // Setup GameScreen props with timer integration
     gameScreenProps = {
       currentPeriodNumber: 1,
-      periodFormation: gameState.periodFormation,
-      setPeriodFormation: jest.fn(),
+      formation: gameState.formation,
+      setFormation: jest.fn(),
       allPlayers: gameState.allPlayers,
       setAllPlayers: jest.fn(),
       selectedSquadPlayers: gameState.allPlayers,
@@ -340,7 +340,7 @@ describe('Timer + GameScreen Integration', () => {
       const updatedProps = {
         ...gameScreenProps,
         teamMode: TEAM_MODES.PAIRS_7,
-        periodFormation: {
+        formation: {
           goalie: '1',
           leftPair: { defender: '2', attacker: '3' },
           rightPair: { defender: '4', attacker: '5' },

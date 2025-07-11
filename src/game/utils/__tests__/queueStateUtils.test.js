@@ -7,7 +7,7 @@ import {
 } from '../queueStateUtils';
 
 describe('queueStateUtils', () => {
-  const mockPeriodFormation = {
+  const mockFormation = {
     leftPair: { defender: '1', attacker: '2' },
     rightPair: { defender: '3', attacker: '4' },
     subPair: { defender: '5', attacker: '6' },
@@ -22,7 +22,7 @@ describe('queueStateUtils', () => {
 
   describe('analyzePairsRotationState', () => {
     it('should prioritize left pair when left pair is next', () => {
-      const result = analyzePairsRotationState('leftPair', mockPeriodFormation);
+      const result = analyzePairsRotationState('leftPair', mockFormation);
       
       expect(result.nextPair).toBe('leftPair');
       expect(result.priorityOrder).toEqual(['leftPair', 'rightPair', 'subPair']);
@@ -30,7 +30,7 @@ describe('queueStateUtils', () => {
     });
 
     it('should prioritize right pair when right pair is next', () => {
-      const result = analyzePairsRotationState('rightPair', mockPeriodFormation);
+      const result = analyzePairsRotationState('rightPair', mockFormation);
       
       expect(result.nextPair).toBe('rightPair');
       expect(result.priorityOrder).toEqual(['rightPair', 'subPair', 'leftPair']);
@@ -38,7 +38,7 @@ describe('queueStateUtils', () => {
     });
 
     it('should prioritize sub pair when sub pair is next', () => {
-      const result = analyzePairsRotationState('subPair', mockPeriodFormation);
+      const result = analyzePairsRotationState('subPair', mockFormation);
       
       expect(result.nextPair).toBe('subPair');
       expect(result.priorityOrder).toEqual(['subPair', 'leftPair', 'rightPair']);
@@ -46,7 +46,7 @@ describe('queueStateUtils', () => {
     });
 
     it('should default to left pair for invalid input', () => {
-      const result = analyzePairsRotationState('invalidPair', mockPeriodFormation);
+      const result = analyzePairsRotationState('invalidPair', mockFormation);
       
       expect(result.nextPair).toBe('leftPair');
       expect(result.priorityOrder).toEqual(['leftPair', 'rightPair', 'subPair']);
@@ -74,7 +74,7 @@ describe('queueStateUtils', () => {
         nextPairPlayers: ['1', '2']
       };
       
-      const result = createIndividualQueueFromPairs(pairsAnalysis, mockPeriodFormation);
+      const result = createIndividualQueueFromPairs(pairsAnalysis, mockFormation);
       
       expect(result.queue).toEqual(['1', '2', '3', '4', '5', '6']);
       expect(result.nextPlayerId).toBe('1');
@@ -87,7 +87,7 @@ describe('queueStateUtils', () => {
         nextPairPlayers: ['3', '4']
       };
       
-      const result = createIndividualQueueFromPairs(pairsAnalysis, mockPeriodFormation);
+      const result = createIndividualQueueFromPairs(pairsAnalysis, mockFormation);
       
       expect(result.queue).toEqual(['3', '4', '5', '6', '1', '2']);
       expect(result.nextPlayerId).toBe('3');
@@ -100,7 +100,7 @@ describe('queueStateUtils', () => {
         nextPairPlayers: ['5', '6']
       };
       
-      const result = createIndividualQueueFromPairs(pairsAnalysis, mockPeriodFormation);
+      const result = createIndividualQueueFromPairs(pairsAnalysis, mockFormation);
       
       expect(result.queue).toEqual(['5', '6', '1', '2', '3', '4']);
       expect(result.nextPlayerId).toBe('5');
@@ -150,7 +150,7 @@ describe('queueStateUtils', () => {
     it('should identify left pair when left defender is next', () => {
       const rotationQueue = ['1', '3', '2', '4', '5', '6'];
       
-      const result = analyzePairsFromIndividualQueue(rotationQueue, mockPeriodFormation);
+      const result = analyzePairsFromIndividualQueue(rotationQueue, mockFormation);
       
       expect(result.nextPair).toBe('leftPair');
       expect(result.reasoning).toBe('next-player-match');
@@ -159,7 +159,7 @@ describe('queueStateUtils', () => {
     it('should identify right pair when right attacker is next', () => {
       const rotationQueue = ['4', '1', '2', '3', '5', '6'];
       
-      const result = analyzePairsFromIndividualQueue(rotationQueue, mockPeriodFormation);
+      const result = analyzePairsFromIndividualQueue(rotationQueue, mockFormation);
       
       expect(result.nextPair).toBe('rightPair');
       expect(result.reasoning).toBe('next-player-match');
@@ -168,7 +168,7 @@ describe('queueStateUtils', () => {
     it('should identify sub pair when substitute is next', () => {
       const rotationQueue = ['5', '6', '1', '2', '3', '4'];
       
-      const result = analyzePairsFromIndividualQueue(rotationQueue, mockPeriodFormation);
+      const result = analyzePairsFromIndividualQueue(rotationQueue, mockFormation);
       
       expect(result.nextPair).toBe('subPair');
       expect(result.reasoning).toBe('next-two-players-match'); // Both sub pair players are first
@@ -177,14 +177,14 @@ describe('queueStateUtils', () => {
     it('should match when next two players form a complete pair', () => {
       const rotationQueue = ['1', '2', '3', '4', '5', '6'];
       
-      const result = analyzePairsFromIndividualQueue(rotationQueue, mockPeriodFormation);
+      const result = analyzePairsFromIndividualQueue(rotationQueue, mockFormation);
       
       expect(result.nextPair).toBe('leftPair');
       expect(result.reasoning).toBe('next-two-players-match');
     });
 
     it('should default to left pair for empty queue', () => {
-      const result = analyzePairsFromIndividualQueue([], mockPeriodFormation);
+      const result = analyzePairsFromIndividualQueue([], mockFormation);
       
       expect(result.nextPair).toBe('leftPair');
       expect(result.reasoning).toBe('default');
@@ -193,14 +193,14 @@ describe('queueStateUtils', () => {
     it('should default to left pair when no match found', () => {
       const rotationQueue = ['99', '98', '97']; // Non-existent players
       
-      const result = analyzePairsFromIndividualQueue(rotationQueue, mockPeriodFormation);
+      const result = analyzePairsFromIndividualQueue(rotationQueue, mockFormation);
       
       expect(result.nextPair).toBe('leftPair');
       expect(result.reasoning).toBe('fallback');
     });
 
     it('should handle null/undefined queue', () => {
-      const result = analyzePairsFromIndividualQueue(null, mockPeriodFormation);
+      const result = analyzePairsFromIndividualQueue(null, mockFormation);
       
       expect(result.nextPair).toBe('leftPair');
       expect(result.reasoning).toBe('default');
@@ -209,19 +209,19 @@ describe('queueStateUtils', () => {
 
   describe('createPrioritizedRotationQueue', () => {
     it('should prioritize left pair players first', () => {
-      const result = createPrioritizedRotationQueue('leftPair', mockPeriodFormation);
+      const result = createPrioritizedRotationQueue('leftPair', mockFormation);
       
       expect(result).toEqual(['1', '2', '3', '4', '5', '6']);
     });
 
     it('should prioritize right pair players first', () => {
-      const result = createPrioritizedRotationQueue('rightPair', mockPeriodFormation);
+      const result = createPrioritizedRotationQueue('rightPair', mockFormation);
       
       expect(result).toEqual(['3', '4', '5', '6', '1', '2']);
     });
 
     it('should prioritize sub pair players first', () => {
-      const result = createPrioritizedRotationQueue('subPair', mockPeriodFormation);
+      const result = createPrioritizedRotationQueue('subPair', mockFormation);
       
       expect(result).toEqual(['5', '6', '1', '2', '3', '4']);
     });
@@ -241,7 +241,7 @@ describe('queueStateUtils', () => {
 
   describe('convertToPairFormation', () => {
     it('should convert individual formation to pair structure', () => {
-      const result = convertToPairFormation(mockPeriodFormation);
+      const result = convertToPairFormation(mockFormation);
       
       expect(result).toEqual({
         leftPair: { defender: '1', attacker: '2' },
@@ -276,8 +276,8 @@ describe('queueStateUtils', () => {
   describe('integration scenarios', () => {
     it('should preserve rotation order through splitPairs flow', () => {
       // Scenario: rightPair is next to substitute in pairs mode
-      const pairsAnalysis = analyzePairsRotationState('rightPair', mockPeriodFormation);
-      const individualQueue = createIndividualQueueFromPairs(pairsAnalysis, mockPeriodFormation);
+      const pairsAnalysis = analyzePairsRotationState('rightPair', mockFormation);
+      const individualQueue = createIndividualQueueFromPairs(pairsAnalysis, mockFormation);
       
       // Right pair players should be first in individual queue
       expect(individualQueue.queue.slice(0, 2)).toEqual(['3', '4']);
@@ -288,7 +288,7 @@ describe('queueStateUtils', () => {
     it('should restore rotation order through formPairs flow', () => {
       // Scenario: Individual queue has right pair players first
       const rotationQueue = ['3', '4', '5', '6', '1', '2'];
-      const pairsAnalysis = analyzePairsFromIndividualQueue(rotationQueue, mockPeriodFormation);
+      const pairsAnalysis = analyzePairsFromIndividualQueue(rotationQueue, mockFormation);
       
       // Should identify right pair as next
       expect(pairsAnalysis.nextPair).toBe('rightPair');
@@ -297,11 +297,11 @@ describe('queueStateUtils', () => {
 
     it('should handle round-trip conversion consistency', () => {
       // Start with sub pair as next
-      const originalPairsAnalysis = analyzePairsRotationState('subPair', mockPeriodFormation);
-      const individualQueue = createIndividualQueueFromPairs(originalPairsAnalysis, mockPeriodFormation);
+      const originalPairsAnalysis = analyzePairsRotationState('subPair', mockFormation);
+      const individualQueue = createIndividualQueueFromPairs(originalPairsAnalysis, mockFormation);
       
       // Convert back to pairs
-      const restoredPairsAnalysis = analyzePairsFromIndividualQueue(individualQueue.queue, mockPeriodFormation);
+      const restoredPairsAnalysis = analyzePairsFromIndividualQueue(individualQueue.queue, mockFormation);
       
       // Should restore original sub pair priority
       expect(restoredPairsAnalysis.nextPair).toBe('subPair');

@@ -18,8 +18,8 @@ describe('Team Mode Switching Integration', () => {
         name: `Player ${i + 1}`,
         stats: {
           isInactive: false,
-          currentPeriodStatus: i < 4 ? 'on_field' : i < 6 ? 'sub' : 'goalie',
-          currentPeriodRole: i < 2 ? 'Defender' : i < 4 ? 'Attacker' : i < 6 ? 'Substitute' : 'Goalie',
+          currentStatus: i < 4 ? 'on_field' : i < 6 ? 'sub' : 'goalie',
+          currentRole: i < 2 ? 'Defender' : i < 4 ? 'Attacker' : i < 6 ? 'Substitute' : 'Goalie',
           currentPairKey: i < 2 ? 'leftPair' : i < 4 ? 'rightPair' : i < 6 ? 'subPair' : 'goalie',
           lastStintStartTimeEpoch: Date.now(),
           timeOnFieldSeconds: 0,
@@ -36,7 +36,7 @@ describe('Team Mode Switching Integration', () => {
       result.current.setTeamMode(TEAM_MODES.PAIRS_7);
       
       // Set up pairs formation
-      result.current.setPeriodFormation({
+      result.current.setFormation({
         leftPair: { defender: '1', attacker: '2' },
         rightPair: { defender: '3', attacker: '4' },
         subPair: { defender: '5', attacker: '6' },
@@ -85,7 +85,7 @@ describe('Team Mode Switching Integration', () => {
       expect(result.current.teamMode).toBe(TEAM_MODES.INDIVIDUAL_7);
 
       // Verify formation conversion
-      const formation = result.current.periodFormation;
+      const formation = result.current.formation;
       expect(formation.leftDefender).toBe('1');
       expect(formation.leftAttacker).toBe('2');
       expect(formation.rightDefender).toBe('3');
@@ -169,8 +169,8 @@ describe('Team Mode Switching Integration', () => {
           name: `Player ${i + 1}`,
           stats: {
             isInactive: false,
-            currentPeriodStatus: i < 4 ? 'on_field' : i < 6 ? 'sub' : 'goalie',
-            currentPeriodRole: i < 2 ? 'Defender' : i < 4 ? 'Attacker' : i < 6 ? 'Substitute' : 'Goalie',
+            currentStatus: i < 4 ? 'on_field' : i < 6 ? 'sub' : 'goalie',
+            currentRole: i < 2 ? 'Defender' : i < 4 ? 'Attacker' : i < 6 ? 'Substitute' : 'Goalie',
             currentPairKey: i === 0 ? 'leftDefender' : i === 1 ? 'leftAttacker' :
                            i === 2 ? 'rightDefender' : i === 3 ? 'rightAttacker' :
                            i === 4 ? 'substitute_1' : i === 5 ? 'substitute_2' : 'goalie',
@@ -189,7 +189,7 @@ describe('Team Mode Switching Integration', () => {
         result.current.setTeamMode(TEAM_MODES.INDIVIDUAL_7);
         
         // Set up individual formation
-        result.current.setPeriodFormation({
+        result.current.setFormation({
           leftPair: { defender: null, attacker: null },
           rightPair: { defender: null, attacker: null },
           subPair: { defender: null, attacker: null },
@@ -226,7 +226,7 @@ describe('Team Mode Switching Integration', () => {
       expect(result.current.nextPhysicalPairToSubOut).toBe('leftPair');
 
       // Verify formation conversion
-      const formation = result.current.periodFormation;
+      const formation = result.current.formation;
       expect(formation.leftPair).toEqual({ defender: '1', attacker: '2' });
       expect(formation.rightPair).toEqual({ defender: '3', attacker: '4' });
       expect(formation.subPair).toEqual({ defender: '5', attacker: '6' });
@@ -399,7 +399,7 @@ describe('Team Mode Switching Integration', () => {
       
       // Set incomplete formation
       act(() => {
-        result.current.setPeriodFormation({
+        result.current.setFormation({
           leftPair: { defender: '1', attacker: null },
           rightPair: { defender: null, attacker: '4' },
           subPair: { defender: '5', attacker: '6' },

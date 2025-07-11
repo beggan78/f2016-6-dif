@@ -65,7 +65,7 @@ describe('IndividualFormation', () => {
 
     defaultProps = {
       teamMode: TEAM_MODES.INDIVIDUAL_7,
-      periodFormation: mockIndividualFormation,
+      formation: mockIndividualFormation,
       allPlayers: mockPlayers,
       animationState: { type: 'none', phase: 'idle', data: {} },
       recentlySubstitutedPlayers: new Set(),
@@ -252,10 +252,10 @@ describe('IndividualFormation', () => {
       expect(container.firstChild).toHaveClass('space-y-2');
     });
 
-    it('should handle missing periodFormation gracefully', () => {
+    it('should handle missing formation gracefully', () => {
       const props = {
         ...defaultProps,
-        periodFormation: null
+        formation: null
       };
       
       expect(() => render(<IndividualFormation {...props} />)).not.toThrow();
@@ -264,7 +264,7 @@ describe('IndividualFormation', () => {
     it('should handle missing player IDs in formation', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           leftDefender: '1',
           rightDefender: null,
           leftAttacker: undefined,
@@ -301,7 +301,7 @@ describe('IndividualFormation', () => {
       defaultProps = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_6,
-        periodFormation: mockIndividualFormation,
+        formation: mockIndividualFormation,
         allPlayers: mockPlayers,
         nextNextPlayerIdToSubOut: undefined // INDIVIDUAL_6 doesn't use next-next
       };
@@ -627,10 +627,10 @@ describe('IndividualFormation', () => {
       expect(() => render(<IndividualFormation {...props} />)).not.toThrow();
     });
 
-    it('should handle malformed periodFormation object', () => {
+    it('should handle malformed formation object', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           leftDefender: 'invalid-id',
           rightDefender: 123, // Should be string
           leftAttacker: '', // Empty string

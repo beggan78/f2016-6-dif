@@ -59,7 +59,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
     it('should properly call animateStateChange for goalie replacement', async () => {
       // Setup game state
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-      const goalieId = gameState.periodFormation.goalie;
+      const goalieId = gameState.formation.goalie;
       const replacementPlayerId = '2';
       
       // Mock animateStateChange to capture the call
@@ -92,7 +92,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
         mockAnimateStateChange(
           gameState,
           (state) => ({ ...state, playersToHighlight: [goalieId, replacementPlayerId] }),
-          mockHooks.useGameState.setPeriodFormation,
+          mockHooks.useGameState.setFormation,
           mockHooks.useGameUIState.setAnimationState,
           mockHooks.useGameUIState.setHideNextOffIndicator,
           mockHooks.useGameUIState.setRecentlySubstitutedPlayers
@@ -102,7 +102,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
       // Verify animateStateChange was called with correct parameters
       expect(mockAnimateStateChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          periodFormation: expect.any(Object),
+          formation: expect.any(Object),
           allPlayers: expect.any(Array),
           teamMode: TEAM_MODES.INDIVIDUAL_6
         }),
@@ -126,7 +126,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
 
     it('should handle animation state progression correctly', async () => {
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const goalieId = gameState.periodFormation.goalie;
+      const goalieId = gameState.formation.goalie;
       const replacementPlayerId = '3';
 
       // Track the sequence of calls
@@ -199,7 +199,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
   describe('Glow Effect Timing', () => {
     it('should apply glow effects with correct timing', async () => {
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7);
-      const goalieId = gameState.periodFormation.goalie;
+      const goalieId = gameState.formation.goalie;
       const replacementPlayerId = '2';
 
       let glowStartTime;
@@ -254,7 +254,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
 
     it('should not interfere with existing glow effects', async () => {
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-      const goalieId = gameState.periodFormation.goalie;
+      const goalieId = gameState.formation.goalie;
       const replacementPlayerId = '2';
       
       // Pre-existing glow effects
@@ -308,7 +308,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
         jest.clearAllMocks();
         
         const gameState = gameStateScenarios.freshGame(teamMode);
-        const goalieId = gameState.periodFormation.goalie;
+        const goalieId = gameState.formation.goalie;
         const replacementPlayerId = '2';
 
         mockAnimateStateChange.mockImplementation((gameState, logicFn, applyFn, setAnim, setHide, setGlow) => {
@@ -331,7 +331,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
         expect(mockAnimateStateChange).toHaveBeenCalledWith(
           expect.objectContaining({
             teamMode: teamMode,
-            periodFormation: expect.any(Object),
+            formation: expect.any(Object),
             allPlayers: expect.any(Array)
           }),
           expect.any(Function),
@@ -351,7 +351,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
   describe('Error Handling', () => {
     it('should handle missing goalie gracefully', async () => {
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-      gameState.periodFormation.goalie = null; // Remove goalie
+      gameState.formation.goalie = null; // Remove goalie
 
       mockAnimateStateChange.mockImplementation((gameState, logicFn, applyFn, setAnim, setHide, setGlow) => {
         // Should still work even without goalie

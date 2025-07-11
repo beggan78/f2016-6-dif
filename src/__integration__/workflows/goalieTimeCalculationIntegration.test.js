@@ -106,8 +106,8 @@ describe('Goalie Time Calculation Integration Tests', () => {
   const createGameScreenProps = (gameState) => {
     return {
       currentPeriodNumber: 1,
-      periodFormation: gameState.periodFormation,
-      setPeriodFormation: mockHooks.useGameState.setPeriodFormation,
+      formation: gameState.formation,
+      setFormation: mockHooks.useGameState.setFormation,
       allPlayers: gameState.allPlayers,
       setAllPlayers: mockHooks.useGameState.setAllPlayers,
       matchTimerSeconds: 900,
@@ -155,7 +155,7 @@ describe('Goalie Time Calculation Integration Tests', () => {
     });
 
     // Update mock state to reflect the replacement
-    const newFormation = { ...gameState.periodFormation };
+    const newFormation = { ...gameState.formation };
     const currentGoalieId = newFormation.goalie;
     
     // Find where the new goalie was positioned
@@ -177,8 +177,8 @@ describe('Goalie Time Calculation Integration Tests', () => {
           ...player,
           stats: {
             ...player.stats,
-            currentPeriodStatus: 'on_field',
-            currentPeriodRole: 'Defender',
+            currentStatus: 'on_field',
+            currentRole: 'Defender',
             lastStintStartTimeEpoch: Date.now(),
             // These fields might be undefined and cause NaN
             timeOnFieldSeconds: player.stats.timeOnFieldSeconds || 0,
@@ -192,8 +192,8 @@ describe('Goalie Time Calculation Integration Tests', () => {
           ...player,
           stats: {
             ...player.stats,
-            currentPeriodStatus: 'goalie',
-            currentPeriodRole: 'Goalie',
+            currentStatus: 'goalie',
+            currentRole: 'Goalie',
             lastStintStartTimeEpoch: Date.now(),
             timeOnFieldSeconds: player.stats.timeOnFieldSeconds || 0,
             timeAsAttackerSeconds: player.stats.timeAsAttackerSeconds || 0,
@@ -205,13 +205,13 @@ describe('Goalie Time Calculation Integration Tests', () => {
     });
     
     mockHooks.useGameState._updateMockState({
-      periodFormation: newFormation,
+      formation: newFormation,
       allPlayers: newAllPlayers,
       teamMode: gameState.teamMode,
       view: 'game'
     });
     
-    return { periodFormation: newFormation, allPlayers: newAllPlayers };
+    return { formation: newFormation, allPlayers: newAllPlayers };
   };
 
   // ===================================================================

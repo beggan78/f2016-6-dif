@@ -16,7 +16,7 @@ describe('formationUtils', () => {
         'rightDefender', 
         'leftAttacker', 
         'rightAttacker', 
-        'substitute'
+        'substitute_1'
       ]);
     });
 
@@ -78,7 +78,7 @@ describe('formationUtils', () => {
         'rightDefender', 
         'leftAttacker', 
         'rightAttacker', 
-        'substitute'
+        'substitute_1'
       ]);
       expect(definition.fieldPositions).toEqual([
         'leftDefender', 
@@ -86,7 +86,7 @@ describe('formationUtils', () => {
         'leftAttacker', 
         'rightAttacker'
       ]);
-      expect(definition.substitutePositions).toEqual(['substitute']);
+      expect(definition.substitutePositions).toEqual(['substitute_1']);
     });
 
     it('should return complete definition for INDIVIDUAL_7 mode', () => {

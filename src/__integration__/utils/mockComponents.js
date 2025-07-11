@@ -73,8 +73,8 @@ export const createInteractiveMockComponent = (componentName, eventHandlers = {}
 /**
  * Mock FormationRenderer component
  */
-export const MockFormationRenderer = ({ teamMode, periodFormation, allPlayers, children, ...props }) => {
-  const mockPlayerPositions = Object.entries(periodFormation || {}).map(([position, playerId]) => {
+export const MockFormationRenderer = ({ teamMode, formation, allPlayers, children, ...props }) => {
+  const mockPlayerPositions = Object.entries(formation || {}).map(([position, playerId]) => {
     const player = allPlayers?.find(p => p.id === playerId);
     return {
       position,
@@ -108,15 +108,15 @@ export const MockFormationRenderer = ({ teamMode, periodFormation, allPlayers, c
 /**
  * Mock IndividualFormation component
  */
-export const MockIndividualFormation = ({ periodFormation, allPlayers, longPressHandlers, ...props }) => {
+export const MockIndividualFormation = ({ formation, allPlayers, longPressHandlers, ...props }) => {
   return (
     <div 
       data-testid="mock-individual-formation"
-      data-goalie={periodFormation?.goalie}
+      data-goalie={formation?.goalie}
     >
       <div data-testid="field-positions">
         {['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].map(position => {
-          const playerId = periodFormation?.[position];
+          const playerId = formation?.[position];
           const player = allPlayers?.find(p => p.id === playerId);
           return (
             <div 
@@ -132,7 +132,7 @@ export const MockIndividualFormation = ({ periodFormation, allPlayers, longPress
       </div>
       <div data-testid="substitute-positions">
         {['substitute_1', 'substitute_2'].map(position => {
-          const playerId = periodFormation?.[position];
+          const playerId = formation?.[position];
           const player = allPlayers?.find(p => p.id === playerId);
           return (
             <div 
@@ -153,16 +153,16 @@ export const MockIndividualFormation = ({ periodFormation, allPlayers, longPress
 /**
  * Mock PairsFormation component
  */
-export const MockPairsFormation = ({ periodFormation, allPlayers, longPressHandlers, ...props }) => {
+export const MockPairsFormation = ({ formation, allPlayers, longPressHandlers, ...props }) => {
   const pairs = ['leftPair', 'rightPair', 'subPair'];
   
   return (
     <div 
       data-testid="mock-pairs-formation"
-      data-goalie={periodFormation?.goalie}
+      data-goalie={formation?.goalie}
     >
       {pairs.map(pairKey => {
-        const pair = periodFormation?.[pairKey];
+        const pair = formation?.[pairKey];
         if (!pair) return null;
         
         const defender = allPlayers?.find(p => p.id === pair.defender);
@@ -273,7 +273,7 @@ export const MockConfigurationScreen = ({
 export const MockPeriodSetupScreen = ({ 
   onFormationChange,
   onStartGame,
-  periodFormation = {},
+  formation = {},
   allPlayers = [],
   teamMode,
   ...props 
@@ -286,8 +286,8 @@ export const MockPeriodSetupScreen = ({
         <div data-testid="goalie-selection">
           <select 
             data-testid="goalie-select"
-            value={periodFormation.goalie || ''}
-            onChange={(e) => onFormationChange?.({ ...periodFormation, goalie: e.target.value })}
+            value={formation.goalie || ''}
+            onChange={(e) => onFormationChange?.({ ...formation, goalie: e.target.value })}
           >
             <option value="">Select Goalie</option>
             {allPlayers.map(player => (
@@ -303,8 +303,8 @@ export const MockPeriodSetupScreen = ({
                 <select 
                   key={position}
                   data-testid={`position-select-${position}`}
-                  value={periodFormation[position] || ''}
-                  onChange={(e) => onFormationChange?.({ ...periodFormation, [position]: e.target.value })}
+                  value={formation[position] || ''}
+                  onChange={(e) => onFormationChange?.({ ...formation, [position]: e.target.value })}
                 >
                   <option value="">Select Player</option>
                   {allPlayers.map(player => (
@@ -320,7 +320,7 @@ export const MockPeriodSetupScreen = ({
       <button 
         data-testid="start-game-button"
         onClick={onStartGame}
-        disabled={!periodFormation.goalie}
+        disabled={!formation.goalie}
       >
         Start Game
       </button>

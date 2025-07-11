@@ -776,7 +776,7 @@ const captureCurrentState = () => {
   // Implementation would capture actual application state
   return {
     view: getCurrentView(),
-    periodFormation: getCurrentFormation(),
+    formation: getCurrentFormation(),
     allPlayers: getCurrentPlayers(),
     gameHistory: getCurrentGameHistory()
   };

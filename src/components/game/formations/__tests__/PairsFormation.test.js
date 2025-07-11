@@ -57,7 +57,7 @@ describe('PairsFormation', () => {
     };
 
     defaultProps = {
-      periodFormation: mockPairsFormation,
+      formation: mockPairsFormation,
       allPlayers: mockPlayers,
       animationState: { type: 'none', phase: 'idle', data: {} },
       recentlySubstitutedPlayers: new Set(),
@@ -151,10 +151,10 @@ describe('PairsFormation', () => {
       expect(screen.getByTestId('player-stats-6')).toBeInTheDocument();
     });
 
-    it('should handle missing periodFormation gracefully', () => {
+    it('should handle missing formation gracefully', () => {
       const props = {
         ...defaultProps,
-        periodFormation: null
+        formation: null
       };
       
       expect(() => render(<PairsFormation {...props} />)).not.toThrow();
@@ -163,7 +163,7 @@ describe('PairsFormation', () => {
     it('should handle missing pairData in formation', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           goalie: '7',
           leftPair: { defender: '1', attacker: '2' },
           // rightPair missing
@@ -194,7 +194,7 @@ describe('PairsFormation', () => {
     it('should handle empty formation object', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {}
+        formation: {}
       };
       
       const { container } = render(<PairsFormation {...props} />);
@@ -419,7 +419,7 @@ describe('PairsFormation', () => {
 
   describe('Error Handling & Edge Cases', () => {
     it('should handle null props without crashing', () => {
-      expect(() => render(<PairsFormation periodFormation={null} />)).not.toThrow();
+      expect(() => render(<PairsFormation formation={null} />)).not.toThrow();
     });
 
     it('should work with empty allPlayers array', () => {
@@ -434,7 +434,7 @@ describe('PairsFormation', () => {
     it('should handle missing player IDs in formation', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           goalie: '7',
           leftPair: { defender: null, attacker: '2' },
           rightPair: { defender: '3', attacker: undefined },
@@ -466,7 +466,7 @@ describe('PairsFormation', () => {
     it('should handle malformed pair objects', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           goalie: '7',
           leftPair: 'invalid', // Should be object with defender/attacker
           rightPair: { defender: '3' }, // Missing attacker

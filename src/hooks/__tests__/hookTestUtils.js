@@ -98,7 +98,7 @@ export const createMockGameState = (overrides = {}) => ({
   teamMode: TEAM_MODES.INDIVIDUAL_7,
   alertMinutes: 2,
   currentPeriodNumber: 1,
-  periodFormation: createMockFormation(),
+  formation: createMockFormation(),
   nextPhysicalPairToSubOut: 'leftPair',
   nextPlayerToSubOut: 'leftDefender',
   nextPlayerIdToSubOut: '1',
@@ -124,9 +124,9 @@ export const createMockPlayers = (count = 7) => {
       name: `Player ${i}`,
       stats: {
         isInactive: false,
-        currentPeriodStatus: i <= 4 ? PLAYER_STATUS.ON_FIELD : 
+        currentStatus: i <= 4 ? PLAYER_STATUS.ON_FIELD :
                             i === 7 ? PLAYER_STATUS.GOALIE : PLAYER_STATUS.SUBSTITUTE,
-        currentPeriodRole: i <= 2 ? PLAYER_ROLES.DEFENDER :
+        currentRole: i <= 2 ? PLAYER_ROLES.DEFENDER :
                           i <= 4 ? PLAYER_ROLES.ATTACKER :
                           i === 7 ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
         currentPairKey: i <= 2 ? 'leftDefender' :
@@ -234,13 +234,13 @@ export const createMockGameStateDependencies = () => ({
   handleRoleChange: jest.fn().mockImplementation((player, newRole, currentTime, isSubTimerPaused) => {
     return {
       ...player.stats,
-      currentPeriodRole: newRole,
+      currentRole: newRole,
       lastStintStartTimeEpoch: currentTime,
       timeOnFieldSeconds: player.stats.timeOnFieldSeconds || 0,
       timeAsAttackerSeconds: player.stats.timeAsAttackerSeconds || 0,
       timeAsDefenderSeconds: player.stats.timeAsDefenderSeconds || 0,
       timeAsGoalieSeconds: player.stats.timeAsGoalieSeconds || 0,
-      currentPeriodStatus: player.stats.currentPeriodStatus,
+      currentStatus: player.stats.currentStatus,
       currentPairKey: player.stats.currentPairKey,
       isInactive: player.stats.isInactive || false
     };
@@ -253,8 +253,8 @@ export const createMockGameStateDependencies = () => ({
       timeAsAttackerSeconds: player.stats.timeAsAttackerSeconds || 0,
       timeAsDefenderSeconds: player.stats.timeAsDefenderSeconds || 0,
       timeAsGoalieSeconds: player.stats.timeAsGoalieSeconds || 0,
-      currentPeriodStatus: player.stats.currentPeriodStatus,
-      currentPeriodRole: player.stats.currentPeriodRole,
+      currentStatus: player.stats.currentStatus,
+      currentRole: player.stats.currentRole,
       currentPairKey: player.stats.currentPairKey,
       isInactive: player.stats.isInactive || false
     };

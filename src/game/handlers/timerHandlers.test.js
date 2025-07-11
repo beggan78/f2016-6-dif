@@ -183,7 +183,7 @@ describe('createTimerHandlers', () => {
       const currentTime = 2000;
       const isPausing = true;
       const allPlayers = [...mockPlayers, 
-        { id: '8', name: 'Player 8', stats: { currentPeriodStatus: 'BENCH' }}
+        { id: '8', name: 'Player 8', stats: { currentStatus: 'BENCH' }}
       ];
 
       mockStateUpdaters.setAllPlayers.mockImplementation((callback) => {
@@ -214,7 +214,7 @@ describe('createTimerHandlers', () => {
       const currentTime = 2000;
       const isPausing = true;
       const playersWithExtra = [...mockPlayers, 
-        { id: '99', name: 'Not Selected', stats: { currentPeriodStatus: 'BENCH' }}
+        { id: '99', name: 'Not Selected', stats: { currentStatus: 'BENCH' }}
       ];
 
       let callCount = 0;
@@ -473,7 +473,7 @@ describe('createTimerHandlers', () => {
       const largePlayerList = Array.from({ length: 100 }, (_, i) => ({
         id: `${i + 1}`,
         name: `Player ${i + 1}`,
-        stats: { currentPeriodStatus: 'ON_FIELD' }
+        stats: { currentStatus: 'ON_FIELD' }
       }));
 
       const smallSelectedSquad = largePlayerList.slice(0, 7);

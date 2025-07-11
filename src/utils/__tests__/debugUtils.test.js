@@ -123,7 +123,7 @@ describe('debugUtils', () => {
       expect(formation).toHaveProperty('rightDefender');
       expect(formation).toHaveProperty('leftAttacker');
       expect(formation).toHaveProperty('rightAttacker');
-      expect(formation).toHaveProperty('substitute');
+      expect(formation).toHaveProperty('substitute_1');
     });
 
     it('should create INDIVIDUAL_7 formation correctly', () => {

@@ -23,7 +23,7 @@ export const assertValidGameState = (gameState, expectedProperties = {}) => {
   
   // Required properties
   const requiredProps = [
-    'periodFormation',
+    'formation',
     'allPlayers', 
     'rotationQueue',
     'teamMode'
@@ -33,9 +33,9 @@ export const assertValidGameState = (gameState, expectedProperties = {}) => {
     expect(gameState).toHaveProperty(prop);
   });
   
-  // Validate periodFormation
-  expect(gameState.periodFormation).toBeDefined();
-  expect(typeof gameState.periodFormation).toBe('object');
+  // Validate formation
+  expect(gameState.formation).toBeDefined();
+  expect(typeof gameState.formation).toBe('object');
   
   // Validate allPlayers
   expect(Array.isArray(gameState.allPlayers)).toBe(true);
@@ -63,7 +63,7 @@ export const assertValidGameState = (gameState, expectedProperties = {}) => {
  * Asserts that player data is consistent across the game state
  */
 export const assertPlayerDataConsistency = (gameState) => {
-  const { periodFormation, allPlayers, rotationQueue } = gameState;
+  const { formation, allPlayers, rotationQueue } = gameState;
   
   // Get all player IDs from formation
   const formationPlayerIds = new Set();
@@ -74,7 +74,7 @@ export const assertPlayerDataConsistency = (gameState) => {
       Object.values(obj).forEach(addPlayerIds);
     }
   };
-  addPlayerIds(periodFormation);
+  addPlayerIds(formation);
   
   // All formation players should exist in allPlayers
   formationPlayerIds.forEach(playerId => {
@@ -106,36 +106,36 @@ export const assertPlayerDataConsistency = (gameState) => {
 /**
  * Asserts that formation structure matches the team mode
  */
-export const assertFormationStructure = (periodFormation, teamMode) => {
-  expect(periodFormation).toBeDefined();
-  expect(periodFormation.goalie).toBeDefined();
+export const assertFormationStructure = (formation, teamMode) => {
+  expect(formation).toBeDefined();
+  expect(formation.goalie).toBeDefined();
   
   switch (teamMode) {
     case TEAM_MODES.PAIRS_7:
-      expect(periodFormation.leftPair).toBeDefined();
-      expect(periodFormation.rightPair).toBeDefined();
-      expect(periodFormation.subPair).toBeDefined();
-      expect(periodFormation.leftPair.defender).toBeDefined();
-      expect(periodFormation.leftPair.attacker).toBeDefined();
-      expect(periodFormation.rightPair.defender).toBeDefined();
-      expect(periodFormation.rightPair.attacker).toBeDefined();
+      expect(formation.leftPair).toBeDefined();
+      expect(formation.rightPair).toBeDefined();
+      expect(formation.subPair).toBeDefined();
+      expect(formation.leftPair.defender).toBeDefined();
+      expect(formation.leftPair.attacker).toBeDefined();
+      expect(formation.rightPair.defender).toBeDefined();
+      expect(formation.rightPair.attacker).toBeDefined();
       break;
       
     case TEAM_MODES.INDIVIDUAL_6:
-      expect(periodFormation.leftDefender).toBeDefined();
-      expect(periodFormation.rightDefender).toBeDefined();
-      expect(periodFormation.leftAttacker).toBeDefined();
-      expect(periodFormation.rightAttacker).toBeDefined();
-      expect(periodFormation.substitute).toBeDefined();
+      expect(formation.leftDefender).toBeDefined();
+      expect(formation.rightDefender).toBeDefined();
+      expect(formation.leftAttacker).toBeDefined();
+      expect(formation.rightAttacker).toBeDefined();
+      expect(formation.substitute).toBeDefined();
       break;
       
     case TEAM_MODES.INDIVIDUAL_7:
-      expect(periodFormation.leftDefender).toBeDefined();
-      expect(periodFormation.rightDefender).toBeDefined();
-      expect(periodFormation.leftAttacker).toBeDefined();
-      expect(periodFormation.rightAttacker).toBeDefined();
-      expect(periodFormation.substitute_1).toBeDefined();
-      expect(periodFormation.substitute_2).toBeDefined();
+      expect(formation.leftDefender).toBeDefined();
+      expect(formation.rightDefender).toBeDefined();
+      expect(formation.leftAttacker).toBeDefined();
+      expect(formation.rightAttacker).toBeDefined();
+      expect(formation.substitute_1).toBeDefined();
+      expect(formation.substitute_2).toBeDefined();
       break;
       
     default:
@@ -154,8 +154,8 @@ export const assertFormationStructure = (periodFormation, teamMode) => {
  */
 export const assertComponentPropsConsistency = (componentProps, expectedGameState) => {
   // Check that component props match game state
-  if (expectedGameState.periodFormation) {
-    expect(componentProps.periodFormation).toEqual(expectedGameState.periodFormation);
+  if (expectedGameState.formation) {
+    expect(componentProps.formation).toEqual(expectedGameState.formation);
   }
   
   if (expectedGameState.allPlayers) {
@@ -168,7 +168,7 @@ export const assertComponentPropsConsistency = (componentProps, expectedGameStat
   
   // Validate handler functions are provided
   const requiredHandlers = [
-    'setPeriodFormation',
+    'setFormation',
     'setAllPlayers',
     'setRotationQueue'
   ];
@@ -190,9 +190,9 @@ export const assertUIStateConsistency = (gameState, options = {}) => {
   
   if (checkPlayerPositions) {
     // Verify that player names appear in expected positions
-    const { periodFormation, allPlayers } = gameState;
+    const { formation, allPlayers } = gameState;
     
-    Object.entries(periodFormation).forEach(([position, playerId]) => {
+    Object.entries(formation).forEach(([position, playerId]) => {
       if (typeof playerId === 'string') {
         const player = allPlayers.find(p => p.id === playerId);
         if (player) {
@@ -251,7 +251,7 @@ export const assertPersistenceAfterRefresh = async (beforeState, afterRefreshCal
   expect(restoredState).toBeDefined();
   
   // Compare critical fields (allowing for some fields to be reset/different)
-  const criticalFields = ['periodFormation', 'allPlayers', 'teamMode'];
+  const criticalFields = ['formation', 'allPlayers', 'teamMode'];
   criticalFields.forEach(field => {
     if (beforeState[field] !== undefined) {
       expect(restoredState[field]).toEqual(beforeState[field]);

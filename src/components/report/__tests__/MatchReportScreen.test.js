@@ -1311,17 +1311,17 @@ describe('MatchReportScreen', () => {
       expect(screen.getByTestId('header-match-start-time')).toBeInTheDocument();
     });
 
-    it('validates periodFormation prop is passed to PlayerStatsTable', () => {
-      const customPeriodFormation = {
+    it('validates formation prop is passed to PlayerStatsTable', () => {
+      const customFormation = {
         goalie: { playerId: 'p1' },
         positions: [
           { playerId: 'p2', role: 'attacker' }
         ]
       };
 
-      render(<MatchReportScreen {...defaultProps} periodFormation={customPeriodFormation} />);
+      render(<MatchReportScreen {...defaultProps} formation={customFormation} />);
 
-      // PlayerStatsTable should receive the periodFormation
+      // PlayerStatsTable should receive the formation
       expect(screen.getByTestId('player-stats-table')).toBeInTheDocument();
     });
 

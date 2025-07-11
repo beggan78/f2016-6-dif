@@ -45,10 +45,10 @@ describe('createGoalieHandlers', () => {
 
     calculateGoalieSwitch.mockImplementation((gameState, newGoalieId) => ({
       ...gameState,
-      periodFormation: { ...gameState.periodFormation, goalie: newGoalieId },
+      formation: { ...gameState.formation, goalie: newGoalieId },
       allPlayers: gameState.allPlayers.map(p => 
         p.id === newGoalieId 
-          ? { ...p, stats: { ...p.stats, currentPeriodStatus: 'GOALIE' }}
+          ? { ...p, stats: { ...p.stats, currentStatus: 'GOALIE' }}
           : p
       )
     }));
@@ -118,7 +118,7 @@ describe('createGoalieHandlers', () => {
 
     it('should filter out non-outfield players from available options', () => {
       const playersWithGoalie = mockPlayers.map(p => 
-        p.id === '7' ? { ...p, stats: { ...p.stats, currentPeriodStatus: 'GOALIE' }} : p
+        p.id === '7' ? { ...p, stats: { ...p.stats, currentStatus: 'GOALIE' }} : p
       );
 
       getOutfieldPlayers.mockReturnValue(playersWithGoalie.slice(0, 6));
@@ -193,7 +193,7 @@ describe('createGoalieHandlers', () => {
     it('should update state with new game state', () => {
       const newGameState = {
         ...mockGameState,
-        periodFormation: { ...mockGameState.periodFormation, goalie: '3' },
+        formation: { ...mockGameState.formation, goalie: '3' },
         allPlayers: mockGameState.allPlayers
       };
 
@@ -213,7 +213,7 @@ describe('createGoalieHandlers', () => {
       const applyFn = animateStateChange.mock.calls[0][2];
       applyFn(newGameState);
 
-      expect(mockDependencies.stateUpdaters.setPeriodFormation).toHaveBeenCalledWith(newGameState.periodFormation);
+      expect(mockDependencies.stateUpdaters.setFormation).toHaveBeenCalledWith(newGameState.formation);
       expect(mockDependencies.stateUpdaters.setAllPlayers).toHaveBeenCalledWith(newGameState.allPlayers);
     });
 

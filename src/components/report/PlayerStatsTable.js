@@ -11,14 +11,14 @@ import { EVENT_TYPES } from '../../utils/gameEventLogger';
  * @param {Object} props - Component props
  * @param {Array} props.players - Array of player objects with stats
  * @param {string} props.teamMode - Team mode for context (PAIRS_7, INDIVIDUAL_6, etc.)
- * @param {Object} props.periodFormation - Formation data for starting role determination
+ * @param {Object} props.formation - Formation data for starting role determination
  * @param {Array} props.matchEvents - Array of match events for goal counting
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
  */
 export function PlayerStatsTable({
   players = [],
   teamMode,
-  periodFormation = {},
+  formation = {},
   matchEvents = [],
   goalScorers = {}
 }) {
@@ -58,7 +58,7 @@ export function PlayerStatsTable({
       className: 'text-center text-slate-300',
       render: (player) => {
         // First check current role based on formation
-        const currentRole = getPlayerCurrentRole(player.id, periodFormation, teamMode);
+        const currentRole = getPlayerCurrentRole(player.id, formation, teamMode);
         if (currentRole === 'GOALIE') return 'Goalie';
         if (currentRole === 'ATTACKER') return 'Attacker';
         if (currentRole === 'DEFENDER') return 'Defender';
@@ -132,7 +132,7 @@ export function PlayerStatsTable({
         return goals > 0 ? goals : '--';
       }
     }
-  ], [periodFormation, playerGoals, teamMode]);
+  ], [formation, playerGoals, teamMode]);
 
   // Sort players based on current sort settings
   const sortedPlayers = useMemo(() => {

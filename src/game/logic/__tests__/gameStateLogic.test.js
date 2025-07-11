@@ -31,7 +31,7 @@ describe('gameStateLogic', () => {
       const result = calculateSubstitution(gameState);
       
       expect(result).toBeDefined();
-      expect(result.periodFormation).toBeDefined();
+      expect(result.formation).toBeDefined();
       expect(result.allPlayers).toBeDefined();
       expect(result.rotationQueue).toBeDefined();
       expect(result.lastSubstitutionTimestamp).toBeDefined();
@@ -88,8 +88,8 @@ describe('gameStateLogic', () => {
       
       const result = calculatePositionSwitch(gameState, player1Id, player2Id);
       
-      expect(result.periodFormation.leftDefender).toBe(player2Id);
-      expect(result.periodFormation.leftAttacker).toBe(player1Id);
+      expect(result.formation.leftDefender).toBe(player2Id);
+      expect(result.formation.leftAttacker).toBe(player1Id);
       expect(result.playersToHighlight).toEqual([player1Id, player2Id]);
     });
 
@@ -100,8 +100,8 @@ describe('gameStateLogic', () => {
       
       const result = calculatePositionSwitch(gameState, player1Id, player2Id);
       
-      expect(result.periodFormation.leftPair.defender).toBe(player2Id);
-      expect(result.periodFormation.rightPair.defender).toBe(player1Id);
+      expect(result.formation.leftPair.defender).toBe(player2Id);
+      expect(result.formation.rightPair.defender).toBe(player1Id);
     });
 
     test('should update player roles when switching positions', () => {
@@ -121,8 +121,8 @@ describe('gameStateLogic', () => {
       expect(switchedAttacker.stats).toBeDefined();
       
       // Check role updates (the actual roles depend on handleRoleChange implementation)
-      expect(switchedDefender.stats.currentPeriodRole).toBeDefined();
-      expect(switchedAttacker.stats.currentPeriodRole).toBeDefined();
+      expect(switchedDefender.stats.currentRole).toBeDefined();
+      expect(switchedAttacker.stats.currentRole).toBeDefined();
     });
 
     test('should return unchanged state for invalid inputs', () => {
@@ -146,12 +146,12 @@ describe('gameStateLogic', () => {
     test('should switch goalie with field player in individual mode', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const newGoalieId = '1'; // Currently leftDefender
-      const currentGoalieId = gameState.periodFormation.goalie;
+      const currentGoalieId = gameState.formation.goalie;
       
       const result = calculateGoalieSwitch(gameState, newGoalieId);
       
-      expect(result.periodFormation.goalie).toBe(newGoalieId);
-      expect(result.periodFormation.leftDefender).toBe(currentGoalieId);
+      expect(result.formation.goalie).toBe(newGoalieId);
+      expect(result.formation.leftDefender).toBe(currentGoalieId);
       expect(result.playersToHighlight).toContain(newGoalieId);
       expect(result.playersToHighlight).toContain(currentGoalieId);
     });
@@ -159,7 +159,7 @@ describe('gameStateLogic', () => {
     test('should update player roles and statuses correctly', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       const newGoalieId = '1';
-      const currentGoalieId = gameState.periodFormation.goalie;
+      const currentGoalieId = gameState.formation.goalie;
       
       const result = calculateGoalieSwitch(gameState, newGoalieId);
       
@@ -174,18 +174,18 @@ describe('gameStateLogic', () => {
       
       // Check that roles/statuses are set (values depend on handleRoleChange)
       expect(newGoalie.stats.currentPairKey).toBe(POSITION_KEYS.GOALIE);
-      expect(formerGoalie.stats.currentPeriodStatus).toBeDefined();
+      expect(formerGoalie.stats.currentStatus).toBeDefined();
     });
 
     test('should handle goalie switch in pairs mode', () => {
       const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
       const newGoalieId = '1'; // leftPair defender
-      const currentGoalieId = gameState.periodFormation.goalie;
+      const currentGoalieId = gameState.formation.goalie;
       
       const result = calculateGoalieSwitch(gameState, newGoalieId);
       
-      expect(result.periodFormation.goalie).toBe(newGoalieId);
-      expect(result.periodFormation.leftPair.defender).toBe(currentGoalieId);
+      expect(result.formation.goalie).toBe(newGoalieId);
+      expect(result.formation.leftPair.defender).toBe(currentGoalieId);
     });
 
     test('should update rotation queue correctly', () => {
@@ -199,9 +199,9 @@ describe('gameStateLogic', () => {
       expect(result.rotationQueue).not.toContain(newGoalieId);
       
       // Former goalie should take new goalie's exact position in queue
-      expect(result.rotationQueue).toContain(gameState.periodFormation.goalie);
+      expect(result.rotationQueue).toContain(gameState.formation.goalie);
       if (originalQueuePosition >= 0) {
-        expect(result.rotationQueue[originalQueuePosition]).toBe(gameState.periodFormation.goalie);
+        expect(result.rotationQueue[originalQueuePosition]).toBe(gameState.formation.goalie);
       }
     });
 
@@ -209,7 +209,7 @@ describe('gameStateLogic', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
       // Invalid: same as current goalie
-      let result = calculateGoalieSwitch(gameState, gameState.periodFormation.goalie);
+      let result = calculateGoalieSwitch(gameState, gameState.formation.goalie);
       expect(result).toBe(gameState);
       
       // Invalid: non-existent player
@@ -238,7 +238,7 @@ describe('gameStateLogic', () => {
       // nextPlayerIdToSubOut should now point to the new first player in queue
       expect(result.nextPlayerIdToSubOut).toBe(result.rotationQueue[0]);
       expect(result.nextPlayerIdToSubOut).not.toBe(nextPlayerToSubOut);
-      expect(result.nextPlayerIdToSubOut).not.toBe(result.periodFormation.goalie);
+      expect(result.nextPlayerIdToSubOut).not.toBe(result.formation.goalie);
     });
 
     test('should update nextPlayerIdToSubOut when new goalie was next to come off (7-player mode)', () => {
@@ -253,7 +253,7 @@ describe('gameStateLogic', () => {
       // nextPlayerIdToSubOut should now point to the new first player in queue
       expect(result.nextPlayerIdToSubOut).toBe(result.rotationQueue[0]);
       expect(result.nextPlayerIdToSubOut).not.toBe(nextPlayerToSubOut);
-      expect(result.nextPlayerIdToSubOut).not.toBe(result.periodFormation.goalie);
+      expect(result.nextPlayerIdToSubOut).not.toBe(result.formation.goalie);
       
       // nextNextPlayerIdToSubOut should be updated too
       if (result.rotationQueue.length >= 2) {
@@ -310,14 +310,14 @@ describe('gameStateLogic', () => {
         playersComingOnIds: ['5'],
         playersGoingOffIds: ['1'],
         playersComingOnOriginalStats: [
-          { id: '5', stats: { currentPeriodStatus: 'substitute' } }
+          { id: '5', stats: { currentStatus: 'substitute' } }
         ],
         teamMode: TEAM_MODES.INDIVIDUAL_6
       };
       
       const result = calculateUndo(gameState, lastSubstitution);
       
-      expectFormationToMatch(result.periodFormation, lastSubstitution.beforeFormation, TEAM_MODES.INDIVIDUAL_6);
+      expectFormationToMatch(result.formation, lastSubstitution.beforeFormation, TEAM_MODES.INDIVIDUAL_6);
       expect(result.nextPlayerIdToSubOut).toBe(lastSubstitution.beforeNextPlayerId);
       expect(result.lastSubstitutionTimestamp).toBeNull();
     });
@@ -342,7 +342,7 @@ describe('gameStateLogic', () => {
         playersComingOnIds: ['5'],
         playersGoingOffIds: ['1'],
         playersComingOnOriginalStats: [
-          { id: '5', stats: { currentPeriodStatus: 'substitute', timeAsSubSeconds: 10 } }
+          { id: '5', stats: { currentStatus: 'substitute', timeAsSubSeconds: 10 } }
         ],
         teamMode: TEAM_MODES.INDIVIDUAL_6
       };
@@ -351,7 +351,7 @@ describe('gameStateLogic', () => {
       
       // Player who went off should get credit for time spent on bench
       const restoredPlayer = result.allPlayers.find(p => p.id === '1');
-      expect(restoredPlayer.stats.currentPeriodStatus).toBe('on_field');
+      expect(restoredPlayer.stats.currentStatus).toBe('on_field');
       
       // Restore original Date.now
       Date.now = originalDateNow;
@@ -434,8 +434,8 @@ describe('gameStateLogic', () => {
       
       const result = calculateSubstituteSwap(gameState, sub1Id, sub2Id);
       
-      expect(result.periodFormation.substitute_1).toBe(sub2Id);
-      expect(result.periodFormation.substitute_2).toBe(sub1Id);
+      expect(result.formation.substitute_1).toBe(sub2Id);
+      expect(result.formation.substitute_2).toBe(sub1Id);
       expect(result.playersToHighlight).toEqual([sub1Id, sub2Id]);
     });
 
@@ -473,7 +473,7 @@ describe('gameStateLogic', () => {
 
     test('should update next player target for individual modes', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
-      gameState.periodFormation.leftDefender = '2';
+      gameState.formation.leftDefender = '2';
       
       const result = calculateNextSubstitutionTarget(gameState, 'leftDefender', 'player');
       

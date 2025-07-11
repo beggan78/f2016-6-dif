@@ -301,7 +301,7 @@ describe('Integration: Score Persistence', () => {
         teamMode: TEAM_MODES.INDIVIDUAL_7,
         allPlayers: initialRoster.slice(0, 7),
         selectedSquadIds: initialRoster.slice(0, 7).map(p => p.id),
-        periodFormation: {
+        formation: {
           goalie: 'p1',
           leftDefender: 'p2',
           rightDefender: 'p3',

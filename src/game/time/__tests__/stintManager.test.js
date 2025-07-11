@@ -53,8 +53,8 @@ describe('stintManager', () => {
       
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.DEFENDER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.DEFENDER,
           timeOnFieldSeconds: 100,
           timeAsDefenderSeconds: 60,
           timeAsAttackerSeconds: 40,
@@ -78,8 +78,8 @@ describe('stintManager', () => {
       
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.ATTACKER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.ATTACKER,
           timeOnFieldSeconds: 50,
           timeAsDefenderSeconds: 20,
           timeAsAttackerSeconds: 30,
@@ -102,8 +102,8 @@ describe('stintManager', () => {
       
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.SUBSTITUTE,
-          currentPeriodRole: PLAYER_ROLES.SUBSTITUTE,
+          currentStatus: PLAYER_STATUS.SUBSTITUTE,
+          currentRole: PLAYER_ROLES.SUBSTITUTE,
           timeAsSubSeconds: 30,
           lastStintStartTimeEpoch: timeHelpers.baseTime
         }
@@ -122,8 +122,8 @@ describe('stintManager', () => {
       
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.GOALIE,
-          currentPeriodRole: PLAYER_ROLES.GOALIE,
+          currentStatus: PLAYER_STATUS.GOALIE,
+          currentRole: PLAYER_ROLES.GOALIE,
           timeAsGoalieSeconds: 120,
           lastStintStartTimeEpoch: timeHelpers.baseTime
         }
@@ -142,7 +142,7 @@ describe('stintManager', () => {
       
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: 'unknown_status',
+          currentStatus: 'unknown_status',
           timeOnFieldSeconds: 100,
           lastStintStartTimeEpoch: timeHelpers.baseTime
         }
@@ -196,8 +196,8 @@ describe('stintManager', () => {
     test('should preserve all other player properties', () => {
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.DEFENDER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.DEFENDER,
           timeOnFieldSeconds: 100,
           timeAsDefenderSeconds: 60,
           lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -207,8 +207,8 @@ describe('stintManager', () => {
       const newTime = timeHelpers.getTimeAfter(5);
       const result = startNewStint(player, newTime);
       
-      expect(result.stats.currentPeriodStatus).toBe(PLAYER_STATUS.ON_FIELD);
-      expect(result.stats.currentPeriodRole).toBe(PLAYER_ROLES.DEFENDER);
+      expect(result.stats.currentStatus).toBe(PLAYER_STATUS.ON_FIELD);
+      expect(result.stats.currentRole).toBe(PLAYER_ROLES.DEFENDER);
       expect(result.stats.timeOnFieldSeconds).toBe(100);
       expect(result.stats.timeAsDefenderSeconds).toBe(60);
       expect(result.stats.lastStintStartTimeEpoch).toBe(newTime);
@@ -222,8 +222,8 @@ describe('stintManager', () => {
       
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.ATTACKER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.ATTACKER,
           timeOnFieldSeconds: 50,
           timeAsAttackerSeconds: 30,
           lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -265,8 +265,8 @@ describe('stintManager', () => {
         
         const player = createMockPlayer('1', {
           stats: {
-            currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-            currentPeriodRole: PLAYER_ROLES.DEFENDER,
+            currentStatus: PLAYER_STATUS.ON_FIELD,
+            currentRole: PLAYER_ROLES.DEFENDER,
             timeOnFieldSeconds: 80,
             timeAsDefenderSeconds: 50,
             lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -302,7 +302,7 @@ describe('stintManager', () => {
       test('should reset stint start time for on_field player', () => {
         const player = createMockPlayer('1', {
           stats: {
-            currentPeriodStatus: 'on_field',
+            currentStatus: 'on_field',
             lastStintStartTimeEpoch: timeHelpers.baseTime
           }
         });
@@ -316,7 +316,7 @@ describe('stintManager', () => {
       test('should reset stint start time for substitute player', () => {
         const player = createMockPlayer('1', {
           stats: {
-            currentPeriodStatus: 'substitute',
+            currentStatus: 'substitute',
             lastStintStartTimeEpoch: timeHelpers.baseTime
           }
         });
@@ -330,7 +330,7 @@ describe('stintManager', () => {
       test('should reset stint start time for goalie player', () => {
         const player = createMockPlayer('1', {
           stats: {
-            currentPeriodStatus: 'goalie',
+            currentStatus: 'goalie',
             lastStintStartTimeEpoch: timeHelpers.baseTime
           }
         });
@@ -344,7 +344,7 @@ describe('stintManager', () => {
       test('should not reset stint start time for inactive player', () => {
         const player = createMockPlayer('1', {
           stats: {
-            currentPeriodStatus: 'inactive',
+            currentStatus: 'inactive',
             lastStintStartTimeEpoch: timeHelpers.baseTime
           }
         });
@@ -358,8 +358,8 @@ describe('stintManager', () => {
       test('should preserve all other player stats', () => {
         const player = createMockPlayer('1', {
           stats: {
-            currentPeriodStatus: 'on_field',
-            currentPeriodRole: PLAYER_ROLES.ATTACKER,
+            currentStatus: 'on_field',
+            currentRole: PLAYER_ROLES.ATTACKER,
             timeOnFieldSeconds: 120,
             timeAsAttackerSeconds: 80,
             lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -369,8 +369,8 @@ describe('stintManager', () => {
         const newTime = timeHelpers.getTimeAfter(15);
         const result = handlePauseResumeTime(player, newTime, false);
         
-        expect(result.stats.currentPeriodStatus).toBe('on_field');
-        expect(result.stats.currentPeriodRole).toBe(PLAYER_ROLES.ATTACKER);
+        expect(result.stats.currentStatus).toBe('on_field');
+        expect(result.stats.currentRole).toBe(PLAYER_ROLES.ATTACKER);
         expect(result.stats.timeOnFieldSeconds).toBe(120);
         expect(result.stats.timeAsAttackerSeconds).toBe(80);
         expect(result.stats.lastStintStartTimeEpoch).toBe(newTime);
@@ -386,8 +386,8 @@ describe('stintManager', () => {
       // Start with fresh player
       let player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.DEFENDER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.DEFENDER,
           timeOnFieldSeconds: 0,
           timeAsDefenderSeconds: 0,
           lastStintStartTimeEpoch: 0
@@ -413,8 +413,8 @@ describe('stintManager', () => {
       
       let player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.ATTACKER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.ATTACKER,
           timeOnFieldSeconds: 10,
           timeAsAttackerSeconds: 8,
           lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -441,8 +441,8 @@ describe('stintManager', () => {
     test('should reset stint timer without adding time to counters', () => {
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.ATTACKER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.ATTACKER,
           timeOnFieldSeconds: 50,
           timeAsAttackerSeconds: 30,
           lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -455,8 +455,8 @@ describe('stintManager', () => {
       // Time counters should remain unchanged
       expect(result.stats.timeOnFieldSeconds).toBe(50);
       expect(result.stats.timeAsAttackerSeconds).toBe(30);
-      expect(result.stats.currentPeriodStatus).toBe(PLAYER_STATUS.ON_FIELD);
-      expect(result.stats.currentPeriodRole).toBe(PLAYER_ROLES.ATTACKER);
+      expect(result.stats.currentStatus).toBe(PLAYER_STATUS.ON_FIELD);
+      expect(result.stats.currentRole).toBe(PLAYER_ROLES.ATTACKER);
       
       // Only stint timer should be updated
       expect(result.stats.lastStintStartTimeEpoch).toBe(newTime);
@@ -490,8 +490,8 @@ describe('stintManager', () => {
     test('should preserve all player stats except stint timer', () => {
       const player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.SUBSTITUTE,
-          currentPeriodRole: PLAYER_ROLES.SUBSTITUTE,
+          currentStatus: PLAYER_STATUS.SUBSTITUTE,
+          currentRole: PLAYER_ROLES.SUBSTITUTE,
           timeOnFieldSeconds: 120,
           timeAsAttackerSeconds: 80,
           timeAsDefenderSeconds: 40,
@@ -512,8 +512,8 @@ describe('stintManager', () => {
       expect(result.stats.timeAsGoalieSeconds).toBe(0);
       
       // Status and role should be preserved
-      expect(result.stats.currentPeriodStatus).toBe(PLAYER_STATUS.SUBSTITUTE);
-      expect(result.stats.currentPeriodRole).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(result.stats.currentStatus).toBe(PLAYER_STATUS.SUBSTITUTE);
+      expect(result.stats.currentRole).toBe(PLAYER_ROLES.SUBSTITUTE);
       
       // Only stint timer should change
       expect(result.stats.lastStintStartTimeEpoch).toBe(newTime);
@@ -533,8 +533,8 @@ describe('stintManager', () => {
       // Start: Player on field for 10 seconds
       let player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.ATTACKER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.ATTACKER,
           timeOnFieldSeconds: 0,
           timeAsAttackerSeconds: 0,
           lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -581,8 +581,8 @@ describe('stintManager', () => {
       // Scenario: Player has 30 seconds accumulated, timer paused for 5 seconds, then substituted
       let player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.DEFENDER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.DEFENDER,
           timeOnFieldSeconds: 30,
           timeAsDefenderSeconds: 25,
           timeAsAttackerSeconds: 5,
@@ -617,8 +617,8 @@ describe('stintManager', () => {
       // Normal substitution without pause
       let player = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.ATTACKER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.ATTACKER,
           timeOnFieldSeconds: 20,
           timeAsAttackerSeconds: 15,
           lastStintStartTimeEpoch: timeHelpers.baseTime
@@ -641,8 +641,8 @@ describe('stintManager', () => {
 
       const basePlayer = createMockPlayer('1', {
         stats: {
-          currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-          currentPeriodRole: PLAYER_ROLES.DEFENDER,
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.DEFENDER,
           timeOnFieldSeconds: 15,
           timeAsDefenderSeconds: 10,
           lastStintStartTimeEpoch: timeHelpers.baseTime

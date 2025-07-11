@@ -554,7 +554,7 @@ describe('GamePersistenceManager', () => {
         view: 'config',
         selectedSquadIds: [],
         teamMode: 'PAIRS_7',
-        periodFormation: expect.any(Object)
+        formation: expect.any(Object)
       });
     });
   });
@@ -567,7 +567,7 @@ describe('GamePersistenceManager', () => {
         selectedSquadIds: ['1'],
         reactSpecificField: 'should not be saved',
         functions: () => {},
-        periodFormation: { goalie: '1' }
+        formation: { goalie: '1' }
       };
       
       jest.spyOn(gameManager, 'saveState');
@@ -578,7 +578,7 @@ describe('GamePersistenceManager', () => {
       expect(savedState).not.toHaveProperty('reactSpecificField');
       expect(savedState).not.toHaveProperty('functions');
       expect(savedState).toHaveProperty('allPlayers');
-      expect(savedState).toHaveProperty('periodFormation');
+      expect(savedState).toHaveProperty('formation');
     });
 
     it('should save homeScore and awayScore fields', () => {
@@ -589,7 +589,7 @@ describe('GamePersistenceManager', () => {
         homeScore: 3,
         awayScore: 2,
         opponentTeamName: 'Test Opponent',
-        periodFormation: { goalie: '1' },
+        formation: { goalie: '1' },
         gameLog: []
       };
       
@@ -610,7 +610,7 @@ describe('GamePersistenceManager', () => {
         allPlayers: [{ id: '1', name: 'Player 1' }],
         view: 'game',
         selectedSquadIds: ['1'],
-        periodFormation: { goalie: '1' },
+        formation: { goalie: '1' },
         gameLog: []
       };
       
@@ -634,7 +634,7 @@ describe('GamePersistenceManager', () => {
         selectedSquadIds: ['1'],
         homeScore: 0,
         awayScore: 0,
-        periodFormation: { goalie: '1' },
+        formation: { goalie: '1' },
         gameLog: []
       };
       

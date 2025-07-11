@@ -18,7 +18,7 @@ const GoalScorerModal = ({
   existingGoalData = null,
   matchTime = '00:00',
   team = 'home',
-  periodFormation = null,
+  formation = null,
   teamMode = null
 }) => {
   // Default to "No specific scorer" for new goals, existing scorer for corrections
@@ -36,10 +36,10 @@ const GoalScorerModal = ({
 
   // Get position icon for a player
   const getPositionIcon = (playerId) => {
-    if (!periodFormation || !teamMode) return RotateCcw;
+    if (!formation || !teamMode) return RotateCcw;
     
-    const position = getPlayerPositionDisplay(playerId, periodFormation, teamMode);
-    const onField = isPlayerOnField(playerId, periodFormation, teamMode);
+    const position = getPlayerPositionDisplay(playerId, formation, teamMode);
+    const onField = isPlayerOnField(playerId, formation, teamMode);
     
     if (!onField) return RotateCcw; // Substitute
     if (position.includes('Attacker')) return Sword;
@@ -50,10 +50,10 @@ const GoalScorerModal = ({
 
   // Get position color classes
   const getPositionColorClasses = (playerId) => {
-    if (!periodFormation || !teamMode) return 'text-gray-400';
+    if (!formation || !teamMode) return 'text-gray-400';
     
-    const position = getPlayerPositionDisplay(playerId, periodFormation, teamMode);
-    const onField = isPlayerOnField(playerId, periodFormation, teamMode);
+    const position = getPlayerPositionDisplay(playerId, formation, teamMode);
+    const onField = isPlayerOnField(playerId, formation, teamMode);
     
     if (!onField) return 'text-gray-400';
     if (position.includes('Attacker')) return 'text-red-500';

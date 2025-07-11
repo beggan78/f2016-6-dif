@@ -20,7 +20,7 @@ describe('Player Utilities', () => {
       name: 'Alice', 
       stats: { 
         isInactive: false, 
-        currentPeriodStatus: 'on_field' 
+        currentStatus: 'on_field'
       } 
     },
     { 
@@ -28,7 +28,7 @@ describe('Player Utilities', () => {
       name: 'Bob', 
       stats: { 
         isInactive: true, 
-        currentPeriodStatus: 'substitute' 
+        currentStatus: 'substitute'
       } 
     },
     { 
@@ -36,7 +36,7 @@ describe('Player Utilities', () => {
       name: 'Charlie', 
       stats: { 
         isInactive: false, 
-        currentPeriodStatus: 'goalie' 
+        currentStatus: 'goalie'
       } 
     },
     { 
@@ -44,7 +44,7 @@ describe('Player Utilities', () => {
       name: 'Diana', 
       stats: { 
         isInactive: false, 
-        currentPeriodStatus: 'substitute' 
+        currentStatus: 'substitute'
       } 
     },
     { 
@@ -52,7 +52,7 @@ describe('Player Utilities', () => {
       name: 'Eve', 
       stats: { 
         isInactive: false, 
-        currentPeriodStatus: 'on_field' 
+        currentStatus: 'on_field'
       } 
     }
   ];

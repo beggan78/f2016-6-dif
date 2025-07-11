@@ -255,7 +255,7 @@ export const simulateErrorScenarios = async (errorConfig) => {
     // Inject invalid data into localStorage
     localStorage.setItem('dif-coach-game-state', JSON.stringify({
       invalidField: 'corrupted',
-      periodFormation: null,
+      formation: null,
       allPlayers: 'not_an_array'
     }));
     errorResults.push('invalid_data_injected');
@@ -337,11 +337,11 @@ export const validateCrossComponentState = (gameState, componentStates = {}) => 
   
   // Validate GameScreen state consistency
   if (componentStates.gameScreen) {
-    const { periodFormation, allPlayers, rotationQueue } = componentStates.gameScreen;
+    const { formation, allPlayers, rotationQueue } = componentStates.gameScreen;
     
     validations.push({
-      check: periodFormation && typeof periodFormation === 'object',
-      message: 'GameScreen periodFormation should be an object',
+      check: formation && typeof formation === 'object',
+      message: 'GameScreen formation should be an object',
       component: 'GameScreen'
     });
     
@@ -449,8 +449,8 @@ export const validateAnimationState = (animationState, expectedTransitions = [])
  */
 const createDefaultPlayerStats = () => ({
   isInactive: false,
-  currentPeriodStatus: PLAYER_STATUS.SUBSTITUTE,
-  currentPeriodRole: PLAYER_ROLES.SUBSTITUTE,
+  currentStatus: PLAYER_STATUS.SUBSTITUTE,
+  currentRole: PLAYER_ROLES.SUBSTITUTE,
   currentPairKey: null,
   lastStintStartTimeEpoch: Date.now(),
   timeOnFieldSeconds: 0,
@@ -503,12 +503,12 @@ export const createRealisticGameState = (options = {}) => {
   }
   
   // Create formation based on type
-  let periodFormation = {};
+  let formation = {};
   let rotationQueue = selectedPlayers.map(p => p.id);
   
   switch (teamMode) {
     case TEAM_MODES.PAIRS_7:
-      periodFormation = {
+      formation = {
         goalie: selectedPlayers[0].id,
         leftPair: {
           defender: selectedPlayers[1].id,
@@ -525,7 +525,7 @@ export const createRealisticGameState = (options = {}) => {
       };
       break;
     case TEAM_MODES.INDIVIDUAL_6:
-      periodFormation = {
+      formation = {
         goalie: selectedPlayers[0].id,
         leftDefender: selectedPlayers[1].id,
         rightDefender: selectedPlayers[2].id,
@@ -537,7 +537,7 @@ export const createRealisticGameState = (options = {}) => {
       break;
     case TEAM_MODES.INDIVIDUAL_7:
     default:
-      periodFormation = {
+      formation = {
         goalie: selectedPlayers[0].id,
         leftDefender: selectedPlayers[1].id,
         rightDefender: selectedPlayers[2].id,
@@ -553,7 +553,7 @@ export const createRealisticGameState = (options = {}) => {
   return {
     teamMode,
     periodNumber,
-    periodFormation,
+    formation,
     allPlayers: selectedPlayers,
     rotationQueue,
     selectedSquadIds: selectedPlayers.map(p => p.id),
@@ -777,8 +777,8 @@ export const validateDataConsistency = (gameState, expectedState = {}) => {
   // Validate formation consistency
   if (expectedState.formationGoalie) {
     validations.push({
-      check: gameState.periodFormation.goalie === expectedState.formationGoalie,
-      message: `Expected formation goalie to be ${expectedState.formationGoalie}, got ${gameState.periodFormation.goalie}`
+      check: gameState.formation.goalie === expectedState.formationGoalie,
+      message: `Expected formation goalie to be ${expectedState.formationGoalie}, got ${gameState.formation.goalie}`
     });
   }
   

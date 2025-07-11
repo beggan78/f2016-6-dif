@@ -46,7 +46,7 @@ jest.mock('../formations/FormationRenderer', () => ({
   FormationRenderer: ({ 
     children, 
     teamMode, 
-    periodFormation, 
+    formation,
     allPlayers, 
     longPressHandlers,
     animationState,
@@ -249,7 +249,7 @@ describe('GameScreen', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.PAIRS_7,
-        periodFormation: createMockFormation(TEAM_MODES.PAIRS_7)
+        formation: createMockFormation(TEAM_MODES.PAIRS_7)
       };
       
       render(<GameScreen {...props} />);
@@ -262,7 +262,7 @@ describe('GameScreen', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_6,
-        periodFormation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
+        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
       };
       
       render(<GameScreen {...props} />);
@@ -595,7 +595,7 @@ describe('GameScreen', () => {
     it('should handle invalid formation data', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {}
+        formation: {}
       };
       
       expect(() => render(<GameScreen {...props} />)).not.toThrow();
@@ -604,7 +604,7 @@ describe('GameScreen', () => {
     it('should handle missing callback functions', () => {
       const props = {
         ...defaultProps,
-        setPeriodFormation: undefined,
+        setFormation: undefined,
         setAllPlayers: undefined
       };
       

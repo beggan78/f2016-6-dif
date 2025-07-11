@@ -59,7 +59,7 @@ describe('UI positionUtils', () => {
     });
 
     test('should return RotateCcw icon for substitute positions', () => {
-      const result1 = getPositionIcon('substitute', mockSubstitutePositions6);
+      const result1 = getPositionIcon('substitute_1', mockSubstitutePositions6);
       const result2 = getPositionIcon('substitute_1', mockSubstitutePositions7);
       const result3 = getPositionIcon('substitute_2', mockSubstitutePositions7);
       
@@ -94,7 +94,7 @@ describe('UI positionUtils', () => {
       expect(getPositionDisplayName('rightDefender', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Right Defender');
       expect(getPositionDisplayName('leftAttacker', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Left Attacker');
       expect(getPositionDisplayName('rightAttacker', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Right Attacker');
-      expect(getPositionDisplayName('substitute', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_1', null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe('Substitute');
     });
 
     test('should return proper display names for individual 7 positions', () => {
@@ -134,7 +134,7 @@ describe('UI positionUtils', () => {
     test('should not show inactive for non-7-player team modes', () => {
       const mockPlayer = { stats: { isInactive: true } };
       
-      const displayName = getPositionDisplayName('substitute', mockPlayer, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6);
+      const displayName = getPositionDisplayName('substitute_1', mockPlayer, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6);
       expect(displayName).toBe('Substitute'); // Should not show "Inactive", but still show proper display name
     });
   });

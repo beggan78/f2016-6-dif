@@ -47,7 +47,7 @@ User Action → Position Capture → Logic Calculation → CSS Animation → Sta
 #### **Phase 1: Position Capture (0ms)**
 ```javascript
 const beforePositions = captureAllPlayerPositions(
-  gameState.periodFormation, 
+  gameState.formation, 
   gameState.allPlayers, 
   gameState.teamMode
 );
@@ -57,7 +57,7 @@ const beforePositions = captureAllPlayerPositions(
 ```javascript
 const newGameState = pureLogicFunction(gameState);
 const afterPositions = captureAllPlayerPositions(
-  newGameState.periodFormation, 
+  newGameState.formation, 
   newGameState.allPlayers, 
   newGameState.teamMode
 );
@@ -140,7 +140,7 @@ const handleYourOperation = () => {
     gameStateFactory(),           // Current game state
     calculateYourOperation,       // Pure logic function
     (newGameState) => {          // State update function
-      setPeriodFormation(newGameState.periodFormation);
+      setFormation(newGameState.formation);
       setAllPlayers(newGameState.allPlayers);
       // Apply other state updates as needed
     },
@@ -164,7 +164,7 @@ export const calculateYourNewOperation = (gameState, ...params) => {
   }
   
   // Calculate new formation and players
-  const newFormation = { ...gameState.periodFormation };
+  const newFormation = { ...gameState.formation };
   const newPlayers = gameState.allPlayers.map(player => {
     // Apply your logic here
     return updatedPlayer;
@@ -175,7 +175,7 @@ export const calculateYourNewOperation = (gameState, ...params) => {
   
   return {
     ...gameState,
-    periodFormation: newFormation,
+    formation: newFormation,
     allPlayers: newPlayers,
     playersToHighlight: playersToHighlight
   };
@@ -191,7 +191,7 @@ const handleYourNewOperation = () => {
     calculateYourNewOperation,
     (newGameState) => {
       // Apply all necessary state updates
-      setPeriodFormation(newGameState.periodFormation);
+      setFormation(newGameState.formation);
       setAllPlayers(newGameState.allPlayers);
     },
     setAnimationState,

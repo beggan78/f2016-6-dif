@@ -25,8 +25,8 @@ import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtil
 
 export function GameScreen({ 
   currentPeriodNumber, 
-  periodFormation, 
-  setPeriodFormation,
+  formation,
+  setFormation,
   allPlayers, 
   setAllPlayers,
   matchTimerSeconds, 
@@ -79,7 +79,7 @@ export function GameScreen({
 
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => ({
-    periodFormation,
+    formation,
     allPlayers,
     teamMode,
     nextPhysicalPairToSubOut,
@@ -97,7 +97,7 @@ export function GameScreen({
     homeScore,
     awayScore
   }), [
-    periodFormation, allPlayers, teamMode, nextPhysicalPairToSubOut,
+    formation, allPlayers, teamMode, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, homeScore, awayScore
@@ -105,7 +105,7 @@ export function GameScreen({
 
   // State updaters object for handlers
   const stateUpdaters = React.useMemo(() => ({
-    setPeriodFormation,
+    setFormation,
     setAllPlayers,
     setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut,
@@ -123,7 +123,7 @@ export function GameScreen({
     resetSubTimer,
     handleUndoSubstitutionTimer
   }), [
-    setPeriodFormation, setAllPlayers, setNextPhysicalPairToSubOut,
+    setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setLastSubstitution,
     setScore, homeScore, awayScore, addHomeGoal, addAwayGoal, resetSubTimer,
@@ -157,11 +157,11 @@ export function GameScreen({
   const fieldPositionCallbacks = React.useMemo(() =>
     createFieldPositionHandlers(
       teamMode,
-      periodFormation,
+      formation,
       allPlayers,
       nextPlayerIdToSubOut,
       modalHandlers
-    ), [teamMode, periodFormation, allPlayers, nextPlayerIdToSubOut, modalHandlers]
+    ), [teamMode, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers]
   );
 
   const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamMode);
@@ -223,7 +223,7 @@ export function GameScreen({
     
     // Calculate current stint time using time module
     let currentStintTime = 0;
-    if (stats.currentPeriodStatus === 'on_field') {
+    if (stats.currentStatus === 'on_field') {
       currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, Date.now());
     }
     
@@ -234,10 +234,10 @@ export function GameScreen({
     let attackerTime = stats.timeAsAttackerSeconds || 0;
     let defenderTime = stats.timeAsDefenderSeconds || 0;
     
-    if (stats.currentPeriodStatus === 'on_field' && stats.currentPeriodRole) {
-      if (stats.currentPeriodRole === 'Attacker') {
+    if (stats.currentStatus === 'on_field' && stats.currentRole) {
+      if (stats.currentRole === 'Attacker') {
         attackerTime += currentStintTime;
-      } else if (stats.currentPeriodRole === 'Defender') {
+      } else if (stats.currentRole === 'Defender') {
         defenderTime += currentStintTime;
       }
     }
@@ -322,7 +322,7 @@ export function GameScreen({
       {/* Field & Subs Visualization */}
       <FormationRenderer
           teamMode={teamMode}
-          periodFormation={periodFormation}
+          formation={formation}
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
@@ -384,10 +384,10 @@ export function GameScreen({
       {/* Substitute Player Modal */}
       <SubstitutePlayerModal
         isOpen={modalHandlers.modals.substitute.isOpen}
-        onInactivate={() => substitutionHandlers.handleInactivatePlayer(modalHandlers.modals.substitute, allPlayers, periodFormation)}
+        onInactivate={() => substitutionHandlers.handleInactivatePlayer(modalHandlers.modals.substitute, allPlayers, formation)}
         onActivate={() => substitutionHandlers.handleActivatePlayer(modalHandlers.modals.substitute)}
         onCancel={substitutionHandlers.handleCancelSubstituteModal}
-        onSetAsNextToGoIn={() => substitutionHandlers.handleSetAsNextToGoIn(modalHandlers.modals.substitute, periodFormation)}
+        onSetAsNextToGoIn={() => substitutionHandlers.handleSetAsNextToGoIn(modalHandlers.modals.substitute, formation)}
         playerName={modalHandlers.modals.substitute.playerName}
         isCurrentlyInactive={modalHandlers.modals.substitute.isCurrentlyInactive}
         canSetAsNextToGoIn={modalHandlers.modals.substitute.canSetAsNextToGoIn}
@@ -432,15 +432,15 @@ export function GameScreen({
         onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
         eligiblePlayers={sortPlayersByGoalScoringRelevance(
-          selectedSquadPlayers.filter(p => p.currentPeriodStatus !== 'inactive'),
-          periodFormation,
+          selectedSquadPlayers.filter(p => p.currentStatus !== 'inactive'),
+          formation,
           teamMode
         )}
         mode={modalHandlers.modals.goalScorer.mode}
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}
         team={modalHandlers.modals.goalScorer.team}
-        periodFormation={periodFormation}
+        formation={formation}
         teamMode={teamMode}
       />
     </div>

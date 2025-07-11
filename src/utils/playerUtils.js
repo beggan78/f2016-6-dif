@@ -18,8 +18,8 @@ export const initializePlayers = (roster) => roster.map((name, index) => ({
     timeAsDefenderSeconds: 0, // Total time spent as defender
     timeAsAttackerSeconds: 0, // Total time spent as attacker
     // Temporary per-period tracking
-    currentPeriodRole: null, // 'Goalie', 'Defender', 'Attacker'
-    currentPeriodStatus: null, // 'on_field', 'substitute', 'goalie'
+    currentRole: null, // 'Goalie', 'Defender', 'Attacker'
+    currentStatus: null, // 'on_field', 'substitute', 'goalie'
     lastStintStartTimeEpoch: 0, // For calculating duration of current stint
     currentPairKey: null, // 'leftPair', 'rightPair', 'subPair'
     isInactive: false, // For 7-player individual mode - temporarily removes player from rotation
@@ -122,7 +122,7 @@ export const createPlayerLookup = (allPlayers) => {
  */
 export const getPlayersByStatus = (allPlayers, selectedSquadIds, status) => {
   return allPlayers.filter(p => 
-    selectedSquadIds.includes(p.id) && p.stats?.currentPeriodStatus === status
+    selectedSquadIds.includes(p.id) && p.stats?.currentStatus === status
   );
 };
 

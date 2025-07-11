@@ -9,9 +9,9 @@ describe('SubstitutionManager', () => {
 
   beforeEach(() => {
     mockPlayers = [
-      { id: '1', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000 } },
-      { id: '2', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000 } },
-      { id: '3', stats: { currentPeriodStatus: 'substitute', currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000 } },
+      { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000 } },
+      { id: '2', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000 } },
+      { id: '3', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000 } },
     ];
   });
 
@@ -28,7 +28,7 @@ describe('SubstitutionManager', () => {
 
     test('handles pairs substitution correctly', () => {
       const context = {
-        periodFormation: mockFormation,
+        formation: mockFormation,
         nextPhysicalPairToSubOut: 'leftPair',
         allPlayers: mockPlayers,
         currentTimeEpoch: 2000
@@ -60,16 +60,16 @@ describe('SubstitutionManager', () => {
     test('handles individual substitution correctly', () => {
       // Create realistic player data with playing times
       const playersWithTime = [
-        { id: '1', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 300, isInactive: false } },
-        { id: '2', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 250, isInactive: false } },
-        { id: '3', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 200, isInactive: false } },
-        { id: '4', stats: { currentPeriodStatus: 'on_field', currentPeriodRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 150, isInactive: false } },
-        { id: '5', stats: { currentPeriodStatus: 'substitute', currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 100, isInactive: false } },
-        { id: '6', stats: { currentPeriodStatus: 'goalie', currentPeriodRole: PLAYER_ROLES.GOALIE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 0, isInactive: false } }
+        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 300, isInactive: false } },
+        { id: '2', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 250, isInactive: false } },
+        { id: '3', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 200, isInactive: false } },
+        { id: '4', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 150, isInactive: false } },
+        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 100, isInactive: false } },
+        { id: '6', stats: { currentStatus: 'goalie', currentRole: PLAYER_ROLES.GOALIE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 0, isInactive: false } }
       ];
 
       const context = {
-        periodFormation: mockFormation,
+        formation: mockFormation,
         nextPlayerIdToSubOut: '1', // Player with most time (300s) should rotate off
         allPlayers: playersWithTime,
         rotationQueue: ['1', '2', '3', '4', '5'],
@@ -102,7 +102,7 @@ describe('SubstitutionManager', () => {
     test('getPositionRole delegates to shared utility', () => {
       expect(manager.getPositionRole('leftDefender')).toBe(PLAYER_ROLES.DEFENDER);
       expect(manager.getPositionRole('rightAttacker')).toBe(PLAYER_ROLES.ATTACKER);
-      expect(manager.getPositionRole('substitute')).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(manager.getPositionRole('substitute_1')).toBe(PLAYER_ROLES.SUBSTITUTE);
       // Note: goalie and pairs don't have direct role mapping
       expect(manager.getPositionRole('goalie')).toBe(PLAYER_ROLES.GOALIE);
     });
@@ -110,8 +110,8 @@ describe('SubstitutionManager', () => {
     test('updatePlayerTimeStats from time module works', () => {
       const player = {
         stats: {
-          currentPeriodStatus: 'substitute',
-          currentPeriodRole: PLAYER_ROLES.SUBSTITUTE,
+          currentStatus: 'substitute',
+          currentRole: PLAYER_ROLES.SUBSTITUTE,
           lastStintStartTimeEpoch: 1000,
           timeAsSubSeconds: 5
         }
@@ -138,8 +138,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '1', 
             stats: { 
-              currentPeriodStatus: 'on_field', 
-              currentPeriodRole: PLAYER_ROLES.DEFENDER, 
+              currentStatus: 'on_field',
+              currentRole: PLAYER_ROLES.DEFENDER,
               lastStintStartTimeEpoch: 1000,
               timeOnFieldSeconds: 50,
               timeAsDefenderSeconds: 30
@@ -148,8 +148,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '2', 
             stats: { 
-              currentPeriodStatus: 'on_field', 
-              currentPeriodRole: PLAYER_ROLES.ATTACKER, 
+              currentStatus: 'on_field',
+              currentRole: PLAYER_ROLES.ATTACKER,
               lastStintStartTimeEpoch: 1000,
               timeOnFieldSeconds: 40,
               timeAsAttackerSeconds: 25
@@ -158,8 +158,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '3', 
             stats: { 
-              currentPeriodStatus: 'substitute', 
-              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              currentStatus: 'substitute',
+              currentRole: PLAYER_ROLES.SUBSTITUTE,
               lastStintStartTimeEpoch: 1000,
               timeOnFieldSeconds: 20,
               timeAsSubSeconds: 15
@@ -168,7 +168,7 @@ describe('SubstitutionManager', () => {
         ];
 
         const context = {
-          periodFormation: {
+          formation: {
             leftPair: { defender: '1', attacker: '2' },
             rightPair: { defender: '4', attacker: '5' },
             subPair: { defender: '3', attacker: '6' },
@@ -198,8 +198,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '1', 
             stats: { 
-              currentPeriodStatus: 'on_field', 
-              currentPeriodRole: PLAYER_ROLES.DEFENDER, 
+              currentStatus: 'on_field',
+              currentRole: PLAYER_ROLES.DEFENDER,
               lastStintStartTimeEpoch: 2000,
               timeOnFieldSeconds: 120,
               timeAsDefenderSeconds: 80
@@ -208,8 +208,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '5', 
             stats: { 
-              currentPeriodStatus: 'substitute', 
-              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              currentStatus: 'substitute',
+              currentRole: PLAYER_ROLES.SUBSTITUTE,
               lastStintStartTimeEpoch: 2000,
               timeAsSubSeconds: 60
             } 
@@ -217,7 +217,7 @@ describe('SubstitutionManager', () => {
         ];
 
         const context = {
-          periodFormation: {
+          formation: {
             leftDefender: '1',
             rightDefender: '2',
             leftAttacker: '3',
@@ -252,8 +252,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '1', 
             stats: { 
-              currentPeriodStatus: 'on_field', 
-              currentPeriodRole: PLAYER_ROLES.DEFENDER, 
+              currentStatus: 'on_field',
+              currentRole: PLAYER_ROLES.DEFENDER,
               lastStintStartTimeEpoch: 1000,
               timeOnFieldSeconds: 100,
               timeAsDefenderSeconds: 70
@@ -262,8 +262,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '3', 
             stats: { 
-              currentPeriodStatus: 'substitute', 
-              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              currentStatus: 'substitute',
+              currentRole: PLAYER_ROLES.SUBSTITUTE,
               lastStintStartTimeEpoch: 1000,
               timeAsSubSeconds: 30
             } 
@@ -271,7 +271,7 @@ describe('SubstitutionManager', () => {
         ];
 
         const context = {
-          periodFormation: {
+          formation: {
             leftPair: { defender: '1', attacker: '2' },
             subPair: { defender: '3', attacker: '6' }
           },
@@ -299,8 +299,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '1', 
             stats: { 
-              currentPeriodStatus: 'on_field', 
-              currentPeriodRole: PLAYER_ROLES.ATTACKER, 
+              currentStatus: 'on_field',
+              currentRole: PLAYER_ROLES.ATTACKER,
               lastStintStartTimeEpoch: 5000,
               timeOnFieldSeconds: 200,
               timeAsAttackerSeconds: 150
@@ -309,8 +309,8 @@ describe('SubstitutionManager', () => {
           { 
             id: '8', 
             stats: { 
-              currentPeriodStatus: 'substitute', 
-              currentPeriodRole: PLAYER_ROLES.SUBSTITUTE, 
+              currentStatus: 'substitute',
+              currentRole: PLAYER_ROLES.SUBSTITUTE,
               lastStintStartTimeEpoch: 5000,
               timeAsSubSeconds: 50
             } 
@@ -318,7 +318,7 @@ describe('SubstitutionManager', () => {
         ];
 
         const context = {
-          periodFormation: {
+          formation: {
             leftDefender: '1',
             substitute_1: '8',
             substitute_2: '9'

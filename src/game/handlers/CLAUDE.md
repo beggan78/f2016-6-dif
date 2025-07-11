@@ -46,7 +46,7 @@ export const createHandlerType = (
 ) => {
   // Extract required state updaters
   const {
-    setPeriodFormation,
+    setFormation,
     setAllPlayers,
     setRotationQueue,
     // ... other updaters as needed
@@ -65,7 +65,7 @@ export const createHandlerType = (
       (gameState) => calculateOperation(gameState, params),
       (newGameState) => {
         // CRITICAL: Apply ALL relevant state changes
-        setPeriodFormation(newGameState.periodFormation);
+        setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
         setRotationQueue(newGameState.rotationQueue);
         // Apply other state updates as needed
@@ -84,7 +84,7 @@ export const createHandlerType = (
 
 ### Critical State Updaters
 Every handler must include these core updaters:
-- `setPeriodFormation`: Updates player positions and formation
+- `setFormation`: Updates player positions and formation
 - `setAllPlayers`: Updates player stats, roles, and status
 - `setRotationQueue`: Updates rotation order (CRITICAL for queue operations)
 
@@ -107,7 +107,7 @@ Required for all animated operations:
 ### Game State Factory
 ```javascript
 const gameStateFactory = () => ({
-  periodFormation,
+  formation,
   allPlayers,
   teamMode,
   rotationQueue,
@@ -149,7 +149,7 @@ const modalHandlers = {
 ```javascript
 const handleSimpleUpdate = (params) => {
   const newState = calculateSimpleUpdate(gameStateFactory(), params);
-  setPeriodFormation(newState.periodFormation);
+  setFormation(newState.formation);
   setAllPlayers(newState.allPlayers);
   // No animation needed
 };
@@ -162,7 +162,7 @@ const handleAnimatedChange = (params) => {
     gameStateFactory(),
     (state) => calculateAnimatedChange(state, params),
     (newState) => {
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
       setRotationQueue(newState.rotationQueue);
     },
@@ -194,7 +194,7 @@ const handleModalAction = (selectionData) => {
 ### Handler Unit Tests
 ```javascript
 const mockStateUpdaters = {
-  setPeriodFormation: jest.fn(),
+  setFormation: jest.fn(),
   setAllPlayers: jest.fn(),
   setRotationQueue: jest.fn()
 };

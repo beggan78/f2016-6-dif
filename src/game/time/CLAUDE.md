@@ -47,14 +47,14 @@ Players accumulate time in "stints" for each role/status:
 Time is allocated based on player's current period status:
 
 ```javascript
-switch (stats.currentPeriodStatus) {
+switch (stats.currentStatus) {
   case PLAYER_STATUS.ON_FIELD:
     updatedStats.timeOnFieldSeconds += stintDurationSeconds;
     
     // Also track role-specific time for outfield players
-    if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) {
+    if (stats.currentRole === PLAYER_ROLES.DEFENDER) {
       updatedStats.timeAsDefenderSeconds += stintDurationSeconds;
-    } else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) {
+    } else if (stats.currentRole === PLAYER_ROLES.ATTACKER) {
       updatedStats.timeAsAttackerSeconds += stintDurationSeconds;
     }
     break;

@@ -265,7 +265,7 @@ This separation allows logic changes without breaking animations and vice versa.
 
 #### Core Functions
 
-**`captureAllPlayerPositions(periodFormation, allPlayers, teamMode)`**
+**`captureAllPlayerPositions(formation, allPlayers, teamMode)`**
 - Captures current positions of all players including goalie
 - Maps each player to their UI position index and role
 - Returns position snapshot for before/after comparison
@@ -519,7 +519,7 @@ The UI module contains focused utilities for game screen rendering, separated fr
 
 ## Game State
 The central `gameState` object contains:
-- `periodFormation`: Current player positions and formation structure
+- `formation`: Current player positions and formation structure
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
 - `teamMode`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
@@ -555,7 +555,7 @@ export const calculateOperation = (gameState, ...params) => {
   }
   
   // Calculate new state
-  const newFormation = { ...gameState.periodFormation };
+  const newFormation = { ...gameState.formation };
   const newPlayers = gameState.allPlayers.map(player => {
     // Player-specific updates
     return updatedPlayer;
@@ -564,7 +564,7 @@ export const calculateOperation = (gameState, ...params) => {
   // Return new complete state
   return {
     ...gameState,
-    periodFormation: newFormation,
+    formation: newFormation,
     allPlayers: newPlayers,
     playersToHighlight: changedPlayerIds
   };
@@ -687,7 +687,7 @@ const handlePositionSwitch = (player1Id, player2Id) => {
     createGameState(),
     (state) => calculatePositionSwitch(state, player1Id, player2Id),
     (newState) => {
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
       // ... update other state
     },
@@ -772,13 +772,13 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 All logic functions can be tested in isolation:
 ```javascript
 const testState = {
-  periodFormation: { /* test formation */ },
+  formation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
   teamMode: 'INDIVIDUAL_6'
 };
 
 const result = calculateSubstitution(testState);
-expect(result.periodFormation).toBe(/* expected formation */);
+expect(result.formation).toBe(/* expected formation */);
 ```
 
 ## Animation Debugging

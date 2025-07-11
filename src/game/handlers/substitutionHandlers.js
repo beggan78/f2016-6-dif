@@ -19,7 +19,7 @@ export const createSubstitutionHandlers = (
   teamMode
 ) => {
   const {
-    setPeriodFormation,
+    setFormation,
     setAllPlayers,
     setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut,
@@ -171,13 +171,13 @@ export const createSubstitutionHandlers = (
     }
   };
 
-  const handleSetAsNextToGoIn = (substituteModal, periodFormation) => {
+  const handleSetAsNextToGoIn = (substituteModal, formation) => {
     if (substituteModal.playerId && isIndividual7Mode) {
       const playerId = substituteModal.playerId;
       
       // Find current positions
-      const substitute_1Id = periodFormation.substitute_1;
-      const substitute_2Id = periodFormation.substitute_2;
+      const substitute_1Id = formation.substitute_1;
+      const substitute_2Id = formation.substitute_2;
       
       // Only proceed if the player is substitute_2 (next-next to go in)
       if (playerId === substitute_2Id) {
@@ -190,7 +190,7 @@ export const createSubstitutionHandlers = (
           (state) => calculateSubstituteSwap(state, substitute_1Id, substitute_2Id),
           (newGameState) => {
             // Apply the state changes
-            setPeriodFormation(newGameState.periodFormation);
+            setFormation(newGameState.formation);
             setAllPlayers(newGameState.allPlayers);
 
             // Log substitute order change event
@@ -206,8 +206,8 @@ export const createSubstitutionHandlers = (
                   player1Name: player1.name,
                   player2Name: player2.name,
                   description: `${player2.name} moved to next-to-go-in position`,
-                  beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
-                  afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                  beforeFormation: getFormationDescription(gameState.formation, teamMode),
+                  afterFormation: getFormationDescription(newGameState.formation, teamMode),
                   teamMode,
                   matchTime: calculateMatchTime(currentTime),
                   timestamp: currentTime,
@@ -230,7 +230,7 @@ export const createSubstitutionHandlers = (
     }
   };
 
-  const handleInactivatePlayer = (substituteModal, allPlayers, periodFormation) => {
+  const handleInactivatePlayer = (substituteModal, allPlayers, formation) => {
     if (substituteModal.playerId && isIndividual7Mode) {
       const currentTime = Date.now();
       const gameState = gameStateFactory();
@@ -242,7 +242,7 @@ export const createSubstitutionHandlers = (
         // Call togglePlayerInactive directly
         const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
         
-        setPeriodFormation(newGameState.periodFormation);
+        setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
         setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
@@ -276,7 +276,7 @@ export const createSubstitutionHandlers = (
           (state) => calculatePlayerToggleInactive(state, substituteModal.playerId),
           (newGameState) => {
             // Apply the state changes
-            setPeriodFormation(newGameState.periodFormation);
+            setFormation(newGameState.formation);
             setAllPlayers(newGameState.allPlayers);
             setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
             setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
@@ -294,8 +294,8 @@ export const createSubstitutionHandlers = (
                   previousStatus: 'active_substitute',
                   newStatus: 'inactive',
                   description: `${playerBeingInactivated.name} marked as inactive (with position swap)`,
-                  beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
-                  afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                  beforeFormation: getFormationDescription(gameState.formation, teamMode),
+                  afterFormation: getFormationDescription(newGameState.formation, teamMode),
                   teamMode,
                   matchTime: calculateMatchTime(currentTime),
                   timestamp: currentTime,
@@ -316,7 +316,7 @@ export const createSubstitutionHandlers = (
       const gameState = gameStateFactory();
       const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
       
-      setPeriodFormation(newGameState.periodFormation);
+      setFormation(newGameState.formation);
       setAllPlayers(newGameState.allPlayers);
       setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
       setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
@@ -342,7 +342,7 @@ export const createSubstitutionHandlers = (
         (state) => calculatePlayerToggleInactive(state, substituteModal.playerId),
         (newGameState) => {
           // Apply the state changes
-          setPeriodFormation(newGameState.periodFormation);
+          setFormation(newGameState.formation);
           setAllPlayers(newGameState.allPlayers);
           setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
           setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
@@ -360,8 +360,8 @@ export const createSubstitutionHandlers = (
                 previousStatus: 'inactive',
                 newStatus: 'active_substitute',
                 description: `${playerBeingActivated.name} reactivated`,
-                beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
-                afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                beforeFormation: getFormationDescription(gameState.formation, teamMode),
+                afterFormation: getFormationDescription(newGameState.formation, teamMode),
                 teamMode,
                 matchTime: calculateMatchTime(currentTime),
                 timestamp: currentTime,
@@ -381,7 +381,7 @@ export const createSubstitutionHandlers = (
       const gameState = gameStateFactory();
       const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
       
-      setPeriodFormation(newGameState.periodFormation);
+      setFormation(newGameState.formation);
       setAllPlayers(newGameState.allPlayers);
       setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
       setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
@@ -407,7 +407,7 @@ export const createSubstitutionHandlers = (
     
     // Capture before-state for undo functionality
     const substitutionTimestamp = Date.now();
-    const beforeFormation = { ...gameState.periodFormation };
+    const beforeFormation = { ...gameState.formation };
     const beforeNextPair = gameState.nextPhysicalPairToSubOut;
     const beforeNextPlayer = gameState.nextPlayerToSubOut;
     const beforeNextPlayerId = gameState.nextPlayerIdToSubOut;
@@ -420,7 +420,7 @@ export const createSubstitutionHandlers = (
       calculateSubstitution,
       (newGameState) => {
         // Apply the state changes
-        setPeriodFormation(newGameState.periodFormation);
+        setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
         setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
@@ -444,7 +444,7 @@ export const createSubstitutionHandlers = (
           playersGoingOffIds,
           playersComingOnIds,
           beforeFormation,
-          newGameState.periodFormation,
+          newGameState.formation,
           teamMode,
           gameState.allPlayers,
           substitutionTimestamp,
@@ -495,8 +495,8 @@ export const createSubstitutionHandlers = (
       
       // Show the position selection options for individual modes
       if (fieldPlayerModal.target && fieldPlayerModal.type === 'player') {
-        const sourcePlayerId = gameState.periodFormation[fieldPlayerModal.target];
-        const goalieId = gameState.periodFormation.goalie;
+        const sourcePlayerId = gameState.formation[fieldPlayerModal.target];
+        const goalieId = gameState.formation.goalie;
         
         if (sourcePlayerId) {
           // Extract IDs from selectedSquadPlayers for getOutfieldPlayers function
@@ -569,7 +569,7 @@ export const createSubstitutionHandlers = (
         gameState,
         (state) => calculatePositionSwitch(state, fieldPlayerModal.sourcePlayerId, targetPlayerId),
         (newGameState) => {
-          setPeriodFormation(newGameState.periodFormation);
+          setFormation(newGameState.formation);
           setAllPlayers(newGameState.allPlayers);
 
           // Log position change event
@@ -585,8 +585,8 @@ export const createSubstitutionHandlers = (
                 targetPlayerName: targetPlayer.name,
                 sourcePosition: sourcePlayer.stats.currentPairKey,
                 targetPosition: targetPlayer.stats.currentPairKey,
-                beforeFormation: getFormationDescription(gameState.periodFormation, teamMode),
-                afterFormation: getFormationDescription(newGameState.periodFormation, teamMode),
+                beforeFormation: getFormationDescription(gameState.formation, teamMode),
+                afterFormation: getFormationDescription(newGameState.formation, teamMode),
                 teamMode,
                 matchTime: calculateMatchTime(currentTime),
                 timestamp: currentTime,
@@ -623,7 +623,7 @@ export const createSubstitutionHandlers = (
       (gameState) => calculateUndo(gameState, lastSubstitution),
       (newGameState) => {
         // Apply the state changes
-        setPeriodFormation(newGameState.periodFormation);
+        setFormation(newGameState.formation);
         setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
@@ -654,7 +654,7 @@ export const createSubstitutionHandlers = (
             playersGoingBackOnNames: getPlayerNames(lastSubstitution.playersGoingOffIds, newGameState.allPlayers),
             playersComingBackOffNames: getPlayerNames(lastSubstitution.playersComingOnIds, newGameState.allPlayers),
             teamMode: lastSubstitution.teamMode,
-            beforeFormation: getFormationDescription(newGameState.periodFormation, lastSubstitution.teamMode),
+            beforeFormation: getFormationDescription(newGameState.formation, lastSubstitution.teamMode),
             afterFormation: getFormationDescription(lastSubstitution.beforeFormation, lastSubstitution.teamMode),
             reason: 'user_initiated_undo',
             matchTime: calculateMatchTime(currentTime),

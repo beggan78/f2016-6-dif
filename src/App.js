@@ -80,9 +80,9 @@ function App() {
   }, []);
 
   const availableForPairing = useMemo(() => {
-    if (!gameState.periodFormation.goalie) return [];
-    return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.periodFormation.goalie);
-  }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.periodFormation.goalie]);
+    if (!gameState.formation.goalie) return [];
+    return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie);
+  }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie]);
 
   // Enhanced game handlers that integrate with timers
   const handleStartGame = () => {
@@ -92,7 +92,7 @@ function App() {
       gameState.teamMode,
       'Djurgården', // Home team name
       gameState.opponentTeamName,
-      gameState.periodFormation,
+      gameState.formation,
       gameState.numPeriods,
       gameState.allPlayers
     );
@@ -132,7 +132,7 @@ function App() {
     timers.stopTimers(
       gameState.currentPeriodNumber,
       isMatchEnd,
-      gameState.periodFormation,
+      gameState.formation,
       gameState.teamMode
     );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
@@ -145,7 +145,7 @@ function App() {
     timers.stopTimers(
       gameState.currentPeriodNumber,
       isMatchEnd,
-      gameState.periodFormation,
+      gameState.formation,
       gameState.teamMode
     );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
@@ -171,7 +171,7 @@ function App() {
     gameState.setAllPlayers(initializePlayers(initialRoster));
     gameState.setSelectedSquadIds([]);
     gameState.setPeriodGoalieIds({});
-    gameState.setPeriodFormation({
+    gameState.setFormation({
       goalie: null,
       leftPair: { defender: null, attacker: null },
       rightPair: { defender: null, attacker: null },
@@ -253,8 +253,8 @@ function App() {
         return (
           <PeriodSetupScreen 
             currentPeriodNumber={gameState.currentPeriodNumber}
-            periodFormation={gameState.periodFormation}
-            setPeriodFormation={gameState.setPeriodFormation}
+            formation={gameState.formation}
+            setFormation={gameState.setFormation}
             availableForPairing={availableForPairing}
             allPlayers={gameState.allPlayers}
             handleStartGame={handleStartGame}
@@ -277,8 +277,8 @@ function App() {
         return (
           <GameScreen 
             currentPeriodNumber={gameState.currentPeriodNumber}
-            periodFormation={gameState.periodFormation}
-            setPeriodFormation={gameState.setPeriodFormation}
+            formation={gameState.formation}
+            setFormation={gameState.setFormation}
             allPlayers={gameState.allPlayers}
             setAllPlayers={gameState.setAllPlayers}
             matchTimerSeconds={timers.matchTimerSeconds}
@@ -362,7 +362,7 @@ function App() {
             }}
             formatTime={formatTime}
             selectedSquadIds={gameState.selectedSquadIds}
-            periodFormation={gameState.periodFormation}
+            formation={gameState.formation}
             debugMode={debugMode}
           />
         );

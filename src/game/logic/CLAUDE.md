@@ -35,7 +35,7 @@ Contains pure functions for all game state transitions and calculations. Handles
 - Updates player stats and role tracking
 - Manages formation structure changes
 - Handles inactive player edge cases (7-player mode)
-- **Handler Requirements**: All game state changes must be applied via state updaters (setPeriodFormation, setAllPlayers, setRotationQueue, etc.)
+- **Handler Requirements**: All game state changes must be applied via state updaters (setFormation, setAllPlayers, setRotationQueue, etc.)
 
 ### `positionUtils.js` - Position and Formation Utilities
 **Core Functions**:
@@ -58,7 +58,7 @@ export const calculateOperation = (gameState, ...params) => {
   }
   
   // Calculate new state
-  const newFormation = { ...gameState.periodFormation };
+  const newFormation = { ...gameState.formation };
   const newPlayers = gameState.allPlayers.map(player => {
     // Player-specific updates
     return updatedPlayer;
@@ -67,7 +67,7 @@ export const calculateOperation = (gameState, ...params) => {
   // Return new complete state
   return {
     ...gameState,
-    periodFormation: newFormation,
+    formation: newFormation,
     allPlayers: newPlayers,
     playersToHighlight: changedPlayerIds
   };
@@ -136,13 +136,13 @@ const newGameState = {
 All logic functions can be tested in isolation:
 ```javascript
 const testState = {
-  periodFormation: { /* test formation */ },
+  formation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
   teamMode: 'INDIVIDUAL_6'
 };
 
 const result = calculateSubstitution(testState);
-expect(result.periodFormation).toBe(/* expected formation */);
+expect(result.formation).toBe(/* expected formation */);
 ```
 
 ## Recent Fixes

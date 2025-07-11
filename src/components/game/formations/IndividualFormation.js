@@ -18,7 +18,7 @@ import { FORMATION_STYLES, ICON_STYLES, HELP_MESSAGES } from './constants';
 
 export function IndividualFormation({ 
   teamMode,
-  periodFormation, 
+  formation,
   allPlayers, 
   animationState,
   recentlySubstitutedPlayers,
@@ -31,8 +31,8 @@ export function IndividualFormation({
   getPlayerTimeStats,
   ...domProps
 }) {
-  // Handle null/undefined periodFormation
-  if (!periodFormation) {
+  // Handle null/undefined formation
+  if (!formation) {
     return <div className="space-y-2" {...domProps}></div>;
   }
 
@@ -46,8 +46,8 @@ export function IndividualFormation({
     teamMode,
     fieldPositions,
     substitutePositions,
-    periodFormationKeys: Object.keys(periodFormation),
-    periodFormation,
+    formationKeys: Object.keys(formation),
+    formation,
     expectedPositions: [...fieldPositions, ...substitutePositions, 'goalie']
   });
   
@@ -56,14 +56,14 @@ export function IndividualFormation({
   const modeSupportsNextNext = supportsNextNextIndicators(teamMode);
 
   const renderIndividualPosition = (position, renderIndex) => {
-    const playerId = periodFormation[position];
+    const playerId = formation[position];
     
     // DEBUG: Log position lookup details
     console.log('[DEBUG] renderIndividualPosition:', {
       position,
       playerId,
       foundInFormation: playerId !== undefined,
-      formationKeys: Object.keys(periodFormation)
+      formationKeys: Object.keys(formation)
     });
     
     if (!playerId) return null;

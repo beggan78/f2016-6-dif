@@ -52,7 +52,7 @@ The animation system works by:
 
 ## Game State Structure
 The central `gameState` object contains:
-- `periodFormation`: Current player positions and formation structure
+- `formation`: Current player positions and formation structure
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
 - `teamMode`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
@@ -94,7 +94,7 @@ const handleOperation = () => {
     (state) => calculateOperation(state, ...params),
     (newState) => {
       // Apply state updates
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
       setRotationQueue(newState.rotationQueue);
       // Apply other state updates as needed

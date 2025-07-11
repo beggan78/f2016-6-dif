@@ -138,7 +138,7 @@ export function ScreenName({
 // Formation components receive standardized props
 export function FormationComponent({
   allPlayers,           // Complete player roster
-  periodFormation,      // Current period formation
+  formation,      // Current period formation
   longPressHandlers,    // Interaction handlers
   onPlayerMove,         // Movement callback
   teamMode             // Team mode
@@ -188,8 +188,8 @@ export function ModalComponent({
 const {
   allPlayers,
   setAllPlayers,
-  periodFormation,
-  setPeriodFormation,
+  formation,
+  setFormation,
   // ... other game state
 } = useGameState(initialRoster);
 ```

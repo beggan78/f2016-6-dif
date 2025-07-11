@@ -89,7 +89,7 @@ describe('PeriodSetupScreen', () => {
     mockPlayers = createMockPlayers(7);
     
     mockSetters = {
-      setPeriodFormation: jest.fn(),
+      setFormation: jest.fn(),
       handleStartGame: jest.fn(),
       setPeriodGoalieIds: jest.fn(),
       setView: jest.fn(),
@@ -98,7 +98,7 @@ describe('PeriodSetupScreen', () => {
 
     defaultProps = {
       currentPeriodNumber: 1,
-      periodFormation: {
+      formation: {
         goalie: '7',
         leftPair: { defender: '', attacker: '' },
         rightPair: { defender: '', attacker: '' },
@@ -186,7 +186,7 @@ describe('PeriodSetupScreen', () => {
     it('should show goalie selection dropdown when no goalie selected', () => {
       const props = {
         ...defaultProps,
-        periodFormation: { ...defaultProps.periodFormation, goalie: null },
+        formation: { ...defaultProps.formation, goalie: null },
         periodGoalieIds: {}
       };
       
@@ -204,13 +204,13 @@ describe('PeriodSetupScreen', () => {
       fireEvent.change(goalieSelect, { target: { value: '5' } });
       
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
-      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it('should handle goalie selection from dropdown', () => {
       const props = {
         ...defaultProps,
-        periodFormation: { ...defaultProps.periodFormation, goalie: null }
+        formation: { ...defaultProps.formation, goalie: null }
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -219,7 +219,7 @@ describe('PeriodSetupScreen', () => {
       fireEvent.change(selects[0], { target: { value: '5' } });
       
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
-      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it('should update rotation queue when goalie is changed in individual mode for period 2+', () => {
@@ -227,8 +227,8 @@ describe('PeriodSetupScreen', () => {
         ...defaultProps,
         currentPeriodNumber: 2,
         teamMode: TEAM_MODES.INDIVIDUAL_6,
-        periodFormation: { 
-          ...defaultProps.periodFormation, 
+        formation: {
+          ...defaultProps.formation,
           goalie: null,  // No current goalie (dropdown visible)
           leftDefender: '1',
           rightDefender: '2',
@@ -254,7 +254,7 @@ describe('PeriodSetupScreen', () => {
       const props = { 
         ...defaultProps, 
         currentPeriodNumber: 2,
-        periodFormation: { ...defaultProps.periodFormation, goalie: null }
+        formation: { ...defaultProps.formation, goalie: null }
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -281,7 +281,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -291,11 +291,11 @@ describe('PeriodSetupScreen', () => {
       const goalieSelect = selects[0]; // First select should be goalie dropdown
       fireEvent.change(goalieSelect, { target: { value: '3' } });
       
-      // Verify setPeriodFormation was called with swapping logic
-      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      // Verify setFormation was called with swapping logic
+      expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
       
       // The function should set player 3 as goalie and player 7 (former goalie) as right defender
-      const setFormationCall = mockSetters.setPeriodFormation.mock.calls.find(call => 
+      const setFormationCall = mockSetters.setFormation.mock.calls.find(call =>
         call[0].toString().includes('goalie') || typeof call[0] === 'function'
       );
       expect(setFormationCall).toBeDefined();
@@ -315,7 +315,7 @@ describe('PeriodSetupScreen', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_6,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -325,8 +325,8 @@ describe('PeriodSetupScreen', () => {
       const goalieSelect = selects[0]; // First select should be goalie dropdown
       fireEvent.change(goalieSelect, { target: { value: '2' } });
       
-      // Verify setPeriodFormation was called with swapping logic
-      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      // Verify setFormation was called with swapping logic
+      expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
     });
 
@@ -345,7 +345,7 @@ describe('PeriodSetupScreen', () => {
       const props = {
         ...defaultProps,
         teamMode: TEAM_MODES.INDIVIDUAL_7,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -355,8 +355,8 @@ describe('PeriodSetupScreen', () => {
       const goalieSelect = selects[0]; // First select should be goalie dropdown
       fireEvent.change(goalieSelect, { target: { value: '4' } });
       
-      // Verify setPeriodFormation was called with swapping logic
-      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      // Verify setFormation was called with swapping logic
+      expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
     });
   });
@@ -378,14 +378,14 @@ describe('PeriodSetupScreen', () => {
       render(<PeriodSetupScreen {...defaultProps} />);
       
       // Mock the assignment logic by directly calling the component's internal logic
-      expect(mockSetters.setPeriodFormation).toBeDefined();
+      expect(mockSetters.setFormation).toBeDefined();
     });
 
     it('should prevent duplicate player assignments in pairs mode', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {
-          ...defaultProps.periodFormation,
+        formation: {
+          ...defaultProps.formation,
           leftPair: { defender: '1', attacker: '2' }
         }
       };
@@ -396,7 +396,7 @@ describe('PeriodSetupScreen', () => {
       render(<PeriodSetupScreen {...props} />);
       
       // The component should have logic to prevent duplicates
-      expect(props.periodFormation.leftPair.defender).toBe('1');
+      expect(props.formation.leftPair.defender).toBe('1');
     });
 
     it('should allow position swapping when formation is complete', () => {
@@ -409,7 +409,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -429,7 +429,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: incompleteFormation
+        formation: incompleteFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -448,7 +448,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -469,8 +469,8 @@ describe('PeriodSetupScreen', () => {
     it('should filter available players correctly for pair assignments', () => {
       const props = {
         ...defaultProps,
-        periodFormation: {
-          ...defaultProps.periodFormation,
+        formation: {
+          ...defaultProps.formation,
           leftPair: { defender: '1', attacker: '2' }
         }
       };
@@ -485,7 +485,7 @@ describe('PeriodSetupScreen', () => {
   describe('INDIVIDUAL_6 Mode Tests', () => {
     beforeEach(() => {
       defaultProps.teamMode = TEAM_MODES.INDIVIDUAL_6;
-      defaultProps.periodFormation = {
+      defaultProps.formation = {
         goalie: '6',
         leftDefender: '',
         rightDefender: '',
@@ -509,7 +509,7 @@ describe('PeriodSetupScreen', () => {
     it('should handle individual player assignment', () => {
       render(<PeriodSetupScreen {...defaultProps} />);
       
-      expect(mockSetters.setPeriodFormation).toBeDefined();
+      expect(mockSetters.setFormation).toBeDefined();
     });
 
     it('should prevent duplicate assignments in individual mode', () => {
@@ -517,8 +517,8 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: {
-          ...defaultProps.periodFormation,
+        formation: {
+          ...defaultProps.formation,
           leftDefender: '1',
           rightDefender: '2'
         }
@@ -526,7 +526,7 @@ describe('PeriodSetupScreen', () => {
       
       render(<PeriodSetupScreen {...props} />);
       
-      expect(props.periodFormation.leftDefender).toBe('1');
+      expect(props.formation.leftDefender).toBe('1');
     });
 
     it('should calculate formation completion for individual 6 mode', () => {
@@ -541,7 +541,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -562,7 +562,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -582,7 +582,7 @@ describe('PeriodSetupScreen', () => {
   describe('INDIVIDUAL_7 Mode Tests', () => {
     beforeEach(() => {
       defaultProps.teamMode = TEAM_MODES.INDIVIDUAL_7;
-      defaultProps.periodFormation = {
+      defaultProps.formation = {
         goalie: '7',
         leftDefender: '',
         rightDefender: '',
@@ -610,7 +610,7 @@ describe('PeriodSetupScreen', () => {
     it('should handle individual 7 player assignment', () => {
       render(<PeriodSetupScreen {...defaultProps} />);
       
-      expect(mockSetters.setPeriodFormation).toBeDefined();
+      expect(mockSetters.setFormation).toBeDefined();
     });
 
     it('should calculate formation completion for individual 7 mode', () => {
@@ -626,7 +626,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -640,8 +640,8 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: {
-          ...defaultProps.periodFormation,
+        formation: {
+          ...defaultProps.formation,
           leftDefender: '1',
           rightDefender: '2'
         }
@@ -649,7 +649,7 @@ describe('PeriodSetupScreen', () => {
       
       render(<PeriodSetupScreen {...props} />);
       
-      expect(props.periodFormation.leftDefender).toBe('1');
+      expect(props.formation.leftDefender).toBe('1');
     });
 
     it('should allow position swapping in complete individual 7 formation', () => {
@@ -665,7 +665,7 @@ describe('PeriodSetupScreen', () => {
       
       const props = {
         ...defaultProps,
-        periodFormation: completeFormation
+        formation: completeFormation
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -686,7 +686,7 @@ describe('PeriodSetupScreen', () => {
     it('should disable start button when formation is incomplete', () => {
       const incompleteProps = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           goalie: '7',
           leftPair: { defender: '1', attacker: '' },
           rightPair: { defender: '', attacker: '' },
@@ -703,7 +703,7 @@ describe('PeriodSetupScreen', () => {
     it('should enable start button when formation is complete', () => {
       const completeProps = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           goalie: '7',
           leftPair: { defender: '1', attacker: '2' },
           rightPair: { defender: '3', attacker: '4' },
@@ -720,7 +720,7 @@ describe('PeriodSetupScreen', () => {
     it('should require goalie selection for formation completion', () => {
       const noGoalieProps = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           goalie: null,
           leftPair: { defender: '1', attacker: '2' },
           rightPair: { defender: '3', attacker: '4' },
@@ -738,7 +738,7 @@ describe('PeriodSetupScreen', () => {
       // Formation with duplicate player should be invalid
       const duplicateProps = {
         ...defaultProps,
-        periodFormation: {
+        formation: {
           goalie: '7',
           leftPair: { defender: '1', attacker: '2' },
           rightPair: { defender: '1', attacker: '4' }, // Duplicate player '1'
@@ -834,7 +834,7 @@ describe('IndividualPositionCard', () => {
   it('should use substitute styling for substitute positions', () => {
     const subProps = { 
       ...defaultProps, 
-      position: 'substitute', 
+      position: 'substitute_1',
       title: 'Substitute' 
     };
     

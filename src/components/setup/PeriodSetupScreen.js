@@ -7,8 +7,8 @@ import { randomizeFormationPositions } from '../../utils/debugUtils';
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
-  periodFormation, 
-  setPeriodFormation, 
+  formation,
+  setFormation,
   availableForPairing, 
   allPlayers, 
   handleStartGame, 
@@ -42,19 +42,19 @@ export function PeriodSetupScreen({
       // Find where the selected player is currently assigned
       let currentPlayerPosition = null;
       ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
-        if (periodFormation[pk]?.defender === playerId) {
+        if (formation[pk]?.defender === playerId) {
           currentPlayerPosition = { pairKey: pk, role: 'defender' };
-        } else if (periodFormation[pk]?.attacker === playerId) {
+        } else if (formation[pk]?.attacker === playerId) {
           currentPlayerPosition = { pairKey: pk, role: 'attacker' };
         }
       });
 
       if (currentPlayerPosition) {
         // Get the player currently in the target position
-        const currentPlayerInTargetPosition = periodFormation[pairKey]?.[role];
+        const currentPlayerInTargetPosition = formation[pairKey]?.[role];
         
         // Swap the players
-        setPeriodFormation(prev => ({
+        setFormation(prev => ({
           ...prev,
           [pairKey]: { ...prev[pairKey], [role]: playerId },
           [currentPlayerPosition.pairKey]: { 
@@ -70,11 +70,11 @@ export function PeriodSetupScreen({
     const otherAssignments = [];
     ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
       if (pk !== pairKey) {
-        if (periodFormation[pk]?.defender) otherAssignments.push(periodFormation[pk].defender);
-        if (periodFormation[pk]?.attacker) otherAssignments.push(periodFormation[pk].attacker);
+        if (formation[pk]?.defender) otherAssignments.push(formation[pk].defender);
+        if (formation[pk]?.attacker) otherAssignments.push(formation[pk].attacker);
       } else { // current pair, different role
-        if (role === 'defender' && periodFormation[pk]?.attacker) otherAssignments.push(periodFormation[pk].attacker);
-        if (role === 'attacker' && periodFormation[pk]?.defender) otherAssignments.push(periodFormation[pk].defender);
+        if (role === 'defender' && formation[pk]?.attacker) otherAssignments.push(formation[pk].attacker);
+        if (role === 'attacker' && formation[pk]?.defender) otherAssignments.push(formation[pk].defender);
       }
     });
 
@@ -83,7 +83,7 @@ export function PeriodSetupScreen({
       return; // Don't update if player is already assigned
     }
 
-    setPeriodFormation(prev => ({
+    setFormation(prev => ({
       ...prev,
       [pairKey]: { ...prev[pairKey], [role]: playerId }
     }));
@@ -94,18 +94,18 @@ export function PeriodSetupScreen({
     if (isFormationComplete() && playerId) {
       // Find where the selected player is currently assigned
       let currentPlayerPosition = null;
-      ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
-        if (periodFormation[pos] === playerId) {
+      ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(pos => {
+        if (formation[pos] === playerId) {
           currentPlayerPosition = pos;
         }
       });
 
       if (currentPlayerPosition) {
         // Get the player currently in the target position
-        const currentPlayerInTargetPosition = periodFormation[position];
+        const currentPlayerInTargetPosition = formation[position];
         
         // Swap the players
-        setPeriodFormation(prev => ({
+        setFormation(prev => ({
           ...prev,
           [position]: playerId,
           [currentPlayerPosition]: currentPlayerInTargetPosition
@@ -116,9 +116,9 @@ export function PeriodSetupScreen({
 
     // Original logic for incomplete formation
     const otherAssignments = [];
-    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
-      if (pos !== position && periodFormation[pos]) {
-        otherAssignments.push(periodFormation[pos]);
+    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(pos => {
+      if (pos !== position && formation[pos]) {
+        otherAssignments.push(formation[pos]);
       }
     });
 
@@ -127,7 +127,7 @@ export function PeriodSetupScreen({
       return;
     }
 
-    setPeriodFormation(prev => ({
+    setFormation(prev => ({
       ...prev,
       [position]: playerId
     }));
@@ -139,17 +139,17 @@ export function PeriodSetupScreen({
       // Find where the selected player is currently assigned
       let currentPlayerPosition = null;
       ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(pos => {
-        if (periodFormation[pos] === playerId) {
+        if (formation[pos] === playerId) {
           currentPlayerPosition = pos;
         }
       });
 
       if (currentPlayerPosition) {
         // Get the player currently in the target position
-        const currentPlayerInTargetPosition = periodFormation[position];
+        const currentPlayerInTargetPosition = formation[position];
         
         // Swap the players
-        setPeriodFormation(prev => ({
+        setFormation(prev => ({
           ...prev,
           [position]: playerId,
           [currentPlayerPosition]: currentPlayerInTargetPosition
@@ -161,8 +161,8 @@ export function PeriodSetupScreen({
     // Original logic for incomplete formation
     const otherAssignments = [];
     ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(pos => {
-      if (pos !== position && periodFormation[pos]) {
-        otherAssignments.push(periodFormation[pos]);
+      if (pos !== position && formation[pos]) {
+        otherAssignments.push(formation[pos]);
       }
     });
 
@@ -171,7 +171,7 @@ export function PeriodSetupScreen({
       return;
     }
 
-    setPeriodFormation(prev => ({
+    setFormation(prev => ({
       ...prev,
       [position]: playerId
     }));
@@ -186,7 +186,7 @@ export function PeriodSetupScreen({
     // Original logic for incomplete formation
     const assignedElsewhereIds = new Set();
     ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
-      const pair = periodFormation[pk];
+      const pair = formation[pk];
       if (pair) {
         if (pk !== currentPairKey || (pk === currentPairKey && currentRole !== 'defender')) {
           if (pair.defender) assignedElsewhereIds.add(pair.defender);
@@ -200,7 +200,7 @@ export function PeriodSetupScreen({
   };
 
   const handleGoalieChangeForCurrentPeriod = (playerId) => {
-    const formerGoalieId = periodFormation.goalie;
+    const formerGoalieId = formation.goalie;
     
     // Add automatic position swapping when formation is complete (like other position handlers)
     if (isFormationComplete() && playerId && formerGoalieId) {
@@ -211,23 +211,23 @@ export function PeriodSetupScreen({
       if (isPairsMode) {
         // Search pairs mode positions
         ['leftPair', 'rightPair', 'subPair'].forEach(pairKey => {
-          if (periodFormation[pairKey]?.defender === playerId) {
+          if (formation[pairKey]?.defender === playerId) {
             newGoalieCurrentPosition = { pairKey, role: 'defender' };
-          } else if (periodFormation[pairKey]?.attacker === playerId) {
+          } else if (formation[pairKey]?.attacker === playerId) {
             newGoalieCurrentPosition = { pairKey, role: 'attacker' };
           }
         });
       } else if (isIndividual6Mode) {
         // Search individual 6 mode positions
-        ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(position => {
-          if (periodFormation[position] === playerId) {
+        ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(position => {
+          if (formation[position] === playerId) {
             newGoalieCurrentPosition = { position };
           }
         });
       } else if (isIndividual7Mode) {
         // Search individual 7 mode positions
         ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(position => {
-          if (periodFormation[position] === playerId) {
+          if (formation[position] === playerId) {
             newGoalieCurrentPosition = { position };
           }
         });
@@ -238,7 +238,7 @@ export function PeriodSetupScreen({
         // Perform the position swap
         if (isPairsMode) {
           // Pairs mode: update nested object structure
-          setPeriodFormation(prev => ({
+          setFormation(prev => ({
             ...prev,
             goalie: playerId,
             [newGoalieCurrentPosition.pairKey]: {
@@ -248,7 +248,7 @@ export function PeriodSetupScreen({
           }));
         } else {
           // Individual modes: update flat structure
-          setPeriodFormation(prev => ({
+          setFormation(prev => ({
             ...prev,
             goalie: playerId,
             [newGoalieCurrentPosition.position]: formerGoalieId
@@ -268,21 +268,21 @@ export function PeriodSetupScreen({
       // Check if we found the new goalie in a field position
       if (isPairsMode) {
         swapOccurred = ['leftPair', 'rightPair', 'subPair'].some(pk => 
-          periodFormation[pk]?.defender === playerId || periodFormation[pk]?.attacker === playerId);
+          formation[pk]?.defender === playerId || formation[pk]?.attacker === playerId);
       } else if (isIndividual6Mode) {
-        swapOccurred = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].some(pos => 
-          periodFormation[pos] === playerId);
+        swapOccurred = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].some(pos =>
+          formation[pos] === playerId);
       } else if (isIndividual7Mode) {
         swapOccurred = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].some(pos =>
-          periodFormation[pos] === playerId);
+          formation[pos] === playerId);
       }
     }
     
     if (!swapOccurred) {
       
       setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
-      // Also update the periodFormation.goalie immediately
-      setPeriodFormation(prev => ({
+      // Also update the formation.goalie immediately
+      setFormation(prev => ({
         ...prev,
         goalie: playerId,
         // Potentially clear pairs if new goalie was in one, or let user resolve
@@ -323,9 +323,9 @@ export function PeriodSetupScreen({
 
     // Original logic for incomplete formation
     const assignedElsewhereIds = new Set();
-    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(pos => {
-      if (pos !== currentPosition && periodFormation[pos]) {
-        assignedElsewhereIds.add(periodFormation[pos]);
+    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(pos => {
+      if (pos !== currentPosition && formation[pos]) {
+        assignedElsewhereIds.add(formation[pos]);
       }
     });
     return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
@@ -340,8 +340,8 @@ export function PeriodSetupScreen({
     // Original logic for incomplete formation
     const assignedElsewhereIds = new Set();
     ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(pos => {
-      if (pos !== currentPosition && periodFormation[pos]) {
-        assignedElsewhereIds.add(periodFormation[pos]);
+      if (pos !== currentPosition && formation[pos]) {
+        assignedElsewhereIds.add(formation[pos]);
       }
     });
     return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
@@ -350,31 +350,31 @@ export function PeriodSetupScreen({
   const isFormationComplete = () => {
     if (isPairsMode) {
       const outfielders = [
-        periodFormation.leftPair.defender, periodFormation.leftPair.attacker,
-        periodFormation.rightPair.defender, periodFormation.rightPair.attacker,
-        periodFormation.subPair.defender, periodFormation.subPair.attacker
+        formation.leftPair.defender, formation.leftPair.attacker,
+        formation.rightPair.defender, formation.rightPair.attacker,
+        formation.subPair.defender, formation.subPair.attacker
       ].filter(Boolean);
-      return periodFormation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
+      return formation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
     } else if (isIndividual6Mode) {
       const outfielders = [
-        periodFormation.leftDefender, periodFormation.rightDefender,
-        periodFormation.leftAttacker, periodFormation.rightAttacker,
-        periodFormation.substitute
+        formation.leftDefender, formation.rightDefender,
+        formation.leftAttacker, formation.rightAttacker,
+        formation.substitute
       ].filter(Boolean);
-      return periodFormation.goalie && outfielders.length === 5 && new Set(outfielders).size === 5;
+      return formation.goalie && outfielders.length === 5 && new Set(outfielders).size === 5;
     } else if (isIndividual7Mode) {
       const outfielders = [
-        periodFormation.leftDefender, periodFormation.rightDefender,
-        periodFormation.leftAttacker, periodFormation.rightAttacker,
-        periodFormation.substitute_1, periodFormation.substitute_2
+        formation.leftDefender, formation.rightDefender,
+        formation.leftAttacker, formation.rightAttacker,
+        formation.substitute_1, formation.substitute_2
       ].filter(Boolean);
-      return periodFormation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
+      return formation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
     }
     return false;
   };
 
   const randomizeFormation = () => {
-    if (!periodFormation.goalie) {
+    if (!formation.goalie) {
       alert('Please select a goalie first before randomizing the formation.');
       return;
     }
@@ -399,12 +399,12 @@ export function PeriodSetupScreen({
     
     // Update formation while preserving goalie
     const newFormation = {
-      ...periodFormation,  // Start with current formation
+      ...formation,  // Start with current formation
       ...randomFormation,  // Apply randomized positions
-      goalie: periodFormation.goalie  // Keep existing goalie
+      goalie: formation.goalie  // Keep existing goalie
     };
     
-    setPeriodFormation(newFormation);
+    setFormation(newFormation);
   };
 
   return (
@@ -432,19 +432,19 @@ export function PeriodSetupScreen({
       <div className="p-2 bg-slate-700 rounded-md">
         <h3 className="text-sm font-medium text-sky-200 mb-1">Goalie for Period {currentPeriodNumber}</h3>
         <Select
-          value={periodFormation.goalie || ""}
+          value={formation.goalie || ""}
           onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
           options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
           placeholder="Select Goalie for this Period"
         />
       </div>
 
-      {periodFormation.goalie && isPairsMode && (
+      {formation.goalie && isPairsMode && (
         <>
           <PairSelectionCard
             title="Left"
             pairKey="leftPair"
-            pair={periodFormation.leftPair}
+            pair={formation.leftPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
             currentPeriodNumber={currentPeriodNumber}
@@ -452,7 +452,7 @@ export function PeriodSetupScreen({
           <PairSelectionCard
             title="Right"
             pairKey="rightPair"
-            pair={periodFormation.rightPair}
+            pair={formation.rightPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
             currentPeriodNumber={currentPeriodNumber}
@@ -460,7 +460,7 @@ export function PeriodSetupScreen({
           <PairSelectionCard
             title="Substitutes"
             pairKey="subPair"
-            pair={periodFormation.subPair}
+            pair={formation.subPair}
             onPlayerAssign={handlePlayerAssignment}
             getAvailableOptions={getAvailableForSelect}
             currentPeriodNumber={currentPeriodNumber}
@@ -468,12 +468,12 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {periodFormation.goalie && isIndividual6Mode && (
+      {formation.goalie && isIndividual6Mode && (
         <>
           <IndividualPositionCard
             title="Left Defender"
             position="leftDefender"
-            playerId={periodFormation.leftDefender}
+            playerId={formation.leftDefender}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
@@ -481,7 +481,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Right Defender"
             position="rightDefender"
-            playerId={periodFormation.rightDefender}
+            playerId={formation.rightDefender}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
@@ -489,7 +489,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Left Attacker"
             position="leftAttacker"
-            playerId={periodFormation.leftAttacker}
+            playerId={formation.leftAttacker}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
@@ -497,15 +497,15 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Right Attacker"
             position="rightAttacker"
-            playerId={periodFormation.rightAttacker}
+            playerId={formation.rightAttacker}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
             title="Substitute"
-            position="substitute"
-            playerId={periodFormation.substitute}
+            position="substitute_1"
+            playerId={formation.substitute}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
@@ -513,12 +513,12 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {periodFormation.goalie && isIndividual7Mode && (
+      {formation.goalie && isIndividual7Mode && (
         <>
           <IndividualPositionCard
             title="Left Defender"
             position="leftDefender"
-            playerId={periodFormation.leftDefender}
+            playerId={formation.leftDefender}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
             currentPeriodNumber={currentPeriodNumber}
@@ -526,7 +526,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Right Defender"
             position="rightDefender"
-            playerId={periodFormation.rightDefender}
+            playerId={formation.rightDefender}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
             currentPeriodNumber={currentPeriodNumber}
@@ -534,7 +534,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Left Attacker"
             position="leftAttacker"
-            playerId={periodFormation.leftAttacker}
+            playerId={formation.leftAttacker}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
             currentPeriodNumber={currentPeriodNumber}
@@ -542,7 +542,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Right Attacker"
             position="rightAttacker"
-            playerId={periodFormation.rightAttacker}
+            playerId={formation.rightAttacker}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
             currentPeriodNumber={currentPeriodNumber}
@@ -550,7 +550,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Substitute" // Please never change this title! But yes, it is the NEXT to sub in
             position="substitute_1"
-            playerId={periodFormation.substitute_1}
+            playerId={formation.substitute_1}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
             currentPeriodNumber={currentPeriodNumber}
@@ -558,7 +558,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Substitute"  // Please never change this title! But yes, it is the NEXT-NEXT to sub in
             position="substitute_2"
-            playerId={periodFormation.substitute_2}
+            playerId={formation.substitute_2}
             onPlayerAssign={handleIndividual7PlayerAssignment}
             getAvailableOptions={getAvailableForIndividual7Select}
             currentPeriodNumber={currentPeriodNumber}
@@ -629,7 +629,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
   const availableOptions = getAvailableOptions(position);
 
   // Use same colors as GameScreen: sky for on-field, slate for substitutes
-  const isSubstitute = position === 'substitute' || position === 'substitute_1' || position === 'substitute_2';
+  const isSubstitute = position === 'substitute_1' || position === 'substitute_2';
   const bgColor = isSubstitute ? 'bg-slate-700' : 'bg-sky-700';
   const headerColor = isSubstitute ? 'text-slate-200' : 'text-sky-200';
 

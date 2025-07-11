@@ -335,7 +335,7 @@ export const determinePlayerStartingRoles = (players, gameLog) => {
     if (Array.isArray(gameLog) && gameLog.length > 0) {
       // Find the first formation in the game log
       const firstFormationEntry = gameLog.find(entry => 
-        entry.type === 'formation' || entry.data?.periodFormation
+        entry.type === 'formation' || entry.data?.formation
       );
 
       if (firstFormationEntry) {
@@ -367,7 +367,7 @@ const determinePlayerStartingRole = (player, gameLog) => {
   // Fallback to analyzing game log
   if (Array.isArray(gameLog) && gameLog.length > 0) {
     const firstFormationEntry = gameLog.find(entry => 
-      entry.type === 'formation' || entry.data?.periodFormation
+      entry.type === 'formation' || entry.data?.formation
     );
 
     if (firstFormationEntry) {
@@ -385,7 +385,7 @@ const determinePlayerStartingRole = (player, gameLog) => {
  */
 const analyzeFormationForStartingRoles = (formationEntry, startingRoles) => {
   try {
-    const formation = formationEntry.data?.periodFormation || formationEntry.periodFormation;
+    const formation = formationEntry.data?.formation || formationEntry.formation;
     
     if (!formation) {
       return;
@@ -425,7 +425,7 @@ const analyzeFormationForStartingRoles = (formationEntry, startingRoles) => {
  */
 const analyzePlayerStartingRoleFromFormation = (playerId, formationEntry) => {
   try {
-    const formation = formationEntry.data?.periodFormation || formationEntry.periodFormation;
+    const formation = formationEntry.data?.formation || formationEntry.formation;
     
     if (!formation) {
       return 'Unknown';

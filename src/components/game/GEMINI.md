@@ -33,7 +33,7 @@ Complex user interactions (e.g., selecting a player for substitution, changing a
 
 ## 3. Key Data Flows
 
-1.  **Game State to UI**: `useGameState` provides the `periodFormation`, `allPlayers`, `matchTimerSeconds`, `subTimerSeconds`, etc., as props to `GameScreen`. These props are then passed down to `FormationRenderer` and other sub-components for display.
+1.  **Game State to UI**: `useGameState` provides the `formation`, `allPlayers`, `matchTimerSeconds`, `subTimerSeconds`, etc., as props to `GameScreen`. These props are then passed down to `FormationRenderer` and other sub-components for display.
 
 2.  **User Interaction to Logic**: When a user taps or long-presses a player card:
     - `useLongPressWithScrollDetection` detects the interaction.

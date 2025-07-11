@@ -82,11 +82,11 @@ describe('useGameState', () => {
 
   describe('Hook Initialization', () => {
     it('should initialize with default state when localStorage is empty', () => {
-      // Return a proper default state structure to avoid undefined periodFormation
+      // Return a proper default state structure to avoid undefined formation
       const defaultState = createMockGameState({
         allPlayers: [],  // This will trigger initializePlayers
         view: 'config',
-        periodFormation: createMockFormation()
+        formation: createMockFormation()
       });
       mockPersistenceManager.loadState.mockReturnValue(defaultState);
       
@@ -94,20 +94,20 @@ describe('useGameState', () => {
       
       expectHookResult(result, [
         'allPlayers', 'view', 'selectedSquadIds', 'teamMode',
-        'currentPeriodNumber', 'periodFormation', 'gameLog'
+        'currentPeriodNumber', 'formation', 'gameLog'
       ]);
       
       expect(result.current.allPlayers).toHaveLength(7);
       expect(result.current.view).toBeDefined();
       expect(result.current.teamMode).toBeDefined();
-      expect(result.current.periodFormation).toBeDefined();
+      expect(result.current.formation).toBeDefined();
     });
 
     it('should initialize players when allPlayers is empty', () => {
       const stateWithEmptyPlayers = createMockGameState({
         allPlayers: [],
         view: 'config',
-        periodFormation: createMockFormation()
+        formation: createMockFormation()
       });
       mockPersistenceManager.loadState.mockReturnValue(stateWithEmptyPlayers);
       
@@ -151,7 +151,7 @@ describe('useGameState', () => {
       
       const expectedSetters = [
         'setAllPlayers', 'setView', 'setSelectedSquadIds', 'setTeamMode',
-        'setCurrentPeriodNumber', 'setPeriodFormation', 'setScore', 'addHomeGoal', 'addAwayGoal'
+        'setCurrentPeriodNumber', 'setFormation', 'setScore', 'addHomeGoal', 'addAwayGoal'
       ];
       
       expectedSetters.forEach(setter => {
@@ -221,7 +221,7 @@ describe('useGameState', () => {
         it(`should handle ${name} team mode correctly`, () => {
           const initialState = createMockGameState({
             teamMode,
-            periodFormation: formation,
+            formation: formation,
             selectedSquadIds: Array.from({ length: expectedPlayers }, (_, i) => `${i + 1}`)
           });
           
@@ -231,7 +231,7 @@ describe('useGameState', () => {
           
           expect(result.current.teamMode).toBe(teamMode);
           expect(result.current.selectedSquadIds).toHaveLength(expectedPlayers);
-          expect(result.current.periodFormation).toEqual(formation);
+          expect(result.current.formation).toEqual(formation);
         });
 
         it(`should update formation correctly for ${name}`, () => {
@@ -239,11 +239,11 @@ describe('useGameState', () => {
           
           act(() => {
             result.current.setTeamMode(teamMode);
-            result.current.setPeriodFormation(formation);
+            result.current.setFormation(formation);
           });
           
           expect(result.current.teamMode).toBe(teamMode);
-          expect(result.current.periodFormation).toEqual(formation);
+          expect(result.current.formation).toEqual(formation);
         });
       });
     });
@@ -343,7 +343,7 @@ describe('useGameState', () => {
     //   
     //   const stateWithEmptyPlayers = createMockGameState({
     //     allPlayers: [],
-    //     periodFormation: createMockFormation()
+    //     formation: createMockFormation()
     //   });
     //   mockPersistenceManager.loadState.mockReturnValue(stateWithEmptyPlayers);
     //   
@@ -414,7 +414,7 @@ describe('useGameState', () => {
         const substitutionManager = mockDependencies.createSubstitutionManager.mock.results[0].value;
         expect(substitutionManager.executeSubstitution).toHaveBeenCalledWith(
           expect.objectContaining({
-            periodFormation: expect.any(Object),
+            formation: expect.any(Object),
             nextPlayerIdToSubOut: '1',
             allPlayers: expect.any(Array),
             rotationQueue: expect.any(Array),
@@ -503,15 +503,15 @@ describe('useGameState', () => {
         // Set specific positions for testing
         players[0].stats.currentPairKey = 'leftDefender'; // Player 1
         players[1].stats.currentPairKey = 'rightDefender'; // Player 2
-        players[0].stats.currentPeriodRole = PLAYER_ROLES.DEFENDER;
-        players[1].stats.currentPeriodRole = PLAYER_ROLES.DEFENDER;
+        players[0].stats.currentRole = PLAYER_ROLES.DEFENDER;
+        players[1].stats.currentRole = PLAYER_ROLES.DEFENDER;
         
         formation.leftDefender = '1';
         formation.rightDefender = '2';
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
-          periodFormation: formation,
+          formation: formation,
           teamMode: TEAM_MODES.INDIVIDUAL_7
         }));
         
@@ -526,8 +526,8 @@ describe('useGameState', () => {
         expect(success).toBe(true);
         
         // Verify positions were swapped in formation
-        expect(newResult.current.periodFormation.leftDefender).toBe('2');
-        expect(newResult.current.periodFormation.rightDefender).toBe('1');
+        expect(newResult.current.formation.leftDefender).toBe('2');
+        expect(newResult.current.formation.rightDefender).toBe('1');
         
         // Verify players' position keys were updated
         const updatedPlayer1 = newResult.current.allPlayers.find(p => p.id === '1');
@@ -546,7 +546,7 @@ describe('useGameState', () => {
         formation.leftDefender = '1';
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
-          periodFormation: formation,
+          formation: formation,
           teamMode: TEAM_MODES.INDIVIDUAL_7
         }));
         
@@ -567,7 +567,7 @@ describe('useGameState', () => {
         // Mock role change handler
         mockDependencies.handleRoleChange.mockImplementation((player, newRole, currentTime, isSubTimerPaused) => ({
           ...player.stats,
-          currentPeriodRole: newRole,
+          currentRole: newRole,
           lastStintStartTimeEpoch: currentTime
         }));
         
@@ -586,7 +586,7 @@ describe('useGameState', () => {
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
-          periodFormation: formation,
+          formation: formation,
           teamMode: TEAM_MODES.INDIVIDUAL_7
         }));
         
@@ -628,7 +628,7 @@ describe('useGameState', () => {
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
-          periodFormation: formation,
+          formation: formation,
           teamMode: TEAM_MODES.INDIVIDUAL_7
         }));
         
@@ -637,8 +637,8 @@ describe('useGameState', () => {
           return {
             ...player.stats,
             timeOnFieldSeconds: player.stats.timeOnFieldSeconds + 60,
-            currentPeriodStatus: player.stats.currentPeriodStatus,
-            currentPeriodRole: player.stats.currentPeriodRole,
+            currentStatus: player.stats.currentStatus,
+            currentRole: player.stats.currentRole,
             currentPairKey: player.stats.currentPairKey
           };
         });
@@ -653,8 +653,8 @@ describe('useGameState', () => {
         expect(success).toBe(true);
         
         // Verify goalie was changed in formation
-        expect(newResult.current.periodFormation.goalie).toBe('1');
-        expect(newResult.current.periodFormation.leftDefender).toBe('7');
+        expect(newResult.current.formation.goalie).toBe('1');
+        expect(newResult.current.formation.leftDefender).toBe('7');
       });
 
       it('should not switch to same goalie', () => {
@@ -664,7 +664,7 @@ describe('useGameState', () => {
         formation.goalie = '7';
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
-          periodFormation: formation
+          formation: formation
         }));
         
         const { result: newResult } = renderHook(() => useGameState());
@@ -689,7 +689,7 @@ describe('useGameState', () => {
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
-          periodFormation: formation
+          formation: formation
         }));
         
         const { result: newResult } = renderHook(() => useGameState());
@@ -718,7 +718,7 @@ describe('useGameState', () => {
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
-          periodFormation: formation,
+          formation: formation,
           teamMode: TEAM_MODES.INDIVIDUAL_7
         }));
         

@@ -60,14 +60,14 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
   }
   
   // Allocate time based on current period status
-  switch (stats.currentPeriodStatus) {
+  switch (stats.currentStatus) {
     case PLAYER_STATUS.ON_FIELD:
       updatedStats.timeOnFieldSeconds += stintDurationSeconds;
       
       // Also track role-specific time for outfield players
-      if (stats.currentPeriodRole === PLAYER_ROLES.DEFENDER) {
+      if (stats.currentRole === PLAYER_ROLES.DEFENDER) {
         updatedStats.timeAsDefenderSeconds += stintDurationSeconds;
-      } else if (stats.currentPeriodRole === PLAYER_ROLES.ATTACKER) {
+      } else if (stats.currentRole === PLAYER_ROLES.ATTACKER) {
         updatedStats.timeAsAttackerSeconds += stintDurationSeconds;
       }
       break;
@@ -82,7 +82,7 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
       
     default:
       // Unknown status - don't allocate time
-      console.warn(`Unknown player status: ${stats.currentPeriodStatus}`);
+      console.warn(`Unknown player status: ${stats.currentStatus}`);
       break;
   }
   
@@ -186,9 +186,9 @@ export const handlePauseResumeTime = (player, currentTimeEpoch, isPausing) => {
     };
   } else {
     // When resuming: reset stint start time for active players
-    if (stats.currentPeriodStatus === 'on_field' || 
-        stats.currentPeriodStatus === 'substitute' || 
-        stats.currentPeriodStatus === 'goalie') {
+    if (stats.currentStatus === 'on_field' ||
+        stats.currentStatus === 'substitute' ||
+        stats.currentStatus === 'goalie') {
       return startNewStint(player, currentTimeEpoch);
     }
     

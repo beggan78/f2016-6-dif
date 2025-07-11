@@ -87,7 +87,7 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
-        periodFormation={mockFormation}
+        formation={mockFormation}
         matchEvents={mockMatchEvents}
         goalScorers={mockGoalScorers}
       />
@@ -130,7 +130,7 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={playersWithZeroTime}
         teamMode={TEAM_MODES.PAIRS_7}
-        periodFormation={{}}
+        formation={{}}
         matchEvents={[]}
         goalScorers={{}}
       />
@@ -146,7 +146,7 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
-        periodFormation={mockFormation}
+        formation={mockFormation}
         matchEvents={mockMatchEvents}
         goalScorers={mockGoalScorers}
       />
@@ -168,7 +168,7 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
-        periodFormation={mockFormation}
+        formation={mockFormation}
         matchEvents={mockMatchEvents}
         goalScorers={mockGoalScorers}
       />
@@ -204,7 +204,7 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
-        periodFormation={mockFormation}
+        formation={mockFormation}
         matchEvents={mockMatchEvents}
         goalScorers={mockGoalScorers}
       />
@@ -249,7 +249,7 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={playersWithUndefinedStats}
         teamMode={TEAM_MODES.PAIRS_7}
-        periodFormation={{}}
+        formation={{}}
         matchEvents={[]}
         goalScorers={{}}
       />
@@ -267,7 +267,7 @@ describe('PlayerStatsTable', () => {
       <PlayerStatsTable
         players={mockPlayers}
         teamMode={TEAM_MODES.PAIRS_7}
-        periodFormation={mockFormation}
+        formation={mockFormation}
         matchEvents={mockMatchEvents}
         goalScorers={mockGoalScorers}
       />
@@ -331,7 +331,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={playersWithIdenticalValues}
           teamMode={TEAM_MODES.INDIVIDUAL_7}
-          periodFormation={{}}
+          formation={{}}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -400,7 +400,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={playersWithMixedData}
             teamMode={TEAM_MODES.INDIVIDUAL_7}
-            periodFormation={{}}
+            formation={{}}
             matchEvents={[]}
             goalScorers={{}}
           />
@@ -420,7 +420,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -449,7 +449,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -495,7 +495,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={largeDataset}
           teamMode={TEAM_MODES.INDIVIDUAL_7}
-          periodFormation={{}}
+          formation={{}}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -519,7 +519,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={largeDataset}
           teamMode={TEAM_MODES.INDIVIDUAL_7}
-          periodFormation={{}}
+          formation={{}}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -547,7 +547,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={largeDataset}
             teamMode={TEAM_MODES.INDIVIDUAL_7}
-            periodFormation={{}}
+            formation={{}}
             matchEvents={[]}
             goalScorers={{}}
           />
@@ -566,7 +566,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -592,7 +592,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -618,7 +618,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -640,7 +640,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -696,7 +696,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={complexEvents}
           goalScorers={{}}
         />
@@ -734,7 +734,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={eventsWithMapping}
           goalScorers={goalScorersMapping}
         />
@@ -782,7 +782,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={mockPlayers}
             teamMode={TEAM_MODES.PAIRS_7}
-            periodFormation={mockFormation}
+            formation={mockFormation}
             matchEvents={eventsWithMissingData}
             goalScorers={{}}
           />
@@ -807,7 +807,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={multipleGoalsEvents}
           goalScorers={{}}
         />
@@ -848,7 +848,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={individual6Players}
           teamMode={TEAM_MODES.INDIVIDUAL_6}
-          periodFormation={individual6Formation}
+          formation={individual6Formation}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -893,7 +893,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={individual7Players}
           teamMode={TEAM_MODES.INDIVIDUAL_7}
-          periodFormation={individual7Formation}
+          formation={individual7Formation}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -923,7 +923,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={incompleteFormation}
+          formation={incompleteFormation}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -943,7 +943,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={{}}
+          formation={{}}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -954,7 +954,7 @@ describe('PlayerStatsTable', () => {
       const roleTexts = Array.from(tableCells).map(cell => cell.textContent);
       
       // All players should show 'Sub' since getPlayerCurrentRole returns 'SUBSTITUTE' 
-      // when periodFormation is empty
+      // when formation is empty
       expect(roleTexts.filter(text => text === 'Sub')).toHaveLength(3);
     });
 
@@ -964,7 +964,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={mockPlayers}
             teamMode={TEAM_MODES.PAIRS_7}
-            periodFormation={null}
+            formation={null}
             matchEvents={[]}
             goalScorers={{}}
           />
@@ -976,7 +976,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={mockPlayers}
             teamMode={TEAM_MODES.PAIRS_7}
-            periodFormation={undefined}
+            formation={undefined}
             matchEvents={[]}
             goalScorers={{}}
           />
@@ -1004,7 +1004,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={playersWithLargeValues}
           teamMode={TEAM_MODES.INDIVIDUAL_7}
-          periodFormation={{}}
+          formation={{}}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -1034,7 +1034,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={playersWithNegativeValues}
             teamMode={TEAM_MODES.INDIVIDUAL_7}
-            periodFormation={{}}
+            formation={{}}
             matchEvents={[]}
             goalScorers={{}}
           />
@@ -1069,7 +1069,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={playersWithMissingStats}
             teamMode={TEAM_MODES.INDIVIDUAL_7}
-            periodFormation={{}}
+            formation={{}}
             matchEvents={[]}
             goalScorers={{}}
           />
@@ -1126,7 +1126,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={playersWithMissingNames}
             teamMode={TEAM_MODES.INDIVIDUAL_7}
-            periodFormation={{}}
+            formation={{}}
             matchEvents={[]}
             goalScorers={{}}
           />
@@ -1145,7 +1145,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -1161,7 +1161,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -1185,7 +1185,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />
@@ -1212,7 +1212,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={mockPlayers}
             teamMode={teamMode}
-            periodFormation={mockFormation}
+            formation={mockFormation}
             matchEvents={mockMatchEvents}
             goalScorers={mockGoalScorers}
           />
@@ -1231,7 +1231,7 @@ describe('PlayerStatsTable', () => {
           <PlayerStatsTable
             players={mockPlayers}
             teamMode="UNKNOWN_MODE"
-            periodFormation={mockFormation}
+            formation={mockFormation}
             matchEvents={mockMatchEvents}
             goalScorers={mockGoalScorers}
           />
@@ -1271,7 +1271,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers}
           teamMode={TEAM_MODES.PAIRS_7}
-          periodFormation={mockFormation}
+          formation={mockFormation}
           matchEvents={[]}
           goalScorers={{}}
         />
@@ -1282,7 +1282,7 @@ describe('PlayerStatsTable', () => {
         <PlayerStatsTable
           players={mockPlayers.slice(0, 2)}
           teamMode={TEAM_MODES.INDIVIDUAL_7}
-          periodFormation={{}}
+          formation={{}}
           matchEvents={mockMatchEvents}
           goalScorers={mockGoalScorers}
         />

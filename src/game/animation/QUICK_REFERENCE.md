@@ -12,7 +12,7 @@ const handleOperation = () => {
     gameState,
     calculateYourOperation,
     (newState) => {
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
     },
     setAnimationState,
@@ -35,7 +35,7 @@ export const calculateNewOperation = (gameState, param1, param2) => {
   }
   
   // Calculate changes
-  const newFormation = { ...gameState.periodFormation };
+  const newFormation = { ...gameState.formation };
   // ... apply your logic
   
   const newPlayers = gameState.allPlayers.map(player => {
@@ -45,7 +45,7 @@ export const calculateNewOperation = (gameState, param1, param2) => {
   
   return {
     ...gameState,
-    periodFormation: newFormation,
+    formation: newFormation,
     allPlayers: newPlayers,
     playersToHighlight: [playerId1, playerId2] // For glow effect
   };
@@ -85,7 +85,7 @@ const createHandlers = (gameStateFactory, stateUpdaters, animationHooks, ...) =>
       (state) => calculateNewOperation(state, param1, param2),
       (newState) => {
         // Apply ALL necessary state updates
-        setPeriodFormation(newState.periodFormation);
+        setFormation(newState.formation);
         setAllPlayers(newState.allPlayers);
         // ... other updates
       },
@@ -154,7 +154,7 @@ const handleSubstitution = () => {
     gameState,
     calculateSubstitution,
     (newState) => {
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
       setRotationQueue(newState.rotationQueue);
       setNextPlayerIdToSubOut(newState.nextPlayerIdToSubOut);
@@ -173,7 +173,7 @@ const handlePositionSwitch = (player1Id, player2Id) => {
     gameState,
     (state) => calculatePositionSwitch(state, player1Id, player2Id),
     (newState) => {
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
     },
     setAnimationState,
@@ -190,7 +190,7 @@ const handleGoalieSwitch = (newGoalieId) => {
     gameState,
     (state) => calculateGoalieSwitch(state, newGoalieId),
     (newState) => {
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
       setRotationQueue(newState.rotationQueue);
     },
@@ -206,9 +206,9 @@ const handleGoalieSwitch = (newGoalieId) => {
 ### Check Animation Calculation
 ```javascript
 // Add temporarily to your logic function
-const beforePositions = captureAllPlayerPositions(gameState.periodFormation, gameState.allPlayers, gameState.teamMode);
+const beforePositions = captureAllPlayerPositions(gameState.formation, gameState.allPlayers, gameState.teamMode);
 const newState = calculateYourOperation(gameState);
-const afterPositions = captureAllPlayerPositions(newState.periodFormation, newState.allPlayers, newState.teamMode);
+const afterPositions = captureAllPlayerPositions(newState.formation, newState.allPlayers, newState.teamMode);
 const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, gameState.teamMode);
 
 console.log('Debug animation:', {
@@ -265,7 +265,7 @@ console.log('Recently substituted:', recentlySubstitutedPlayers);
 ### ❌ Don't Do This
 ```javascript
 // Direct state updates without animation
-setPeriodFormation(newFormation);
+setFormation(newFormation);
 setAllPlayers(newPlayers);
 
 // Manual animation timing
@@ -273,7 +273,7 @@ setPlayerClass('moving');
 setTimeout(() => setPlayerClass(''), 1000);
 
 // Modifying input state
-gameState.periodFormation.leftDefender = newPlayerId; // Mutates input!
+gameState.formation.leftDefender = newPlayerId; // Mutates input!
 ```
 
 ### ✅ Do This Instead
@@ -283,7 +283,7 @@ animateStateChange(
   gameState,
   calculateOperation,
   (newState) => {
-    setPeriodFormation(newState.periodFormation);
+    setFormation(newState.formation);
     setAllPlayers(newState.allPlayers);
   },
   setAnimationState,
@@ -292,7 +292,7 @@ animateStateChange(
 );
 
 // Pure functions
-const newFormation = { ...gameState.periodFormation };
+const newFormation = { ...gameState.formation };
 newFormation.leftDefender = newPlayerId;
 ```
 

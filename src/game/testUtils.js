@@ -14,8 +14,8 @@ export const createMockPlayer = (id, overrides = {}) => ({
   name: `Player ${id}`,
   stats: {
     isInactive: false,
-    currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-    currentPeriodRole: PLAYER_ROLES.DEFENDER,
+    currentStatus: PLAYER_STATUS.ON_FIELD,
+    currentRole: PLAYER_ROLES.DEFENDER,
     currentPairKey: POSITION_KEYS.LEFT_DEFENDER,
     lastStintStartTimeEpoch: 1000,
     timeOnFieldSeconds: 0,
@@ -86,8 +86,8 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
     
     players.push(createMockPlayer(i.toString(), {
       stats: {
-        currentPeriodStatus: status,
-        currentPeriodRole: role,
+        currentStatus: status,
+        currentRole: role,
         currentPairKey: position,
         timeOnFieldSeconds: i * 30, // Varied playing times
         timeAsDefenderSeconds: role === PLAYER_ROLES.DEFENDER ? i * 30 : 0,
@@ -143,10 +143,10 @@ export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
  */
 export const createMockGameState = (teamMode = TEAM_MODES.INDIVIDUAL_7, overrides = {}) => {
   const allPlayers = createMockPlayers(7, teamMode);
-  const periodFormation = createMockFormation(teamMode);
+  const formation = createMockFormation(teamMode);
   
   return {
-    periodFormation,
+    formation,
     allPlayers,
     teamMode,
     rotationQueue: ['1', '2', '3', '4', '5'],
@@ -200,7 +200,7 @@ export const createMockPlayerLookup = (players) => {
 export const createMockDependencies = () => ({
   gameStateFactory: jest.fn(() => createMockGameState()),
   stateUpdaters: {
-    setPeriodFormation: jest.fn(),
+    setFormation: jest.fn(),
     setAllPlayers: jest.fn(),
     setRotationQueue: jest.fn(),
     setNextPlayerIdToSubOut: jest.fn(),
@@ -238,8 +238,8 @@ export const createMockAnimationState = () => ({
  * Assertion helpers for complex objects
  */
 export const expectPlayerStatsToMatch = (actual, expected) => {
-  expect(actual.currentPeriodStatus).toBe(expected.currentPeriodStatus);
-  expect(actual.currentPeriodRole).toBe(expected.currentPeriodRole);
+  expect(actual.currentStatus).toBe(expected.currentStatus);
+  expect(actual.currentRole).toBe(expected.currentRole);
   expect(actual.currentPairKey).toBe(expected.currentPairKey);
 };
 

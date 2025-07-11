@@ -7,7 +7,7 @@ import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES, HELP_MESSAGES } from './constants';
 
 export function PairsFormation({ 
-  periodFormation, 
+  formation,
   allPlayers, 
   animationState, 
   recentlySubstitutedPlayers,
@@ -19,8 +19,8 @@ export function PairsFormation({
   getPlayerTimeStats,
   ...domProps
 }) {
-  // Handle null/undefined periodFormation
-  if (!periodFormation) {
+  // Handle null/undefined formation
+  if (!formation) {
     return (
       <div className="space-y-2" {...domProps}>
         <div>Left</div>
@@ -31,7 +31,7 @@ export function PairsFormation({
   }
 
   const renderPair = (pairKey, pairDisplayName, renderIndex) => {
-    const pairData = periodFormation[pairKey];
+    const pairData = formation[pairKey];
     if (!pairData) return null;
 
     const isNextOff = pairKey === nextPhysicalPairToSubOut;
@@ -93,7 +93,7 @@ export function PairsFormation({
   };
 
   const renderGoalie = () => {
-    const goalieId = periodFormation.goalie;
+    const goalieId = formation.goalie;
     if (!goalieId) return null;
 
     // Check if goalie was recently substituted

@@ -3,7 +3,7 @@ import { TEAM_MODES } from '../../constants/playerConstants';
 
 export const createFieldPositionHandlers = (
   teamMode,
-  periodFormation,
+  formation,
   allPlayers,
   nextPlayerIdToSubOut,
   modalHandlers
@@ -19,7 +19,7 @@ export const createFieldPositionHandlers = (
     if (isPairsMode) {
       // Pairs mode - handle pair interactions
       const pairKey = position;
-      const pairData = periodFormation[pairKey];
+      const pairData = formation[pairKey];
       if (!pairData) return;
 
       const defenderName = getPlayerNameById(pairData.defender);
@@ -36,7 +36,7 @@ export const createFieldPositionHandlers = (
       });
     } else {
       // Individual modes - handle individual player interactions
-      const playerId = periodFormation[position];
+      const playerId = formation[position];
       const playerName = getPlayerNameById(playerId);
       
       openFieldPlayerModal({
@@ -54,7 +54,7 @@ export const createFieldPositionHandlers = (
     // Only for 7-player individual mode substitute players
     if (!isIndividual7Mode || (position !== 'substitute_1' && position !== 'substitute_2')) return;
     
-    const playerId = periodFormation[position];
+    const playerId = formation[position];
     const playerName = getPlayerNameById(playerId);
     const player = findPlayerById(allPlayers, playerId);
     const isCurrentlyInactive = player?.stats.isInactive || false;
@@ -92,7 +92,6 @@ export const createFieldPositionHandlers = (
   } else {
     // Individual modes
     const positions = [
-      'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute',
       'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker',
       'substitute_1', 'substitute_2'
     ];

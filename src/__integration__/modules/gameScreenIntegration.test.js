@@ -93,7 +93,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -117,7 +117,7 @@ describe('GameScreen Integration Tests', () => {
       expect(screen.getAllByText(/Substitute/)).toHaveLength(2); // INDIVIDUAL_7 has 2 substitutes
       
       // Verify formation positions are rendered by checking for key elements
-      const formation = gameState.periodFormation;
+      const formation = gameState.formation;
       const allPlayers = gameState.allPlayers;
       
       // Check that the goalie is displayed
@@ -146,7 +146,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7);
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -171,7 +171,7 @@ describe('GameScreen Integration Tests', () => {
       expect(screen.getByText(/Substitutes/)).toBeInTheDocument();
       
       // Verify pair-specific elements are present
-      const formation = gameState.periodFormation;
+      const formation = gameState.formation;
       const allPlayers = gameState.allPlayers;
       
       // Check that field pairs are displayed (leftDefender, rightDefender, leftAttacker, rightAttacker)
@@ -196,7 +196,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -221,7 +221,7 @@ describe('GameScreen Integration Tests', () => {
       expect(screen.getAllByText(/Substitute/)).toHaveLength(1);
       
       // Check that field players are displayed
-      const formation = gameState.periodFormation;
+      const formation = gameState.formation;
       const allPlayers = gameState.allPlayers;
       
       // Verify field positions
@@ -246,7 +246,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange - Start with INDIVIDUAL_7
       const initialGameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
       mockHooks.useGameState._updateMockState({
-        periodFormation: initialGameState.periodFormation,
+        formation: initialGameState.formation,
         allPlayers: initialGameState.allPlayers,
         teamMode: initialGameState.teamMode,
         rotationQueue: initialGameState.rotationQueue,
@@ -262,7 +262,7 @@ describe('GameScreen Integration Tests', () => {
       // Act - Switch to INDIVIDUAL_6 team mode
       const switchedGameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
       mockHooks.useGameState._updateMockState({
-        periodFormation: switchedGameState.periodFormation,
+        formation: switchedGameState.formation,
         allPlayers: switchedGameState.allPlayers,
         teamMode: switchedGameState.teamMode,
         rotationQueue: switchedGameState.rotationQueue,
@@ -283,7 +283,7 @@ describe('GameScreen Integration Tests', () => {
       // Act - Switch to PAIRS_7 team mode
       const pairsGameState = gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7);
       mockHooks.useGameState._updateMockState({
-        periodFormation: pairsGameState.periodFormation,
+        formation: pairsGameState.formation,
         allPlayers: pairsGameState.allPlayers,
         teamMode: pairsGameState.teamMode,
         rotationQueue: pairsGameState.rotationQueue,
@@ -313,7 +313,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -324,7 +324,7 @@ describe('GameScreen Integration Tests', () => {
       const { rerender } = render(<GameScreen {...gameScreenProps} />);
       
       // Assert initial state
-      const initialFormation = gameState.periodFormation;
+      const initialFormation = gameState.formation;
       const initialLeftDefender = gameState.allPlayers.find(p => p.id === initialFormation.leftDefender);
       expect(screen.getByText(new RegExp(initialLeftDefender.name))).toBeInTheDocument();
       
@@ -337,7 +337,7 @@ describe('GameScreen Integration Tests', () => {
       };
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: updatedFormation,
+        formation: updatedFormation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -360,7 +360,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -378,7 +378,7 @@ describe('GameScreen Integration Tests', () => {
       // Act - Change next player to sub out
       const newNextPlayer = gameState.allPlayers[1];
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -396,7 +396,7 @@ describe('GameScreen Integration Tests', () => {
       // Act - Update rotation queue order
       const rotatedQueue = [...gameState.rotationQueue.slice(1), gameState.rotationQueue[0]];
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: rotatedQueue,
@@ -416,10 +416,10 @@ describe('GameScreen Integration Tests', () => {
     it('should handle player status changes and UI updates', async () => {
       // Arrange - Use INDIVIDUAL_7 which supports inactive players
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_1);
+      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.formation.substitute_1);
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -441,7 +441,7 @@ describe('GameScreen Integration Tests', () => {
       );
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: updatedPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -463,7 +463,7 @@ describe('GameScreen Integration Tests', () => {
       );
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: reactivatedPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -484,7 +484,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -511,7 +511,7 @@ describe('GameScreen Integration Tests', () => {
       // Act - Update score rapidly
       for (let i = 1; i <= 3; i++) {
         mockHooks.useGameState._updateMockState({
-          periodFormation: gameState.periodFormation,
+          formation: gameState.formation,
           allPlayers: gameState.allPlayers,
           teamMode: gameState.teamMode,
           rotationQueue: gameState.rotationQueue,
@@ -555,7 +555,7 @@ describe('GameScreen Integration Tests', () => {
     it('should display player stats correctly in formation context', async () => {
       // Arrange - Use INDIVIDUAL_7 which has comprehensive stats display
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.leftDefender);
+      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.formation.leftDefender);
       
       // Setup player with time stats
       const updatedPlayers = gameState.allPlayers.map(player => 
@@ -567,8 +567,8 @@ describe('GameScreen Integration Tests', () => {
                 timeOnFieldSeconds: 300, // 5 minutes
                 timeAsDefenderSeconds: 180, // 3 minutes
                 timeAsAttackerSeconds: 120, // 2 minutes
-                currentPeriodStatus: 'on_field',
-                currentPeriodRole: 'Defender',
+                currentStatus: 'on_field',
+                currentRole: 'Defender',
                 lastStintStartTimeEpoch: Date.now() - 60000 // Started 1 minute ago
               }
             }
@@ -576,7 +576,7 @@ describe('GameScreen Integration Tests', () => {
       );
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: updatedPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -610,7 +610,7 @@ describe('GameScreen Integration Tests', () => {
       const recentlySubstitutedPlayerId = gameState.allPlayers[0].id;
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -671,11 +671,11 @@ describe('GameScreen Integration Tests', () => {
     it('should handle inactive player management in formations', async () => {
       // Arrange - Use INDIVIDUAL_7 which supports inactive players
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const substitute1 = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_1);
-      const substitute2 = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_2);
+      const substitute1 = gameState.allPlayers.find(p => p.id === gameState.formation.substitute_1);
+      const substitute2 = gameState.allPlayers.find(p => p.id === gameState.formation.substitute_2);
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -697,7 +697,7 @@ describe('GameScreen Integration Tests', () => {
       );
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: updatedPlayers1,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -720,7 +720,7 @@ describe('GameScreen Integration Tests', () => {
       );
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: updatedPlayers2,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -743,7 +743,7 @@ describe('GameScreen Integration Tests', () => {
       );
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: reactivatedPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -764,8 +764,8 @@ describe('GameScreen Integration Tests', () => {
     it('should handle player time stats and role integration', async () => {
       // Arrange - Use INDIVIDUAL_6 for simpler role tracking
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-      const leftDefender = gameState.allPlayers.find(p => p.id === gameState.periodFormation.leftDefender);
-      const substitute = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute);
+      const leftDefender = gameState.allPlayers.find(p => p.id === gameState.formation.leftDefender);
+      const substitute = gameState.allPlayers.find(p => p.id === gameState.formation.substitute);
       
       // Setup players with detailed time stats
       const playersWithStats = gameState.allPlayers.map(player => {
@@ -777,8 +777,8 @@ describe('GameScreen Integration Tests', () => {
               timeOnFieldSeconds: 600, // 10 minutes total
               timeAsDefenderSeconds: 400, // 6:40 as defender
               timeAsAttackerSeconds: 200, // 3:20 as attacker
-              currentPeriodStatus: 'on_field',
-              currentPeriodRole: 'Defender',
+              currentStatus: 'on_field',
+              currentRole: 'Defender',
               lastStintStartTimeEpoch: Date.now() - 120000 // Started 2 minutes ago
             }
           };
@@ -790,8 +790,8 @@ describe('GameScreen Integration Tests', () => {
               timeOnFieldSeconds: 300, // 5 minutes total
               timeAsDefenderSeconds: 150, // 2:30 as defender
               timeAsAttackerSeconds: 150, // 2:30 as attacker
-              currentPeriodStatus: 'substitute',
-              currentPeriodRole: null,
+              currentStatus: 'substitute',
+              currentRole: null,
               lastStintStartTimeEpoch: null
             }
           };
@@ -800,7 +800,7 @@ describe('GameScreen Integration Tests', () => {
       });
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: playersWithStats,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -818,7 +818,7 @@ describe('GameScreen Integration Tests', () => {
       
       // Act - Simulate position change (swap defender with substitute)
       const swappedFormation = {
-        ...gameState.periodFormation,
+        ...gameState.formation,
         leftDefender: substitute.id,
         substitute: leftDefender.id
       };
@@ -830,8 +830,8 @@ describe('GameScreen Integration Tests', () => {
             ...player,
             stats: {
               ...player.stats,
-              currentPeriodStatus: 'substitute',
-              currentPeriodRole: null,
+              currentStatus: 'substitute',
+              currentRole: null,
               lastStintStartTimeEpoch: null
             }
           };
@@ -840,8 +840,8 @@ describe('GameScreen Integration Tests', () => {
             ...player,
             stats: {
               ...player.stats,
-              currentPeriodStatus: 'on_field',
-              currentPeriodRole: 'Defender',
+              currentStatus: 'on_field',
+              currentRole: 'Defender',
               lastStintStartTimeEpoch: Date.now()
             }
           };
@@ -850,7 +850,7 @@ describe('GameScreen Integration Tests', () => {
       });
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: swappedFormation,
+        formation: swappedFormation,
         allPlayers: updatedPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -869,8 +869,8 @@ describe('GameScreen Integration Tests', () => {
       
       // Verify state consistency after role changes
       const finalState = mockHooks.useGameState._getMockState();
-      expect(finalState.periodFormation.leftDefender).toBe(substitute.id);
-      expect(finalState.periodFormation.substitute).toBe(leftDefender.id);
+      expect(finalState.formation.leftDefender).toBe(substitute.id);
+      expect(finalState.formation.substitute).toBe(leftDefender.id);
       
       assertValidGameState(finalState);
     });
@@ -882,10 +882,10 @@ describe('GameScreen Integration Tests', () => {
     it('should handle long-press interactions on formation players', async () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const leftDefender = gameState.allPlayers.find(p => p.id === gameState.periodFormation.leftDefender);
+      const leftDefender = gameState.allPlayers.find(p => p.id === gameState.formation.leftDefender);
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -923,10 +923,10 @@ describe('GameScreen Integration Tests', () => {
     it('should handle formation player clicks and interaction feedback', async () => {
       // Arrange - Use PAIRS_7 to test different interaction type
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7);
-      const leftPair = gameState.periodFormation.leftPair;
+      const leftPair = gameState.formation.leftPair;
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -979,7 +979,7 @@ describe('GameScreen Integration Tests', () => {
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -1037,10 +1037,10 @@ describe('GameScreen Integration Tests', () => {
     it('should provide visual feedback and responsive interactions', async () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_1);
+      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.formation.substitute_1);
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue,
@@ -1131,8 +1131,8 @@ const createGameScreenProps = (gameState, mockHooks) => {
   return {
     // Game state props
     currentPeriodNumber: gameState.currentPeriodNumber || 1,
-    periodFormation: gameState.periodFormation,
-    setPeriodFormation: mockHooks.useGameState.setPeriodFormation,
+    formation: gameState.formation,
+    setFormation: mockHooks.useGameState.setFormation,
     allPlayers: gameState.allPlayers,
     setAllPlayers: mockHooks.useGameState.setAllPlayers,
     teamMode: gameState.teamMode,

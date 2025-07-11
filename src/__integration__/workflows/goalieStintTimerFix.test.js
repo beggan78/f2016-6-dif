@@ -15,8 +15,8 @@ describe('Goalie Stint Timer Fix Verification', () => {
   it('should properly initialize lastStintStartTimeEpoch for former goalie', () => {
     // Setup a game state with an active goalie
     const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-    const currentGoalieId = gameState.periodFormation.goalie;
-    const newGoalieId = gameState.periodFormation.leftDefender;
+    const currentGoalieId = gameState.formation.goalie;
+    const newGoalieId = gameState.formation.leftDefender;
     
     // Perform goalie switch
     const resultState = calculateGoalieSwitch(gameState, newGoalieId);
@@ -30,14 +30,14 @@ describe('Goalie Stint Timer Fix Verification', () => {
     expect(formerGoalie.stats.lastStintStartTimeEpoch).toBeDefined();
     expect(formerGoalie.stats.lastStintStartTimeEpoch).not.toBeNull();
     expect(formerGoalie.stats.lastStintStartTimeEpoch).toBeGreaterThan(0);
-    expect(formerGoalie.stats.currentPeriodStatus).toBe('on_field');
+    expect(formerGoalie.stats.currentStatus).toBe('on_field');
     
     // Verify new goalie has proper stint timer initialization
     expect(newGoalie).toBeDefined();
     expect(newGoalie.stats.lastStintStartTimeEpoch).toBeDefined();
     expect(newGoalie.stats.lastStintStartTimeEpoch).not.toBeNull();
     expect(newGoalie.stats.lastStintStartTimeEpoch).toBeGreaterThan(0);
-    expect(newGoalie.stats.currentPeriodStatus).toBe('goalie');
+    expect(newGoalie.stats.currentStatus).toBe('goalie');
     
     // Verify both players have the same stint start time (synchronized)
     expect(formerGoalie.stats.lastStintStartTimeEpoch).toBe(newGoalie.stats.lastStintStartTimeEpoch);
@@ -48,16 +48,16 @@ describe('Goalie Stint Timer Fix Verification', () => {
     
     teamModes.forEach(teamMode => {
       const gameState = gameStateScenarios.freshGame(teamMode);
-      const currentGoalieId = gameState.periodFormation.goalie;
+      const currentGoalieId = gameState.formation.goalie;
       
       // Find a suitable replacement goalie
       let newGoalieId;
       if (teamMode === TEAM_MODES.PAIRS_7) {
-        newGoalieId = gameState.periodFormation.leftPair.defender;
+        newGoalieId = gameState.formation.leftPair.defender;
       } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
-        newGoalieId = gameState.periodFormation.leftDefender;
+        newGoalieId = gameState.formation.leftDefender;
       } else {
-        newGoalieId = gameState.periodFormation.leftDefender;
+        newGoalieId = gameState.formation.leftDefender;
       }
       
       // Perform goalie switch
@@ -77,8 +77,8 @@ describe('Goalie Stint Timer Fix Verification', () => {
   
   it('should preserve time field initialization from startNewStint', () => {
     const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-    const currentGoalieId = gameState.periodFormation.goalie;
-    const newGoalieId = gameState.periodFormation.leftDefender;
+    const currentGoalieId = gameState.formation.goalie;
+    const newGoalieId = gameState.formation.leftDefender;
     
     // Perform goalie switch
     const resultState = calculateGoalieSwitch(gameState, newGoalieId);

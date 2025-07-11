@@ -30,7 +30,7 @@ export class SubstitutionManager {
    * - Pause substitution (timer paused): Preserves time using resetPlayerStintTimer()
    * 
    * @param {Object} context - Substitution context
-   * @param {Object} context.periodFormation - Current formation
+   * @param {Object} context.formation - Current formation
    * @param {string} context.nextPhysicalPairToSubOut - Pair to substitute out
    * @param {Array} context.allPlayers - All player objects
    * @param {number} context.currentTimeEpoch - Current time
@@ -39,7 +39,7 @@ export class SubstitutionManager {
    */
   handlePairsSubstitution(context) {
     const { 
-      periodFormation, 
+      formation,
       nextPhysicalPairToSubOut, 
       allPlayers, 
       currentTimeEpoch,
@@ -49,14 +49,14 @@ export class SubstitutionManager {
     const pairToSubOutKey = nextPhysicalPairToSubOut;
     const pairToSubInKey = 'subPair';
 
-    const pairGettingSubbed = periodFormation[pairToSubOutKey];
-    const pairComingIn = periodFormation[pairToSubInKey];
+    const pairGettingSubbed = formation[pairToSubOutKey];
+    const pairComingIn = formation[pairToSubInKey];
 
     const playersGoingOffIds = [pairGettingSubbed.defender, pairGettingSubbed.attacker].filter(Boolean);
     const playersComingOnIds = [pairComingIn.defender, pairComingIn.attacker].filter(Boolean);
 
     // Calculate new formation
-    const newFormation = JSON.parse(JSON.stringify(periodFormation));
+    const newFormation = JSON.parse(JSON.stringify(formation));
     newFormation[pairToSubOutKey].defender = pairComingIn.defender;
     newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
     newFormation[pairToSubInKey].defender = pairGettingSubbed.defender;
@@ -74,7 +74,7 @@ export class SubstitutionManager {
           ...p,
           stats: {
             ...timeResult.stats,
-            currentPeriodStatus: 'substitute',
+            currentStatus: 'substitute',
             currentPairKey: pairToSubInKey
           }
         };
@@ -89,7 +89,7 @@ export class SubstitutionManager {
           ...p,
           stats: {
             ...timeResult.stats,
-            currentPeriodStatus: 'on_field',
+            currentStatus: 'on_field',
             currentPairKey: pairToSubOutKey
           }
         };
@@ -116,7 +116,7 @@ export class SubstitutionManager {
    * - Pause substitution (timer paused): Preserves time using resetPlayerStintTimer()
    * 
    * @param {Object} context - Substitution context
-   * @param {Object} context.periodFormation - Current formation
+   * @param {Object} context.formation - Current formation
    * @param {string} context.nextPlayerIdToSubOut - Player ID to substitute out
    * @param {Array} context.allPlayers - All player objects
    * @param {Array} context.rotationQueue - Current rotation queue
@@ -126,7 +126,7 @@ export class SubstitutionManager {
    */
   handleIndividualSubstitution(context) {
     const {
-      periodFormation,
+      formation,
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
@@ -135,21 +135,21 @@ export class SubstitutionManager {
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
-    const playerComingOnId = periodFormation.substitute_1;
+    const playerComingOnId = formation.substitute_1;
 
     // Create rotation queue helper
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     queueManager.initialize(); // Separate active and inactive players
 
     // Find position of outgoing player
-    const playerToSubOutKey = Object.keys(periodFormation).find(key => 
-      periodFormation[key] === playerGoingOffId && key !== 'substitute_1' && key !== 'goalie'
+    const playerToSubOutKey = Object.keys(formation).find(key =>
+      formation[key] === playerGoingOffId && key !== 'substitute_1' && key !== 'goalie'
     );
 
     const newRole = this.getPositionRole(playerToSubOutKey);
 
     // Calculate new formation
-    const newFormation = JSON.parse(JSON.stringify(periodFormation));
+    const newFormation = JSON.parse(JSON.stringify(formation));
     newFormation[playerToSubOutKey] = playerComingOnId;
     newFormation.substitute_1 = playerGoingOffId;
 
@@ -165,9 +165,9 @@ export class SubstitutionManager {
           ...p,
           stats: {
             ...timeResult.stats,
-            currentPeriodStatus: 'substitute',
+            currentStatus: 'substitute',
             currentPairKey: 'substitute_1',
-            currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
+            currentRole: PLAYER_ROLES.SUBSTITUTE
           }
         };
       }
@@ -181,9 +181,9 @@ export class SubstitutionManager {
           ...p,
           stats: {
             ...timeResult.stats,
-            currentPeriodStatus: 'on_field',
+            currentStatus: 'on_field',
             currentPairKey: playerToSubOutKey,
-            currentPeriodRole: newRole
+            currentRole: newRole
           }
         };
       }
@@ -223,7 +223,7 @@ export class SubstitutionManager {
    * - Pause substitution (timer paused): Preserves time using resetPlayerStintTimer()
    * 
    * @param {Object} context - Substitution context
-   * @param {Object} context.periodFormation - Current formation
+   * @param {Object} context.formation - Current formation
    * @param {string} context.nextPlayerIdToSubOut - Player ID to substitute out
    * @param {Array} context.allPlayers - All player objects
    * @param {Array} context.rotationQueue - Current rotation queue
@@ -233,7 +233,7 @@ export class SubstitutionManager {
    */
   handleIndividual7Substitution(context) {
     const {
-      periodFormation,
+      formation,
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
@@ -242,7 +242,7 @@ export class SubstitutionManager {
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
-    const playerComingOnId = periodFormation.substitute_1;
+    const playerComingOnId = formation.substitute_1;
 
     // Create rotation queue helper
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
@@ -255,24 +255,24 @@ export class SubstitutionManager {
     }
 
     // Check if substitute_2 is inactive
-    const substitute_2Player = findPlayerById(allPlayers, periodFormation.substitute_2);
+    const substitute_2Player = findPlayerById(allPlayers, formation.substitute_2);
     const isSubstitute_2Inactive = substitute_2Player?.stats.isInactive || false;
 
     // Find position of outgoing player
-    const playerToSubOutKey = Object.keys(periodFormation).find(key => 
-      periodFormation[key] === playerGoingOffId && !key.includes('substitute') && key !== 'goalie'
+    const playerToSubOutKey = Object.keys(formation).find(key =>
+      formation[key] === playerGoingOffId && !key.includes('substitute') && key !== 'goalie'
     );
 
     const newRole = this.getPositionRole(playerToSubOutKey);
 
     // Calculate new formation
-    const newFormation = JSON.parse(JSON.stringify(periodFormation));
+    const newFormation = JSON.parse(JSON.stringify(formation));
     newFormation[playerToSubOutKey] = playerComingOnId;
 
     if (isSubstitute_2Inactive) {
       newFormation.substitute_1 = playerGoingOffId;
     } else {
-      newFormation.substitute_1 = periodFormation.substitute_2;
+      newFormation.substitute_1 = formation.substitute_2;
       newFormation.substitute_2 = playerGoingOffId;
     }
 
@@ -289,9 +289,9 @@ export class SubstitutionManager {
           ...p,
           stats: {
             ...timeResult.stats,
-            currentPeriodStatus: 'substitute',
+            currentStatus: 'substitute',
             currentPairKey: newPairKey,
-            currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
+            currentRole: PLAYER_ROLES.SUBSTITUTE
           }
         };
       }
@@ -305,19 +305,19 @@ export class SubstitutionManager {
           ...p,
           stats: {
             ...timeResult.stats,
-            currentPeriodStatus: 'on_field',
+            currentStatus: 'on_field',
             currentPairKey: playerToSubOutKey,
-            currentPeriodRole: newRole
+            currentRole: newRole
           }
         };
       }
-      if (p.id === periodFormation.substitute_2 && !isSubstitute_2Inactive) {
+      if (p.id === formation.substitute_2 && !isSubstitute_2Inactive) {
         return {
           ...p,
           stats: {
             ...p.stats,
             currentPairKey: 'substitute_1',
-            currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
+            currentRole: PLAYER_ROLES.SUBSTITUTE
           }
         };
       }
@@ -392,7 +392,7 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
     ...player,
     stats: {
       ...updatedStats,
-      currentPeriodRole: newRole
+      currentRole: newRole
     }
   };
   

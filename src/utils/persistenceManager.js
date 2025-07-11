@@ -286,7 +286,7 @@ export class GamePersistenceManager extends PersistenceManager {
       teamMode: 'PAIRS_7',
       alertMinutes: 2,
       currentPeriodNumber: 1,
-      periodFormation: {
+      formation: {
         goalie: null,
         leftPair: { defender: null, attacker: null },
         rightPair: { defender: null, attacker: null },
@@ -335,7 +335,7 @@ export class GamePersistenceManager extends PersistenceManager {
       teamMode: gameState.teamMode,
       alertMinutes: gameState.alertMinutes,
       currentPeriodNumber: gameState.currentPeriodNumber,
-      periodFormation: gameState.periodFormation,
+      formation: gameState.formation,
       nextPhysicalPairToSubOut: gameState.nextPhysicalPairToSubOut,
       nextPlayerToSubOut: gameState.nextPlayerToSubOut,
       nextPlayerIdToSubOut: gameState.nextPlayerIdToSubOut,

@@ -13,7 +13,7 @@ import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerC
  */
 export const createMockGameScreenProps = (overrides = {}) => ({
   currentPeriodNumber: 1,
-  periodFormation: {
+  formation: {
     goalie: '7',
     leftDefender: '1',
     rightDefender: '2',
@@ -22,7 +22,7 @@ export const createMockGameScreenProps = (overrides = {}) => ({
     substitute_1: '5',
     substitute_2: '6'
   },
-  setPeriodFormation: jest.fn(),
+  setFormation: jest.fn(),
   allPlayers: createMockPlayers(),
   setAllPlayers: jest.fn(),
   matchTimerSeconds: 900, // 15 minutes
@@ -74,9 +74,9 @@ export const createMockPlayers = (count = 7) => {
       name: `Player ${i}`,
       stats: {
         isInactive: false,
-        currentPeriodStatus: i <= 4 ? PLAYER_STATUS.ON_FIELD : 
+        currentStatus: i <= 4 ? PLAYER_STATUS.ON_FIELD :
                             i === 7 ? PLAYER_STATUS.GOALIE : PLAYER_STATUS.SUBSTITUTE,
-        currentPeriodRole: i <= 2 ? PLAYER_ROLES.DEFENDER :
+        currentRole: i <= 2 ? PLAYER_ROLES.DEFENDER :
                           i <= 4 ? PLAYER_ROLES.ATTACKER :
                           i === 7 ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
         currentPairKey: i <= 2 ? `leftDefender` :

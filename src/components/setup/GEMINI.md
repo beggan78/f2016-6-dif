@@ -36,15 +36,15 @@ The `PeriodSetupScreen` dynamically renders different player assignment interfac
 Basic input validation (e.g., squad size, goalie assignments) is performed before proceeding to the next step, providing immediate feedback to the user.
 
 ### e. Integration with `useGameState`
-These components heavily rely on the `useGameState` hook to read and update the global game state. Functions like `setSelectedSquadIds`, `setNumPeriods`, `setPeriodGoalieIds`, `setPeriodFormation`, `handleStartPeriodSetup`, and `handleStartGame` are all provided by `useGameState`.
+These components heavily rely on the `useGameState` hook to read and update the global game state. Functions like `setSelectedSquadIds`, `setNumPeriods`, `setPeriodGoalieIds`, `setFormation`, `handleStartPeriodSetup`, and `handleStartGame` are all provided by `useGameState`.
 
 ## 3. Key Data Flows
 
 1.  **Configuration to Game State**: User selections in `ConfigurationScreen` (squad, periods, duration, team mode, goalies) directly update the corresponding state variables in `useGameState`.
 
-2.  **Period Setup to Game State**: Player assignments in `PeriodSetupScreen` update the `periodFormation` state in `useGameState`. When `handleStartGame` is called, `useGameState` finalizes the formation and transitions the view to the game screen.
+2.  **Period Setup to Game State**: Player assignments in `PeriodSetupScreen` update the `formation` state in `useGameState`. When `handleStartGame` is called, `useGameState` finalizes the formation and transitions the view to the game screen.
 
-3.  **Recommendations**: For periods 2 and 3, `useGameState` pre-populates the `periodFormation` based on intelligent recommendations from `formationGenerator.js`, which `PeriodSetupScreen` then displays for review and optional manual adjustment.
+3.  **Recommendations**: For periods 2 and 3, `useGameState` pre-populates the `formation` based on intelligent recommendations from `formationGenerator.js`, which `PeriodSetupScreen` then displays for review and optional manual adjustment.
 
 ## 4. How to Make Changes
 

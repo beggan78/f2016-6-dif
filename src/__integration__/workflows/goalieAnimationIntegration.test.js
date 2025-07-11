@@ -50,23 +50,23 @@ jest.mock('../../game/ui/playerAnimation', () => ({
 
 // Mock FormationRenderer to simplify testing
 jest.mock('../../components/game/formations/FormationRenderer', () => ({
-  FormationRenderer: ({ goalieHandlers, periodFormation, ...otherProps }) => {
+  FormationRenderer: ({ goalieHandlers, formation, ...otherProps }) => {
     return (
       <div data-testid="formation-renderer">
         <div data-testid="formation-debug">
-          Formation Type: {periodFormation ? 'Present' : 'Missing'}
-          {periodFormation?.goalie && ` | Goalie: ${periodFormation.goalie}`}
+          Formation Type: {formation ? 'Present' : 'Missing'}
+          {formation?.goalie && ` | Goalie: ${formation.goalie}`}
         </div>
         
-        {periodFormation?.goalie ? (
+        {formation?.goalie ? (
           <div 
             data-testid="goalie-element"
-            data-goalie-id={periodFormation.goalie}
+            data-goalie-id={formation.goalie}
             className="goalie-container"
             {...(goalieHandlers?.goalieEvents || {})}
           >
             <h3>Goalie</h3>
-            <div>Player {periodFormation.goalie}</div>
+            <div>Player {formation.goalie}</div>
             {goalieHandlers?.goalieEvents && <p>Hold to replace goalie</p>}
           </div>
         ) : (
@@ -138,8 +138,8 @@ describe('Goalie Animation Integration Tests', () => {
   const createGameScreenProps = (gameState) => {
     return {
       currentPeriodNumber: 1,
-      periodFormation: gameState.periodFormation,
-      setPeriodFormation: mockHooks.useGameState.setPeriodFormation,
+      formation: gameState.formation,
+      setFormation: mockHooks.useGameState.setFormation,
       allPlayers: gameState.allPlayers,
       setAllPlayers: mockHooks.useGameState.setAllPlayers,
       matchTimerSeconds: 900,
@@ -184,10 +184,10 @@ describe('Goalie Animation Integration Tests', () => {
     it('should handle missing goalie gracefully', async () => {
       // Setup game state without goalie
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-      gameState.periodFormation.goalie = null;
+      gameState.formation.goalie = null;
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         view: 'game'

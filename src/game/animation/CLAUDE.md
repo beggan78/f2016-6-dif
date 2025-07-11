@@ -11,7 +11,7 @@ Complete animation calculation and orchestration system that provides smooth vis
 **Core Functions**:
 
 #### Position Management
-- `captureAllPlayerPositions(periodFormation, allPlayers, teamMode)`: Captures current positions of all players including goalie
+- `captureAllPlayerPositions(formation, allPlayers, teamMode)`: Captures current positions of all players including goalie
 - `calculateAllPlayerAnimations(beforePositions, afterPositions, teamMode)`: Compares before/after position snapshots and calculates movements
 
 #### Animation Orchestration
@@ -79,7 +79,7 @@ const handleOperation = () => {
     createGameState(),
     (state) => calculateOperation(state, ...params),
     (newState) => {
-      setPeriodFormation(newState.periodFormation);
+      setFormation(newState.formation);
       setAllPlayers(newState.allPlayers);
       // Apply other state updates
     },

@@ -35,7 +35,7 @@ describe('createSubstitutionHandlers', () => {
     mockGameStateFactory = jest.fn(() => mockGameState);
     mockLastSubstitution = {
       timestamp: 1000,
-      beforeFormation: mockGameState.periodFormation,
+      beforeFormation: mockGameState.formation,
       beforeNextPair: 'leftPair',
       beforeNextPlayer: 'leftDefender',
       beforeNextPlayerId: '1',
@@ -76,7 +76,7 @@ describe('createSubstitutionHandlers', () => {
     calculateSubstitution.mockImplementation((gameState) => ({
       ...gameState,
       playersToHighlight: ['5'],
-      periodFormation: { ...gameState.periodFormation, substitute_1: '1' }
+      formation: { ...gameState.formation, substitute_1: '1' }
     }));
 
     calculatePositionSwitch.mockImplementation((gameState) => gameState);
@@ -172,9 +172,9 @@ describe('createSubstitutionHandlers', () => {
       );
 
       const substituteModal = { playerId: '6' };
-      const periodFormation = { substitute_1: '5', substitute_2: '6' };
+      const formation = { substitute_1: '5', substitute_2: '6' };
       
-      handlers.handleSetAsNextToGoIn(substituteModal, periodFormation);
+      handlers.handleSetAsNextToGoIn(substituteModal, formation);
 
       expect(animateStateChange).toHaveBeenCalled();
       expect(calculateSubstituteSwap).toHaveBeenCalledWith(mockGameState, '5', '6');
@@ -191,9 +191,9 @@ describe('createSubstitutionHandlers', () => {
       );
 
       const substituteModal = { playerId: '5' };
-      const periodFormation = { substitute_1: '5', substitute_2: '6' };
+      const formation = { substitute_1: '5', substitute_2: '6' };
       
-      handlers.handleSetAsNextToGoIn(substituteModal, periodFormation);
+      handlers.handleSetAsNextToGoIn(substituteModal, formation);
 
       expect(animateStateChange).not.toHaveBeenCalled();
       expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
@@ -209,9 +209,9 @@ describe('createSubstitutionHandlers', () => {
       );
 
       const substituteModal = { playerId: '5' };
-      const periodFormation = { substitute: '5' };
+      const formation = { substitute: '5' };
       
-      handlers.handleSetAsNextToGoIn(substituteModal, periodFormation);
+      handlers.handleSetAsNextToGoIn(substituteModal, formation);
 
       expect(animateStateChange).not.toHaveBeenCalled();
       expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
@@ -236,11 +236,11 @@ describe('createSubstitutionHandlers', () => {
 
       const substituteModal = { playerId: '6' };
       
-      handlers.handleInactivatePlayer(substituteModal, playersWithSub7_2, mockGameState.periodFormation);
+      handlers.handleInactivatePlayer(substituteModal, playersWithSub7_2, mockGameState.formation);
 
       expect(animateStateChange).not.toHaveBeenCalled();
       expect(calculatePlayerToggleInactive).toHaveBeenCalledWith(mockGameState, '6');
-      expect(mockDependencies.stateUpdaters.setPeriodFormation).toHaveBeenCalled();
+      expect(mockDependencies.stateUpdaters.setFormation).toHaveBeenCalled();
     });
 
     it('should inactivate substitute_1 with animation', () => {
@@ -260,7 +260,7 @@ describe('createSubstitutionHandlers', () => {
 
       const substituteModal = { playerId: '5' };
       
-      handlers.handleInactivatePlayer(substituteModal, playersWithSub7_1, mockGameState.periodFormation);
+      handlers.handleInactivatePlayer(substituteModal, playersWithSub7_1, mockGameState.formation);
 
       expect(animateStateChange).toHaveBeenCalled();
       expect(calculatePlayerToggleInactive).toHaveBeenCalledWith(mockGameState, '5');
@@ -277,7 +277,7 @@ describe('createSubstitutionHandlers', () => {
 
       const substituteModal = { playerId: '5' };
       
-      handlers.handleInactivatePlayer(substituteModal, mockPlayers, mockGameState.periodFormation);
+      handlers.handleInactivatePlayer(substituteModal, mockPlayers, mockGameState.formation);
 
       expect(animateStateChange).not.toHaveBeenCalled();
       expect(calculatePlayerToggleInactive).toHaveBeenCalledWith(mockGameState, '5');
@@ -344,7 +344,7 @@ describe('createSubstitutionHandlers', () => {
       expect(mockDependencies.stateUpdaters.setLastSubstitution).toHaveBeenCalledWith(
         expect.objectContaining({
           timestamp: expect.any(Number),
-          beforeFormation: mockGameStateWithTimer.periodFormation,
+          beforeFormation: mockGameStateWithTimer.formation,
           teamMode: TEAM_MODES.INDIVIDUAL_7,
           subTimerSecondsAtSubstitution: 120
         })

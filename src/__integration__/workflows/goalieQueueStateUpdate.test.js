@@ -13,7 +13,7 @@ describe('Goalie Queue State Update Integration', () => {
   it('should actually update rotation queue state when goalie switch is called', () => {
     // Create a test state for individual_6 mode
     const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
-    const currentGoalieId = gameState.periodFormation.goalie;
+    const currentGoalieId = gameState.formation.goalie;
     const newGoalieId = gameState.rotationQueue[0]; // First player in queue
     const originalQueuePosition = 0;
     
@@ -23,13 +23,13 @@ describe('Goalie Queue State Update Integration', () => {
     
     // Track state updates to verify they're called
     let updatedRotationQueue = null;
-    let updatedPeriodFormation = null;
+    let updatedFormation = null;
     let updatedAllPlayers = null;
     
     // Mock state updaters that capture calls
     const mockStateUpdaters = {
-      setPeriodFormation: jest.fn((newFormation) => {
-        updatedPeriodFormation = newFormation;
+      setFormation: jest.fn((newFormation) => {
+        updatedFormation = newFormation;
       }),
       setAllPlayers: jest.fn((newPlayers) => {
         updatedAllPlayers = newPlayers;
@@ -85,11 +85,11 @@ describe('Goalie Queue State Update Integration', () => {
     console.log('✅ New goalie', newGoalieId, 'is removed from queue');
     
     // Verify other state updaters were also called
-    expect(mockStateUpdaters.setPeriodFormation).toHaveBeenCalledTimes(1);
+    expect(mockStateUpdaters.setFormation).toHaveBeenCalledTimes(1);
     expect(mockStateUpdaters.setAllPlayers).toHaveBeenCalledTimes(1);
     
     // Verify the formation was updated correctly
-    expect(updatedPeriodFormation.goalie).toBe(newGoalieId);
+    expect(updatedFormation.goalie).toBe(newGoalieId);
     
     // Verify modal was closed
     expect(mockModalHandlers.closeGoalieModal).toHaveBeenCalledTimes(1);
@@ -102,14 +102,14 @@ describe('Goalie Queue State Update Integration', () => {
       console.log(`\nTesting ${teamMode} queue state update`);
       
       const gameState = gameStateScenarios.freshGame(teamMode);
-      const currentGoalieId = gameState.periodFormation.goalie;
+      const currentGoalieId = gameState.formation.goalie;
       const newGoalieId = gameState.rotationQueue[1]; // Second player in queue
       const originalQueuePosition = 1;
       
       let updatedRotationQueue = null;
       
       const mockStateUpdaters = {
-        setPeriodFormation: jest.fn(),
+        setFormation: jest.fn(),
         setAllPlayers: jest.fn(),
         setRotationQueue: jest.fn((newQueue) => {
           updatedRotationQueue = newQueue;

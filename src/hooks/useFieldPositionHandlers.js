@@ -51,11 +51,6 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamMode) => {
       leftAttackerEvents,
       rightAttackerEvents,
       substitute_1Events,
-      leftDefenderEvents,
-      rightDefenderEvents,
-      leftAttackerEvents,
-      rightAttackerEvents,
-      substitute_1Events,
       substitute_2Events
     };
   }

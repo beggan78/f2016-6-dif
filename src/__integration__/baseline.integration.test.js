@@ -101,7 +101,7 @@ describe('Baseline Integration Tests', () => {
       
       // Update mock hook state
       mockHooks.useGameState._updateMockState({
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers,
         teamMode: gameState.teamMode,
         rotationQueue: gameState.rotationQueue
@@ -150,7 +150,7 @@ describe('Baseline Integration Tests', () => {
       const initialGameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: initialGameState.periodFormation,
+        formation: initialGameState.formation,
         allPlayers: initialGameState.allPlayers,
         teamMode: initialGameState.teamMode,
         rotationQueue: initialGameState.rotationQueue
@@ -161,13 +161,13 @@ describe('Baseline Integration Tests', () => {
       
       // Simulate formation change
       const updatedFormation = {
-        ...initialGameState.periodFormation,
-        leftDefender: initialGameState.periodFormation.rightDefender,
-        rightDefender: initialGameState.periodFormation.leftDefender
+        ...initialGameState.formation,
+        leftDefender: initialGameState.formation.rightDefender,
+        rightDefender: initialGameState.formation.leftDefender
       };
       
       mockHooks.useGameState._updateMockState({
-        periodFormation: updatedFormation,
+        formation: updatedFormation,
         allPlayers: initialGameState.allPlayers,
         teamMode: initialGameState.teamMode,
         rotationQueue: initialGameState.rotationQueue
@@ -175,7 +175,7 @@ describe('Baseline Integration Tests', () => {
       
       const updatedProps = createGameScreenProps({
         ...initialGameState,
-        periodFormation: updatedFormation
+        formation: updatedFormation
       }, mockHooks);
       
       // Re-render with updated props
@@ -2728,18 +2728,18 @@ describe('Baseline Integration Tests', () => {
         
         // Simulate formation change during active timer
         const newFormation = {
-          ...preFormationGameState.periodFormation,
+          ...preFormationGameState.formation,
           leftPair: { defender: 'player-3', attacker: 'player-4' },
           rightPair: { defender: 'player-5', attacker: 'player-6' }
         };
         
-        mockHooks.useGameState.setPeriodFormation(newFormation);
+        mockHooks.useGameState.setFormation(newFormation);
         
         const postFormationGameState = mockHooks.useGameState._getMockState();
         const postFormationTimerState = mockHooks.useTimers._getMockTimerState();
         
         // Verify formation change respects timer state
-        expect(postFormationGameState.periodFormation).toEqual(newFormation);
+        expect(postFormationGameState.formation).toEqual(newFormation);
         expect(postFormationTimerState.subTimerSeconds).toBe(preFormationTimerState.subTimerSeconds); // Timer unaffected
         expect(postFormationTimerState.isSubTimerPaused).toBe(preFormationTimerState.isSubTimerPaused);
         
@@ -2828,9 +2828,9 @@ describe('Baseline Integration Tests', () => {
       
       const teamModes = [TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.PAIRS_7];
       const formations = [
-        gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7).periodFormation,
-        gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6).periodFormation,
-        gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7).periodFormation
+        gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7).formation,
+        gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6).formation,
+        gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7).formation
       ];
       
       for (let i = 0; i < 15; i++) {
@@ -2840,14 +2840,14 @@ describe('Baseline Integration Tests', () => {
         await formationBenchmark.measure(async () => {
           // Rapid team mode and formation changes
           mockHooks.useGameState.setTeamMode(teamModes[teamModeIndex]);
-          mockHooks.useGameState.setPeriodFormation(formation);
+          mockHooks.useGameState.setFormation(formation);
           
           // Position swaps within formation
           if (formation.leftDefender && formation.rightDefender) {
             const temp = formation.leftDefender;
             formation.leftDefender = formation.rightDefender;
             formation.rightDefender = temp;
-            mockHooks.useGameState.setPeriodFormation({ ...formation });
+            mockHooks.useGameState.setFormation({ ...formation });
           }
         });
       }
@@ -2860,7 +2860,7 @@ describe('Baseline Integration Tests', () => {
       // Verify final state consistency
       const finalGameState = mockHooks.useGameState._getMockState();
       expect(Object.values(TEAM_MODES)).toContain(finalGameState.teamMode);
-      expect(finalGameState.periodFormation).toBeDefined();
+      expect(finalGameState.formation).toBeDefined();
     });
     
     it('should handle score update performance with UI coordination', async () => {
@@ -3006,7 +3006,7 @@ describe('Baseline Integration Tests', () => {
         () => {
           // Team mode switch
           mockHooks.useGameState.setTeamMode(TEAM_MODES.PAIRS_7);
-          mockHooks.useGameState.setPeriodFormation(gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7).periodFormation);
+          mockHooks.useGameState.setFormation(gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7).formation);
           mockHooks.useGameUIState.clearAllAnimations();
         },
         () => {
@@ -3087,12 +3087,12 @@ describe('Baseline Integration Tests', () => {
         await memoryBenchmark.measure(async () => {
           // Create and destroy complex state objects
           const complexFormation = {
-            ...gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7).periodFormation,
+            ...gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7).formation,
             metadata: new Array(50).fill(`cycle-${cycle}`)
           };
           
           // Heavy state operations
-          mockHooks.useGameState.setPeriodFormation(complexFormation);
+          mockHooks.useGameState.setFormation(complexFormation);
           mockHooks.useGameState.setRotationQueue(new Array(10).fill(`player-${cycle % 7 + 1}`));
           
           // Heavy animation state
@@ -3154,8 +3154,8 @@ describe('Baseline Integration Tests', () => {
             timeAsAttackerSeconds: i * 5,
             timeAsDefenderSeconds: i * 5,
             timeAsGoalieSeconds: i % 10 === 0 ? i * 2 : 0,
-            currentPeriodStatus: i <= 7 ? 'on_field' : 'substitute',
-            currentPeriodRole: i <= 4 ? 'Attacker' : 'Defender',
+            currentStatus: i <= 7 ? 'on_field' : 'substitute',
+            currentRole: i <= 4 ? 'Attacker' : 'Defender',
             isInactive: i > 40,
             lastStintStartTimeEpoch: Date.now() - (i * 1000)
           }
@@ -3194,7 +3194,7 @@ describe('Baseline Integration Tests', () => {
               index,
               playerData: {
                 timeOnField: player.stats.timeOnFieldSeconds,
-                role: player.stats.currentPeriodRole
+                role: player.stats.currentRole
               }
             };
           });
@@ -3364,12 +3364,12 @@ describe('Baseline Integration Tests', () => {
           mockHooks.useGameUIState.setHideNextOffIndicator(false);
         }},
         { type: 'position_switch', action: () => {
-          const formation = mockHooks.useGameState._getMockState().periodFormation;
+          const formation = mockHooks.useGameState._getMockState().formation;
           if (formation.leftAttacker && formation.rightAttacker) {
             const temp = formation.leftAttacker;
             formation.leftAttacker = formation.rightAttacker;
             formation.rightAttacker = temp;
-            mockHooks.useGameState.setPeriodFormation({ ...formation });
+            mockHooks.useGameState.setFormation({ ...formation });
           }
         }},
         { type: 'timer_management', action: () => {
@@ -3469,9 +3469,9 @@ describe('Baseline Integration Tests', () => {
           mockHooks.useGameModals.removeModalFromStack();
         }},
         { name: 'rapid_formation_change', action: () => {
-          const newFormation = gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7).periodFormation;
+          const newFormation = gameStateScenarios.freshGame(TEAM_MODES.PAIRS_7).formation;
           mockHooks.useGameState.setTeamMode(TEAM_MODES.PAIRS_7);
-          mockHooks.useGameState.setPeriodFormation(newFormation);
+          mockHooks.useGameState.setFormation(newFormation);
         }}
       ];
       
@@ -3561,9 +3561,9 @@ describe('Baseline Integration Tests', () => {
           });
           
           // Change formation during animation
-          const newFormation = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6).periodFormation;
+          const newFormation = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6).formation;
           mockHooks.useGameState.setTeamMode(TEAM_MODES.INDIVIDUAL_6);
-          mockHooks.useGameState.setPeriodFormation(newFormation);
+          mockHooks.useGameState.setFormation(newFormation);
           
           // Complete transitions
           ['player-1', 'player-2', 'player-3', 'player-4'].forEach(playerId => {
@@ -3642,8 +3642,8 @@ describe('Baseline Integration Tests', () => {
         await formationBenchmark.measure(async () => {
           // Switch team mode and formation
           mockHooks.useGameState.setTeamMode(teamMode);
-          const newFormation = gameStateScenarios.freshGame(teamMode).periodFormation;
-          mockHooks.useGameState.setPeriodFormation(newFormation);
+          const newFormation = gameStateScenarios.freshGame(teamMode).formation;
+          mockHooks.useGameState.setFormation(newFormation);
           
           // Complex UI state during formation rendering
           const animationState = {};
@@ -3689,7 +3689,7 @@ describe('Baseline Integration Tests', () => {
       const finalUIState = mockHooks.useGameUIState._getMockUIState();
       
       expect(Object.values(TEAM_MODES)).toContain(finalGameState.teamMode);
-      expect(finalGameState.periodFormation).toBeDefined();
+      expect(finalGameState.formation).toBeDefined();
       expect(finalGameState.nextPlayerIdToSubOut).toBeDefined();
       expect(finalUIState.recentlySubstitutedPlayers.size).toBeGreaterThan(0);
       expect(finalUIState.glowPlayers.length).toBeGreaterThan(0);
@@ -3830,8 +3830,8 @@ describe('Baseline Integration Tests', () => {
             timeAsAttackerSeconds: i * 7,
             timeAsDefenderSeconds: i * 8,
             timeAsGoalieSeconds: i % 5 === 0 ? i * 3 : 0,
-            currentPeriodStatus: i < 7 ? 'on_field' : 'substitute',
-            currentPeriodRole: i % 3 === 0 ? 'Attacker' : 'Defender',
+            currentStatus: i < 7 ? 'on_field' : 'substitute',
+            currentRole: i % 3 === 0 ? 'Attacker' : 'Defender',
             isInactive: i > 25,
             lastStintStartTimeEpoch: Date.now() - (i * 2000)
           }
@@ -3863,8 +3863,8 @@ describe('Baseline Integration Tests', () => {
           mockHooks.useGameState.setTeamMode(newTeamMode);
           
           // Formation changes (affects entire formation rendering)
-          const newFormation = gameStateScenarios.freshGame(newTeamMode).periodFormation;
-          mockHooks.useGameState.setPeriodFormation(newFormation);
+          const newFormation = gameStateScenarios.freshGame(newTeamMode).formation;
+          mockHooks.useGameState.setFormation(newFormation);
           
           // Complex animation state (affects all player components)
           const complexAnimationState = {};
@@ -3968,8 +3968,8 @@ describe('Baseline Integration Tests', () => {
             timeAsAttackerSeconds: Math.floor(Math.random() * 900),
             timeAsDefenderSeconds: Math.floor(Math.random() * 900),
             timeAsGoalieSeconds: i % 10 === 0 ? Math.floor(Math.random() * 300) : 0,
-            currentPeriodStatus: i < 7 ? 'on_field' : 'substitute',
-            currentPeriodRole: ['Attacker', 'Defender'][i % 2],
+            currentStatus: i < 7 ? 'on_field' : 'substitute',
+            currentRole: ['Attacker', 'Defender'][i % 2],
             isInactive: i > 80,
             lastStintStartTimeEpoch: Date.now() - Math.floor(Math.random() * 1000000),
             gameHistory: new Array(Math.floor(Math.random() * 20)).fill(null).map((_, j) => ({
@@ -4008,7 +4008,7 @@ describe('Baseline Integration Tests', () => {
             .map(p => p.id);
           
           const eligibleForSubstitution = productionScaleState.allPlayers
-            .filter(p => p.stats.currentPeriodStatus === 'substitute' && !p.stats.isInactive)
+            .filter(p => p.stats.currentStatus === 'substitute' && !p.stats.isInactive)
             .slice(0, 15)
             .map(p => p.id);
           
@@ -4159,7 +4159,7 @@ describe('Baseline Integration Tests', () => {
       // Verify game state remains intact during timer errors
       const gameStateAfterTimerError = mockHooks.useGameState._getMockState();
       expect(gameStateAfterTimerError.allPlayers).toEqual(initialGameState.allPlayers);
-      expect(gameStateAfterTimerError.periodFormation).toEqual(initialGameState.periodFormation);
+      expect(gameStateAfterTimerError.formation).toEqual(initialGameState.formation);
       
       // Test timer recovery
       mockHooks.useTimers.resetSubTimer();
@@ -4491,7 +4491,7 @@ describe('Baseline Integration Tests', () => {
       const workingTimerState = mockHooks.useTimers._getMockTimerState();
       
       expect(workingGameState.allPlayers).toBeDefined();
-      expect(workingGameState.periodFormation).toBeDefined();
+      expect(workingGameState.formation).toBeDefined();
       expect(workingTimerState.subTimerSeconds).toBe(150);
       expect(workingTimerState.matchTimerSeconds).toBe(600);
     });
@@ -4506,7 +4506,7 @@ describe('Baseline Integration Tests', () => {
       // Simulate potential render-time errors by corrupting props
       const corruptedProps = {
         ...gameScreenProps,
-        periodFormation: null, // This could cause render errors
+        formation: null, // This could cause render errors
         allPlayers: undefined, // This could cause render errors
       };
       
@@ -4604,7 +4604,7 @@ describe('Baseline Integration Tests', () => {
       // Store original data for comparison
       const originalGameState = mockHooks.useGameState._getMockState();
       const originalPlayers = [...originalGameState.allPlayers];
-      const originalFormation = { ...originalGameState.periodFormation };
+      const originalFormation = { ...originalGameState.formation };
       const originalRotationQueue = [...originalGameState.rotationQueue];
       const originalGameLog = [...originalGameState.gameLog];
       
@@ -4655,7 +4655,7 @@ describe('Baseline Integration Tests', () => {
       });
       
       // Formation data integrity
-      expect(gameStateAfterErrors.periodFormation).toEqual(originalFormation);
+      expect(gameStateAfterErrors.formation).toEqual(originalFormation);
       
       // Game log integrity
       expect(gameStateAfterErrors.gameLog).toEqual(originalGameLog);
@@ -4670,7 +4670,7 @@ describe('Baseline Integration Tests', () => {
       
       // Other data should remain unchanged
       expect(updatedGameState.allPlayers).toEqual(gameStateAfterErrors.allPlayers);
-      expect(updatedGameState.periodFormation).toEqual(originalFormation);
+      expect(updatedGameState.formation).toEqual(originalFormation);
     });
     
     it('should maintain formation data integrity during hook errors', async () => {
@@ -4688,14 +4688,14 @@ describe('Baseline Integration Tests', () => {
         substitute_2: 'player-7'
       };
       
-      gameState.periodFormation = detailedFormation;
+      gameState.formation = detailedFormation;
       mockHooks.useGameState._updateMockState(gameState);
       
       const gameScreenProps = createGameScreenProps(gameState, mockHooks);
       render(<GameScreen {...gameScreenProps} />);
       
       // Store original formation for comparison
-      const originalFormation = { ...mockHooks.useGameState._getMockState().periodFormation };
+      const originalFormation = { ...mockHooks.useGameState._getMockState().formation };
       
       // Act - simulate various hook errors that could affect formation rendering
       
@@ -4740,7 +4740,7 @@ describe('Baseline Integration Tests', () => {
       }
       
       // Assert - formation should remain intact and renderable
-      const formationAfterErrors = mockHooks.useGameState._getMockState().periodFormation;
+      const formationAfterErrors = mockHooks.useGameState._getMockState().formation;
       
       // Formation structure should be preserved
       expect(formationAfterErrors).toEqual(originalFormation);
@@ -4764,8 +4764,8 @@ describe('Baseline Integration Tests', () => {
       newFormation.leftDefender = 'player-3';
       newFormation.rightDefender = 'player-2';
       
-      mockHooks.useGameState.setPeriodFormation(newFormation);
-      const swappedFormation = mockHooks.useGameState._getMockState().periodFormation;
+      mockHooks.useGameState.setFormation(newFormation);
+      const swappedFormation = mockHooks.useGameState._getMockState().formation;
       
       expect(swappedFormation.leftDefender).toBe('player-3');
       expect(swappedFormation.rightDefender).toBe('player-2');
@@ -4790,8 +4790,8 @@ describe('Baseline Integration Tests', () => {
           timeAsDefenderSeconds: (index + 1) * 45,
           timeAsGoalieSeconds: index === 0 ? 180 : 0,
           isInactive: index > 5, // Some inactive players
-          currentPeriodStatus: index < 4 ? 'on_field' : 'substitute',
-          currentPeriodRole: index < 2 ? 'Attacker' : index < 4 ? 'Defender' : null,
+          currentStatus: index < 4 ? 'on_field' : 'substitute',
+          currentRole: index < 2 ? 'Attacker' : index < 4 ? 'Defender' : null,
           lastStintStartTimeEpoch: Date.now() - (index * 30000) // Various stint start times
         }
       }));
@@ -4877,8 +4877,8 @@ describe('Baseline Integration Tests', () => {
         expect(player.stats.timeAsDefenderSeconds).toBe(originalPlayer.stats.timeAsDefenderSeconds);
         expect(player.stats.timeAsGoalieSeconds).toBe(originalPlayer.stats.timeAsGoalieSeconds);
         expect(player.stats.isInactive).toBe(originalPlayer.stats.isInactive);
-        expect(player.stats.currentPeriodStatus).toBe(originalPlayer.stats.currentPeriodStatus);
-        expect(player.stats.currentPeriodRole).toBe(originalPlayer.stats.currentPeriodRole);
+        expect(player.stats.currentStatus).toBe(originalPlayer.stats.currentStatus);
+        expect(player.stats.currentRole).toBe(originalPlayer.stats.currentRole);
         expect(player.stats.lastStintStartTimeEpoch).toBe(originalPlayer.stats.lastStintStartTimeEpoch);
       });
       
@@ -5178,8 +5178,8 @@ const createGameScreenProps = (gameState, mockHooks) => {
   return {
     // Game state props
     currentPeriodNumber: gameState.currentPeriodNumber || 1,
-    periodFormation: gameState.periodFormation,
-    setPeriodFormation: mockHooks.useGameState.setPeriodFormation,
+    formation: gameState.formation,
+    setFormation: mockHooks.useGameState.setFormation,
     allPlayers: gameState.allPlayers,
     setAllPlayers: mockHooks.useGameState.setAllPlayers,
     teamMode: gameState.teamMode,

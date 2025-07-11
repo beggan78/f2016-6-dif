@@ -13,7 +13,7 @@ export const createGoalieHandlers = (
   selectedSquadPlayers
 ) => {
   const {
-    setPeriodFormation,
+    setFormation,
     setAllPlayers,
     setRotationQueue,
     setNextPlayerIdToSubOut,
@@ -34,12 +34,12 @@ export const createGoalieHandlers = (
 
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
-  const handleGoalieLongPress = (periodFormation) => {
-    const currentGoalieName = getPlayerNameById(periodFormation.goalie);
+  const handleGoalieLongPress = (formation) => {
+    const currentGoalieName = getPlayerNameById(formation.goalie);
     
     // Get available players for goalie replacement (outfield squad players)
     const selectedSquadIds = selectedSquadPlayers.map(p => p.id);
-    const outfieldPlayers = getOutfieldPlayers(allPlayers, selectedSquadIds, periodFormation.goalie);
+    const outfieldPlayers = getOutfieldPlayers(allPlayers, selectedSquadIds, formation.goalie);
     const availablePlayers = outfieldPlayers.map(player => ({
       id: player.id,
       name: formatPlayerName(player)
@@ -60,7 +60,7 @@ export const createGoalieHandlers = (
       gameState,
       (gameState) => calculateGoalieSwitch(gameState, newGoalieId),
       (newGameState) => {
-        setPeriodFormation(newGameState.periodFormation);
+        setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
         setRotationQueue(newGameState.rotationQueue);
         // Apply next player tracking updates if they changed
@@ -77,8 +77,8 @@ export const createGoalieHandlers = (
             logEvent(EVENT_TYPES.GOALIE_ASSIGNMENT, {
               goalieId: newGoalieId,
               goalieName: newGoaliePlayer.name,
-              previousGoalieId: gameState.periodFormation.goalie,
-              previousGoalieName: gameState.periodFormation.goalie ? getPlayerNameById(gameState.periodFormation.goalie) : null,
+              previousGoalieId: gameState.formation.goalie,
+              previousGoalieName: gameState.formation.goalie ? getPlayerNameById(gameState.formation.goalie) : null,
               eventType: 'replacement',
               matchTime: calculateMatchTime(currentTime),
               timestamp: currentTime,
@@ -108,7 +108,7 @@ export const createGoalieHandlers = (
   // Create goalie long press callback
   const goalieCallback = () => {
     const gameState = gameStateFactory();
-    handleGoalieLongPress(gameState.periodFormation);
+    handleGoalieLongPress(gameState.formation);
   };
 
   return {

@@ -163,7 +163,7 @@ export const persistenceScenarios = {
     currentPeriodNumber: 2,
     selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7'],
     teamMode: TEAM_MODES.PAIRS_7,
-    periodFormation: {
+    formation: {
       goalie: 'player-1',
       leftPair: { defender: 'player-2', attacker: 'player-3' },
       rightPair: { defender: 'player-4', attacker: 'player-5' },
@@ -262,9 +262,9 @@ export const playerDataScenarios = {
         periodsAsGoalie: index === 0 ? 1 : 0,
         periodsAsDefender: index < 3 ? 1 : 0,
         periodsAsAttacker: index >= 3 && index < 6 ? 1 : 0,
-        currentPeriodStatus: index < 4 ? PLAYER_STATUS.ON_FIELD : 
+        currentStatus: index < 4 ? PLAYER_STATUS.ON_FIELD :
                            index === 0 ? PLAYER_STATUS.GOALIE : PLAYER_STATUS.SUBSTITUTE,
-        currentPeriodRole: index === 0 ? PLAYER_ROLES.GOALIE :
+        currentRole: index === 0 ? PLAYER_ROLES.GOALIE :
                           index < 3 ? PLAYER_ROLES.DEFENDER :
                           index < 6 ? PLAYER_ROLES.ATTACKER : PLAYER_ROLES.SUBSTITUTE
       }
@@ -312,8 +312,8 @@ export const playerDataScenarios = {
         periodsAsGoalie: index < 3 ? 1 : 0,
         periodsAsDefender: 2,
         periodsAsAttacker: 1,
-        currentPeriodStatus: PLAYER_STATUS.ON_FIELD,
-        currentPeriodRole: index % 2 === 0 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER
+        currentStatus: PLAYER_STATUS.ON_FIELD,
+        currentRole: index % 2 === 0 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER
       }
     }));
   },
@@ -334,7 +334,7 @@ export const playerDataScenarios = {
         timeAsDefenderSeconds: index === 6 ? 0 : 150 + (index * 15),
         timeAsGoalieSeconds: index === 0 ? 450 : 0,
         timeAsSubSeconds: index > 4 && index !== 6 ? 90 : 0,
-        currentPeriodStatus: index === 6 ? PLAYER_STATUS.SUBSTITUTE : 
+        currentStatus: index === 6 ? PLAYER_STATUS.SUBSTITUTE :
                            index === 0 ? PLAYER_STATUS.GOALIE :
                            index < 5 ? PLAYER_STATUS.ON_FIELD : PLAYER_STATUS.SUBSTITUTE
       }
@@ -363,7 +363,7 @@ export const gameStateScenarios = {
       currentPeriodNumber: 1,
       selectedSquadIds: players.map(p => p.id),
       teamMode: teamMode,
-      periodFormation: formations[teamMode],
+      formation: formations[teamMode],
       allPlayers: players.map(player => ({
         ...player,
         stats: {
@@ -503,7 +503,7 @@ export const edgeCaseScenarios = {
     view: 'game',
     selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6'],
     teamMode: TEAM_MODES.INDIVIDUAL_6,
-    periodFormation: {
+    formation: {
       goalie: 'player-1',
       leftDefender: 'player-2',
       rightDefender: 'player-3',
@@ -522,7 +522,7 @@ export const edgeCaseScenarios = {
     currentPeriodNumber: 3,
     selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7'],
     teamMode: TEAM_MODES.INDIVIDUAL_7,
-    periodFormation: formationScenarios.individual7Standard(['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7']),
+    formation: formationScenarios.individual7Standard(['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7']),
     allPlayers: playerDataScenarios.withInactivePlayers(),
     rotationQueue: ['player-2', 'player-3', 'player-4', 'player-5', 'player-6'],
     gameConfig: {
@@ -559,7 +559,7 @@ export const edgeCaseScenarios = {
    */
   dataInconsistencies: {
     missingPlayer: {
-      periodFormation: {
+      formation: {
         goalie: 'missing-player-id',
         leftDefender: 'player-1',
         rightDefender: 'player-2',
@@ -572,7 +572,7 @@ export const edgeCaseScenarios = {
     },
     
     duplicateAssignments: {
-      periodFormation: {
+      formation: {
         goalie: 'player-1',
         leftDefender: 'player-2',
         rightDefender: 'player-2', // Duplicate!
@@ -608,8 +608,8 @@ export const performanceTestData = {
       name: `Stress Player ${i + 1}`,
       stats: {
         isInactive: false,
-        currentPeriodStatus: i < 4 ? PLAYER_STATUS.ON_FIELD : PLAYER_STATUS.SUBSTITUTE,
-        currentPeriodRole: i < 2 ? PLAYER_ROLES.DEFENDER : 
+        currentStatus: i < 4 ? PLAYER_STATUS.ON_FIELD : PLAYER_STATUS.SUBSTITUTE,
+        currentRole: i < 2 ? PLAYER_ROLES.DEFENDER :
                           i < 4 ? PLAYER_ROLES.ATTACKER : PLAYER_ROLES.SUBSTITUTE,
         currentPairKey: null,
         lastStintStartTimeEpoch: Date.now() - (i * 1000),
@@ -661,7 +661,7 @@ export const animationTestScenarios = {
    */
   simpleSwap: {
     before: {
-      periodFormation: {
+      formation: {
         goalie: 'player-1',
         leftDefender: 'player-2',
         rightDefender: 'player-3',
@@ -672,7 +672,7 @@ export const animationTestScenarios = {
       }
     },
     after: {
-      periodFormation: {
+      formation: {
         goalie: 'player-1',
         leftDefender: 'player-6', // Swapped with substitute
         rightDefender: 'player-3',
@@ -736,7 +736,7 @@ export const workflowScenarios = {
         name: 'period_setup',
         screen: 'setup',
         data: formationScenarios.pairs7Standard,
-        expectedResult: { view: 'game', periodFormation: Object }
+        expectedResult: { view: 'game', formation: Object }
       },
       {
         name: 'gameplay',

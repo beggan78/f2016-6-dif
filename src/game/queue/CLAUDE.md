@@ -161,9 +161,9 @@ queueManager.removePlayer(newGoalieId);
 
 // Former goalie takes new goalie's exact queue position
 if (newGoalieQueuePosition >= 0) {
-  queueManager.addPlayer(periodFormation.goalie, newGoalieQueuePosition);
+  queueManager.addPlayer(formation.goalie, newGoalieQueuePosition);
 } else {
-  queueManager.addPlayer(periodFormation.goalie, 'end');
+  queueManager.addPlayer(formation.goalie, 'end');
 }
 ```
 

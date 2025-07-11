@@ -116,7 +116,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       const props = {
         ...testConfig.defaultProps,
         // Add props based on game state
-        periodFormation: gameState.periodFormation,
+        formation: gameState.formation,
         allPlayers: gameState.allPlayers
       };
       
@@ -148,7 +148,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       const { rerender } = render(
         <COMPONENT_NAME 
           {...testConfig.defaultProps}
-          periodFormation={initialGameState.periodFormation}
+          formation={initialGameState.formation}
           allPlayers={initialGameState.allPlayers}
         />
       );
@@ -156,7 +156,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       // Capture initial state
       const beforeSnapshot = componentStateHelpers.captureStateSnapshot(
         () => ({
-          periodFormation: initialGameState.periodFormation,
+          formation: initialGameState.formation,
           allPlayers: initialGameState.allPlayers
         })
       );
@@ -166,7 +166,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
         rerender(
           <COMPONENT_NAME 
             {...testConfig.defaultProps}
-            periodFormation={updatedGameState.periodFormation}
+            formation={updatedGameState.formation}
             allPlayers={updatedGameState.allPlayers}
           />
         );
@@ -175,7 +175,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       // Capture updated state
       const afterSnapshot = componentStateHelpers.captureStateSnapshot(
         () => ({
-          periodFormation: updatedGameState.periodFormation,
+          formation: updatedGameState.formation,
           allPlayers: updatedGameState.allPlayers
         })
       );
@@ -196,7 +196,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       render(
         <COMPONENT_NAME 
           {...testConfig.defaultProps}
-          periodFormation={gameState.periodFormation}
+          formation={gameState.formation}
           allPlayers={gameState.allPlayers}
           rotationQueue={gameState.rotationQueue}
         />
@@ -258,7 +258,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       
       // Act - simulate hook state change
       await executeAndWaitForAsync(async () => {
-        mockHookState.useGameState.setPeriodFormation({
+        mockHookState.useGameState.setFormation({
           goalie: 'player-1',
           leftDefender: 'player-2',
           rightDefender: 'player-3',
@@ -270,7 +270,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       });
       
       // Assert
-      expect(mockHookState.useGameState.setPeriodFormation).toHaveBeenCalled();
+      expect(mockHookState.useGameState.setFormation).toHaveBeenCalled();
       
       // Verify component updates in response to hook changes
       await waitFor(() => {
@@ -327,7 +327,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       render(
         <COMPONENT_NAME 
           {...testConfig.defaultProps}
-          periodFormation={gameState.periodFormation}
+          formation={gameState.formation}
           allPlayers={gameState.allPlayers}
           onInteraction={onInteraction}
         />
@@ -379,7 +379,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       render(
         <COMPONENT_NAME 
           {...testConfig.defaultProps}
-          periodFormation={gameState.periodFormation}
+          formation={gameState.formation}
           allPlayers={gameState.allPlayers}
         />
       );
@@ -484,7 +484,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
         () => render(
           <COMPONENT_NAME 
             {...testConfig.defaultProps}
-            periodFormation={largeGameState.periodFormation}
+            formation={largeGameState.formation}
             allPlayers={largeGameState.allPlayers}
             gameHistory={largeGameState.gameHistory}
           />
@@ -541,7 +541,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
       render(
         <COMPONENT_NAME 
           {...testConfig.defaultProps}
-          periodFormation={gameState.periodFormation}
+          formation={gameState.formation}
           allPlayers={gameState.allPlayers}
         />
       );
@@ -579,7 +579,7 @@ const setupComponentWithState = (scenario = 'freshGame', customProps = {}) => {
   const gameState = gameStateScenarios[scenario]();
   const props = {
     ...testConfig.defaultProps,
-    periodFormation: gameState.periodFormation,
+    formation: gameState.formation,
     allPlayers: gameState.allPlayers,
     rotationQueue: gameState.rotationQueue,
     ...customProps
