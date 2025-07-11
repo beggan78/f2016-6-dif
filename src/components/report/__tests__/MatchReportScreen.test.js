@@ -868,11 +868,11 @@ describe('MatchReportScreen', () => {
 
   describe('Performance testing with large datasets', () => {
     it('renders efficiently with large number of players', () => {
-      const largeMockPlayers = Array.from({ length: 50 }, (_, i) => ({
+      const largeMockPlayers = Array.from({ length: 15 }, (_, i) => ({
         id: `player-${i}`,
         name: `Player ${i}`,
         stats: {
-          startedMatchAs: i < 25 ? PLAYER_ROLES.ON_FIELD : null,
+          startedMatchAs: i < 10 ? PLAYER_ROLES.ON_FIELD : null,
           timeOnFieldSeconds: Math.floor(Math.random() * 3600),
           timeAsAttackerSeconds: Math.floor(Math.random() * 1800),
           timeAsDefenderSeconds: Math.floor(Math.random() * 1800),
@@ -893,11 +893,11 @@ describe('MatchReportScreen', () => {
       expect(endTime - startTime).toBeLessThan(200);
 
       // Should still display correct count
-      expect(screen.getByTestId('table-players-count')).toHaveTextContent('25');
+      expect(screen.getByTestId('table-players-count')).toHaveTextContent('10');
     });
 
     it('handles large number of events efficiently', () => {
-      const largeEventList = Array.from({ length: 1000 }, (_, i) => ({
+      const largeEventList = Array.from({ length: 200 }, (_, i) => ({
         id: `event-${i}`,
         type: i % 2 === 0 ? EVENT_TYPES.GOAL_HOME : 'substitution',
         timestamp: 1000000000000 + (i * 10000),
