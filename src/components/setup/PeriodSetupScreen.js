@@ -204,7 +204,6 @@ export function PeriodSetupScreen({
     
     // Add automatic position swapping when formation is complete (like other position handlers)
     if (isFormationComplete() && playerId && formerGoalieId) {
-      console.log(`[DEBUG] Goalie change: ${formerGoalieId} -> ${playerId}, formation complete, checking for position swap`);
       
       // Find where the new goalie is currently assigned
       let newGoalieCurrentPosition = null;
@@ -235,8 +234,6 @@ export function PeriodSetupScreen({
       }
       
       if (newGoalieCurrentPosition) {
-        console.log(`[DEBUG] New goalie ${playerId} found at position:`, newGoalieCurrentPosition);
-        console.log(`[DEBUG] Former goalie ${formerGoalieId} will take this position`);
         
         // Perform the position swap
         if (isPairsMode) {
@@ -258,14 +255,10 @@ export function PeriodSetupScreen({
           }));
         }
         
-        console.log(`[DEBUG] Position swap completed: new goalie assigned, former goalie moved to field position`);
-        
         // Still update goalie IDs for period tracking
         setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
         
         // Continue with existing rotation queue logic below
-      } else {
-        console.log(`[DEBUG] New goalie ${playerId} not found in field positions, no swap needed`);
       }
     }
     
@@ -286,7 +279,6 @@ export function PeriodSetupScreen({
     }
     
     if (!swapOccurred) {
-      console.log(`[DEBUG] No position swap occurred, using original goalie assignment logic`);
       
       setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
       // Also update the periodFormation.goalie immediately

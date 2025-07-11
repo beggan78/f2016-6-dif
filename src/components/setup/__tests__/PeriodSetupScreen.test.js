@@ -329,6 +329,36 @@ describe('PeriodSetupScreen', () => {
       expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
     });
+
+    it('should swap positions when selecting a field player as new goalie in INDIVIDUAL_7 mode', () => {
+      // Setup a complete INDIVIDUAL_7 formation
+      const completeFormation = {
+        goalie: '7',  // Player 7 is current goalie
+        leftDefender7: '1',
+        rightDefender7: '2', 
+        leftAttacker7: '3',
+        rightAttacker7: '4',
+        substitute7_1: '5',
+        substitute7_2: '6'
+      };
+      
+      const props = {
+        ...defaultProps,
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        periodFormation: completeFormation
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Select player '4' (currently right attacker) as new goalie
+      const selects = screen.getAllByTestId('select');
+      const goalieSelect = selects[0]; // First select should be goalie dropdown
+      fireEvent.change(goalieSelect, { target: { value: '4' } });
+      
+      // Verify setPeriodFormation was called with swapping logic
+      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
+    });
   });
 
   describe('PAIRS_7 Mode Tests', () => {
