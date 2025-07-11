@@ -15,7 +15,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
-import { formatTime } from '../../utils/formatUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 
 // Timeline preferences persistence manager
@@ -632,7 +631,7 @@ export function GameEventTimeline({
             return (
               <div key={`period-${periodNumber}`} className="space-y-4">
                 {/* Period Header - show for periods > 1, or period 1 when there's no match start event */}
-                {(periodNumber > 1 || (periodNumber == 1 && !groupedEventsByPeriod.matchStartEvent)) && (
+                {(periodNumber > 1 || (periodNumber === 1 && !groupedEventsByPeriod.matchStartEvent)) && (
                   <div className="flex items-center space-x-2 mb-4">
                     <div className="h-px bg-slate-600 flex-1"></div>
                     <h3 className="text-sm font-medium text-slate-300 px-3">

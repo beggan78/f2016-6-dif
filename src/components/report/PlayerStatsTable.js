@@ -132,7 +132,7 @@ export function PlayerStatsTable({
         return goals > 0 ? goals : '--';
       }
     }
-  ], []);
+  ], [periodFormation, playerGoals, teamMode]);
 
   // Sort players based on current sort settings
   const sortedPlayers = useMemo(() => {
@@ -185,7 +185,7 @@ export function PlayerStatsTable({
     });
     
     return sorted;
-  }, [players, sortBy, sortOrder]);
+  }, [players, sortBy, sortOrder, playerGoals]);
 
   // Handle column header click for sorting
   const handleSort = (columnKey) => {

@@ -47,7 +47,7 @@ export const analyzePairsRotationState = (nextPhysicalPairToSubOut, periodFormat
  * @returns {Array} Individual rotation queue maintaining pair rotation order
  */
 export const createIndividualQueueFromPairs = (pairsAnalysis, periodFormation) => {
-  const { priorityOrder, nextPairPlayers } = pairsAnalysis;
+  const { priorityOrder } = pairsAnalysis;
   const queue = [];
   
   // Add players from each pair in priority order

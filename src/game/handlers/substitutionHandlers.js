@@ -8,7 +8,7 @@ import {
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
-import { logEvent, removeEvent, markEventAsUndone, EVENT_TYPES, calculateMatchTime, getMatchEvents } from '../../utils/gameEventLogger';
+import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createSubstitutionHandlers = (
   gameStateFactory,

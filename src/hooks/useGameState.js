@@ -801,7 +801,7 @@ export function useGameState() {
     setNextPlayerIdToSubOut(individualQueue.nextPlayerId);
     setNextNextPlayerIdToSubOut(individualQueue.nextNextPlayerId);
     setNextPlayerToSubOut('leftDefender7');
-  }, [teamMode, selectedSquadIds, periodFormation.leftPair, periodFormation.rightPair, periodFormation.subPair, periodFormation.substitute7_1, periodFormation.substitute7_2, nextPhysicalPairToSubOut]);
+  }, [teamMode, selectedSquadIds, periodFormation, nextPhysicalPairToSubOut]);
 
   const formPairs = useCallback(() => {
     if (teamMode !== TEAM_MODES.INDIVIDUAL_7) return;
@@ -813,10 +813,9 @@ export function useGameState() {
     }
     
     // Import queue state utilities
-    const { analyzePairsFromIndividualQueue, convertToPairFormation } = require('../game/utils/queueStateUtils');
+    const { analyzePairsFromIndividualQueue } = require('../game/utils/queueStateUtils');
     
     // Analyze current individual rotation queue to determine pairs rotation
-    const pairFormation = convertToPairFormation(periodFormation);
     const pairsAnalysis = analyzePairsFromIndividualQueue(rotationQueue, periodFormation);
     
     setPeriodFormation(prev => {

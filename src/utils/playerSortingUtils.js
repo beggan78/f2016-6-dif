@@ -4,7 +4,6 @@
  */
 
 import { TEAM_MODES } from '../constants/playerConstants';
-import { POSITION_KEYS } from '../constants/positionConstants';
 
 /**
  * Position priority for goal scoring relevance
@@ -108,6 +107,9 @@ export const getCurrentAttackers = (periodFormation, teamMode) => {
       if (periodFormation.leftPair?.attacker) attackers.push(periodFormation.leftPair.attacker);
       if (periodFormation.rightPair?.attacker) attackers.push(periodFormation.rightPair.attacker);
       break;
+
+    default:
+      break;
   }
 
   return attackers;
@@ -138,6 +140,9 @@ export const getCurrentDefenders = (periodFormation, teamMode) => {
     case TEAM_MODES.PAIRS_7:
       if (periodFormation.leftPair?.defender) defenders.push(periodFormation.leftPair.defender);
       if (periodFormation.rightPair?.defender) defenders.push(periodFormation.rightPair.defender);
+      break;
+
+    default:
       break;
   }
 
@@ -223,6 +228,9 @@ export const getPlayerPositionDisplay = (playerId, periodFormation, teamMode) =>
       if (periodFormation.rightPair?.defender === playerId) return 'Right Defender';
       if (periodFormation.subPair?.attacker === playerId) return 'Sub Attacker';
       if (periodFormation.subPair?.defender === playerId) return 'Sub Defender';
+      break;
+
+    default:
       break;
   }
 
