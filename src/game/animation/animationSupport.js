@@ -303,7 +303,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
     });
   } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
     // 6-player individual mode
-    [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE].forEach(pos => {
+    [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1].forEach(pos => {
       const playerId = formation[pos];
       if (playerId) {
         positions[playerId] = {
@@ -315,7 +315,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
     });
   } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
     // 7-player individual mode
-    [POSITION_KEYS.LEFT_DEFENDER_7, POSITION_KEYS.RIGHT_DEFENDER_7, POSITION_KEYS.LEFT_ATTACKER_7, POSITION_KEYS.RIGHT_ATTACKER_7, POSITION_KEYS.SUBSTITUTE_7_1, POSITION_KEYS.SUBSTITUTE_7_2].forEach(pos => {
+    [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2].forEach(pos => {
       const playerId = formation[pos];
       if (playerId) {
         positions[playerId] = {

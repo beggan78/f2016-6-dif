@@ -765,7 +765,7 @@ describe('GameScreen Integration Tests', () => {
       // Arrange - Use INDIVIDUAL_6 for simpler role tracking
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_6);
       const leftDefender = gameState.allPlayers.find(p => p.id === gameState.formation.leftDefender);
-      const substitute = gameState.allPlayers.find(p => p.id === gameState.formation.substitute);
+      const substitute = gameState.allPlayers.find(p => p.id === gameState.formation.substitute_1);
       
       // Setup players with detailed time stats
       const playersWithStats = gameState.allPlayers.map(player => {
@@ -870,7 +870,7 @@ describe('GameScreen Integration Tests', () => {
       // Verify state consistency after role changes
       const finalState = mockHooks.useGameState._getMockState();
       expect(finalState.formation.leftDefender).toBe(substitute.id);
-      expect(finalState.formation.substitute).toBe(leftDefender.id);
+      expect(finalState.formation.substitute_1).toBe(leftDefender.id);
       
       assertValidGameState(finalState);
     });

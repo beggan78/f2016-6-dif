@@ -359,7 +359,7 @@ export function PeriodSetupScreen({
       const outfielders = [
         formation.leftDefender, formation.rightDefender,
         formation.leftAttacker, formation.rightAttacker,
-        formation.substitute
+        formation.substitute_1
       ].filter(Boolean);
       return formation.goalie && outfielders.length === 5 && new Set(outfielders).size === 5;
     } else if (isIndividual7Mode) {
@@ -505,7 +505,7 @@ export function PeriodSetupScreen({
           <IndividualPositionCard
             title="Substitute"
             position="substitute_1"
-            playerId={formation.substitute}
+            playerId={formation.substitute_1}
             onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}

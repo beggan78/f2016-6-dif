@@ -22,21 +22,20 @@ describe('positionUtils', () => {
     test('should map defender positions to DEFENDER role', () => {
       expect(getPositionRole(POSITION_KEYS.LEFT_DEFENDER)).toBe(PLAYER_ROLES.DEFENDER);
       expect(getPositionRole(POSITION_KEYS.RIGHT_DEFENDER)).toBe(PLAYER_ROLES.DEFENDER);
-      expect(getPositionRole(POSITION_KEYS.LEFT_DEFENDER_7)).toBe(PLAYER_ROLES.DEFENDER);
-      expect(getPositionRole(POSITION_KEYS.RIGHT_DEFENDER_7)).toBe(PLAYER_ROLES.DEFENDER);
+      expect(getPositionRole(POSITION_KEYS.LEFT_DEFENDER)).toBe(PLAYER_ROLES.DEFENDER);
+      expect(getPositionRole(POSITION_KEYS.RIGHT_DEFENDER)).toBe(PLAYER_ROLES.DEFENDER);
     });
 
     test('should map attacker positions to ATTACKER role', () => {
       expect(getPositionRole(POSITION_KEYS.LEFT_ATTACKER)).toBe(PLAYER_ROLES.ATTACKER);
       expect(getPositionRole(POSITION_KEYS.RIGHT_ATTACKER)).toBe(PLAYER_ROLES.ATTACKER);
-      expect(getPositionRole(POSITION_KEYS.LEFT_ATTACKER_7)).toBe(PLAYER_ROLES.ATTACKER);
-      expect(getPositionRole(POSITION_KEYS.RIGHT_ATTACKER_7)).toBe(PLAYER_ROLES.ATTACKER);
+      expect(getPositionRole(POSITION_KEYS.LEFT_ATTACKER)).toBe(PLAYER_ROLES.ATTACKER);
+      expect(getPositionRole(POSITION_KEYS.RIGHT_ATTACKER)).toBe(PLAYER_ROLES.ATTACKER);
     });
 
     test('should map substitute positions to SUBSTITUTE role', () => {
-      expect(getPositionRole(POSITION_KEYS.SUBSTITUTE)).toBe(PLAYER_ROLES.SUBSTITUTE);
-      expect(getPositionRole(POSITION_KEYS.SUBSTITUTE_7_1)).toBe(PLAYER_ROLES.SUBSTITUTE);
-      expect(getPositionRole(POSITION_KEYS.SUBSTITUTE_7_2)).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(getPositionRole(POSITION_KEYS.SUBSTITUTE_1)).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(getPositionRole(POSITION_KEYS.SUBSTITUTE_2)).toBe(PLAYER_ROLES.SUBSTITUTE);
     });
 
     test('should map goalie position to GOALIE role', () => {
@@ -66,7 +65,7 @@ describe('positionUtils', () => {
       expect(positions).toContain(POSITION_KEYS.RIGHT_DEFENDER);
       expect(positions).toContain(POSITION_KEYS.LEFT_ATTACKER);
       expect(positions).toContain(POSITION_KEYS.RIGHT_ATTACKER);
-      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE);
+      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_1);
       expect(positions).not.toContain(POSITION_KEYS.GOALIE);
     });
 
@@ -74,12 +73,12 @@ describe('positionUtils', () => {
       const positions = getOutfieldPositions(TEAM_MODES.INDIVIDUAL_7);
       
       expect(positions).toHaveLength(6);
-      expect(positions).toContain(POSITION_KEYS.LEFT_DEFENDER_7);
-      expect(positions).toContain(POSITION_KEYS.RIGHT_DEFENDER_7);
-      expect(positions).toContain(POSITION_KEYS.LEFT_ATTACKER_7);
-      expect(positions).toContain(POSITION_KEYS.RIGHT_ATTACKER_7);
-      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_7_1);
-      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_7_2);
+      expect(positions).toContain(POSITION_KEYS.LEFT_DEFENDER);
+      expect(positions).toContain(POSITION_KEYS.RIGHT_DEFENDER);
+      expect(positions).toContain(POSITION_KEYS.LEFT_ATTACKER);
+      expect(positions).toContain(POSITION_KEYS.RIGHT_ATTACKER);
+      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_1);
+      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_2);
       expect(positions).not.toContain(POSITION_KEYS.GOALIE);
     });
 
@@ -114,7 +113,7 @@ describe('positionUtils', () => {
       expect(positions).toContain(POSITION_KEYS.RIGHT_DEFENDER);
       expect(positions).toContain(POSITION_KEYS.LEFT_ATTACKER);
       expect(positions).toContain(POSITION_KEYS.RIGHT_ATTACKER);
-      expect(positions).not.toContain(POSITION_KEYS.SUBSTITUTE);
+      expect(positions).not.toContain(POSITION_KEYS.SUBSTITUTE_1);
       expect(positions).not.toContain(POSITION_KEYS.GOALIE);
     });
 
@@ -122,12 +121,12 @@ describe('positionUtils', () => {
       const positions = getFieldPositions(TEAM_MODES.INDIVIDUAL_7);
       
       expect(positions).toHaveLength(4);
-      expect(positions).toContain(POSITION_KEYS.LEFT_DEFENDER_7);
-      expect(positions).toContain(POSITION_KEYS.RIGHT_DEFENDER_7);
-      expect(positions).toContain(POSITION_KEYS.LEFT_ATTACKER_7);
-      expect(positions).toContain(POSITION_KEYS.RIGHT_ATTACKER_7);
-      expect(positions).not.toContain(POSITION_KEYS.SUBSTITUTE_7_1);
-      expect(positions).not.toContain(POSITION_KEYS.SUBSTITUTE_7_2);
+      expect(positions).toContain(POSITION_KEYS.LEFT_DEFENDER);
+      expect(positions).toContain(POSITION_KEYS.RIGHT_DEFENDER);
+      expect(positions).toContain(POSITION_KEYS.LEFT_ATTACKER);
+      expect(positions).toContain(POSITION_KEYS.RIGHT_ATTACKER);
+      expect(positions).not.toContain(POSITION_KEYS.SUBSTITUTE_1);
+      expect(positions).not.toContain(POSITION_KEYS.SUBSTITUTE_2);
     });
 
     test('should return only playing pairs for PAIRS_7', () => {
@@ -151,15 +150,15 @@ describe('positionUtils', () => {
       const positions = getSubstitutePositions(TEAM_MODES.INDIVIDUAL_6);
       
       expect(positions).toHaveLength(1);
-      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE);
+      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_1);
     });
 
     test('should return substitute positions for INDIVIDUAL_7', () => {
       const positions = getSubstitutePositions(TEAM_MODES.INDIVIDUAL_7);
       
       expect(positions).toHaveLength(2);
-      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_7_1);
-      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_7_2);
+      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_1);
+      expect(positions).toContain(POSITION_KEYS.SUBSTITUTE_2);
     });
 
     test('should return substitute pair for PAIRS_7', () => {
@@ -183,18 +182,18 @@ describe('positionUtils', () => {
       expect(isFieldPosition(POSITION_KEYS.LEFT_ATTACKER, TEAM_MODES.INDIVIDUAL_6)).toBe(true);
       expect(isFieldPosition(POSITION_KEYS.RIGHT_ATTACKER, TEAM_MODES.INDIVIDUAL_6)).toBe(true);
       
-      expect(isFieldPosition(POSITION_KEYS.SUBSTITUTE, TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+      expect(isFieldPosition(POSITION_KEYS.SUBSTITUTE_1, TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(isFieldPosition(POSITION_KEYS.GOALIE, TEAM_MODES.INDIVIDUAL_6)).toBe(false);
     });
 
     test('should correctly identify field positions in INDIVIDUAL_7', () => {
-      expect(isFieldPosition(POSITION_KEYS.LEFT_DEFENDER_7, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
-      expect(isFieldPosition(POSITION_KEYS.RIGHT_DEFENDER_7, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
-      expect(isFieldPosition(POSITION_KEYS.LEFT_ATTACKER_7, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
-      expect(isFieldPosition(POSITION_KEYS.RIGHT_ATTACKER_7, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isFieldPosition(POSITION_KEYS.LEFT_DEFENDER, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isFieldPosition(POSITION_KEYS.RIGHT_DEFENDER, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isFieldPosition(POSITION_KEYS.LEFT_ATTACKER, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isFieldPosition(POSITION_KEYS.RIGHT_ATTACKER, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
       
-      expect(isFieldPosition(POSITION_KEYS.SUBSTITUTE_7_1, TEAM_MODES.INDIVIDUAL_7)).toBe(false);
-      expect(isFieldPosition(POSITION_KEYS.SUBSTITUTE_7_2, TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isFieldPosition(POSITION_KEYS.SUBSTITUTE_1, TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isFieldPosition(POSITION_KEYS.SUBSTITUTE_2, TEAM_MODES.INDIVIDUAL_7)).toBe(false);
     });
 
     test('should correctly identify playing pairs in PAIRS_7', () => {
@@ -212,17 +211,17 @@ describe('positionUtils', () => {
 
   describe('isSubstitutePosition', () => {
     test('should correctly identify substitute positions in INDIVIDUAL_6', () => {
-      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE, TEAM_MODES.INDIVIDUAL_6)).toBe(true);
+      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE_1, TEAM_MODES.INDIVIDUAL_6)).toBe(true);
       
       expect(isSubstitutePosition(POSITION_KEYS.LEFT_DEFENDER, TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(isSubstitutePosition(POSITION_KEYS.GOALIE, TEAM_MODES.INDIVIDUAL_6)).toBe(false);
     });
 
     test('should correctly identify substitute positions in INDIVIDUAL_7', () => {
-      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE_7_1, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
-      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE_7_2, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE_1, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE_2, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
       
-      expect(isSubstitutePosition(POSITION_KEYS.LEFT_DEFENDER_7, TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isSubstitutePosition(POSITION_KEYS.LEFT_DEFENDER, TEAM_MODES.INDIVIDUAL_7)).toBe(false);
     });
 
     test('should correctly identify substitute pair in PAIRS_7', () => {
@@ -234,7 +233,7 @@ describe('positionUtils', () => {
 
     test('should return false for unknown positions or team modes', () => {
       expect(isSubstitutePosition('unknownPosition', TEAM_MODES.INDIVIDUAL_6)).toBe(false);
-      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE, 'UNKNOWN_TEAM_MODE')).toBe(false);
+      expect(isSubstitutePosition(POSITION_KEYS.SUBSTITUTE_1, 'UNKNOWN_TEAM_MODE')).toBe(false);
     });
   });
 

@@ -74,7 +74,7 @@ export const createSubstitutionHandlers = (
         rightDefender: formation.rightDefender,
         leftAttacker: formation.leftAttacker,
         rightAttacker: formation.rightAttacker,
-        substitute: formation.substitute,
+        substitute: formation.substitute_1,
         goalie: formation.goalie
       };
     } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {

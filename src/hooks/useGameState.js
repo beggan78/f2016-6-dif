@@ -410,7 +410,7 @@ export function useGameState() {
       const allOutfieldersInFormation = [
         formation.leftDefender, formation.rightDefender,
         formation.leftAttacker, formation.rightAttacker,
-        formation.substitute,
+        formation.substitute_1,
       ].filter(Boolean);
 
       if (new Set(allOutfieldersInFormation).size !== 5 || !formation.goalie) {
@@ -466,7 +466,7 @@ export function useGameState() {
           role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'leftAttacker';
         } else if (p.id === formation.rightAttacker) {
           role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'rightAttacker';
-        } else if (p.id === formation.substitute) {
+        } else if (p.id === formation.substitute_1) {
           role = PLAYER_ROLES.SUBSTITUTE; status = 'substitute'; pairKey = 'substitute';
         }
       } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {

@@ -131,7 +131,7 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
     const switches = [
       { newGoalie: gameState.formation.leftDefender },
       { newGoalie: gameState.formation.rightDefender },
-      { newGoalie: gameState.formation.substitute }
+      { newGoalie: gameState.formation.substitute_1 }
     ];
     
     for (const switchOp of switches) {

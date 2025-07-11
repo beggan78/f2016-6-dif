@@ -126,7 +126,7 @@ export const assertFormationStructure = (formation, teamMode) => {
       expect(formation.rightDefender).toBeDefined();
       expect(formation.leftAttacker).toBeDefined();
       expect(formation.rightAttacker).toBeDefined();
-      expect(formation.substitute).toBeDefined();
+      expect(formation.substitute_1).toBeDefined();
       break;
       
     case TEAM_MODES.INDIVIDUAL_7:

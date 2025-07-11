@@ -28,8 +28,8 @@ jest.mock('lucide-react', () => {
 });
 
 describe('UI positionUtils', () => {
-  const mockSubstitutePositions6 = [POSITION_KEYS.SUBSTITUTE];
-  const mockSubstitutePositions7 = [POSITION_KEYS.SUBSTITUTE_7_1, POSITION_KEYS.SUBSTITUTE_7_2];
+  const mockSubstitutePositions6 = [POSITION_KEYS.SUBSTITUTE_1];
+  const mockSubstitutePositions7 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2];
   const mockSubstitutePositionsPairs = [POSITION_KEYS.SUB_PAIR];
 
   describe('getPositionIcon', () => {

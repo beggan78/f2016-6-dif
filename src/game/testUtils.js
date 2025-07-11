@@ -61,7 +61,7 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
       } else if (i === 5) {
         status = PLAYER_STATUS.SUBSTITUTE;
         role = PLAYER_ROLES.SUBSTITUTE;
-        position = POSITION_KEYS.SUBSTITUTE;
+        position = POSITION_KEYS.SUBSTITUTE_1;
       } else {
         status = PLAYER_STATUS.GOALIE;
         role = PLAYER_ROLES.GOALIE;
@@ -71,12 +71,12 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
       if (i <= 4) {
         status = PLAYER_STATUS.ON_FIELD;
         role = i <= 2 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        position = [POSITION_KEYS.LEFT_DEFENDER_7, POSITION_KEYS.RIGHT_DEFENDER_7,
-                   POSITION_KEYS.LEFT_ATTACKER_7, POSITION_KEYS.RIGHT_ATTACKER_7][i - 1];
+        position = [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER,
+                   POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER][i - 1];
       } else if (i <= 6) {
         status = PLAYER_STATUS.SUBSTITUTE;
         role = PLAYER_ROLES.SUBSTITUTE;
-        position = i === 5 ? POSITION_KEYS.SUBSTITUTE_7_1 : POSITION_KEYS.SUBSTITUTE_7_2;
+        position = i === 5 ? POSITION_KEYS.SUBSTITUTE_1 : POSITION_KEYS.SUBSTITUTE_2;
       } else {
         status = PLAYER_STATUS.GOALIE;
         role = PLAYER_ROLES.GOALIE;

@@ -449,8 +449,8 @@ describe('gameStateLogic', () => {
       const player1 = result.allPlayers.find(p => p.id === sub1Id);
       const player2 = result.allPlayers.find(p => p.id === sub2Id);
       
-      expect(player1.stats.currentPairKey).toBe(POSITION_KEYS.SUBSTITUTE_7_2);
-      expect(player2.stats.currentPairKey).toBe(POSITION_KEYS.SUBSTITUTE_7_1);
+      expect(player1.stats.currentPairKey).toBe(POSITION_KEYS.SUBSTITUTE_2);
+      expect(player2.stats.currentPairKey).toBe(POSITION_KEYS.SUBSTITUTE_1);
     });
 
     test('should return unchanged state for invalid inputs', () => {
