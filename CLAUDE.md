@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # DIF F16-6 Coach - Claude Code Memory
 
 ## Project Overview

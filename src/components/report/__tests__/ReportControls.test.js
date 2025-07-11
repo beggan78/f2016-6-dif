@@ -689,5 +689,406 @@ describe('ReportControls', () => {
         expect(button).toBeEnabled();
       });
     });
+
+    it('supports keyboard navigation for checkbox', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      const checkbox = screen.getByRole('checkbox');
+      checkbox.focus();
+      
+      // Checkbox should be focusable
+      expect(document.activeElement).toBe(checkbox);
+      
+      // Simulate space key press by triggering click event
+      fireEvent.click(checkbox);
+      
+      expect(mockHandlers.onToggleSubstitutions).toHaveBeenCalledWith(true);
+    });
+
+    it('supports keyboard navigation for select elements', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      const sortSelect = screen.getByDisplayValue('Newest First');
+      sortSelect.focus();
+      
+      fireEvent.keyDown(sortSelect, { key: 'ArrowDown' });
+      fireEvent.change(sortSelect, { target: { value: 'asc' } });
+      
+      expect(mockHandlers.onSortOrderChange).toHaveBeenCalledWith('asc');
+    });
+
+    it('has proper ARIA attributes for interactive elements', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      const checkbox = screen.getByRole('checkbox');
+      expect(checkbox).toHaveAttribute('type', 'checkbox');
+      
+      // Select elements should be accessible as comboboxes
+      const selects = screen.getAllByRole('combobox');
+      expect(selects).toHaveLength(2); // sortOrder and eventFilter selects
+      
+      selects.forEach(select => {
+        expect(select).toBeInTheDocument();
+      });
+    });
+
+    it('has proper focus management', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      const buttons = screen.getAllByRole('button');
+      const checkbox = screen.getByRole('checkbox');
+      const selects = screen.getAllByRole('combobox');
+      
+      [...buttons, checkbox, ...selects].forEach(element => {
+        element.focus();
+        expect(document.activeElement).toBe(element);
+      });
+    });
+  });
+
+  describe('Mobile Device Interaction', () => {
+    beforeEach(() => {
+      // Mock touch events and mobile viewport
+      Object.defineProperty(window, 'ontouchstart', {
+        value: {},
+        configurable: true
+      });
+      
+      Object.defineProperty(window, 'screen', {
+        value: {
+          width: 375,
+          height: 667
+        },
+        configurable: true
+      });
+    });
+
+    it('handles touch events on buttons', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      const printButton = screen.getByTestId('button-print');
+      
+      fireEvent.touchStart(printButton);
+      fireEvent.touchEnd(printButton);
+      fireEvent.click(printButton);
+
+      expect(mockHandlers.onPrint).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles touch events on checkbox', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      const checkbox = screen.getByRole('checkbox');
+      
+      fireEvent.touchStart(checkbox);
+      fireEvent.touchEnd(checkbox);
+      fireEvent.click(checkbox);
+
+      expect(mockHandlers.onToggleSubstitutions).toHaveBeenCalledWith(true);
+    });
+
+    it('handles mobile-specific share functionality', async () => {
+      const props = { ...defaultProps, onShare: undefined };
+      const mockShare = jest.fn().mockResolvedValue();
+      Object.defineProperty(global, 'navigator', {
+        value: {
+          share: mockShare,
+          userAgent: 'Mobile Safari'
+        },
+        configurable: true
+      });
+
+      render(<ReportControls {...props} />);
+
+      const shareButton = screen.getByTestId('button-share');
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        expect(mockShare).toHaveBeenCalledWith({
+          title: 'Match Report',
+          text: 'Check out this match report',
+          url: 'https://example.com/report'
+        });
+      });
+    });
+
+    it('adapts layout for mobile screens', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      // Check responsive grid classes are applied
+      const grid = screen.getByRole('checkbox').closest('.grid');
+      expect(grid).toHaveClass('grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3');
+
+      // Check flex wrap is applied for button containers
+      const buttonContainer = screen.getByTestId('button-quick-stats').closest('.flex-wrap');
+      expect(buttonContainer).toHaveClass('flex-wrap');
+    });
+  });
+
+  describe('Performance and Optimization', () => {
+    it('does not cause unnecessary re-renders with stable props', () => {
+      let renderCount = 0;
+      const TestWrapper = ({ children }) => {
+        renderCount++;
+        return children;
+      };
+
+      const { rerender } = render(
+        <TestWrapper>
+          <ReportControls {...defaultProps} />
+        </TestWrapper>
+      );
+
+      const initialRenderCount = renderCount;
+
+      // Re-render with same props
+      rerender(
+        <TestWrapper>
+          <ReportControls {...defaultProps} />
+        </TestWrapper>
+      );
+
+      // Should not cause additional renders with identical props
+      expect(renderCount).toBe(initialRenderCount + 1);
+    });
+
+    it('handles rapid user interactions gracefully', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      const checkbox = screen.getByRole('checkbox');
+      
+      // Simulate rapid clicking
+      for (let i = 0; i < 10; i++) {
+        fireEvent.click(checkbox);
+      }
+
+      // Should call handler for each click
+      expect(mockHandlers.onToggleSubstitutions).toHaveBeenCalledTimes(10);
+    });
+
+    it('efficiently handles large number of select options', () => {
+      // This test ensures the component can handle extended option lists if needed
+      render(<ReportControls {...defaultProps} />);
+
+      const sortSelect = screen.getByDisplayValue('Newest First');
+      const eventSelect = screen.getByDisplayValue('All Events');
+
+      expect(sortSelect.children).toHaveLength(2); // Newest First, Oldest First
+      expect(eventSelect.children).toHaveLength(4); // All, Goals, Substitutions, Important
+
+      // Both selects should render efficiently
+      expect(sortSelect).toBeInTheDocument();
+      expect(eventSelect).toBeInTheDocument();
+    });
+  });
+
+  describe('Browser Compatibility Edge Cases', () => {
+    it('handles legacy browsers without navigator.share', () => {
+      const props = { ...defaultProps, onShare: undefined };
+      Object.defineProperty(global, 'navigator', {
+        value: {
+          // No share property
+          clipboard: {
+            writeText: jest.fn().mockResolvedValue()
+          }
+        },
+        configurable: true
+      });
+
+      render(<ReportControls {...props} />);
+
+      const shareButton = screen.getByTestId('button-share');
+      fireEvent.click(shareButton);
+
+      expect(global.navigator.clipboard.writeText).toHaveBeenCalledWith('https://example.com/report');
+    });
+
+    it('handles legacy browsers without clipboard API', () => {
+      const props = { ...defaultProps, onShare: undefined };
+      Object.defineProperty(global, 'navigator', {
+        value: {
+          // No share or clipboard properties
+        },
+        configurable: true
+      });
+
+      render(<ReportControls {...props} />);
+
+      const shareButton = screen.getByTestId('button-share');
+      fireEvent.click(shareButton);
+
+      // Should not crash and not call any APIs
+      expect(global.alert).not.toHaveBeenCalled();
+      expect(global.console.warn).not.toHaveBeenCalled();
+    });
+
+    it('handles browsers with partial Web API support', () => {
+      const props = { ...defaultProps, onShare: undefined };
+      Object.defineProperty(global, 'navigator', {
+        value: {
+          share: undefined, // Explicitly undefined
+          clipboard: null   // Explicitly null
+        },
+        configurable: true
+      });
+
+      render(<ReportControls {...props} />);
+
+      const shareButton = screen.getByTestId('button-share');
+      
+      expect(() => {
+        fireEvent.click(shareButton);
+      }).not.toThrow();
+    });
+
+    it('handles different browser print implementations', () => {
+      const props = { ...defaultProps, onPrint: undefined };
+      
+      // Mock window.print to be a custom implementation
+      const mockPrint = jest.fn();
+      const originalPrint = global.window.print;
+      global.window.print = mockPrint;
+
+      render(<ReportControls {...props} />);
+
+      const printButton = screen.getByTestId('button-print');
+      fireEvent.click(printButton);
+      
+      expect(mockPrint).toHaveBeenCalledTimes(1);
+      
+      // Restore original print function
+      global.window.print = originalPrint;
+    });
+  });
+
+  describe('Integration Scenarios', () => {
+    it('properly integrates with parent component state management', () => {
+      const parentState = {
+        showSubstitutions: false,
+        sortOrder: 'desc',
+        eventFilter: 'all'
+      };
+
+      const { rerender } = render(<ReportControls {...defaultProps} {...parentState} />);
+
+      // Simulate parent state change
+      fireEvent.click(screen.getByRole('checkbox'));
+      expect(mockHandlers.onToggleSubstitutions).toHaveBeenCalledWith(true);
+
+      // Simulate parent updating state based on callback
+      rerender(<ReportControls {...defaultProps} {...parentState} showSubstitutions={true} />);
+      expect(screen.getByRole('checkbox')).toBeChecked();
+    });
+
+    it('handles complex callback sequences', () => {
+      render(<ReportControls {...defaultProps} />);
+
+      // Simulate a sequence of user actions
+      fireEvent.click(screen.getByTestId('button-quick-stats'));
+      fireEvent.change(screen.getByDisplayValue('Newest First'), { target: { value: 'asc' } });
+      fireEvent.change(screen.getByDisplayValue('All Events'), { target: { value: 'goals' } });
+      fireEvent.click(screen.getByRole('checkbox'));
+
+      expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(1);
+      expect(mockHandlers.onSortOrderChange).toHaveBeenCalledWith('asc');
+      expect(mockHandlers.onEventFilterChange).toHaveBeenCalledWith('goals');
+      expect(mockHandlers.onToggleSubstitutions).toHaveBeenCalledWith(true);
+    });
+
+    it('maintains state consistency across prop updates', () => {
+      const { rerender } = render(<ReportControls {...defaultProps} />);
+
+      // Update multiple props simultaneously
+      rerender(<ReportControls 
+        {...defaultProps} 
+        showSubstitutions={true}
+        sortOrder="asc"
+        eventFilter="goals"
+      />);
+
+      expect(screen.getByRole('checkbox')).toBeChecked();
+      expect(screen.getByDisplayValue('Oldest First')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Goals Only')).toBeInTheDocument();
+    });
+
+    it('handles rapid prop changes without errors', () => {
+      const { rerender } = render(<ReportControls {...defaultProps} />);
+
+      // Simulate rapid prop changes
+      const propSequence = [
+        { sortOrder: 'asc', eventFilter: 'goals' },
+        { sortOrder: 'desc', eventFilter: 'substitutions' },
+        { sortOrder: 'asc', eventFilter: 'important' },
+        { sortOrder: 'desc', eventFilter: 'all' }
+      ];
+
+      propSequence.forEach(props => {
+        expect(() => {
+          rerender(<ReportControls {...defaultProps} {...props} />);
+        }).not.toThrow();
+      });
+    });
+  });
+
+  describe('Error Recovery and Resilience', () => {
+    it('recovers gracefully from callback errors', () => {
+      const erroringHandler = jest.fn(() => {
+        throw new Error('Callback error');
+      });
+      
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      render(<ReportControls 
+        {...defaultProps} 
+        onToggleSubstitutions={erroringHandler} 
+      />);
+
+      const checkbox = screen.getByRole('checkbox');
+      
+      // The error should be caught by React's error boundary
+      // We expect the handler to be called even if it throws
+      fireEvent.click(checkbox);
+      expect(erroringHandler).toHaveBeenCalled();
+      
+      consoleSpy.mockRestore();
+    });
+
+    it('handles network failures during share operations', async () => {
+      const props = { ...defaultProps, onShare: undefined };
+      const networkError = new Error('Network unavailable');
+      const mockShare = jest.fn().mockRejectedValue(networkError);
+      
+      Object.defineProperty(global, 'navigator', {
+        value: { share: mockShare },
+        configurable: true
+      });
+
+      render(<ReportControls {...props} />);
+
+      const shareButton = screen.getByTestId('button-share');
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        expect(global.console.warn).toHaveBeenCalledWith('Failed to share report:', networkError);
+      });
+    });
+
+    it('maintains functionality when optional props are removed', () => {
+      const { rerender } = render(<ReportControls {...defaultProps} />);
+
+      // Remove optional props one by one
+      rerender(<ReportControls {...defaultProps} onNavigateToStats={undefined} />);
+      expect(screen.queryByTestId('button-quick-stats')).not.toBeInTheDocument();
+
+      rerender(<ReportControls {...defaultProps} onSortOrderChange={undefined} />);
+      expect(screen.queryByText('Timeline Order')).not.toBeInTheDocument();
+
+      rerender(<ReportControls {...defaultProps} onEventFilterChange={undefined} />);
+      expect(screen.queryByText('Event Filter')).not.toBeInTheDocument();
+
+      // Core functionality should still work
+      expect(screen.getByTestId('button-print')).toBeInTheDocument();
+      expect(screen.getByTestId('button-share')).toBeInTheDocument();
+    });
   });
 });

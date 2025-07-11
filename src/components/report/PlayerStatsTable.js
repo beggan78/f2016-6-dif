@@ -65,7 +65,7 @@ export function PlayerStatsTable({
         if (currentRole === 'SUBSTITUTE') return 'Sub';
         
         // Fallback to starting role if we can't determine current role
-        const role = player.stats.startedMatchAs;
+        const role = player.stats?.startedMatchAs;
         if (role === PLAYER_ROLES.GOALIE) return 'Goalie';
         if (role === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
         if (role === PLAYER_ROLES.ON_FIELD) return 'Field';
@@ -78,7 +78,7 @@ export function PlayerStatsTable({
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
-        const time = player.stats.timeOnFieldSeconds || 0;
+        const time = player.stats?.timeOnFieldSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
     },
@@ -88,7 +88,7 @@ export function PlayerStatsTable({
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
-        const time = player.stats.timeAsAttackerSeconds || 0;
+        const time = player.stats?.timeAsAttackerSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
     },
@@ -98,7 +98,7 @@ export function PlayerStatsTable({
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
-        const time = player.stats.timeAsDefenderSeconds || 0;
+        const time = player.stats?.timeAsDefenderSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
     },
@@ -108,7 +108,7 @@ export function PlayerStatsTable({
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
-        const time = player.stats.timeAsGoalieSeconds || 0;
+        const time = player.stats?.timeAsGoalieSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
     },
@@ -118,7 +118,7 @@ export function PlayerStatsTable({
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
-        const time = player.stats.timeAsSubSeconds || 0;
+        const time = player.stats?.timeAsSubSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
     },
@@ -147,24 +147,24 @@ export function PlayerStatsTable({
           bValue = b.name || '';
           break;
         case 'timeOnField':
-          aValue = a.stats.timeOnFieldSeconds || 0;
-          bValue = b.stats.timeOnFieldSeconds || 0;
+          aValue = a.stats?.timeOnFieldSeconds || 0;
+          bValue = b.stats?.timeOnFieldSeconds || 0;
           break;
         case 'timeAsAttacker':
-          aValue = a.stats.timeAsAttackerSeconds || 0;
-          bValue = b.stats.timeAsAttackerSeconds || 0;
+          aValue = a.stats?.timeAsAttackerSeconds || 0;
+          bValue = b.stats?.timeAsAttackerSeconds || 0;
           break;
         case 'timeAsDefender':
-          aValue = a.stats.timeAsDefenderSeconds || 0;
-          bValue = b.stats.timeAsDefenderSeconds || 0;
+          aValue = a.stats?.timeAsDefenderSeconds || 0;
+          bValue = b.stats?.timeAsDefenderSeconds || 0;
           break;
         case 'timeAsGoalie':
-          aValue = a.stats.timeAsGoalieSeconds || 0;
-          bValue = b.stats.timeAsGoalieSeconds || 0;
+          aValue = a.stats?.timeAsGoalieSeconds || 0;
+          bValue = b.stats?.timeAsGoalieSeconds || 0;
           break;
         case 'timeAsSubstitute':
-          aValue = a.stats.timeAsSubSeconds || 0;
-          bValue = b.stats.timeAsSubSeconds || 0;
+          aValue = a.stats?.timeAsSubSeconds || 0;
+          bValue = b.stats?.timeAsSubSeconds || 0;
           break;
         case 'goalsScored':
           aValue = playerGoals[a.id] || 0;

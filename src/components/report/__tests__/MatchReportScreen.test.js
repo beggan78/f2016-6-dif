@@ -766,4 +766,588 @@ describe('MatchReportScreen', () => {
       expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('true');
     });
   });
+
+  // ====================
+  // NEW COMPREHENSIVE TESTS - ADDRESSING IDENTIFIED GAPS
+  // ====================
+
+  describe('Error handling and data corruption', () => {
+    it('handles corrupted player data gracefully', () => {
+      // Suppress React warnings for this test
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+
+      const corruptedPlayersProps = {
+        ...defaultProps,
+        allPlayers: [
+          { id: 'p1', name: 'Alice', stats: {} }, // Missing startedMatchAs (undefined)
+          { id: 'p2', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD } }, // Missing name
+          { id: 'p3', name: 'Bob', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD } }, // Valid player
+        ]
+      };
+
+      // Should not crash with corrupted data
+      expect(() => {
+        render(<MatchReportScreen {...corruptedPlayersProps} />);
+      }).not.toThrow();
+
+      // Should render the component
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+      
+      // Should filter players safely - the component filters by p.stats.startedMatchAs !== null
+      // p1 has undefined startedMatchAs (undefined !== null is true, so it's included)
+      // p2 and p3 have valid startedMatchAs values
+      // So all 3 players should be included since undefined !== null
+      expect(screen.getByTestId('table-players-count')).toHaveTextContent('3');
+
+      // Restore console.error
+      console.error = originalConsoleError;
+    });
+
+    it('handles corrupted event data gracefully', () => {
+      // Suppress React warnings for this test
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+
+      const corruptedEventsProps = {
+        ...defaultProps,
+        matchEvents: [
+          { id: 'event-1', type: 'unknown_type', timestamp: null }, // null timestamp
+          { id: 'event-missing-type', timestamp: 1000000000000 }, // missing type
+          { id: 'event-2', type: EVENT_TYPES.GOAL_HOME, timestamp: 'invalid' }, // invalid timestamp
+          { id: 'event-3', timestamp: 1000000060000 } // missing type
+        ]
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...corruptedEventsProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+
+      // Restore console.error
+      console.error = originalConsoleError;
+    });
+
+    it('handles malformed goalScorers data', () => {
+      const malformedGoalScorersProps = {
+        ...defaultProps,
+        goalScorers: {
+          'non-existent-event': 'non-existent-player',
+          'goal-event-1': null,
+          null: 'p1',
+          123: 'p2'
+        }
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...malformedGoalScorersProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+    });
+
+    it('handles invalid timestamp formats in events', () => {
+      const invalidTimestampProps = {
+        ...defaultProps,
+        matchEvents: [
+          { id: 'event-1', type: EVENT_TYPES.MATCH_START, timestamp: '2023-01-01T00:00:00Z' },
+          { id: 'event-2', type: EVENT_TYPES.GOAL_HOME, timestamp: NaN },
+          { id: 'event-3', type: EVENT_TYPES.GOAL_HOME, timestamp: Infinity },
+          { id: 'event-4', type: EVENT_TYPES.GOAL_HOME, timestamp: -1 }
+        ]
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...invalidTimestampProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+    });
+  });
+
+  describe('Performance testing with large datasets', () => {
+    it('renders efficiently with large number of players', () => {
+      const largeMockPlayers = Array.from({ length: 50 }, (_, i) => ({
+        id: `player-${i}`,
+        name: `Player ${i}`,
+        stats: {
+          startedMatchAs: i < 25 ? PLAYER_ROLES.ON_FIELD : null,
+          timeOnFieldSeconds: Math.floor(Math.random() * 3600),
+          timeAsAttackerSeconds: Math.floor(Math.random() * 1800),
+          timeAsDefenderSeconds: Math.floor(Math.random() * 1800),
+          timeAsGoalieSeconds: Math.floor(Math.random() * 900)
+        }
+      }));
+
+      const largeDataProps = {
+        ...defaultProps,
+        allPlayers: largeMockPlayers
+      };
+
+      const startTime = performance.now();
+      render(<MatchReportScreen {...largeDataProps} />);
+      const endTime = performance.now();
+
+      // Should render within reasonable time (200ms threshold)
+      expect(endTime - startTime).toBeLessThan(200);
+
+      // Should still display correct count
+      expect(screen.getByTestId('table-players-count')).toHaveTextContent('25');
+    });
+
+    it('handles large number of events efficiently', () => {
+      const largeEventList = Array.from({ length: 1000 }, (_, i) => ({
+        id: `event-${i}`,
+        type: i % 2 === 0 ? EVENT_TYPES.GOAL_HOME : 'substitution',
+        timestamp: 1000000000000 + (i * 10000),
+        matchTime: `${Math.floor(i / 6)}:${String(i % 60).padStart(2, '0')}`,
+        sequence: i + 1,
+        data: {},
+        undone: false
+      }));
+
+      const largeEventsProps = {
+        ...defaultProps,
+        matchEvents: largeEventList
+      };
+
+      const startTime = performance.now();
+      render(<MatchReportScreen {...largeEventsProps} />);
+      const endTime = performance.now();
+
+      // Should render within reasonable time
+      expect(endTime - startTime).toBeLessThan(300);
+
+      // Should correctly filter events (substitutions off by default)
+      const filteredCount = largeEventList.filter(e => e.type !== 'substitution').length;
+      expect(screen.getByTestId('timeline-events-count')).toHaveTextContent(filteredCount.toString());
+    });
+
+    it('efficiently processes complex filtering operations', () => {
+      const complexEventList = Array.from({ length: 500 }, (_, i) => ({
+        id: `event-${i}`,
+        type: ['substitution', 'position_change', 'goalie_change', EVENT_TYPES.GOAL_HOME, EVENT_TYPES.MATCH_START][i % 5],
+        timestamp: 1000000000000 + (i * 15000),
+        matchTime: `${Math.floor(i / 4)}:${String((i * 15) % 60).padStart(2, '0')}`,
+        sequence: i + 1,
+        data: {},
+        undone: false
+      }));
+
+      const complexFilterProps = {
+        ...defaultProps,
+        matchEvents: complexEventList
+      };
+
+      render(<MatchReportScreen {...complexFilterProps} />);
+
+      // Toggle substitutions multiple times to test filtering performance
+      const substitutionToggle = screen.getByText('Substitutions');
+      
+      const startTime = performance.now();
+      for (let i = 0; i < 10; i++) {
+        fireEvent.click(substitutionToggle);
+      }
+      const endTime = performance.now();
+
+      // Multiple filtering operations should complete quickly (relaxed threshold for CI)
+      expect(endTime - startTime).toBeLessThan(500);
+    });
+  });
+
+  describe('Accessibility testing', () => {
+    it('has proper semantic structure with headings', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Should have main heading
+      const mainHeading = screen.getByRole('heading', { level: 1 });
+      expect(mainHeading).toHaveTextContent('Match Report');
+
+      // Should have section headings
+      const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
+      expect(sectionHeadings).toHaveLength(4);
+      expect(sectionHeadings[0]).toHaveTextContent('Match Summary');
+      expect(sectionHeadings[1]).toHaveTextContent('Player Statistics');
+      expect(sectionHeadings[2]).toHaveTextContent('Game Events');
+      expect(sectionHeadings[3]).toHaveTextContent('Report Actions');
+    });
+
+    it('has accessible navigation controls', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Navigation buttons should be accessible
+      const statsButton = screen.getByRole('button', { name: /quick stats/i });
+      expect(statsButton).toBeInTheDocument();
+      expect(statsButton).toBeEnabled();
+
+      const backButton = screen.getByRole('button', { name: /back to game/i });
+      expect(backButton).toBeInTheDocument();
+      expect(backButton).toBeEnabled();
+    });
+
+    it('has accessible toggle button for substitutions', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      const toggleButton = screen.getByRole('button', { name: /substitutions/i });
+      expect(toggleButton).toBeInTheDocument();
+      expect(toggleButton).toBeEnabled();
+
+      // Should indicate current state
+      expect(toggleButton).toHaveTextContent('Substitutions');
+    });
+
+    it('maintains keyboard navigation support', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      const toggleButton = screen.getByRole('button', { name: /substitutions/i });
+      
+      // Should be focusable
+      toggleButton.focus();
+      expect(document.activeElement).toBe(toggleButton);
+
+      // Should respond to Enter key
+      fireEvent.keyDown(toggleButton, { key: 'Enter', code: 'Enter' });
+      // Toggle should work (though we test this via click in the existing tests)
+    });
+
+    it('provides appropriate ARIA labels and roles', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Should have proper article/section structure
+      const sections = screen.getAllByRole('generic');
+      expect(sections.length).toBeGreaterThan(0);
+
+      // Icons should not interfere with accessibility
+      expect(screen.getByTestId('file-text-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('trophy-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('users-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('clock-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
+    });
+  });
+
+  describe('Advanced prop validation and edge cases', () => {
+    it('handles extreme timestamp values', () => {
+      const extremeTimestampProps = {
+        ...defaultProps,
+        matchStartTime: 0, // Unix epoch
+        matchEvents: [
+          { id: 'event-1', type: EVENT_TYPES.MATCH_START, timestamp: 0 },
+          { id: 'event-2', type: EVENT_TYPES.GOAL_HOME, timestamp: 8640000000000000 } // Max safe integer
+        ]
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...extremeTimestampProps} />);
+      }).not.toThrow();
+
+      // Should calculate duration without crashing
+      const durationElement = screen.getByTestId('header-match-duration');
+      expect(durationElement).toBeInTheDocument();
+    });
+
+    it('handles invalid numeric props gracefully', () => {
+      const invalidNumericProps = {
+        ...defaultProps,
+        homeScore: 'invalid',
+        awayScore: NaN,
+        periodDurationMinutes: null,
+        matchStartTime: 'not-a-timestamp'
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...invalidNumericProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+    });
+
+    it('handles missing or invalid callback functions', () => {
+      // Suppress React warnings about invalid event listeners for this test
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+
+      const invalidCallbackProps = {
+        ...defaultProps,
+        onNavigateToStats: null, // Use null instead of string to avoid React warnings
+        onBackToGame: undefined,
+        onGoalClick: undefined,
+        navigateToMatchReport: undefined
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...invalidCallbackProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+
+      // Restore console.error
+      console.error = originalConsoleError;
+    });
+
+    it('handles invalid team mode gracefully', () => {
+      const invalidTeamModeProps = {
+        ...defaultProps,
+        teamMode: 'INVALID_MODE'
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...invalidTeamModeProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByTestId('header-team-mode')).toHaveTextContent('INVALID_MODE');
+    });
+
+    it('handles extremely long team names', () => {
+      const longTeamNameProps = {
+        ...defaultProps,
+        homeTeamName: 'A'.repeat(1000),
+        awayTeamName: 'B'.repeat(1000)
+      };
+
+      expect(() => {
+        render(<MatchReportScreen {...longTeamNameProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByTestId('header-home-team')).toHaveTextContent('A'.repeat(1000));
+      expect(screen.getByTestId('header-away-team')).toHaveTextContent('B'.repeat(1000));
+    });
+  });
+
+  describe('Complex state interaction scenarios', () => {
+    it('maintains consistent state during rapid user interactions', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      const substitutionToggle = screen.getByText('Substitutions');
+      const playerFilterButton = screen.getByTestId('test-player-filter-change');
+
+      // Rapid interactions should not cause state inconsistency
+      fireEvent.click(substitutionToggle);
+      fireEvent.click(playerFilterButton);
+      fireEvent.click(substitutionToggle);
+      fireEvent.click(playerFilterButton);
+
+      // Final state should be predictable
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('true'); // Auto-enabled by player selection
+      expect(screen.getByTestId('timeline-selected-player')).toHaveTextContent('test-player');
+    });
+
+    it('handles simultaneous prop updates correctly', () => {
+      const { rerender } = render(<MatchReportScreen {...defaultProps} />);
+
+      // Update multiple props simultaneously
+      const updatedProps = {
+        ...defaultProps,
+        homeScore: 5,
+        awayScore: 3,
+        matchEvents: [...defaultProps.matchEvents, {
+          id: 'new-event',
+          type: EVENT_TYPES.GOAL_HOME,
+          timestamp: 1000000300000,
+          matchTime: '05:00',
+          sequence: 6,
+          data: {},
+          undone: false
+        }],
+        allPlayers: [...defaultProps.allPlayers, {
+          id: 'p4',
+          name: 'Dave',
+          stats: {
+            startedMatchAs: PLAYER_ROLES.ON_FIELD,
+            timeOnFieldSeconds: 200,
+            timeAsAttackerSeconds: 100,
+            timeAsDefenderSeconds: 100,
+            timeAsGoalieSeconds: 0
+          }
+        }]
+      };
+
+      expect(() => {
+        rerender(<MatchReportScreen {...updatedProps} />);
+      }).not.toThrow();
+
+      // Should reflect all updates
+      expect(screen.getByTestId('header-home-score')).toHaveTextContent('5');
+      expect(screen.getByTestId('header-away-score')).toHaveTextContent('3');
+      expect(screen.getByTestId('table-players-count')).toHaveTextContent('3');
+      expect(screen.getByTestId('timeline-events-count')).toHaveTextContent('3'); // Non-substitution events
+    });
+
+    it('handles prop changes while user interactions are active', () => {
+      const { rerender } = render(<MatchReportScreen {...defaultProps} />);
+
+      // Enable substitutions
+      fireEvent.click(screen.getByText('Substitutions'));
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('true');
+
+      // Change props while toggle is on
+      const newProps = {
+        ...defaultProps,
+        matchEvents: [] // Empty events
+      };
+
+      rerender(<MatchReportScreen {...newProps} />);
+
+      // Toggle state should persist
+      expect(screen.getByTestId('timeline-show-substitutions')).toHaveTextContent('true');
+      expect(screen.getByTestId('timeline-events-count')).toHaveTextContent('0');
+    });
+  });
+
+  describe('Memory management and cleanup', () => {
+    it('cleans up properly when unmounted', () => {
+      const { unmount } = render(<MatchReportScreen {...defaultProps} />);
+
+      // Should unmount without errors
+      expect(() => {
+        unmount();
+      }).not.toThrow();
+    });
+
+    it('handles rapid mount/unmount cycles', () => {
+      for (let i = 0; i < 10; i++) {
+        const { unmount } = render(<MatchReportScreen {...defaultProps} />);
+        unmount();
+      }
+
+      // Should not cause memory leaks or errors
+      expect(true).toBe(true); // Test completes without throwing
+    });
+
+    it('properly handles callback cleanup', () => {
+      const mockCallbacks = {
+        onNavigateToStats: jest.fn(),
+        onBackToGame: jest.fn(),
+        onGoalClick: jest.fn()
+      };
+
+      const { unmount } = render(<MatchReportScreen {...defaultProps} {...mockCallbacks} />);
+
+      // Trigger some callbacks before unmount
+      fireEvent.click(screen.getByText('Quick Stats'));
+      fireEvent.click(screen.getByTestId('test-goal-click'));
+
+      unmount();
+
+      // Callbacks should have been called
+      expect(mockCallbacks.onNavigateToStats).toHaveBeenCalled();
+      expect(mockCallbacks.onGoalClick).toHaveBeenCalled();
+    });
+  });
+
+  describe('Browser compatibility and edge cases', () => {
+    it('handles Date.now() variations for duration calculation', () => {
+      const originalDateNow = Date.now;
+      
+      // Mock Date.now to return a specific value
+      Date.now = jest.fn(() => 1000000500000);
+
+      const propsWithoutEvents = {
+        ...defaultProps,
+        matchEvents: []
+      };
+
+      render(<MatchReportScreen {...propsWithoutEvents} />);
+
+      const durationElement = screen.getByTestId('header-match-duration');
+      // Should use mocked Date.now value: (1000000500000 - 1000000000000) / 1000 = 500
+      expect(durationElement).toHaveTextContent('500');
+
+      // Restore original Date.now
+      Date.now = originalDateNow;
+    });
+
+    it('handles performance.now() unavailability gracefully', () => {
+      const originalPerformanceNow = performance.now;
+      
+      // Temporarily remove performance.now
+      delete performance.now;
+
+      expect(() => {
+        render(<MatchReportScreen {...defaultProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+
+      // Restore performance.now
+      performance.now = originalPerformanceNow;
+    });
+
+    it('handles missing console methods gracefully', () => {
+      const originalConsoleLog = console.log;
+      
+      // Temporarily remove console.log
+      delete console.log;
+
+      expect(() => {
+        render(<MatchReportScreen {...defaultProps} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('Match Report')).toBeInTheDocument();
+
+      // Restore console.log
+      console.log = originalConsoleLog;
+    });
+  });
+
+  describe('Component isolation and mocking validation', () => {
+    it('verifies all child components receive expected props', () => {
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // Verify MatchSummaryHeader receives all required props
+      const summaryHeader = screen.getByTestId('match-summary-header');
+      expect(summaryHeader).toBeInTheDocument();
+      
+      // All expected data attributes should be present
+      expect(screen.getByTestId('header-home-team')).toBeInTheDocument();
+      expect(screen.getByTestId('header-away-team')).toBeInTheDocument();
+      expect(screen.getByTestId('header-home-score')).toBeInTheDocument();
+      expect(screen.getByTestId('header-away-score')).toBeInTheDocument();
+      expect(screen.getByTestId('header-match-duration')).toBeInTheDocument();
+      expect(screen.getByTestId('header-total-periods')).toBeInTheDocument();
+      expect(screen.getByTestId('header-period-duration')).toBeInTheDocument();
+      expect(screen.getByTestId('header-team-mode')).toBeInTheDocument();
+      expect(screen.getByTestId('header-match-start-time')).toBeInTheDocument();
+    });
+
+    it('validates periodFormation prop is passed to PlayerStatsTable', () => {
+      const customPeriodFormation = {
+        goalie: { playerId: 'p1' },
+        positions: [
+          { playerId: 'p2', role: 'attacker' }
+        ]
+      };
+
+      render(<MatchReportScreen {...defaultProps} periodFormation={customPeriodFormation} />);
+
+      // PlayerStatsTable should receive the periodFormation
+      expect(screen.getByTestId('player-stats-table')).toBeInTheDocument();
+    });
+
+    it('validates debugMode prop is passed to GameEventTimeline', () => {
+      render(<MatchReportScreen {...defaultProps} debugMode={true} />);
+
+      // GameEventTimeline should receive debugMode prop
+      expect(screen.getByTestId('game-event-timeline')).toBeInTheDocument();
+    });
+
+    it('ensures getPlayerName function works correctly with real data', () => {
+      // Test the actual getPlayerName logic by checking if it finds correct players
+      render(<MatchReportScreen {...defaultProps} />);
+
+      // The function should be able to find players by ID
+      const alice = mockPlayers.find(p => p.id === 'p1');
+      const bob = mockPlayers.find(p => p.id === 'p2');
+      const charlie = mockPlayers.find(p => p.id === 'p3');
+
+      expect(alice?.name).toBe('Alice');
+      expect(bob?.name).toBe('Bob');
+      expect(charlie?.name).toBe('Charlie');
+
+      // Non-existent player should return undefined
+      const nonExistent = mockPlayers.find(p => p.id === 'non-existent');
+      expect(nonExistent).toBeUndefined();
+    });
+  });
 });

@@ -709,4 +709,510 @@ describe('MatchSummaryHeader', () => {
       });
     });
   });
+
+  describe('Advanced Score Edge Cases', () => {
+    it('handles floating point scores correctly', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeScore={2.5}
+          awayScore={1.5}
+        />
+      );
+      
+      expect(screen.getByText('2.5')).toBeInTheDocument();
+      expect(screen.getByText('1.5')).toBeInTheDocument();
+      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+    });
+
+    it('handles zero vs positive score edge case', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeScore={0}
+          awayScore={1}
+        />
+      );
+      
+      expect(screen.getByText('Hammarby wins')).toBeInTheDocument();
+      
+      const homeScore = screen.getByText('0');
+      const awayScore = screen.getByText('1');
+      expect(homeScore).toHaveClass('text-slate-300');
+      expect(awayScore).toHaveClass('text-emerald-400');
+    });
+
+    it('handles very close fractional scores', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeScore={1.00001}
+          awayScore={1.00000}
+        />
+      );
+      
+      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+    });
+
+    it('handles NaN scores gracefully', () => {
+      // Console errors expected due to React warning about NaN children
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeScore={NaN}
+          awayScore={NaN}
+        />
+      );
+      
+      expect(screen.getByText('Match tied')).toBeInTheDocument();
+      
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('handles Infinity scores gracefully', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeScore={Infinity}
+          awayScore={5}
+        />
+      );
+      
+      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+    });
+  });
+
+  describe('Date/Time Edge Cases', () => {
+    it('handles epoch timestamp edge case (1970)', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchStartTime={1000} // Very early timestamp
+        />
+      );
+      
+      expect(screen.getByText(/1970-01-01 \d{2}:\d{2}/)).toBeInTheDocument();
+    });
+
+    it('handles far future timestamp', () => {
+      const futureTime = new Date('2099-12-31T23:59:59').getTime();
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchStartTime={futureTime}
+        />
+      );
+      
+      expect(screen.getByText(/2099-12-31 \d{2}:\d{2}/)).toBeInTheDocument();
+    });
+
+    it('handles invalid date input gracefully', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchStartTime="invalid-date"
+        />
+      );
+      
+      // Component will create a new Date("invalid-date") which results in Invalid Date
+      // But it still renders a formatted string, just with "Invalid Date" values
+      expect(screen.getByText(/Invalid Date/i) || screen.getByText('No start time recorded')).toBeInTheDocument();
+    });
+
+    it('handles negative timestamp', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchStartTime={-1000000000000}
+        />
+      );
+      
+      // Should handle negative timestamps gracefully
+      expect(screen.getByText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/)).toBeInTheDocument();
+    });
+
+    it('handles very large duration edge cases', () => {
+      const { formatTime } = require('../../../utils/formatUtils');
+      
+      // Test extremely long match duration
+      formatTime.mockReturnValue('999:59');
+      
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchDuration={59999} // Nearly 1000 minutes
+        />
+      );
+      
+      expect(formatTime).toHaveBeenCalledWith(59999);
+      expect(screen.getByText('999:59')).toBeInTheDocument();
+    });
+
+    it('handles fractional duration seconds', () => {
+      const { formatTime } = require('../../../utils/formatUtils');
+      
+      formatTime.mockReturnValue('15:30');
+      
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchDuration={930.5} // 15.5 minutes
+        />
+      );
+      
+      expect(formatTime).toHaveBeenCalledWith(930.5);
+    });
+  });
+
+  describe('Accessibility Testing', () => {
+    it('has semantic HTML structure for match summary', () => {
+      render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Check for semantic structure - using class names as accessibility indicators
+      const dateElement = screen.getByText(/2022-01-01/);
+      const dateSection = dateElement.closest('div');
+      expect(dateSection).toHaveClass('flex', 'items-center', 'justify-center');
+      
+      // Find score element and verify it has appropriate styling
+      const scoreElements = screen.getAllByText('2');
+      const homeScoreElement = scoreElements.find(el => el.className.includes('text-4xl'));
+      expect(homeScoreElement).toBeDefined();
+      expect(homeScoreElement).toHaveClass('text-4xl', 'font-bold');
+    });
+
+    it('provides clear visual hierarchy for match results', () => {
+      render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Check team names have appropriate font sizes
+      const homeTeam = screen.getByText('Djurgården');
+      const awayTeam = screen.getByText('Hammarby');
+      expect(homeTeam).toHaveClass('text-lg', 'font-semibold');
+      expect(awayTeam).toHaveClass('text-lg', 'font-semibold');
+      
+      // Check scores are prominently displayed
+      const homeScore = screen.getByText('2');
+      const awayScore = screen.getByText('1');
+      expect(homeScore).toHaveClass('text-4xl', 'font-bold');
+      expect(awayScore).toHaveClass('text-4xl', 'font-bold');
+    });
+
+    it('maintains readable contrast for different match outcomes', () => {
+      const { rerender } = render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeScore={3}
+          awayScore={1}
+        />
+      );
+      
+      // Winner should have emerald color (high contrast)
+      expect(screen.getByText('3')).toHaveClass('text-emerald-400');
+      // Loser should have muted color but still readable
+      expect(screen.getByText('1')).toHaveClass('text-slate-300');
+      
+      // Test tie scenario
+      rerender(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeScore={2}
+          awayScore={2}
+        />
+      );
+      
+      // Both scores should have neutral but readable color
+      const tieScores = screen.getAllByText('2');
+      tieScores.forEach(score => {
+        expect(score).toHaveClass('text-sky-300');
+      });
+    });
+
+    it('handles screen reader content appropriately', () => {
+      render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Test that important information is available as text content
+      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('2 × 12min')).toBeInTheDocument();
+      
+      // Ensure score values are clearly readable
+      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getByText('1')).toBeInTheDocument();
+    });
+  });
+
+  describe('Responsive Design Considerations', () => {
+    it('applies truncation classes for long team names', () => {
+      const veryLongName = 'Extremely Long Team Name That Would Overflow Container';
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeTeamName={veryLongName}
+          awayTeamName={veryLongName}
+        />
+      );
+      
+      const teamElements = screen.getAllByText(veryLongName);
+      teamElements.forEach(element => {
+        expect(element).toHaveClass('truncate');
+      });
+    });
+
+    it('maintains proper spacing in score layout', () => {
+      render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Check separator styling - need to find the parent div with the correct classes
+      const separator = screen.getByText('-');
+      expect(separator.closest('div').parentElement).toHaveClass('flex-shrink-0', 'px-4');
+      
+      // Verify scores have proper styling
+      const scoreElements = screen.getAllByText(/^[0-9]+$/);
+      expect(scoreElements.length).toBeGreaterThanOrEqual(2);
+      scoreElements.forEach(element => {
+        if (element.className.includes('text-4xl')) {
+          expect(element).toHaveClass('text-4xl', 'font-bold', 'font-mono');
+        }
+      });
+    });
+
+    it('handles very short team names gracefully', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          homeTeamName="A"
+          awayTeamName="B"
+        />
+      );
+      
+      expect(screen.getByText('A')).toBeInTheDocument();
+      expect(screen.getByText('B')).toBeInTheDocument();
+      expect(screen.getByText('A wins')).toBeInTheDocument();
+    });
+  });
+
+  describe('Integration with formatUtils', () => {
+    it('handles formatTime utility edge cases', () => {
+      const { formatTime } = require('../../../utils/formatUtils');
+      
+      // Test when formatTime returns empty string
+      formatTime.mockReturnValue('');
+      
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchDuration={0}
+        />
+      );
+      
+      expect(screen.getByText('Duration unknown')).toBeInTheDocument();
+    });
+
+    it('handles formatTime utility throwing error', () => {
+      const { formatTime } = require('../../../utils/formatUtils');
+      
+      // Mock formatTime to throw error
+      formatTime.mockImplementation(() => {
+        throw new Error('Format error');
+      });
+      
+      // Suppress expected console errors during this test
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+      // When formatTime throws, the component will crash during render
+      // So we need to test if it throws or handles gracefully
+      expect(() => {
+        render(
+          <MatchSummaryHeader 
+            {...defaultProps} 
+            matchDuration={900}
+          />
+        );
+      }).toThrow();
+      
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('validates formatTime is called with correct parameters', () => {
+      const { formatTime } = require('../../../utils/formatUtils');
+      
+      formatTime.mockReturnValue('25:30');
+      
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchDuration={1530}
+        />
+      );
+      
+      // Verify exact parameter passed
+      expect(formatTime).toHaveBeenCalledWith(1530);
+      expect(formatTime).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Period Information Edge Cases', () => {
+    it('handles negative period values', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          totalPeriods={-1}
+          periodDurationMinutes={-5}
+        />
+      );
+      
+      expect(screen.getByText('-1 × -5min')).toBeInTheDocument();
+    });
+
+    it('handles fractional period values', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          totalPeriods={2.5}
+          periodDurationMinutes={12.5}
+        />
+      );
+      
+      expect(screen.getByText('2.5 × 12.5min')).toBeInTheDocument();
+    });
+
+    it('handles very large period values', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          totalPeriods={999}
+          periodDurationMinutes={999}
+        />
+      );
+      
+      expect(screen.getByText('999 × 999min')).toBeInTheDocument();
+    });
+
+    it('handles string period values', () => {
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          totalPeriods="3"
+          periodDurationMinutes="15"
+        />
+      );
+      
+      expect(screen.getByText('3 × 15min')).toBeInTheDocument();
+    });
+  });
+
+  describe('Component Robustness', () => {
+    it('handles complete props replacement gracefully', () => {
+      const { rerender } = render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Completely change all props
+      const newProps = {
+        homeTeamName: 'New Home',
+        awayTeamName: 'New Away',
+        homeScore: 5,
+        awayScore: 3,
+        matchStartTime: new Date('2023-06-15T18:30:00').getTime(),
+        matchDuration: 1800,
+        totalPeriods: 4,
+        periodDurationMinutes: 10
+      };
+      
+      rerender(<MatchSummaryHeader {...newProps} />);
+      
+      expect(screen.getByText('New Home')).toBeInTheDocument();
+      expect(screen.getByText('New Away')).toBeInTheDocument();
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText('New Home wins')).toBeInTheDocument();
+      expect(screen.getByText('4 × 10min')).toBeInTheDocument();
+    });
+
+    it('maintains stability with rapid prop changes', () => {
+      const { rerender } = render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Simulate rapid score updates
+      for (let i = 0; i < 10; i++) {
+        rerender(
+          <MatchSummaryHeader 
+            {...defaultProps} 
+            homeScore={i}
+            awayScore={i + 1}
+          />
+        );
+      }
+      
+      // Should end with final values
+      expect(screen.getByText('9')).toBeInTheDocument();
+      expect(screen.getByText('10')).toBeInTheDocument();
+      expect(screen.getByText('Hammarby wins')).toBeInTheDocument();
+    });
+
+    it('handles mixed valid and invalid props', () => {
+      const { formatTime } = require('../../../utils/formatUtils');
+      // Ensure formatTime returns fallback for invalid input
+      formatTime.mockReturnValue('Duration unknown');
+      
+      render(
+        <MatchSummaryHeader 
+          homeTeamName="Valid Team"
+          awayTeamName={null}
+          homeScore="3"
+          awayScore={undefined}
+          matchStartTime={null}
+          matchDuration="invalid"
+          totalPeriods={2}
+          periodDurationMinutes={null}
+        />
+      );
+      
+      expect(screen.getByText('Valid Team')).toBeInTheDocument();
+      expect(screen.getByText('No start time recorded')).toBeInTheDocument();
+      // When periodDurationMinutes is null, it renders as "2 × min" (note: no number before min)
+      expect(screen.getByText('2 × min')).toBeInTheDocument();
+      
+      // Check the scores are rendered (string "3" and undefined becomes 0)  
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText('0')).toBeInTheDocument();
+    });
+  });
+
+  describe('Performance and Memory', () => {
+    it('does not cause memory leaks with multiple renders', () => {
+      const { rerender, unmount } = render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Multiple rerenders to test for memory leaks
+      for (let i = 0; i < 50; i++) {
+        rerender(
+          <MatchSummaryHeader 
+            {...defaultProps} 
+            homeScore={i % 10}
+            awayScore={(i + 1) % 10}
+          />
+        );
+      }
+      
+      // Should unmount cleanly
+      expect(() => unmount()).not.toThrow();
+    });
+
+    it('handles component updates efficiently', () => {
+      const startTime = performance.now();
+      
+      const { rerender } = render(<MatchSummaryHeader {...defaultProps} />);
+      
+      // Test multiple rapid updates
+      for (let i = 0; i < 20; i++) {
+        rerender(
+          <MatchSummaryHeader 
+            {...defaultProps} 
+            homeScore={i}
+          />
+        );
+      }
+      
+      const endTime = performance.now();
+      
+      // Should complete quickly (arbitrary but reasonable threshold)
+      expect(endTime - startTime).toBeLessThan(100);
+    });
+  });
 });
