@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
-import { Users, Play, Edit3, ArrowLeft, Shuffle } from 'lucide-react';
+import { Users, Play, ArrowLeft, Shuffle } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
-import { findPlayerById } from '../../utils/playerUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 
 export function PeriodSetupScreen({ 
@@ -35,8 +34,6 @@ export function PeriodSetupScreen({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  const goalieForPeriod = findPlayerById(allPlayers, periodFormation.goalie);
 
 
   const handlePlayerAssignment = (pairKey, role, playerId) => {
@@ -205,14 +202,101 @@ export function PeriodSetupScreen({
   const handleGoalieChangeForCurrentPeriod = (playerId) => {
     const formerGoalieId = periodFormation.goalie;
     
-    setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
-    // Also update the periodFormation.goalie immediately
-    setPeriodFormation(prev => ({
-      ...prev,
-      goalie: playerId,
-      // Potentially clear pairs if new goalie was in one, or let user resolve
-      // For simplicity, just update goalie. User must re-evaluate pairs.
-    }));
+    // Add automatic position swapping when formation is complete (like other position handlers)
+    if (isFormationComplete() && playerId && formerGoalieId) {
+      console.log(`[DEBUG] Goalie change: ${formerGoalieId} -> ${playerId}, formation complete, checking for position swap`);
+      
+      // Find where the new goalie is currently assigned
+      let newGoalieCurrentPosition = null;
+      
+      if (isPairsMode) {
+        // Search pairs mode positions
+        ['leftPair', 'rightPair', 'subPair'].forEach(pairKey => {
+          if (periodFormation[pairKey]?.defender === playerId) {
+            newGoalieCurrentPosition = { pairKey, role: 'defender' };
+          } else if (periodFormation[pairKey]?.attacker === playerId) {
+            newGoalieCurrentPosition = { pairKey, role: 'attacker' };
+          }
+        });
+      } else if (isIndividual6Mode) {
+        // Search individual 6 mode positions
+        ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].forEach(position => {
+          if (periodFormation[position] === playerId) {
+            newGoalieCurrentPosition = { position };
+          }
+        });
+      } else if (isIndividual7Mode) {
+        // Search individual 7 mode positions
+        ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].forEach(position => {
+          if (periodFormation[position] === playerId) {
+            newGoalieCurrentPosition = { position };
+          }
+        });
+      }
+      
+      if (newGoalieCurrentPosition) {
+        console.log(`[DEBUG] New goalie ${playerId} found at position:`, newGoalieCurrentPosition);
+        console.log(`[DEBUG] Former goalie ${formerGoalieId} will take this position`);
+        
+        // Perform the position swap
+        if (isPairsMode) {
+          // Pairs mode: update nested object structure
+          setPeriodFormation(prev => ({
+            ...prev,
+            goalie: playerId,
+            [newGoalieCurrentPosition.pairKey]: {
+              ...prev[newGoalieCurrentPosition.pairKey],
+              [newGoalieCurrentPosition.role]: formerGoalieId
+            }
+          }));
+        } else {
+          // Individual modes: update flat structure
+          setPeriodFormation(prev => ({
+            ...prev,
+            goalie: playerId,
+            [newGoalieCurrentPosition.position]: formerGoalieId
+          }));
+        }
+        
+        console.log(`[DEBUG] Position swap completed: new goalie assigned, former goalie moved to field position`);
+        
+        // Still update goalie IDs for period tracking
+        setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
+        
+        // Continue with existing rotation queue logic below
+      } else {
+        console.log(`[DEBUG] New goalie ${playerId} not found in field positions, no swap needed`);
+      }
+    }
+    
+    // If no swapping occurred, use original logic
+    let swapOccurred = false;
+    if (isFormationComplete() && playerId && formerGoalieId) {
+      // Check if we found the new goalie in a field position
+      if (isPairsMode) {
+        swapOccurred = ['leftPair', 'rightPair', 'subPair'].some(pk => 
+          periodFormation[pk]?.defender === playerId || periodFormation[pk]?.attacker === playerId);
+      } else if (isIndividual6Mode) {
+        swapOccurred = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'].some(pos => 
+          periodFormation[pos] === playerId);
+      } else if (isIndividual7Mode) {
+        swapOccurred = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].some(pos => 
+          periodFormation[pos] === playerId);
+      }
+    }
+    
+    if (!swapOccurred) {
+      console.log(`[DEBUG] No position swap occurred, using original goalie assignment logic`);
+      
+      setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
+      // Also update the periodFormation.goalie immediately
+      setPeriodFormation(prev => ({
+        ...prev,
+        goalie: playerId,
+        // Potentially clear pairs if new goalie was in one, or let user resolve
+        // For simplicity, just update goalie. User must re-evaluate pairs.
+      }));
+    }
 
     // Update rotation queue if it exists and we're in individual modes (periods 2+)
     if (rotationQueue && rotationQueue.length > 0 && (isIndividual6Mode || isIndividual7Mode)) {
@@ -355,19 +439,12 @@ export function PeriodSetupScreen({
 
       <div className="p-2 bg-slate-700 rounded-md">
         <h3 className="text-sm font-medium text-sky-200 mb-1">Goalie for Period {currentPeriodNumber}</h3>
-        {goalieForPeriod ? (
-          <div className="flex items-center justify-between p-1 bg-sky-600 rounded-md">
-            <span className="text-white">{goalieForPeriod.name}</span>
-            <Button onClick={() => handleGoalieChangeForCurrentPeriod(null)} size="sm" variant="secondary" Icon={Edit3}>Change</Button>
-          </div>
-        ) : (
-          <Select
-            value={periodFormation.goalie || ""}
-            onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
-            options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-            placeholder="Select Goalie for this Period"
-          />
-        )}
+        <Select
+          value={periodFormation.goalie || ""}
+          onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
+          options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
+          placeholder="Select Goalie for this Period"
+        />
       </div>
 
       {periodFormation.goalie && isPairsMode && (

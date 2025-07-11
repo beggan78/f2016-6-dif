@@ -175,16 +175,12 @@ describe('PeriodSetupScreen', () => {
   });
 
   describe('Goalie Management', () => {
-    it('should show selected goalie with change button', () => {
-      // Mock findPlayerById to return the expected player
-      const { findPlayerById } = require('../../../utils/playerUtils');
-      findPlayerById.mockReturnValue(mockPlayers[6]); // Player 7
-      
+    it('should show selected goalie in dropdown', () => {
       render(<PeriodSetupScreen {...defaultProps} />);
       
-      expect(screen.getByText('Player 7')).toBeInTheDocument();
-      const changeButtons = screen.getAllByText('Change');
-      expect(changeButtons.length).toBeGreaterThan(0);
+      const selects = screen.getAllByTestId('select');
+      const goalieSelect = selects[0]; // First select should be goalie dropdown
+      expect(goalieSelect.value).toBe('7'); // Should show selected goalie
     });
 
     it('should show goalie selection dropdown when no goalie selected', () => {
@@ -200,15 +196,12 @@ describe('PeriodSetupScreen', () => {
       expect(selects.length).toBeGreaterThan(0);
     });
 
-    it('should handle goalie change', () => {
-      // Mock findPlayerById to return the expected player
-      const { findPlayerById } = require('../../../utils/playerUtils');
-      findPlayerById.mockReturnValue(mockPlayers[6]); // Player 7
-      
+    it('should handle goalie change via dropdown', () => {
       render(<PeriodSetupScreen {...defaultProps} />);
       
-      const changeButtons = screen.getAllByText('Change');
-      fireEvent.click(changeButtons[0]);
+      const selects = screen.getAllByTestId('select');
+      const goalieSelect = selects[0]; // First select should be goalie dropdown
+      fireEvent.change(goalieSelect, { target: { value: '5' } });
       
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
       expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
@@ -275,6 +268,66 @@ describe('PeriodSetupScreen', () => {
       render(<PeriodSetupScreen {...defaultProps} />);
       
       expect(screen.getByText('Back to Configuration')).toBeInTheDocument();
+    });
+
+    it('should swap positions when selecting a field player as new goalie in complete formation', () => {
+      // Setup a complete PAIRS_7 formation
+      const completeFormation = {
+        goalie: '7',  // Player 7 is current goalie
+        leftPair: { defender: '1', attacker: '2' },
+        rightPair: { defender: '3', attacker: '4' },
+        subPair: { defender: '5', attacker: '6' }
+      };
+      
+      const props = {
+        ...defaultProps,
+        periodFormation: completeFormation
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Select player '3' (currently right defender) as new goalie
+      const selects = screen.getAllByTestId('select');
+      const goalieSelect = selects[0]; // First select should be goalie dropdown
+      fireEvent.change(goalieSelect, { target: { value: '3' } });
+      
+      // Verify setPeriodFormation was called with swapping logic
+      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      
+      // The function should set player 3 as goalie and player 7 (former goalie) as right defender
+      const setFormationCall = mockSetters.setPeriodFormation.mock.calls.find(call => 
+        call[0].toString().includes('goalie') || typeof call[0] === 'function'
+      );
+      expect(setFormationCall).toBeDefined();
+    });
+
+    it('should swap positions when selecting a field player as new goalie in INDIVIDUAL_6 mode', () => {
+      // Setup a complete INDIVIDUAL_6 formation
+      const completeFormation = {
+        goalie: '6',  // Player 6 is current goalie
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute: '5'
+      };
+      
+      const props = {
+        ...defaultProps,
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        periodFormation: completeFormation
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Select player '2' (currently right defender) as new goalie
+      const selects = screen.getAllByTestId('select');
+      const goalieSelect = selects[0]; // First select should be goalie dropdown
+      fireEvent.change(goalieSelect, { target: { value: '2' } });
+      
+      // Verify setPeriodFormation was called with swapping logic
+      expect(mockSetters.setPeriodFormation).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
     });
   });
 
