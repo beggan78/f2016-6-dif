@@ -142,7 +142,7 @@ describe('Timer + GameScreen Integration', () => {
       rotationQueue: ['2', '3', '4', '5', '6', '7'],
       setRotationQueue: jest.fn(),
       nextPhysicalPairToSubOut: null,
-      nextPlayerToSubOut: 'leftDefender7',
+      nextPlayerToSubOut: 'leftDefender',
       nextPlayerIdToSubOut: '2',
       nextNextPlayerIdToSubOut: '3',
       setNextPhysicalPairToSubOut: jest.fn(),

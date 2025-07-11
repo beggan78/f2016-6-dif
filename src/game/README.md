@@ -152,7 +152,7 @@ This separation allows logic changes without breaking animations and vice versa.
 - `calculateGoalieSwitch()`: Manages goalie changes and role transitions
 - `calculateUndo()`: Reverses the most recent substitution with time adjustments
 - `calculatePlayerToggleInactive()`: Activates/deactivates players (7-player mode only)
-- `calculateSubstituteSwap()`: Swaps substitute7_1 and substitute7_2 positions
+- `calculateSubstituteSwap()`: Swaps substitute_1 and substitute_2 positions
 - `calculateNextSubstitutionTarget()`: Updates next player/pair to substitute
 
 **Key characteristics**:
@@ -721,8 +721,8 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 - Next player is always queue[0]
 
 ## INDIVIDUAL_7 (7-Player Mode)
-- Field positions: `leftDefender7`, `rightDefender7`, `leftAttacker7`, `rightAttacker7`
-- Substitute positions: `substitute7_1`, `substitute7_2` (two separate substitutes)
+- Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
+- Substitute positions: `substitute_1`, `substitute_2` (two separate substitutes)
 - Goalie: `goalie` (single position)
 - Individual player substitutions with rotation
 - Inactive player support (players can be temporarily removed from rotation)

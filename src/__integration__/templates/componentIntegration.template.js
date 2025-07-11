@@ -260,12 +260,12 @@ describe('COMPONENT_NAME Integration Tests', () => {
       await executeAndWaitForAsync(async () => {
         mockHookState.useGameState.setPeriodFormation({
           goalie: 'player-1',
-          leftDefender7: 'player-2',
-          rightDefender7: 'player-3',
-          leftAttacker7: 'player-4',
-          rightAttacker7: 'player-5',
-          substitute7_1: 'player-6',
-          substitute7_2: 'player-7'
+          leftDefender: 'player-2',
+          rightDefender: 'player-3',
+          leftAttacker: 'player-4',
+          rightAttacker: 'player-5',
+          substitute_1: 'player-6',
+          substitute_2: 'player-7'
         });
       });
       

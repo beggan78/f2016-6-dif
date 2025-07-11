@@ -130,12 +130,12 @@ export const assertFormationStructure = (periodFormation, teamMode) => {
       break;
       
     case TEAM_MODES.INDIVIDUAL_7:
-      expect(periodFormation.leftDefender7).toBeDefined();
-      expect(periodFormation.rightDefender7).toBeDefined();
-      expect(periodFormation.leftAttacker7).toBeDefined();
-      expect(periodFormation.rightAttacker7).toBeDefined();
-      expect(periodFormation.substitute7_1).toBeDefined();
-      expect(periodFormation.substitute7_2).toBeDefined();
+      expect(periodFormation.leftDefender).toBeDefined();
+      expect(periodFormation.rightDefender).toBeDefined();
+      expect(periodFormation.leftAttacker).toBeDefined();
+      expect(periodFormation.rightAttacker).toBeDefined();
+      expect(periodFormation.substitute_1).toBeDefined();
+      expect(periodFormation.substitute_2).toBeDefined();
       break;
       
     default:

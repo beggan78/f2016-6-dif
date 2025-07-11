@@ -52,7 +52,7 @@ export const createFieldPositionHandlers = (
 
   const handleSubstituteLongPress = (position) => {
     // Only for 7-player individual mode substitute players
-    if (!isIndividual7Mode || (position !== 'substitute7_1' && position !== 'substitute7_2')) return;
+    if (!isIndividual7Mode || (position !== 'substitute_1' && position !== 'substitute_2')) return;
     
     const playerId = periodFormation[position];
     const playerName = getPlayerNameById(playerId);
@@ -61,7 +61,7 @@ export const createFieldPositionHandlers = (
     
     // Determine if player can be set as next to go in
     const isNextToGoIn = playerId === nextPlayerIdToSubOut;
-    const canSetAsNextToGoIn = position === 'substitute7_2' && !isNextToGoIn && !isCurrentlyInactive;
+    const canSetAsNextToGoIn = position === 'substitute_2' && !isNextToGoIn && !isCurrentlyInactive;
     
     openSubstituteModal({
       playerId: playerId,
@@ -74,7 +74,7 @@ export const createFieldPositionHandlers = (
   // Create position-specific callback functions for long press events
   const createPositionCallback = (position) => {
     return () => {
-      if (position === 'substitute7_1' || position === 'substitute7_2') {
+      if (position === 'substitute_1' || position === 'substitute_2') {
         handleSubstituteLongPress(position);
       } else {
         handleFieldPlayerLongPress(position);
@@ -93,8 +93,8 @@ export const createFieldPositionHandlers = (
     // Individual modes
     const positions = [
       'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute',
-      'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 
-      'substitute7_1', 'substitute7_2'
+      'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker',
+      'substitute_1', 'substitute_2'
     ];
     
     positions.forEach(position => {

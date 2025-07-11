@@ -77,12 +77,12 @@ export const formationScenarios = {
   
   individual7Standard: (playerIds) => ({
     goalie: playerIds[0],
-    leftDefender7: playerIds[1],
-    rightDefender7: playerIds[2],
-    leftAttacker7: playerIds[3],
-    rightAttacker7: playerIds[4],
-    substitute7_1: playerIds[5],
-    substitute7_2: playerIds[6]
+    leftDefender: playerIds[1],
+    rightDefender: playerIds[2],
+    leftAttacker: playerIds[3],
+    rightAttacker: playerIds[4],
+    substitute_1: playerIds[5],
+    substitute_2: playerIds[6]
   })
 };
 
@@ -413,13 +413,13 @@ export const gameStateScenarios = {
             timestamp: Date.now() - 300000,
             playerOut: players[1].id,
             playerIn: players[5].id,
-            position: 'leftDefender7'
+            position: 'leftDefender'
           },
           {
             timestamp: Date.now() - 180000,
             playerOut: players[3].id,
             playerIn: players[6].id,
-            position: 'leftAttacker7'
+            position: 'leftAttacker'
           }
         ],
         periods: [
@@ -453,16 +453,16 @@ export const gameStateScenarios = {
       gameHistory: {
         substitutions: [
           // Period 1 substitutions
-          { timestamp: Date.now() - 2400000, playerOut: players[1].id, playerIn: players[5].id, position: 'leftDefender7' },
-          { timestamp: Date.now() - 2100000, playerOut: players[2].id, playerIn: players[6].id, position: 'rightDefender7' },
+          { timestamp: Date.now() - 2400000, playerOut: players[1].id, playerIn: players[5].id, position: 'leftDefender' },
+          { timestamp: Date.now() - 2100000, playerOut: players[2].id, playerIn: players[6].id, position: 'rightDefender' },
           
           // Period 2 substitutions
-          { timestamp: Date.now() - 1500000, playerOut: players[3].id, playerIn: players[1].id, position: 'leftAttacker7' },
-          { timestamp: Date.now() - 1200000, playerOut: players[4].id, playerIn: players[2].id, position: 'rightAttacker7' },
+          { timestamp: Date.now() - 1500000, playerOut: players[3].id, playerIn: players[1].id, position: 'leftAttacker' },
+          { timestamp: Date.now() - 1200000, playerOut: players[4].id, playerIn: players[2].id, position: 'rightAttacker' },
           
           // Period 3 substitutions
-          { timestamp: Date.now() - 600000, playerOut: players[5].id, playerIn: players[3].id, position: 'leftDefender7' },
-          { timestamp: Date.now() - 300000, playerOut: players[6].id, playerIn: players[4].id, position: 'rightDefender7' }
+          { timestamp: Date.now() - 600000, playerOut: players[5].id, playerIn: players[3].id, position: 'leftDefender' },
+          { timestamp: Date.now() - 300000, playerOut: players[6].id, playerIn: players[4].id, position: 'rightDefender' }
         ],
         periods: [
           { number: 1, startTime: Date.now() - 2700000, endTime: Date.now() - 1800000, substitutions: 2 },
@@ -544,7 +544,7 @@ export const edgeCaseScenarios = {
         timestamp: Date.now() - (20 - i) * 60000,
         playerOut: `player-${(i % 6) + 1}`,
         playerIn: `player-${((i + 3) % 6) + 1}`,
-        position: ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'][i % 4]
+        position: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'][i % 4]
       })),
       periods: [
         { number: 1, startTime: Date.now() - 5400000, endTime: Date.now() - 3600000, substitutions: 6 },
@@ -561,12 +561,12 @@ export const edgeCaseScenarios = {
     missingPlayer: {
       periodFormation: {
         goalie: 'missing-player-id',
-        leftDefender7: 'player-1',
-        rightDefender7: 'player-2',
-        leftAttacker7: 'player-3',
-        rightAttacker7: 'player-4',
-        substitute7_1: 'player-5',
-        substitute7_2: 'player-6'
+        leftDefender: 'player-1',
+        rightDefender: 'player-2',
+        leftAttacker: 'player-3',
+        rightAttacker: 'player-4',
+        substitute_1: 'player-5',
+        substitute_2: 'player-6'
       },
       allPlayers: playerDataScenarios.balanced(6) // Missing the goalie player
     },
@@ -574,12 +574,12 @@ export const edgeCaseScenarios = {
     duplicateAssignments: {
       periodFormation: {
         goalie: 'player-1',
-        leftDefender7: 'player-2',
-        rightDefender7: 'player-2', // Duplicate!
-        leftAttacker7: 'player-3',
-        rightAttacker7: 'player-4',
-        substitute7_1: 'player-5',
-        substitute7_2: 'player-6'
+        leftDefender: 'player-2',
+        rightDefender: 'player-2', // Duplicate!
+        leftAttacker: 'player-3',
+        rightAttacker: 'player-4',
+        substitute_1: 'player-5',
+        substitute_2: 'player-6'
       },
       allPlayers: playerDataScenarios.balanced(7)
     },
@@ -639,7 +639,7 @@ export const performanceTestData = {
         timestamp: Date.now() - ((actionCount - i) * 1000),
         playerOut: `player-${(i % 7) + 1}`,
         playerIn: `player-${((i + 1) % 7) + 1}`,
-        position: ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'][i % 4],
+        position: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'][i % 4],
         period: Math.floor(i / (actionCount / 3)) + 1
       });
     }
@@ -663,23 +663,23 @@ export const animationTestScenarios = {
     before: {
       periodFormation: {
         goalie: 'player-1',
-        leftDefender7: 'player-2',
-        rightDefender7: 'player-3',
-        leftAttacker7: 'player-4',
-        rightAttacker7: 'player-5',
-        substitute7_1: 'player-6',
-        substitute7_2: 'player-7'
+        leftDefender: 'player-2',
+        rightDefender: 'player-3',
+        leftAttacker: 'player-4',
+        rightAttacker: 'player-5',
+        substitute_1: 'player-6',
+        substitute_2: 'player-7'
       }
     },
     after: {
       periodFormation: {
         goalie: 'player-1',
-        leftDefender7: 'player-6', // Swapped with substitute
-        rightDefender7: 'player-3',
-        leftAttacker7: 'player-4',
-        rightAttacker7: 'player-5',
-        substitute7_1: 'player-2', // Swapped with field player
-        substitute7_2: 'player-7'
+        leftDefender: 'player-6', // Swapped with substitute
+        rightDefender: 'player-3',
+        leftAttacker: 'player-4',
+        rightAttacker: 'player-5',
+        substitute_1: 'player-2', // Swapped with field player
+        substitute_2: 'player-7'
       }
     },
     expectedAnimations: [
@@ -695,12 +695,12 @@ export const animationTestScenarios = {
     before: formationScenarios.individual7Standard(['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7']),
     after: {
       goalie: 'player-1',
-      leftDefender7: 'player-3',   // Was rightDefender7
-      rightDefender7: 'player-4',  // Was leftAttacker7
-      leftAttacker7: 'player-5',   // Was rightAttacker7
-      rightAttacker7: 'player-6',  // Was substitute7_1
-      substitute7_1: 'player-7',   // Was substitute7_2
-      substitute7_2: 'player-2'    // Was leftDefender7
+      leftDefender: 'player-3',   // Was rightDefender
+      rightDefender: 'player-4',  // Was leftAttacker
+      leftAttacker: 'player-5',   // Was rightAttacker
+      rightAttacker: 'player-6',  // Was substitute_1
+      substitute_1: 'player-7',   // Was substitute_2
+      substitute_2: 'player-2'    // Was leftDefender
     },
     expectedAnimations: [
       { playerId: 'player-2', direction: 'down' },

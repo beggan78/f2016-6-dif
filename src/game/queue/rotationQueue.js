@@ -123,7 +123,7 @@ export class RotationQueue {
     }
     
     // Add to end of queue (they should be last priority to come off field)
-    // The "set as next to go in" logic in useGameState will handle making them substitute7_1
+    // The "set as next to go in" logic in useGameState will handle making them substitute_1
     this.addPlayer(playerId, 'end');
   }
 

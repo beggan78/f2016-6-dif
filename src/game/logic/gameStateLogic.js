@@ -96,8 +96,8 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   // Validate positions
   const validPositions = {
     [TEAM_MODES.PAIRS_7]: [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR, POSITION_KEYS.SUB_PAIR],
-    [TEAM_MODES.INDIVIDUAL_6]: [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE],
-    [TEAM_MODES.INDIVIDUAL_7]: [POSITION_KEYS.LEFT_DEFENDER_7, POSITION_KEYS.RIGHT_DEFENDER_7, POSITION_KEYS.LEFT_ATTACKER_7, POSITION_KEYS.RIGHT_ATTACKER_7, POSITION_KEYS.SUBSTITUTE_7_1, POSITION_KEYS.SUBSTITUTE_7_2]
+    [TEAM_MODES.INDIVIDUAL_6]: [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1],
+    [TEAM_MODES.INDIVIDUAL_7]: [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2]
   };
 
   const currentValidPositions = validPositions[teamMode] || [];
@@ -470,10 +470,10 @@ export const calculateUndo = (gameState, lastSubstitution) => {
         else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
         else if (beforeFormation.rightAttacker === player.id) restoredPosition = 'rightAttacker';
       } else if (lastSubstitution.teamMode === 'INDIVIDUAL_7') {
-        if (beforeFormation.leftDefender7 === player.id) restoredPosition = 'leftDefender';
-        else if (beforeFormation.rightDefender7 === player.id) restoredPosition = 'rightDefender7';
-        else if (beforeFormation.leftAttacker7 === player.id) restoredPosition = 'leftAttacker7';
-        else if (beforeFormation.rightAttacker7 === player.id) restoredPosition = 'rightAttacker7';
+        if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
+        else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
+        else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
+        else if (beforeFormation.rightAttacker === player.id) restoredPosition = 'rightAttacker';
       }
       
       if (restoredPosition) {
@@ -518,7 +518,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
   }
 
   const currentlyInactive = player.stats.isInactive;
-  const isSubstitute = player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_7_1 || player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_7_2;
+  const isSubstitute = player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_1 || player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_2;
   
   // Only allow inactivating/activating substitute players
   if (!isSubstitute) {
@@ -528,9 +528,9 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
 
   // Safety check: Prevent having both substitutes inactive
   if (!currentlyInactive) { // Player is about to be inactivated
-    const substitute7_1Id = periodFormation.substitute7_1;
-    const substitute7_2Id = periodFormation.substitute7_2;
-    const otherSubstituteId = playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
+    const substitute_1Id = periodFormation.substitute_1;
+    const substitute_2Id = periodFormation.substitute_2;
+    const otherSubstituteId = playerId === substitute_1Id ? substitute_2Id : substitute_1Id;
     const otherSubstitute = findPlayerById(allPlayers, otherSubstituteId);
     
     if (otherSubstitute?.stats.isInactive) {
@@ -554,42 +554,42 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
 
   // Update rotation queue and positions
   if (currentlyInactive) {
-    // Player is being activated - they become the next player to go in (substitute7_1)
+    // Player is being activated - they become the next player to go in (substitute_1)
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     queueManager.initialize();
     queueManager.reactivatePlayer(playerId);
     
     // Get current substitute positions
-    const currentSub7_1Id = periodFormation.substitute7_1;
-    const currentSub7_2Id = periodFormation.substitute7_2;
+    const currentSub_1Id = periodFormation.substitute_1;
+    const currentSub_2Id = periodFormation.substitute_2;
     
-    if (playerId === currentSub7_1Id) {
-      // Reactivated player is already in substitute7_1 position - just activate them
+    if (playerId === currentSub_1Id) {
+      // Reactivated player is already in substitute_1 position - just activate them
       // nextPlayerIdToSubOut should remain pointing to the current active field player
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length >= 1) {
         newNextNextPlayerIdToSubOut = nextActivePlayers[0];
       }
-    } else if (playerId === currentSub7_2Id) {
-      // Reactivated player is in substitute7_2 - swap with substitute7_1
+    } else if (playerId === currentSub_2Id) {
+      // Reactivated player is in substitute_2 - swap with substitute_1
       newFormation = {
         ...newFormation,
-        substitute7_1: playerId,
-        substitute7_2: currentSub7_1Id
+        substitute_1: playerId,
+        substitute_2: currentSub_1Id
       };
       
       // Update positions in player data
       newAllPlayers = newAllPlayers.map(p => {
         if (p.id === playerId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_1 } };
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_1 } };
         }
-        if (p.id === currentSub7_1Id) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_2 } };
+        if (p.id === currentSub_1Id) {
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_2 } };
         }
         return p;
       });
       
-      newNextNextPlayerIdToSubOut = currentSub7_1Id;
+      newNextNextPlayerIdToSubOut = currentSub_1Id;
     }
     
     newRotationQueue = queueManager.toArray();
@@ -616,23 +616,23 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       }
     }
     
-    // Move inactive player to substitute7_2 position if they were substitute7_1
-    if (player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_7_1 && periodFormation.substitute7_2) {
-      const otherSubId = periodFormation.substitute7_2;
+    // Move inactive player to substitute_2 position if they were substitute_1
+    if (player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_1 && periodFormation.substitute_2) {
+      const otherSubId = periodFormation.substitute_2;
       
       newFormation = {
         ...newFormation,
-        substitute7_1: otherSubId,
-        substitute7_2: playerId
+        substitute_1: otherSubId,
+        substitute_2: playerId
       };
       
       // Update positions in player data
       newAllPlayers = newAllPlayers.map(p => {
         if (p.id === playerId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_2 } };
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_2 } };
         }
         if (p.id === otherSubId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_1 } };
+          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_1 } };
         }
         return p;
       });
@@ -653,7 +653,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
 /**
  * Calculate the result of swapping substitute positions (7-player mode)
  */
-export const calculateSubstituteSwap = (gameState, substitute7_1Id, substitute7_2Id) => {
+export const calculateSubstituteSwap = (gameState, substitute_1Id, substitute_2Id) => {
   const { allPlayers, periodFormation, teamMode } = gameState;
   
   if (teamMode !== TEAM_MODES.INDIVIDUAL_7) {
@@ -661,7 +661,7 @@ export const calculateSubstituteSwap = (gameState, substitute7_1Id, substitute7_
     return gameState;
   }
   
-  if (!substitute7_1Id || !substitute7_2Id) {
+  if (!substitute_1Id || !substitute_2Id) {
     console.warn('Invalid substitute IDs for swap');
     return gameState;
   }
@@ -669,17 +669,17 @@ export const calculateSubstituteSwap = (gameState, substitute7_1Id, substitute7_
   // Create new formation with swapped substitute positions
   const newFormation = {
     ...periodFormation,
-    substitute7_1: substitute7_2Id,
-    substitute7_2: substitute7_1Id
+    substitute_1: substitute_2Id,
+    substitute_2: substitute_1Id
   };
   
   // Update player positions in their stats
   const newAllPlayers = allPlayers.map(p => {
-    if (p.id === substitute7_1Id) {
-      return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_2 } };
+    if (p.id === substitute_1Id) {
+      return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_2 } };
     }
-    if (p.id === substitute7_2Id) {
-      return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_7_1 } };
+    if (p.id === substitute_2Id) {
+      return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_1 } };
     }
     return p;
   });
@@ -688,7 +688,7 @@ export const calculateSubstituteSwap = (gameState, substitute7_1Id, substitute7_
     ...gameState,
     periodFormation: newFormation,
     allPlayers: newAllPlayers,
-    playersToHighlight: [substitute7_1Id, substitute7_2Id]
+    playersToHighlight: [substitute_1Id, substitute_2Id]
   };
 };
 

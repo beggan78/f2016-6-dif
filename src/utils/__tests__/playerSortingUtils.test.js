@@ -36,13 +36,13 @@ describe('playerSortingUtils', () => {
   };
 
   const mockFormationIndividual7 = {
-    leftAttacker7: 'p1',
-    rightAttacker7: 'p2',
-    leftDefender7: 'p3',
-    rightDefender7: 'p4',
+    leftAttacker: 'p1',
+    rightAttacker: 'p2',
+    leftDefender: 'p3',
+    rightDefender: 'p4',
     goalie: 'p5',
-    substitute7_1: 'p6',
-    substitute7_2: 'p7'
+    substitute_1: 'p6',
+    substitute_2: 'p7'
   };
 
   const mockFormationPairs7 = {

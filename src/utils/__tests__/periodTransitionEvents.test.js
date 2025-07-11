@@ -174,12 +174,12 @@ describe('Period Transition Event Logging', () => {
     test('should log complete match lifecycle for INDIVIDUAL_7 mode', () => {
       const formation7 = {
         goalie: 'player1',
-        leftDefender7: 'player2',
-        rightDefender7: 'player3',
-        leftAttacker7: 'player4',
-        rightAttacker7: 'player5',
-        substitute7_1: 'player6',
-        substitute7_2: 'player7'
+        leftDefender: 'player2',
+        rightDefender: 'player3',
+        leftAttacker: 'player4',
+        rightAttacker: 'player5',
+        substitute_1: 'player6',
+        substitute_2: 'player7'
       };
 
       // Log all events for 7-player mode
@@ -218,8 +218,8 @@ describe('Period Transition Event Logging', () => {
 
       // Verify 7-player formation structure
       const periodStart = events.find(e => e.type === EVENT_TYPES.PERIOD_START);
-      expect(periodStart.data.startingFormation.substitute7_1).toBe('player6');
-      expect(periodStart.data.startingFormation.substitute7_2).toBe('player7');
+      expect(periodStart.data.startingFormation.substitute_1).toBe('player6');
+      expect(periodStart.data.startingFormation.substitute_2).toBe('player7');
     });
 
     test('should log complete match lifecycle for PAIRS_7 mode', () => {

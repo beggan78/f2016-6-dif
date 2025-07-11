@@ -115,7 +115,7 @@ export const MockIndividualFormation = ({ periodFormation, allPlayers, longPress
       data-goalie={periodFormation?.goalie}
     >
       <div data-testid="field-positions">
-        {['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'].map(position => {
+        {['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'].map(position => {
           const playerId = periodFormation?.[position];
           const player = allPlayers?.find(p => p.id === playerId);
           return (
@@ -131,7 +131,7 @@ export const MockIndividualFormation = ({ periodFormation, allPlayers, longPress
         })}
       </div>
       <div data-testid="substitute-positions">
-        {['substitute7_1', 'substitute7_2'].map(position => {
+        {['substitute_1', 'substitute_2'].map(position => {
           const playerId = periodFormation?.[position];
           const player = allPlayers?.find(p => p.id === playerId);
           return (
@@ -299,7 +299,7 @@ export const MockPeriodSetupScreen = ({
         <div data-testid="formation-positions">
           {teamMode === 'INDIVIDUAL_7' && (
             <>
-              {['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'].map(position => (
+              {['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].map(position => (
                 <select 
                   key={position}
                   data-testid={`position-select-${position}`}

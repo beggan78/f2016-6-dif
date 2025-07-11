@@ -4,6 +4,7 @@ import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
 import { formatTime } from './utils/formatUtils';
+import { formatPlayerName } from './utils/formatUtils';
 import { calculateUndoTimerTarget } from './game/time/timeCalculator';
 import { initializePlayers } from './utils/playerUtils';
 import { initialRoster } from './constants/defaultData';
@@ -243,6 +244,8 @@ function App() {
             selectedSquadPlayers={selectedSquadPlayers}
             opponentTeamName={gameState.opponentTeamName}
             setOpponentTeamName={gameState.setOpponentTeamName}
+            captainId={gameState.captainId}
+            setCaptain={gameState.setCaptain}
             debugMode={debugMode}
           />
         );
@@ -355,7 +358,7 @@ function App() {
             goalScorers={gameState.goalScorers || {}}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
-              return player ? player.name : 'Unknown Player';
+              return player ? formatPlayerName(player) : 'Unknown Player';
             }}
             formatTime={formatTime}
             selectedSquadIds={gameState.selectedSquadIds}

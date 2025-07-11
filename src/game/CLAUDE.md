@@ -44,8 +44,8 @@ The animation system works by:
 - Simple rotation: substituted player moves to end
 
 ### INDIVIDUAL_7 (7-Player Mode)
-- Field positions: `leftDefender7`, `rightDefender7`, `leftAttacker7`, `rightAttacker7`
-- Substitute positions: `substitute7_1`, `substitute7_2` (two separate substitutes)
+- Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
+- Substitute positions: `substitute_1`, `substitute_2` (two separate substitutes)
 - Goalie: `goalie` (single position)
 - Inactive player support (players can be temporarily removed from rotation)
 - Complex rotation with next/next-next tracking

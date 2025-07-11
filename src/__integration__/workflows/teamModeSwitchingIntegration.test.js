@@ -46,12 +46,12 @@ describe('Team Mode Switching Integration', () => {
         leftAttacker: null,
         rightAttacker: null,
         substitute: null,
-        leftDefender7: null,
-        rightDefender7: null,
-        leftAttacker7: null,
-        rightAttacker7: null,
-        substitute7_1: null,
-        substitute7_2: null
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute_1: null,
+        substitute_2: null
       });
     });
   };
@@ -86,12 +86,12 @@ describe('Team Mode Switching Integration', () => {
 
       // Verify formation conversion
       const formation = result.current.periodFormation;
-      expect(formation.leftDefender7).toBe('1');
-      expect(formation.leftAttacker7).toBe('2');
-      expect(formation.rightDefender7).toBe('3');
-      expect(formation.rightAttacker7).toBe('4');
-      expect(formation.substitute7_1).toBe('5');
-      expect(formation.substitute7_2).toBe('6');
+      expect(formation.leftDefender).toBe('1');
+      expect(formation.leftAttacker).toBe('2');
+      expect(formation.rightDefender).toBe('3');
+      expect(formation.rightAttacker).toBe('4');
+      expect(formation.substitute_1).toBe('5');
+      expect(formation.substitute_2).toBe('6');
 
       // Verify rotation queue preserves leftPair priority
       const queue = result.current.rotationQueue;
@@ -150,12 +150,12 @@ describe('Team Mode Switching Integration', () => {
       const players = result.current.allPlayers;
       
       // Verify currentPairKey mappings
-      expect(players.find(p => p.id === '1').stats.currentPairKey).toBe('leftDefender7');
-      expect(players.find(p => p.id === '2').stats.currentPairKey).toBe('leftAttacker7');
-      expect(players.find(p => p.id === '3').stats.currentPairKey).toBe('rightDefender7');
-      expect(players.find(p => p.id === '4').stats.currentPairKey).toBe('rightAttacker7');
-      expect(players.find(p => p.id === '5').stats.currentPairKey).toBe('substitute7_1');
-      expect(players.find(p => p.id === '6').stats.currentPairKey).toBe('substitute7_2');
+      expect(players.find(p => p.id === '1').stats.currentPairKey).toBe('leftDefender');
+      expect(players.find(p => p.id === '2').stats.currentPairKey).toBe('leftAttacker');
+      expect(players.find(p => p.id === '3').stats.currentPairKey).toBe('rightDefender');
+      expect(players.find(p => p.id === '4').stats.currentPairKey).toBe('rightAttacker');
+      expect(players.find(p => p.id === '5').stats.currentPairKey).toBe('substitute_1');
+      expect(players.find(p => p.id === '6').stats.currentPairKey).toBe('substitute_2');
       expect(players.find(p => p.id === '7').stats.currentPairKey).toBe('goalie');
     });
   });
@@ -171,9 +171,9 @@ describe('Team Mode Switching Integration', () => {
             isInactive: false,
             currentPeriodStatus: i < 4 ? 'on_field' : i < 6 ? 'sub' : 'goalie',
             currentPeriodRole: i < 2 ? 'Defender' : i < 4 ? 'Attacker' : i < 6 ? 'Substitute' : 'Goalie',
-            currentPairKey: i === 0 ? 'leftDefender7' : i === 1 ? 'leftAttacker7' : 
-                           i === 2 ? 'rightDefender7' : i === 3 ? 'rightAttacker7' :
-                           i === 4 ? 'substitute7_1' : i === 5 ? 'substitute7_2' : 'goalie',
+            currentPairKey: i === 0 ? 'leftDefender' : i === 1 ? 'leftAttacker' :
+                           i === 2 ? 'rightDefender' : i === 3 ? 'rightAttacker' :
+                           i === 4 ? 'substitute_1' : i === 5 ? 'substitute_2' : 'goalie',
             lastStintStartTimeEpoch: Date.now(),
             timeOnFieldSeconds: 0,
             timeAsAttackerSeconds: 0,
@@ -199,12 +199,12 @@ describe('Team Mode Switching Integration', () => {
           leftAttacker: null,
           rightAttacker: null,
           substitute: null,
-          leftDefender7: '1',
-          rightDefender7: '3',
-          leftAttacker7: '2',
-          rightAttacker7: '4',
-          substitute7_1: '5',
-          substitute7_2: '6'
+          leftDefender: '1',
+          rightDefender: '3',
+          leftAttacker: '2',
+          rightAttacker: '4',
+          substitute_1: '5',
+          substitute_2: '6'
         });
 
         // Set rotation queue
@@ -360,7 +360,7 @@ describe('Team Mode Switching Integration', () => {
         result.current.formPairs();
       });
 
-      // Should identify subPair as next since player 5 (substitute7_1) is first
+      // Should identify subPair as next since player 5 (substitute_1) is first
       expect(result.current.nextPhysicalPairToSubOut).toBe('subPair');
     });
   });

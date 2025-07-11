@@ -99,10 +99,11 @@ export function MatchReportScreen({
   }, [matchEvents, showSubstitutionEvents]);
 
 
-  // Helper function to get player name by ID
+  // Helper function to get player name by ID with captain designation
   const getPlayerName = useCallback((playerId) => {
     const player = allPlayers.find(p => p.id === playerId);
-    return player ? player.name : null;
+    if (!player) return null;
+    return player.stats?.isCaptain ? `${player.name} (C)` : player.name;
   }, [allPlayers]);
 
   // Handler for player filter changes

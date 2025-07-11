@@ -12,12 +12,12 @@ describe('queueStateUtils', () => {
     rightPair: { defender: '3', attacker: '4' },
     subPair: { defender: '5', attacker: '6' },
     goalie: '7',
-    leftDefender7: '1',
-    rightDefender7: '3',
-    leftAttacker7: '2',
-    rightAttacker7: '4',
-    substitute7_1: '5',
-    substitute7_2: '6'
+    leftDefender: '1',
+    rightDefender: '3',
+    leftAttacker: '2',
+    rightAttacker: '4',
+    substitute_1: '5',
+    substitute_2: '6'
   };
 
   describe('analyzePairsRotationState', () => {
@@ -253,12 +253,12 @@ describe('queueStateUtils', () => {
 
     it('should handle missing individual positions', () => {
       const incompleteFormation = {
-        leftDefender7: '1',
-        rightDefender7: null,
-        leftAttacker7: '2',
-        rightAttacker7: '4',
-        substitute7_1: null,
-        substitute7_2: '6',
+        leftDefender: '1',
+        rightDefender: null,
+        leftAttacker: '2',
+        rightAttacker: '4',
+        substitute_1: null,
+        substitute_2: '6',
         goalie: '7'
       };
       

@@ -83,13 +83,13 @@ describe('gameStateLogic', () => {
   describe('calculatePositionSwitch', () => {
     test('should swap two field players in individual mode', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
-      const player1Id = '1'; // leftDefender7
-      const player2Id = '3'; // leftAttacker7
+      const player1Id = '1'; // leftDefender
+      const player2Id = '3'; // leftAttacker
       
       const result = calculatePositionSwitch(gameState, player1Id, player2Id);
       
-      expect(result.periodFormation.leftDefender7).toBe(player2Id);
-      expect(result.periodFormation.leftAttacker7).toBe(player1Id);
+      expect(result.periodFormation.leftDefender).toBe(player2Id);
+      expect(result.periodFormation.leftAttacker).toBe(player1Id);
       expect(result.playersToHighlight).toEqual([player1Id, player2Id]);
     });
 
@@ -145,13 +145,13 @@ describe('gameStateLogic', () => {
   describe('calculateGoalieSwitch', () => {
     test('should switch goalie with field player in individual mode', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
-      const newGoalieId = '1'; // Currently leftDefender7
+      const newGoalieId = '1'; // Currently leftDefender
       const currentGoalieId = gameState.periodFormation.goalie;
       
       const result = calculateGoalieSwitch(gameState, newGoalieId);
       
       expect(result.periodFormation.goalie).toBe(newGoalieId);
-      expect(result.periodFormation.leftDefender7).toBe(currentGoalieId);
+      expect(result.periodFormation.leftDefender).toBe(currentGoalieId);
       expect(result.playersToHighlight).toContain(newGoalieId);
       expect(result.playersToHighlight).toContain(currentGoalieId);
     });
@@ -379,7 +379,7 @@ describe('gameStateLogic', () => {
 
     test('should deactivate substitute player', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
-      const substituteId = '5'; // substitute7_1
+      const substituteId = '5'; // substitute_1
       
       const result = calculatePlayerToggleInactive(gameState, substituteId);
       
@@ -401,7 +401,7 @@ describe('gameStateLogic', () => {
 
     test('should only allow substitute players to be inactivated', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
-      const fieldPlayerId = '1'; // leftDefender7
+      const fieldPlayerId = '1'; // leftDefender
       
       const result = calculatePlayerToggleInactive(gameState, fieldPlayerId);
       
@@ -410,10 +410,10 @@ describe('gameStateLogic', () => {
 
     test('should prevent both substitutes from being inactive', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
-      // Make substitute7_2 inactive
+      // Make substitute_2 inactive
       gameState.allPlayers.find(p => p.id === '6').stats.isInactive = true;
       
-      // Try to inactivate substitute7_1
+      // Try to inactivate substitute_1
       const result = calculatePlayerToggleInactive(gameState, '5');
       
       expect(result).toBe(gameState);
@@ -434,8 +434,8 @@ describe('gameStateLogic', () => {
       
       const result = calculateSubstituteSwap(gameState, sub1Id, sub2Id);
       
-      expect(result.periodFormation.substitute7_1).toBe(sub2Id);
-      expect(result.periodFormation.substitute7_2).toBe(sub1Id);
+      expect(result.periodFormation.substitute_1).toBe(sub2Id);
+      expect(result.periodFormation.substitute_2).toBe(sub1Id);
       expect(result.playersToHighlight).toEqual([sub1Id, sub2Id]);
     });
 
@@ -473,11 +473,11 @@ describe('gameStateLogic', () => {
 
     test('should update next player target for individual modes', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
-      gameState.periodFormation.leftDefender7 = '2';
+      gameState.periodFormation.leftDefender = '2';
       
-      const result = calculateNextSubstitutionTarget(gameState, 'leftDefender7', 'player');
+      const result = calculateNextSubstitutionTarget(gameState, 'leftDefender', 'player');
       
-      expect(result.nextPlayerToSubOut).toBe('leftDefender7');
+      expect(result.nextPlayerToSubOut).toBe('leftDefender');
       expect(result.nextPlayerIdToSubOut).toBe('2');
     });
 

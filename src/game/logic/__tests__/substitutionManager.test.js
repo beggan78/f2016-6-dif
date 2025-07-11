@@ -319,9 +319,9 @@ describe('SubstitutionManager', () => {
 
         const context = {
           periodFormation: {
-            leftDefender7: '1',
-            substitute7_1: '8',
-            substitute7_2: '9'
+            leftDefender: '1',
+            substitute_1: '8',
+            substitute_2: '9'
           },
           nextPlayerIdToSubOut: '1',
           allPlayers: mockPlayersWithTime,

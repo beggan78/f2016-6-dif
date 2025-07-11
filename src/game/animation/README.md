@@ -93,7 +93,7 @@ The system maps player positions to visual indices for distance calculations:
 | Team Mode | Position Order |
 |-----------|----------------|
 | **Individual 6** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute(5) |
-| **Individual 7** | goalie(0) → leftDefender7(1) → rightDefender7(2) → leftAttacker7(3) → rightAttacker7(4) → substitute7_1(5) → substitute7_2(6) |
+| **Individual 7** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute_1(5) → substitute_2(6) |
 | **Pairs** | goalie(0) → leftPair(1) → rightPair(2) → subPair(3) |
 
 **Distance Calculation:**

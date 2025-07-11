@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import { formatTime } from '../../utils/formatUtils';
+import { formatTime, formatPlayerName } from '../../utils/formatUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { getPlayerCurrentRole } from '../../utils/playerSortingUtils';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
@@ -49,7 +49,7 @@ export function PlayerStatsTable({
       label: 'Player',
       sortable: true,
       className: 'text-left font-medium text-slate-100',
-      render: (player) => player.name
+      render: (player) => formatPlayerName(player)
     },
     {
       key: 'startingRole',

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { createPersistenceManager } from '../../utils/persistenceManager';
+import { formatPlayerName } from '../../utils/formatUtils';
 
 // Timeline preferences persistence manager
 const timelinePrefsManager = createPersistenceManager('dif-coach-timeline-preferences', {
@@ -589,7 +590,7 @@ export function GameEventTimeline({
                 <option value="">All Players</option>
                 {availablePlayers.map(player => (
                   <option key={player.id} value={player.id}>
-                    {player.name}
+                    {formatPlayerName(player)}
                   </option>
                 ))}
               </select>

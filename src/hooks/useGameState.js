@@ -58,6 +58,7 @@ export function useGameState() {
   const [lastEventBackup, setLastEventBackup] = useState(initialState.lastEventBackup || null);
   const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
+  const [captainId, setCaptainId] = useState(initialState.captainId || null);
 
   // Function to sync match data from gameEventLogger
   const syncMatchDataFromEventLogger = useCallback(() => {
@@ -179,11 +180,12 @@ export function useGameState() {
       lastEventBackup,
       timerPauseStartTime,
       totalMatchPausedDuration,
+      captainId,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamMode, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamMode, alertMinutes, currentPeriodNumber, periodFormation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
 
 
 
@@ -219,25 +221,17 @@ export function useGameState() {
             selectedSquadIds.map(id => allPlayers.find(p=>p.id === id)) // Pass full player objects
         );
 
-        setPeriodFormation({
+        const pairsFormation = {
           goalie: currentGoalieId,
           leftPair: recommendedLeft,
           rightPair: recommendedRight,
           subPair: recommendedSubs,
-          // 6-player formation structure
-          leftDefender: null,
-          rightDefender: null,
-          leftAttacker: null,
-          rightAttacker: null,
-          substitute: null,
-          // 7-player individual formation structure
-          leftDefender7: null,
-          rightDefender7: null,
-          leftAttacker7: null,
-          rightAttacker7: null,
-          substitute7_1: null, // First substitute (next to go in)
-          substitute7_2: null, // Second substitute (next-next to go in)
-        });
+        };
+        
+        // DEBUG: Log pairs formation
+        console.log('[DEBUG] useGameState - Setting PAIRS formation:', pairsFormation);
+        
+        setPeriodFormation(pairsFormation);
         setNextPhysicalPairToSubOut(firstToSubRec); // 'leftPair' or 'rightPair'
       } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
         // 6-player individual formation generation using new logic
@@ -248,25 +242,21 @@ export function useGameState() {
           'INDIVIDUAL_6'
         );
 
-        setPeriodFormation({
+        // DEBUG: Log INDIVIDUAL_6 formation generation result
+        console.log('[DEBUG] useGameState - INDIVIDUAL_6 formation result:', result);
+        
+        const individual6Formation = {
           goalie: currentGoalieId,
-          leftPair: { defender: null, attacker: null },
-          rightPair: { defender: null, attacker: null },
-          subPair: { defender: null, attacker: null },
-          // 6-player formation structure
           leftDefender: result.formation.leftDefender,
           rightDefender: result.formation.rightDefender,
           leftAttacker: result.formation.leftAttacker,
           rightAttacker: result.formation.rightAttacker,
-          substitute: result.formation.substitute,
-          // 7-player individual formation structure
-          leftDefender7: null,
-          rightDefender7: null,
-          leftAttacker7: null,
-          rightAttacker7: null,
-          substitute7_1: null,
-          substitute7_2: null,
-        });
+          substitute_1: result.formation.substitute_1,
+        };
+        
+        console.log('[DEBUG] useGameState - Setting INDIVIDUAL_6 formation:', individual6Formation);
+        
+        setPeriodFormation(individual6Formation);
         
         // Set next player to substitute off (player with most field time)
         setNextPlayerIdToSubOut(result.nextToRotateOff);
@@ -287,33 +277,30 @@ export function useGameState() {
           'INDIVIDUAL_7'
         );
 
-        setPeriodFormation({
+        // DEBUG: Log INDIVIDUAL_7 formation generation result
+        console.log('[DEBUG] useGameState - INDIVIDUAL_7 formation result:', result);
+        
+        const individual7Formation = {
           goalie: currentGoalieId,
-          leftPair: { defender: null, attacker: null },
-          rightPair: { defender: null, attacker: null },
-          subPair: { defender: null, attacker: null },
-          // 6-player formation structure
-          leftDefender: null,
-          rightDefender: null,
-          leftAttacker: null,
-          rightAttacker: null,
-          substitute: null,
-          // 7-player individual formation structure
-          leftDefender7: result.formation.leftDefender7,
-          rightDefender7: result.formation.rightDefender7,
-          leftAttacker7: result.formation.leftAttacker7,
-          rightAttacker7: result.formation.rightAttacker7,
-          substitute7_1: result.formation.substitute7_1,
-          substitute7_2: result.formation.substitute7_2,
-        });
+          leftDefender: result.formation.leftDefender,
+          rightDefender: result.formation.rightDefender,
+          leftAttacker: result.formation.leftAttacker,
+          rightAttacker: result.formation.rightAttacker,
+          substitute_1: result.formation.substitute_1,
+          substitute_2: result.formation.substitute_2,
+        };
+        
+        console.log('[DEBUG] useGameState - Setting INDIVIDUAL_7 formation:', individual7Formation);
+        
+        setPeriodFormation(individual7Formation);
         
         // Set next player to substitute off (player with most field time)
         setNextPlayerIdToSubOut(result.nextToRotateOff);
         
         // Find the position of the next player to substitute
-        const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
+        const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
         const playerPosition = positions.find(pos => result.formation[pos] === result.nextToRotateOff);
-        setNextPlayerToSubOut(playerPosition || 'leftDefender7');
+        setNextPlayerToSubOut(playerPosition || 'leftDefender');
         
         // Set rotation queue
         setRotationQueue(result.rotationQueue);
@@ -338,12 +325,12 @@ export function useGameState() {
         rightAttacker: null,
         substitute: null,
         // 7-player individual formation structure
-        leftDefender7: null,
-        rightDefender7: null,
-        leftAttacker7: null,
-        rightAttacker7: null,
-        substitute7_1: null,
-        substitute7_2: null,
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute_1: null,
+        substitute_2: null,
       });
       setNextPhysicalPairToSubOut('leftPair');
       
@@ -353,7 +340,7 @@ export function useGameState() {
         // Initialize basic rotation queue for Period 1 (will be filled when game starts)
         setRotationQueue([]);
       } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
-        setNextPlayerToSubOut('leftDefender7');
+        setNextPlayerToSubOut('leftDefender');
         // Initialize basic rotation queue for Period 1 (will be filled when game starts)
         setRotationQueue([]);
       }
@@ -425,9 +412,9 @@ export function useGameState() {
     } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
       // 7-player individual validation
       const allOutfieldersInFormation = [
-        periodFormation.leftDefender7, periodFormation.rightDefender7,
-        periodFormation.leftAttacker7, periodFormation.rightAttacker7,
-        periodFormation.substitute7_1, periodFormation.substitute7_2,
+        periodFormation.leftDefender, periodFormation.rightDefender,
+        periodFormation.leftAttacker, periodFormation.rightAttacker,
+        periodFormation.substitute_1, periodFormation.substitute_2,
       ].filter(Boolean);
 
       if (new Set(allOutfieldersInFormation).size !== 6 || !periodFormation.goalie) {
@@ -476,18 +463,18 @@ export function useGameState() {
         }
       } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
         // 7-player individual logic
-        if (p.id === periodFormation.leftDefender7) {
-          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'leftDefender7';
-        } else if (p.id === periodFormation.rightDefender7) {
-          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'rightDefender7';
-        } else if (p.id === periodFormation.leftAttacker7) {
-          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'leftAttacker7';
-        } else if (p.id === periodFormation.rightAttacker7) {
-          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'rightAttacker7';
-        } else if (p.id === periodFormation.substitute7_1) {
-          role = PLAYER_ROLES.SUBSTITUTE; status = 'substitute'; pairKey = 'substitute7_1';
-        } else if (p.id === periodFormation.substitute7_2) {
-          role = PLAYER_ROLES.SUBSTITUTE; status = 'substitute'; pairKey = 'substitute7_2';
+        if (p.id === periodFormation.leftDefender) {
+          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'leftDefender';
+        } else if (p.id === periodFormation.rightDefender) {
+          role = PLAYER_ROLES.DEFENDER; status = 'on_field'; pairKey = 'rightDefender';
+        } else if (p.id === periodFormation.leftAttacker) {
+          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'leftAttacker';
+        } else if (p.id === periodFormation.rightAttacker) {
+          role = PLAYER_ROLES.ATTACKER; status = 'on_field'; pairKey = 'rightAttacker';
+        } else if (p.id === periodFormation.substitute_1) {
+          role = PLAYER_ROLES.SUBSTITUTE; status = 'substitute'; pairKey = 'substitute_1';
+        } else if (p.id === periodFormation.substitute_2) {
+          role = PLAYER_ROLES.SUBSTITUTE; status = 'substitute'; pairKey = 'substitute_2';
         }
       }
 
@@ -527,7 +514,7 @@ export function useGameState() {
       const initialPlayerToSubOut = periodFormation[nextPlayerToSubOut];
       
       // Basic positional order for Period 1
-      const outfieldPositions = ['leftDefender7', 'leftAttacker7', 'rightDefender7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+      const outfieldPositions = ['leftDefender', 'leftAttacker', 'rightDefender', 'rightAttacker', 'substitute_1', 'substitute_2'];
       const initialQueue = outfieldPositions.map(pos => periodFormation[pos]).filter(Boolean);
       
       // Only set values if we have a complete formation
@@ -747,12 +734,12 @@ export function useGameState() {
         leftAttacker: null,
         rightAttacker: null,
         substitute: null,
-        leftDefender7: prev.leftPair.defender,
-        rightDefender7: prev.rightPair.defender,
-        leftAttacker7: prev.leftPair.attacker,
-        rightAttacker7: prev.rightPair.attacker,
-        substitute7_1: prev.subPair.defender,
-        substitute7_2: prev.subPair.attacker,
+        leftDefender: prev.leftPair.defender,
+        rightDefender: prev.rightPair.defender,
+        leftAttacker: prev.leftPair.attacker,
+        rightAttacker: prev.rightPair.attacker,
+        substitute_1: prev.subPair.defender,
+        substitute_2: prev.subPair.attacker,
       };
       return newFormation;
     });
@@ -766,21 +753,21 @@ export function useGameState() {
       // Map pair keys to individual keys
       if (stats.currentPairKey === 'leftPair') {
         if (p.id === periodFormation.leftPair.defender) {
-          stats.currentPairKey = 'leftDefender7';
+          stats.currentPairKey = 'leftDefender';
         } else if (p.id === periodFormation.leftPair.attacker) {
-          stats.currentPairKey = 'leftAttacker7';
+          stats.currentPairKey = 'leftAttacker';
         }
       } else if (stats.currentPairKey === 'rightPair') {
         if (p.id === periodFormation.rightPair.defender) {
-          stats.currentPairKey = 'rightDefender7';
+          stats.currentPairKey = 'rightDefender';
         } else if (p.id === periodFormation.rightPair.attacker) {
-          stats.currentPairKey = 'rightAttacker7';
+          stats.currentPairKey = 'rightAttacker';
         }
       } else if (stats.currentPairKey === 'subPair') {
         if (p.id === periodFormation.subPair.defender) {
-          stats.currentPairKey = 'substitute7_1';
+          stats.currentPairKey = 'substitute_1';
         } else if (p.id === periodFormation.subPair.attacker) {
-          stats.currentPairKey = 'substitute7_2';
+          stats.currentPairKey = 'substitute_2';
         }
       }
       
@@ -800,7 +787,7 @@ export function useGameState() {
     setRotationQueue(individualQueue.queue);
     setNextPlayerIdToSubOut(individualQueue.nextPlayerId);
     setNextNextPlayerIdToSubOut(individualQueue.nextNextPlayerId);
-    setNextPlayerToSubOut('leftDefender7');
+    setNextPlayerToSubOut('leftDefender');
   }, [teamMode, selectedSquadIds, periodFormation, nextPhysicalPairToSubOut]);
 
   const formPairs = useCallback(() => {
@@ -822,28 +809,28 @@ export function useGameState() {
       const newFormation = {
         goalie: prev.goalie,
         leftPair: { 
-          defender: prev.leftDefender7, 
-          attacker: prev.leftAttacker7 
+          defender: prev.leftDefender,
+          attacker: prev.leftAttacker
         },
         rightPair: { 
-          defender: prev.rightDefender7, 
-          attacker: prev.rightAttacker7 
+          defender: prev.rightDefender,
+          attacker: prev.rightAttacker
         },
         subPair: { 
-          defender: prev.substitute7_1, 
-          attacker: prev.substitute7_2 
+          defender: prev.substitute_1,
+          attacker: prev.substitute_2
         },
         leftDefender: null,
         rightDefender: null,
         leftAttacker: null,
         rightAttacker: null,
         substitute: null,
-        leftDefender7: null,
-        rightDefender7: null,
-        leftAttacker7: null,
-        rightAttacker7: null,
-        substitute7_1: null,
-        substitute7_2: null,
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute_1: null,
+        substitute_2: null,
       };
       return newFormation;
     });
@@ -855,11 +842,11 @@ export function useGameState() {
       const stats = { ...p.stats };
       
       // Map individual keys to pair keys
-      if (stats.currentPairKey === 'leftDefender7' || stats.currentPairKey === 'leftAttacker7') {
+      if (stats.currentPairKey === 'leftDefender' || stats.currentPairKey === 'leftAttacker') {
         stats.currentPairKey = 'leftPair';
-      } else if (stats.currentPairKey === 'rightDefender7' || stats.currentPairKey === 'rightAttacker7') {
+      } else if (stats.currentPairKey === 'rightDefender' || stats.currentPairKey === 'rightAttacker') {
         stats.currentPairKey = 'rightPair';
-      } else if (stats.currentPairKey === 'substitute7_1' || stats.currentPairKey === 'substitute7_2') {
+      } else if (stats.currentPairKey === 'substitute_1' || stats.currentPairKey === 'substitute_2') {
         stats.currentPairKey = 'subPair';
       }
       
@@ -927,16 +914,16 @@ export function useGameState() {
     if (!player) return;
 
     const currentlyInactive = player.stats.isInactive;
-    const isSubstitute = player.stats.currentPairKey === 'substitute7_1' || player.stats.currentPairKey === 'substitute7_2';
+    const isSubstitute = player.stats.currentPairKey === 'substitute_1' || player.stats.currentPairKey === 'substitute_2';
     
     // Only allow inactivating/activating substitute players
     if (!isSubstitute) return;
 
     // CRITICAL SAFETY CHECK: Prevent having both substitutes inactive
     if (!currentlyInactive) { // Player is about to be inactivated
-      const substitute7_1Id = periodFormation.substitute7_1;
-      const substitute7_2Id = periodFormation.substitute7_2;
-      const otherSubstituteId = playerId === substitute7_1Id ? substitute7_2Id : substitute7_1Id;
+      const substitute_1Id = periodFormation.substitute_1;
+      const substitute_2Id = periodFormation.substitute_2;
+      const otherSubstituteId = playerId === substitute_1Id ? substitute_2Id : substitute_1Id;
       const otherSubstitute = findPlayerById(allPlayers, otherSubstituteId);
       
       if (otherSubstitute?.stats.isInactive) {
@@ -954,21 +941,21 @@ export function useGameState() {
     const performStateChanges = () => {
       // Update rotation queue and positions
       if (currentlyInactive) {
-        // Player is being activated - they become the next player to go in (substitute7_1)
+        // Player is being activated - they become the next player to go in (substitute_1)
         const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
         queueManager.initialize(); // Separate active and inactive players
         queueManager.reactivatePlayer(playerId);
         
         // Get current substitute positions
-        const currentSub7_1Id = periodFormation.substitute7_1;
-        const currentSub7_2Id = periodFormation.substitute7_2;
+        const currentSub7_1Id = periodFormation.substitute_1;
+        const currentSub7_2Id = periodFormation.substitute_2;
         
-        // The reactivated player should become substitute7_1 (next to go in)
-        // The current substitute7_1 (if active) should move to substitute7_2
-        // If the reactivated player was substitute7_2, swap with substitute7_1
+        // The reactivated player should become substitute_1 (next to go in)
+        // The current substitute_1 (if active) should move to substitute_2
+        // If the reactivated player was substitute_2, swap with substitute_1
         
         if (playerId === currentSub7_1Id) {
-          // Reactivated player is already in substitute7_1 position - just activate them
+          // Reactivated player is already in substitute_1 position - just activate them
           setAllPlayers(prev => prev.map(p => {
             if (p.id === playerId) {
               return { ...p, stats: { ...p.stats, isInactive: false } };
@@ -977,27 +964,27 @@ export function useGameState() {
           }));
           
           // nextPlayerIdToSubOut should remain pointing to the current active field player
-          // Find the next active player for substitute7_2 position
+          // Find the next active player for substitute_2 position
           const nextActivePlayers = queueManager.getNextActivePlayer(2);
           if (nextActivePlayers.length >= 1) {
             setNextNextPlayerIdToSubOut(nextActivePlayers[0]);
           }
           // Don't change nextPlayerIdToSubOut - it should still point to the field player
         } else if (playerId === currentSub7_2Id) {
-          // Reactivated player is in substitute7_2 - swap with substitute7_1
+          // Reactivated player is in substitute_2 - swap with substitute_1
           setPeriodFormation(prev => ({
             ...prev,
-            substitute7_1: playerId,
-            substitute7_2: currentSub7_1Id
+            substitute_1: playerId,
+            substitute_2: currentSub7_1Id
           }));
           
           // Update player positions and inactive state in one operation
           setAllPlayers(prev => prev.map(p => {
             if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1', isInactive: false } };
+              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1', isInactive: false } };
             }
             if (p.id === currentSub7_1Id) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2' } };
+              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' } };
             }
             return p;
           }));
@@ -1031,23 +1018,23 @@ export function useGameState() {
           }
         }
         
-        // Move inactive player to substitute7_2 position if they were substitute7_1
-        if (player.stats.currentPairKey === 'substitute7_1' && periodFormation.substitute7_2) {
-          // Swap positions - substitute7_2 becomes substitute7_1, inactive player goes to substitute7_2
-          const otherSubId = periodFormation.substitute7_2;
+        // Move inactive player to substitute_2 position if they were substitute_1
+        if (player.stats.currentPairKey === 'substitute_1' && periodFormation.substitute_2) {
+          // Swap positions - substitute_2 becomes substitute_1, inactive player goes to substitute_2
+          const otherSubId = periodFormation.substitute_2;
           
           setPeriodFormation(prev => ({
             ...prev,
-            substitute7_1: otherSubId,
-            substitute7_2: playerId
+            substitute_1: otherSubId,
+            substitute_2: playerId
           }));
           
           setAllPlayers(prev => prev.map(p => {
             if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_2', isInactive: true } };
+              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2', isInactive: true } };
             }
             if (p.id === otherSubId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute7_1' } };
+              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
             }
             return p;
           }));
@@ -1105,7 +1092,7 @@ export function useGameState() {
     const validPositions = {
       [TEAM_MODES.PAIRS_7]: ['leftPair', 'rightPair', 'subPair'],
       [TEAM_MODES.INDIVIDUAL_6]: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
-      [TEAM_MODES.INDIVIDUAL_7]: ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2']
+      [TEAM_MODES.INDIVIDUAL_7]: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2']
     };
 
     const currentValidPositions = validPositions[teamMode] || [];
@@ -1406,6 +1393,37 @@ export function useGameState() {
     setView(VIEWS.MATCH_REPORT);
   }, [syncMatchDataFromEventLogger]);
 
+  // Captain management functions
+  const setCaptain = useCallback((newCaptainId) => {
+    console.log('[DEBUG] setCaptain called with:', {
+      newCaptainId,
+      previousCaptainId: captainId
+    });
+    
+    // Update captainId state
+    setCaptainId(newCaptainId);
+    
+    // Update player stats to reflect captain assignment
+    setAllPlayers(prev => {
+      const updatedPlayers = prev.map(player => ({
+        ...player,
+        stats: {
+          ...player.stats,
+          isCaptain: player.id === newCaptainId
+        }
+      }));
+      
+      const captain = updatedPlayers.find(p => p.stats.isCaptain);
+      console.log('[DEBUG] Captain assignment completed:', {
+        captainId: newCaptainId,
+        captainName: captain ? captain.name : 'None',
+        captainPlayerData: captain ? { id: captain.id, name: captain.name, isCaptain: captain.stats.isCaptain } : null
+      });
+      
+      return updatedPlayers;
+    });
+  }, [captainId]);
+
   return {
     // State
     allPlayers,
@@ -1462,6 +1480,8 @@ export function useGameState() {
     setTimerPauseStartTime,
     totalMatchPausedDuration,
     setTotalMatchPausedDuration,
+    captainId,
+    setCaptainId,
     
     // Actions
     preparePeriod,
@@ -1484,6 +1504,7 @@ export function useGameState() {
     setScore,
     resetScore,
     navigateToMatchReport,
+    setCaptain,
     
     // Enhanced persistence actions
     createManualBackup,

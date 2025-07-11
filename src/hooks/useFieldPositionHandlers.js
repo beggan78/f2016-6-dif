@@ -31,26 +31,11 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamMode) => {
   const rightAttackerEvents = useLongPressWithScrollDetection(
     fieldPositionCallbacks.rightAttackerCallback || (() => {})
   );
-  const substituteEvents = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.substituteCallback || (() => {})
+  const substitute_1Events = useLongPressWithScrollDetection(
+    fieldPositionCallbacks.substitute_1Callback || (() => {})
   );
-  const leftDefender7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.leftDefender7Callback || (() => {})
-  );
-  const rightDefender7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.rightDefender7Callback || (() => {})
-  );
-  const leftAttacker7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.leftAttacker7Callback || (() => {})
-  );
-  const rightAttacker7Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.rightAttacker7Callback || (() => {})
-  );
-  const substitute7_1Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.substitute7_1Callback || (() => {})
-  );
-  const substitute7_2Events = useLongPressWithScrollDetection(
-    fieldPositionCallbacks.substitute7_2Callback || (() => {})
+  const substitute_2Events = useLongPressWithScrollDetection(
+    fieldPositionCallbacks.substitute_2Callback || (() => {})
   );
 
   if (isPairsMode) {
@@ -65,13 +50,13 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamMode) => {
       rightDefenderEvents,
       leftAttackerEvents,
       rightAttackerEvents,
-      substituteEvents,
-      leftDefender7Events,
-      rightDefender7Events,
-      leftAttacker7Events,
-      rightAttacker7Events,
-      substitute7_1Events,
-      substitute7_2Events
+      substitute_1Events,
+      leftDefenderEvents,
+      rightDefenderEvents,
+      leftAttackerEvents,
+      rightAttackerEvents,
+      substitute_1Events,
+      substitute_2Events
     };
   }
 };

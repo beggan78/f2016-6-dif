@@ -8,20 +8,13 @@ export const POSITION_KEYS = {
   RIGHT_PAIR: 'rightPair', 
   SUB_PAIR: 'subPair',
   
-  // 6-player Individual
+  // Individual formations (unified naming for 6-player and 7-player)
   LEFT_DEFENDER: 'leftDefender',
   RIGHT_DEFENDER: 'rightDefender',
   LEFT_ATTACKER: 'leftAttacker', 
   RIGHT_ATTACKER: 'rightAttacker',
-  SUBSTITUTE: 'substitute',
-  
-  // 7-player individual
-  LEFT_DEFENDER_7: 'leftDefender7',
-  RIGHT_DEFENDER_7: 'rightDefender7',  
-  LEFT_ATTACKER_7: 'leftAttacker7',
-  RIGHT_ATTACKER_7: 'rightAttacker7',
-  SUBSTITUTE_7_1: 'substitute7_1',
-  SUBSTITUTE_7_2: 'substitute7_2',
+  SUBSTITUTE_1: 'substitute_1',
+  SUBSTITUTE_2: 'substitute_2',
   
   // Common
   GOALIE: 'goalie'

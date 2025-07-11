@@ -334,12 +334,12 @@ describe('PeriodSetupScreen', () => {
       // Setup a complete INDIVIDUAL_7 formation
       const completeFormation = {
         goalie: '7',  // Player 7 is current goalie
-        leftDefender7: '1',
-        rightDefender7: '2', 
-        leftAttacker7: '3',
-        rightAttacker7: '4',
-        substitute7_1: '5',
-        substitute7_2: '6'
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
       
       const props = {
@@ -584,12 +584,12 @@ describe('PeriodSetupScreen', () => {
       defaultProps.teamMode = TEAM_MODES.INDIVIDUAL_7;
       defaultProps.periodFormation = {
         goalie: '7',
-        leftDefender7: '',
-        rightDefender7: '',
-        leftAttacker7: '',
-        rightAttacker7: '',
-        substitute7_1: '',
-        substitute7_2: ''
+        leftDefender: '',
+        rightDefender: '',
+        leftAttacker: '',
+        rightAttacker: '',
+        substitute_1: '',
+        substitute_2: ''
       };
       defaultProps.availableForPairing = mockPlayers.slice(0, 6); // 6 field players
     });
@@ -616,12 +616,12 @@ describe('PeriodSetupScreen', () => {
     it('should calculate formation completion for individual 7 mode', () => {
       const completeFormation = {
         goalie: '7',
-        leftDefender7: '1',
-        rightDefender7: '2',
-        leftAttacker7: '3',
-        rightAttacker7: '4',
-        substitute7_1: '5',
-        substitute7_2: '6'
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
       
       const props = {
@@ -642,25 +642,25 @@ describe('PeriodSetupScreen', () => {
         ...defaultProps,
         periodFormation: {
           ...defaultProps.periodFormation,
-          leftDefender7: '1',
-          rightDefender7: '2'
+          leftDefender: '1',
+          rightDefender: '2'
         }
       };
       
       render(<PeriodSetupScreen {...props} />);
       
-      expect(props.periodFormation.leftDefender7).toBe('1');
+      expect(props.periodFormation.leftDefender).toBe('1');
     });
 
     it('should allow position swapping in complete individual 7 formation', () => {
       const completeFormation = {
         goalie: '7',
-        leftDefender7: '1',
-        rightDefender7: '2',
-        leftAttacker7: '3',
-        rightAttacker7: '4',
-        substitute7_1: '5',
-        substitute7_2: '6'
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
       
       const props = {

@@ -45,15 +45,39 @@ export const formatTimeDifference = (diffSeconds) => {
  * @returns {string} Player label with optional time statistics
  */
 export const getPlayerLabel = (player, currentPeriodNumber) => {
+  const baseLabel = formatPlayerName(player);
+  
   // Only show accumulated time for periods 2 and 3
   if (currentPeriodNumber > 1) {
     const outfieldTime = formatTime(player.stats.timeOnFieldSeconds);
     const attackDefenderDiff = player.stats.timeAsAttackerSeconds - player.stats.timeAsDefenderSeconds;
     const diffFormatted = formatTimeDifference(attackDefenderDiff);
     
-    return `${player.name}  ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
+    return `${baseLabel}  ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
   }
-  return player.name;
+  return baseLabel;
+};
+
+/**
+ * Formats player name with captain designation
+ * @param {Object} player - Player object with name and stats
+ * @returns {string} Player name with (C) suffix if captain
+ */
+export const formatPlayerName = (player) => {
+  const isCaptain = player.stats?.isCaptain;
+  const formattedName = isCaptain ? `${player.name} (C)` : player.name;
+  
+  if (isCaptain) {
+    console.log('[DEBUG] formatPlayerName - Captain found:', {
+      playerId: player.id,
+      playerName: player.name,
+      isCaptain: isCaptain,
+      formattedName: formattedName,
+      playerStats: player.stats
+    });
+  }
+  
+  return formattedName;
 };
 
 /**
@@ -84,7 +108,9 @@ export const generateStatsText = (squadForStats, homeScore, awayScore, opponentT
                      player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
                      player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-';
     
-    text += `${player.name}\t\t${startedAs}\t${formatPoints(goaliePoints)}\t${formatPoints(defenderPoints)}\t${formatPoints(attackerPoints)}\t${formatTime(player.stats.timeOnFieldSeconds)}\t${formatTime(player.stats.timeAsDefenderSeconds)}\t${formatTime(player.stats.timeAsAttackerSeconds)}\t${formatTime(player.stats.timeAsGoalieSeconds)}\n`;
+    const playerNameWithCaptain = formatPlayerName(player);
+    
+    text += `${playerNameWithCaptain}\t\t${startedAs}\t${formatPoints(goaliePoints)}\t${formatPoints(defenderPoints)}\t${formatPoints(attackerPoints)}\t${formatTime(player.stats.timeOnFieldSeconds)}\t${formatTime(player.stats.timeAsDefenderSeconds)}\t${formatTime(player.stats.timeAsAttackerSeconds)}\t${formatTime(player.stats.timeAsGoalieSeconds)}\n`;
   });
   
   return text;

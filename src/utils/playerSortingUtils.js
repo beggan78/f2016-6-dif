@@ -50,13 +50,13 @@ export const getPlayerCurrentRole = (playerId, periodFormation, teamMode) => {
 
     case TEAM_MODES.INDIVIDUAL_7:
       // Check attacker positions
-      if (periodFormation.leftAttacker7 === playerId || 
-          periodFormation.rightAttacker7 === playerId) {
+      if (periodFormation.leftAttacker === playerId || 
+          periodFormation.rightAttacker === playerId) {
         return 'ATTACKER';
       }
       // Check defender positions
-      if (periodFormation.leftDefender7 === playerId || 
-          periodFormation.rightDefender7 === playerId) {
+      if (periodFormation.leftDefender === playerId || 
+          periodFormation.rightDefender === playerId) {
         return 'DEFENDER';
       }
       // Everyone else is substitute
@@ -99,8 +99,8 @@ export const getCurrentAttackers = (periodFormation, teamMode) => {
       break;
 
     case TEAM_MODES.INDIVIDUAL_7:
-      if (periodFormation.leftAttacker7) attackers.push(periodFormation.leftAttacker7);
-      if (periodFormation.rightAttacker7) attackers.push(periodFormation.rightAttacker7);
+      if (periodFormation.leftAttacker) attackers.push(periodFormation.leftAttacker);
+      if (periodFormation.rightAttacker) attackers.push(periodFormation.rightAttacker);
       break;
 
     case TEAM_MODES.PAIRS_7:
@@ -133,8 +133,8 @@ export const getCurrentDefenders = (periodFormation, teamMode) => {
       break;
 
     case TEAM_MODES.INDIVIDUAL_7:
-      if (periodFormation.leftDefender7) defenders.push(periodFormation.leftDefender7);
-      if (periodFormation.rightDefender7) defenders.push(periodFormation.rightDefender7);
+      if (periodFormation.leftDefender) defenders.push(periodFormation.leftDefender);
+      if (periodFormation.rightDefender) defenders.push(periodFormation.rightDefender);
       break;
 
     case TEAM_MODES.PAIRS_7:
@@ -215,10 +215,10 @@ export const getPlayerPositionDisplay = (playerId, periodFormation, teamMode) =>
       break;
 
     case TEAM_MODES.INDIVIDUAL_7:
-      if (periodFormation.leftAttacker7 === playerId) return 'Left Attacker';
-      if (periodFormation.rightAttacker7 === playerId) return 'Right Attacker';
-      if (periodFormation.leftDefender7 === playerId) return 'Left Defender';
-      if (periodFormation.rightDefender7 === playerId) return 'Right Defender';
+      if (periodFormation.leftAttacker === playerId) return 'Left Attacker';
+      if (periodFormation.rightAttacker === playerId) return 'Right Attacker';
+      if (periodFormation.leftDefender === playerId) return 'Left Defender';
+      if (periodFormation.rightDefender === playerId) return 'Right Defender';
       break;
 
     case TEAM_MODES.PAIRS_7:

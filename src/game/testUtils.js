@@ -127,12 +127,12 @@ export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
     case TEAM_MODES.INDIVIDUAL_7:
     default:
       return {
-        leftDefender7: '1',
-        rightDefender7: '2',
-        leftAttacker7: '3',
-        rightAttacker7: '4',
-        substitute7_1: '5',
-        substitute7_2: '6',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6',
         goalie: '7'
       };
   }
@@ -151,7 +151,7 @@ export const createMockGameState = (teamMode = TEAM_MODES.INDIVIDUAL_7, override
     teamMode,
     rotationQueue: ['1', '2', '3', '4', '5'],
     nextPhysicalPairToSubOut: 'leftPair',
-    nextPlayerToSubOut: 'leftDefender7',
+    nextPlayerToSubOut: 'leftDefender',
     nextPlayerIdToSubOut: '1',
     nextNextPlayerIdToSubOut: '2',
     selectedSquadPlayers: allPlayers,

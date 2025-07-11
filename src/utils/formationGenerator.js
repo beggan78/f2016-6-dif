@@ -317,20 +317,20 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
       rightDefender: defenders[1]?.id || null,
       leftAttacker: attackers[0]?.id || null,
       rightAttacker: attackers[1]?.id || null,
-      substitute: rotationQueue[4]?.id || null // 5th player in rotation queue
+      substitute_1: rotationQueue[4]?.id || null // 5th player in rotation queue
     };
   } else if (teamMode === 'INDIVIDUAL_7') {
-    // For 7-player mode, inactive player goes to substitute7_2, active substitutes fill remaining positions
+    // For 7-player mode, inactive player goes to substitute_2, active substitutes fill remaining positions
     const activeSubstitutes = rotationQueue.slice(4); // Players beyond the first 4
     
     formation = {
       ...formation,
-      leftDefender7: defenders[0]?.id || null,
-      rightDefender7: defenders[1]?.id || null,
-      leftAttacker7: attackers[0]?.id || null,
-      rightAttacker7: attackers[1]?.id || null,
-      substitute7_1: activeSubstitutes[0]?.id || null, // 5th player in rotation queue
-      substitute7_2: inactivePlayers[0]?.id || activeSubstitutes[1]?.id || null // Inactive player or 6th in queue
+      leftDefender: defenders[0]?.id || null,
+      rightDefender: defenders[1]?.id || null,
+      leftAttacker: attackers[0]?.id || null,
+      rightAttacker: attackers[1]?.id || null,
+      substitute_1: activeSubstitutes[0]?.id || null, // 5th player in rotation queue
+      substitute_2: inactivePlayers[0]?.id || activeSubstitutes[1]?.id || null // Inactive player or 6th in queue
     };
   } else if (teamMode === 'INDIVIDUAL_8') {
     // For future 8-player mode support
@@ -338,13 +338,13 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
     
     formation = {
       ...formation,
-      leftDefender8: defenders[0]?.id || null,
-      rightDefender8: defenders[1]?.id || null,
-      leftAttacker8: attackers[0]?.id || null,
-      rightAttacker8: attackers[1]?.id || null,
-      substitute8_1: activeSubstitutes[0]?.id || null, // 5th player
-      substitute8_2: activeSubstitutes[1]?.id || null, // 6th player
-      substitute8_3: inactivePlayers[0]?.id || activeSubstitutes[2]?.id || null // Inactive or 7th player
+      leftDefender: defenders[0]?.id || null,
+      rightDefender: defenders[1]?.id || null,
+      leftAttacker: attackers[0]?.id || null,
+      rightAttacker: attackers[1]?.id || null,
+      substitute_1: activeSubstitutes[0]?.id || null, // 5th player
+      substitute_2: activeSubstitutes[1]?.id || null, // 6th player
+      substitute_3: inactivePlayers[0]?.id || activeSubstitutes[2]?.id || null // Inactive or 7th player
     };
   }
 

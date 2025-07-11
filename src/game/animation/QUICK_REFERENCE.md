@@ -137,7 +137,7 @@ goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → right
 
 ### Individual 7-Player Mode  
 ```
-goalie(0) → leftDefender7(1) → rightDefender7(2) → leftAttacker7(3) → rightAttacker7(4) → substitute7_1(5) → substitute7_2(6)
+goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute_1(5) → substitute_2(6)
 ```
 
 ### Pairs Mode

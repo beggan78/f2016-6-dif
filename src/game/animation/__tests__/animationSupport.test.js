@@ -45,12 +45,12 @@ describe('animationSupport', () => {
       expect(positions).toBeDefined();
       
       // Should have position mappings for all players
-      expect(positions['1']).toBeDefined(); // leftDefender7
-      expect(positions['2']).toBeDefined(); // rightDefender7
-      expect(positions['3']).toBeDefined(); // leftAttacker7
-      expect(positions['4']).toBeDefined(); // rightAttacker7
-      expect(positions['5']).toBeDefined(); // substitute7_1
-      expect(positions['6']).toBeDefined(); // substitute7_2
+      expect(positions['1']).toBeDefined(); // leftDefender
+      expect(positions['2']).toBeDefined(); // rightDefender
+      expect(positions['3']).toBeDefined(); // leftAttacker
+      expect(positions['4']).toBeDefined(); // rightAttacker
+      expect(positions['5']).toBeDefined(); // substitute_1
+      expect(positions['6']).toBeDefined(); // substitute_2
       expect(positions['7']).toBeDefined(); // goalie
     });
 
@@ -94,12 +94,12 @@ describe('animationSupport', () => {
       const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.INDIVIDUAL_7);
       
       // Check position indices match expected layout (goalie first in positionOrder)
-      expect(positions['1'].positionIndex).toBe(1); // leftDefender7
-      expect(positions['2'].positionIndex).toBe(2); // rightDefender7
-      expect(positions['3'].positionIndex).toBe(3); // leftAttacker7
-      expect(positions['4'].positionIndex).toBe(4); // rightAttacker7
-      expect(positions['5'].positionIndex).toBe(5); // substitute7_1
-      expect(positions['6'].positionIndex).toBe(6); // substitute7_2
+      expect(positions['1'].positionIndex).toBe(1); // leftDefender
+      expect(positions['2'].positionIndex).toBe(2); // rightDefender
+      expect(positions['3'].positionIndex).toBe(3); // leftAttacker
+      expect(positions['4'].positionIndex).toBe(4); // rightAttacker
+      expect(positions['5'].positionIndex).toBe(5); // substitute_1
+      expect(positions['6'].positionIndex).toBe(6); // substitute_2
       expect(positions['7'].positionIndex).toBe(0); // goalie
     });
 
@@ -237,8 +237,8 @@ describe('animationSupport', () => {
       const afterFormation = { ...beforeFormation };
       
       // Move player from first position to last field position (larger distance)
-      afterFormation.leftDefender7 = beforeFormation.rightAttacker7;
-      afterFormation.rightAttacker7 = beforeFormation.leftDefender7;
+      afterFormation.leftDefender = beforeFormation.rightAttacker;
+      afterFormation.rightAttacker = beforeFormation.leftDefender;
       
       const players = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
       
@@ -369,12 +369,12 @@ describe('animationSupport', () => {
       const positions7 = captureAllPlayerPositions(formation7, players7, TEAM_MODES.INDIVIDUAL_7);
       
       expect(positions7[formation7.goalie].positionIndex).toBe(0);
-      expect(positions7[formation7.leftDefender7].positionIndex).toBe(1);
-      expect(positions7[formation7.rightDefender7].positionIndex).toBe(2);
-      expect(positions7[formation7.leftAttacker7].positionIndex).toBe(3);
-      expect(positions7[formation7.rightAttacker7].positionIndex).toBe(4);
-      expect(positions7[formation7.substitute7_1].positionIndex).toBe(5);
-      expect(positions7[formation7.substitute7_2].positionIndex).toBe(6);
+      expect(positions7[formation7.leftDefender].positionIndex).toBe(1);
+      expect(positions7[formation7.rightDefender].positionIndex).toBe(2);
+      expect(positions7[formation7.leftAttacker].positionIndex).toBe(3);
+      expect(positions7[formation7.rightAttacker].positionIndex).toBe(4);
+      expect(positions7[formation7.substitute_1].positionIndex).toBe(5);
+      expect(positions7[formation7.substitute_2].positionIndex).toBe(6);
     });
   });
 });

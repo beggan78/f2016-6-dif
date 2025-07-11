@@ -12,7 +12,7 @@ Contains pure functions for all game state transitions and calculations. Handles
 - `calculateGoalieSwitch()`: Manages goalie changes and role transitions
 - `calculateUndo()`: Reverses the most recent substitution with time adjustments
 - `calculatePlayerToggleInactive()`: Activates/deactivates players (7-player mode only)
-- `calculateSubstituteSwap()`: Swaps substitute7_1 and substitute7_2 positions
+- `calculateSubstituteSwap()`: Swaps substitute_1 and substitute_2 positions
 - `calculateNextSubstitutionTarget()`: Updates next player/pair to substitute
 
 **Key Characteristics**:

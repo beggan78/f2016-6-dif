@@ -65,7 +65,7 @@ const MEASUREMENTS = {
 Each team mode has specific position mappings:
 - **PAIRS_7**: leftPair (index 0), rightPair (index 1), subPair (index 2), goalie (index 3)
 - **INDIVIDUAL_6**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute (4), goalie (5)
-- **INDIVIDUAL_7**: leftDefender7 (0), rightDefender7 (1), leftAttacker7 (2), rightAttacker7 (3), substitute7_1 (4), substitute7_2 (5), goalie (6)
+- **INDIVIDUAL_7**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute_1 (4), substitute_2 (5), goalie (6)
 
 ## Usage Patterns
 

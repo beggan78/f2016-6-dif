@@ -15,12 +15,12 @@ export const createMockGameScreenProps = (overrides = {}) => ({
   currentPeriodNumber: 1,
   periodFormation: {
     goalie: '7',
-    leftDefender7: '1',
-    rightDefender7: '2',
-    leftAttacker7: '3',
-    rightAttacker7: '4',
-    substitute7_1: '5',
-    substitute7_2: '6'
+    leftDefender: '1',
+    rightDefender: '2',
+    leftAttacker: '3',
+    rightAttacker: '4',
+    substitute_1: '5',
+    substitute_2: '6'
   },
   setPeriodFormation: jest.fn(),
   allPlayers: createMockPlayers(),
@@ -38,8 +38,8 @@ export const createMockGameScreenProps = (overrides = {}) => ({
   resetSubTimer: jest.fn(),
   handleUndoSubstitution: jest.fn(),
   handleEndPeriod: jest.fn(),
-  nextPhysicalPairToSubOut: 'leftDefender7',
-  nextPlayerToSubOut: 'leftDefender7',
+  nextPhysicalPairToSubOut: 'leftDefender',
+  nextPlayerToSubOut: 'leftDefender',
   nextPlayerIdToSubOut: '1',
   nextNextPlayerIdToSubOut: '2',
   setNextNextPlayerIdToSubOut: jest.fn(),
@@ -79,9 +79,9 @@ export const createMockPlayers = (count = 7) => {
         currentPeriodRole: i <= 2 ? PLAYER_ROLES.DEFENDER :
                           i <= 4 ? PLAYER_ROLES.ATTACKER :
                           i === 7 ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
-        currentPairKey: i <= 2 ? `leftDefender7` :
-                       i <= 4 ? `leftAttacker7` :
-                       i === 7 ? 'goalie' : `substitute7_${i - 4}`,
+        currentPairKey: i <= 2 ? `leftDefender` :
+                       i <= 4 ? `leftAttacker` :
+                       i === 7 ? 'goalie' : `substitute_${i - 4}`,
         lastStintStartTimeEpoch: Date.now() - (i * 30000),
         timeOnFieldSeconds: i * 30,
         timeAsAttackerSeconds: i <= 4 ? i * 15 : 0,
@@ -127,12 +127,12 @@ export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
     default:
       return {
         goalie: '7',
-        leftDefender7: '1',
-        rightDefender7: '2',
-        leftAttacker7: '3',
-        rightAttacker7: '4',
-        substitute7_1: '5',
-        substitute7_2: '6'
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
   }
 };

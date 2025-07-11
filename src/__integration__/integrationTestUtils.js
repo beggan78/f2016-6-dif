@@ -539,12 +539,12 @@ export const createRealisticGameState = (options = {}) => {
     default:
       periodFormation = {
         goalie: selectedPlayers[0].id,
-        leftDefender7: selectedPlayers[1].id,
-        rightDefender7: selectedPlayers[2].id,
-        leftAttacker7: selectedPlayers[3].id,
-        rightAttacker7: selectedPlayers[4].id,
-        substitute7_1: selectedPlayers[5].id,
-        substitute7_2: selectedPlayers[6].id
+        leftDefender: selectedPlayers[1].id,
+        rightDefender: selectedPlayers[2].id,
+        leftAttacker: selectedPlayers[3].id,
+        rightAttacker: selectedPlayers[4].id,
+        substitute_1: selectedPlayers[5].id,
+        substitute_2: selectedPlayers[6].id
       };
       rotationQueue = selectedPlayers.slice(1).map(p => p.id); // Exclude goalie
       break;
@@ -572,7 +572,7 @@ export const createRealisticGameState = (options = {}) => {
             timestamp: Date.now() - 120000,
             playerOut: selectedPlayers[1].id,
             playerIn: selectedPlayers[5].id,
-            position: 'leftDefender7'
+            position: 'leftDefender'
           }
         ],
         periods: [

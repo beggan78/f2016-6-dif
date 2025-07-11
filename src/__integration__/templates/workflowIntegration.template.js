@@ -725,7 +725,7 @@ const completeSetupStep = async () => {
   fireEvent.change(screen.getByTestId('goalie-select'), { target: { value: 'player-1' } });
   
   // Set formation positions (for INDIVIDUAL_7)
-  const positions = ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'];
+  const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'];
   positions.forEach((position, index) => {
     fireEvent.change(screen.getByTestId(`position-select-${position}`), { 
       target: { value: `player-${index + 2}` } 

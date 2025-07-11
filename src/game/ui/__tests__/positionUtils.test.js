@@ -36,8 +36,8 @@ describe('UI positionUtils', () => {
     test('should return Shield icon for defender positions', () => {
       const result1 = getPositionIcon('leftDefender', mockSubstitutePositions6);
       const result2 = getPositionIcon('rightDefender', mockSubstitutePositions6);
-      const result3 = getPositionIcon('leftDefender7', mockSubstitutePositions7);
-      const result4 = getPositionIcon('rightDefender7', mockSubstitutePositions7);
+      const result3 = getPositionIcon('leftDefender', mockSubstitutePositions7);
+      const result4 = getPositionIcon('rightDefender', mockSubstitutePositions7);
       
       // Test that we get the correct React element type and props
       expect(result1.type.name).toBe('Shield');
@@ -49,8 +49,8 @@ describe('UI positionUtils', () => {
     test('should return Sword icon for attacker positions', () => {
       const result1 = getPositionIcon('leftAttacker', mockSubstitutePositions6);
       const result2 = getPositionIcon('rightAttacker', mockSubstitutePositions6);
-      const result3 = getPositionIcon('leftAttacker7', mockSubstitutePositions7);
-      const result4 = getPositionIcon('rightAttacker7', mockSubstitutePositions7);
+      const result3 = getPositionIcon('leftAttacker', mockSubstitutePositions7);
+      const result4 = getPositionIcon('rightAttacker', mockSubstitutePositions7);
       
       expect(result1.type.name).toBe('Sword');
       expect(result2.type.name).toBe('Sword');
@@ -60,8 +60,8 @@ describe('UI positionUtils', () => {
 
     test('should return RotateCcw icon for substitute positions', () => {
       const result1 = getPositionIcon('substitute', mockSubstitutePositions6);
-      const result2 = getPositionIcon('substitute7_1', mockSubstitutePositions7);
-      const result3 = getPositionIcon('substitute7_2', mockSubstitutePositions7);
+      const result2 = getPositionIcon('substitute_1', mockSubstitutePositions7);
+      const result3 = getPositionIcon('substitute_2', mockSubstitutePositions7);
       
       expect(result1.type.name).toBe('RotateCcw');
       expect(result2.type.name).toBe('RotateCcw');
@@ -98,12 +98,12 @@ describe('UI positionUtils', () => {
     });
 
     test('should return proper display names for individual 7 positions', () => {
-      expect(getPositionDisplayName('leftDefender7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Defender');
-      expect(getPositionDisplayName('rightDefender7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Defender');
-      expect(getPositionDisplayName('leftAttacker7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Attacker');
-      expect(getPositionDisplayName('rightAttacker7', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Attacker');
-      expect(getPositionDisplayName('substitute7_1', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
-      expect(getPositionDisplayName('substitute7_2', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
+      expect(getPositionDisplayName('leftDefender', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Defender');
+      expect(getPositionDisplayName('rightDefender', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Defender');
+      expect(getPositionDisplayName('leftAttacker', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Attacker');
+      expect(getPositionDisplayName('rightAttacker', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Attacker');
+      expect(getPositionDisplayName('substitute_1', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_2', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
     });
 
     test('should return proper display names for pair positions', () => {
@@ -117,7 +117,7 @@ describe('UI positionUtils', () => {
       // Make player inactive
       mockPlayers[4].stats.isInactive = true;
       
-      const displayName = getPositionDisplayName('substitute7_1', mockPlayers[4], TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7);
+      const displayName = getPositionDisplayName('substitute_1', mockPlayers[4], TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7);
       expect(displayName).toBe('Inactive');
     });
 
@@ -162,7 +162,7 @@ describe('UI positionUtils', () => {
 
     test('should return next-next indicators for INDIVIDUAL_7', () => {
       const mockPlayer = { id: '2' };
-      const props = getIndicatorProps(mockPlayer, 'rightDefender7', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
+      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
@@ -172,7 +172,7 @@ describe('UI positionUtils', () => {
 
     test('should return next-next on for second substitute in INDIVIDUAL_7', () => {
       const mockPlayer = { id: '6' };
-      const props = getIndicatorProps(mockPlayer, 'substitute7_2', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
+      const props = getIndicatorProps(mockPlayer, 'substitute_2', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
@@ -248,12 +248,12 @@ describe('UI positionUtils', () => {
 
     test('should construct correct event key', () => {
       const mockHandlers = {
-        substitute7_1Events: { onLongPress: jest.fn() }
+        substitute_1Events: { onLongPress: jest.fn() }
       };
       
-      const events = getPositionEvents(mockHandlers, 'substitute7_1');
+      const events = getPositionEvents(mockHandlers, 'substitute_1');
       
-      expect(events.onLongPress).toBe(mockHandlers.substitute7_1Events.onLongPress);
+      expect(events.onLongPress).toBe(mockHandlers.substitute_1Events.onLongPress);
     });
   });
 
@@ -347,7 +347,7 @@ describe('UI positionUtils', () => {
 
     test('should show next-next indicators correctly for INDIVIDUAL_7', () => {
       const mockPlayer = { id: '2' }; // This player is nextNextPlayerIdToSubOut
-      const props = getIndicatorProps(mockPlayer, 'rightDefender7', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
+      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_MODES.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7);
       
       expect(props.isNextOff).toBe(false); // Not the next player to sub out
       expect(props.isNextNextOff).toBe(true); // This is the next-next player to sub out

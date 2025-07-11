@@ -60,13 +60,8 @@ export const POSITION_DISPLAY_NAMES = {
   rightDefender: 'Right Defender', 
   leftAttacker: 'Left Attacker',
   rightAttacker: 'Right Attacker',
-  substitute: 'Substitute',
-  leftDefender7: 'Left Defender',
-  rightDefender7: 'Right Defender',
-  leftAttacker7: 'Left Attacker', 
-  rightAttacker7: 'Right Attacker',
-  substitute7_1: 'Substitute',
-  substitute7_2: 'Substitute'
+  substitute_1: 'Substitute',
+  substitute_2: 'Substitute'
 };
 
 // Help text messages

@@ -29,13 +29,13 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      expect(handlers.leftDefender7Callback).toBeDefined();
-      expect(handlers.rightDefender7Callback).toBeDefined();
-      expect(handlers.leftAttacker7Callback).toBeDefined();
-      expect(handlers.rightAttacker7Callback).toBeDefined();
-      expect(handlers.substitute7_1Callback).toBeDefined();
-      expect(handlers.substitute7_2Callback).toBeDefined();
-      expect(typeof handlers.leftDefender7Callback).toBe('function');
+      expect(handlers.leftDefenderCallback).toBeDefined();
+      expect(handlers.rightDefenderCallback).toBeDefined();
+      expect(handlers.leftAttackerCallback).toBeDefined();
+      expect(handlers.rightAttackerCallback).toBeDefined();
+      expect(handlers.substitute_1Callback).toBeDefined();
+      expect(handlers.substitute_2Callback).toBeDefined();
+      expect(typeof handlers.leftDefenderCallback).toBe('function');
     });
 
     it('should handle field player long press correctly', () => {
@@ -47,11 +47,11 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.leftDefender7Callback();
+      handlers.leftDefenderCallback();
 
       expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
         type: 'player',
-        target: 'leftDefender7',
+        target: 'leftDefender',
         playerName: 'Player 1',
         sourcePlayerId: '1',
         availablePlayers: [],
@@ -59,7 +59,7 @@ describe('createFieldPositionHandlers', () => {
       });
     });
 
-    it('should handle substitute long press for substitute7_1', () => {
+    it('should handle substitute long press for substitute_1', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_MODES.INDIVIDUAL_7,
         mockFormation,
@@ -68,7 +68,7 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.substitute7_1Callback();
+      handlers.substitute_1Callback();
 
       expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
         playerId: '5',
@@ -78,7 +78,7 @@ describe('createFieldPositionHandlers', () => {
       });
     });
 
-    it('should handle substitute long press for substitute7_2 with next to go in option', () => {
+    it('should handle substitute long press for substitute_2 with next to go in option', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_MODES.INDIVIDUAL_7,
         mockFormation,
@@ -87,7 +87,7 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.substitute7_2Callback();
+      handlers.substitute_2Callback();
 
       expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
         playerId: '6',
@@ -106,7 +106,7 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.substitute7_2Callback();
+      handlers.substitute_2Callback();
 
       expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
         playerId: '6',
@@ -129,7 +129,7 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.substitute7_1Callback();
+      handlers.substitute_1Callback();
 
       expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
         playerId: '5',
@@ -299,7 +299,7 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.substitute7_2Callback();
+      handlers.substitute_2Callback();
 
       expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
         playerId: '6',
@@ -318,11 +318,11 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.leftDefender7Callback();
+      handlers.leftDefenderCallback();
 
       expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
         type: 'player',
-        target: 'leftDefender7',
+        target: 'leftDefender',
         playerName: 'N/A',
         sourcePlayerId: undefined,
         availablePlayers: [],
@@ -347,12 +347,12 @@ describe('createFieldPositionHandlers', () => {
         'leftAttackerCallback',
         'rightAttackerCallback',
         'substituteCallback',
-        'leftDefender7Callback',
-        'rightDefender7Callback',
-        'leftAttacker7Callback',
-        'rightAttacker7Callback',
-        'substitute7_1Callback',
-        'substitute7_2Callback'
+        'leftDefenderCallback',
+        'rightDefenderCallback',
+        'leftAttackerCallback',
+        'rightAttackerCallback',
+        'substitute_1Callback',
+        'substitute_2Callback'
       ];
 
       expectedCallbacks.forEach(callback => {
@@ -373,8 +373,8 @@ describe('createFieldPositionHandlers', () => {
       expect(handlers.leftPairCallback).toBeDefined();
       expect(handlers.rightPairCallback).toBeDefined();
       expect(handlers.subPairCallback).toBeDefined();
-      expect(handlers.leftDefender7Callback).toBeUndefined();
-      expect(handlers.substitute7_1Callback).toBeUndefined();
+      expect(handlers.leftDefenderCallback).toBeUndefined();
+      expect(handlers.substitute_1Callback).toBeUndefined();
     });
   });
 });

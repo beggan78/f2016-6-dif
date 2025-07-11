@@ -6,7 +6,7 @@
 import { EVENT_TYPES } from './gameEventLogger';
 import { PLAYER_ROLES, PLAYER_STATUS, TEAM_MODES } from '../constants/playerConstants';
 import { getSelectedSquadPlayers, findPlayerById } from './playerUtils';
-import { formatTime } from './formatUtils';
+import { formatTime, formatPlayerName } from './formatUtils';
 import { MODE_DEFINITIONS } from '../constants/gameModes';
 
 /**
@@ -140,7 +140,7 @@ export const processPlayerStatistics = (allPlayers, gameLog, selectedSquadIds) =
 
       return {
         id: player.id,
-        name: player.name,
+        name: formatPlayerName(player),
         startingRole,
         timeBreakdown,
         totalActiveTime,
@@ -467,8 +467,7 @@ const analyzePlayerStartingRoleFromFormation = (playerId, formationEntry) => {
 const isFieldPositionKey = (positionKey) => {
   const fieldPositionKeys = [
     'leftPair', 'rightPair',
-    'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker',
-    'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'
+    'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'
   ];
   return fieldPositionKeys.includes(positionKey);
 };
@@ -480,7 +479,7 @@ const isFieldPositionKey = (positionKey) => {
  */
 const isSubstitutePositionKey = (positionKey) => {
   const substitutePositionKeys = [
-    'subPair', 'substitute', 'substitute7_1', 'substitute7_2'
+    'subPair', 'substitute_1', 'substitute_2'
   ];
   return substitutePositionKeys.includes(positionKey);
 };

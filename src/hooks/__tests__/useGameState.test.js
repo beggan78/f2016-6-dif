@@ -395,11 +395,11 @@ describe('useGameState', () => {
         const mockSubstitutionResult = {
           newFormation: createMockFormation(),
           updatedPlayers: createMockPlayers(),
-          newNextPhysicalPairToSubOut: 'rightDefender7',
+          newNextPhysicalPairToSubOut: 'rightDefender',
           newRotationQueue: ['2', '3', '4', '5', '6', '1'],
           newNextPlayerIdToSubOut: '2',
           newNextNextPlayerIdToSubOut: '3',
-          newNextPlayerToSubOut: 'rightDefender7'
+          newNextPlayerToSubOut: 'rightDefender'
         };
         
         mockDependencies.createSubstitutionManager.mockReturnValue({
@@ -501,13 +501,13 @@ describe('useGameState', () => {
         const players = createMockPlayers();
         
         // Set specific positions for testing
-        players[0].stats.currentPairKey = 'leftDefender7'; // Player 1
-        players[1].stats.currentPairKey = 'rightDefender7'; // Player 2
+        players[0].stats.currentPairKey = 'leftDefender'; // Player 1
+        players[1].stats.currentPairKey = 'rightDefender'; // Player 2
         players[0].stats.currentPeriodRole = PLAYER_ROLES.DEFENDER;
         players[1].stats.currentPeriodRole = PLAYER_ROLES.DEFENDER;
         
-        formation.leftDefender7 = '1';
-        formation.rightDefender7 = '2';
+        formation.leftDefender = '1';
+        formation.rightDefender = '2';
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
@@ -526,15 +526,15 @@ describe('useGameState', () => {
         expect(success).toBe(true);
         
         // Verify positions were swapped in formation
-        expect(newResult.current.periodFormation.leftDefender7).toBe('2');
-        expect(newResult.current.periodFormation.rightDefender7).toBe('1');
+        expect(newResult.current.periodFormation.leftDefender).toBe('2');
+        expect(newResult.current.periodFormation.rightDefender).toBe('1');
         
         // Verify players' position keys were updated
         const updatedPlayer1 = newResult.current.allPlayers.find(p => p.id === '1');
         const updatedPlayer2 = newResult.current.allPlayers.find(p => p.id === '2');
         
-        expect(updatedPlayer1.stats.currentPairKey).toBe('rightDefender7');
-        expect(updatedPlayer2.stats.currentPairKey).toBe('leftDefender7');
+        expect(updatedPlayer1.stats.currentPairKey).toBe('rightDefender');
+        expect(updatedPlayer2.stats.currentPairKey).toBe('leftDefender');
       });
 
       it('should not allow switching with goalie', () => {
@@ -543,7 +543,7 @@ describe('useGameState', () => {
         // Setup formation with goalie
         const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
         formation.goalie = '7';
-        formation.leftDefender7 = '1';
+        formation.leftDefender = '1';
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           periodFormation: formation,
@@ -579,10 +579,10 @@ describe('useGameState', () => {
         const formation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
         const players = createMockPlayers();
         
-        players[0].stats.currentPairKey = 'leftDefender7';
-        players[1].stats.currentPairKey = 'leftAttacker7';
-        formation.leftDefender7 = '1';
-        formation.leftAttacker7 = '2';
+        players[0].stats.currentPairKey = 'leftDefender';
+        players[1].stats.currentPairKey = 'leftAttacker';
+        formation.leftDefender = '1';
+        formation.leftAttacker = '2';
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
@@ -622,9 +622,9 @@ describe('useGameState', () => {
         
         // Setup current goalie and field player
         formation.goalie = '7';
-        formation.leftDefender7 = '1';
+        formation.leftDefender = '1';
         players[6].stats.currentPairKey = 'goalie'; // Player 7 (index 6)
-        players[0].stats.currentPairKey = 'leftDefender7'; // Player 1 (index 0)
+        players[0].stats.currentPairKey = 'leftDefender'; // Player 1 (index 0)
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,
@@ -654,7 +654,7 @@ describe('useGameState', () => {
         
         // Verify goalie was changed in formation
         expect(newResult.current.periodFormation.goalie).toBe('1');
-        expect(newResult.current.periodFormation.leftDefender7).toBe('7');
+        expect(newResult.current.periodFormation.leftDefender).toBe('7');
       });
 
       it('should not switch to same goalie', () => {
@@ -713,8 +713,8 @@ describe('useGameState', () => {
         const players = createMockPlayers();
         
         // Make player 5 a substitute
-        players[4].stats.currentPairKey = 'substitute7_1'; // Player 5 (index 4)
-        formation.substitute7_1 = '5';
+        players[4].stats.currentPairKey = 'substitute_1'; // Player 5 (index 4)
+        formation.substitute_1 = '5';
         
         mockPersistenceManager.loadState.mockReturnValue(createMockGameState({
           allPlayers: players,

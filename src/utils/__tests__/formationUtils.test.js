@@ -24,12 +24,12 @@ describe('formationUtils', () => {
       const positions = getAllPositions(TEAM_MODES.INDIVIDUAL_7);
       expect(positions).toEqual([
         'goalie',
-        'leftDefender7',
-        'rightDefender7', 
-        'leftAttacker7',
-        'rightAttacker7',
-        'substitute7_1',
-        'substitute7_2'
+        'leftDefender',
+        'rightDefender',
+        'leftAttacker',
+        'rightAttacker',
+        'substitute_1',
+        'substitute_2'
       ]);
     });
 
@@ -97,20 +97,20 @@ describe('formationUtils', () => {
       expect(definition.expectedCounts).toEqual({ outfield: 6, onField: 4 });
       expect(definition.positionOrder).toEqual([
         'goalie',
-        'leftDefender7',
-        'rightDefender7',
-        'leftAttacker7',
-        'rightAttacker7',
-        'substitute7_1',
-        'substitute7_2'
+        'leftDefender',
+        'rightDefender',
+        'leftAttacker',
+        'rightAttacker',
+        'substitute_1',
+        'substitute_2'
       ]);
       expect(definition.fieldPositions).toEqual([
-        'leftDefender7',
-        'rightDefender7', 
-        'leftAttacker7',
-        'rightAttacker7'
+        'leftDefender',
+        'rightDefender',
+        'leftAttacker',
+        'rightAttacker'
       ]);
-      expect(definition.substitutePositions).toEqual(['substitute7_1', 'substitute7_2']);
+      expect(definition.substitutePositions).toEqual(['substitute_1', 'substitute_2']);
     });
 
     it('should return null for unknown team mode', () => {
@@ -213,12 +213,12 @@ describe('formationUtils', () => {
     it('should handle INDIVIDUAL_7 roles correctly', () => {
       const definition = getModeDefinition(TEAM_MODES.INDIVIDUAL_7);
       
-      expect(definition.positions.leftDefender7.role).toBe('Defender');
-      expect(definition.positions.rightDefender7.role).toBe('Defender');
-      expect(definition.positions.leftAttacker7.role).toBe('Attacker');
-      expect(definition.positions.rightAttacker7.role).toBe('Attacker');
-      expect(definition.positions.substitute7_1.role).toBe('Substitute');
-      expect(definition.positions.substitute7_2.role).toBe('Substitute');
+      expect(definition.positions.leftDefender.role).toBe('Defender');
+      expect(definition.positions.rightDefender.role).toBe('Defender');
+      expect(definition.positions.leftAttacker.role).toBe('Attacker');
+      expect(definition.positions.rightAttacker.role).toBe('Attacker');
+      expect(definition.positions.substitute_1.role).toBe('Substitute');
+      expect(definition.positions.substitute_2.role).toBe('Substitute');
     });
 
     it('should have correct substitute count for each mode', () => {

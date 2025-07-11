@@ -129,12 +129,12 @@ describe('debugUtils', () => {
     it('should create INDIVIDUAL_7 formation correctly', () => {
       const formation = randomizeFormationPositions(mockPlayers, 'individual_7');
       
-      expect(formation).toHaveProperty('leftDefender7');
-      expect(formation).toHaveProperty('rightDefender7');
-      expect(formation).toHaveProperty('leftAttacker7');
-      expect(formation).toHaveProperty('rightAttacker7');
-      expect(formation).toHaveProperty('substitute7_1');
-      expect(formation).toHaveProperty('substitute7_2');
+      expect(formation).toHaveProperty('leftDefender');
+      expect(formation).toHaveProperty('rightDefender');
+      expect(formation).toHaveProperty('leftAttacker');
+      expect(formation).toHaveProperty('rightAttacker');
+      expect(formation).toHaveProperty('substitute_1');
+      expect(formation).toHaveProperty('substitute_2');
     });
 
     it('should assign unique players in formation', () => {

@@ -24,27 +24,27 @@ export const MODE_DEFINITIONS = {
       rightDefender: { key: 'rightDefender', role: PLAYER_ROLES.DEFENDER },
       leftAttacker: { key: 'leftAttacker', role: PLAYER_ROLES.ATTACKER },
       rightAttacker: { key: 'rightAttacker', role: PLAYER_ROLES.ATTACKER },
-      substitute: { key: 'substitute', role: PLAYER_ROLES.SUBSTITUTE }
+      substitute_1: { key: 'substitute_1', role: PLAYER_ROLES.SUBSTITUTE }
     },
     expectedCounts: { outfield: 5, onField: 4 },
-    positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute'],
+    positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'],
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
-    substitutePositions: ['substitute']
+    substitutePositions: ['substitute_1']
   },
   [TEAM_MODES.INDIVIDUAL_7]: {
     positions: {
       goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
-      leftDefender7: { key: 'leftDefender7', role: PLAYER_ROLES.DEFENDER },
-      rightDefender7: { key: 'rightDefender7', role: PLAYER_ROLES.DEFENDER },
-      leftAttacker7: { key: 'leftAttacker7', role: PLAYER_ROLES.ATTACKER },
-      rightAttacker7: { key: 'rightAttacker7', role: PLAYER_ROLES.ATTACKER },
-      substitute7_1: { key: 'substitute7_1', role: PLAYER_ROLES.SUBSTITUTE },
-      substitute7_2: { key: 'substitute7_2', role: PLAYER_ROLES.SUBSTITUTE }
+      leftDefender: { key: 'leftDefender', role: PLAYER_ROLES.DEFENDER },
+      rightDefender: { key: 'rightDefender', role: PLAYER_ROLES.DEFENDER },
+      leftAttacker: { key: 'leftAttacker', role: PLAYER_ROLES.ATTACKER },
+      rightAttacker: { key: 'rightAttacker', role: PLAYER_ROLES.ATTACKER },
+      substitute_1: { key: 'substitute_1', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_2: { key: 'substitute_2', role: PLAYER_ROLES.SUBSTITUTE }
     },
     expectedCounts: { outfield: 6, onField: 4 },
-    positionOrder: ['goalie', 'leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2'],
-    fieldPositions: ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'],
-    substitutePositions: ['substitute7_1', 'substitute7_2']
+    positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'],
+    fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
+    substitutePositions: ['substitute_1', 'substitute_2']
   }
 };
 
@@ -55,15 +55,10 @@ export const POSITION_ROLE_MAP = {
   goalie: PLAYER_ROLES.GOALIE,
   leftDefender: PLAYER_ROLES.DEFENDER,
   rightDefender: PLAYER_ROLES.DEFENDER,
-  leftDefender7: PLAYER_ROLES.DEFENDER,
-  rightDefender7: PLAYER_ROLES.DEFENDER,
   leftAttacker: PLAYER_ROLES.ATTACKER,
   rightAttacker: PLAYER_ROLES.ATTACKER,
-  leftAttacker7: PLAYER_ROLES.ATTACKER,
-  rightAttacker7: PLAYER_ROLES.ATTACKER,
-  substitute: PLAYER_ROLES.SUBSTITUTE,
-  substitute7_1: PLAYER_ROLES.SUBSTITUTE,
-  substitute7_2: PLAYER_ROLES.SUBSTITUTE
+  substitute_1: PLAYER_ROLES.SUBSTITUTE,
+  substitute_2: PLAYER_ROLES.SUBSTITUTE
 };
 
 /**

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
+import { formatPlayerName } from '../../utils/formatUtils';
 
 export function Input({ value, onChange, placeholder, id, disabled, type = 'text', className = '' }) {
   return (
@@ -138,7 +139,7 @@ export function FieldPlayerModal({
                     variant="primary"
                     className="text-left"
                   >
-                    Switch with {player.name}
+                    Switch with {formatPlayerName(player)}
                   </Button>
                 ))}
               </div>
@@ -256,7 +257,7 @@ export function GoalieModal({
                 disabled={player.isInactive}
                 className={`text-left ${player.isInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {player.name} {player.isInactive ? '(Inactive)' : ''}
+                {formatPlayerName(player)} {player.isInactive ? '(Inactive)' : ''}
               </Button>
             ))}
           </div>

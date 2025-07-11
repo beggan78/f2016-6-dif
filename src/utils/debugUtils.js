@@ -83,15 +83,15 @@ export const randomizeFormationPositions = (availablePlayers, teamMode) => {
     formation.rightDefender = shuffled[1]?.id || null;
     formation.leftAttacker = shuffled[2]?.id || null;
     formation.rightAttacker = shuffled[3]?.id || null;
-    formation.substitute = shuffled[4]?.id || null;
+    formation.substitute_1 = shuffled[4]?.id || null;
   } else if (teamMode === 'individual_7') {
     // Individual 7-player mode: 4 field positions + 2 substitutes
-    formation.leftDefender7 = shuffled[0]?.id || null;
-    formation.rightDefender7 = shuffled[1]?.id || null;
-    formation.leftAttacker7 = shuffled[2]?.id || null;
-    formation.rightAttacker7 = shuffled[3]?.id || null;
-    formation.substitute7_1 = shuffled[4]?.id || null;
-    formation.substitute7_2 = shuffled[5]?.id || null;
+    formation.leftDefender = shuffled[0]?.id || null;
+    formation.rightDefender = shuffled[1]?.id || null;
+    formation.leftAttacker = shuffled[2]?.id || null;
+    formation.rightAttacker = shuffled[3]?.id || null;
+    formation.substitute_1 = shuffled[4]?.id || null;
+    formation.substitute_2 = shuffled[5]?.id || null;
   }
   
   return formation;

@@ -41,7 +41,7 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
         } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
           newGoalieId = gameState.periodFormation.leftDefender;
         } else {
-          newGoalieId = gameState.periodFormation.leftDefender7;
+          newGoalieId = gameState.periodFormation.leftDefender;
         }
         originalQueuePosition = gameState.rotationQueue.indexOf(newGoalieId);
       }

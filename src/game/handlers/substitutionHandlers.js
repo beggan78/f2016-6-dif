@@ -7,6 +7,7 @@ import {
   calculateUndo
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
+import { formatPlayerName } from '../../utils/formatUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
@@ -78,12 +79,12 @@ export const createSubstitutionHandlers = (
       };
     } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
       return {
-        leftDefender7: formation.leftDefender7,
-        rightDefender7: formation.rightDefender7,
-        leftAttacker7: formation.leftAttacker7,
-        rightAttacker7: formation.rightAttacker7,
-        substitute7_1: formation.substitute7_1,
-        substitute7_2: formation.substitute7_2,
+        leftDefender: formation.leftDefender,
+        rightDefender: formation.rightDefender,
+        leftAttacker: formation.leftAttacker,
+        rightAttacker: formation.rightAttacker,
+        substitute_1: formation.substitute_1,
+        substitute_2: formation.substitute_2,
         goalie: formation.goalie
       };
     }
@@ -96,7 +97,7 @@ export const createSubstitutionHandlers = (
   const getPlayerNames = (playerIds, allPlayers) => {
     return playerIds.map(id => {
       const player = allPlayers.find(p => p.id === id);
-      return player ? player.name : 'Unknown';
+      return player ? formatPlayerName(player) : 'Unknown';
     }).filter(name => name !== 'Unknown');
   };
 
@@ -175,18 +176,18 @@ export const createSubstitutionHandlers = (
       const playerId = substituteModal.playerId;
       
       // Find current positions
-      const substitute7_1Id = periodFormation.substitute7_1;
-      const substitute7_2Id = periodFormation.substitute7_2;
+      const substitute_1Id = periodFormation.substitute_1;
+      const substitute_2Id = periodFormation.substitute_2;
       
-      // Only proceed if the player is substitute7_2 (next-next to go in)
-      if (playerId === substitute7_2Id) {
+      // Only proceed if the player is substitute_2 (next-next to go in)
+      if (playerId === substitute_2Id) {
         const currentTime = Date.now();
         const gameState = gameStateFactory();
         
         // Use the new animation system for substitute swap
         animateStateChange(
           gameState,
-          (state) => calculateSubstituteSwap(state, substitute7_1Id, substitute7_2Id),
+          (state) => calculateSubstituteSwap(state, substitute_1Id, substitute_2Id),
           (newGameState) => {
             // Apply the state changes
             setPeriodFormation(newGameState.periodFormation);
@@ -194,14 +195,14 @@ export const createSubstitutionHandlers = (
 
             // Log substitute order change event
             try {
-              const player1 = gameState.allPlayers.find(p => p.id === substitute7_1Id);
-              const player2 = gameState.allPlayers.find(p => p.id === substitute7_2Id);
+              const player1 = gameState.allPlayers.find(p => p.id === substitute_1Id);
+              const player2 = gameState.allPlayers.find(p => p.id === substitute_2Id);
               
               if (player1 && player2) {
                 logEvent(EVENT_TYPES.POSITION_CHANGE, {
                   type: 'substitute_order_swap',
-                  player1Id: substitute7_1Id,
-                  player2Id: substitute7_2Id,
+                  player1Id: substitute_1Id,
+                  player2Id: substitute_2Id,
                   player1Name: player1.name,
                   player2Name: player2.name,
                   description: `${player2.name} moved to next-to-go-in position`,
@@ -234,10 +235,10 @@ export const createSubstitutionHandlers = (
       const currentTime = Date.now();
       const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
-      const isSubstitute7_2BeingInactivated = playerBeingInactivated?.stats.currentPairKey === 'substitute7_2';
+      const isSubstitute7_2BeingInactivated = playerBeingInactivated?.stats.currentPairKey === 'substitute_2';
       
       if (isSubstitute7_2BeingInactivated) {
-        // No animation needed - substitute7_2 is already in the correct position for inactive players
+        // No animation needed - substitute_2 is already in the correct position for inactive players
         // Call togglePlayerInactive directly
         const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
         
@@ -522,7 +523,7 @@ export const createSubstitutionHandlers = (
             } else if (gameState.teamMode === TEAM_MODES.INDIVIDUAL_6) {
               return currentPairKey !== 'substitute';
             } else if (gameState.teamMode === TEAM_MODES.INDIVIDUAL_7) {
-              return currentPairKey !== 'substitute7_1' && currentPairKey !== 'substitute7_2';
+              return currentPairKey !== 'substitute_1' && currentPairKey !== 'substitute_2';
             }
             
             return true;

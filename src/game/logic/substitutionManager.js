@@ -135,7 +135,7 @@ export class SubstitutionManager {
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
-    const playerComingOnId = periodFormation.substitute;
+    const playerComingOnId = periodFormation.substitute_1;
 
     // Create rotation queue helper
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
@@ -143,7 +143,7 @@ export class SubstitutionManager {
 
     // Find position of outgoing player
     const playerToSubOutKey = Object.keys(periodFormation).find(key => 
-      periodFormation[key] === playerGoingOffId && key !== 'substitute' && key !== 'goalie'
+      periodFormation[key] === playerGoingOffId && key !== 'substitute_1' && key !== 'goalie'
     );
 
     const newRole = this.getPositionRole(playerToSubOutKey);
@@ -151,7 +151,7 @@ export class SubstitutionManager {
     // Calculate new formation
     const newFormation = JSON.parse(JSON.stringify(periodFormation));
     newFormation[playerToSubOutKey] = playerComingOnId;
-    newFormation.substitute = playerGoingOffId;
+    newFormation.substitute_1 = playerGoingOffId;
 
     // Calculate updated players
     const updatedPlayers = allPlayers.map(p => {
@@ -166,7 +166,7 @@ export class SubstitutionManager {
           stats: {
             ...timeResult.stats,
             currentPeriodStatus: 'substitute',
-            currentPairKey: 'substitute',
+            currentPairKey: 'substitute_1',
             currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
           }
         };
@@ -242,21 +242,21 @@ export class SubstitutionManager {
     } = context;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
-    const playerComingOnId = periodFormation.substitute7_1;
+    const playerComingOnId = periodFormation.substitute_1;
 
     // Create rotation queue helper
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     queueManager.initialize(); // Separate active and inactive players
 
     // Safety check for inactive substitute
-    const substitute7_1Player = findPlayerById(allPlayers, playerComingOnId);
-    if (substitute7_1Player?.stats.isInactive) {
-      throw new Error('substitute7_1 is inactive but was selected for substitution');
+    const substitute_1Player = findPlayerById(allPlayers, playerComingOnId);
+    if (substitute_1Player?.stats.isInactive) {
+      throw new Error('substitute_1 is inactive but was selected for substitution');
     }
 
-    // Check if substitute7_2 is inactive
-    const substitute7_2Player = findPlayerById(allPlayers, periodFormation.substitute7_2);
-    const isSubstitute7_2Inactive = substitute7_2Player?.stats.isInactive || false;
+    // Check if substitute_2 is inactive
+    const substitute_2Player = findPlayerById(allPlayers, periodFormation.substitute_2);
+    const isSubstitute_2Inactive = substitute_2Player?.stats.isInactive || false;
 
     // Find position of outgoing player
     const playerToSubOutKey = Object.keys(periodFormation).find(key => 
@@ -269,11 +269,11 @@ export class SubstitutionManager {
     const newFormation = JSON.parse(JSON.stringify(periodFormation));
     newFormation[playerToSubOutKey] = playerComingOnId;
 
-    if (isSubstitute7_2Inactive) {
-      newFormation.substitute7_1 = playerGoingOffId;
+    if (isSubstitute_2Inactive) {
+      newFormation.substitute_1 = playerGoingOffId;
     } else {
-      newFormation.substitute7_1 = periodFormation.substitute7_2;
-      newFormation.substitute7_2 = playerGoingOffId;
+      newFormation.substitute_1 = periodFormation.substitute_2;
+      newFormation.substitute_2 = playerGoingOffId;
     }
 
     // Calculate updated players
@@ -284,7 +284,7 @@ export class SubstitutionManager {
           ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
           : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
         
-        const newPairKey = isSubstitute7_2Inactive ? 'substitute7_1' : 'substitute7_2';
+        const newPairKey = isSubstitute_2Inactive ? 'substitute_1' : 'substitute_2';
         return {
           ...p,
           stats: {
@@ -311,12 +311,12 @@ export class SubstitutionManager {
           }
         };
       }
-      if (p.id === periodFormation.substitute7_2 && !isSubstitute7_2Inactive) {
+      if (p.id === periodFormation.substitute_2 && !isSubstitute_2Inactive) {
         return {
           ...p,
           stats: {
             ...p.stats,
-            currentPairKey: 'substitute7_1',
+            currentPairKey: 'substitute_1',
             currentPeriodRole: PLAYER_ROLES.SUBSTITUTE
           }
         };
@@ -346,7 +346,7 @@ export class SubstitutionManager {
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextNextPlayerIdToSubOut: nextNextPlayerIdToSubOut,
-      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender7',
+      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender',
       playersComingOnIds: [playerComingOnId],
       playersGoingOffIds: [playerGoingOffId]
     };

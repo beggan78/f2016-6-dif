@@ -162,8 +162,8 @@ describe('Baseline Integration Tests', () => {
       // Simulate formation change
       const updatedFormation = {
         ...initialGameState.periodFormation,
-        leftDefender7: initialGameState.periodFormation.rightDefender7,
-        rightDefender7: initialGameState.periodFormation.leftDefender7
+        leftDefender: initialGameState.periodFormation.rightDefender,
+        rightDefender: initialGameState.periodFormation.leftDefender
       };
       
       mockHooks.useGameState._updateMockState({
@@ -592,7 +592,7 @@ describe('Baseline Integration Tests', () => {
       // Test 1: Basic modal and animation coordination
       await executeAndWaitForAsync(async () => {
         // Open modal
-        mockHooks.useGameModals.pushModalState('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender7' });
+        mockHooks.useGameModals.pushModalState('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender' });
         
         // Set animation state
         mockHooks.useGameUIState.setAnimationState({
@@ -601,7 +601,7 @@ describe('Baseline Integration Tests', () => {
       });
       
       // Assert basic coordination
-      expect(mockHooks.useGameModals.pushModalState).toHaveBeenCalledWith('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender7' });
+      expect(mockHooks.useGameModals.pushModalState).toHaveBeenCalledWith('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender' });
       expect(mockHooks.useGameUIState.setAnimationState).toHaveBeenCalled();
       
       let modalState = mockHooks.useGameModals._getMockModalState();
@@ -623,7 +623,7 @@ describe('Baseline Integration Tests', () => {
       // Test modal stacking sequence
       await executeAndWaitForAsync(async () => {
         // Step 1: Open field player modal
-        mockHooks.useGameModals.pushModalState('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender7' });
+        mockHooks.useGameModals.pushModalState('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender' });
         
         let modalState = mockHooks.useGameModals._getMockModalState();
         expect(modalState.currentModal).toBe('fieldPlayerModal');
@@ -678,7 +678,7 @@ describe('Baseline Integration Tests', () => {
       // Test modal state preservation during UI changes
       await executeAndWaitForAsync(async () => {
         // Open modal with specific data
-        const modalData = { playerId: 'player-3', position: 'rightAttacker7', availablePlayers: ['player-5', 'player-6'] };
+        const modalData = { playerId: 'player-3', position: 'rightAttacker', availablePlayers: ['player-5', 'player-6'] };
         mockHooks.useGameModals.pushModalState('fieldPlayerModal', modalData);
         
         // Perform various UI state changes
@@ -761,7 +761,7 @@ describe('Baseline Integration Tests', () => {
         // Step 2: Open modal while animations are running
         mockHooks.useGameModals.pushModalState('fieldPlayerModal', { 
           playerId: 'player-1', 
-          position: 'leftDefender7' 
+          position: 'leftDefender'
         });
         
         // Verify modal opened
@@ -1004,7 +1004,7 @@ describe('Baseline Integration Tests', () => {
         // Step 2: Open modal while shouldSubstituteNow is active
         mockHooks.useGameModals.pushModalState('fieldPlayerModal', { 
           playerId: 'player-2', 
-          position: 'rightAttacker7' 
+          position: 'rightAttacker'
         });
         
         // Verify modal opens and flag remains
@@ -1105,7 +1105,7 @@ describe('Baseline Integration Tests', () => {
         // Step 2: Open modal for one of the recently substituted players
         mockHooks.useGameModals.pushModalState('fieldPlayerModal', { 
           playerId: 'player-1', 
-          position: 'leftDefender7',
+          position: 'leftDefender',
           wasRecentlySubstituted: true
         });
         
@@ -1201,7 +1201,7 @@ describe('Baseline Integration Tests', () => {
         // Step 2: Open modal that should temporarily hide indicators
         mockHooks.useGameModals.pushModalState('fieldPlayerModal', { 
           playerId: 'player-2', // The next player to sub out
-          position: 'rightDefender7'
+          position: 'rightDefender'
         });
         
         // Step 3: Simulate indicator hiding during modal interaction
@@ -1336,7 +1336,7 @@ describe('Baseline Integration Tests', () => {
         // Step 2: Open field player modal for animated player
         const fieldPlayerModalData = {
           playerId: 'player-2',
-          position: 'leftAttacker7',
+          position: 'leftAttacker',
           availablePlayers: ['player-5', 'player-6', 'player-7'],
           showPositionOptions: true,
           type: 'player',
@@ -1384,7 +1384,7 @@ describe('Baseline Integration Tests', () => {
         // Modal should reflect substitution animation state
         const substitutionModalData = {
           playerId: 'player-2',
-          position: 'leftAttacker7',
+          position: 'leftAttacker',
           availablePlayers: ['player-5', 'player-6', 'player-7'],
           showPositionOptions: false, // Disabled during substitution
           type: 'player',
@@ -1822,7 +1822,7 @@ describe('Baseline Integration Tests', () => {
         // Modal state: Start with field player modal
         mockHooks.useGameModals.pushModalState('fieldPlayerModal', {
           playerId: 'player-2',
-          position: 'rightDefender7',
+          position: 'rightDefender',
           availablePlayers: ['player-5', 'player-6', 'player-7'],
           triggeredBy: 'user_interaction'
         });
@@ -1858,7 +1858,7 @@ describe('Baseline Integration Tests', () => {
         // Modal should update to reflect urgency
         mockHooks.useGameModals.replaceCurrentModal('fieldPlayerModal', {
           playerId: 'player-2',
-          position: 'rightDefender7',
+          position: 'rightDefender',
           availablePlayers: ['player-5', 'player-6', 'player-7'],
           urgentSubstitution: true,
           timeRemaining: 180,
@@ -2843,10 +2843,10 @@ describe('Baseline Integration Tests', () => {
           mockHooks.useGameState.setPeriodFormation(formation);
           
           // Position swaps within formation
-          if (formation.leftDefender7 && formation.rightDefender7) {
-            const temp = formation.leftDefender7;
-            formation.leftDefender7 = formation.rightDefender7;
-            formation.rightDefender7 = temp;
+          if (formation.leftDefender && formation.rightDefender) {
+            const temp = formation.leftDefender;
+            formation.leftDefender = formation.rightDefender;
+            formation.rightDefender = temp;
             mockHooks.useGameState.setPeriodFormation({ ...formation });
           }
         });
@@ -3365,10 +3365,10 @@ describe('Baseline Integration Tests', () => {
         }},
         { type: 'position_switch', action: () => {
           const formation = mockHooks.useGameState._getMockState().periodFormation;
-          if (formation.leftAttacker7 && formation.rightAttacker7) {
-            const temp = formation.leftAttacker7;
-            formation.leftAttacker7 = formation.rightAttacker7;
-            formation.rightAttacker7 = temp;
+          if (formation.leftAttacker && formation.rightAttacker) {
+            const temp = formation.leftAttacker;
+            formation.leftAttacker = formation.rightAttacker;
+            formation.rightAttacker = temp;
             mockHooks.useGameState.setPeriodFormation({ ...formation });
           }
         }},
@@ -3426,14 +3426,14 @@ describe('Baseline Integration Tests', () => {
         { name: 'open_field_player_modal', action: () => {
           mockHooks.useGameModals.pushModalState('fieldPlayerModal', {
             playerId: 'player-2',
-            position: 'leftDefender7',
+            position: 'leftDefender',
             userTriggered: true
           });
         }},
         { name: 'change_position_in_modal', action: () => {
           mockHooks.useGameModals.replaceCurrentModal('fieldPlayerModal', {
             playerId: 'player-2',
-            position: 'rightDefender7',
+            position: 'rightDefender',
             positionChanged: true
           });
         }},
@@ -3578,7 +3578,7 @@ describe('Baseline Integration Tests', () => {
           // Open modal during animation
           mockHooks.useGameModals.pushModalState('fieldPlayerModal', {
             playerId: 'player-5',
-            position: 'substitute7',
+            position: 'substitute',
             duringAnimation: true
           });
           
@@ -3718,7 +3718,7 @@ describe('Baseline Integration Tests', () => {
               type: 'fieldPlayerModal',
               data: {
                 playerId: `player-${cycle % 7 + 1}`,
-                position: 'leftDefender7',
+                position: 'leftDefender',
                 availablePlayers: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5'],
                 showPositionOptions: true,
                 loadTestData: new Array(20).fill(`field-${cycle}`)
@@ -4175,7 +4175,7 @@ describe('Baseline Integration Tests', () => {
       render(<GameScreen {...gameScreenProps} />);
       
       // Build up modal stack
-      mockHooks.useGameModals.pushModalState('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender7' });
+      mockHooks.useGameModals.pushModalState('fieldPlayerModal', { playerId: 'player-1', position: 'leftDefender' });
       mockHooks.useGameModals.pushModalState('substituteModal', { playerId: 'player-2', isInactive: false });
       mockHooks.useGameModals.pushModalState('goalieModal', { currentGoalie: 'player-1' });
       
@@ -4680,12 +4680,12 @@ describe('Baseline Integration Tests', () => {
       // Create a detailed formation with all positions filled
       const detailedFormation = {
         goalie: 'player-1',
-        leftDefender7: 'player-2',
-        rightDefender7: 'player-3',
-        leftAttacker7: 'player-4',
-        rightAttacker7: 'player-5',
-        substitute7_1: 'player-6',
-        substitute7_2: 'player-7'
+        leftDefender: 'player-2',
+        rightDefender: 'player-3',
+        leftAttacker: 'player-4',
+        rightAttacker: 'player-5',
+        substitute_1: 'player-6',
+        substitute_2: 'player-7'
       };
       
       gameState.periodFormation = detailedFormation;
@@ -4745,12 +4745,12 @@ describe('Baseline Integration Tests', () => {
       // Formation structure should be preserved
       expect(formationAfterErrors).toEqual(originalFormation);
       expect(formationAfterErrors.goalie).toBe('player-1');
-      expect(formationAfterErrors.leftDefender7).toBe('player-2');
-      expect(formationAfterErrors.rightDefender7).toBe('player-3');
-      expect(formationAfterErrors.leftAttacker7).toBe('player-4');
-      expect(formationAfterErrors.rightAttacker7).toBe('player-5');
-      expect(formationAfterErrors.substitute7_1).toBe('player-6');
-      expect(formationAfterErrors.substitute7_2).toBe('player-7');
+      expect(formationAfterErrors.leftDefender).toBe('player-2');
+      expect(formationAfterErrors.rightDefender).toBe('player-3');
+      expect(formationAfterErrors.leftAttacker).toBe('player-4');
+      expect(formationAfterErrors.rightAttacker).toBe('player-5');
+      expect(formationAfterErrors.substitute_1).toBe('player-6');
+      expect(formationAfterErrors.substitute_2).toBe('player-7');
       
       // Formation should still be renderable despite UI errors
       expect(screen.getAllByText(/Goalie/i)[0]).toBeInTheDocument();
@@ -4761,19 +4761,19 @@ describe('Baseline Integration Tests', () => {
       
       // Formation should handle position swaps despite errors
       const newFormation = { ...formationAfterErrors };
-      newFormation.leftDefender7 = 'player-3';
-      newFormation.rightDefender7 = 'player-2';
+      newFormation.leftDefender = 'player-3';
+      newFormation.rightDefender = 'player-2';
       
       mockHooks.useGameState.setPeriodFormation(newFormation);
       const swappedFormation = mockHooks.useGameState._getMockState().periodFormation;
       
-      expect(swappedFormation.leftDefender7).toBe('player-3');
-      expect(swappedFormation.rightDefender7).toBe('player-2');
+      expect(swappedFormation.leftDefender).toBe('player-3');
+      expect(swappedFormation.rightDefender).toBe('player-2');
       
       // Other positions should remain unchanged
       expect(swappedFormation.goalie).toBe('player-1');
-      expect(swappedFormation.leftAttacker7).toBe('player-4');
-      expect(swappedFormation.rightAttacker7).toBe('player-5');
+      expect(swappedFormation.leftAttacker).toBe('player-4');
+      expect(swappedFormation.rightAttacker).toBe('player-5');
     });
     
     it('should protect player stats and rotation data during system errors', async () => {

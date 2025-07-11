@@ -23,6 +23,7 @@ export const initializePlayers = (roster) => roster.map((name, index) => ({
     lastStintStartTimeEpoch: 0, // For calculating duration of current stint
     currentPairKey: null, // 'leftPair', 'rightPair', 'subPair'
     isInactive: false, // For 7-player individual mode - temporarily removes player from rotation
+    isCaptain: false, // Captain designation for the current game
   }
 }));
 
@@ -52,14 +53,32 @@ export const findPlayerById = (allPlayers, playerId) => {
 };
 
 /**
- * Gets a player's name by ID, with fallback
+ * Gets a player's name by ID, with fallback, including captain designation
  * @param {Array} allPlayers - Array of all players
  * @param {string} playerId - Player ID to get name for
  * @param {string} fallback - Fallback name if player not found (default: 'N/A')
- * @returns {string} Player name or fallback
+ * @returns {string} Player name with captain designation or fallback
  */
 export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
-  return findPlayerById(allPlayers, playerId)?.name || fallback;
+  const player = findPlayerById(allPlayers, playerId);
+  if (!player) {
+    console.log('[DEBUG] getPlayerName - Player not found:', { playerId, fallback });
+    return fallback;
+  }
+  
+  const isCaptain = player.stats?.isCaptain;
+  const formattedName = isCaptain ? `${player.name} (C)` : player.name;
+  
+  if (isCaptain) {
+    console.log('[DEBUG] getPlayerName - Captain found:', {
+      playerId,
+      playerName: player.name,
+      isCaptain: isCaptain,
+      formattedName: formattedName
+    });
+  }
+  
+  return formattedName;
 };
 
 /**
@@ -116,4 +135,40 @@ export const getPlayersByStatus = (allPlayers, selectedSquadIds, status) => {
 export const isPlayerInactive = (allPlayers, playerId) => {
   const player = findPlayerById(allPlayers, playerId);
   return player?.stats?.isInactive || false;
+};
+
+/**
+ * Gets the current captain player
+ * @param {Array} allPlayers - Array of all players
+ * @returns {Object|null} Captain player object or null if no captain assigned
+ */
+export const getCaptainPlayer = (allPlayers) => {
+  return allPlayers.find(player => player.stats?.isCaptain) || null;
+};
+
+/**
+ * Checks if a player is the captain
+ * @param {Array} allPlayers - Array of all players
+ * @param {string} playerId - Player ID to check
+ * @returns {boolean} True if player is captain, false otherwise
+ */
+export const isPlayerCaptain = (allPlayers, playerId) => {
+  const player = findPlayerById(allPlayers, playerId);
+  return player?.stats?.isCaptain || false;
+};
+
+/**
+ * Sets a player as captain (removing captain status from previous captain)
+ * @param {Array} allPlayers - Array of all players
+ * @param {string} newCaptainId - Player ID to set as captain, or null to remove captain
+ * @returns {Array} Updated players array with new captain assignment
+ */
+export const setCaptain = (allPlayers, newCaptainId) => {
+  return allPlayers.map(player => ({
+    ...player,
+    stats: {
+      ...player.stats,
+      isCaptain: player.id === newCaptainId
+    }
+  }));
 };

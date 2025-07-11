@@ -1,6 +1,7 @@
 import { animateStateChange } from '../animation/animationSupport';
 import { calculateGoalieSwitch } from '../logic/gameStateLogic';
 import { getPlayerName, getOutfieldPlayers } from '../../utils/playerUtils';
+import { formatPlayerName } from '../../utils/formatUtils';
 import { logEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createGoalieHandlers = (
@@ -41,7 +42,7 @@ export const createGoalieHandlers = (
     const outfieldPlayers = getOutfieldPlayers(allPlayers, selectedSquadIds, periodFormation.goalie);
     const availablePlayers = outfieldPlayers.map(player => ({
       id: player.id,
-      name: player.name
+      name: formatPlayerName(player)
     }));
 
     openGoalieModal({

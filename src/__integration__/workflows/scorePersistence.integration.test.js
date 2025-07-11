@@ -303,12 +303,12 @@ describe('Integration: Score Persistence', () => {
         selectedSquadIds: initialRoster.slice(0, 7).map(p => p.id),
         periodFormation: {
           goalie: 'p1',
-          leftDefender7: 'p2',
-          rightDefender7: 'p3',
-          leftAttacker7: 'p4',
-          rightAttacker7: 'p5',
-          substitute7_1: 'p6',
-          substitute7_2: 'p7'
+          leftDefender: 'p2',
+          rightDefender: 'p3',
+          leftAttacker: 'p4',
+          rightAttacker: 'p5',
+          substitute_1: 'p6',
+          substitute_2: 'p7'
         }
       };
 

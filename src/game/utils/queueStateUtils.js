@@ -86,9 +86,9 @@ export const analyzePairsFromIndividualQueue = (rotationQueue, periodFormation) 
   
   // Check which pair contains the next player
   const pairs = [
-    { key: 'leftPair', defender: periodFormation.leftDefender7, attacker: periodFormation.leftAttacker7 },
-    { key: 'rightPair', defender: periodFormation.rightDefender7, attacker: periodFormation.rightAttacker7 },
-    { key: 'subPair', defender: periodFormation.substitute7_1, attacker: periodFormation.substitute7_2 }
+    { key: 'leftPair', defender: periodFormation.leftDefender, attacker: periodFormation.leftAttacker },
+    { key: 'rightPair', defender: periodFormation.rightDefender, attacker: periodFormation.rightAttacker },
+    { key: 'subPair', defender: periodFormation.substitute_1, attacker: periodFormation.substitute_2 }
   ];
   
   // First check if next two players form a complete pair
@@ -159,16 +159,16 @@ export const createPrioritizedRotationQueue = (priorityPair, periodFormation) =>
 export const convertToPairFormation = (periodFormation) => {
   return {
     leftPair: {
-      defender: periodFormation.leftDefender7,
-      attacker: periodFormation.leftAttacker7
+      defender: periodFormation.leftDefender,
+      attacker: periodFormation.leftAttacker
     },
     rightPair: {
-      defender: periodFormation.rightDefender7,
-      attacker: periodFormation.rightAttacker7
+      defender: periodFormation.rightDefender,
+      attacker: periodFormation.rightAttacker
     },
     subPair: {
-      defender: periodFormation.substitute7_1,
-      attacker: periodFormation.substitute7_2
+      defender: periodFormation.substitute_1,
+      attacker: periodFormation.substitute_2
     },
     goalie: periodFormation.goalie
   };

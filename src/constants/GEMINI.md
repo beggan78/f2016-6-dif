@@ -6,7 +6,7 @@ This directory centralizes all static, unchanging values and configurations used
 
 - **`formations.js`**: This is the most critical constant file, defining the complete structure and properties of all supported team modes (`PAIRS_7`, `INDIVIDUAL_6`, `INDIVIDUAL_7`). It includes:
   - `MODE_DEFINITIONS`: A comprehensive object detailing positions, expected player counts, and the order of positions for each team mode.
-  - `POSITION_ROLE_MAP`: A lookup table that maps specific position keys (e.g., `leftDefender`, `substitute7_1`) to their corresponding `PLAYER_ROLES`.
+  - `POSITION_ROLE_MAP`: A lookup table that maps specific position keys (e.g., `leftDefender`, `substitute_1`) to their corresponding `PLAYER_ROLES`.
   - Helper functions (`getFormationPositions`, `getFormationPositionsWithGoalie`) to easily retrieve position lists based on team mode.
 
 - **`playerConstants.js`**: Defines fundamental constants related to players and their status:

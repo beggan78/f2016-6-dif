@@ -3,7 +3,7 @@ import { ListChecks, PlusCircle, Copy, FileText } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
-import { formatPoints, generateStatsText } from '../../utils/formatUtils';
+import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -91,7 +91,7 @@ export function StatsScreen({
               const { goaliePoints, defenderPoints, attackerPoints } = calculateRolePoints(player);
               return (
                 <tr key={player.id}>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{player.name}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{formatPlayerName(player)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">
                     {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
                         player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :

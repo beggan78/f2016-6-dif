@@ -104,21 +104,21 @@ describe('IndividualFormation', () => {
       if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
         return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
       }
-      return ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7'];
+      return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
     });
     
     getSubstitutePositions.mockImplementation((teamMode) => {
       if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
         return ['substitute'];
       }
-      return ['substitute7_1', 'substitute7_2'];
+      return ['substitute_1', 'substitute_2'];
     });
     
     getAllPositions.mockImplementation((teamMode) => {
       if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
         return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute', 'goalie'];
       }
-      return ['leftDefender7', 'rightDefender7', 'leftAttacker7', 'rightAttacker7', 'substitute7_1', 'substitute7_2', 'goalie'];
+      return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2', 'goalie'];
     });
     
     getPositionIcon.mockImplementation((position, substitutePositions) => {
@@ -129,11 +129,11 @@ describe('IndividualFormation', () => {
     });
     
     getPositionDisplayName.mockImplementation((position, player, teamMode, substitutePositions) => {
-      if (position === 'leftDefender' || position === 'leftDefender7') return 'Left Defender';
-      if (position === 'rightDefender' || position === 'rightDefender7') return 'Right Defender';
-      if (position === 'leftAttacker' || position === 'leftAttacker7') return 'Left Attacker';
-      if (position === 'rightAttacker' || position === 'rightAttacker7') return 'Right Attacker';
-      if (position === 'substitute' || position.includes('substitute7')) return 'Substitute';
+      if (position === 'leftDefender' || position === 'leftDefender') return 'Left Defender';
+      if (position === 'rightDefender' || position === 'rightDefender') return 'Right Defender';
+      if (position === 'leftAttacker' || position === 'leftAttacker') return 'Left Attacker';
+      if (position === 'rightAttacker' || position === 'rightAttacker') return 'Right Attacker';
+      if (position === 'substitute' || position.includes('substitute')) return 'Substitute';
       return position;
     });
     
@@ -191,22 +191,22 @@ describe('IndividualFormation', () => {
       // Check player names are displayed (using flexible text matching)
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '🛡️ Player 1';
-      })).toBeInTheDocument(); // leftDefender7
+      })).toBeInTheDocument(); // leftDefender
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '🛡️ Player 2';
-      })).toBeInTheDocument(); // rightDefender7
+      })).toBeInTheDocument(); // rightDefender
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '⚔️ Player 3';
-      })).toBeInTheDocument(); // leftAttacker7
+      })).toBeInTheDocument(); // leftAttacker
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '⚔️ Player 4';
-      })).toBeInTheDocument(); // rightAttacker7
+      })).toBeInTheDocument(); // rightAttacker
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '🔄 Player 5';
-      })).toBeInTheDocument(); // substitute7_1
+      })).toBeInTheDocument(); // substitute_1
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '🔄 Player 6';
-      })).toBeInTheDocument(); // substitute7_2
+      })).toBeInTheDocument(); // substitute_2
     });
 
     it('should render PlayerStatsDisplay components for each player', () => {
@@ -265,12 +265,12 @@ describe('IndividualFormation', () => {
       const props = {
         ...defaultProps,
         periodFormation: {
-          leftDefender7: '1',
-          rightDefender7: null,
-          leftAttacker7: undefined,
-          rightAttacker7: '4',
-          substitute7_1: '5',
-          substitute7_2: '6',
+          leftDefender: '1',
+          rightDefender: null,
+          leftAttacker: undefined,
+          rightAttacker: '4',
+          substitute_1: '5',
+          substitute_2: '6',
           goalie: '7'
         }
       };
@@ -340,7 +340,7 @@ describe('IndividualFormation', () => {
     it('should show "Next Off" indicator for nextPlayerIdToSubOut', () => {
       const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
       getIndicatorProps.mockImplementation((player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) => {
-        if (player?.id === '1') { // leftDefender7 player
+        if (player?.id === '1') { // leftDefender player
           return { isNextOff: true, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
         }
         return { isNextOff: false, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
@@ -354,7 +354,7 @@ describe('IndividualFormation', () => {
     it('should show "Next On" indicator for substitute positions', () => {
       const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
       getIndicatorProps.mockImplementation((player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) => {
-        if (player?.id === '5') { // substitute7_1 player
+        if (player?.id === '5') { // substitute_1 player
           return { isNextOff: false, isNextOn: true, isNextNextOff: false, isNextNextOn: false };
         }
         return { isNextOff: false, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
@@ -368,7 +368,7 @@ describe('IndividualFormation', () => {
     it('should show next-next indicators in INDIVIDUAL_7', () => {
       const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
       getIndicatorProps.mockImplementation((player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) => {
-        if (player?.id === '2') { // rightDefender7 player
+        if (player?.id === '2') { // rightDefender player
           return { isNextOff: false, isNextOn: false, isNextNextOff: true, isNextNextOn: false };
         }
         return { isNextOff: false, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
@@ -399,7 +399,7 @@ describe('IndividualFormation', () => {
       
       const props = {
         ...defaultProps,
-        recentlySubstitutedPlayers: new Set(['1', '2']) // leftDefender7 and rightDefender7
+        recentlySubstitutedPlayers: new Set(['1', '2']) // leftDefender and rightDefender
       };
       
       render(<IndividualFormation {...props} />);
@@ -432,7 +432,7 @@ describe('IndividualFormation', () => {
       // Mock a player as inactive
       const { findPlayerById } = require('../../../../utils/playerUtils');
       findPlayerById.mockImplementation((players, id) => {
-        if (id === '5') { // substitute7_1
+        if (id === '5') { // substitute_1
           return { id: '5', stats: { isInactive: true } };
         }
         return { id, stats: { isInactive: false } };
@@ -481,12 +481,12 @@ describe('IndividualFormation', () => {
       render(<IndividualFormation {...defaultProps} />);
       
       // Should call getPositionEvents for each position
-      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'leftDefender7');
-      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'rightDefender7');
-      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'leftAttacker7');
-      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'rightAttacker7');
-      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'substitute7_1');
-      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'substitute7_2');
+      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'leftDefender');
+      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'rightDefender');
+      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'leftAttacker');
+      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'rightAttacker');
+      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'substitute_1');
+      expect(getPositionEvents).toHaveBeenCalledWith(mockLongPressHandlers, 'substitute_2');
     });
 
     it('should handle missing longPressHandlers gracefully', () => {
@@ -537,7 +537,7 @@ describe('IndividualFormation', () => {
         animationState: {
           type: 'substitution',
           phase: 'switching',
-          data: { fromPosition: 'leftDefender7', toPosition: 'substitute7_1' }
+          data: { fromPosition: 'leftDefender', toPosition: 'substitute_1' }
         }
       };
       
@@ -631,10 +631,10 @@ describe('IndividualFormation', () => {
       const props = {
         ...defaultProps,
         periodFormation: {
-          leftDefender7: 'invalid-id',
-          rightDefender7: 123, // Should be string
-          leftAttacker7: '', // Empty string
-          rightAttacker7: '4'
+          leftDefender: 'invalid-id',
+          rightDefender: 123, // Should be string
+          leftAttacker: '', // Empty string
+          rightAttacker: '4'
           // Missing substitute positions
         }
       };

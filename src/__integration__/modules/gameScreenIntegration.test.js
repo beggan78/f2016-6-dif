@@ -325,15 +325,15 @@ describe('GameScreen Integration Tests', () => {
       
       // Assert initial state
       const initialFormation = gameState.periodFormation;
-      const initialLeftDefender = gameState.allPlayers.find(p => p.id === initialFormation.leftDefender7);
+      const initialLeftDefender = gameState.allPlayers.find(p => p.id === initialFormation.leftDefender);
       expect(screen.getByText(new RegExp(initialLeftDefender.name))).toBeInTheDocument();
       
       // Act - Simulate position change (swap left defender with substitute)
-      const substitute = gameState.allPlayers.find(p => p.id === initialFormation.substitute7_1);
+      const substitute = gameState.allPlayers.find(p => p.id === initialFormation.substitute_1);
       const updatedFormation = {
         ...initialFormation,
-        leftDefender7: substitute.id,
-        substitute7_1: initialLeftDefender.id
+        leftDefender: substitute.id,
+        substitute_1: initialLeftDefender.id
       };
       
       mockHooks.useGameState._updateMockState({
@@ -416,7 +416,7 @@ describe('GameScreen Integration Tests', () => {
     it('should handle player status changes and UI updates', async () => {
       // Arrange - Use INDIVIDUAL_7 which supports inactive players
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute7_1);
+      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_1);
       
       mockHooks.useGameState._updateMockState({
         periodFormation: gameState.periodFormation,
@@ -555,7 +555,7 @@ describe('GameScreen Integration Tests', () => {
     it('should display player stats correctly in formation context', async () => {
       // Arrange - Use INDIVIDUAL_7 which has comprehensive stats display
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.leftDefender7);
+      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.leftDefender);
       
       // Setup player with time stats
       const updatedPlayers = gameState.allPlayers.map(player => 
@@ -671,8 +671,8 @@ describe('GameScreen Integration Tests', () => {
     it('should handle inactive player management in formations', async () => {
       // Arrange - Use INDIVIDUAL_7 which supports inactive players
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const substitute1 = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute7_1);
-      const substitute2 = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute7_2);
+      const substitute1 = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_1);
+      const substitute2 = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_2);
       
       mockHooks.useGameState._updateMockState({
         periodFormation: gameState.periodFormation,
@@ -882,7 +882,7 @@ describe('GameScreen Integration Tests', () => {
     it('should handle long-press interactions on formation players', async () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const leftDefender = gameState.allPlayers.find(p => p.id === gameState.periodFormation.leftDefender7);
+      const leftDefender = gameState.allPlayers.find(p => p.id === gameState.periodFormation.leftDefender);
       
       mockHooks.useGameState._updateMockState({
         periodFormation: gameState.periodFormation,
@@ -1037,7 +1037,7 @@ describe('GameScreen Integration Tests', () => {
     it('should provide visual feedback and responsive interactions', async () => {
       // Arrange
       const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute7_1);
+      const testPlayer = gameState.allPlayers.find(p => p.id === gameState.periodFormation.substitute_1);
       
       mockHooks.useGameState._updateMockState({
         periodFormation: gameState.periodFormation,

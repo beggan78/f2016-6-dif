@@ -5,6 +5,7 @@ import { TEAM_MODES } from '../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
+import { formatPlayerName } from '../../utils/formatUtils';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -24,6 +25,8 @@ export function ConfigurationScreen({
   selectedSquadPlayers,
   opponentTeamName,
   setOpponentTeamName,
+  captainId,
+  setCaptain,
   debugMode = false
 }) {
   const togglePlayerSelection = (playerId) => {
@@ -37,6 +40,11 @@ export function ConfigurationScreen({
         setTeamMode(TEAM_MODES.PAIRS_7); // Default to pairs for 7-player
       }
       
+      // Clear captain if the captain is being deselected
+      if (captainId && !newIds.includes(captainId)) {
+        setCaptain(null);
+      }
+      
       return newIds;
     });
   };
@@ -45,10 +53,24 @@ export function ConfigurationScreen({
     setPeriodGoalieIds(prev => ({ ...prev, [period]: playerId }));
   };
 
+  const handleCaptainChange = (playerId) => {
+    // Empty string means no captain selected
+    const captainId = playerId === "" ? null : playerId;
+    
+    console.log('[DEBUG] ConfigurationScreen.handleCaptainChange:', {
+      selectedValue: playerId,
+      captainId: captainId,
+      selectedSquadPlayers: selectedSquadPlayers.map(p => ({ id: p.id, name: p.name }))
+    });
+    
+    setCaptain(captainId);
+  };
+
   const randomizeConfiguration = () => {
     // Clear existing selections
     setSelectedSquadIds([]);
     setPeriodGoalieIds({});
+    setCaptain(null);
     
     // Randomly select 7 players from roster
     const randomPlayers = getRandomPlayers(allPlayers, 7);
@@ -87,7 +109,7 @@ export function ConfigurationScreen({
                 className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
                 disabled={selectedSquadIds.length >= 7 && !selectedSquadIds.includes(player.id)}
               />
-              <span>{player.name}</span>
+              <span>{formatPlayerName(player)}</span>
             </label>
           ))}
         </div>
@@ -171,11 +193,31 @@ export function ConfigurationScreen({
                   id={`goalie_p${period}`}
                   value={periodGoalieIds[period] || ""}
                   onChange={e => handleGoalieChange(period, e.target.value)}
-                  options={selectedSquadPlayers.map(p => ({ value: p.id, label: p.name }))}
+                  options={selectedSquadPlayers.map(p => ({ value: p.id, label: formatPlayerName(p) }))}
                   placeholder="Select Goalie"
                 />
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Captain Assignment */}
+      {(selectedSquadIds.length === 6 || selectedSquadIds.length === 7) && (
+        <div className="p-3 bg-slate-700 rounded-md">
+          <h3 className="text-base font-medium text-sky-200 mb-2">Assign Captain</h3>
+          <div>
+            <label htmlFor="captain" className="block text-sm font-medium text-sky-200 mb-1">Team Captain</label>
+            <Select
+              id="captain"
+              value={captainId || ""}
+              onChange={e => handleCaptainChange(e.target.value)}
+              options={[
+                { value: "", label: "No Captain" },
+                ...selectedSquadPlayers.map(p => ({ value: p.id, label: formatPlayerName(p) }))
+              ]}
+            />
+            <p className="text-xs text-slate-400 mt-1">Optional - select a team captain for this game</p>
           </div>
         </div>
       )}
