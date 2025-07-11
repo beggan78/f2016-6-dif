@@ -4,6 +4,8 @@
 
 This document provides quick solutions to common testing issues encountered in the DIF F16-6 Coach application.
 
+*See `.claude/testing-guidelines.md` for comprehensive testing patterns and best practices.*
+
 ## 1. Module Mocking Issues
 
 ### Problem: Variable Hoisting in Jest Mocks
@@ -86,68 +88,16 @@ jest.mock('lucide-react', () => ({
 
 ## 3. Utility Function Mocking
 
-### Problem: Input Sanitization Mock (AddPlayerModal Issue)
-**Issue**: `sanitizeNameInput` mock not handling edge cases properly
+### Problem: Utility Function Mocks Not Matching Expected Behavior
+**Common Issues**:
+- `sanitizeNameInput` mock not handling edge cases (length limits, character filtering)
+- `calculateRolePoints` mock not returning expected object structure
+- Mock functions returning undefined instead of realistic data
 
-**Solution**: Realistic mock implementation
-```javascript
-jest.mock('../../../utils/inputSanitization', () => ({
-  sanitizeNameInput: jest.fn((input) => {
-    if (typeof input !== 'string') return '';
-    
-    let result = input;
-    if (result.length > 50) {
-      result = result.substring(0, 50);
-    }
-    
-    // Remove invalid characters
-    result = result.replace(/[^a-zA-ZÀ-ÿ0-9\s\-'&.]/g, '');
-    
-    return result;
-  })
-}));
-```
-
-### Problem: Role Points Calculation Mock (StatsScreen Issue)
-**Issue**: `calculateRolePoints` mock not matching expected return structure
-
-**Solution**: Match actual function behavior
-```javascript
-jest.mock('../../../utils/rolePointUtils', () => ({
-  calculateRolePoints: jest.fn((player) => {
-    if (!player || !player.stats) {
-      return { goaliePoints: 0, defenderPoints: 0, attackerPoints: 0 };
-    }
-    
-    const goaliePoints = player.stats.periodsAsGoalie || 0;
-    const remainingPoints = 3 - goaliePoints;
-    
-    if (remainingPoints <= 0) {
-      return { goaliePoints, defenderPoints: 0, attackerPoints: 0 };
-    }
-    
-    // Simplified but realistic logic
-    const totalOutfieldTime = 
-      (player.stats.timeAsDefenderSeconds || 0) + 
-      (player.stats.timeAsAttackerSeconds || 0);
-    
-    if (totalOutfieldTime === 0) {
-      return { goaliePoints, defenderPoints: 0, attackerPoints: 0 };
-    }
-    
-    const defenderPoints = Math.round(
-      ((player.stats.timeAsDefenderSeconds || 0) / totalOutfieldTime) * 
-      remainingPoints * 2
-    ) / 2;
-    
-    return {
-      goaliePoints,
-      defenderPoints,
-      attackerPoints: remainingPoints - defenderPoints
-    };
-  })
-}));
-```
+**Solution**: Create realistic mock implementations that match actual function behavior
+- Return proper data structures (objects with expected properties)
+- Handle edge cases (null/undefined inputs, boundary conditions)
+- Use simplified but realistic business logic in mocks
 
 ## 4. Browser API Mocking
 
@@ -282,73 +232,31 @@ it('should handle form submission', () => {
 ## 8. Console Warning Suppression
 
 ### Problem: React Key Warnings in Tests
-```javascript
-// ✅ Suppress specific warnings during tests
-beforeEach(() => {
-  const originalError = console.error;
-  jest.spyOn(console, 'error').mockImplementation((...args) => {
-    // Filter React key warnings
-    if (args[0]?.includes?.('Each child in a list should have a unique "key" prop')) {
-      return;
-    }
-    originalError.call(console, ...args);
-  });
-});
+**Issue**: React warnings cluttering test output (key warnings, prop warnings)
 
-afterEach(() => {
-  console.error.mockRestore();
-});
-```
+**Solution**: Selectively suppress known warnings while preserving real errors
+- Mock `console.error` to filter specific warning patterns
+- Restore original console behavior after tests
+- Only suppress expected warnings, not real errors
 
 ## 9. Memory Management in Tests
 
 ### Problem: Memory Leaks in Test Suites
-```javascript
-// ✅ Proper cleanup in tests
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+**Issue**: Tests leaving behind mocks, event listeners, or React components
 
-afterEach(() => {
-  cleanup(); // From @testing-library/react
-});
-
-afterAll(() => {
-  // Restore any global mocks
-  jest.restoreAllMocks();
-});
-```
+**Solution**: Implement proper cleanup patterns
+- Use `jest.clearAllMocks()` in `beforeEach`
+- Use `cleanup()` from @testing-library/react in `afterEach`
+- Use `jest.restoreAllMocks()` in `afterAll`
+- Clear timers and intervals in cleanup
 
 ## 10. Debugging Test Failures
 
-### Debugging Tool: Screen Debug
-```javascript
-// ✅ Debug what's actually rendered
-it('should render correctly', () => {
-  render(<Component />);
-  
-  // See what's rendered
-  screen.debug();
-  
-  // Or debug specific element
-  const element = screen.getByTestId('test-element');
-  screen.debug(element);
-});
-```
-
-### Debugging Tool: Query Failures
-```javascript
-// ✅ Debug query failures
-it('should find element', () => {
-  render(<Component />);
-  
-  // This will show available elements if query fails
-  expect(screen.getByText('Expected Text')).toBeInTheDocument();
-  
-  // Alternative: check what's available
-  expect(screen.queryByText('Expected Text')).toBeInTheDocument();
-});
-```
+### Debugging Tools
+- Use `screen.debug()` to see what's actually rendered
+- Use `screen.debug(element)` to debug specific elements
+- Check query failures with `screen.queryByText()` vs `screen.getByText()`
+- Use browser DevTools React extension for component inspection
 
 ## Quick Reference Commands
 

@@ -205,60 +205,17 @@ Test complete user journeys:
 - Timer state persistence and pause handling
 
 ## Performance Testing Considerations
-
-### 1. Component Performance
-```javascript
-// Test component rendering performance
-it('should render efficiently with large datasets', () => {
-  const largeDataset = createMockPlayers(50);
-  const startTime = performance.now();
-  
-  render(<Component players={largeDataset} />);
-  
-  const endTime = performance.now();
-  expect(endTime - startTime).toBeLessThan(100); // 100ms threshold
-});
-```
-
-### 2. Memory Management
-```javascript
-// Test memory cleanup
-it('should clean up properly on unmount', () => {
-  const { unmount } = renderHook(() => useCustomHook());
-  
-  unmount();
-  
-  // Verify cleanup occurred
-  expect(mockCleanupFunction).toHaveBeenCalled();
-});
-```
+- Test component rendering with large datasets
+- Verify memory cleanup on unmount
+- Monitor test execution time
+- Set performance thresholds (e.g., <100ms render time)
+- Test memory leak prevention in hooks
 
 ## Accessibility Testing
-
-### 1. Basic Accessibility
-```javascript
-// Test ARIA labels and keyboard navigation
-it('should have proper accessibility attributes', () => {
-  render(<Component />);
-  
-  const element = screen.getByRole('button');
-  expect(element).toHaveAccessibleName();
-  expect(element).toHaveAttribute('aria-label');
-});
-```
-
-### 2. Keyboard Navigation
-```javascript
-// Test keyboard interactions
-it('should handle keyboard navigation', () => {
-  render(<Component />);
-  
-  const element = screen.getByRole('button');
-  fireEvent.keyDown(element, { key: 'Enter' });
-  
-  expect(mockHandler).toHaveBeenCalled();
-});
-```
+- Test ARIA labels and accessible names
+- Verify keyboard navigation (Enter, Space, Tab)
+- Check focus management and visual indicators
+- Test with screen reader scenarios
 
 ## Error Handling Testing
 
@@ -312,48 +269,16 @@ it('should handle async errors', async () => {
 - Use realistic mock implementations
 - Verify mock calls when testing side effects
 
-## Common Pitfalls and Solutions
+## Common Pitfalls
 
-### 1. Mocking Issues
-**Problem**: Jest module mocking with variable hoisting
-```javascript
-// ❌ This fails due to hoisting
-const mockFn = jest.fn();
-jest.mock('./module', () => ({ fn: mockFn }));
+### Key Issues to Avoid
+- **Mock Hoisting**: Jest module mocking variable hoisting issues
+- **Async Testing**: Missing `waitFor` or `await` in async operations
+- **Implementation Testing**: Testing internal state instead of user behavior
+- **Mock Structure**: Mocks returning undefined instead of expected objects
+- **Memory Leaks**: Not cleaning up mocks and event listeners
 
-// ✅ This works
-jest.mock('./module', () => ({
-  fn: jest.fn()
-}));
-```
-
-### 2. Async Testing
-**Problem**: Testing async operations without proper waiting
-```javascript
-// ❌ This may fail due to timing
-it('should update after async operation', () => {
-  render(<AsyncComponent />);
-  expect(screen.getByText('Updated')).toBeInTheDocument();
-});
-
-// ✅ This waits properly
-it('should update after async operation', async () => {
-  render(<AsyncComponent />);
-  await waitFor(() => {
-    expect(screen.getByText('Updated')).toBeInTheDocument();
-  });
-});
-```
-
-### 3. State Testing
-**Problem**: Testing internal state instead of behavior
-```javascript
-// ❌ Testing implementation details
-expect(component.state.value).toBe('expected');
-
-// ✅ Testing user-visible behavior
-expect(screen.getByDisplayValue('expected')).toBeInTheDocument();
-```
+*For detailed solutions and code examples, see `.claude/testing-troubleshooting.md`*
 
 ## Test Coverage Goals
 
