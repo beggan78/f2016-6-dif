@@ -1045,10 +1045,11 @@ describe('ReportControls', () => {
 
       const checkbox = screen.getByRole('checkbox');
       
-      // The error should be caught by React's error boundary
+      // The error should be caught and logged to console.error
       // We expect the handler to be called even if it throws
       fireEvent.click(checkbox);
       expect(erroringHandler).toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith('Error in onToggleSubstitutions callback:', expect.any(Error));
       
       consoleSpy.mockRestore();
     });

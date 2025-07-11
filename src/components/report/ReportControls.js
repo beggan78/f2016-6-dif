@@ -99,7 +99,13 @@ export function ReportControls({
               <input
                 type="checkbox"
                 checked={showSubstitutions}
-                onChange={(e) => onToggleSubstitutions && onToggleSubstitutions(e.target.checked)}
+                onChange={(e) => {
+                  try {
+                    onToggleSubstitutions && onToggleSubstitutions(e.target.checked);
+                  } catch (error) {
+                    console.error('Error in onToggleSubstitutions callback:', error);
+                  }
+                }}
                 className="rounded border-slate-500 bg-slate-700 text-sky-600 focus:ring-sky-500 focus:ring-offset-slate-800"
               />
               <span className="text-sm text-slate-300">Show substitutions</span>
@@ -112,7 +118,13 @@ export function ReportControls({
               <label className="text-xs font-medium text-slate-300">Timeline Order</label>
               <select
                 value={sortOrder || 'desc'}
-                onChange={(e) => onSortOrderChange(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    onSortOrderChange(e.target.value);
+                  } catch (error) {
+                    console.error('Error in onSortOrderChange callback:', error);
+                  }
+                }}
                 className="w-full bg-slate-700 border border-slate-500 text-slate-100 py-1.5 px-2.5 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               >
                 <option value="desc">Newest First</option>
@@ -127,7 +139,13 @@ export function ReportControls({
               <label className="text-xs font-medium text-slate-300">Event Filter</label>
               <select
                 value={eventFilter || 'all'}
-                onChange={(e) => onEventFilterChange(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    onEventFilterChange(e.target.value);
+                  } catch (error) {
+                    console.error('Error in onEventFilterChange callback:', error);
+                  }
+                }}
                 className="w-full bg-slate-700 border border-slate-500 text-slate-100 py-1.5 px-2.5 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               >
                 <option value="all">All Events</option>
