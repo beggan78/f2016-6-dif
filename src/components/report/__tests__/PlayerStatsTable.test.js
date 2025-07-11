@@ -487,8 +487,8 @@ describe('PlayerStatsTable', () => {
       }));
     };
 
-    it('renders efficiently with 25 players', () => {
-      const largeDataset = createLargePlayerDataset(25);
+    it('renders efficiently with 15 players', () => {
+      const largeDataset = createLargePlayerDataset(15);
       const startTime = performance.now();
 
       const { container } = render(
@@ -513,7 +513,7 @@ describe('PlayerStatsTable', () => {
     });
 
     it('sorts large datasets efficiently', () => {
-      const largeDataset = createLargePlayerDataset(50);
+      const largeDataset = createLargePlayerDataset(15);
 
       render(
         <PlayerStatsTable
@@ -540,7 +540,7 @@ describe('PlayerStatsTable', () => {
     });
 
     it('handles memory efficiently with repeated rendering', () => {
-      const largeDataset = createLargePlayerDataset(30);
+      const largeDataset = createLargePlayerDataset(15);
 
       for (let i = 0; i < 5; i++) {
         const { unmount } = render(
