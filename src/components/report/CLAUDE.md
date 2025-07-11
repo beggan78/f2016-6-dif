@@ -74,6 +74,12 @@ The report components provide comprehensive post-match analysis and reporting ca
 - **Callbacks Up**: User interactions bubble up through callback props
 - **State Management**: Local UI state managed in MatchReportScreen
 
+### Performance Optimization
+- **useMemo** for expensive filtering/sorting operations in timeline and table components
+- **useCallback** for stable event handler references to prevent unnecessary re-renders
+- **Component-level memoization** for pure display components with complex prop structures
+- **State persistence** using PersistenceManager for timeline preferences and user experience
+
 ## Integration Points
 
 ### Game Event Logger
@@ -153,6 +159,12 @@ import { formatTime } from '../../utils/formatUtils';
 - **Event Simulation**: User interaction simulation
 
 ## Usage Guidelines
+
+### Code Conventions
+- **Component Names**: PascalCase with descriptive, domain-specific names
+- **Function Names**: camelCase using verb-noun patterns for clarity
+- **Defensive Programming**: Comprehensive null checks and default parameter values
+- **Pure Functions**: All data transformations use pure functions without side effects
 
 ### Adding New Event Types
 1. **Update EVENT_TYPES**: Add new event type to gameEventLogger
