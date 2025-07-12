@@ -72,7 +72,7 @@ export const formationScenarios = {
     rightDefender: playerIds[2],
     leftAttacker: playerIds[3],
     rightAttacker: playerIds[4],
-    substitute: playerIds[5]
+    substitute_1: playerIds[5]
   }),
   
   individual7Standard: (playerIds) => ({
@@ -509,7 +509,7 @@ export const edgeCaseScenarios = {
       rightDefender: 'player-3',
       leftAttacker: 'player-4',
       rightAttacker: 'player-5',
-      substitute: 'player-6'
+      substitute_1: 'player-6'
     },
     allPlayers: playerDataScenarios.balanced(6)
   },

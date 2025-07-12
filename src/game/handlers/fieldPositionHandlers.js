@@ -74,7 +74,8 @@ export const createFieldPositionHandlers = (
   // Create position-specific callback functions for long press events
   const createPositionCallback = (position) => {
     return () => {
-      if (position === 'substitute_1' || position === 'substitute_2') {
+      // Only use substitute modal for substitute positions in INDIVIDUAL_7 mode
+      if (isIndividual7Mode && (position === 'substitute_1' || position === 'substitute_2')) {
         handleSubstituteLongPress(position);
       } else {
         handleFieldPlayerLongPress(position);

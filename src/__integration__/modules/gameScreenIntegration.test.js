@@ -820,7 +820,7 @@ describe('GameScreen Integration Tests', () => {
       const swappedFormation = {
         ...gameState.formation,
         leftDefender: substitute.id,
-        substitute: leftDefender.id
+        substitute_1: leftDefender.id
       };
       
       // Update player roles accordingly

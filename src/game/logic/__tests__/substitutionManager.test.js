@@ -52,7 +52,7 @@ describe('SubstitutionManager', () => {
         rightDefender: '2',
         leftAttacker: '3',
         rightAttacker: '4',
-        substitute: '5',
+        substitute_1: '5',
         goalie: '6'
       };
     });
@@ -79,7 +79,7 @@ describe('SubstitutionManager', () => {
       const result = manager.executeSubstitution(context);
 
       expect(result.newFormation.leftDefender).toBe('5');
-      expect(result.newFormation.substitute).toBe('1');
+      expect(result.newFormation.substitute_1).toBe('1');
       
       // With new logic, rotation queue should be rebuilt based on accumulated time
       // After substitution:
@@ -222,7 +222,7 @@ describe('SubstitutionManager', () => {
             rightDefender: '2',
             leftAttacker: '3',
             rightAttacker: '4',
-            substitute: '5',
+            substitute_1: '5',
             goalie: '6'
           },
           nextPlayerIdToSubOut: '1',

@@ -239,7 +239,7 @@ describe('createFieldPositionHandlers', () => {
       expect(handlers.rightDefenderCallback).toBeDefined();
       expect(handlers.leftAttackerCallback).toBeDefined();
       expect(handlers.rightAttackerCallback).toBeDefined();
-      expect(handlers.substituteCallback).toBeDefined();
+      expect(handlers.substitute_1Callback).toBeDefined();
       expect(typeof handlers.leftDefenderCallback).toBe('function');
     });
 
@@ -273,11 +273,11 @@ describe('createFieldPositionHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.substituteCallback();
+      handlers.substitute_1Callback();
 
       expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
         type: 'player',
-        target: 'substitute',
+        target: 'substitute_1',
         playerName: 'Player 5',
         sourcePlayerId: '5',
         availablePlayers: [],
@@ -344,11 +344,6 @@ describe('createFieldPositionHandlers', () => {
       const expectedCallbacks = [
         'leftDefenderCallback',
         'rightDefenderCallback', 
-        'leftAttackerCallback',
-        'rightAttackerCallback',
-        'substituteCallback',
-        'leftDefenderCallback',
-        'rightDefenderCallback',
         'leftAttackerCallback',
         'rightAttackerCallback',
         'substitute_1Callback',

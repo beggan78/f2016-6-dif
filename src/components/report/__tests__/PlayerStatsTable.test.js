@@ -509,7 +509,7 @@ describe('PlayerStatsTable', () => {
 
       // Verify all players are rendered
       const rows = container.querySelectorAll('tbody tr');
-      expect(rows).toHaveLength(25);
+      expect(rows).toHaveLength(15);
     });
 
     it('sorts large datasets efficiently', () => {

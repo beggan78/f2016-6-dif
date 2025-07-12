@@ -207,7 +207,7 @@ describe('formationUtils', () => {
       expect(definition.positions.rightDefender.role).toBe('Defender');
       expect(definition.positions.leftAttacker.role).toBe('Attacker');
       expect(definition.positions.rightAttacker.role).toBe('Attacker');
-      expect(definition.positions.substitute.role).toBe('Substitute');
+      expect(definition.positions.substitute_1.role).toBe('Substitute');
     });
 
     it('should handle INDIVIDUAL_7 roles correctly', () => {

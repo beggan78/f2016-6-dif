@@ -234,7 +234,7 @@ describe('PeriodSetupScreen', () => {
           rightDefender: '2',
           leftAttacker: '3',
           rightAttacker: '4',
-          substitute: '5'
+          substitute_1: '5'
         },
         rotationQueue: ['1', '2', '3', '4', '5', '6', '7'], // All players in queue initially
       };
@@ -309,7 +309,7 @@ describe('PeriodSetupScreen', () => {
         rightDefender: '2',
         leftAttacker: '3',
         rightAttacker: '4',
-        substitute: '5'
+        substitute_1: '5'
       };
       
       const props = {
@@ -536,7 +536,7 @@ describe('PeriodSetupScreen', () => {
         rightDefender: '2',
         leftAttacker: '3',
         rightAttacker: '4',
-        substitute: '5'
+        substitute_1: '5'
       };
       
       const props = {
@@ -557,7 +557,7 @@ describe('PeriodSetupScreen', () => {
         rightDefender: '2',
         leftAttacker: '3',
         rightAttacker: '4',
-        substitute: '5'
+        substitute_1: '5'
       };
       
       const props = {

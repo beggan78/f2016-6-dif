@@ -152,7 +152,7 @@ describe('UI positionUtils', () => {
 
     test('should return next on indicator props for first substitute', () => {
       const mockPlayer = { id: '5' };
-      const props = getIndicatorProps(mockPlayer, 'substitute', TEAM_MODES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
+      const props = getIndicatorProps(mockPlayer, 'substitute_1', TEAM_MODES.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
       
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(true); // First substitute position

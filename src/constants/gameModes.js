@@ -29,7 +29,9 @@ export const MODE_DEFINITIONS = {
     expectedCounts: { outfield: 5, onField: 4 },
     positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'],
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
-    substitutePositions: ['substitute_1']
+    substitutePositions: ['substitute_1'],
+    supportsInactiveUsers: false,
+    substituteRotationPattern: 'simple'
   },
   [TEAM_MODES.INDIVIDUAL_7]: {
     positions: {
@@ -44,7 +46,9 @@ export const MODE_DEFINITIONS = {
     expectedCounts: { outfield: 6, onField: 4 },
     positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'],
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
-    substitutePositions: ['substitute_1', 'substitute_2']
+    substitutePositions: ['substitute_1', 'substitute_2'],
+    supportsInactiveUsers: true,
+    substituteRotationPattern: 'carousel'
   }
 };
 

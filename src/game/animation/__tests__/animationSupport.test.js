@@ -32,7 +32,7 @@ describe('animationSupport', () => {
       expect(positions['2']).toBeDefined(); // rightDefender
       expect(positions['3']).toBeDefined(); // leftAttacker
       expect(positions['4']).toBeDefined(); // rightAttacker
-      expect(positions['5']).toBeDefined(); // substitute
+      expect(positions['5']).toBeDefined(); // substitute_1
       expect(positions['6']).toBeDefined(); // goalie
     });
 
@@ -83,7 +83,7 @@ describe('animationSupport', () => {
       expect(positions['2'].positionIndex).toBe(2); // rightDefender
       expect(positions['3'].positionIndex).toBe(3); // leftAttacker
       expect(positions['4'].positionIndex).toBe(4); // rightAttacker
-      expect(positions['5'].positionIndex).toBe(5); // substitute
+      expect(positions['5'].positionIndex).toBe(5); // substitute_1
       expect(positions['6'].positionIndex).toBe(0); // goalie
     });
 
@@ -361,7 +361,7 @@ describe('animationSupport', () => {
       expect(positions6[formation6.rightDefender].positionIndex).toBe(2);
       expect(positions6[formation6.leftAttacker].positionIndex).toBe(3);
       expect(positions6[formation6.rightAttacker].positionIndex).toBe(4);
-      expect(positions6[formation6.substitute].positionIndex).toBe(5);
+      expect(positions6[formation6.substitute_1].positionIndex).toBe(5);
       
       // Individual 7 team mode: goalie(0), leftDef7(1), rightDef7(2), leftAtt7(3), rightAtt7(4), sub7_1(5), sub7_2(6)
       const formation7 = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
