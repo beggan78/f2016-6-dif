@@ -4,7 +4,7 @@ import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEdit
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
-import { getPlayerName, findPlayerById } from '../../utils/playerUtils';
+import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 
 // New modular imports
@@ -201,6 +201,11 @@ export function GameScreen({
     goalieEvents
   }), [goalieHandlerCallbacks, goalieEvents]);
 
+  // Check if SUB NOW button should be enabled (at least one active substitute)
+  const canSubstitute = React.useMemo(() => {
+    return hasActiveSubstitutes(allPlayers, teamMode);
+  }, [allPlayers, teamMode]);
+
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
@@ -340,7 +345,13 @@ export function GameScreen({
       <div className="flex flex-col gap-3 mt-4">
         {/* Top row: SUB NOW with undo button */}
         <div className="flex gap-2">
-          <Button onClick={substitutionHandlers.handleSubstitutionWithHighlight} Icon={RotateCcw} className="flex-1">
+          <Button 
+            onClick={substitutionHandlers.handleSubstitutionWithHighlight} 
+            Icon={RotateCcw} 
+            className="flex-1"
+            disabled={!canSubstitute}
+            title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}
+          >
             SUB NOW
           </Button>
           <button

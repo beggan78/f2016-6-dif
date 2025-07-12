@@ -6,10 +6,10 @@ import {
   calculateSubstituteSwap,
   calculateUndo
 } from '../logic/gameStateLogic';
-import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
+import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
-import { MODE_DEFINITIONS } from '../../constants/gameModes';
+import { MODE_DEFINITIONS, supportsInactiveUsers, getBottomSubstitutePosition } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createSubstitutionHandlers = (
@@ -48,6 +48,7 @@ export const createSubstitutionHandlers = (
   } = modalHandlers;
 
   const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
+  const supportsInactive = supportsInactiveUsers(teamMode);
 
   /**
    * Generate unique event ID for substitution tracking
@@ -235,14 +236,15 @@ export const createSubstitutionHandlers = (
   };
 
   const handleInactivatePlayer = (substituteModal, allPlayers, formation) => {
-    if (substituteModal.playerId && isIndividual7Mode) {
+    if (substituteModal.playerId && supportsInactive) {
       const currentTime = Date.now();
       const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
-      const isSubstitute7_2BeingInactivated = playerBeingInactivated?.stats.currentPairKey === 'substitute_2';
+      const bottomSubPosition = getBottomSubstitutePosition(teamMode);
+      const isBottomSubBeingInactivated = playerBeingInactivated?.stats.currentPairKey === bottomSubPosition;
       
-      if (isSubstitute7_2BeingInactivated) {
-        // No animation needed - substitute_2 is already in the correct position for inactive players
+      if (isBottomSubBeingInactivated) {
+        // No animation needed - player is already in the correct position for inactive players
         // Call togglePlayerInactive directly
         const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
         
@@ -316,17 +318,8 @@ export const createSubstitutionHandlers = (
         );
       }
     } else if (substituteModal.playerId) {
-      // Non-7-player mode, no animation needed
-      const gameState = gameStateFactory();
-      const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
-      
-      setFormation(newGameState.formation);
-      setAllPlayers(newGameState.allPlayers);
-      setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-      setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
-      if (newGameState.rotationQueue) {
-        setRotationQueue(newGameState.rotationQueue);
-      }
+      // Mode doesn't support inactive players, no action taken
+      console.warn('Attempted to inactivate player in mode that does not support inactive players:', teamMode);
     }
     closeSubstituteModal();
     if (removeModalFromStack) {
@@ -335,7 +328,7 @@ export const createSubstitutionHandlers = (
   };
 
   const handleActivatePlayer = (substituteModal) => {
-    if (substituteModal.playerId && isIndividual7Mode) {
+    if (substituteModal.playerId && supportsInactive) {
       const currentTime = Date.now();
       const gameState = gameStateFactory();
       const playerBeingActivated = findPlayerById(gameState.allPlayers, substituteModal.playerId);
@@ -381,17 +374,8 @@ export const createSubstitutionHandlers = (
         setRecentlySubstitutedPlayers
       );
     } else if (substituteModal.playerId) {
-      // Non-7-player mode, no animation needed
-      const gameState = gameStateFactory();
-      const newGameState = calculatePlayerToggleInactive(gameState, substituteModal.playerId);
-      
-      setFormation(newGameState.formation);
-      setAllPlayers(newGameState.allPlayers);
-      setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-      setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
-      if (newGameState.rotationQueue) {
-        setRotationQueue(newGameState.rotationQueue);
-      }
+      // Mode doesn't support inactive players, no action taken
+      console.warn('Attempted to activate player in mode that does not support inactive players:', teamMode);
     }
     closeSubstituteModal();
     if (removeModalFromStack) {
@@ -408,6 +392,12 @@ export const createSubstitutionHandlers = (
 
   const handleSubstitutionWithHighlight = () => {
     const gameState = gameStateFactory();
+    
+    // Check if substitution is possible (at least one active substitute)
+    if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamMode)) {
+      console.warn('Cannot substitute: all substitutes are inactive');
+      return;
+    }
     
     // Capture before-state for undo functionality
     const substitutionTimestamp = Date.now();

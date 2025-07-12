@@ -1,5 +1,6 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
+import { supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, MODE_DEFINITIONS } from '../../constants/gameModes';
 
 export const createFieldPositionHandlers = (
   teamMode,
@@ -11,7 +12,8 @@ export const createFieldPositionHandlers = (
   const { openFieldPlayerModal, openSubstituteModal } = modalHandlers;
   
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
-  const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
+  const supportsInactive = supportsInactiveUsers(teamMode);
+  const supportsNextNext = supportsNextNextIndicators(teamMode);
   
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
@@ -51,8 +53,11 @@ export const createFieldPositionHandlers = (
   };
 
   const handleSubstituteLongPress = (position) => {
-    // Only for 7-player individual mode substitute players
-    if (!isIndividual7Mode || (position !== 'substitute_1' && position !== 'substitute_2')) return;
+    // Only for individual modes that support inactive players
+    if (!supportsInactive) return;
+    
+    const definition = MODE_DEFINITIONS[teamMode];
+    if (!definition?.substitutePositions.includes(position)) return;
     
     const playerId = formation[position];
     const playerName = getPlayerNameById(playerId);
@@ -60,8 +65,13 @@ export const createFieldPositionHandlers = (
     const isCurrentlyInactive = player?.stats.isInactive || false;
     
     // Determine if player can be set as next to go in
+    // Only bottom substitute position in modes with next-next support can be set as next to go in
     const isNextToGoIn = playerId === nextPlayerIdToSubOut;
-    const canSetAsNextToGoIn = position === 'substitute_2' && !isNextToGoIn && !isCurrentlyInactive;
+    const bottomSubPosition = getBottomSubstitutePosition(teamMode);
+    const canSetAsNextToGoIn = supportsNextNext && 
+                               position === bottomSubPosition && 
+                               !isNextToGoIn && 
+                               !isCurrentlyInactive;
     
     openSubstituteModal({
       playerId: playerId,
@@ -74,8 +84,9 @@ export const createFieldPositionHandlers = (
   // Create position-specific callback functions for long press events
   const createPositionCallback = (position) => {
     return () => {
-      // Only use substitute modal for substitute positions in INDIVIDUAL_7 mode
-      if (isIndividual7Mode && (position === 'substitute_1' || position === 'substitute_2')) {
+      // Use substitute modal for substitute positions in modes that support inactive players
+      const definition = MODE_DEFINITIONS[teamMode];
+      if (supportsInactive && definition?.substitutePositions.includes(position)) {
         handleSubstituteLongPress(position);
       } else {
         handleFieldPlayerLongPress(position);

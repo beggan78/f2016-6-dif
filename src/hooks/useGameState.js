@@ -1248,11 +1248,9 @@ export function useGameState() {
         }
       }));
       
-      const captain = updatedPlayers.find(p => p.stats.isCaptain);
-
       return updatedPlayers;
     });
-  }, [captainId]);
+  }, []);
 
   return {
     // State

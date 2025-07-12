@@ -367,11 +367,14 @@ describe('gameStateLogic', () => {
   });
 
   describe('calculatePlayerToggleInactive', () => {
-    test('should only work in 7-player individual mode', () => {
+    test('should work in all individual modes that support inactive players', () => {
+      // 6-player mode now supports inactive players
       const gameState6 = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
       const result6 = calculatePlayerToggleInactive(gameState6, '5');
-      expect(result6).toBe(gameState6);
+      expect(result6).not.toBe(gameState6); // Should change state
+      expect(result6.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(true);
       
+      // Pairs mode still doesn't support inactive players
       const gameStatePairs = createMockGameState(TEAM_MODES.PAIRS_7);
       const resultPairs = calculatePlayerToggleInactive(gameStatePairs, '5');
       expect(resultPairs).toBe(gameStatePairs);
@@ -408,15 +411,17 @@ describe('gameStateLogic', () => {
       expect(result).toBe(gameState);
     });
 
-    test('should prevent both substitutes from being inactive', () => {
+    test('should allow all substitutes to be inactive', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       // Make substitute_2 inactive
       gameState.allPlayers.find(p => p.id === '6').stats.isInactive = true;
       
-      // Try to inactivate substitute_1
+      // Inactivate substitute_1 (should succeed - now allows all substitutes to be inactive)
       const result = calculatePlayerToggleInactive(gameState, '5');
       
-      expect(result).toBe(gameState);
+      expect(result).not.toBe(gameState); // Should change state
+      expect(result.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(true);
+      expect(result.allPlayers.find(p => p.id === '6').stats.isInactive).toBe(true);
     });
   });
 

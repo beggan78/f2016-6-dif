@@ -264,7 +264,7 @@ describe('createFieldPositionHandlers', () => {
       });
     });
 
-    it('should not open substitute modal for regular substitute in 6-player mode', () => {
+    it('should open substitute modal for substitute_1 in 6-player mode', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_MODES.INDIVIDUAL_6,
         mockFormation,
@@ -275,15 +275,13 @@ describe('createFieldPositionHandlers', () => {
 
       handlers.substitute_1Callback();
 
-      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
-        type: 'player',
-        target: 'substitute_1',
+      expect(mockModalHandlers.openSubstituteModal).toHaveBeenCalledWith({
+        playerId: '5',
         playerName: 'Player 5',
-        sourcePlayerId: '5',
-        availablePlayers: [],
-        showPositionOptions: false
+        isCurrentlyInactive: false,
+        canSetAsNextToGoIn: false // 6-player mode doesn't support next-next indicators
       });
-      expect(mockModalHandlers.openSubstituteModal).not.toHaveBeenCalled();
+      expect(mockModalHandlers.openFieldPlayerModal).not.toHaveBeenCalled();
     });
   });
 

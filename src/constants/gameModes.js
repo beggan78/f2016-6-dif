@@ -30,7 +30,7 @@ export const MODE_DEFINITIONS = {
     positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'],
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
     substitutePositions: ['substitute_1'],
-    supportsInactiveUsers: false,
+    supportsInactiveUsers: true,
     supportsNextNextIndicators: false,
     substituteRotationPattern: 'simple',
     initialFormationTemplate: {
@@ -178,6 +178,24 @@ export function getValidPositions(teamMode) {
   
   // For individual modes, return all outfield positions
   return [...definition.fieldPositions, ...definition.substitutePositions];
+}
+
+/**
+ * Get maximum number of inactive players allowed for a team mode
+ */
+export function getMaxInactiveCount(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  return definition?.substitutePositions.length || 0;
+}
+
+/**
+ * Get the bottom substitute position (for positioning inactive players)
+ */
+export function getBottomSubstitutePosition(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition?.substitutePositions?.length) return null;
+  
+  return definition.substitutePositions[definition.substitutePositions.length - 1];
 }
 
 /**

@@ -172,3 +172,28 @@ export const setCaptain = (allPlayers, newCaptainId) => {
     }
   }));
 };
+
+/**
+ * Check if there are any active substitutes for a team mode
+ * @param {Array} allPlayers - Array of all players
+ * @param {string} teamMode - Current team mode
+ * @returns {boolean} True if at least one substitute is active (not inactive)
+ */
+export const hasActiveSubstitutes = (allPlayers, teamMode) => {
+  // Import inside function to avoid circular dependency issues
+  const gameModes = require('../constants/gameModes');
+  const MODE_DEFINITIONS = gameModes.MODE_DEFINITIONS;
+  
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition?.substitutePositions?.length) {
+    return false;
+  }
+  
+  // Find players in substitute positions
+  const substitutePlayers = allPlayers.filter(player => 
+    definition.substitutePositions.includes(player.stats?.currentPairKey)
+  );
+  
+  // Check if at least one substitute is not inactive
+  return substitutePlayers.some(player => !player.stats?.isInactive);
+};

@@ -13,7 +13,7 @@ import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
-import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
+import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, MODE_DEFINITIONS } from '../../constants/gameModes';
 
 /**
  * Calculate the result of a substitution without modifying any state
@@ -496,7 +496,7 @@ export const calculateUndo = (gameState, lastSubstitution) => {
 };
 
 /**
- * Calculate the result of toggling a player's inactive status
+ * Calculate the result of toggling a player's inactive status (all individual modes)
  */
 export const calculatePlayerToggleInactive = (gameState, playerId) => {
   const { allPlayers, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, teamMode } = gameState;
@@ -512,8 +512,16 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     return gameState;
   }
 
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition) {
+    console.warn('Invalid team mode for player inactivation');
+    return gameState;
+  }
+
   const currentlyInactive = player.stats.isInactive;
-  const isSubstitute = player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_1 || player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_2;
+  
+  // Check if player is a substitute using configuration-driven approach
+  const isSubstitute = definition.substitutePositions.includes(player.stats.currentPairKey);
   
   // Only allow inactivating/activating substitute players
   if (!isSubstitute) {
@@ -521,18 +529,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     return gameState;
   }
 
-  // Safety check: Prevent having both substitutes inactive
-  if (!currentlyInactive) { // Player is about to be inactivated
-    const substitute_1Id = formation.substitute_1;
-    const substitute_2Id = formation.substitute_2;
-    const otherSubstituteId = playerId === substitute_1Id ? substitute_2Id : substitute_1Id;
-    const otherSubstitute = findPlayerById(allPlayers, otherSubstituteId);
-    
-    if (otherSubstitute?.stats.isInactive) {
-      console.warn('Cannot inactivate player: would result in both substitutes being inactive');
-      return gameState;
-    }
-  }
+  // No additional validation needed - SUB NOW button handles "all inactive" scenario
 
   let newFormation = { ...formation };
   let newRotationQueue = [...rotationQueue];
@@ -549,47 +546,21 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
 
   // Update rotation queue and positions
   if (currentlyInactive) {
-    // Player is being activated - they become the next player to go in (substitute_1)
+    // Player is being activated - they become active in their current position
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     queueManager.initialize();
     queueManager.reactivatePlayer(playerId);
+    newRotationQueue = queueManager.toArray();
     
-    // Get current substitute positions
-    const currentSub_1Id = formation.substitute_1;
-    const currentSub_2Id = formation.substitute_2;
-    
-    if (playerId === currentSub_1Id) {
-      // Reactivated player is already in substitute_1 position - just activate them
-      // nextPlayerIdToSubOut should remain pointing to the current active field player
+    // Update next/next-next tracking based on team mode capabilities
+    if (supportsNextNextIndicators(teamMode)) {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length >= 1) {
         newNextNextPlayerIdToSubOut = nextActivePlayers[0];
       }
-    } else if (playerId === currentSub_2Id) {
-      // Reactivated player is in substitute_2 - swap with substitute_1
-      newFormation = {
-        ...newFormation,
-        substitute_1: playerId,
-        substitute_2: currentSub_1Id
-      };
-      
-      // Update positions in player data
-      newAllPlayers = newAllPlayers.map(p => {
-        if (p.id === playerId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_1 } };
-        }
-        if (p.id === currentSub_1Id) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_2 } };
-        }
-        return p;
-      });
-      
-      newNextNextPlayerIdToSubOut = currentSub_1Id;
     }
-    
-    newRotationQueue = queueManager.toArray();
   } else {
-    // Player is being inactivated
+    // Player is being inactivated - move to bottom substitute position if possible
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     queueManager.initialize();
     queueManager.deactivatePlayer(playerId);
@@ -600,37 +571,44 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length > 0) {
         newNextPlayerIdToSubOut = nextActivePlayers[0];
-        if (nextActivePlayers.length >= 2) {
+        if (supportsNextNextIndicators(teamMode) && nextActivePlayers.length >= 2) {
           newNextNextPlayerIdToSubOut = nextActivePlayers[1];
         }
       }
-    } else if (playerId === nextNextPlayerIdToSubOut) {
+    } else if (supportsNextNextIndicators(teamMode) && playerId === nextNextPlayerIdToSubOut) {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length >= 2) {
         newNextNextPlayerIdToSubOut = nextActivePlayers[1];
       }
     }
     
-    // Move inactive player to substitute_2 position if they were substitute_1
-    if (player.stats.currentPairKey === POSITION_KEYS.SUBSTITUTE_1 && formation.substitute_2) {
-      const otherSubId = formation.substitute_2;
+    // Smart positioning: Move inactive player to bottom substitute position
+    const bottomSubPosition = getBottomSubstitutePosition(teamMode);
+    const currentPosition = player.stats.currentPairKey;
+    
+    if (bottomSubPosition && currentPosition !== bottomSubPosition) {
+      // Find player currently in bottom position
+      const bottomPlayerId = formation[bottomSubPosition];
       
-      newFormation = {
-        ...newFormation,
-        substitute_1: otherSubId,
-        substitute_2: playerId
-      };
-      
-      // Update positions in player data
-      newAllPlayers = newAllPlayers.map(p => {
-        if (p.id === playerId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_2 } };
-        }
-        if (p.id === otherSubId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: POSITION_KEYS.SUBSTITUTE_1 } };
-        }
-        return p;
-      });
+      if (bottomPlayerId && bottomPlayerId !== playerId) {
+        // Swap positions with player in bottom position
+        newFormation = {
+          ...newFormation,
+          [currentPosition]: bottomPlayerId,
+          [bottomSubPosition]: playerId
+        };
+        
+        // Update position data for both players
+        newAllPlayers = newAllPlayers.map(p => {
+          if (p.id === playerId) {
+            return { ...p, stats: { ...p.stats, currentPairKey: bottomSubPosition } };
+          }
+          if (p.id === bottomPlayerId) {
+            return { ...p, stats: { ...p.stats, currentPairKey: currentPosition } };
+          }
+          return p;
+        });
+      }
     }
   }
 
