@@ -65,16 +65,8 @@ export function useGameState() {
     const loggerStartTime = getMatchStartTime();
     const loggerEvents = getAllEvents();
     
-    console.log('[DEBUG] Syncing match data from event logger:', {
-      loggerStartTime,
-      eventsCount: loggerEvents.length,
-      currentStateStartTime: matchStartTime,
-      currentStateEventsCount: matchEvents.length
-    });
-    
     // Special case: If logger has been cleared (no events and no start time), clear local state too
     if (!loggerStartTime && loggerEvents.length === 0 && (matchStartTime || matchEvents.length > 0)) {
-      console.log('[DEBUG] Event logger appears to be cleared, clearing local state');
       setMatchStartTime(null);
       setMatchEvents([]);
       setGoalScorers({});
@@ -82,12 +74,10 @@ export function useGameState() {
     }
     
     if (loggerStartTime && loggerStartTime !== matchStartTime) {
-      console.log('[DEBUG] Setting matchStartTime from event logger:', loggerStartTime);
       setMatchStartTime(loggerStartTime);
     }
     
     if (loggerEvents.length !== matchEvents.length) {
-      console.log('[DEBUG] Setting matchEvents from event logger:', loggerEvents.length, 'events');
       setMatchEvents(loggerEvents);
     }
   }, [matchStartTime, matchEvents]);
@@ -228,9 +218,6 @@ export function useGameState() {
           subPair: recommendedSubs,
         };
         
-        // DEBUG: Log pairs formation
-        console.log('[DEBUG] useGameState - Setting PAIRS formation:', pairsFormation);
-        
         setFormation(pairsFormation);
         setNextPhysicalPairToSubOut(firstToSubRec); // 'leftPair' or 'rightPair'
       } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
@@ -239,12 +226,10 @@ export function useGameState() {
           currentGoalieId,
           playersWithLastPeriodStats,
           selectedSquadIds.map(id => allPlayers.find(p => p.id === id)),
-          'INDIVIDUAL_6'
+          TEAM_MODES.INDIVIDUAL_6
         );
-
-        // DEBUG: Log INDIVIDUAL_6 formation generation result
         console.log('[DEBUG] useGameState - INDIVIDUAL_6 formation result:', result);
-        
+
         const individual6Formation = {
           goalie: currentGoalieId,
           leftDefender: result.formation.leftDefender,
@@ -253,8 +238,6 @@ export function useGameState() {
           rightAttacker: result.formation.rightAttacker,
           substitute_1: result.formation.substitute_1,
         };
-        
-        console.log('[DEBUG] useGameState - Setting INDIVIDUAL_6 formation:', individual6Formation);
         
         setFormation(individual6Formation);
         
@@ -274,12 +257,10 @@ export function useGameState() {
           currentGoalieId,
           playersWithLastPeriodStats,
           selectedSquadIds.map(id => allPlayers.find(p => p.id === id)),
-          'INDIVIDUAL_7'
+          TEAM_MODES.INDIVIDUAL_7
         );
-
-        // DEBUG: Log INDIVIDUAL_7 formation generation result
         console.log('[DEBUG] useGameState - INDIVIDUAL_7 formation result:', result);
-        
+
         const individual7Formation = {
           goalie: currentGoalieId,
           leftDefender: result.formation.leftDefender,
@@ -289,9 +270,7 @@ export function useGameState() {
           substitute_1: result.formation.substitute_1,
           substitute_2: result.formation.substitute_2,
         };
-        
-        console.log('[DEBUG] useGameState - Setting INDIVIDUAL_7 formation:', individual7Formation);
-        
+
         setFormation(individual7Formation);
         
         // Set next player to substitute off (player with most field time)
@@ -665,18 +644,15 @@ export function useGameState() {
   // Enhanced clear stored state with backup
   const clearStoredState = useCallback(() => {
     // Clear all game events from event logger
-    console.log('[DEBUG] useGameState.clearStoredState - Clearing all game events');
     const eventsCleared = clearAllEvents();
     if (eventsCleared) {
-      console.log('[DEBUG] Game events cleared successfully');
-      
+
       // Reset local match state variables
       setMatchEvents([]);
       setMatchStartTime(null);
       setGoalScorers({});
       setEventSequenceNumber(0);
       setLastEventBackup(null);
-      console.log('[DEBUG] Local match state variables reset');
     } else {
       console.warn('[DEBUG] Failed to clear game events');
     }
@@ -685,9 +661,7 @@ export function useGameState() {
     persistenceManager.createBackup();
     // Clear the state
     const result = persistenceManager.clearState();
-    if (result) {
-      console.log('Game state cleared successfully');
-    } else {
+    if (!result) {
       console.warn('Failed to clear game state');
     }
     
@@ -1393,11 +1367,6 @@ export function useGameState() {
 
   // Captain management functions
   const setCaptain = useCallback((newCaptainId) => {
-    console.log('[DEBUG] setCaptain called with:', {
-      newCaptainId,
-      previousCaptainId: captainId
-    });
-    
     // Update captainId state
     setCaptainId(newCaptainId);
     
@@ -1412,12 +1381,7 @@ export function useGameState() {
       }));
       
       const captain = updatedPlayers.find(p => p.stats.isCaptain);
-      console.log('[DEBUG] Captain assignment completed:', {
-        captainId: newCaptainId,
-        captainName: captain ? captain.name : 'None',
-        captainPlayerData: captain ? { id: captain.id, name: captain.name, isCaptain: captain.stats.isCaptain } : null
-      });
-      
+
       return updatedPlayers;
     });
   }, [captainId]);

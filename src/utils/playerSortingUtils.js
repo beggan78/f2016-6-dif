@@ -35,26 +35,13 @@ export const getPlayerCurrentRole = (playerId, formation, teamMode) => {
 
   switch (teamMode) {
     case TEAM_MODES.INDIVIDUAL_6:
-      // Check attacker positions
-      if (formation.leftAttacker === playerId ||
-          formation.rightAttacker === playerId) {
-        return 'ATTACKER';
-      }
-      // Check defender positions
-      if (formation.leftDefender === playerId ||
-          formation.rightDefender === playerId) {
-        return 'DEFENDER';
-      }
-      // Everyone else is substitute
-      return 'SUBSTITUTE';
-
     case TEAM_MODES.INDIVIDUAL_7:
-      // Check attacker positions
+      // Check attacker positions (unified for both individual modes)
       if (formation.leftAttacker === playerId ||
           formation.rightAttacker === playerId) {
         return 'ATTACKER';
       }
-      // Check defender positions
+      // Check defender positions (unified for both individual modes)
       if (formation.leftDefender === playerId ||
           formation.rightDefender === playerId) {
         return 'DEFENDER';
@@ -94,10 +81,6 @@ export const getCurrentAttackers = (formation, teamMode) => {
 
   switch (teamMode) {
     case TEAM_MODES.INDIVIDUAL_6:
-      if (formation.leftAttacker) attackers.push(formation.leftAttacker);
-      if (formation.rightAttacker) attackers.push(formation.rightAttacker);
-      break;
-
     case TEAM_MODES.INDIVIDUAL_7:
       if (formation.leftAttacker) attackers.push(formation.leftAttacker);
       if (formation.rightAttacker) attackers.push(formation.rightAttacker);
@@ -128,10 +111,6 @@ export const getCurrentDefenders = (formation, teamMode) => {
 
   switch (teamMode) {
     case TEAM_MODES.INDIVIDUAL_6:
-      if (formation.leftDefender) defenders.push(formation.leftDefender);
-      if (formation.rightDefender) defenders.push(formation.rightDefender);
-      break;
-
     case TEAM_MODES.INDIVIDUAL_7:
       if (formation.leftDefender) defenders.push(formation.leftDefender);
       if (formation.rightDefender) defenders.push(formation.rightDefender);

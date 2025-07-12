@@ -1,3 +1,5 @@
+import { MODE_DEFINITIONS } from '../constants/gameModes';
+
 /**
  * Generates formation recommendations for period 3 in pair mode with role balance enforcement
  */
@@ -310,42 +312,41 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
     goalie: currentGoalieId
   };
 
-  if (teamMode === 'INDIVIDUAL_6') {
+  // Get mode configuration to determine substitute count
+  const modeConfig = MODE_DEFINITIONS[teamMode];
+  const substitutePositions = modeConfig?.substitutePositions || [];
+  
+  if (substitutePositions.length > 0 && substitutePositions[0].startsWith('substitute_')) {
+    // Base formation for all individual modes (same field positions)
     formation = {
       ...formation,
       leftDefender: defenders[0]?.id || null,
       rightDefender: defenders[1]?.id || null,
       leftAttacker: attackers[0]?.id || null,
-      rightAttacker: attackers[1]?.id || null,
-      substitute_1: rotationQueue[4]?.id || null // 5th player in rotation queue
+      rightAttacker: attackers[1]?.id || null
     };
-  } else if (teamMode === 'INDIVIDUAL_7') {
-    // For 7-player mode, inactive player goes to substitute_2, active substitutes fill remaining positions
+    
+    // Add substitute positions dynamically based on mode configuration
     const activeSubstitutes = rotationQueue.slice(4); // Players beyond the first 4
     
-    formation = {
-      ...formation,
-      leftDefender: defenders[0]?.id || null,
-      rightDefender: defenders[1]?.id || null,
-      leftAttacker: attackers[0]?.id || null,
-      rightAttacker: attackers[1]?.id || null,
-      substitute_1: activeSubstitutes[0]?.id || null, // 5th player in rotation queue
-      substitute_2: inactivePlayers[0]?.id || activeSubstitutes[1]?.id || null // Inactive player or 6th in queue
-    };
-  } else if (teamMode === 'INDIVIDUAL_8') {
-    // For future 8-player mode support
-    const activeSubstitutes = rotationQueue.slice(4);
-    
-    formation = {
-      ...formation,
-      leftDefender: defenders[0]?.id || null,
-      rightDefender: defenders[1]?.id || null,
-      leftAttacker: attackers[0]?.id || null,
-      rightAttacker: attackers[1]?.id || null,
-      substitute_1: activeSubstitutes[0]?.id || null, // 5th player
-      substitute_2: activeSubstitutes[1]?.id || null, // 6th player
-      substitute_3: inactivePlayers[0]?.id || activeSubstitutes[2]?.id || null // Inactive or 7th player
-    };
+    substitutePositions.forEach((positionKey, index) => {
+      if (substitutePositions.length === 1) {
+        // INDIVIDUAL_6: single substitute (5th player)
+        formation[positionKey] = rotationQueue[4]?.id || null;
+      } else if (substitutePositions.length >= 2) {
+        // INDIVIDUAL_7+ modes: handle inactive players and substitute rotation
+        if (index === 0) {
+          // First substitute position gets first active substitute
+          formation[positionKey] = activeSubstitutes[0]?.id || null;
+        } else if (index === substitutePositions.length - 1 && inactivePlayers.length > 0) {
+          // Last substitute position gets inactive player if available, otherwise next active substitute
+          formation[positionKey] = inactivePlayers[0]?.id || activeSubstitutes[index]?.id || null;
+        } else {
+          // Middle substitute positions get active substitutes in order
+          formation[positionKey] = activeSubstitutes[index]?.id || null;
+        }
+      }
+    });
   }
 
   return {

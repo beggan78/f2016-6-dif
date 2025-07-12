@@ -40,32 +40,14 @@ export function IndividualFormation({
   const fieldPositions = getFieldPositions(teamMode);
   const substitutePositions = getSubstitutePositions(teamMode);
   const allPositions = getAllPositions(teamMode); // Include goalie in formation rendering
-  
-  // DEBUG: Log formation data to diagnose position name mismatch
-  console.log('[DEBUG] IndividualFormation - Formation Data:', {
-    teamMode,
-    fieldPositions,
-    substitutePositions,
-    formationKeys: Object.keys(formation),
-    formation,
-    expectedPositions: [...fieldPositions, ...substitutePositions, 'goalie']
-  });
-  
+
   // Mode capabilities
   const modeSupportsInactive = supportsInactivePlayers(teamMode);
   const modeSupportsNextNext = supportsNextNextIndicators(teamMode);
 
   const renderIndividualPosition = (position, renderIndex) => {
     const playerId = formation[position];
-    
-    // DEBUG: Log position lookup details
-    console.log('[DEBUG] renderIndividualPosition:', {
-      position,
-      playerId,
-      foundInFormation: playerId !== undefined,
-      formationKeys: Object.keys(formation)
-    });
-    
+
     if (!playerId) return null;
     
     const isFieldPosition = fieldPositions.includes(position);

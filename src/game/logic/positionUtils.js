@@ -30,13 +30,6 @@ export function getFieldPositions(teamMode) {
   const definition = MODE_DEFINITIONS[teamMode];
   const result = definition ? definition.fieldPositions : [];
   
-  // DEBUG: Log field positions for debugging
-  console.log('[DEBUG] getFieldPositions:', {
-    teamMode,
-    definitionExists: !!definition,
-    fieldPositions: result
-  });
-  
   return result;
 }
 
@@ -46,13 +39,6 @@ export function getFieldPositions(teamMode) {
 export function getSubstitutePositions(teamMode) {
   const definition = MODE_DEFINITIONS[teamMode];
   const result = definition ? definition.substitutePositions : [];
-  
-  // DEBUG: Log substitute positions for debugging
-  console.log('[DEBUG] getSubstitutePositions:', {
-    teamMode,
-    definitionExists: !!definition,
-    substitutePositions: result
-  });
   
   return result;
 }
