@@ -62,23 +62,11 @@ export const findPlayerById = (allPlayers, playerId) => {
 export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
   const player = findPlayerById(allPlayers, playerId);
   if (!player) {
-    console.log('[DEBUG] getPlayerName - Player not found:', { playerId, fallback });
     return fallback;
   }
   
   const isCaptain = player.stats?.isCaptain;
-  const formattedName = isCaptain ? `${player.name} (C)` : player.name;
-  
-  if (isCaptain) {
-    console.log('[DEBUG] getPlayerName - Captain found:', {
-      playerId,
-      playerName: player.name,
-      isCaptain: isCaptain,
-      formattedName: formattedName
-    });
-  }
-  
-  return formattedName;
+  return isCaptain ? `${player.name} (C)` : player.name;
 };
 
 /**

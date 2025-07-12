@@ -41,6 +41,17 @@ export function useGameState() {
     initialState.allPlayers = initializePlayers(initialRoster);
   }
   
+  // Sync captain data between captainId and allPlayers stats
+  if (initialState.captainId && initialState.allPlayers) {
+    initialState.allPlayers = initialState.allPlayers.map(player => ({
+      ...player,
+      stats: {
+        ...player.stats,
+        isCaptain: player.id === initialState.captainId
+      }
+    }));
+  }
+  
   // Initialize event logger on hook initialization
   useEffect(() => {
     initializeEventLogger();
@@ -76,6 +87,28 @@ export function useGameState() {
   const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
   const [captainId, setCaptainId] = useState(initialState.captainId || null);
+
+  // Sync captain data in allPlayers whenever captainId changes
+  useEffect(() => {
+    if (captainId) {
+      setAllPlayers(prev => prev.map(player => ({
+        ...player,
+        stats: {
+          ...player.stats,
+          isCaptain: player.id === captainId
+        }
+      })));
+    } else {
+      // Clear all captain designations when captainId is null
+      setAllPlayers(prev => prev.map(player => ({
+        ...player,
+        stats: {
+          ...player.stats,
+          isCaptain: false
+        }
+      })));
+    }
+  }, [captainId]);
 
   // Function to sync match data from gameEventLogger
   const syncMatchDataFromEventLogger = useCallback(() => {
@@ -312,9 +345,14 @@ export function useGameState() {
     // Reset player stats for the new game for the selected squad
     setAllPlayers(prev => prev.map(p => {
       if (selectedSquadIds.includes(p.id)) {
+        const freshStats = initializePlayers([p.name])[0].stats;
         return {
           ...p,
-          stats: initializePlayers([p.name])[0].stats // Reset stats
+          stats: {
+            ...freshStats,
+            // Preserve captain data during stats reset
+            isCaptain: p.stats?.isCaptain || false
+          }
         };
       }
       return p;
@@ -537,6 +575,9 @@ export function useGameState() {
       setGoalScorers({});
       setEventSequenceNumber(0);
       setLastEventBackup(null);
+      
+      // Clear captain assignment
+      setCaptainId(null);
     } else {
       console.warn('[DEBUG] Failed to clear game events');
     }
@@ -1239,17 +1280,13 @@ export function useGameState() {
     setCaptainId(newCaptainId);
     
     // Update player stats to reflect captain assignment
-    setAllPlayers(prev => {
-      const updatedPlayers = prev.map(player => ({
-        ...player,
-        stats: {
-          ...player.stats,
-          isCaptain: player.id === newCaptainId
-        }
-      }));
-      
-      return updatedPlayers;
-    });
+    setAllPlayers(prev => prev.map(player => ({
+      ...player,
+      stats: {
+        ...player.stats,
+        isCaptain: player.id === newCaptainId
+      }
+    })));
   }, []);
 
   return {
