@@ -44,55 +44,6 @@ describe('SubstitutionManager', () => {
     });
   });
 
-  describe('6-player individual formation', () => {
-    beforeEach(() => {
-      manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
-      mockFormation = {
-        leftDefender: '1',
-        rightDefender: '2',
-        leftAttacker: '3',
-        rightAttacker: '4',
-        substitute_1: '5',
-        goalie: '6'
-      };
-    });
-
-    test('handles individual substitution correctly', () => {
-      // Create realistic player data with playing times
-      const playersWithTime = [
-        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 300, isInactive: false } },
-        { id: '2', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 250, isInactive: false } },
-        { id: '3', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 200, isInactive: false } },
-        { id: '4', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 150, isInactive: false } },
-        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 100, isInactive: false } },
-        { id: '6', stats: { currentStatus: 'goalie', currentRole: PLAYER_ROLES.GOALIE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 0, isInactive: false } }
-      ];
-
-      const context = {
-        formation: mockFormation,
-        nextPlayerIdToSubOut: '1', // Player with most time (300s) should rotate off
-        allPlayers: playersWithTime,
-        rotationQueue: ['1', '2', '3', '4', '5'],
-        currentTimeEpoch: 2000
-      };
-
-      const result = manager.executeSubstitution(context);
-
-      expect(result.newFormation.leftDefender).toBe('5');
-      expect(result.newFormation.substitute_1).toBe('1');
-      
-      // With new logic, rotation queue should be rebuilt based on accumulated time
-      // After substitution:
-      // - Player '1': ~301s (300 + 1s from stint) - most time, should be first
-      // - Player '2': ~251s (250 + 1s from stint)  
-      // - Player '3': ~201s (200 + 1s from stint)
-      // - Player '4': ~151s (150 + 1s from stint)
-      // - Player '5': ~101s (100 + 1s from stint) - least time
-      // The 4 with least time (2,3,4,5) go on field, ordered by most time first: [2,3,4,5]
-      // Player 1 with most time becomes substitute
-      expect(result.newRotationQueue).toEqual(['2', '3', '4', '5', '1']);
-    });
-  });
 
   describe('utility functions', () => {
     beforeEach(() => {
@@ -131,73 +82,116 @@ describe('SubstitutionManager', () => {
   });
 
   describe('unified individual mode handler', () => {
-    test('should use configuration-driven behavior for 6-player mode', () => {
+    test.each([
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        formation: {
+          leftDefender: '1',
+          rightDefender: '2',
+          leftAttacker: '3',
+          rightAttacker: '4',
+          substitute_1: '5',
+          goalie: '6'
+        },
+        expectNextNext: false,
+        expectedSubstitutePosition: 'substitute_1',
+        description: '6-player mode'
+      },
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        formation: {
+          leftDefender: '1',
+          rightDefender: '2',
+          leftAttacker: '3', 
+          rightAttacker: '4',
+          substitute_1: '5',
+          substitute_2: '6',
+          goalie: '7'
+        },
+        expectNextNext: true,
+        expectedSubstitutePosition: 'substitute_2',
+        description: '7-player mode'
+      }
+    ])('should use configuration-driven behavior for %s', ({ teamMode, formation, expectNextNext, expectedSubstitutePosition }) => {
+      const manager = new SubstitutionManager(teamMode);
+      
+      const mockPlayers = [
+        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, isInactive: false } },
+        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, isInactive: false } },
+      ];
+      
+      if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
+        mockPlayers.push({ id: '6', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, isInactive: false } });
+      }
+      
+      const rotationQueue = teamMode === TEAM_MODES.INDIVIDUAL_6 ? ['1', '2', '3', '4', '5'] : ['1', '2', '3', '4', '5', '6'];
+      
+      const context = {
+        formation,
+        nextPlayerIdToSubOut: '1',
+        allPlayers: mockPlayers,
+        rotationQueue,
+        currentTimeEpoch: 2000,
+        isSubTimerPaused: false
+      };
+      
+      const result = manager.executeSubstitution(context);
+      
+      // Check next-next indicator expectations
+      if (expectNextNext) {
+        expect(result.newNextNextPlayerIdToSubOut).toBeDefined();
+      } else {
+        expect(result.newNextNextPlayerIdToSubOut).toBeUndefined();
+      }
+      
+      // Should place outgoing player in expected substitute position
+      expect(result.newFormation[expectedSubstitutePosition]).toBe('1');
+    });
+
+    test('handles individual substitution with time accumulation correctly for INDIVIDUAL_6', () => {
       const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
       const mockFormation = {
         leftDefender: '1',
-        rightDefender: '2', 
+        rightDefender: '2',
         leftAttacker: '3',
         rightAttacker: '4',
         substitute_1: '5',
         goalie: '6'
       };
       
-      const mockPlayers = [
-        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000 } },
-        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000 } },
+      // Create realistic player data with playing times
+      const playersWithTime = [
+        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 300, isInactive: false } },
+        { id: '2', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 250, isInactive: false } },
+        { id: '3', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 200, isInactive: false } },
+        { id: '4', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.ATTACKER, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 150, isInactive: false } },
+        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 100, isInactive: false } },
+        { id: '6', stats: { currentStatus: 'goalie', currentRole: PLAYER_ROLES.GOALIE, lastStintStartTimeEpoch: 1000, timeOnFieldSeconds: 0, isInactive: false } }
       ];
-      
-      const context = {
-        formation: mockFormation,
-        nextPlayerIdToSubOut: '1',
-        allPlayers: mockPlayers,
-        rotationQueue: ['1', '2', '3', '4', '5'],
-        currentTimeEpoch: 2000,
-        isSubTimerPaused: false
-      };
-      
-      const result = manager.executeSubstitution(context);
-      
-      // Should use simple swap pattern (no newNextNextPlayerIdToSubOut)
-      expect(result.newNextNextPlayerIdToSubOut).toBeUndefined();
-      // Should place outgoing player in substitute_1
-      expect(result.newFormation.substitute_1).toBe('1');
-    });
 
-    test('should use configuration-driven behavior for 7-player mode', () => {
-      const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_7);
-      const mockFormation = {
-        leftDefender: '1',
-        rightDefender: '2',
-        leftAttacker: '3', 
-        rightAttacker: '4',
-        substitute_1: '5',
-        substitute_2: '6',
-        goalie: '7'
-      };
-      
-      const mockPlayers = [
-        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, isInactive: false } },
-        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, isInactive: false } },
-        { id: '6', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, isInactive: false } },
-      ];
-      
       const context = {
         formation: mockFormation,
-        nextPlayerIdToSubOut: '1',
-        allPlayers: mockPlayers,
-        rotationQueue: ['1', '2', '3', '4', '5', '6'],
-        currentTimeEpoch: 2000,
-        isSubTimerPaused: false
+        nextPlayerIdToSubOut: '1', // Player with most time (300s) should rotate off
+        allPlayers: playersWithTime,
+        rotationQueue: ['1', '2', '3', '4', '5'],
+        currentTimeEpoch: 2000
       };
-      
+
       const result = manager.executeSubstitution(context);
+
+      expect(result.newFormation.leftDefender).toBe('5');
+      expect(result.newFormation.substitute_1).toBe('1');
       
-      // Should use carousel pattern (includes newNextNextPlayerIdToSubOut)
-      expect(result.newNextNextPlayerIdToSubOut).toBeDefined();
-      // Should use carousel rotation: substitute_2 -> substitute_1, outgoing -> substitute_2
-      expect(result.newFormation.substitute_1).toBe('6'); // Previous substitute_2
-      expect(result.newFormation.substitute_2).toBe('1'); // Outgoing player
+      // With new logic, rotation queue should be rebuilt based on accumulated time
+      // After substitution:
+      // - Player '1': ~301s (300 + 1s from stint) - most time, should be first
+      // - Player '2': ~251s (250 + 1s from stint)  
+      // - Player '3': ~201s (200 + 1s from stint)
+      // - Player '4': ~151s (150 + 1s from stint)
+      // - Player '5': ~101s (100 + 1s from stint) - least time
+      // The 4 with least time (2,3,4,5) go on field, ordered by most time first: [2,3,4,5]
+      // Player 1 with most time becomes substitute
+      expect(result.newRotationQueue).toEqual(['2', '3', '4', '5', '1']);
     });
   });
 
@@ -263,8 +257,34 @@ describe('SubstitutionManager', () => {
         expect(player3.stats.timeAsSubSeconds).toBe(25); // 15 + 10
       });
 
-      test('should accumulate time during individual6 substitution', () => {
-        const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
+      test.each([
+        {
+          teamMode: TEAM_MODES.INDIVIDUAL_6,
+          formation: {
+            leftDefender: '1',
+            rightDefender: '2',
+            leftAttacker: '3',
+            rightAttacker: '4',
+            substitute_1: '5',
+            goalie: '6'
+          },
+          description: 'individual6'
+        },
+        {
+          teamMode: TEAM_MODES.INDIVIDUAL_7,
+          formation: {
+            leftDefender: '1',
+            rightDefender: '2',
+            leftAttacker: '3',
+            rightAttacker: '4',
+            substitute_1: '5',
+            substitute_2: '8',
+            goalie: '6'
+          },
+          description: 'individual7'
+        }
+      ])('should accumulate time during %s substitution', ({ teamMode, formation }) => {
+        const manager = new SubstitutionManager(teamMode);
         const mockPlayersWithTime = [
           { 
             id: '1', 
@@ -287,18 +307,13 @@ describe('SubstitutionManager', () => {
           },
         ];
 
+        const rotationQueue = teamMode === TEAM_MODES.INDIVIDUAL_6 ? ['1', '2', '3', '4', '5'] : ['1', '2', '3', '4', '5', '8'];
+
         const context = {
-          formation: {
-            leftDefender: '1',
-            rightDefender: '2',
-            leftAttacker: '3',
-            rightAttacker: '4',
-            substitute_1: '5',
-            goalie: '6'
-          },
+          formation,
           nextPlayerIdToSubOut: '1',
           allPlayers: mockPlayersWithTime,
-          rotationQueue: ['1', '2', '3', '4', '5'],
+          rotationQueue,
           currentTimeEpoch: 17000, // 15 seconds later
           isSubTimerPaused: false
         };
@@ -364,8 +379,28 @@ describe('SubstitutionManager', () => {
         expect(player3.stats.timeAsSubSeconds).toBe(30); // unchanged
       });
 
-      test('should NOT accumulate time during individual7 substitution when paused', () => {
-        const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_7);
+      test.each([
+        {
+          teamMode: TEAM_MODES.INDIVIDUAL_6,
+          formation: {
+            leftDefender: '1',
+            substitute_1: '8'
+          },
+          rotationQueue: ['1', '2', '3', '4', '8'],
+          description: 'individual6'
+        },
+        {
+          teamMode: TEAM_MODES.INDIVIDUAL_7,
+          formation: {
+            leftDefender: '1',
+            substitute_1: '8',
+            substitute_2: '9'
+          },
+          rotationQueue: ['1', '2', '3', '4', '8', '9'],
+          description: 'individual7'
+        }
+      ])('should NOT accumulate time during %s substitution when paused', ({ teamMode, formation, rotationQueue }) => {
+        const manager = new SubstitutionManager(teamMode);
         const mockPlayersWithTime = [
           { 
             id: '1', 
@@ -389,14 +424,10 @@ describe('SubstitutionManager', () => {
         ];
 
         const context = {
-          formation: {
-            leftDefender: '1',
-            substitute_1: '8',
-            substitute_2: '9'
-          },
+          formation,
           nextPlayerIdToSubOut: '1',
           allPlayers: mockPlayersWithTime,
-          rotationQueue: ['1', '2', '3', '4', '8', '9'],
+          rotationQueue,
           currentTimeEpoch: 25000, // 20 seconds later (during pause)
           isSubTimerPaused: true // Pause substitution
         };

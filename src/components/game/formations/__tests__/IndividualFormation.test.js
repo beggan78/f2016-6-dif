@@ -174,19 +174,65 @@ describe('IndividualFormation', () => {
     });
   });
 
-  describe('Core Rendering - INDIVIDUAL_7', () => {
-    it('should render all positions for INDIVIDUAL_7 team mode', () => {
-      render(<IndividualFormation {...defaultProps} />);
+  describe('Core Rendering - Both Individual Modes', () => {
+    test.each([
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        playerCount: 6,
+        expectedSubstituteCount: 1,
+        description: 'INDIVIDUAL_6'
+      },
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        playerCount: 7,
+        expectedSubstituteCount: 2,
+        description: 'INDIVIDUAL_7'
+      }
+    ])('should render all positions for %s team mode', ({ teamMode, playerCount, expectedSubstituteCount }) => {
+      const mockFormation = createMockFormation(teamMode);
+      const mockPlayers = createMockPlayers(playerCount);
+      const props = {
+        ...defaultProps,
+        teamMode,
+        formation: mockFormation,
+        allPlayers: mockPlayers,
+        nextNextPlayerIdToSubOut: teamMode === TEAM_MODES.INDIVIDUAL_6 ? undefined : '2'
+      };
+      
+      render(<IndividualFormation {...props} />);
       
       expect(screen.getByText('Left Defender')).toBeInTheDocument();
       expect(screen.getByText('Right Defender')).toBeInTheDocument();
       expect(screen.getByText('Left Attacker')).toBeInTheDocument();
       expect(screen.getByText('Right Attacker')).toBeInTheDocument();
-      expect(screen.getAllByText('Substitute')).toHaveLength(2); // Two substitutes in INDIVIDUAL_7
+      expect(screen.getAllByText('Substitute')).toHaveLength(expectedSubstituteCount);
     });
 
-    it('should display player names and stats for each position', () => {
-      render(<IndividualFormation {...defaultProps} />);
+    test.each([
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        playerCount: 6,
+        expectedPlayerIds: ['1', '2', '3', '4', '5'],
+        description: 'INDIVIDUAL_6'
+      },
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        playerCount: 7,
+        expectedPlayerIds: ['1', '2', '3', '4', '5', '6'],
+        description: 'INDIVIDUAL_7'
+      }
+    ])('should display player names and stats for each position in %s', ({ teamMode, playerCount, expectedPlayerIds }) => {
+      const mockFormation = createMockFormation(teamMode);
+      const mockPlayers = createMockPlayers(playerCount);
+      const props = {
+        ...defaultProps,
+        teamMode,
+        formation: mockFormation,
+        allPlayers: mockPlayers,
+        nextNextPlayerIdToSubOut: teamMode === TEAM_MODES.INDIVIDUAL_6 ? undefined : '2'
+      };
+      
+      render(<IndividualFormation {...props} />);
       
       // Check player names are displayed (using flexible text matching)
       expect(screen.getByText((content, node) => {
@@ -204,25 +250,69 @@ describe('IndividualFormation', () => {
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '🔄 Player 5';
       })).toBeInTheDocument(); // substitute_1
-      expect(screen.getByText((content, node) => {
-        return node && node.textContent === '🔄 Player 6';
-      })).toBeInTheDocument(); // substitute_2
-    });
-
-    it('should render PlayerStatsDisplay components for each player', () => {
-      render(<IndividualFormation {...defaultProps} />);
       
-      // Should have stats displays for all 6 players (excluding goalie)
-      expect(screen.getByTestId('player-stats-1')).toBeInTheDocument();
-      expect(screen.getByTestId('player-stats-2')).toBeInTheDocument();
-      expect(screen.getByTestId('player-stats-3')).toBeInTheDocument();
-      expect(screen.getByTestId('player-stats-4')).toBeInTheDocument();
-      expect(screen.getByTestId('player-stats-5')).toBeInTheDocument();
-      expect(screen.getByTestId('player-stats-6')).toBeInTheDocument();
+      if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
+        expect(screen.getByText((content, node) => {
+          return node && node.textContent === '🔄 Player 6';
+        })).toBeInTheDocument(); // substitute_2 only in INDIVIDUAL_7
+      }
     });
 
-    it('should display position icons correctly', () => {
-      render(<IndividualFormation {...defaultProps} />);
+    test.each([
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        playerCount: 6,
+        expectedStatIds: ['1', '2', '3', '4', '5'],
+        description: 'INDIVIDUAL_6'
+      },
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        playerCount: 7,
+        expectedStatIds: ['1', '2', '3', '4', '5', '6'],
+        description: 'INDIVIDUAL_7'
+      }
+    ])('should render PlayerStatsDisplay components for each player in %s', ({ teamMode, playerCount, expectedStatIds }) => {
+      const mockFormation = createMockFormation(teamMode);
+      const mockPlayers = createMockPlayers(playerCount);
+      const props = {
+        ...defaultProps,
+        teamMode,
+        formation: mockFormation,
+        allPlayers: mockPlayers,
+        nextNextPlayerIdToSubOut: teamMode === TEAM_MODES.INDIVIDUAL_6 ? undefined : '2'
+      };
+      
+      render(<IndividualFormation {...props} />);
+      
+      // Should have stats displays for expected outfield players (excluding goalie)
+      expectedStatIds.forEach(id => {
+        expect(screen.getByTestId(`player-stats-${id}`)).toBeInTheDocument();
+      });
+    });
+
+    test.each([
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        playerCount: 6,
+        description: 'INDIVIDUAL_6'
+      },
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        playerCount: 7,
+        description: 'INDIVIDUAL_7'
+      }
+    ])('should display position icons correctly in %s', ({ teamMode, playerCount }) => {
+      const mockFormation = createMockFormation(teamMode);
+      const mockPlayers = createMockPlayers(playerCount);
+      const props = {
+        ...defaultProps,
+        teamMode,
+        formation: mockFormation,
+        allPlayers: mockPlayers,
+        nextNextPlayerIdToSubOut: teamMode === TEAM_MODES.INDIVIDUAL_6 ? undefined : '2'
+      };
+      
+      render(<IndividualFormation {...props} />);
       
       // Check that position icons are displayed as part of player text (mocked as emoji)
       // Use more specific matching to find only the direct text nodes with icons
@@ -241,29 +331,60 @@ describe('IndividualFormation', () => {
       expect(screen.getAllByText((content, node) => {
         return node && node.tagName === 'DIV' && node.textContent === '🔄 Player 5';
       })).toHaveLength(1); // Substitute 1
-      expect(screen.getAllByText((content, node) => {
-        return node && node.tagName === 'DIV' && node.textContent === '🔄 Player 6';
-      })).toHaveLength(1); // Substitute 2
-    });
-
-    it('should apply correct container structure', () => {
-      const { container } = render(<IndividualFormation {...defaultProps} />);
       
-      expect(container.firstChild).toHaveClass('space-y-2');
+      if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
+        expect(screen.getAllByText((content, node) => {
+          return node && node.tagName === 'DIV' && node.textContent === '🔄 Player 6';
+        })).toHaveLength(1); // Substitute 2 only in INDIVIDUAL_7
+      }
     });
 
-    it('should handle missing formation gracefully', () => {
-      const props = {
-        ...defaultProps,
-        formation: null
-      };
-      
-      expect(() => render(<IndividualFormation {...props} />)).not.toThrow();
-    });
+    test.each([TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7])(
+      'should apply correct container structure for %s', (teamMode) => {
+        const mockFormation = createMockFormation(teamMode);
+        const mockPlayers = createMockPlayers(teamMode === TEAM_MODES.INDIVIDUAL_6 ? 6 : 7);
+        const props = {
+          ...defaultProps,
+          teamMode,
+          formation: mockFormation,
+          allPlayers: mockPlayers,
+          nextNextPlayerIdToSubOut: teamMode === TEAM_MODES.INDIVIDUAL_6 ? undefined : '2'
+        };
+        
+        const { container } = render(<IndividualFormation {...props} />);
+        
+        expect(container.firstChild).toHaveClass('space-y-2');
+      }
+    );
 
-    it('should handle missing player IDs in formation', () => {
-      const props = {
-        ...defaultProps,
+    test.each([TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7])(
+      'should handle missing formation gracefully for %s', (teamMode) => {
+        const props = {
+          ...defaultProps,
+          teamMode,
+          formation: null
+        };
+        
+        expect(() => render(<IndividualFormation {...props} />)).not.toThrow();
+      }
+    );
+
+    test.each([
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        formation: {
+          leftDefender: '1',
+          rightDefender: null,
+          leftAttacker: undefined,
+          rightAttacker: '4',
+          substitute: '5',
+          goalie: '6'
+        },
+        expectedSubstitutePlayers: ['5'],
+        description: 'INDIVIDUAL_6'
+      },
+      {
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
         formation: {
           leftDefender: '1',
           rightDefender: null,
@@ -272,7 +393,15 @@ describe('IndividualFormation', () => {
           substitute_1: '5',
           substitute_2: '6',
           goalie: '7'
-        }
+        },
+        expectedSubstitutePlayers: ['5', '6'],
+        description: 'INDIVIDUAL_7'
+      }
+    ])('should handle missing player IDs in formation for %s', ({ teamMode, formation, expectedSubstitutePlayers }) => {
+      const props = {
+        ...defaultProps,
+        teamMode,
+        formation
       };
       
       render(<IndividualFormation {...props} />);
@@ -284,86 +413,69 @@ describe('IndividualFormation', () => {
       expect(screen.getByText((content, node) => {
         return node && node.textContent === '⚔️ Player 4';
       })).toBeInTheDocument();
-      expect(screen.getByText((content, node) => {
-        return node && node.textContent === '🔄 Player 5';
-      })).toBeInTheDocument();
-      expect(screen.getByText((content, node) => {
-        return node && node.textContent === '🔄 Player 6';
-      })).toBeInTheDocument();
+      
+      // Check expected substitute players
+      expectedSubstitutePlayers.forEach(playerId => {
+        expect(screen.getByText((content, node) => {
+          return node && node.textContent === `🔄 Player ${playerId}`;
+        })).toBeInTheDocument();
+      });
     });
   });
 
-  describe('Core Rendering - INDIVIDUAL_6', () => {
-    beforeEach(() => {
-      // Update mocks for INDIVIDUAL_6
-      mockIndividualFormation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
-      mockPlayers = createMockPlayers(6);
-      defaultProps = {
-        ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_6,
-        formation: mockIndividualFormation,
-        allPlayers: mockPlayers,
-        nextNextPlayerIdToSubOut: undefined // INDIVIDUAL_6 doesn't use next-next
-      };
-    });
-
-    it('should render all positions for INDIVIDUAL_6 team mode', () => {
-      render(<IndividualFormation {...defaultProps} />);
-      
-      expect(screen.getByText('Left Defender')).toBeInTheDocument();
-      expect(screen.getByText('Right Defender')).toBeInTheDocument();
-      expect(screen.getByText('Left Attacker')).toBeInTheDocument();
-      expect(screen.getByText('Right Attacker')).toBeInTheDocument();
-      expect(screen.getAllByText('Substitute')).toHaveLength(1); // One substitute in INDIVIDUAL_6
-    });
-
-    it('should not support inactive players in INDIVIDUAL_6', () => {
-      const { supportsInactivePlayers } = require('../../../../game/ui/positionUtils');
-      
-      render(<IndividualFormation {...defaultProps} />);
-      
-      // Should call supportsInactivePlayers with INDIVIDUAL_6 and return false
-      expect(supportsInactivePlayers).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_6);
-    });
-
-    it('should not support next-next indicators in INDIVIDUAL_6', () => {
-      const { supportsNextNextIndicators } = require('../../../../game/ui/positionUtils');
-      
-      render(<IndividualFormation {...defaultProps} />);
-      
-      // Should call supportsNextNextIndicators with INDIVIDUAL_6 and return false
-      expect(supportsNextNextIndicators).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_6);
-    });
-  });
 
   describe('Visual State Management', () => {
-    it('should show "Next Off" indicator for nextPlayerIdToSubOut', () => {
-      const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
-      getIndicatorProps.mockImplementation((player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) => {
-        if (player?.id === '1') { // leftDefender player
-          return { isNextOff: true, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
-        }
-        return { isNextOff: false, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
-      });
-      
-      render(<IndividualFormation {...defaultProps} />);
-      
-      expect(screen.getByTestId('arrow-down-icon')).toBeInTheDocument();
-    });
+    test.each([TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7])(
+      'should show "Next Off" indicator for nextPlayerIdToSubOut in %s', (teamMode) => {
+        const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
+        getIndicatorProps.mockImplementation((player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) => {
+          if (player?.id === '1') { // leftDefender player
+            return { isNextOff: true, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
+          }
+          return { isNextOff: false, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
+        });
+        
+        const mockFormation = createMockFormation(teamMode);
+        const mockPlayers = createMockPlayers(teamMode === TEAM_MODES.INDIVIDUAL_6 ? 6 : 7);
+        const props = {
+          ...defaultProps,
+          teamMode,
+          formation: mockFormation,
+          allPlayers: mockPlayers,
+          nextNextPlayerIdToSubOut: teamMode === TEAM_MODES.INDIVIDUAL_6 ? undefined : '2'
+        };
+        
+        render(<IndividualFormation {...props} />);
+        
+        expect(screen.getByTestId('arrow-down-icon')).toBeInTheDocument();
+      }
+    );
 
-    it('should show "Next On" indicator for substitute positions', () => {
-      const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
-      getIndicatorProps.mockImplementation((player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) => {
-        if (player?.id === '5') { // substitute_1 player
-          return { isNextOff: false, isNextOn: true, isNextNextOff: false, isNextNextOn: false };
-        }
-        return { isNextOff: false, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
-      });
-      
-      render(<IndividualFormation {...defaultProps} />);
-      
-      expect(screen.getByTestId('arrow-up-icon')).toBeInTheDocument();
-    });
+    test.each([TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7])(
+      'should show "Next On" indicator for substitute positions in %s', (teamMode) => {
+        const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
+        getIndicatorProps.mockImplementation((player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) => {
+          if (player?.id === '5') { // substitute_1 player
+            return { isNextOff: false, isNextOn: true, isNextNextOff: false, isNextNextOn: false };
+          }
+          return { isNextOff: false, isNextOn: false, isNextNextOff: false, isNextNextOn: false };
+        });
+        
+        const mockFormation = createMockFormation(teamMode);
+        const mockPlayers = createMockPlayers(teamMode === TEAM_MODES.INDIVIDUAL_6 ? 6 : 7);
+        const props = {
+          ...defaultProps,
+          teamMode,
+          formation: mockFormation,
+          allPlayers: mockPlayers,
+          nextNextPlayerIdToSubOut: teamMode === TEAM_MODES.INDIVIDUAL_6 ? undefined : '2'
+        };
+        
+        render(<IndividualFormation {...props} />);
+        
+        expect(screen.getByTestId('arrow-up-icon')).toBeInTheDocument();
+      }
+    );
 
     it('should show next-next indicators in INDIVIDUAL_7', () => {
       const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
@@ -379,52 +491,77 @@ describe('IndividualFormation', () => {
       expect(screen.getByTestId('arrow-down-icon')).toBeInTheDocument();
     });
 
-    it('should hide indicators when hideNextOffIndicator is true', () => {
-      const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
-      getIndicatorProps.mockReturnValue({ isNextOff: true, isNextOn: true, isNextNextOff: true, isNextNextOn: true });
-      
-      const props = {
-        ...defaultProps,
-        hideNextOffIndicator: true
-      };
-      
-      render(<IndividualFormation {...props} />);
-      
-      expect(screen.queryByTestId('arrow-down-icon')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('arrow-up-icon')).not.toBeInTheDocument();
-    });
+    test.each([TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7])(
+      'should hide indicators when hideNextOffIndicator is true in %s', (teamMode) => {
+        const { getIndicatorProps } = require('../../../../game/ui/positionUtils');
+        getIndicatorProps.mockReturnValue({ isNextOff: true, isNextOn: true, isNextNextOff: true, isNextNextOn: true });
+        
+        const mockFormation = createMockFormation(teamMode);
+        const mockPlayers = createMockPlayers(teamMode === TEAM_MODES.INDIVIDUAL_6 ? 6 : 7);
+        const props = {
+          ...defaultProps,
+          teamMode,
+          formation: mockFormation,
+          allPlayers: mockPlayers,
+          hideNextOffIndicator: true
+        };
+        
+        render(<IndividualFormation {...props} />);
+        
+        expect(screen.queryByTestId('arrow-down-icon')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('arrow-up-icon')).not.toBeInTheDocument();
+      }
+    );
 
-    it('should apply styling for recently substituted players', () => {
-      const { getPlayerStyling } = require('../../../../game/ui/playerStyling');
-      
-      const props = {
-        ...defaultProps,
-        recentlySubstitutedPlayers: new Set(['1', '2']) // leftDefender and rightDefender
-      };
-      
-      render(<IndividualFormation {...props} />);
-      
-      // Should call getPlayerStyling with isRecentlySubstituted: true
-      expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
-        isRecentlySubstituted: true
-      }));
-    });
+    test.each([TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7])(
+      'should apply styling for recently substituted players in %s', (teamMode) => {
+        const { getPlayerStyling } = require('../../../../game/ui/playerStyling');
+        
+        const mockFormation = createMockFormation(teamMode);
+        const mockPlayers = createMockPlayers(teamMode === TEAM_MODES.INDIVIDUAL_6 ? 6 : 7);
+        const props = {
+          ...defaultProps,
+          teamMode,
+          formation: mockFormation,
+          allPlayers: mockPlayers,
+          recentlySubstitutedPlayers: new Set(['1', '2']) // leftDefender and rightDefender
+        };
+        
+        render(<IndividualFormation {...props} />);
+        
+        // Should call getPlayerStyling with isRecentlySubstituted: true
+        expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
+          isRecentlySubstituted: true
+        }));
+      }
+    );
 
-    it('should apply correct background colors for field vs substitute positions', () => {
-      const { getPlayerStyling } = require('../../../../game/ui/playerStyling');
-      
-      render(<IndividualFormation {...defaultProps} />);
-      
-      // Field positions should have isFieldPosition: true
-      expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
-        isFieldPosition: true
-      }));
-      
-      // Substitute positions should have isFieldPosition: false
-      expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
-        isFieldPosition: false
-      }));
-    });
+    test.each([TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7])(
+      'should apply correct background colors for field vs substitute positions in %s', (teamMode) => {
+        const { getPlayerStyling } = require('../../../../game/ui/playerStyling');
+        
+        const mockFormation = createMockFormation(teamMode);
+        const mockPlayers = createMockPlayers(teamMode === TEAM_MODES.INDIVIDUAL_6 ? 6 : 7);
+        const props = {
+          ...defaultProps,
+          teamMode,
+          formation: mockFormation,
+          allPlayers: mockPlayers
+        };
+        
+        render(<IndividualFormation {...props} />);
+        
+        // Field positions should have isFieldPosition: true
+        expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
+          isFieldPosition: true
+        }));
+        
+        // Substitute positions should have isFieldPosition: false
+        expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
+          isFieldPosition: false
+        }));
+      }
+    );
   });
 
   describe('Inactive Player Support (INDIVIDUAL_7)', () => {

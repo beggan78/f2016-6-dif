@@ -62,37 +62,31 @@ describe('playerSortingUtils', () => {
   };
 
   describe('getPlayerCurrentRole', () => {
-    test('should identify attackers in INDIVIDUAL_6 mode', () => {
-      expect(getPlayerCurrentRole('p1', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('ATTACKER');
-      expect(getPlayerCurrentRole('p2', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('ATTACKER');
-    });
-
-    test('should identify defenders in INDIVIDUAL_6 mode', () => {
-      expect(getPlayerCurrentRole('p3', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('DEFENDER');
-      expect(getPlayerCurrentRole('p4', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('DEFENDER');
-    });
-
-    test('should identify goalie in INDIVIDUAL_6 mode', () => {
-      expect(getPlayerCurrentRole('p5', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('GOALIE');
-    });
-
-    test('should identify substitutes in INDIVIDUAL_6 mode', () => {
-      expect(getPlayerCurrentRole('p6', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('SUBSTITUTE');
-    });
-
-    test('should identify attackers in INDIVIDUAL_7 mode', () => {
-      expect(getPlayerCurrentRole('p1', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('ATTACKER');
-      expect(getPlayerCurrentRole('p2', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('ATTACKER');
-    });
-
-    test('should identify defenders in INDIVIDUAL_7 mode', () => {
-      expect(getPlayerCurrentRole('p3', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('DEFENDER');
-      expect(getPlayerCurrentRole('p4', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('DEFENDER');
-    });
-
-    test('should identify substitutes in INDIVIDUAL_7 mode', () => {
-      expect(getPlayerCurrentRole('p6', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('SUBSTITUTE');
-      expect(getPlayerCurrentRole('p7', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('SUBSTITUTE');
+    test('should identify roles correctly across individual modes', () => {
+      // Test unified individual mode behavior - both modes should behave identically for same positions
+      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
+      const individualFormations = [mockFormationIndividual6, mockFormationIndividual7];
+      
+      individualModes.forEach((mode, index) => {
+        const formation = individualFormations[index];
+        
+        // Attackers
+        expect(getPlayerCurrentRole('p1', formation, mode)).toBe('ATTACKER');
+        expect(getPlayerCurrentRole('p2', formation, mode)).toBe('ATTACKER');
+        
+        // Defenders  
+        expect(getPlayerCurrentRole('p3', formation, mode)).toBe('DEFENDER');
+        expect(getPlayerCurrentRole('p4', formation, mode)).toBe('DEFENDER');
+        
+        // Goalie
+        expect(getPlayerCurrentRole('p5', formation, mode)).toBe('GOALIE');
+        
+        // Substitutes
+        expect(getPlayerCurrentRole('p6', formation, mode)).toBe('SUBSTITUTE');
+        if (mode === TEAM_MODES.INDIVIDUAL_7) {
+          expect(getPlayerCurrentRole('p7', formation, mode)).toBe('SUBSTITUTE');
+        }
+      });
     });
 
     test('should identify attackers in PAIRS_7 mode', () => {
@@ -122,14 +116,17 @@ describe('playerSortingUtils', () => {
   });
 
   describe('getCurrentAttackers', () => {
-    test('should get attackers for INDIVIDUAL_6 mode', () => {
-      const attackers = getCurrentAttackers(mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
-      expect(attackers).toEqual(['p1', 'p2']);
-    });
-
-    test('should get attackers for INDIVIDUAL_7 mode', () => {
-      const attackers = getCurrentAttackers(mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7);
-      expect(attackers).toEqual(['p1', 'p2']);
+    test('should get attackers consistently across individual modes', () => {
+      // Test that individual modes have consistent attacker extraction
+      const testCases = [
+        { mode: TEAM_MODES.INDIVIDUAL_6, formation: mockFormationIndividual6 },
+        { mode: TEAM_MODES.INDIVIDUAL_7, formation: mockFormationIndividual7 }
+      ];
+      
+      testCases.forEach(({ mode, formation }) => {
+        const attackers = getCurrentAttackers(formation, mode);
+        expect(attackers).toEqual(['p1', 'p2']);
+      });
     });
 
     test('should get attackers for PAIRS_7 mode', () => {
@@ -149,14 +146,17 @@ describe('playerSortingUtils', () => {
   });
 
   describe('getCurrentDefenders', () => {
-    test('should get defenders for INDIVIDUAL_6 mode', () => {
-      const defenders = getCurrentDefenders(mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
-      expect(defenders).toEqual(['p3', 'p4']);
-    });
-
-    test('should get defenders for INDIVIDUAL_7 mode', () => {
-      const defenders = getCurrentDefenders(mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7);
-      expect(defenders).toEqual(['p3', 'p4']);
+    test('should get defenders consistently across individual modes', () => {
+      // Test that individual modes have consistent defender extraction
+      const testCases = [
+        { mode: TEAM_MODES.INDIVIDUAL_6, formation: mockFormationIndividual6 },
+        { mode: TEAM_MODES.INDIVIDUAL_7, formation: mockFormationIndividual7 }
+      ];
+      
+      testCases.forEach(({ mode, formation }) => {
+        const defenders = getCurrentDefenders(formation, mode);
+        expect(defenders).toEqual(['p3', 'p4']);
+      });
     });
 
     test('should get defenders for PAIRS_7 mode', () => {
@@ -170,26 +170,28 @@ describe('playerSortingUtils', () => {
   });
 
   describe('sortPlayersByGoalScoringRelevance', () => {
-    test('should sort players by relevance for INDIVIDUAL_6 mode', () => {
-      // Use only players that are in the formation for this test
-      const playersForIndividual6 = mockPlayers.slice(0, 6); // p1-p6
-      const sorted = sortPlayersByGoalScoringRelevance(playersForIndividual6, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
+    test('should sort players by relevance consistently across individual modes', () => {
+      // Test that individual modes produce consistent sorting logic
+      const testCases = [
+        {
+          mode: TEAM_MODES.INDIVIDUAL_6,
+          formation: mockFormationIndividual6,
+          players: mockPlayers.slice(0, 6), // p1-p6
+          expectedOrder: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'] // Attackers, Defenders, Goalie, Substitutes
+        },
+        {
+          mode: TEAM_MODES.INDIVIDUAL_7,
+          formation: mockFormationIndividual7,
+          players: mockPlayers,
+          expectedOrder: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'] // Attackers, Defenders, Goalie, Substitutes
+        }
+      ];
       
-      // Should be: Attackers (p1, p2), Defenders (p3, p4), Goalie (p5), Substitutes (p6)
-      const expectedOrder = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
-      const actualOrder = sorted.map(p => p.id);
-      
-      expect(actualOrder).toEqual(expectedOrder);
-    });
-
-    test('should sort players by relevance for INDIVIDUAL_7 mode', () => {
-      const sorted = sortPlayersByGoalScoringRelevance(mockPlayers, mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7);
-      
-      // Should be: Attackers (p1, p2), Defenders (p3, p4), Goalie (p5), Substitutes (p6, p7)
-      const expectedOrder = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
-      const actualOrder = sorted.map(p => p.id);
-      
-      expect(actualOrder).toEqual(expectedOrder);
+      testCases.forEach(({ mode, formation, players, expectedOrder }) => {
+        const sorted = sortPlayersByGoalScoringRelevance(players, formation, mode);
+        const actualOrder = sorted.map(p => p.id);
+        expect(actualOrder).toEqual(expectedOrder);
+      });
     });
 
     test('should sort players by relevance for PAIRS_7 mode', () => {
@@ -245,23 +247,41 @@ describe('playerSortingUtils', () => {
   });
 
   describe('getPlayerPositionDisplay', () => {
-    test('should return correct position names for INDIVIDUAL_6 mode', () => {
-      expect(getPlayerPositionDisplay('p1', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('Left Attacker');
-      expect(getPlayerPositionDisplay('p2', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('Right Attacker');
-      expect(getPlayerPositionDisplay('p3', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('Left Defender');
-      expect(getPlayerPositionDisplay('p4', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('Right Defender');
-      expect(getPlayerPositionDisplay('p5', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('Goalie');
-      expect(getPlayerPositionDisplay('p6', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('Substitute');
-    });
-
-    test('should return correct position names for INDIVIDUAL_7 mode', () => {
-      expect(getPlayerPositionDisplay('p1', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('Left Attacker');
-      expect(getPlayerPositionDisplay('p2', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('Right Attacker');
-      expect(getPlayerPositionDisplay('p3', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('Left Defender');
-      expect(getPlayerPositionDisplay('p4', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('Right Defender');
-      expect(getPlayerPositionDisplay('p5', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('Goalie');
-      expect(getPlayerPositionDisplay('p6', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('Substitute');
-      expect(getPlayerPositionDisplay('p7', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe('Substitute');
+    test('should return correct position names for individual modes', () => {
+      // Test that individual modes have consistent position display logic
+      const testCases = [
+        {
+          mode: TEAM_MODES.INDIVIDUAL_6,
+          formation: mockFormationIndividual6,
+          expectedPositions: {
+            'p1': 'Left Attacker',
+            'p2': 'Right Attacker', 
+            'p3': 'Left Defender',
+            'p4': 'Right Defender',
+            'p5': 'Goalie',
+            'p6': 'Substitute'
+          }
+        },
+        {
+          mode: TEAM_MODES.INDIVIDUAL_7,
+          formation: mockFormationIndividual7,
+          expectedPositions: {
+            'p1': 'Left Attacker',
+            'p2': 'Right Attacker',
+            'p3': 'Left Defender', 
+            'p4': 'Right Defender',
+            'p5': 'Goalie',
+            'p6': 'Substitute',
+            'p7': 'Substitute'
+          }
+        }
+      ];
+      
+      testCases.forEach(({ mode, formation, expectedPositions }) => {
+        Object.entries(expectedPositions).forEach(([playerId, expectedPosition]) => {
+          expect(getPlayerPositionDisplay(playerId, formation, mode)).toBe(expectedPosition);
+        });
+      });
     });
 
     test('should return correct position names for PAIRS_7 mode', () => {
@@ -281,21 +301,37 @@ describe('playerSortingUtils', () => {
   });
 
   describe('isPlayerOnField', () => {
-    test('should correctly identify field players', () => {
-      expect(isPlayerOnField('p1', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe(true); // Attacker
-      expect(isPlayerOnField('p3', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe(true); // Defender
-      expect(isPlayerOnField('p5', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe(true); // Goalie
-      expect(isPlayerOnField('p6', mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe(false); // Substitute
-    });
-
-    test('should work across all team modes', () => {
-      // Test INDIVIDUAL_7
-      expect(isPlayerOnField('p1', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe(true);
-      expect(isPlayerOnField('p6', mockFormationIndividual7, TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+    test('should correctly identify field players across all team modes', () => {
+      // Test configuration-driven field detection across all modes
+      const testCases = [
+        {
+          mode: TEAM_MODES.INDIVIDUAL_6,
+          formation: mockFormationIndividual6,
+          onFieldPlayers: ['p1', 'p3', 'p5'], // Attacker, Defender, Goalie
+          substitutePlayers: ['p6']
+        },
+        {
+          mode: TEAM_MODES.INDIVIDUAL_7,
+          formation: mockFormationIndividual7,
+          onFieldPlayers: ['p1', 'p3', 'p5'], // Attacker, Defender, Goalie
+          substitutePlayers: ['p6']
+        },
+        {
+          mode: TEAM_MODES.PAIRS_7,
+          formation: mockFormationPairs7,
+          onFieldPlayers: ['p1', 'p3', 'p5'], // Attacker, Defender, Goalie
+          substitutePlayers: ['p6'] // SubPair is substitute
+        }
+      ];
       
-      // Test PAIRS_7
-      expect(isPlayerOnField('p1', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe(true);
-      expect(isPlayerOnField('p6', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe(false); // SubPair is substitute
+      testCases.forEach(({ mode, formation, onFieldPlayers, substitutePlayers }) => {
+        onFieldPlayers.forEach(playerId => {
+          expect(isPlayerOnField(playerId, formation, mode)).toBe(true);
+        });
+        substitutePlayers.forEach(playerId => {
+          expect(isPlayerOnField(playerId, formation, mode)).toBe(false);
+        });
+      });
     });
   });
 
