@@ -1,7 +1,7 @@
 import React from 'react';
 import { Shield, Sword, RotateCcw } from 'lucide-react';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
+import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
 
 /**
  * Game-screen UI utilities for position rendering
@@ -26,7 +26,7 @@ export function getPositionIcon(position, substitutePositions) {
  */
 export function getPositionDisplayName(position, player, teamMode, substitutePositions) {
   // Check if this formation supports inactive players
-  const supportsInactivePlayers = teamMode === TEAM_MODES.INDIVIDUAL_7;
+  const supportsInactivePlayers = supportsInactiveUsers(teamMode);
   
   // For substitute positions with inactive support, check player status
   if (supportsInactivePlayers && substitutePositions.includes(position)) {
@@ -44,13 +44,13 @@ export function getPositionDisplayName(position, player, teamMode, substitutePos
 export function getIndicatorProps(player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) {
   const playerId = player?.id;
   const isSubstitutePosition = substitutePositions.includes(position);
-  const supportsNextNextIndicators = teamMode === TEAM_MODES.INDIVIDUAL_7;
+  const supportsNextNext = supportsNextNextIndicators(teamMode);
   
   return {
     isNextOff: playerId === nextPlayerIdToSubOut,
     isNextOn: isSubstitutePosition && position === substitutePositions[0], // First substitute is "next on"
-    isNextNextOff: supportsNextNextIndicators ? playerId === nextNextPlayerIdToSubOut : false,
-    isNextNextOn: supportsNextNextIndicators && isSubstitutePosition && position === substitutePositions[1] // Second substitute is "next next on"
+    isNextNextOff: supportsNextNext ? playerId === nextNextPlayerIdToSubOut : false,
+    isNextNextOn: supportsNextNext && isSubstitutePosition && position === substitutePositions[1] // Second substitute is "next next on"
   };
 }
 
@@ -63,14 +63,13 @@ export function getPositionEvents(longPressHandlers, position) {
 
 /**
  * Check if a formation supports inactive players
+ * @deprecated Use supportsInactiveUsers from gameModes.js instead
  */
 export function supportsInactivePlayers(teamMode) {
-  return teamMode === TEAM_MODES.INDIVIDUAL_7;
+  return supportsInactiveUsers(teamMode);
 }
 
 /**
- * Check if a formation supports next/nextNext indicators
+ * Re-export supportsNextNextIndicators from gameModes for backward compatibility
  */
-export function supportsNextNextIndicators(teamMode) {
-  return teamMode === TEAM_MODES.INDIVIDUAL_7;
-}
+export { supportsNextNextIndicators } from '../../constants/gameModes';

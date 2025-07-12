@@ -31,7 +31,16 @@ export const MODE_DEFINITIONS = {
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
     substitutePositions: ['substitute_1'],
     supportsInactiveUsers: false,
-    substituteRotationPattern: 'simple'
+    substituteRotationPattern: 'simple',
+    initialFormationTemplate: {
+      goalie: null,
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null,
+      substitute_1: null
+    },
+    validationMessage: "Please complete the team formation with 1 goalie and 5 unique outfield players."
   },
   [TEAM_MODES.INDIVIDUAL_7]: {
     positions: {
@@ -48,7 +57,17 @@ export const MODE_DEFINITIONS = {
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
     substitutePositions: ['substitute_1', 'substitute_2'],
     supportsInactiveUsers: true,
-    substituteRotationPattern: 'carousel'
+    substituteRotationPattern: 'carousel',
+    initialFormationTemplate: {
+      goalie: null,
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null,
+      substitute_1: null,
+      substitute_2: null
+    },
+    validationMessage: "Please complete the team formation with 1 goalie and 6 unique outfield players."
   }
 };
 
@@ -79,4 +98,117 @@ export function getFormationPositions(teamMode) {
 export function getFormationPositionsWithGoalie(teamMode) {
   const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder : [];
+}
+
+/**
+ * Get initial formation template for a team mode
+ */
+export function getInitialFormationTemplate(teamMode, goalieId = null) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition?.initialFormationTemplate) return {};
+  
+  const template = { ...definition.initialFormationTemplate };
+  if (goalieId) {
+    template.goalie = goalieId;
+  }
+  return template;
+}
+
+/**
+ * Get validation message for a team mode
+ */
+export function getValidationMessage(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  return definition?.validationMessage || "Please complete the team formation.";
+}
+
+/**
+ * Get all outfield positions for formation validation
+ */
+export function getOutfieldPositions(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition) return [];
+  
+  return [...definition.fieldPositions, ...definition.substitutePositions];
+}
+
+/**
+ * Check if a team mode supports inactive players
+ */
+export function supportsInactiveUsers(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  return definition?.supportsInactiveUsers || false;
+}
+
+/**
+ * Check if a team mode supports next-next indicators
+ */
+export function supportsNextNextIndicators(teamMode) {
+  // Only 7-player mode supports next-next indicators
+  return teamMode === TEAM_MODES.INDIVIDUAL_7;
+}
+
+/**
+ * Initialize player role and status based on formation position
+ */
+export function initializePlayerRoleAndStatus(playerId, formation, teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition) return { role: null, status: null, pairKey: null };
+  
+  // Check if player is goalie
+  if (playerId === formation.goalie) {
+    return {
+      role: PLAYER_ROLES.GOALIE,
+      status: 'goalie',
+      pairKey: null
+    };
+  }
+  
+  // Check field positions
+  for (const position of definition.fieldPositions) {
+    if (playerId === formation[position]) {
+      return {
+        role: definition.positions[position].role,
+        status: 'on_field',
+        pairKey: position
+      };
+    }
+  }
+  
+  // Check substitute positions
+  for (const position of definition.substitutePositions) {
+    if (playerId === formation[position]) {
+      return {
+        role: definition.positions[position].role,
+        status: 'substitute',
+        pairKey: position
+      };
+    }
+  }
+  
+  // Handle pairs mode (special case)
+  if (teamMode === TEAM_MODES.PAIRS_7) {
+    const pairPositions = ['leftPair', 'rightPair', 'subPair'];
+    for (const pairKey of pairPositions) {
+      const pair = formation[pairKey];
+      if (pair) {
+        if (playerId === pair.defender) {
+          return {
+            role: PLAYER_ROLES.DEFENDER,
+            status: pairKey === 'subPair' ? 'substitute' : 'on_field',
+            pairKey
+          };
+        }
+        if (playerId === pair.attacker) {
+          return {
+            role: PLAYER_ROLES.ATTACKER,
+            status: pairKey === 'subPair' ? 'substitute' : 'on_field',
+            pairKey
+          };
+        }
+      }
+    }
+  }
+  
+  return { role: null, status: null, pairKey: null };
 }

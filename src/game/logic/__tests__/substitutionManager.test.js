@@ -130,6 +130,77 @@ describe('SubstitutionManager', () => {
     expect(manager.teamMode).toBe(TEAM_MODES.INDIVIDUAL_6);
   });
 
+  describe('unified individual mode handler', () => {
+    test('should use configuration-driven behavior for 6-player mode', () => {
+      const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_6);
+      const mockFormation = {
+        leftDefender: '1',
+        rightDefender: '2', 
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        goalie: '6'
+      };
+      
+      const mockPlayers = [
+        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000 } },
+        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000 } },
+      ];
+      
+      const context = {
+        formation: mockFormation,
+        nextPlayerIdToSubOut: '1',
+        allPlayers: mockPlayers,
+        rotationQueue: ['1', '2', '3', '4', '5'],
+        currentTimeEpoch: 2000,
+        isSubTimerPaused: false
+      };
+      
+      const result = manager.executeSubstitution(context);
+      
+      // Should use simple swap pattern (no newNextNextPlayerIdToSubOut)
+      expect(result.newNextNextPlayerIdToSubOut).toBeUndefined();
+      // Should place outgoing player in substitute_1
+      expect(result.newFormation.substitute_1).toBe('1');
+    });
+
+    test('should use configuration-driven behavior for 7-player mode', () => {
+      const manager = new SubstitutionManager(TEAM_MODES.INDIVIDUAL_7);
+      const mockFormation = {
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3', 
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6',
+        goalie: '7'
+      };
+      
+      const mockPlayers = [
+        { id: '1', stats: { currentStatus: 'on_field', currentRole: PLAYER_ROLES.DEFENDER, lastStintStartTimeEpoch: 1000, isInactive: false } },
+        { id: '5', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, isInactive: false } },
+        { id: '6', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, isInactive: false } },
+      ];
+      
+      const context = {
+        formation: mockFormation,
+        nextPlayerIdToSubOut: '1',
+        allPlayers: mockPlayers,
+        rotationQueue: ['1', '2', '3', '4', '5', '6'],
+        currentTimeEpoch: 2000,
+        isSubTimerPaused: false
+      };
+      
+      const result = manager.executeSubstitution(context);
+      
+      // Should use carousel pattern (includes newNextNextPlayerIdToSubOut)
+      expect(result.newNextNextPlayerIdToSubOut).toBeDefined();
+      // Should use carousel rotation: substitute_2 -> substitute_1, outgoing -> substitute_2
+      expect(result.newFormation.substitute_1).toBe('6'); // Previous substitute_2
+      expect(result.newFormation.substitute_2).toBe('1'); // Outgoing player
+    });
+  });
+
   describe('conditional time tracking fix', () => {
     describe('normal substitution (timer not paused)', () => {
       test('should accumulate time during pairs substitution', () => {

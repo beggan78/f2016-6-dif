@@ -156,7 +156,7 @@
 // No longer using findPlayerById in this file
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { getFormationPositionsWithGoalie } from '../../constants/gameModes';
+import { getFormationPositionsWithGoalie, MODE_DEFINITIONS } from '../../constants/gameModes';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -301,30 +301,22 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
         }
       }
     });
-  } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
-    // 6-player individual mode
-    [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1].forEach(pos => {
-      const playerId = formation[pos];
-      if (playerId) {
-        positions[playerId] = {
-          playerId: playerId,
-          position: pos,
-          positionIndex: getPositionIndex(pos, teamMode)
-        };
-      }
-    });
-  } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
-    // 7-player individual mode
-    [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2].forEach(pos => {
-      const playerId = formation[pos];
-      if (playerId) {
-        positions[playerId] = {
-          playerId: playerId,
-          position: pos,
-          positionIndex: getPositionIndex(pos, teamMode)
-        };
-      }
-    });
+  } else if (teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7) {
+    // Unified individual mode handling using MODE_DEFINITIONS
+    const modeDefinition = MODE_DEFINITIONS[teamMode];
+    if (modeDefinition) {
+      const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
+      allPositions.forEach(pos => {
+        const playerId = formation[pos];
+        if (playerId) {
+          positions[playerId] = {
+            playerId: playerId,
+            position: pos,
+            positionIndex: getPositionIndex(pos, teamMode)
+          };
+        }
+      });
+    }
   }
   
   return positions;
