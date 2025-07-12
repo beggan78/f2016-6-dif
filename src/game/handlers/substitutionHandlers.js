@@ -9,6 +9,7 @@ import {
 import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
+import { MODE_DEFINITIONS } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createSubstitutionHandlers = (
@@ -68,27 +69,30 @@ export const createSubstitutionHandlers = (
         subPair: formation.subPair,
         goalie: formation.goalie
       };
-    } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
-      return {
-        leftDefender: formation.leftDefender,
-        rightDefender: formation.rightDefender,
-        leftAttacker: formation.leftAttacker,
-        rightAttacker: formation.rightAttacker,
-        substitute: formation.substitute_1,
-        goalie: formation.goalie
-      };
-    } else if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
-      return {
-        leftDefender: formation.leftDefender,
-        rightDefender: formation.rightDefender,
-        leftAttacker: formation.leftAttacker,
-        rightAttacker: formation.rightAttacker,
-        substitute_1: formation.substitute_1,
-        substitute_2: formation.substitute_2,
-        goalie: formation.goalie
-      };
+    } else {
+      // Generic formation normalizer for individual modes using MODE_DEFINITIONS
+      const definition = MODE_DEFINITIONS[teamMode];
+      if (!definition) return formation;
+      
+      const normalized = { goalie: formation.goalie };
+      
+      // Add field positions
+      definition.fieldPositions.forEach(position => {
+        normalized[position] = formation[position];
+      });
+      
+      // Add substitute positions
+      definition.substitutePositions.forEach(position => {
+        // For INDIVIDUAL_6, use 'substitute' as the key for substitute_1
+        if (teamMode === TEAM_MODES.INDIVIDUAL_6 && position === 'substitute_1') {
+          normalized.substitute = formation[position];
+        } else {
+          normalized[position] = formation[position];
+        }
+      });
+      
+      return normalized;
     }
-    return formation;
   };
 
   /**
@@ -517,16 +521,12 @@ export const createSubstitutionHandlers = (
             
             const currentPairKey = fullPlayerData.stats.currentPairKey;
             
-            // Exclude substitutes based on team mode
-            if (gameState.teamMode === TEAM_MODES.PAIRS_7) {
-              return currentPairKey !== 'subPair';
-            } else if (gameState.teamMode === TEAM_MODES.INDIVIDUAL_6) {
-              return currentPairKey !== 'substitute';
-            } else if (gameState.teamMode === TEAM_MODES.INDIVIDUAL_7) {
-              return currentPairKey !== 'substitute_1' && currentPairKey !== 'substitute_2';
-            }
+            // Exclude substitutes based on team mode using MODE_DEFINITIONS
+            const definition = MODE_DEFINITIONS[gameState.teamMode];
+            if (!definition) return true;
             
-            return true;
+            // Use configuration-driven substitute exclusion
+            return !definition.substitutePositions.includes(currentPairKey);
           });
           
           // Update modal state to show position options

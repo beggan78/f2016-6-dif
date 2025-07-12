@@ -4,6 +4,7 @@ import { Select, Button } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
+import { getOutfieldPositions } from '../../constants/gameModes';
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
@@ -94,7 +95,7 @@ export function PeriodSetupScreen({
     if (isFormationComplete() && playerId) {
       // Find where the selected player is currently assigned
       let currentPlayerPosition = null;
-      ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(pos => {
+      getOutfieldPositions(teamMode).forEach(pos => {
         if (formation[pos] === playerId) {
           currentPlayerPosition = pos;
         }
@@ -116,7 +117,7 @@ export function PeriodSetupScreen({
 
     // Original logic for incomplete formation
     const otherAssignments = [];
-    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(pos => {
+    getOutfieldPositions(teamMode).forEach(pos => {
       if (pos !== position && formation[pos]) {
         otherAssignments.push(formation[pos]);
       }
@@ -138,7 +139,7 @@ export function PeriodSetupScreen({
     if (isFormationComplete() && playerId) {
       // Find where the selected player is currently assigned
       let currentPlayerPosition = null;
-      ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(pos => {
+      getOutfieldPositions(teamMode).forEach(pos => {
         if (formation[pos] === playerId) {
           currentPlayerPosition = pos;
         }
@@ -160,7 +161,7 @@ export function PeriodSetupScreen({
 
     // Original logic for incomplete formation
     const otherAssignments = [];
-    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(pos => {
+    getOutfieldPositions(teamMode).forEach(pos => {
       if (pos !== position && formation[pos]) {
         otherAssignments.push(formation[pos]);
       }
@@ -217,16 +218,9 @@ export function PeriodSetupScreen({
             newGoalieCurrentPosition = { pairKey, role: 'attacker' };
           }
         });
-      } else if (isIndividual6Mode) {
-        // Search individual 6 mode positions
-        ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(position => {
-          if (formation[position] === playerId) {
-            newGoalieCurrentPosition = { position };
-          }
-        });
-      } else if (isIndividual7Mode) {
-        // Search individual 7 mode positions
-        ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(position => {
+      } else {
+        // Search individual mode positions (supports both 6 and 7 player modes)
+        getOutfieldPositions(teamMode).forEach(position => {
           if (formation[position] === playerId) {
             newGoalieCurrentPosition = { position };
           }
@@ -269,11 +263,9 @@ export function PeriodSetupScreen({
       if (isPairsMode) {
         swapOccurred = ['leftPair', 'rightPair', 'subPair'].some(pk => 
           formation[pk]?.defender === playerId || formation[pk]?.attacker === playerId);
-      } else if (isIndividual6Mode) {
-        swapOccurred = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].some(pos =>
-          formation[pos] === playerId);
-      } else if (isIndividual7Mode) {
-        swapOccurred = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].some(pos =>
+      } else {
+        // Check individual mode positions (supports both 6 and 7 player modes)
+        swapOccurred = getOutfieldPositions(teamMode).some(pos =>
           formation[pos] === playerId);
       }
     }
@@ -291,7 +283,7 @@ export function PeriodSetupScreen({
     }
 
     // Update rotation queue if it exists and we're in individual modes (periods 2+)
-    if (rotationQueue && rotationQueue.length > 0 && (isIndividual6Mode || isIndividual7Mode)) {
+    if (rotationQueue && rotationQueue.length > 0 && teamMode !== TEAM_MODES.PAIRS_7) {
       const newGoalieIndex = rotationQueue.findIndex(id => id === playerId);
       
       if (newGoalieIndex !== -1) {
@@ -321,25 +313,9 @@ export function PeriodSetupScreen({
       return availableForPairing;
     }
 
-    // Original logic for incomplete formation
+    // Original logic for incomplete formation - works for both 6 and 7 player modes
     const assignedElsewhereIds = new Set();
-    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'].forEach(pos => {
-      if (pos !== currentPosition && formation[pos]) {
-        assignedElsewhereIds.add(formation[pos]);
-      }
-    });
-    return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
-  };
-
-  const getAvailableForIndividual7Select = (currentPosition) => {
-    // If formation is complete, show all players except goalie
-    if (isFormationComplete()) {
-      return availableForPairing;
-    }
-
-    // Original logic for incomplete formation
-    const assignedElsewhereIds = new Set();
-    ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].forEach(pos => {
+    getOutfieldPositions(teamMode).forEach(pos => {
       if (pos !== currentPosition && formation[pos]) {
         assignedElsewhereIds.add(formation[pos]);
       }
@@ -355,22 +331,13 @@ export function PeriodSetupScreen({
         formation.subPair.defender, formation.subPair.attacker
       ].filter(Boolean);
       return formation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
-    } else if (isIndividual6Mode) {
-      const outfielders = [
-        formation.leftDefender, formation.rightDefender,
-        formation.leftAttacker, formation.rightAttacker,
-        formation.substitute_1
-      ].filter(Boolean);
-      return formation.goalie && outfielders.length === 5 && new Set(outfielders).size === 5;
-    } else if (isIndividual7Mode) {
-      const outfielders = [
-        formation.leftDefender, formation.rightDefender,
-        formation.leftAttacker, formation.rightAttacker,
-        formation.substitute_1, formation.substitute_2
-      ].filter(Boolean);
-      return formation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
+    } else {
+      // Individual modes (6 or 7 players) - use configuration-driven validation
+      const outfieldPositions = getOutfieldPositions(teamMode);
+      const outfielders = outfieldPositions.map(pos => formation[pos]).filter(Boolean);
+      const expectedCount = outfieldPositions.length;
+      return formation.goalie && outfielders.length === expectedCount && new Set(outfielders).size === expectedCount;
     }
-    return false;
   };
 
   const randomizeFormation = () => {
@@ -520,7 +487,7 @@ export function PeriodSetupScreen({
             position="leftDefender"
             playerId={formation.leftDefender}
             onPlayerAssign={handleIndividual7PlayerAssignment}
-            getAvailableOptions={getAvailableForIndividual7Select}
+            getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
@@ -528,7 +495,7 @@ export function PeriodSetupScreen({
             position="rightDefender"
             playerId={formation.rightDefender}
             onPlayerAssign={handleIndividual7PlayerAssignment}
-            getAvailableOptions={getAvailableForIndividual7Select}
+            getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
@@ -536,7 +503,7 @@ export function PeriodSetupScreen({
             position="leftAttacker"
             playerId={formation.leftAttacker}
             onPlayerAssign={handleIndividual7PlayerAssignment}
-            getAvailableOptions={getAvailableForIndividual7Select}
+            getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
@@ -544,7 +511,7 @@ export function PeriodSetupScreen({
             position="rightAttacker"
             playerId={formation.rightAttacker}
             onPlayerAssign={handleIndividual7PlayerAssignment}
-            getAvailableOptions={getAvailableForIndividual7Select}
+            getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
@@ -552,7 +519,7 @@ export function PeriodSetupScreen({
             position="substitute_1"
             playerId={formation.substitute_1}
             onPlayerAssign={handleIndividual7PlayerAssignment}
-            getAvailableOptions={getAvailableForIndividual7Select}
+            getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
           <IndividualPositionCard
@@ -560,7 +527,7 @@ export function PeriodSetupScreen({
             position="substitute_2"
             playerId={formation.substitute_2}
             onPlayerAssign={handleIndividual7PlayerAssignment}
-            getAvailableOptions={getAvailableForIndividual7Select}
+            getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
         </>

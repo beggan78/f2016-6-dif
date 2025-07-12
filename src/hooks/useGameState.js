@@ -4,7 +4,7 @@ import { initialRoster } from '../constants/defaultData';
 import { PLAYER_ROLES, TEAM_MODES } from '../constants/playerConstants';
 import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
-import { getInitialFormationTemplate, getValidationMessage, getOutfieldPositions, initializePlayerRoleAndStatus } from '../constants/gameModes';
+import { getInitialFormationTemplate, getValidationMessage, getOutfieldPositions, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
@@ -15,6 +15,22 @@ import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents 
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+
+/**
+ * Unified utility function for handling nextNext player logic
+ * Consolidates scattered nextNext conditionals into a single reusable pattern
+ * @param {string} teamMode - The current team mode
+ * @param {Array} playerList - Array of players (rotation queue or other player array)
+ * @param {Function} setNextNextPlayerIdToSubOut - Setter function for nextNext player
+ * @param {number} targetIndex - Index to use for nextNext player (defaults to 1)
+ */
+const updateNextNextPlayerIfSupported = (teamMode, playerList, setNextNextPlayerIdToSubOut, targetIndex = 1) => {
+  if (supportsNextNextIndicators(teamMode) && playerList.length >= (targetIndex + 1)) {
+    setNextNextPlayerIdToSubOut(playerList[targetIndex]);
+  } else {
+    setNextNextPlayerIdToSubOut(null);
+  }
+};
 
 export function useGameState() {
   // Initialize state from PersistenceManager
@@ -247,10 +263,8 @@ export function useGameState() {
         // Set rotation queue
         setRotationQueue(result.rotationQueue);
         
-        // Set next-next player only for 7-player mode
-        if (teamMode === TEAM_MODES.INDIVIDUAL_7 && result.rotationQueue.length >= 2) {
-          setNextNextPlayerIdToSubOut(result.rotationQueue[1]);
-        }
+        // Set next-next player using unified logic
+        updateNextNextPlayerIfSupported(teamMode, result.rotationQueue, setNextNextPlayerIdToSubOut);
       }
 
     } else {
@@ -381,10 +395,8 @@ export function useGameState() {
         setNextPlayerIdToSubOut(initialPlayerToSubOut);
         setRotationQueue(initialQueue);
         
-        // Set next-next player (second in queue) only for 7-player individual mode
-        if (teamMode === TEAM_MODES.INDIVIDUAL_7 && initialQueue.length >= 2) {
-          setNextNextPlayerIdToSubOut(initialQueue[1]);
-        }
+        // Set next-next player using unified logic
+        updateNextNextPlayerIfSupported(teamMode, initialQueue, setNextNextPlayerIdToSubOut);
       }
     }
 
@@ -737,12 +749,8 @@ export function useGameState() {
           
           const updatedQueue = queueManager.toArray();
           
-          // Update next-next tracking to reflect new queue order
-          if (updatedQueue.length >= 2) {
-            setNextNextPlayerIdToSubOut(updatedQueue[1]); // Second in queue
-          } else {
-            setNextNextPlayerIdToSubOut(null);
-          }
+          // Update next-next tracking to reflect new queue order using unified logic
+          updateNextNextPlayerIfSupported(teamMode, updatedQueue, setNextNextPlayerIdToSubOut);
           
           return updatedQueue;
         });
@@ -810,9 +818,7 @@ export function useGameState() {
           // nextPlayerIdToSubOut should remain pointing to the current active field player
           // Find the next active player for substitute_2 position
           const nextActivePlayers = queueManager.getNextActivePlayer(2);
-          if (nextActivePlayers.length >= 1) {
-            setNextNextPlayerIdToSubOut(nextActivePlayers[0]);
-          }
+          updateNextNextPlayerIfSupported(teamMode, nextActivePlayers, setNextNextPlayerIdToSubOut, 0);
           // Don't change nextPlayerIdToSubOut - it should still point to the field player
         } else if (playerId === currentSub7_2Id) {
           // Reactivated player is in substitute_2 - swap with substitute_1
@@ -851,15 +857,11 @@ export function useGameState() {
           const nextActivePlayers = queueManager.getNextActivePlayer(2);
           if (nextActivePlayers.length > 0) {
             setNextPlayerIdToSubOut(nextActivePlayers[0]);
-            if (nextActivePlayers.length >= 2) {
-              setNextNextPlayerIdToSubOut(nextActivePlayers[1]);
-            }
+            updateNextNextPlayerIfSupported(teamMode, nextActivePlayers, setNextNextPlayerIdToSubOut);
           }
         } else if (playerId === nextNextPlayerIdToSubOut) {
           const nextActivePlayers = queueManager.getNextActivePlayer(2);
-          if (nextActivePlayers.length >= 2) {
-            setNextNextPlayerIdToSubOut(nextActivePlayers[1]);
-          }
+          updateNextNextPlayerIfSupported(teamMode, nextActivePlayers, setNextNextPlayerIdToSubOut);
         }
         
         // Move inactive player to substitute_2 position if they were substitute_1
@@ -933,13 +935,7 @@ export function useGameState() {
     const player2Position = player2.stats.currentPairKey;
 
     // Don't allow switching if either player is not currently on field or substitute
-    const validPositions = {
-      [TEAM_MODES.PAIRS_7]: ['leftPair', 'rightPair', 'subPair'],
-      [TEAM_MODES.INDIVIDUAL_6]: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1'],
-      [TEAM_MODES.INDIVIDUAL_7]: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2']
-    };
-
-    const currentValidPositions = validPositions[teamMode] || [];
+    const currentValidPositions = getValidPositions(teamMode);
     if (!currentValidPositions.includes(player1Position) || !currentValidPositions.includes(player2Position)) {
       console.warn('One or both players are not in valid positions for switching');
       return false;

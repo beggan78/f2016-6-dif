@@ -13,6 +13,7 @@ import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
+import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
 
 /**
  * Calculate the result of a substitution without modifying any state
@@ -94,13 +95,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   const player2Position = player2.stats.currentPairKey;
 
   // Validate positions
-  const validPositions = {
-    [TEAM_MODES.PAIRS_7]: [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR, POSITION_KEYS.SUB_PAIR],
-    [TEAM_MODES.INDIVIDUAL_6]: [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1],
-    [TEAM_MODES.INDIVIDUAL_7]: [POSITION_KEYS.LEFT_DEFENDER, POSITION_KEYS.RIGHT_DEFENDER, POSITION_KEYS.LEFT_ATTACKER, POSITION_KEYS.RIGHT_ATTACKER, POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2]
-  };
-
-  const currentValidPositions = validPositions[teamMode] || [];
+  const currentValidPositions = getValidPositions(teamMode);
   if (!currentValidPositions.includes(player1Position) || !currentValidPositions.includes(player2Position)) {
     console.warn('One or both players are not in valid positions for switching');
     return gameState;
@@ -380,11 +375,11 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
     const updatedQueue = queueManager.toArray();
     newNextPlayerIdToSubOut = updatedQueue[0] || null;
     
-    // For 7-player mode, also update next-next tracking
-    if (teamMode === TEAM_MODES.INDIVIDUAL_7 && updatedQueue.length >= 2) {
+    // For modes with next-next tracking, also update next-next tracking
+    if (supportsNextNextIndicators(teamMode) && updatedQueue.length >= 2) {
       newNextNextPlayerIdToSubOut = updatedQueue[1];
     }
-  } else if (newGoalieId === gameState.nextNextPlayerIdToSubOut && teamMode === TEAM_MODES.INDIVIDUAL_7) {
+  } else if (newGoalieId === gameState.nextNextPlayerIdToSubOut && supportsNextNextIndicators(teamMode)) {
     // New goalie was next-next to come off in 7-player mode
     const updatedQueue = queueManager.toArray();
     if (updatedQueue.length >= 2) {
@@ -464,12 +459,12 @@ export const calculateUndo = (gameState, lastSubstitution) => {
         else if (beforeFormation.leftPair?.attacker === player.id) restoredPosition = 'leftPair';
         else if (beforeFormation.rightPair?.defender === player.id) restoredPosition = 'rightPair';
         else if (beforeFormation.rightPair?.attacker === player.id) restoredPosition = 'rightPair';
-      } else if (lastSubstitution.teamMode === 'INDIVIDUAL_6') {
+      } else if (lastSubstitution.teamMode === TEAM_MODES.INDIVIDUAL_6) {
         if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
         else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
         else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
         else if (beforeFormation.rightAttacker === player.id) restoredPosition = 'rightAttacker';
-      } else if (lastSubstitution.teamMode === 'INDIVIDUAL_7') {
+      } else if (lastSubstitution.teamMode === TEAM_MODES.INDIVIDUAL_7) {
         if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
         else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
         else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
@@ -506,8 +501,8 @@ export const calculateUndo = (gameState, lastSubstitution) => {
 export const calculatePlayerToggleInactive = (gameState, playerId) => {
   const { allPlayers, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, teamMode } = gameState;
 
-  if (teamMode !== TEAM_MODES.INDIVIDUAL_7) {
-    console.warn('Player inactivation only supported in 7-player individual mode');
+  if (!supportsInactiveUsers(teamMode)) {
+    console.warn('Player inactivation only supported in modes with inactive user support');
     return gameState;
   }
 
@@ -656,8 +651,8 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
 export const calculateSubstituteSwap = (gameState, substitute_1Id, substitute_2Id) => {
   const { allPlayers, formation, teamMode } = gameState;
   
-  if (teamMode !== TEAM_MODES.INDIVIDUAL_7) {
-    console.warn('Substitute swap only supported in 7-player individual mode');
+  if (!supportsNextNextIndicators(teamMode)) {
+    console.warn('Substitute swap only supported in modes with multiple substitute support');
     return gameState;
   }
   

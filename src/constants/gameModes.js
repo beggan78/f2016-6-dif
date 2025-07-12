@@ -31,6 +31,7 @@ export const MODE_DEFINITIONS = {
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
     substitutePositions: ['substitute_1'],
     supportsInactiveUsers: false,
+    supportsNextNextIndicators: false,
     substituteRotationPattern: 'simple',
     initialFormationTemplate: {
       goalie: null,
@@ -57,6 +58,7 @@ export const MODE_DEFINITIONS = {
     fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
     substitutePositions: ['substitute_1', 'substitute_2'],
     supportsInactiveUsers: true,
+    supportsNextNextIndicators: true,
     substituteRotationPattern: 'carousel',
     initialFormationTemplate: {
       goalie: null,
@@ -144,8 +146,38 @@ export function supportsInactiveUsers(teamMode) {
  * Check if a team mode supports next-next indicators
  */
 export function supportsNextNextIndicators(teamMode) {
-  // Only 7-player mode supports next-next indicators
-  return teamMode === TEAM_MODES.INDIVIDUAL_7;
+  const definition = MODE_DEFINITIONS[teamMode];
+  return definition?.supportsNextNextIndicators || false;
+}
+
+/**
+ * Get all positions for a team mode (including goalie)
+ */
+export function getAllPositions(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  return definition ? definition.positionOrder : [];
+}
+
+/**
+ * Get all positions for a team mode (excluding goalie) - alias for getOutfieldPositions
+ */
+export function getAllOutfieldPositions(teamMode) {
+  return getOutfieldPositions(teamMode);
+}
+
+/**
+ * Get valid positions for player switching/positioning operations
+ */
+export function getValidPositions(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition) return [];
+  
+  if (teamMode === TEAM_MODES.PAIRS_7) {
+    return ['leftPair', 'rightPair', 'subPair'];
+  }
+  
+  // For individual modes, return all outfield positions
+  return [...definition.fieldPositions, ...definition.substitutePositions];
 }
 
 /**
