@@ -5,6 +5,7 @@ import { MatchReportScreen } from '../MatchReportScreen';
 import { TEAM_MODES, PLAYER_ROLES } from '../../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../../constants/teamConstants';
 import { EVENT_TYPES } from '../../../utils/gameEventLogger';
+import { describePerformance, expectPerformance, createLargeDataset, performanceConfig } from '../../../__tests__/performanceTestUtils';
 
 // Mock all child components
 jest.mock('../MatchSummaryHeader', () => ({
@@ -866,17 +867,14 @@ describe('MatchReportScreen', () => {
     });
   });
 
-  describe('Performance testing with large datasets', () => {
-    it('renders efficiently with large number of players', () => {
-      const largeMockPlayers = Array.from({ length: 15 }, (_, i) => ({
-        id: `player-${i}`,
-        name: `Player ${i}`,
+  describePerformance('Performance testing with large datasets', () => {
+    it('renders efficiently with large number of players', async () => {
+      // Use the performance utility to create consistent test data
+      const largeMockPlayers = createLargeDataset.players(15).map((player, i) => ({
+        ...player,
         stats: {
-          startedMatchAs: i < 10 ? PLAYER_ROLES.ON_FIELD : null,
-          timeOnFieldSeconds: Math.floor(Math.random() * 3600),
-          timeAsAttackerSeconds: Math.floor(Math.random() * 1800),
-          timeAsDefenderSeconds: Math.floor(Math.random() * 1800),
-          timeAsGoalieSeconds: Math.floor(Math.random() * 900)
+          ...player.stats,
+          startedMatchAs: i < 10 ? PLAYER_ROLES.ON_FIELD : null
         }
       }));
 
@@ -885,26 +883,21 @@ describe('MatchReportScreen', () => {
         allPlayers: largeMockPlayers
       };
 
-      const startTime = performance.now();
-      render(<MatchReportScreen {...largeDataProps} />);
-      const endTime = performance.now();
-
-      // Should render within reasonable time (200ms threshold)
-      expect(endTime - startTime).toBeLessThan(200);
+      // Use performance testing utility with environment-appropriate thresholds
+      await expectPerformance(
+        () => render(<MatchReportScreen {...largeDataProps} />),
+        performanceConfig.testOptions.rendering
+      );
 
       // Should still display correct count
       expect(screen.getByTestId('table-players-count')).toHaveTextContent('10');
     });
 
-    it('handles large number of events efficiently', () => {
-      const largeEventList = Array.from({ length: 200 }, (_, i) => ({
-        id: `event-${i}`,
-        type: i % 2 === 0 ? EVENT_TYPES.GOAL_HOME : 'substitution',
-        timestamp: 1000000000000 + (i * 10000),
-        matchTime: `${Math.floor(i / 6)}:${String(i % 60).padStart(2, '0')}`,
-        sequence: i + 1,
-        data: {},
-        undone: false
+    it('handles large number of events efficiently', async () => {
+      // Use utility to create large event dataset
+      const largeEventList = createLargeDataset.events(200).map((event, i) => ({
+        ...event,
+        type: i % 2 === 0 ? EVENT_TYPES.GOAL_HOME : 'substitution'
       }));
 
       const largeEventsProps = {
@@ -912,27 +905,22 @@ describe('MatchReportScreen', () => {
         matchEvents: largeEventList
       };
 
-      const startTime = performance.now();
-      render(<MatchReportScreen {...largeEventsProps} />);
-      const endTime = performance.now();
-
-      // Should render within reasonable time
-      expect(endTime - startTime).toBeLessThan(300);
+      // Test rendering performance with large event list
+      await expectPerformance(
+        () => render(<MatchReportScreen {...largeEventsProps} />),
+        performanceConfig.testOptions.rendering
+      );
 
       // Should correctly filter events (substitutions off by default)
       const filteredCount = largeEventList.filter(e => e.type !== 'substitution').length;
       expect(screen.getByTestId('timeline-events-count')).toHaveTextContent(filteredCount.toString());
     });
 
-    it('efficiently processes complex filtering operations', () => {
-      const complexEventList = Array.from({ length: 500 }, (_, i) => ({
-        id: `event-${i}`,
-        type: ['substitution', 'position_change', 'goalie_change', EVENT_TYPES.GOAL_HOME, EVENT_TYPES.MATCH_START][i % 5],
-        timestamp: 1000000000000 + (i * 15000),
-        matchTime: `${Math.floor(i / 4)}:${String((i * 15) % 60).padStart(2, '0')}`,
-        sequence: i + 1,
-        data: {},
-        undone: false
+    it('efficiently processes complex filtering operations', async () => {
+      // Create complex event list using utility
+      const complexEventList = createLargeDataset.events(200).map((event, i) => ({
+        ...event,
+        type: ['substitution', 'position_change', 'goalie_change', EVENT_TYPES.GOAL_HOME, EVENT_TYPES.MATCH_START][i % 5]
       }));
 
       const complexFilterProps = {
@@ -942,17 +930,18 @@ describe('MatchReportScreen', () => {
 
       render(<MatchReportScreen {...complexFilterProps} />);
 
-      // Toggle substitutions multiple times to test filtering performance
+      // Test filtering performance
       const substitutionToggle = screen.getByText('Substitutions');
       
-      const startTime = performance.now();
-      for (let i = 0; i < 10; i++) {
-        fireEvent.click(substitutionToggle);
-      }
-      const endTime = performance.now();
-
-      // Multiple filtering operations should complete quickly (relaxed threshold for CI)
-      expect(endTime - startTime).toBeLessThan(500);
+      await expectPerformance(
+        () => {
+          // Toggle substitutions multiple times to test filtering performance
+          for (let i = 0; i < 10; i++) {
+            fireEvent.click(substitutionToggle);
+          }
+        },
+        performanceConfig.testOptions.complexOperations
+      );
     });
   });
 

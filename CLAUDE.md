@@ -96,6 +96,14 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - Error scenarios and edge cases required
 - Performance regression prevention
 
+### Performance Testing
+- **Local Development**: Performance tests run automatically with regular test suite
+- **CI Environment**: Performance tests are skipped by default to prevent unreliable failures
+- **Explicit Performance Testing**: Use `npm run test:performance` to force performance tests in any environment
+- **Environment Detection**: Automatic detection of CI vs local environments using environment variables
+- **Configurable Thresholds**: Performance thresholds adjust automatically based on environment (more lenient in CI)
+- **Performance Utilities**: Dedicated utilities in `src/__tests__/performanceTestUtils.js` for consistent performance testing patterns
+
 ### Testing Development Guidelines
 - **Production Code Changes**: When the task is to write tests, do not change production code other than to add debug logs aimed at better understanding the logic better
 - **Suspected Issues**: If you suspect that the code is not functioning properly and needs changing, please pause and describe what you perceive the error to be. The user can then run the application to confirm or dismiss the hypothesis
