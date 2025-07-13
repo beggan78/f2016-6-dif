@@ -131,11 +131,11 @@ describe('UI positionUtils', () => {
       expect(getPositionDisplayName(undefined, null, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6)).toBe(undefined);
     });
 
-    test('should not show inactive for non-7-player team modes', () => {
+    test('should show inactive for both individual modes that support it', () => {
       const mockPlayer = { stats: { isInactive: true } };
       
       const displayName = getPositionDisplayName('substitute_1', mockPlayer, TEAM_MODES.INDIVIDUAL_6, mockSubstitutePositions6);
-      expect(displayName).toBe('Substitute'); // Should not show "Inactive", but still show proper display name
+      expect(displayName).toBe('Inactive'); // Both INDIVIDUAL_6 and INDIVIDUAL_7 modes support inactive players
     });
   });
 
@@ -259,9 +259,9 @@ describe('UI positionUtils', () => {
 
   describe('formation support checks', () => {
     describe('supportsInactivePlayers', () => {
-      test('should return true only for INDIVIDUAL_7', () => {
+      test('should return true for both individual modes (6-player and 7-player)', () => {
         expect(supportsInactivePlayers(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
-        expect(supportsInactivePlayers(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+        expect(supportsInactivePlayers(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
         expect(supportsInactivePlayers(TEAM_MODES.PAIRS_7)).toBe(false);
       });
 
@@ -303,12 +303,15 @@ describe('UI positionUtils', () => {
         expect(typeof supportsInactive).toBe('boolean');
         expect(typeof supportsNextNext).toBe('boolean');
         
-        // Both should be true for INDIVIDUAL_7, false for others
+        // Check expected values for each mode
         if (teamMode === TEAM_MODES.INDIVIDUAL_7) {
-          expect(supportsInactive).toBe(true);
+          expect(supportsInactive).toBe(true); // 7-player individual mode supports inactive players
           expect(supportsNextNext).toBe(true);
+        } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
+          expect(supportsInactive).toBe(true); // 6-player individual mode also supports inactive players
+          expect(supportsNextNext).toBe(false);
         } else {
-          expect(supportsInactive).toBe(false);
+          expect(supportsInactive).toBe(false); // Only pairs mode doesn't support inactive players
           expect(supportsNextNext).toBe(false);
         }
       });

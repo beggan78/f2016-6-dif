@@ -156,7 +156,7 @@ describe('IndividualFormation', () => {
       'data-position': position
     }));
     
-    supportsInactivePlayers.mockImplementation((teamMode) => teamMode === TEAM_MODES.INDIVIDUAL_7);
+    supportsInactivePlayers.mockImplementation((teamMode) => teamMode === TEAM_MODES.INDIVIDUAL_7 || teamMode === TEAM_MODES.INDIVIDUAL_6);
     
     supportsNextNextIndicators.mockImplementation((teamMode) => teamMode === TEAM_MODES.INDIVIDUAL_7);
     

@@ -7,7 +7,7 @@ import {
   calculateSubstituteSwap,
   calculateUndo
 } from '../logic/gameStateLogic';
-import { findPlayerById, getOutfieldPlayers } from '../../utils/playerUtils';
+import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { 
   createMockPlayers, 
@@ -31,7 +31,17 @@ describe('createSubstitutionHandlers', () => {
     
     mockDependencies = createMockDependencies();
     mockPlayers = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
+    // Ensure all mock players are explicitly active (not inactive)
+    mockPlayers = mockPlayers.map(p => ({
+      ...p,
+      stats: {
+        ...p.stats,
+        isInactive: false
+      }
+    }));
     mockGameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+    // Update mock game state to use the updated players
+    mockGameState.allPlayers = mockPlayers;
     mockGameStateFactory = jest.fn(() => mockGameState);
     mockLastSubstitution = {
       timestamp: 1000,
@@ -66,6 +76,19 @@ describe('createSubstitutionHandlers', () => {
     getOutfieldPlayers.mockImplementation((players, squadIds, goalieId) => 
       players.filter(p => p.id !== goalieId)
     );
+
+    hasActiveSubstitutes.mockImplementation((allPlayers, teamMode) => {
+      // For test purposes, return true if there are any substitute players that are not inactive
+      const { MODE_DEFINITIONS } = require('../../constants/gameModes');
+      const definition = MODE_DEFINITIONS[teamMode];
+      if (!definition?.substitutePositions?.length) return false;
+      
+      const substitutePlayers = allPlayers.filter(player => 
+        definition.substitutePositions.includes(player.stats?.currentPairKey)
+      );
+      
+      return substitutePlayers.some(player => !player.stats?.isInactive);
+    });
 
     // Mock animation and calculation functions
     animateStateChange.mockImplementation((gameState, calculateFn, applyFn) => {
@@ -266,7 +289,13 @@ describe('createSubstitutionHandlers', () => {
       expect(calculatePlayerToggleInactive).toHaveBeenCalledWith(mockGameState, '5');
     });
 
-    it('should handle non-7-player mode without animation', () => {
+    it('should handle INDIVIDUAL_6 mode without animation (only one substitute position)', () => {
+      const playersWithSub6_1 = mockPlayers.slice(0, 6).map(p => 
+        p.id === '5' ? { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' }} : p
+      );
+      
+      findPlayerById.mockReturnValue(playersWithSub6_1.find(p => p.id === '5'));
+
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,
@@ -277,7 +306,7 @@ describe('createSubstitutionHandlers', () => {
 
       const substituteModal = { playerId: '5' };
       
-      handlers.handleInactivatePlayer(substituteModal, mockPlayers, mockGameState.formation);
+      handlers.handleInactivatePlayer(substituteModal, playersWithSub6_1, { ...mockGameState.formation, substitute: '5' });
 
       expect(animateStateChange).not.toHaveBeenCalled();
       expect(calculatePlayerToggleInactive).toHaveBeenCalledWith(mockGameState, '5');
@@ -303,7 +332,7 @@ describe('createSubstitutionHandlers', () => {
       expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
     });
 
-    it('should activate player without animation in non-7-player mode', () => {
+    it('should activate player with animation in INDIVIDUAL_6 mode (now supports inactive players)', () => {
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,
@@ -316,15 +345,26 @@ describe('createSubstitutionHandlers', () => {
       
       handlers.handleActivatePlayer(substituteModal);
 
-      expect(animateStateChange).not.toHaveBeenCalled();
+      expect(animateStateChange).toHaveBeenCalled();
       expect(calculatePlayerToggleInactive).toHaveBeenCalledWith(mockGameState, '5');
+      expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
     });
   });
 
   describe('handleSubstitutionWithHighlight', () => {
     it('should perform substitution with animation and save undo data', () => {
+      // Ensure substitute players are explicitly active (not inactive)
+      const playersWithActiveSubstitutes = mockPlayers.map(p => ({
+        ...p,
+        stats: {
+          ...p.stats,
+          isInactive: false // Explicitly set all players as active
+        }
+      }));
+
       const mockGameStateWithTimer = {
         ...mockGameState,
+        allPlayers: playersWithActiveSubstitutes,
         subTimerSeconds: 120
       };
       mockGameStateFactory.mockReturnValue(mockGameStateWithTimer);

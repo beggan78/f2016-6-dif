@@ -200,7 +200,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('individual mode support functions should be accurate', () => {
-      expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+      expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
       expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
       expect(supportsInactiveUsers(TEAM_MODES.PAIRS_7)).toBe(false);
       

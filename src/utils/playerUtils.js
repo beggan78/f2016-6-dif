@@ -168,6 +168,11 @@ export const setCaptain = (allPlayers, newCaptainId) => {
  * @returns {boolean} True if at least one substitute is active (not inactive)
  */
 export const hasActiveSubstitutes = (allPlayers, teamMode) => {
+  // Guard against undefined/null allPlayers
+  if (!allPlayers || !Array.isArray(allPlayers)) {
+    return false;
+  }
+
   // Import inside function to avoid circular dependency issues
   const gameModes = require('../constants/gameModes');
   const MODE_DEFINITIONS = gameModes.MODE_DEFINITIONS;
