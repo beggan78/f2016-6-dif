@@ -16,7 +16,8 @@ import {
   getAllPositions,
   getAllOutfieldPositions,
   getValidPositions,
-  initializePlayerRoleAndStatus
+  initializePlayerRoleAndStatus,
+  isIndividualMode
 } from '../gameModes';
 
 import { TEAM_MODES, PLAYER_ROLES } from '../playerConstants';
@@ -24,7 +25,7 @@ import { TEAM_MODES, PLAYER_ROLES } from '../playerConstants';
 describe('MODE_DEFINITIONS Configuration', () => {
   describe('configuration structure validation', () => {
     test('should have definitions for all team modes', () => {
-      const expectedModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
+      const expectedModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
       
       expectedModes.forEach(mode => {
         expect(MODE_DEFINITIONS).toHaveProperty(mode);
@@ -74,7 +75,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('should have valid individual mode configurations', () => {
-      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
+      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
       
       individualModes.forEach(mode => {
         const definition = MODE_DEFINITIONS[mode];
@@ -173,7 +174,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('getInitialFormationTemplate should create valid templates', () => {
-      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
+      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
       
       individualModes.forEach(mode => {
         const template = getInitialFormationTemplate(mode);
@@ -259,8 +260,8 @@ describe('MODE_DEFINITIONS Configuration', () => {
       const testCases = [
         { playerId: 'p1', expectedRole: PLAYER_ROLES.DEFENDER, expectedStatus: 'on_field' },
         { playerId: 'p2', expectedRole: PLAYER_ROLES.ATTACKER, expectedStatus: 'on_field' },
-        { playerId: 'p5', expectedRole: PLAYER_ROLES.DEFENDER, expectedStatus: 'substitute' },
-        { playerId: 'p6', expectedRole: PLAYER_ROLES.ATTACKER, expectedStatus: 'substitute' },
+        { playerId: 'p5', expectedRole: PLAYER_ROLES.SUBSTITUTE, expectedStatus: 'substitute' },
+        { playerId: 'p6', expectedRole: PLAYER_ROLES.SUBSTITUTE, expectedStatus: 'substitute' },
         { playerId: 'p7', expectedRole: PLAYER_ROLES.GOALIE, expectedStatus: 'goalie' }
       ];
       
@@ -285,22 +286,42 @@ describe('MODE_DEFINITIONS Configuration', () => {
     test('should maintain consistency between individual modes', () => {
       const individual6 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6];
       const individual7 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_7];
+      const individual8 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_8];
       
-      // Field positions should be identical
+      // Field positions should be identical across all individual modes
       expect(individual6.fieldPositions).toEqual(individual7.fieldPositions);
+      expect(individual6.fieldPositions).toEqual(individual8.fieldPositions);
       
-      // OnField count should be the same
+      // OnField count should be the same across all individual modes
       expect(individual6.expectedCounts.onField).toBe(individual7.expectedCounts.onField);
+      expect(individual6.expectedCounts.onField).toBe(individual8.expectedCounts.onField);
       
-      // Should both have goalie position
+      // Should all have goalie position
       expect(individual6.positionOrder).toContain('goalie');
       expect(individual7.positionOrder).toContain('goalie');
+      expect(individual8.positionOrder).toContain('goalie');
     });
 
     test('should have correct substitute counts', () => {
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6].substitutePositions).toHaveLength(1);
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_7].substitutePositions).toHaveLength(2);
+      expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_8].substitutePositions).toHaveLength(3);
       expect(MODE_DEFINITIONS[TEAM_MODES.PAIRS_7].substitutePositions).toHaveLength(1);
+    });
+  });
+
+  describe('isIndividualMode helper function', () => {
+    test('should return true for all individual modes', () => {
+      expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
+      expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_8)).toBe(true);
+    });
+
+    test('should return false for non-individual modes', () => {
+      expect(isIndividualMode(TEAM_MODES.PAIRS_7)).toBe(false);
+      expect(isIndividualMode('unknown_mode')).toBe(false);
+      expect(isIndividualMode(null)).toBe(false);
+      expect(isIndividualMode(undefined)).toBe(false);
     });
   });
 });

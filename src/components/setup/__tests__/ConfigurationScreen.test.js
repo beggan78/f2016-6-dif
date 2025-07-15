@@ -145,7 +145,7 @@ describe('ConfigurationScreen', () => {
     it('should show squad selection count', () => {
       render(<ConfigurationScreen {...defaultProps} />);
       
-      expect(screen.getByText('Select Squad (0/6-7 Players)')).toBeInTheDocument();
+      expect(screen.getByText('Select Squad (0/6-8 Players)')).toBeInTheDocument();
     });
 
     it('should render game settings section', () => {
@@ -182,13 +182,13 @@ describe('ConfigurationScreen', () => {
       
       render(<ConfigurationScreen {...props} />);
       
-      expect(screen.getByText('Select Squad (3/6-7 Players)')).toBeInTheDocument();
+      expect(screen.getByText('Select Squad (3/6-8 Players)')).toBeInTheDocument();
     });
 
-    it('should disable checkboxes when 7 players are selected', () => {
+    it('should disable checkboxes when 8 players are selected', () => {
       const props = {
         ...defaultProps,
-        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7']
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7', '8']
       };
       
       render(<ConfigurationScreen {...props} />);
@@ -279,6 +279,33 @@ describe('ConfigurationScreen', () => {
       // Team mode should remain as set by user
       expect(props.teamMode).toBe(TEAM_MODES.PAIRS_7);
     });
+
+    it('should auto-select INDIVIDUAL_8 when 8 players are selected', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7'] // 7 players currently
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      // Simulate selecting an 8th player
+      const eighthPlayerCheckbox = screen.getAllByRole('checkbox')[7]; // Player 8
+      fireEvent.click(eighthPlayerCheckbox);
+      
+      expect(mockSetters.setSelectedSquadIds).toHaveBeenCalledWith(expect.any(Function));
+      
+      // Verify the callback would set INDIVIDUAL_8 mode
+      const setSelectedSquadIdsCall = mockSetters.setSelectedSquadIds.mock.calls.find(call => 
+        typeof call[0] === 'function'
+      );
+      
+      if (setSelectedSquadIdsCall) {
+        const updateFunction = setSelectedSquadIdsCall[0];
+        const currentIds = ['1', '2', '3', '4', '5', '6', '7'];
+        const newIds = updateFunction(currentIds);
+        expect(newIds).toEqual(['1', '2', '3', '4', '5', '6', '7', '8']);
+      }
+    });
   });
 
   describe('Team Mode Selection (7 Players)', () => {
@@ -293,13 +320,24 @@ describe('ConfigurationScreen', () => {
       
       expect(screen.getByText('Substitution Mode')).toBeInTheDocument();
       expect(screen.getByText('Pairs')).toBeInTheDocument();
-      expect(screen.getByText('Individual')).toBeInTheDocument();
+      expect(screen.getByText('Individual (7-player)')).toBeInTheDocument();
     });
 
     it('should not show team mode selection when fewer than 7 players', () => {
       const props = {
         ...defaultProps,
         selectedSquadIds: ['1', '2', '3', '4', '5', '6']
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.queryByText('Substitution Mode')).not.toBeInTheDocument();
+    });
+
+    it('should not show team mode selection when 8 players are selected', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7', '8']
       };
       
       render(<ConfigurationScreen {...props} />);
@@ -513,7 +551,7 @@ describe('ConfigurationScreen', () => {
       expect(button).toBeDisabled();
     });
 
-    it('should disable proceed button with only 5 players', () => {
+    it('should disable proceed button with only 5 players (no game mode available)', () => {
       const props = {
         ...defaultProps,
         selectedSquadIds: ['1', '2', '3', '4', '5']
@@ -523,6 +561,21 @@ describe('ConfigurationScreen', () => {
       
       const button = screen.getByTestId('button');
       expect(button).toBeDisabled();
+    });
+
+    it('should enable proceed button with 8 players when goalies assigned', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7', '8'],
+        selectedSquadPlayers: createMockPlayers(8),
+        periodGoalieIds: { 1: '1', 2: '2' },
+        teamMode: TEAM_MODES.INDIVIDUAL_8
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      const button = screen.getByTestId('button');
+      expect(button).not.toBeDisabled();
     });
 
     it('should disable proceed button when goalies are not assigned', () => {
@@ -574,6 +627,133 @@ describe('ConfigurationScreen', () => {
       render(<ConfigurationScreen {...defaultProps} />);
       
       expect(screen.getByTestId('button-icon')).toBeInTheDocument();
+    });
+  });
+
+  describe('Captain Assignment', () => {
+    it('should show captain assignment when 5 players are selected', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5'],
+        selectedSquadPlayers: createMockPlayers(5)
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.getByText('Assign Captain')).toBeInTheDocument();
+      expect(screen.getByText('Team Captain')).toBeInTheDocument();
+    });
+
+    it('should show captain assignment when 6 players are selected', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6'],
+        selectedSquadPlayers: createMockPlayers(6)
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.getByText('Assign Captain')).toBeInTheDocument();
+    });
+
+    it('should show captain assignment when 7 players are selected', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7'],
+        selectedSquadPlayers: createMockPlayers(7)
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.getByText('Assign Captain')).toBeInTheDocument();
+    });
+
+    it('should show captain assignment when 8 players are selected', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7', '8'],
+        selectedSquadPlayers: createMockPlayers(8)
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.getByText('Assign Captain')).toBeInTheDocument();
+    });
+
+    it('should not show captain assignment when fewer than 5 players are selected', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4'],
+        selectedSquadPlayers: createMockPlayers(4)
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.queryByText('Assign Captain')).not.toBeInTheDocument();
+    });
+
+    it('should handle captain selection change', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6'],
+        selectedSquadPlayers: createMockPlayers(6),
+        setCaptain: jest.fn()
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      const captainSelect = screen.getByTestId('captain');
+      fireEvent.change(captainSelect, { target: { value: '1' } });
+      
+      expect(props.setCaptain).toHaveBeenCalledWith('1');
+    });
+
+    it('should handle no captain selection', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6'],
+        selectedSquadPlayers: createMockPlayers(6),
+        setCaptain: jest.fn()
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      const captainSelect = screen.getByTestId('captain');
+      fireEvent.change(captainSelect, { target: { value: '' } });
+      
+      expect(props.setCaptain).toHaveBeenCalledWith(null);
+    });
+
+    it('should populate captain options with selected squad players', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6'],
+        selectedSquadPlayers: createMockPlayers(6)
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      const captainSelect = screen.getByTestId('captain');
+      
+      // Check for "No Captain" option
+      expect(captainSelect).toContainHTML('<option value="">No Captain</option>');
+      
+      // Check for player options
+      props.selectedSquadPlayers.forEach(player => {
+        expect(captainSelect).toContainHTML(`<option value="${player.id}">${player.name}</option>`);
+      });
+    });
+
+    it('should show helper text for captain assignment', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6'],
+        selectedSquadPlayers: createMockPlayers(6)
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.getByText('Optional - select a team captain for this game')).toBeInTheDocument();
     });
   });
 

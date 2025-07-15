@@ -198,7 +198,7 @@ const getBoxHeight = (mode) => {
  * animation distances by calculating index differences.
  * 
  * @param {string} position - Position key (e.g., 'leftDefender', 'goalie', 'leftPair')
- * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+ * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
  * @returns {number} Zero-based index representing visual order (-1 if not found)
  * 
  * @example
@@ -248,7 +248,7 @@ const calculateDistance = (fromIndex, toIndex, teamMode) => {
  * 
  * @param {Object} formation - Current formation with player assignments
  * @param {Array} allPlayers - Complete player data array
- * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+ * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
  * @returns {Object} Position snapshot: { [playerId]: PositionData }
  * 
  * PositionData structure:
@@ -301,7 +301,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
         }
       }
     });
-  } else if (teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7) {
+  } else if (teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7 || teamMode === TEAM_MODES.INDIVIDUAL_8) {
     // Unified individual mode handling using MODE_DEFINITIONS
     const modeDefinition = MODE_DEFINITIONS[teamMode];
     if (modeDefinition) {

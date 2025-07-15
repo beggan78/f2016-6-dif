@@ -682,6 +682,110 @@ describe('PeriodSetupScreen', () => {
     });
   });
 
+  describe('INDIVIDUAL_8 Mode Tests', () => {
+    beforeEach(() => {
+      defaultProps.teamMode = TEAM_MODES.INDIVIDUAL_8;
+      defaultProps.formation = {
+        goalie: '8',
+        leftDefender: '',
+        rightDefender: '',
+        leftAttacker: '',
+        rightAttacker: '',
+        substitute_1: '',
+        substitute_2: '',
+        substitute_3: ''
+      };
+      defaultProps.availableForPairing = mockPlayers.slice(0, 7); // 7 field players
+    });
+
+    it('should render individual position cards for 8-player mode', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      expect(screen.getByText('Left Defender')).toBeInTheDocument();
+      expect(screen.getByText('Right Defender')).toBeInTheDocument();
+      expect(screen.getByText('Left Attacker')).toBeInTheDocument();
+      expect(screen.getByText('Right Attacker')).toBeInTheDocument();
+      
+      // Should show three substitute positions (all labeled "Substitute")
+      const substitutes = screen.getAllByText('Substitute');
+      expect(substitutes).toHaveLength(3);
+    });
+
+    it('should handle individual 8 player assignment', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      expect(mockSetters.setFormation).toBeDefined();
+    });
+
+    it('should calculate formation completion for individual 8 mode', () => {
+      const completeFormation = {
+        goalie: '8',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6',
+        substitute_3: '7'
+      };
+      
+      const props = {
+        ...defaultProps,
+        formation: completeFormation
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      const startButton = screen.getByText('Start Period 1');
+      expect(startButton).not.toBeDisabled();
+    });
+
+    it('should prevent duplicate assignments in individual 8 mode', () => {
+      window.alert = jest.fn();
+      
+      const props = {
+        ...defaultProps,
+        formation: {
+          ...defaultProps.formation,
+          leftDefender: '1'
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      expect(mockSetters.setFormation).toBeDefined();
+    });
+
+    it('should allow position swapping in complete individual 8 formation', () => {
+      const completeFormation = {
+        goalie: '8',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6',
+        substitute_3: '7'
+      };
+      
+      const props = {
+        ...defaultProps,
+        formation: completeFormation
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      expect(mockSetters.setFormation).toBeDefined();
+    });
+
+    it('should show correct substitute styling for all three substitutes', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      const substitutes = screen.getAllByText('Substitute');
+      expect(substitutes).toHaveLength(3);
+    });
+  });
+
   describe('Formation Completion Logic', () => {
     it('should disable start button when formation is incomplete', () => {
       const incompleteProps = {

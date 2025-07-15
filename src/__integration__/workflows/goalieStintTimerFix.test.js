@@ -44,7 +44,7 @@ describe('Goalie Stint Timer Fix Verification', () => {
   });
   
   it('should work correctly across all team modes', () => {
-    const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.PAIRS_7];
+    const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.PAIRS_7];
     
     teamModes.forEach(teamMode => {
       const gameState = gameStateScenarios.freshGame(teamMode);

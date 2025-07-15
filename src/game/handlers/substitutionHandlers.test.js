@@ -5,7 +5,8 @@ import {
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
   calculateSubstituteSwap,
-  calculateUndo
+  calculateUndo,
+  calculateSubstituteReorder
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
@@ -105,6 +106,7 @@ describe('createSubstitutionHandlers', () => {
     calculatePositionSwitch.mockImplementation((gameState) => gameState);
     calculatePlayerToggleInactive.mockImplementation((gameState) => gameState);
     calculateSubstituteSwap.mockImplementation((gameState) => gameState);
+    calculateSubstituteReorder.mockImplementation((gameState) => gameState);
     calculateUndo.mockImplementation((gameState) => gameState);
   });
 
@@ -185,7 +187,7 @@ describe('createSubstitutionHandlers', () => {
   });
 
   describe('handleSetAsNextToGoIn', () => {
-    it('should swap substitute positions in individual 7 mode', () => {
+    it('should reorder substitute positions in individual 7 mode', () => {
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,
@@ -200,11 +202,11 @@ describe('createSubstitutionHandlers', () => {
       handlers.handleSetAsNextToGoIn(substituteModal, formation);
 
       expect(animateStateChange).toHaveBeenCalled();
-      expect(calculateSubstituteSwap).toHaveBeenCalledWith(mockGameState, '5', '6');
+      expect(calculateSubstituteReorder).toHaveBeenCalledWith(mockGameState, 'substitute_2');
       expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
     });
 
-    it('should not swap if player is not substitute_2', () => {
+    it('should not reorder if player is substitute_1', () => {
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,
@@ -222,7 +224,7 @@ describe('createSubstitutionHandlers', () => {
       expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
     });
 
-    it('should not swap if not in individual 7 mode', () => {
+    it('should not reorder if not in individual mode with multiple substitutes', () => {
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,

@@ -17,55 +17,26 @@ const GOAL_SCORING_PRIORITY = {
 };
 
 /**
- * Determine a player's current role based on their position in the formation
- * @param {string} playerId - Player ID to check
- * @param {Object} formation - Current formation object
- * @param {string} teamMode - Current team mode (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+ * Get a player's current role from their stored data
+ * @param {Object} player - Player object with stats
  * @returns {string} Role: 'ATTACKER', 'DEFENDER', 'GOALIE', or 'SUBSTITUTE'
  */
-export const getPlayerCurrentRole = (playerId, formation, teamMode) => {
-  if (!playerId || !formation) {
+export const getPlayerCurrentRole = (player) => {
+  if (!player?.stats?.currentRole) {
     return 'SUBSTITUTE';
   }
 
-  // Check if player is goalie (same across all team modes)
-  if (formation.goalie === playerId) {
-    return 'GOALIE';
-  }
-
-  switch (teamMode) {
-    case TEAM_MODES.INDIVIDUAL_6:
-    case TEAM_MODES.INDIVIDUAL_7:
-      // Check attacker positions (unified for both individual modes)
-      if (formation.leftAttacker === playerId ||
-          formation.rightAttacker === playerId) {
-        return 'ATTACKER';
-      }
-      // Check defender positions (unified for both individual modes)
-      if (formation.leftDefender === playerId ||
-          formation.rightDefender === playerId) {
-        return 'DEFENDER';
-      }
-      // Everyone else is substitute
-      return 'SUBSTITUTE';
-
-    case TEAM_MODES.PAIRS_7:
-      // Check pairs for attackers
-      if ((formation.leftPair?.attacker === playerId) ||
-          (formation.rightPair?.attacker === playerId)) {
-        return 'ATTACKER';
-      }
-      // Check pairs for defenders
-      if ((formation.leftPair?.defender === playerId) ||
-          (formation.rightPair?.defender === playerId)) {
-        return 'DEFENDER';
-      }
-      // Everyone else is substitute (including subPair)
-      return 'SUBSTITUTE';
-
-    default:
-      return 'SUBSTITUTE';
-  }
+  // Map stored role values to the expected format
+  const role = player.stats.currentRole;
+  
+  // Handle different possible role formats
+  if (role === 'Goalie' || role === 'GOALIE') return 'GOALIE';
+  if (role === 'Attacker' || role === 'ATTACKER') return 'ATTACKER';
+  if (role === 'Defender' || role === 'DEFENDER') return 'DEFENDER';
+  if (role === 'Substitute' || role === 'SUBSTITUTE') return 'SUBSTITUTE';
+  
+  // Default fallback
+  return 'SUBSTITUTE';
 };
 
 /**
@@ -134,11 +105,9 @@ export const getCurrentDefenders = (formation, teamMode) => {
  * Within each category, maintains alphabetical order by name
  * 
  * @param {Array} players - Array of player objects to sort
- * @param {Object} formation - Current formation object
- * @param {string} teamMode - Current team mode (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
  * @returns {Array} Sorted array of player objects
  */
-export const sortPlayersByGoalScoringRelevance = (players, formation, teamMode) => {
+export const sortPlayersByGoalScoringRelevance = (players) => {
   if (!Array.isArray(players) || players.length === 0) {
     return players;
   }
@@ -148,8 +117,8 @@ export const sortPlayersByGoalScoringRelevance = (players, formation, teamMode) 
 
   // Sort players by relevance and then by name within each category
   sortedPlayers.sort((playerA, playerB) => {
-    const roleA = getPlayerCurrentRole(playerA.id, formation, teamMode);
-    const roleB = getPlayerCurrentRole(playerB.id, formation, teamMode);
+    const roleA = getPlayerCurrentRole(playerA);
+    const roleB = getPlayerCurrentRole(playerB);
 
     const priorityA = GOAL_SCORING_PRIORITY[roleA];
     const priorityB = GOAL_SCORING_PRIORITY[roleB];
@@ -170,72 +139,78 @@ export const sortPlayersByGoalScoringRelevance = (players, formation, teamMode) 
 
 /**
  * Get position display name for a player
- * @param {string} playerId - Player ID
- * @param {Object} formation - Current formation object
- * @param {string} teamMode - Current team mode
+ * @param {Object} player - Player object with stats
  * @returns {string} Position display name (e.g., "Left Attacker", "Substitute")
  */
-export const getPlayerPositionDisplay = (playerId, formation, teamMode) => {
-  if (!playerId || !formation) {
+export const getPlayerPositionDisplay = (player) => {
+  if (!player?.stats?.currentPairKey) {
     return 'Substitute';
   }
 
-  // Check if player is goalie
-  if (formation.goalie === playerId) {
-    return 'Goalie';
-  }
-
-  switch (teamMode) {
-    case TEAM_MODES.INDIVIDUAL_6:
-      if (formation.leftAttacker === playerId) return 'Left Attacker';
-      if (formation.rightAttacker === playerId) return 'Right Attacker';
-      if (formation.leftDefender === playerId) return 'Left Defender';
-      if (formation.rightDefender === playerId) return 'Right Defender';
-      break;
-
-    case TEAM_MODES.INDIVIDUAL_7:
-      if (formation.leftAttacker === playerId) return 'Left Attacker';
-      if (formation.rightAttacker === playerId) return 'Right Attacker';
-      if (formation.leftDefender === playerId) return 'Left Defender';
-      if (formation.rightDefender === playerId) return 'Right Defender';
-      break;
-
-    case TEAM_MODES.PAIRS_7:
-      if (formation.leftPair?.attacker === playerId) return 'Left Attacker';
-      if (formation.rightPair?.attacker === playerId) return 'Right Attacker';
-      if (formation.leftPair?.defender === playerId) return 'Left Defender';
-      if (formation.rightPair?.defender === playerId) return 'Right Defender';
-      if (formation.subPair?.attacker === playerId) return 'Sub Attacker';
-      if (formation.subPair?.defender === playerId) return 'Sub Defender';
-      break;
-
+  const pairKey = player.stats.currentPairKey;
+  
+  // Map position keys to display names
+  switch (pairKey) {
+    case 'goalie':
+      return 'Goalie';
+    
+    // Individual mode positions
+    case 'leftDefender':
+      return 'Left Defender';
+    case 'rightDefender':
+      return 'Right Defender';
+    case 'leftAttacker':
+      return 'Left Attacker';
+    case 'rightAttacker':
+      return 'Right Attacker';
+    case 'substitute_1':
+      return 'Substitute 1';
+    case 'substitute_2':
+      return 'Substitute 2';
+    case 'substitute_3':
+      return 'Substitute 3';
+    case 'substitute':
+      return 'Substitute';
+    
+    // Pairs mode positions - combine pair location with player role
+    case 'leftPair':
+      return player.stats.currentRole === 'Defender' ? 'Left Defender' : 'Left Attacker';
+    case 'rightPair':
+      return player.stats.currentRole === 'Defender' ? 'Right Defender' : 'Right Attacker';
+    case 'subPair':
+      return player.stats.currentRole === 'Defender' ? 'Sub Defender' : 'Sub Attacker';
+    
     default:
-      break;
+      // Handle any unknown position keys
+      if (pairKey.startsWith('substitute_')) {
+        return 'Substitute';
+      }
+      return 'Substitute';
   }
-
-  return 'Substitute';
 };
 
 /**
  * Check if a player is currently on the field (not substitute)
- * @param {string} playerId - Player ID
- * @param {Object} formation - Current formation object
- * @param {string} teamMode - Current team mode
+ * @param {Object} player - Player object with stats
  * @returns {boolean} True if player is on field, false if substitute/inactive
  */
-export const isPlayerOnField = (playerId, formation, teamMode) => {
-  const role = getPlayerCurrentRole(playerId, formation, teamMode);
-  return role !== 'SUBSTITUTE';
+export const isPlayerOnField = (player) => {
+  if (!player?.stats?.currentStatus) {
+    return false;
+  }
+
+  const status = player.stats.currentStatus;
+  
+  // Player is on field if they're not a substitute and not inactive
+  return status === 'on_field' || status === 'goalie';
 };
 
 /**
  * Group players by their current role for display purposes
  * @param {Array} players - Array of player objects
- * @param {Object} formation - Current formation object
- * @param {string} teamMode - Current team mode
  * @returns {Object} Object with arrays: { attackers, defenders, goalie, substitutes }
  */
-export const groupPlayersByRole = (players, formation, teamMode) => {
+export const groupPlayersByRole = (players) => {
   const groups = {
     attackers: [],
     defenders: [],
@@ -248,7 +223,7 @@ export const groupPlayersByRole = (players, formation, teamMode) => {
   }
 
   players.forEach(player => {
-    const role = getPlayerCurrentRole(player.id, formation, teamMode);
+    const role = getPlayerCurrentRole(player);
     
     switch (role) {
       case 'ATTACKER':

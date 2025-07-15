@@ -10,7 +10,8 @@ export const PLAYER_ROLES = {
 export const TEAM_MODES = {
   PAIRS_7: 'pairs_7',        // 7 players managed in pairs (3 pairs + goalie)
   INDIVIDUAL_6: 'individual_6', // 6 players managed individually (4 field + 1 sub + goalie)
-  INDIVIDUAL_7: 'individual_7'  // 7 players managed individually (4 field + 2 subs + goalie)
+  INDIVIDUAL_7: 'individual_7', // 7 players managed individually (4 field + 2 subs + goalie)
+  INDIVIDUAL_8: 'individual_8'  // 8 players managed individually (4 field + 3 subs + goalie)
 };
 
 

@@ -11,88 +11,118 @@ import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerC
 /**
  * Create mock props for GameScreen component
  */
-export const createMockGameScreenProps = (overrides = {}) => ({
-  currentPeriodNumber: 1,
-  formation: {
-    goalie: '7',
-    leftDefender: '1',
-    rightDefender: '2',
-    leftAttacker: '3',
-    rightAttacker: '4',
-    substitute_1: '5',
-    substitute_2: '6'
-  },
-  setFormation: jest.fn(),
-  allPlayers: createMockPlayers(),
-  setAllPlayers: jest.fn(),
-  matchTimerSeconds: 900, // 15 minutes
-  subTimerSeconds: 120,   // 2 minutes
-  isSubTimerPaused: false,
-  pauseSubTimer: jest.fn(),
-  resumeSubTimer: jest.fn(),
-  formatTime: jest.fn((seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }),
-  resetSubTimer: jest.fn(),
-  handleUndoSubstitution: jest.fn(),
-  handleEndPeriod: jest.fn(),
-  nextPhysicalPairToSubOut: 'leftDefender',
-  nextPlayerToSubOut: 'leftDefender',
-  nextPlayerIdToSubOut: '1',
-  nextNextPlayerIdToSubOut: '2',
-  setNextNextPlayerIdToSubOut: jest.fn(),
-  selectedSquadPlayers: createMockPlayers(),
-  setNextPhysicalPairToSubOut: jest.fn(),
-  setNextPlayerToSubOut: jest.fn(),
-  setNextPlayerIdToSubOut: jest.fn(),
-  teamMode: TEAM_MODES.INDIVIDUAL_7,
-  alertMinutes: 2,
-  pushModalState: jest.fn(),
-  removeModalFromStack: jest.fn(),
-  homeScore: 0,
-  awayScore: 0,
-  opponentTeamName: 'Test Opponent',
-  addHomeGoal: jest.fn(),
-  addAwayGoal: jest.fn(),
-  setScore: jest.fn(),
-  rotationQueue: ['1', '2', '3', '4', '5', '6'],
-  setRotationQueue: jest.fn(),
-  ...overrides
-});
+export const createMockGameScreenProps = (overrides = {}) => {
+  const teamMode = overrides.teamMode || TEAM_MODES.INDIVIDUAL_7;
+  const formation = overrides.formation || createMockFormation(teamMode);
+  const allPlayers = overrides.allPlayers || createMockPlayers(7, teamMode);
+  
+  return {
+    currentPeriodNumber: 1,
+    formation,
+    setFormation: jest.fn(),
+    allPlayers,
+    setAllPlayers: jest.fn(),
+    matchTimerSeconds: 900, // 15 minutes
+    subTimerSeconds: 120,   // 2 minutes
+    isSubTimerPaused: false,
+    pauseSubTimer: jest.fn(),
+    resumeSubTimer: jest.fn(),
+    formatTime: jest.fn((seconds) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }),
+    resetSubTimer: jest.fn(),
+    handleUndoSubstitution: jest.fn(),
+    handleEndPeriod: jest.fn(),
+    nextPhysicalPairToSubOut: teamMode === TEAM_MODES.PAIRS_7 ? 'leftPair' : 'leftDefender',
+    nextPlayerToSubOut: 'leftDefender',
+    nextPlayerIdToSubOut: '1',
+    nextNextPlayerIdToSubOut: '2',
+    setNextNextPlayerIdToSubOut: jest.fn(),
+    selectedSquadPlayers: allPlayers,
+    setNextPhysicalPairToSubOut: jest.fn(),
+    setNextPlayerToSubOut: jest.fn(),
+    setNextPlayerIdToSubOut: jest.fn(),
+    teamMode,
+    alertMinutes: 2,
+    pushModalState: jest.fn(),
+    removeModalFromStack: jest.fn(),
+    homeScore: 0,
+    awayScore: 0,
+    opponentTeamName: 'Test Opponent',
+    addHomeGoal: jest.fn(),
+    addAwayGoal: jest.fn(),
+    setScore: jest.fn(),
+    rotationQueue: ['1', '2', '3', '4', '5', '6'],
+    setRotationQueue: jest.fn(),
+    ...overrides
+  };
+};
 
 /**
  * Create mock players for component testing
+ * @param {number} count - Number of players to create
+ * @param {string} teamMode - Team mode to use for player structure (defaults to INDIVIDUAL_7)
  */
-export const createMockPlayers = (count = 7) => {
+export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7) => {
   const players = [];
   
   for (let i = 1; i <= count; i++) {
+    let status, role, pairKey;
+    
+    if (teamMode === TEAM_MODES.PAIRS_7) {
+      // PAIRS_7 mode structure
+      if (i <= 4) {
+        status = PLAYER_STATUS.ON_FIELD;
+        role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
+        pairKey = i <= 2 ? 'leftPair' : 'rightPair';
+      } else if (i <= 6) {
+        status = PLAYER_STATUS.SUBSTITUTE;
+        role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
+        pairKey = 'subPair';
+      } else {
+        status = PLAYER_STATUS.GOALIE;
+        role = PLAYER_ROLES.GOALIE;
+        pairKey = 'goalie';
+      }
+    } else {
+      // Individual modes structure (INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
+      if (i <= 4) {
+        status = PLAYER_STATUS.ON_FIELD;
+        role = i <= 2 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
+        pairKey = i <= 2 ? (i === 1 ? 'leftDefender' : 'rightDefender') :
+                          (i === 3 ? 'leftAttacker' : 'rightAttacker');
+      } else if (i < count) {
+        status = PLAYER_STATUS.SUBSTITUTE;
+        role = PLAYER_ROLES.SUBSTITUTE;
+        pairKey = `substitute_${i - 4}`;
+      } else {
+        status = PLAYER_STATUS.GOALIE;
+        role = PLAYER_ROLES.GOALIE;
+        pairKey = 'goalie';
+      }
+    }
+    
     players.push({
       id: `${i}`,
       name: `Player ${i}`,
       stats: {
         isInactive: false,
-        currentStatus: i <= 4 ? PLAYER_STATUS.ON_FIELD :
-                            i === 7 ? PLAYER_STATUS.GOALIE : PLAYER_STATUS.SUBSTITUTE,
-        currentRole: i <= 2 ? PLAYER_ROLES.DEFENDER :
-                          i <= 4 ? PLAYER_ROLES.ATTACKER :
-                          i === 7 ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
-        currentPairKey: i <= 2 ? `leftDefender` :
-                       i <= 4 ? `leftAttacker` :
-                       i === 7 ? 'goalie' : `substitute_${i - 4}`,
+        currentStatus: status,
+        currentRole: role,
+        currentPairKey: pairKey,
         lastStintStartTimeEpoch: Date.now() - (i * 30000),
         timeOnFieldSeconds: i * 30,
-        timeAsAttackerSeconds: i <= 4 ? i * 15 : 0,
-        timeAsDefenderSeconds: i <= 2 ? i * 15 : 0,
-        timeAsSubSeconds: i > 4 && i < 7 ? i * 10 : 0,
-        timeAsGoalieSeconds: i === 7 ? i * 30 : 0,
-        startedMatchAs: i <= 4 ? PLAYER_ROLES.ON_FIELD :
-                       i === 7 ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
-        periodsAsGoalie: i === 7 ? 1 : 0,
-        periodsAsDefender: i <= 2 ? 1 : 0,
-        periodsAsAttacker: i <= 4 && i > 2 ? 1 : 0
+        timeAsAttackerSeconds: role === PLAYER_ROLES.ATTACKER ? i * 15 : 0,
+        timeAsDefenderSeconds: role === PLAYER_ROLES.DEFENDER ? i * 15 : 0,
+        timeAsSubSeconds: status === PLAYER_STATUS.SUBSTITUTE ? i * 10 : 0,
+        timeAsGoalieSeconds: status === PLAYER_STATUS.GOALIE ? i * 30 : 0,
+        startedMatchAs: status === PLAYER_STATUS.ON_FIELD ? PLAYER_ROLES.ON_FIELD :
+                       status === PLAYER_STATUS.GOALIE ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
+        periodsAsGoalie: status === PLAYER_STATUS.GOALIE ? 1 : 0,
+        periodsAsDefender: role === PLAYER_ROLES.DEFENDER ? 1 : 0,
+        periodsAsAttacker: role === PLAYER_ROLES.ATTACKER ? 1 : 0
       }
     });
   }
@@ -124,6 +154,28 @@ export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
       };
       
     case TEAM_MODES.INDIVIDUAL_7:
+      return {
+        goalie: '7',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
+      };
+      
+    case TEAM_MODES.INDIVIDUAL_8:
+      return {
+        goalie: '8',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6',
+        substitute_3: '7'
+      };
+      
     default:
       return {
         goalie: '7',

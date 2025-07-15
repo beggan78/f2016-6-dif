@@ -301,7 +301,7 @@ describe('Focused Goalie Animation Integration Tests', () => {
 
   describe('Team Mode Consistency', () => {
     it('should work consistently across all team modes', async () => {
-      const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.PAIRS_7];
+      const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.PAIRS_7];
       
       for (const teamMode of teamModes) {
         // Reset mocks between iterations

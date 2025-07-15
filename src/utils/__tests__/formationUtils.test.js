@@ -135,7 +135,7 @@ describe('formationUtils', () => {
   });
 
   describe('position definitions structure', () => {
-    const teamModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
+    const teamModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
 
     teamModes.forEach(teamMode => {
       describe(`${teamMode} structure validation`, () => {

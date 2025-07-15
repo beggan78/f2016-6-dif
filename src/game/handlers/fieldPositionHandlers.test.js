@@ -345,7 +345,8 @@ describe('createFieldPositionHandlers', () => {
         'leftAttackerCallback',
         'rightAttackerCallback',
         'substitute_1Callback',
-        'substitute_2Callback'
+        'substitute_2Callback',
+        'substitute_3Callback'
       ];
 
       expectedCallbacks.forEach(callback => {

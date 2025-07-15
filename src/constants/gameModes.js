@@ -70,6 +70,36 @@ export const MODE_DEFINITIONS = {
       substitute_2: null
     },
     validationMessage: "Please complete the team formation with 1 goalie and 6 unique outfield players."
+  },
+  [TEAM_MODES.INDIVIDUAL_8]: {
+    positions: {
+      goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
+      leftDefender: { key: 'leftDefender', role: PLAYER_ROLES.DEFENDER },
+      rightDefender: { key: 'rightDefender', role: PLAYER_ROLES.DEFENDER },
+      leftAttacker: { key: 'leftAttacker', role: PLAYER_ROLES.ATTACKER },
+      rightAttacker: { key: 'rightAttacker', role: PLAYER_ROLES.ATTACKER },
+      substitute_1: { key: 'substitute_1', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_2: { key: 'substitute_2', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_3: { key: 'substitute_3', role: PLAYER_ROLES.SUBSTITUTE }
+    },
+    expectedCounts: { outfield: 7, onField: 4 },
+    positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2', 'substitute_3'],
+    fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
+    substitutePositions: ['substitute_1', 'substitute_2', 'substitute_3'],
+    supportsInactiveUsers: true,
+    supportsNextNextIndicators: true,
+    substituteRotationPattern: 'advanced_carousel',
+    initialFormationTemplate: {
+      goalie: null,
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null,
+      substitute_1: null,
+      substitute_2: null,
+      substitute_3: null
+    },
+    validationMessage: "Please complete the team formation with 1 goalie and 7 unique outfield players."
   }
 };
 
@@ -83,7 +113,8 @@ export const POSITION_ROLE_MAP = {
   leftAttacker: PLAYER_ROLES.ATTACKER,
   rightAttacker: PLAYER_ROLES.ATTACKER,
   substitute_1: PLAYER_ROLES.SUBSTITUTE,
-  substitute_2: PLAYER_ROLES.SUBSTITUTE
+  substitute_2: PLAYER_ROLES.SUBSTITUTE,
+  substitute_3: PLAYER_ROLES.SUBSTITUTE
 };
 
 /**
@@ -151,6 +182,13 @@ export function supportsNextNextIndicators(teamMode) {
 }
 
 /**
+ * Check if a team mode is an individual mode (any individual player count)
+ */
+export function isIndividualMode(teamMode) {
+  return [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8].includes(teamMode);
+}
+
+/**
  * Get all positions for a team mode (including goalie)
  */
 export function getAllPositions(teamMode) {
@@ -210,7 +248,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamMode) {
     return {
       role: PLAYER_ROLES.GOALIE,
       status: 'goalie',
-      pairKey: null
+      pairKey: 'goalie'
     };
   }
   
@@ -244,14 +282,14 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamMode) {
       if (pair) {
         if (playerId === pair.defender) {
           return {
-            role: PLAYER_ROLES.DEFENDER,
+            role: pairKey === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.DEFENDER,
             status: pairKey === 'subPair' ? 'substitute' : 'on_field',
             pairKey
           };
         }
         if (playerId === pair.attacker) {
           return {
-            role: PLAYER_ROLES.ATTACKER,
+            role: pairKey === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.ATTACKER,
             status: pairKey === 'subPair' ? 'substitute' : 'on_field',
             pairKey
           };

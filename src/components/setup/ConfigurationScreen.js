@@ -38,6 +38,8 @@ export function ConfigurationScreen({
         setTeamMode(TEAM_MODES.INDIVIDUAL_6);
       } else if (newIds.length === 7 && teamMode === TEAM_MODES.INDIVIDUAL_6) {
         setTeamMode(TEAM_MODES.PAIRS_7); // Default to pairs for 7-player
+      } else if (newIds.length === 8) {
+        setTeamMode(TEAM_MODES.INDIVIDUAL_8); // Auto-set 8-player individual mode
       }
       
       // Clear captain if the captain is being deselected
@@ -98,7 +100,7 @@ export function ConfigurationScreen({
 
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
-        <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad ({selectedSquadIds.length}/6-7 Players)</h3>
+        <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad ({selectedSquadIds.length}/6-8 Players)</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {allPlayers.map(player => (
             <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
@@ -107,7 +109,7 @@ export function ConfigurationScreen({
                 checked={selectedSquadIds.includes(player.id)}
                 onChange={() => togglePlayerSelection(player.id)}
                 className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
-                disabled={selectedSquadIds.length >= 7 && !selectedSquadIds.includes(player.id)}
+                disabled={selectedSquadIds.length >= 8 && !selectedSquadIds.includes(player.id)}
               />
               <span>{formatPlayerName(player)}</span>
             </label>
@@ -149,40 +151,44 @@ export function ConfigurationScreen({
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
           <div className="space-y-2">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="teamMode"
-                value={TEAM_MODES.PAIRS_7}
-                checked={teamMode === TEAM_MODES.PAIRS_7}
-                onChange={e => setTeamMode(e.target.value)}
-                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
-              />
-              <div>
-                <span className="text-sky-100 font-medium">Pairs</span>
-                <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
-              </div>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="teamMode"
-                value={TEAM_MODES.INDIVIDUAL_7}
-                checked={teamMode === TEAM_MODES.INDIVIDUAL_7}
-                onChange={e => setTeamMode(e.target.value)}
-                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
-              />
-              <div>
-                <span className="text-sky-100 font-medium">Individual</span>
-                <p className="text-xs text-slate-400">Individual positions with 2 substitutes. Dual next/next-next visual indicators.</p>
-              </div>
-            </label>
+            {selectedSquadIds.length === 7 && (
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="teamMode"
+                  value={TEAM_MODES.PAIRS_7}
+                  checked={teamMode === TEAM_MODES.PAIRS_7}
+                  onChange={e => setTeamMode(e.target.value)}
+                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+                />
+                <div>
+                  <span className="text-sky-100 font-medium">Pairs</span>
+                  <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
+                </div>
+              </label>
+            )}
+            {selectedSquadIds.length === 7 && (
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="teamMode"
+                  value={TEAM_MODES.INDIVIDUAL_7}
+                  checked={teamMode === TEAM_MODES.INDIVIDUAL_7}
+                  onChange={e => setTeamMode(e.target.value)}
+                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+                />
+                <div>
+                  <span className="text-sky-100 font-medium">Individual (7-player)</span>
+                  <p className="text-xs text-slate-400">Individual positions with 2 substitutes. Dual next/next-next visual indicators.</p>
+                </div>
+              </label>
+            )}
           </div>
         </div>
       )}
 
       {/* Goalie Assignment */}
-      {(selectedSquadIds.length === 6 || selectedSquadIds.length === 7) && (
+      {(selectedSquadIds.length === 6 || selectedSquadIds.length === 7 || selectedSquadIds.length === 8) && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">
@@ -203,7 +209,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Captain Assignment */}
-      {(selectedSquadIds.length === 6 || selectedSquadIds.length === 7) && (
+      {selectedSquadIds.length >= 5 && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Captain</h3>
           <div>
@@ -224,7 +230,7 @@ export function ConfigurationScreen({
 
       <Button 
         onClick={handleStartPeriodSetup} 
-        disabled={(selectedSquadIds.length !== 6 && selectedSquadIds.length !== 7) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
+        disabled={(selectedSquadIds.length < 5 || selectedSquadIds.length > 8) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
         Icon={Play}
       >
         Proceed to Period Setup

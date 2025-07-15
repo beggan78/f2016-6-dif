@@ -245,3 +245,15 @@ export const performanceConfig = {
     complexOperations: { operation: 'slow', enableLogging: true }
   }
 };
+
+// Basic test to satisfy Jest requirement for test files
+describe('Performance Test Utils', () => {
+  it('should export performance testing utilities', () => {
+    expect(describePerformance).toBeDefined();
+    expect(itPerformance).toBeDefined();
+    expect(measurePerformance).toBeDefined();
+    expect(expectPerformance).toBeDefined();
+    expect(createLargeDataset).toBeDefined();
+    expect(performanceConfig).toBeDefined();
+  });
+});

@@ -4,8 +4,9 @@ import { initialRoster } from '../constants/defaultData';
 import { PLAYER_ROLES, TEAM_MODES } from '../constants/playerConstants';
 import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
-import { getInitialFormationTemplate, getValidationMessage, getOutfieldPositions, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators } from '../constants/gameModes';
+import { getInitialFormationTemplate, getValidationMessage, getOutfieldPositions, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, isIndividualMode } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
+import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
@@ -109,6 +110,45 @@ export function useGameState() {
       })));
     }
   }, [captainId]);
+
+  // Sync player roles with formation changes (fixes PAIRS_7 Goal Scorer modal sorting)
+  useEffect(() => {
+    // Only update roles if we have a formation and selected squad players
+    if (!formation || !selectedSquadIds.length) return;
+    
+    // Skip if formation is empty (all positions null)
+    const hasAnyAssignedPositions = Object.values(formation).some(pos => {
+      if (typeof pos === 'string') return pos; // Individual mode positions
+      if (typeof pos === 'object' && pos) return pos.defender || pos.attacker; // Pair positions
+      return false;
+    });
+    
+    if (!hasAnyAssignedPositions) return;
+    
+    // Update player roles based on current formation
+    setAllPlayers(prev => prev.map(player => {
+      if (!selectedSquadIds.includes(player.id)) return player;
+      
+      const { role, status, pairKey } = initializePlayerRoleAndStatus(player.id, formation, teamMode);
+      
+      // Only update if the role/status actually changed to avoid unnecessary re-renders
+      if (player.stats.currentRole !== role || 
+          player.stats.currentStatus !== status || 
+          player.stats.currentPairKey !== pairKey) {
+        return {
+          ...player,
+          stats: {
+            ...player.stats,
+            currentRole: role,
+            currentStatus: status,
+            currentPairKey: pairKey
+          }
+        };
+      }
+      
+      return player;
+    }));
+  }, [formation, teamMode, selectedSquadIds]);
 
   // Function to sync match data from gameEventLogger
   const syncMatchDataFromEventLogger = useCallback(() => {
@@ -270,7 +310,7 @@ export function useGameState() {
         
         setFormation(pairsFormation);
         setNextPhysicalPairToSubOut(firstToSubRec); // 'leftPair' or 'rightPair'
-      } else if (teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7) {
+      } else if (isIndividualMode(teamMode)) {
         // Unified individual mode formation generation
         const result = generateIndividualFormationRecommendation(
           currentGoalieId,
@@ -309,14 +349,14 @@ export function useGameState() {
           rightPair: { defender: null, attacker: null },
           subPair: { defender: null, attacker: null },
         });
-      } else if (teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7) {
+      } else if (isIndividualMode(teamMode)) {
         // Use unified formation template for individual modes
         setFormation(getInitialFormationTemplate(teamMode, currentGoalieId));
       }
       setNextPhysicalPairToSubOut('leftPair');
       
       // Initialize next player and rotation queue for individual modes in P1
-      if (teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7) {
+      if (isIndividualMode(teamMode)) {
         setNextPlayerToSubOut('leftDefender');
         // Initialize basic rotation queue for Period 1 (will be filled when game starts)
         setRotationQueue([]);
@@ -329,8 +369,8 @@ export function useGameState() {
   }, [preparePeriodWithGameLog, gameLog]);
 
   const handleStartPeriodSetup = useCallback(() => {
-    if (selectedSquadIds.length !== 7 && selectedSquadIds.length !== 6) {
-      alert("Please select exactly 6 or 7 players for the squad."); // Replace with modal
+    if (selectedSquadIds.length < 5 || selectedSquadIds.length > 8) {
+      alert("Please select 5-8 players for the squad."); // Replace with modal
       return;
     }
     const goaliesAssigned = Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean);
@@ -379,7 +419,7 @@ export function useGameState() {
         alert("Please complete the team formation with 1 goalie and 6 unique outfield players in pairs."); // Replace with modal
         return;
       }
-    } else if (teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7) {
+    } else if (isIndividualMode(teamMode)) {
       // Unified individual mode validation
       const outfieldPositions = getOutfieldPositions(teamMode);
       const allOutfieldersInFormation = outfieldPositions.map(pos => formation[pos]).filter(Boolean);
@@ -420,7 +460,7 @@ export function useGameState() {
 
     // Initialize rotation queue for individual modes only if not already set by formation generator
     // For Period 1 or when formation generator hasn't provided a queue
-    if ((teamMode === TEAM_MODES.INDIVIDUAL_6 || teamMode === TEAM_MODES.INDIVIDUAL_7) && nextPlayerToSubOut && rotationQueue.length === 0) {
+    if ((isIndividualMode(teamMode)) && nextPlayerToSubOut && rotationQueue.length === 0) {
       const initialPlayerToSubOut = formation[nextPlayerToSubOut];
       
       // Get outfield positions for this team mode
@@ -834,58 +874,27 @@ export function useGameState() {
     const performStateChanges = () => {
       // Update rotation queue and positions
       if (currentlyInactive) {
-        // Player is being activated - they become the next player to go in (substitute_1)
-        const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
-        queueManager.initialize(); // Separate active and inactive players
-        queueManager.reactivatePlayer(playerId);
+        // Player is being reactivated - use logic layer to handle all cascading
+        const currentGameState = {
+          formation,
+          allPlayers,
+          teamMode,
+          rotationQueue,
+          nextPlayerIdToSubOut,
+          nextNextPlayerIdToSubOut,
+          nextPlayerToSubOut,
+          nextPhysicalPairToSubOut
+        };
+        const newGameState = calculatePlayerToggleInactive(currentGameState, playerId);
         
-        // Get current substitute positions
-        const currentSub7_1Id = formation.substitute_1;
-        const currentSub7_2Id = formation.substitute_2;
-        
-        // The reactivated player should become substitute_1 (next to go in)
-        // The current substitute_1 (if active) should move to substitute_2
-        // If the reactivated player was substitute_2, swap with substitute_1
-        
-        if (playerId === currentSub7_1Id) {
-          // Reactivated player is already in substitute_1 position - just activate them
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, isInactive: false } };
-            }
-            return p;
-          }));
-          
-          // nextPlayerIdToSubOut should remain pointing to the current active field player
-          // Find the next active player for substitute_2 position
-          const nextActivePlayers = queueManager.getNextActivePlayer(2);
-          updateNextNextPlayerIfSupported(teamMode, nextActivePlayers, setNextNextPlayerIdToSubOut, 0);
-          // Don't change nextPlayerIdToSubOut - it should still point to the field player
-        } else if (playerId === currentSub7_2Id) {
-          // Reactivated player is in substitute_2 - swap with substitute_1
-          setFormation(prev => ({
-            ...prev,
-            substitute_1: playerId,
-            substitute_2: currentSub7_1Id
-          }));
-          
-          // Update player positions and inactive state in one operation
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1', isInactive: false } };
-            }
-            if (p.id === currentSub7_1Id) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' } };
-            }
-            return p;
-          }));
-          
-          // nextPlayerIdToSubOut should still point to the current field player who's next to come off
-          setNextNextPlayerIdToSubOut(currentSub7_1Id);
-          // Don't change nextPlayerIdToSubOut - it should still point to the field player
+        // Apply all state changes from logic layer
+        setFormation(newGameState.formation);
+        setAllPlayers(newGameState.allPlayers);
+        setRotationQueue(newGameState.rotationQueue);
+        setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
+        if (newGameState.nextNextPlayerIdToSubOut !== undefined) {
+          setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
         }
-        
-        setRotationQueue(queueManager.toArray());
       } else {
         // Player is being inactivated - use queue manager
         const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
@@ -943,7 +952,7 @@ export function useGameState() {
     } else {
       performStateChanges();
     }
-  }, [teamMode, allPlayers, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, formation]);
+  }, [teamMode, allPlayers, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, formation, nextPlayerToSubOut, nextPhysicalPairToSubOut]);
 
   // Helper function to get inactive players for animation purposes
   const getInactivePlayerPosition = useCallback((playerId) => {

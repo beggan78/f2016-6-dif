@@ -1,6 +1,6 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
-import { supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, MODE_DEFINITIONS } from '../../constants/gameModes';
+import { supportsInactiveUsers, supportsNextNextIndicators, MODE_DEFINITIONS } from '../../constants/gameModes';
 
 export const createFieldPositionHandlers = (
   teamMode,
@@ -65,11 +65,10 @@ export const createFieldPositionHandlers = (
     const isCurrentlyInactive = player?.stats.isInactive || false;
     
     // Determine if player can be set as next to go in
-    // Only bottom substitute position in modes with next-next support can be set as next to go in
+    // All substitute positions except substitute_1 can be set as next to go in
     const isNextToGoIn = playerId === nextPlayerIdToSubOut;
-    const bottomSubPosition = getBottomSubstitutePosition(teamMode);
     const canSetAsNextToGoIn = supportsNextNext && 
-                               position === bottomSubPosition && 
+                               position !== 'substitute_1' &&
                                !isNextToGoIn && 
                                !isCurrentlyInactive;
     
@@ -105,7 +104,7 @@ export const createFieldPositionHandlers = (
     // Individual modes
     const positions = [
       'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker',
-      'substitute_1', 'substitute_2'
+      'substitute_1', 'substitute_2', 'substitute_3'
     ];
     
     positions.forEach(position => {

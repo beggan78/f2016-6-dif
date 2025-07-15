@@ -4,7 +4,45 @@ import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
 import { getPositionRole, getFieldPositions } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
+import { getCarouselMapping } from './carouselPatterns';
 
+/**
+ * Creates a cascade mapping for active substitutes when inactive players are present
+ * @param {Array} activeSubstitutes - Array of active substitute positions
+ * @param {Object} formation - Current formation
+ * @param {string} outgoingPlayer - Player coming off the field
+ * @param {string} bottomActivePosition - Bottom-most active substitute position
+ * @returns {Object} Mapping of player moves
+ */
+const createActiveSubstituteCascade = (activeSubstitutes, formation, outgoingPlayer, bottomActivePosition) => {
+  const cascade = {};
+  
+  // Outgoing player goes to bottom-most active substitute position
+  cascade[outgoingPlayer] = bottomActivePosition;
+  
+  // All active substitutes move up one position
+  for (let i = activeSubstitutes.length - 1; i > 0; i--) {
+    const currentPosition = activeSubstitutes[i];
+    const nextPosition = activeSubstitutes[i - 1];
+    const playerId = formation[currentPosition];
+    if (playerId) {
+      cascade[playerId] = nextPosition;
+    }
+  }
+  
+  return cascade;
+};
+
+/**
+ * Applies the active cascade mapping to the formation
+ * @param {Object} formation - Formation object to modify
+ * @param {Object} cascade - Cascade mapping from createActiveSubstituteCascade
+ */
+const applyActiveCascade = (formation, cascade) => {
+  Object.entries(cascade).forEach(([playerId, newPosition]) => {
+    formation[newPosition] = playerId;
+  });
+};
 
 /**
  * Manages substitution logic for different team modes
@@ -141,7 +179,8 @@ export class SubstitutionManager {
     const { substitutePositions, supportsInactiveUsers, substituteRotationPattern } = modeConfig;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
-    const playerComingOnId = formation.substitute_1;
+    const firstSubstitutePosition = substitutePositions[0]; // Get first substitute position dynamically
+    const playerComingOnId = formation[firstSubstitutePosition];
 
     // Create rotation queue helper
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
@@ -168,20 +207,60 @@ export class SubstitutionManager {
     const newFormation = JSON.parse(JSON.stringify(formation));
     newFormation[playerToSubOutKey] = playerComingOnId;
 
-    // Handle substitute rotation based on pattern
+    // Handle substitute rotation based on pattern using generalized carousel system
     if (substituteRotationPattern === 'simple') {
       // 6-player: Simple swap
-      newFormation.substitute_1 = playerGoingOffId;
-    } else if (substituteRotationPattern === 'carousel') {
-      // 7-player: Carousel rotation with inactive player handling
-      const substitute_2Player = findPlayerById(allPlayers, formation.substitute_2);
-      const isSubstitute_2Inactive = substitute_2Player?.stats.isInactive || false;
+      newFormation[firstSubstitutePosition] = playerGoingOffId;
+    } else {
+      // All carousel patterns (7-player, 8-player, future modes)
+      // Check for inactive players that would break the carousel
+      const hasInactiveInCarousel = substitutePositions.some(position => {
+        const player = findPlayerById(allPlayers, formation[position]);
+        return player?.stats.isInactive === true;
+      });
       
-      if (isSubstitute_2Inactive) {
-        newFormation.substitute_1 = playerGoingOffId;
+      if (hasInactiveInCarousel) {
+        // NEW: Active cascade logic - field player goes to bottom-most active substitute position
+        const activeSubstitutes = substitutePositions.filter(position => {
+          const player = findPlayerById(allPlayers, formation[position]);
+          return player && !player.stats.isInactive;
+        });
+        
+        if (activeSubstitutes.length > 0) {
+          const bottomActivePosition = activeSubstitutes[activeSubstitutes.length - 1];
+          
+          // Create cascade mapping for active substitutes
+          const activeSubstituteCascade = createActiveSubstituteCascade(
+            activeSubstitutes,
+            formation,
+            playerGoingOffId,
+            bottomActivePosition
+          );
+          
+          // Apply cascade to formation
+          applyActiveCascade(newFormation, activeSubstituteCascade);
+        } else {
+          // Fallback: if no active substitutes, use simple logic
+          newFormation[firstSubstitutePosition] = playerGoingOffId;
+        }
       } else {
-        newFormation.substitute_1 = formation.substitute_2;
-        newFormation.substitute_2 = playerGoingOffId;
+        // Apply generalized carousel pattern
+        const carouselMapping = getCarouselMapping(
+          substituteRotationPattern,
+          playerGoingOffId,
+          substitutePositions,
+          formation
+        );
+        
+        // Apply the mapping to formation
+        Object.entries(carouselMapping).forEach(([playerId, newPosition]) => {
+          if (substitutePositions.includes(newPosition)) {
+            newFormation[newPosition] = playerId;
+          } else {
+            // Player going to field position (outgoing player's position)
+            newFormation[playerToSubOutKey] = playerId;
+          }
+        });
       }
     }
 
@@ -193,10 +272,36 @@ export class SubstitutionManager {
           ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
           : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
         
-        // Determine new substitute position
-        const newPairKey = substituteRotationPattern === 'carousel' && 
-                          findPlayerById(allPlayers, formation.substitute_2)?.stats.isInactive === false
-                          ? 'substitute_2' : 'substitute_1';
+        // Determine new substitute position using carousel or cascade mapping
+        let newPairKey = firstSubstitutePosition; // Default fallback
+        if (substituteRotationPattern !== 'simple') {
+          const hasInactiveInCarousel = substitutePositions.some(position => {
+            const player = findPlayerById(allPlayers, formation[position]);
+            return player?.stats.isInactive === true;
+          });
+          
+          if (hasInactiveInCarousel) {
+            // Use active cascade logic
+            const activeSubstitutes = substitutePositions.filter(position => {
+              const player = findPlayerById(allPlayers, formation[position]);
+              return player && !player.stats.isInactive;
+            });
+            
+            if (activeSubstitutes.length > 0) {
+              const bottomActivePosition = activeSubstitutes[activeSubstitutes.length - 1];
+              newPairKey = bottomActivePosition;
+            }
+          } else {
+            const carouselMapping = getCarouselMapping(
+              substituteRotationPattern,
+              playerGoingOffId,
+              substitutePositions,
+              formation
+            );
+            // Find where this player is going in the carousel
+            newPairKey = carouselMapping[playerGoingOffId] || firstSubstitutePosition;
+          }
+        }
         
         return {
           ...p,
@@ -224,17 +329,61 @@ export class SubstitutionManager {
           }
         };
       }
-      // Handle substitute_2 position change in carousel mode
-      if (substituteRotationPattern === 'carousel' && p.id === formation.substitute_2 && 
-          !findPlayerById(allPlayers, formation.substitute_2)?.stats.isInactive) {
-        return {
-          ...p,
-          stats: {
-            ...p.stats,
-            currentPairKey: 'substitute_1',
-            currentRole: PLAYER_ROLES.SUBSTITUTE
+      // Handle substitute position changes in carousel or cascade patterns
+      if (substituteRotationPattern !== 'simple') {
+        const hasInactiveInCarousel = substitutePositions.some(position => {
+          const player = findPlayerById(allPlayers, formation[position]);
+          return player?.stats.isInactive === true;
+        });
+        
+        if (hasInactiveInCarousel) {
+          // Use active cascade logic for substitute position changes
+          const activeSubstitutes = substitutePositions.filter(position => {
+            const player = findPlayerById(allPlayers, formation[position]);
+            return player && !player.stats.isInactive;
+          });
+          
+          if (activeSubstitutes.length > 0) {
+            const bottomActivePosition = activeSubstitutes[activeSubstitutes.length - 1];
+            const activeSubstituteCascade = createActiveSubstituteCascade(
+              activeSubstitutes,
+              formation,
+              playerGoingOffId,
+              bottomActivePosition
+            );
+            
+            // Check if this player is being moved in the cascade
+            if (activeSubstituteCascade[p.id] && substitutePositions.includes(activeSubstituteCascade[p.id])) {
+              return {
+                ...p,
+                stats: {
+                  ...p.stats,
+                  currentPairKey: activeSubstituteCascade[p.id],
+                  currentRole: PLAYER_ROLES.SUBSTITUTE
+                }
+              };
+            }
           }
-        };
+        } else {
+          const carouselMapping = getCarouselMapping(
+            substituteRotationPattern,
+            playerGoingOffId,
+            substitutePositions,
+            formation
+          );
+          
+          // Check if this player is being moved in the carousel
+          if (carouselMapping[p.id] && substitutePositions.includes(carouselMapping[p.id])) {
+            return {
+              ...p,
+              stats: {
+                ...p.stats,
+                currentPairKey: carouselMapping[p.id],
+                currentRole: PLAYER_ROLES.SUBSTITUTE
+              }
+            };
+          }
+        }
       }
       return p;
     });
@@ -264,8 +413,8 @@ export class SubstitutionManager {
       playersGoingOffIds: [playerGoingOffId]
     };
 
-    // Add 7-player specific field
-    if (substituteRotationPattern === 'carousel') {
+    // Add next-next tracking for modes that support it
+    if (substituteRotationPattern === 'carousel' || substituteRotationPattern === 'advanced_carousel') {
       result.newNextNextPlayerIdToSubOut = newRotationQueue[1] || null;
     }
 
@@ -281,6 +430,7 @@ export class SubstitutionManager {
         return this.handlePairsSubstitution(context);
       case TEAM_MODES.INDIVIDUAL_6:
       case TEAM_MODES.INDIVIDUAL_7:
+      case TEAM_MODES.INDIVIDUAL_8:
         return this.handleIndividualModeSubstitution(context);
       default:
         throw new Error(`Unknown team mode: ${this.teamMode}`);

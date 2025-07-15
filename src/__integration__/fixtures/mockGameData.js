@@ -83,6 +83,17 @@ export const formationScenarios = {
     rightAttacker: playerIds[4],
     substitute_1: playerIds[5],
     substitute_2: playerIds[6]
+  }),
+  
+  individual8Standard: (playerIds) => ({
+    goalie: playerIds[0],
+    leftDefender: playerIds[1],
+    rightDefender: playerIds[2],
+    leftAttacker: playerIds[3],
+    rightAttacker: playerIds[4],
+    substitute_1: playerIds[5],
+    substitute_2: playerIds[6],
+    substitute_3: playerIds[7]
   })
 };
 
@@ -350,12 +361,20 @@ export const gameStateScenarios = {
    * Fresh game - just started
    */
   freshGame: (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-    const players = playerDataScenarios.balanced();
+    // Ensure we have enough players for the team mode
+    const playerCounts = {
+      [TEAM_MODES.PAIRS_7]: 7,
+      [TEAM_MODES.INDIVIDUAL_6]: 6,
+      [TEAM_MODES.INDIVIDUAL_7]: 7,
+      [TEAM_MODES.INDIVIDUAL_8]: 8
+    };
+    const players = playerDataScenarios.balanced(playerCounts[teamMode] || 7);
     
     const formations = {
       [TEAM_MODES.PAIRS_7]: formationScenarios.pairs7Standard(players.map(p => p.id)),
       [TEAM_MODES.INDIVIDUAL_6]: formationScenarios.individual6Standard(players.slice(0, 6).map(p => p.id)),
-      [TEAM_MODES.INDIVIDUAL_7]: formationScenarios.individual7Standard(players.map(p => p.id))
+      [TEAM_MODES.INDIVIDUAL_7]: formationScenarios.individual7Standard(players.map(p => p.id)),
+      [TEAM_MODES.INDIVIDUAL_8]: formationScenarios.individual8Standard(players.slice(0, 8).map(p => p.id))
     };
     
     return {

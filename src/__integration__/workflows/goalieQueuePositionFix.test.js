@@ -13,7 +13,7 @@ import { TEAM_MODES } from '../../constants/playerConstants';
 describe('Goalie Queue Position Fix Integration Tests', () => {
   
   it('should preserve queue position across team modes', () => {
-    const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.PAIRS_7];
+    const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.PAIRS_7];
     
     teamModes.forEach(teamMode => {
       console.log(`Testing ${teamMode} queue position preservation`);

@@ -46,12 +46,35 @@ export function getIndicatorProps(player, position, teamMode, nextPlayerIdToSubO
   const isSubstitutePosition = substitutePositions.includes(position);
   const supportsNextNext = supportsNextNextIndicators(teamMode);
   
-  return {
+  const indicators = {
     isNextOff: playerId === nextPlayerIdToSubOut,
     isNextOn: isSubstitutePosition && position === substitutePositions[0], // First substitute is "next on"
     isNextNextOff: supportsNextNext ? playerId === nextNextPlayerIdToSubOut : false,
     isNextNextOn: supportsNextNext && isSubstitutePosition && position === substitutePositions[1] // Second substitute is "next next on"
   };
+  
+  // DEBUG: Log when a player has both indicators (this is the bug!)
+  if (indicators.isNextOff && indicators.isNextOn) {
+    console.error(`🚨 DUAL INDICATOR BUG DETECTED 🚨`);
+    console.error(`Player ${playerId} (${player?.name}) at position ${position} has BOTH indicators:`);
+    console.error(`- isNextOff: ${indicators.isNextOff} (playerId === nextPlayerIdToSubOut: ${playerId} === ${nextPlayerIdToSubOut})`);
+    console.error(`- isNextOn: ${indicators.isNextOn} (isSubstitutePosition: ${isSubstitutePosition} && position === substitutePositions[0]: ${position} === ${substitutePositions[0]})`);
+    console.error(`- Player stats:`, player?.stats);
+    console.error(`- substitutePositions:`, substitutePositions);
+    console.error(`- teamMode:`, teamMode);
+    console.error(`Stack trace:`, new Error().stack);
+  }
+  
+  // DEBUG: Log indicator calculation for debugging
+  if (playerId && (indicators.isNextOff || indicators.isNextOn)) {
+    console.log(`[INDICATOR DEBUG] Player ${playerId} (${player?.name}) at ${position}:`);
+    console.log(`  - isNextOff: ${indicators.isNextOff} (nextPlayerIdToSubOut: ${nextPlayerIdToSubOut})`);
+    console.log(`  - isNextOn: ${indicators.isNextOn} (first substitute: ${substitutePositions[0]})`);
+    console.log(`  - isSubstitutePosition: ${isSubstitutePosition}`);
+    console.log(`  - player.stats.isInactive: ${player?.stats?.isInactive}`);
+  }
+  
+  return indicators;
 }
 
 /**

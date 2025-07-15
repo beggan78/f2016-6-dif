@@ -112,6 +112,21 @@ describe('FormationRenderer', () => {
       expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
     });
 
+    it('should render IndividualFormation for INDIVIDUAL_8 team mode', () => {
+      const props = {
+        ...defaultProps,
+        teamMode: TEAM_MODES.INDIVIDUAL_8,
+        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_8)
+      };
+      
+      render(<FormationRenderer {...props} />);
+      
+      expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
+      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-team-mode', TEAM_MODES.INDIVIDUAL_8);
+      expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
+      expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
+    });
+
     it('should show error message for unsupported team mode', () => {
       const props = {
         ...defaultProps,
@@ -219,6 +234,21 @@ describe('FormationRenderer', () => {
       // Verify props are passed through
       expect(screen.getByTestId('individual-formation-players')).toHaveTextContent('7 players');
       expect(screen.getByTestId('individual-formation-goalie')).toHaveTextContent('7');
+    });
+
+    it('should pass all props correctly to IndividualFormation for INDIVIDUAL_8', () => {
+      const props = {
+        ...defaultProps,
+        teamMode: TEAM_MODES.INDIVIDUAL_8,
+        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_8),
+        allPlayers: createMockPlayers(8)
+      };
+      
+      render(<FormationRenderer {...props} />);
+      
+      // Verify props are passed through
+      expect(screen.getByTestId('individual-formation-players')).toHaveTextContent('8 players');
+      expect(screen.getByTestId('individual-formation-goalie')).toHaveTextContent('8');
     });
 
     it('should handle empty players array for IndividualFormation', () => {

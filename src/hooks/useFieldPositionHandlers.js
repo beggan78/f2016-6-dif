@@ -37,6 +37,9 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamMode) => {
   const substitute_2Events = useLongPressWithScrollDetection(
     fieldPositionCallbacks.substitute_2Callback || (() => {})
   );
+  const substitute_3Events = useLongPressWithScrollDetection(
+    fieldPositionCallbacks.substitute_3Callback || (() => {})
+  );
 
   if (isPairsMode) {
     return {
@@ -51,7 +54,8 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamMode) => {
       leftAttackerEvents,
       rightAttackerEvents,
       substitute_1Events,
-      substitute_2Events
+      substitute_2Events,
+      substitute_3Events
     };
   }
 };

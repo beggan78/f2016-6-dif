@@ -10,7 +10,9 @@ import {
   calculateUndo,
   calculatePlayerToggleInactive,
   calculateSubstituteSwap,
-  calculateNextSubstitutionTarget
+  calculateSubstituteReorder,
+  calculateNextSubstitutionTarget,
+  calculatePairPositionSwap
 } from '../gameStateLogic';
 
 import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../../constants/playerConstants';
@@ -423,6 +425,282 @@ describe('gameStateLogic', () => {
       expect(result.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(true);
       expect(result.allPlayers.find(p => p.id === '6').stats.isInactive).toBe(true);
     });
+
+    describe('cascading inactivation behavior', () => {
+      test('should move inactive player to bottom and shift others up - 7 player mode', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+        // Set up: p1=substitute_1, p2=substitute_2
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        
+        // Update player position keys to match formation
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' } };
+          return p;
+        });
+        
+        // Inactivate substitute_1 (p1)
+        const result = calculatePlayerToggleInactive(gameState, '5');
+        
+        // Expected: p2 moves to substitute_1, p1 moves to substitute_2 (bottom)
+        expect(result.formation.substitute_1).toBe('6');
+        expect(result.formation.substitute_2).toBe('5');
+        expect(result.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(true);
+        expect(result.allPlayers.find(p => p.id === '5').stats.currentPairKey).toBe('substitute_2');
+        expect(result.allPlayers.find(p => p.id === '6').stats.currentPairKey).toBe('substitute_1');
+      });
+
+      test('should handle 8-player mode with 3 substitutes', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_8);
+        // Set up: p1=sub_1, p2=sub_2, p3=sub_3
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        gameState.formation.substitute_3 = '7';
+        
+        // Update player position keys to match formation
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' } };
+          if (p.id === '7') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_3' } };
+          return p;
+        });
+        
+        // Inactivate substitute_2 (middle player)
+        const result = calculatePlayerToggleInactive(gameState, '6');
+        
+        // Expected: p1 stays, p3 moves to sub_2, p2 moves to sub_3 (bottom)
+        expect(result.formation.substitute_1).toBe('5');
+        expect(result.formation.substitute_2).toBe('7');
+        expect(result.formation.substitute_3).toBe('6');
+        expect(result.allPlayers.find(p => p.id === '6').stats.isInactive).toBe(true);
+        expect(result.allPlayers.find(p => p.id === '6').stats.currentPairKey).toBe('substitute_3');
+        expect(result.allPlayers.find(p => p.id === '7').stats.currentPairKey).toBe('substitute_2');
+      });
+
+      test('should handle inactivating bottom player (no cascading needed)', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+        // Set up: p1=substitute_1, p2=substitute_2
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        
+        // Update player position keys to match formation
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' } };
+          return p;
+        });
+        
+        // Inactivate substitute_2 (bottom player)
+        const result = calculatePlayerToggleInactive(gameState, '6');
+        
+        // Expected: Formation stays the same, only inactive flag changes
+        expect(result.formation.substitute_1).toBe('5');
+        expect(result.formation.substitute_2).toBe('6');
+        expect(result.allPlayers.find(p => p.id === '6').stats.isInactive).toBe(true);
+        expect(result.allPlayers.find(p => p.id === '6').stats.currentPairKey).toBe('substitute_2');
+      });
+
+      test('should handle 8-player mode inactivating first substitute', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_8);
+        // Set up: p1=sub_1, p2=sub_2, p3=sub_3
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        gameState.formation.substitute_3 = '7';
+        
+        // Update player position keys to match formation
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' } };
+          if (p.id === '7') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_3' } };
+          return p;
+        });
+        
+        // Inactivate substitute_1 (first player)
+        const result = calculatePlayerToggleInactive(gameState, '5');
+        
+        // Expected: p2 moves to sub_1, p3 moves to sub_2, p1 moves to sub_3 (bottom)
+        expect(result.formation.substitute_1).toBe('6');
+        expect(result.formation.substitute_2).toBe('7');
+        expect(result.formation.substitute_3).toBe('5');
+        expect(result.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(true);
+        expect(result.allPlayers.find(p => p.id === '5').stats.currentPairKey).toBe('substitute_3');
+        expect(result.allPlayers.find(p => p.id === '6').stats.currentPairKey).toBe('substitute_1');
+        expect(result.allPlayers.find(p => p.id === '7').stats.currentPairKey).toBe('substitute_2');
+      });
+
+      test('should work correctly in 6-player mode', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
+        // Set up: p1=substitute_1 (only one substitute in 6-player mode)
+        gameState.formation.substitute_1 = '5';
+        
+        // Update player position keys to match formation
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          return p;
+        });
+        
+        // Inactivate substitute_1 (only substitute)
+        const result = calculatePlayerToggleInactive(gameState, '5');
+        
+        // Expected: Formation stays the same (already at bottom), only inactive flag changes
+        expect(result.formation.substitute_1).toBe('5');
+        expect(result.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(true);
+        expect(result.allPlayers.find(p => p.id === '5').stats.currentPairKey).toBe('substitute_1');
+      });
+    });
+
+    describe('reactivation cascading behavior', () => {
+      test('should make reactivated player substitute_1 and cascade others down (7-player mode)', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+        
+        // Set up: p5=sub_1, p6=sub_2 (inactive)
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        
+        // Update player states
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2', isInactive: true } };
+          return p;
+        });
+        
+        // Reactivate p6
+        const result = calculatePlayerToggleInactive(gameState, '6');
+        
+        // Expected: p6 → substitute_1, p5 → substitute_2
+        expect(result.formation.substitute_1).toBe('6');
+        expect(result.formation.substitute_2).toBe('5');
+        
+        // Verify player position tracking
+        expect(result.allPlayers.find(p => p.id === '6').stats.currentPairKey).toBe('substitute_1');
+        expect(result.allPlayers.find(p => p.id === '6').stats.isInactive).toBe(false);
+        expect(result.allPlayers.find(p => p.id === '5').stats.currentPairKey).toBe('substitute_2');
+        
+        // Verify next tracking updated - should be first player in rotation queue, not the reactivated player
+        expect(result.nextPlayerIdToSubOut).toBe('1'); // First field player in queue, not reactivated player
+      });
+
+      test('should handle 8-player mode reactivation cascading', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_8);
+        
+        // Create 8 players for 8-player mode
+        const players = createMockPlayers(8, TEAM_MODES.INDIVIDUAL_8);
+        gameState.allPlayers = players;
+        
+        // Set up: p5=sub_1, p6=sub_2, p7=sub_3 (inactive)
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        gameState.formation.substitute_3 = '7';
+        
+        // Update player states  
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' } };
+          if (p.id === '7') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_3', isInactive: true } };
+          return p;
+        });
+        
+        // Reactivate p7 
+        const result = calculatePlayerToggleInactive(gameState, '7');
+        
+        // Expected: p7 → substitute_1, p5 → substitute_2, p6 → substitute_3
+        expect(result.formation.substitute_1).toBe('7');
+        expect(result.formation.substitute_2).toBe('5');
+        expect(result.formation.substitute_3).toBe('6');
+        
+        // Verify player position tracking
+        expect(result.allPlayers.find(p => p.id === '7').stats.currentPairKey).toBe('substitute_1');
+        expect(result.allPlayers.find(p => p.id === '7').stats.isInactive).toBe(false);
+        expect(result.allPlayers.find(p => p.id === '5').stats.currentPairKey).toBe('substitute_2');
+        expect(result.allPlayers.find(p => p.id === '6').stats.currentPairKey).toBe('substitute_3');
+        
+        // Verify next tracking updated - should be first player in rotation queue, not the reactivated player  
+        expect(result.nextPlayerIdToSubOut).toBe('1'); // First field player in queue, not reactivated player
+      });
+
+      test('should handle reactivation with multiple inactive players', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_8);
+        
+        // Create 8 players for 8-player mode
+        const players = createMockPlayers(8, TEAM_MODES.INDIVIDUAL_8);
+        gameState.allPlayers = players;
+        
+        // Set up: p5=sub_1, p6=sub_2 (inactive), p7=sub_3 (inactive)  
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        gameState.formation.substitute_3 = '7';
+        
+        // Update player states
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2', isInactive: true } };
+          if (p.id === '7') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_3', isInactive: true } };
+          return p;
+        });
+        
+        // Reactivate p7 (from substitute_3)
+        const result = calculatePlayerToggleInactive(gameState, '7');
+        
+        // Expected: p7 → substitute_1, p5 → substitute_2, p6 remains inactive at substitute_3
+        expect(result.formation.substitute_1).toBe('7');
+        expect(result.formation.substitute_2).toBe('5');
+        expect(result.formation.substitute_3).toBe('6'); // inactive player stays
+        
+        // Verify player states
+        expect(result.allPlayers.find(p => p.id === '7').stats.isInactive).toBe(false);
+        expect(result.allPlayers.find(p => p.id === '6').stats.isInactive).toBe(true);
+        expect(result.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(false);
+      });
+
+      test('should work correctly in 6-player mode', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
+        
+        // Set up: p5=substitute_1 (inactive)
+        gameState.formation.substitute_1 = '5';
+        
+        // Update player state
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '5') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1', isInactive: true } };
+          return p;
+        });
+        
+        // Reactivate p5
+        const result = calculatePlayerToggleInactive(gameState, '5');
+        
+        // Expected: p5 remains substitute_1 but becomes active
+        expect(result.formation.substitute_1).toBe('5');
+        expect(result.allPlayers.find(p => p.id === '5').stats.currentPairKey).toBe('substitute_1');
+        expect(result.allPlayers.find(p => p.id === '5').stats.isInactive).toBe(false);
+        
+        // Verify next tracking updated - should be first player in rotation queue, not the reactivated player
+        expect(result.nextPlayerIdToSubOut).toBe('1'); // First field player in queue, not reactivated player
+      });
+
+      test('should update rotation queue correctly', () => {
+        const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+        
+        // Set up formation and inactive player
+        gameState.formation.substitute_1 = '5';
+        gameState.formation.substitute_2 = '6';
+        gameState.rotationQueue = ['1', '2', '3', '4', '5']; // p6 is inactive, not in queue
+        
+        gameState.allPlayers = gameState.allPlayers.map(p => {
+          if (p.id === '6') return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2', isInactive: true } };
+          return p;
+        });
+        
+        // Reactivate p6
+        const result = calculatePlayerToggleInactive(gameState, '6');
+        
+        // p6 should be at first substitute position (position 4 in queue)
+        // Positions 0-3 are field players, position 4+ are substitutes
+        expect(result.rotationQueue[4]).toBe('6');
+        expect(result.rotationQueue).toContain('6');
+        // Verify p6 is not at position 0 (would be "next to come off" instead of "next to go on")
+        expect(result.rotationQueue[0]).not.toBe('6');
+      });
+    });
   });
 
   describe('calculateSubstituteSwap', () => {
@@ -467,6 +745,83 @@ describe('gameStateLogic', () => {
     });
   });
 
+  describe('calculateSubstituteReorder', () => {
+    test('should only work in modes with multiple substitute support', () => {
+      const gameState6 = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
+      const result6 = calculateSubstituteReorder(gameState6, 'substitute_1');
+      expect(result6).toBe(gameState6);
+      
+      const gameStatePairs = createMockGameState(TEAM_MODES.PAIRS_7);
+      const resultPairs = calculateSubstituteReorder(gameStatePairs, 'substitute_1');
+      expect(resultPairs).toBe(gameStatePairs);
+    });
+
+    test('should move target player to substitute_1 and shift others down', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      // Set up a formation with substitute_1 = '5', substitute_2 = '6'
+      gameState.formation.substitute_1 = '5';
+      gameState.formation.substitute_2 = '6';
+      
+      const result = calculateSubstituteReorder(gameState, 'substitute_2');
+      
+      // Target player (6) should move to substitute_1
+      expect(result.formation.substitute_1).toBe('6');
+      // Previous substitute_1 player (5) should move to substitute_2
+      expect(result.formation.substitute_2).toBe('5');
+      // Should highlight both affected players
+      expect(result.playersToHighlight).toEqual(['6', '5']);
+    });
+
+    test('should handle 8-player mode with substitute_3', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_8);
+      // Set up a formation with substitute_1 = '5', substitute_2 = '6', substitute_3 = '7'
+      gameState.formation.substitute_1 = '5';
+      gameState.formation.substitute_2 = '6';
+      gameState.formation.substitute_3 = '7';
+      
+      const result = calculateSubstituteReorder(gameState, 'substitute_3');
+      
+      // Target player (7) should move to substitute_1
+      expect(result.formation.substitute_1).toBe('7');
+      // Previous substitute_1 player (5) should move to substitute_2
+      expect(result.formation.substitute_2).toBe('5');
+      // Previous substitute_2 player (6) should move to substitute_3
+      expect(result.formation.substitute_3).toBe('6');
+      // Should highlight all affected players
+      expect(result.playersToHighlight).toEqual(['7', '5', '6']);
+    });
+
+    test('should update player position keys correctly', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      gameState.formation.substitute_1 = '5';
+      gameState.formation.substitute_2 = '6';
+      
+      const result = calculateSubstituteReorder(gameState, 'substitute_2');
+      
+      const player5 = result.allPlayers.find(p => p.id === '5');
+      const player6 = result.allPlayers.find(p => p.id === '6');
+      
+      expect(player5.stats.currentPairKey).toBe('substitute_2');
+      expect(player6.stats.currentPairKey).toBe('substitute_1');
+    });
+
+    test('should not allow reordering substitute_1', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      
+      const result = calculateSubstituteReorder(gameState, 'substitute_1');
+      
+      expect(result).toBe(gameState);
+    });
+
+    test('should return unchanged state for invalid inputs', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      
+      const result = calculateSubstituteReorder(gameState, 'invalid_position');
+      
+      expect(result).toBe(gameState);
+    });
+  });
+
   describe('calculateNextSubstitutionTarget', () => {
     test('should update next pair target for pairs mode', () => {
       const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
@@ -490,6 +845,80 @@ describe('gameStateLogic', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
       const result = calculateNextSubstitutionTarget(gameState, 'target', 'unknown');
+      
+      expect(result).toBe(gameState);
+    });
+  });
+
+  describe('calculatePairPositionSwap', () => {
+    test('should only work in PAIRS_7 mode', () => {
+      const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+      
+      const result = calculatePairPositionSwap(gameState, 'leftPair');
+      
+      expect(result).toBe(gameState);
+    });
+
+    test('should swap defender and attacker in field pair (leftPair)', () => {
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
+      gameState.formation.leftPair = { defender: '1', attacker: '2' };
+      gameState.allPlayers = [
+        { id: '1', name: 'Player1', stats: { currentRole: PLAYER_ROLES.DEFENDER, currentPairKey: 'leftPair' } },
+        { id: '2', name: 'Player2', stats: { currentRole: PLAYER_ROLES.ATTACKER, currentPairKey: 'leftPair' } }
+      ];
+
+      const result = calculatePairPositionSwap(gameState, 'leftPair');
+
+      expect(result.formation.leftPair).toEqual({ defender: '2', attacker: '1' });
+      expect(result.allPlayers[0].stats.currentRole).toBe(PLAYER_ROLES.ATTACKER); // '1' becomes attacker
+      expect(result.allPlayers[1].stats.currentRole).toBe(PLAYER_ROLES.DEFENDER); // '2' becomes defender
+      expect(result.playersToHighlight).toEqual(['1', '2']);
+    });
+
+    test('should swap defender and attacker in field pair (rightPair)', () => {
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
+      gameState.formation.rightPair = { defender: '3', attacker: '4' };
+      gameState.allPlayers = [
+        { id: '3', name: 'Player3', stats: { currentRole: PLAYER_ROLES.DEFENDER, currentPairKey: 'rightPair' } },
+        { id: '4', name: 'Player4', stats: { currentRole: PLAYER_ROLES.ATTACKER, currentPairKey: 'rightPair' } }
+      ];
+
+      const result = calculatePairPositionSwap(gameState, 'rightPair');
+
+      expect(result.formation.rightPair).toEqual({ defender: '4', attacker: '3' });
+      expect(result.allPlayers[0].stats.currentRole).toBe(PLAYER_ROLES.ATTACKER); // '3' becomes attacker
+      expect(result.allPlayers[1].stats.currentRole).toBe(PLAYER_ROLES.DEFENDER); // '4' becomes defender
+    });
+
+    test('should swap positions in substitute pair but keep both as substitutes', () => {
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
+      gameState.formation.subPair = { defender: '5', attacker: '6' };
+      gameState.allPlayers = [
+        { id: '5', name: 'Player5', stats: { currentRole: PLAYER_ROLES.SUBSTITUTE, currentPairKey: 'subPair' } },
+        { id: '6', name: 'Player6', stats: { currentRole: PLAYER_ROLES.SUBSTITUTE, currentPairKey: 'subPair' } }
+      ];
+
+      const result = calculatePairPositionSwap(gameState, 'subPair');
+
+      expect(result.formation.subPair).toEqual({ defender: '6', attacker: '5' });
+      // Both should remain as substitutes per the recent fix
+      expect(result.allPlayers[0].stats.currentRole).toBe(PLAYER_ROLES.SUBSTITUTE); // '5' stays substitute
+      expect(result.allPlayers[1].stats.currentRole).toBe(PLAYER_ROLES.SUBSTITUTE); // '6' stays substitute
+    });
+
+    test('should return unchanged state for invalid pair key', () => {
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
+      
+      const result = calculatePairPositionSwap(gameState, 'invalidPair');
+      
+      expect(result).toBe(gameState);
+    });
+
+    test('should return unchanged state for incomplete pair', () => {
+      const gameState = createMockGameState(TEAM_MODES.PAIRS_7);
+      gameState.formation.leftPair = { defender: '1', attacker: null }; // Missing attacker
+      
+      const result = calculatePairPositionSwap(gameState, 'leftPair');
       
       expect(result).toBe(gameState);
     });

@@ -442,17 +442,14 @@ export function GameScreen({
         onClose={scoreHandlers.handleCancelGoalScorer}
         onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
-        eligiblePlayers={sortPlayersByGoalScoringRelevance(
-          selectedSquadPlayers.filter(p => p.currentStatus !== 'inactive'),
-          formation,
-          teamMode
-        )}
+        eligiblePlayers={(() => {
+          const filteredPlayers = selectedSquadPlayers.filter(p => p.stats && !p.stats.isInactive);
+          return sortPlayersByGoalScoringRelevance(filteredPlayers);
+        })()}
         mode={modalHandlers.modals.goalScorer.mode}
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}
         team={modalHandlers.modals.goalScorer.team}
-        formation={formation}
-        teamMode={teamMode}
       />
     </div>
   );

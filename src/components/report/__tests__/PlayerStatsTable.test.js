@@ -11,6 +11,9 @@ const mockPlayers = [
     name: 'Alice',
     stats: {
       startedMatchAs: PLAYER_ROLES.GOALIE,
+      currentRole: 'Goalie',
+      currentStatus: 'goalie', 
+      currentPairKey: 'goalie',
       timeOnFieldSeconds: 300,
       timeAsAttackerSeconds: 0,
       timeAsDefenderSeconds: 0,
@@ -23,6 +26,9 @@ const mockPlayers = [
     name: 'Bob',
     stats: {
       startedMatchAs: PLAYER_ROLES.ON_FIELD,
+      currentRole: 'Attacker',
+      currentStatus: 'on_field',
+      currentPairKey: 'leftAttacker',
       timeOnFieldSeconds: 600,
       timeAsAttackerSeconds: 360,
       timeAsDefenderSeconds: 240,
@@ -35,6 +41,9 @@ const mockPlayers = [
     name: 'Charlie',
     stats: {
       startedMatchAs: PLAYER_ROLES.SUBSTITUTE,
+      currentRole: 'Defender',
+      currentStatus: 'on_field',
+      currentPairKey: 'leftDefender',
       timeOnFieldSeconds: 450,
       timeAsAttackerSeconds: 225,
       timeAsDefenderSeconds: 225,
@@ -836,12 +845,12 @@ describe('PlayerStatsTable', () => {
       };
 
       const individual6Players = [
-        { id: 'p1', name: 'GoaliePlayer', stats: { startedMatchAs: PLAYER_ROLES.GOALIE, timeOnFieldSeconds: 100, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 100, timeAsSubSeconds: 0 }},
-        { id: 'p2', name: 'LeftDefPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, timeOnFieldSeconds: 100, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 100, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
-        { id: 'p3', name: 'RightDefPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, timeOnFieldSeconds: 100, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 100, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
-        { id: 'p4', name: 'LeftAttPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, timeOnFieldSeconds: 100, timeAsAttackerSeconds: 100, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
-        { id: 'p5', name: 'RightAttPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, timeOnFieldSeconds: 100, timeAsAttackerSeconds: 100, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
-        { id: 'p6', name: 'SubPlayer', stats: { startedMatchAs: PLAYER_ROLES.SUBSTITUTE, timeOnFieldSeconds: 0, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 0, timeAsSubSeconds: 100 }}
+        { id: 'p1', name: 'GoaliePlayer', stats: { startedMatchAs: PLAYER_ROLES.GOALIE, currentRole: 'Goalie', currentStatus: 'goalie', currentPairKey: 'goalie', timeOnFieldSeconds: 100, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 100, timeAsSubSeconds: 0 }},
+        { id: 'p2', name: 'LeftDefPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, currentRole: 'Defender', currentStatus: 'on_field', currentPairKey: 'leftDefender', timeOnFieldSeconds: 100, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 100, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
+        { id: 'p3', name: 'RightDefPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, currentRole: 'Defender', currentStatus: 'on_field', currentPairKey: 'rightDefender', timeOnFieldSeconds: 100, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 100, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
+        { id: 'p4', name: 'LeftAttPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, currentRole: 'Attacker', currentStatus: 'on_field', currentPairKey: 'leftAttacker', timeOnFieldSeconds: 100, timeAsAttackerSeconds: 100, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
+        { id: 'p5', name: 'RightAttPlayer', stats: { startedMatchAs: PLAYER_ROLES.ON_FIELD, currentRole: 'Attacker', currentStatus: 'on_field', currentPairKey: 'rightAttacker', timeOnFieldSeconds: 100, timeAsAttackerSeconds: 100, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 0, timeAsSubSeconds: 0 }},
+        { id: 'p6', name: 'SubPlayer', stats: { startedMatchAs: PLAYER_ROLES.SUBSTITUTE, currentRole: 'Substitute', currentStatus: 'substitute', currentPairKey: 'substitute_1', timeOnFieldSeconds: 0, timeAsAttackerSeconds: 0, timeAsDefenderSeconds: 0, timeAsGoalieSeconds: 0, timeAsSubSeconds: 100 }}
       ];
 
       render(
@@ -881,6 +890,17 @@ describe('PlayerStatsTable', () => {
         stats: {
           startedMatchAs: i === 0 ? PLAYER_ROLES.GOALIE : 
                           i <= 4 ? PLAYER_ROLES.ON_FIELD : PLAYER_ROLES.SUBSTITUTE,
+          currentRole: i === 0 ? 'Goalie' :
+                       i === 1 || i === 2 ? 'Defender' :
+                       i === 3 || i === 4 ? 'Attacker' : 'Substitute',
+          currentStatus: i === 0 ? 'goalie' :
+                         i <= 4 ? 'on_field' : 'substitute',
+          currentPairKey: i === 0 ? 'goalie' :
+                          i === 1 ? 'leftDefender' :
+                          i === 2 ? 'rightDefender' :
+                          i === 3 ? 'leftAttacker' :
+                          i === 4 ? 'rightAttacker' :
+                          i === 5 ? 'substitute_1' : 'substitute_2',
           timeOnFieldSeconds: i <= 4 ? 100 : 50,
           timeAsAttackerSeconds: i === 3 || i === 4 ? 100 : 0,
           timeAsDefenderSeconds: i === 1 || i === 2 ? 100 : 0,
@@ -913,7 +933,7 @@ describe('PlayerStatsTable', () => {
       expect(roleTexts.filter(text => text === 'Sub')).toHaveLength(2);
     });
 
-    it('falls back to startedMatchAs when formation data is incomplete', () => {
+    it('uses player stats roles regardless of formation completeness', () => {
       const incompleteFormation = {
         goalie: 'p1'
         // Missing other position data
@@ -929,16 +949,16 @@ describe('PlayerStatsTable', () => {
         />
       );
 
-      // Should show goalie from formation, others fall back to startedMatchAs logic
+      // Should show roles from player stats (not formation dependent anymore)
       const tableCells = document.querySelectorAll('tbody td');
       const roleTexts = Array.from(tableCells).map(cell => cell.textContent);
       
-      expect(roleTexts).toContain('Goalie'); // p1 from formation
-      expect(roleTexts).toContain('Sub'); // p2 falls back to 'Sub' via getPlayerCurrentRole
-      expect(roleTexts).toContain('Sub'); // p3 also becomes 'Sub'
+      expect(roleTexts).toContain('Goalie'); // p1 has currentRole: 'Goalie'
+      expect(roleTexts).toContain('Attacker'); // p2 has currentRole: 'Attacker'
+      expect(roleTexts).toContain('Defender'); // p3 has currentRole: 'Defender'
     });
 
-    it('handles completely empty formation gracefully', () => {
+    it('uses player stats roles even with empty formation', () => {
       render(
         <PlayerStatsTable
           players={mockPlayers}
@@ -949,13 +969,14 @@ describe('PlayerStatsTable', () => {
         />
       );
 
-      // With empty formation, getPlayerCurrentRole returns 'SUBSTITUTE' for all players
+      // With empty formation, roles still come from player stats (formation independent)
       const tableCells = document.querySelectorAll('tbody td');
       const roleTexts = Array.from(tableCells).map(cell => cell.textContent);
       
-      // All players should show 'Sub' since getPlayerCurrentRole returns 'SUBSTITUTE' 
-      // when formation is empty
-      expect(roleTexts.filter(text => text === 'Sub')).toHaveLength(3);
+      // Players should show their actual roles from stats, not affected by empty formation
+      expect(roleTexts).toContain('Goalie'); // p1 has currentRole: 'Goalie'
+      expect(roleTexts).toContain('Attacker'); // p2 has currentRole: 'Attacker'  
+      expect(roleTexts).toContain('Defender'); // p3 has currentRole: 'Defender'
     });
 
     it('handles null/undefined formation data', () => {
@@ -1204,8 +1225,8 @@ describe('PlayerStatsTable', () => {
 
   describe('Integration with Player Utilities', () => {
     it('integrates correctly with role point utilities across team modes', () => {
-      // Test with all three team modes to ensure utility integration works
-      const testTeamModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
+      // Test with all team modes to ensure utility integration works
+      const testTeamModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
       
       testTeamModes.forEach(teamMode => {
         const { unmount } = render(

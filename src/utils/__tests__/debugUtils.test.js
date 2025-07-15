@@ -137,6 +137,18 @@ describe('debugUtils', () => {
       expect(formation).toHaveProperty('substitute_2');
     });
 
+    it('should create INDIVIDUAL_8 formation correctly', () => {
+      const formation = randomizeFormationPositions(mockPlayers, 'individual_8');
+      
+      expect(formation).toHaveProperty('leftDefender');
+      expect(formation).toHaveProperty('rightDefender');
+      expect(formation).toHaveProperty('leftAttacker');
+      expect(formation).toHaveProperty('rightAttacker');
+      expect(formation).toHaveProperty('substitute_1');
+      expect(formation).toHaveProperty('substitute_2');
+      expect(formation).toHaveProperty('substitute_3');
+    });
+
     it('should assign unique players in formation', () => {
       const formation = randomizeFormationPositions(mockPlayers, 'pairs_7');
       

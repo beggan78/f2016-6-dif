@@ -58,7 +58,7 @@ export function PlayerStatsTable({
       className: 'text-center text-slate-300',
       render: (player) => {
         // First check current role based on formation
-        const currentRole = getPlayerCurrentRole(player.id, formation, teamMode);
+        const currentRole = getPlayerCurrentRole(player);
         if (currentRole === 'GOALIE') return 'Goalie';
         if (currentRole === 'ATTACKER') return 'Attacker';
         if (currentRole === 'DEFENDER') return 'Defender';
@@ -132,7 +132,7 @@ export function PlayerStatsTable({
         return goals > 0 ? goals : '--';
       }
     }
-  ], [formation, playerGoals, teamMode]);
+  ], [playerGoals]);
 
   // Sort players based on current sort settings
   const sortedPlayers = useMemo(() => {

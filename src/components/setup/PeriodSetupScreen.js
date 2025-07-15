@@ -31,6 +31,7 @@ export function PeriodSetupScreen({
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
   const isIndividual6Mode = teamMode === TEAM_MODES.INDIVIDUAL_6;
   const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
+  const isIndividual8Mode = teamMode === TEAM_MODES.INDIVIDUAL_8;
   
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -533,6 +534,67 @@ export function PeriodSetupScreen({
         </>
       )}
 
+      {formation.goalie && isIndividual8Mode && (
+        <>
+          <IndividualPositionCard
+            title="Left Defender"
+            position="leftDefender"
+            playerId={formation.leftDefender}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+          <IndividualPositionCard
+            title="Right Defender"
+            position="rightDefender"
+            playerId={formation.rightDefender}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+          <IndividualPositionCard
+            title="Left Attacker"
+            position="leftAttacker"
+            playerId={formation.leftAttacker}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+          <IndividualPositionCard
+            title="Right Attacker"
+            position="rightAttacker"
+            playerId={formation.rightAttacker}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+          <IndividualPositionCard
+            title="Substitute" // Next to substitute in
+            position="substitute_1"
+            playerId={formation.substitute_1}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+          <IndividualPositionCard
+            title="Substitute" // Second to substitute in
+            position="substitute_2"
+            playerId={formation.substitute_2}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+          <IndividualPositionCard
+            title="Substitute" // Third to substitute in
+            position="substitute_3"
+            playerId={formation.substitute_3}
+            onPlayerAssign={handleIndividual7PlayerAssignment}
+            getAvailableOptions={getAvailableForIndividualSelect}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+        </>
+      )}
+
       <Button onClick={handleStartGame} disabled={!isFormationComplete()} Icon={Play}>
         Start Period {currentPeriodNumber}
       </Button>
@@ -596,7 +658,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
   const availableOptions = getAvailableOptions(position);
 
   // Use same colors as GameScreen: sky for on-field, slate for substitutes
-  const isSubstitute = position === 'substitute_1' || position === 'substitute_2';
+  const isSubstitute = position === 'substitute_1' || position === 'substitute_2' || position === 'substitute_3';
   const bgColor = isSubstitute ? 'bg-slate-700' : 'bg-sky-700';
   const headerColor = isSubstitute ? 'text-slate-200' : 'text-sky-200';
 

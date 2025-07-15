@@ -341,7 +341,7 @@ describe('positionUtils', () => {
   describe('team mode consistency', () => {
     test('field positions + substitute positions should equal outfield positions', () => {
       // Test consistency across all team modes using configuration
-      const allTeamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.PAIRS_7];
+      const allTeamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.PAIRS_7];
       
       allTeamModes.forEach(teamMode => {
         const fieldPositions = getFieldPositions(teamMode);
@@ -363,7 +363,7 @@ describe('positionUtils', () => {
 
     test('all field positions should be identified as field positions', () => {
       // Test position classification consistency across all team modes
-      const allTeamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.PAIRS_7];
+      const allTeamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.PAIRS_7];
       
       allTeamModes.forEach(teamMode => {
         const fieldPositions = getFieldPositions(teamMode);
@@ -377,7 +377,7 @@ describe('positionUtils', () => {
 
     test('all substitute positions should be identified as substitute positions', () => {
       // Test substitute position classification consistency across all team modes
-      const allTeamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.PAIRS_7];
+      const allTeamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.PAIRS_7];
       
       allTeamModes.forEach(teamMode => {
         const substitutePositions = getSubstitutePositions(teamMode);

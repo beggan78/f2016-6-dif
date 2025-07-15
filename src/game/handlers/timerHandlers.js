@@ -1,5 +1,6 @@
 import { handlePauseResumeTime } from '../time/stintManager';
 import { logEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
+import { PLAYER_STATUS } from '../../constants/playerConstants';
 
 export const createTimerHandlers = (
   selectedSquadPlayers,
@@ -33,7 +34,7 @@ export const createTimerHandlers = (
         periodNumber: gameState.currentPeriodNumber || 1,
         subTimerSeconds: gameState.subTimerSeconds || 0,
         matchTimerSeconds: gameState.matchTimerSeconds || 0,
-        activePlayerCount: selectedSquadPlayers.filter(p => p.currentStatus === 'on').length,
+        activePlayerCount: selectedSquadPlayers.filter(p => p.stats.currentStatus === PLAYER_STATUS.ON_FIELD).length,
         pauseReason: 'user_initiated'
       });
       
@@ -57,7 +58,7 @@ export const createTimerHandlers = (
         periodNumber: gameState.currentPeriodNumber || 1,
         subTimerSeconds: gameState.subTimerSeconds || 0,
         matchTimerSeconds: gameState.matchTimerSeconds || 0,
-        activePlayerCount: selectedSquadPlayers.filter(p => p.currentStatus === 'on').length,
+        activePlayerCount: selectedSquadPlayers.filter(p => p.stats.currentStatus === PLAYER_STATUS.ON_FIELD).length,
         resumeReason: 'user_initiated'
       });
       

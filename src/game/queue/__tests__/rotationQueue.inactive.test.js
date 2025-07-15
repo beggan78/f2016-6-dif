@@ -64,16 +64,17 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     expect(queue.getNextActivePlayer(5)).toEqual(['1', '5']);
   });
 
-  test('reactivating a player puts them at end of queue', () => {
+  test('reactivating a player puts them at first substitute position (next to go in)', () => {
     // Reactivate player '2'
     queue.reactivatePlayer('2');
     
-    // They should be at end of active queue
+    // They should be at first substitute position (position 3 since queue only has 3 players)
+    // Current queue: ['1', '3', '5'] -> ['1', '3', '5', '2'] 
     expect(queue.toArray()).toEqual(['1', '3', '5', '2']);
     // And removed from inactive list
     expect(queue.getInactivePlayers()).toEqual(['4']);
     
-    // Next to be substituted should still be the first player
+    // Next to be substituted should still be first field player  
     expect(queue.getNextActivePlayer()).toBe('1');
   });
 
@@ -89,12 +90,12 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     queue.rotatePlayer('3');
     expect(queue.toArray()).toEqual(['5', '3']);
     
-    // Reactivate player '4' - should go to end
+    // Reactivate player '4' - should go to first substitute position (position 2 in this case)
     queue.reactivatePlayer('4');
     expect(queue.toArray()).toEqual(['5', '3', '4']);
     expect(queue.getInactivePlayers()).toEqual(['2', '1']);
     
-    // Next player should be '5' (the first in queue)
+    // Next player should be '5' (first field player)
     expect(queue.getNextActivePlayer()).toBe('5');
     expect(queue.getNextActivePlayer(3)).toEqual(['5', '3', '4']);
   });
@@ -131,8 +132,8 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     expect(queue.getInactivePlayers()).toContain('2'); // Original unchanged
   });
 
-  test('bug fix: reactivated player should not become next to substitute out', () => {
-    // Recreate the exact bug scenario from the issue report
+  test('reactivated player becomes next to go in (substitute_1)', () => {
+    // Test new behavior: reactivated players become next to go in
     // Initial setup with 7 players (typical 7-player individual mode)
     const players = ['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury'];
     const getPlayerById = (id) => ({ id, name: id, stats: { isInactive: false } });
@@ -142,38 +143,38 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     
     // Initial state: [FieldA, FieldB, FieldC, FieldD, OtherSub, PlayerWithInjury]
     expect(bugTestQueue.toArray()).toEqual(['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury']);
-    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // Correct - field player
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // First player in queue
     
     // Step 1: Inactivate PlayerWithInjury
     bugTestQueue.deactivatePlayer('PlayerWithInjury');
     expect(bugTestQueue.toArray()).toEqual(['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub']);
     expect(bugTestQueue.getInactivePlayers()).toEqual(['PlayerWithInjury']);
-    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // Still correct
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // Still first
     
-    // Step 2: Reactivate PlayerWithInjury (THE FIX)
+    // Step 2: Reactivate PlayerWithInjury - they become next to go in (at first substitute position)
     bugTestQueue.reactivatePlayer('PlayerWithInjury');
-    expect(bugTestQueue.toArray()).toEqual(['FieldA', 'FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury']);
+    expect(bugTestQueue.toArray()).toEqual(['FieldA', 'FieldB', 'FieldC', 'FieldD', 'PlayerWithInjury', 'OtherSub']);
     expect(bugTestQueue.getInactivePlayers()).toEqual([]);
     
-    // CRITICAL: Next player should still be FieldA, NOT PlayerWithInjury
-    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // ✅ Fixed - field player, not substitute
+    // NEW BEHAVIOR: Reactivated player is at first substitute position (position 4)
+    expect(bugTestQueue.getNextActivePlayer()).toBe('FieldA'); // ✅ Fixed - first field player remains first
     
-    // Step 4: Simulate first substitution (FieldA comes off)
+    // Step 4: Simulate first substitution (FieldA comes off from field)
     bugTestQueue.rotatePlayer('FieldA'); // FieldA goes to end
-    expect(bugTestQueue.toArray()).toEqual(['FieldB', 'FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury', 'FieldA']);
+    expect(bugTestQueue.toArray()).toEqual(['FieldB', 'FieldC', 'FieldD', 'PlayerWithInjury', 'OtherSub', 'FieldA']);
     expect(bugTestQueue.getNextActivePlayer()).toBe('FieldB'); // ✅ Correct - next field player
     
     // Step 5: Simulate second substitution (FieldB comes off)
     bugTestQueue.rotatePlayer('FieldB'); // FieldB goes to end  
-    expect(bugTestQueue.toArray()).toEqual(['FieldC', 'FieldD', 'OtherSub', 'PlayerWithInjury', 'FieldA', 'FieldB']);
+    expect(bugTestQueue.toArray()).toEqual(['FieldC', 'FieldD', 'PlayerWithInjury', 'OtherSub', 'FieldA', 'FieldB']);
     expect(bugTestQueue.getNextActivePlayer()).toBe('FieldC'); // ✅ Correct - next field player
     
     // Verify PlayerWithInjury is NOT at the front of the queue
     expect(bugTestQueue.getNextActivePlayer()).not.toBe('PlayerWithInjury');
   });
 
-  test('bug fix: reactivated player goes to end, preserving field player priority', () => {
-    // Test that field players always have priority over substitute players
+  test('reactivated player becomes next to go in, gaining priority', () => {
+    // Test new behavior: reactivated players become next to go in
     const players = ['Field1', 'Field2', 'Sub1', 'Sub2'];
     const getPlayerById = (id) => ({ id, name: id, stats: { isInactive: false } });
     
@@ -184,11 +185,11 @@ describe('RotationQueue - Inactive Player Bug Prevention', () => {
     priorityTestQueue.deactivatePlayer('Sub2');
     expect(priorityTestQueue.toArray()).toEqual(['Field1', 'Field2', 'Sub1']);
     
-    // Reactivate Sub2 - should go to END, not start
+    // Reactivate Sub2 - should go to first substitute position (position 3 in this case)
     priorityTestQueue.reactivatePlayer('Sub2');
     expect(priorityTestQueue.toArray()).toEqual(['Field1', 'Field2', 'Sub1', 'Sub2']);
     
-    // Field players should still have priority for substitution
+    // Field players should still come first in rotation
     expect(priorityTestQueue.getNextActivePlayer()).toBe('Field1');
     expect(priorityTestQueue.getNextActivePlayer(2)).toEqual(['Field1', 'Field2']);
   });

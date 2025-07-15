@@ -1,6 +1,6 @@
 /**
  * Player Sorting Utils Tests
- * Tests relevance-based sorting for goal scorer attribution
+ * Tests the new architecture that uses player stats instead of formation lookups
  */
 
 import {
@@ -15,339 +15,305 @@ import {
 import { TEAM_MODES } from '../../constants/playerConstants';
 
 describe('playerSortingUtils', () => {
-  // Test data
+  // Test data - Players with stats representing their current roles
+  const mockAttackerAlice = { 
+    id: 'p1', 
+    name: 'Alice',
+    stats: {
+      currentRole: 'Attacker',
+      currentStatus: 'on_field',
+      currentPairKey: 'leftAttacker'
+    }
+  };
+  
+  const mockAttackerBob = { 
+    id: 'p2', 
+    name: 'Bob',
+    stats: {
+      currentRole: 'Attacker',
+      currentStatus: 'on_field',
+      currentPairKey: 'rightAttacker'
+    }
+  };
+  
+  const mockDefenderCharlie = { 
+    id: 'p3', 
+    name: 'Charlie',
+    stats: {
+      currentRole: 'Defender',
+      currentStatus: 'on_field',
+      currentPairKey: 'leftDefender'
+    }
+  };
+  
+  const mockDefenderDiana = { 
+    id: 'p4', 
+    name: 'Diana',
+    stats: {
+      currentRole: 'Defender',
+      currentStatus: 'on_field',
+      currentPairKey: 'rightDefender'
+    }
+  };
+  
+  const mockGoalieEve = { 
+    id: 'p5', 
+    name: 'Eve',
+    stats: {
+      currentRole: 'Goalie',
+      currentStatus: 'goalie',
+      currentPairKey: 'goalie'
+    }
+  };
+  
+  const mockSubstituteFrank = { 
+    id: 'p6', 
+    name: 'Frank',
+    stats: {
+      currentRole: 'Substitute',
+      currentStatus: 'substitute',
+      currentPairKey: 'substitute_1'
+    }
+  };
+  
+  const mockSubstituteGrace = { 
+    id: 'p7', 
+    name: 'Grace',
+    stats: {
+      currentRole: 'Substitute',
+      currentStatus: 'substitute',
+      currentPairKey: 'substitute_2'
+    }
+  };
+
   const mockPlayers = [
-    { id: 'p1', name: 'Alice' },
-    { id: 'p2', name: 'Bob' },
-    { id: 'p3', name: 'Charlie' },
-    { id: 'p4', name: 'Diana' },
-    { id: 'p5', name: 'Eve' },
-    { id: 'p6', name: 'Frank' },
-    { id: 'p7', name: 'Grace' }
+    mockAttackerAlice,
+    mockAttackerBob, 
+    mockDefenderCharlie,
+    mockDefenderDiana,
+    mockGoalieEve,
+    mockSubstituteFrank,
+    mockSubstituteGrace
   ];
 
-  const mockFormationIndividual6 = {
-    leftAttacker: 'p1',
-    rightAttacker: 'p2',
-    leftDefender: 'p3',
-    rightDefender: 'p4',
-    goalie: 'p5',
-    substitute: 'p6'
-  };
-
-  const mockFormationIndividual7 = {
-    leftAttacker: 'p1',
-    rightAttacker: 'p2',
-    leftDefender: 'p3',
-    rightDefender: 'p4',
-    goalie: 'p5',
-    substitute_1: 'p6',
-    substitute_2: 'p7'
-  };
-
-  const mockFormationPairs7 = {
-    leftPair: {
-      attacker: 'p1',
-      defender: 'p3'
-    },
-    rightPair: {
-      attacker: 'p2',
-      defender: 'p4'
-    },
-    subPair: {
-      attacker: 'p6',
-      defender: 'p7'
-    },
-    goalie: 'p5'
-  };
-
   describe('getPlayerCurrentRole', () => {
-    test('should identify roles correctly across individual modes', () => {
-      // Test unified individual mode behavior - both modes should behave identically for same positions
-      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
-      const individualFormations = [mockFormationIndividual6, mockFormationIndividual7];
+    test('should get role from player stats data', () => {
+      expect(getPlayerCurrentRole(mockAttackerAlice)).toBe('ATTACKER');
+      expect(getPlayerCurrentRole(mockAttackerBob)).toBe('ATTACKER');
+      expect(getPlayerCurrentRole(mockDefenderCharlie)).toBe('DEFENDER');
+      expect(getPlayerCurrentRole(mockDefenderDiana)).toBe('DEFENDER');
+      expect(getPlayerCurrentRole(mockGoalieEve)).toBe('GOALIE');
+      expect(getPlayerCurrentRole(mockSubstituteFrank)).toBe('SUBSTITUTE');
+      expect(getPlayerCurrentRole(mockSubstituteGrace)).toBe('SUBSTITUTE');
+    });
+
+    test('should handle different role formats', () => {
+      const playerWithUpperCase = { 
+        stats: { currentRole: 'ATTACKER' }
+      };
+      const playerWithTitleCase = { 
+        stats: { currentRole: 'Attacker' }
+      };
       
-      individualModes.forEach((mode, index) => {
-        const formation = individualFormations[index];
-        
-        // Attackers
-        expect(getPlayerCurrentRole('p1', formation, mode)).toBe('ATTACKER');
-        expect(getPlayerCurrentRole('p2', formation, mode)).toBe('ATTACKER');
-        
-        // Defenders  
-        expect(getPlayerCurrentRole('p3', formation, mode)).toBe('DEFENDER');
-        expect(getPlayerCurrentRole('p4', formation, mode)).toBe('DEFENDER');
-        
-        // Goalie
-        expect(getPlayerCurrentRole('p5', formation, mode)).toBe('GOALIE');
-        
-        // Substitutes
-        expect(getPlayerCurrentRole('p6', formation, mode)).toBe('SUBSTITUTE');
-        if (mode === TEAM_MODES.INDIVIDUAL_7) {
-          expect(getPlayerCurrentRole('p7', formation, mode)).toBe('SUBSTITUTE');
-        }
-      });
-    });
-
-    test('should identify attackers in PAIRS_7 mode', () => {
-      expect(getPlayerCurrentRole('p1', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('ATTACKER');
-      expect(getPlayerCurrentRole('p2', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('ATTACKER');
-    });
-
-    test('should identify defenders in PAIRS_7 mode', () => {
-      expect(getPlayerCurrentRole('p3', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('DEFENDER');
-      expect(getPlayerCurrentRole('p4', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('DEFENDER');
-    });
-
-    test('should identify substitutes in PAIRS_7 mode (including subPair)', () => {
-      expect(getPlayerCurrentRole('p6', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('SUBSTITUTE');
-      expect(getPlayerCurrentRole('p7', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('SUBSTITUTE');
+      expect(getPlayerCurrentRole(playerWithUpperCase)).toBe('ATTACKER');
+      expect(getPlayerCurrentRole(playerWithTitleCase)).toBe('ATTACKER');
     });
 
     test('should handle null/undefined inputs', () => {
-      expect(getPlayerCurrentRole(null, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('SUBSTITUTE');
-      expect(getPlayerCurrentRole('p1', null, TEAM_MODES.INDIVIDUAL_6)).toBe('SUBSTITUTE');
-      expect(getPlayerCurrentRole('p1', mockFormationIndividual6, null)).toBe('SUBSTITUTE');
+      expect(getPlayerCurrentRole(null)).toBe('SUBSTITUTE');
+      expect(getPlayerCurrentRole({})).toBe('SUBSTITUTE');
+      expect(getPlayerCurrentRole({ stats: {} })).toBe('SUBSTITUTE');
+      expect(getPlayerCurrentRole({ stats: { currentRole: null } })).toBe('SUBSTITUTE');
     });
 
-    test('should handle unknown team mode', () => {
-      expect(getPlayerCurrentRole('p1', mockFormationIndividual6, 'UNKNOWN_MODE')).toBe('SUBSTITUTE');
-    });
-  });
-
-  describe('getCurrentAttackers', () => {
-    test('should get attackers consistently across individual modes', () => {
-      // Test that individual modes have consistent attacker extraction
-      const testCases = [
-        { mode: TEAM_MODES.INDIVIDUAL_6, formation: mockFormationIndividual6 },
-        { mode: TEAM_MODES.INDIVIDUAL_7, formation: mockFormationIndividual7 }
-      ];
-      
-      testCases.forEach(({ mode, formation }) => {
-        const attackers = getCurrentAttackers(formation, mode);
-        expect(attackers).toEqual(['p1', 'p2']);
-      });
-    });
-
-    test('should get attackers for PAIRS_7 mode', () => {
-      const attackers = getCurrentAttackers(mockFormationPairs7, TEAM_MODES.PAIRS_7);
-      expect(attackers).toEqual(['p1', 'p2']);
-    });
-
-    test('should handle missing formation', () => {
-      expect(getCurrentAttackers(null, TEAM_MODES.INDIVIDUAL_6)).toEqual([]);
-    });
-
-    test('should handle partial formation data', () => {
-      const partialFormation = { leftAttacker: 'p1' };
-      const attackers = getCurrentAttackers(partialFormation, TEAM_MODES.INDIVIDUAL_6);
-      expect(attackers).toEqual(['p1']);
-    });
-  });
-
-  describe('getCurrentDefenders', () => {
-    test('should get defenders consistently across individual modes', () => {
-      // Test that individual modes have consistent defender extraction
-      const testCases = [
-        { mode: TEAM_MODES.INDIVIDUAL_6, formation: mockFormationIndividual6 },
-        { mode: TEAM_MODES.INDIVIDUAL_7, formation: mockFormationIndividual7 }
-      ];
-      
-      testCases.forEach(({ mode, formation }) => {
-        const defenders = getCurrentDefenders(formation, mode);
-        expect(defenders).toEqual(['p3', 'p4']);
-      });
-    });
-
-    test('should get defenders for PAIRS_7 mode', () => {
-      const defenders = getCurrentDefenders(mockFormationPairs7, TEAM_MODES.PAIRS_7);
-      expect(defenders).toEqual(['p3', 'p4']);
-    });
-
-    test('should handle missing formation', () => {
-      expect(getCurrentDefenders(null, TEAM_MODES.INDIVIDUAL_6)).toEqual([]);
+    test('should default to substitute for unknown roles', () => {
+      const playerWithUnknownRole = { 
+        stats: { currentRole: 'UNKNOWN_ROLE' }
+      };
+      expect(getPlayerCurrentRole(playerWithUnknownRole)).toBe('SUBSTITUTE');
     });
   });
 
   describe('sortPlayersByGoalScoringRelevance', () => {
-    test('should sort players by relevance consistently across individual modes', () => {
-      // Test that individual modes produce consistent sorting logic
-      const testCases = [
-        {
-          mode: TEAM_MODES.INDIVIDUAL_6,
-          formation: mockFormationIndividual6,
-          players: mockPlayers.slice(0, 6), // p1-p6
-          expectedOrder: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'] // Attackers, Defenders, Goalie, Substitutes
-        },
-        {
-          mode: TEAM_MODES.INDIVIDUAL_7,
-          formation: mockFormationIndividual7,
-          players: mockPlayers,
-          expectedOrder: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'] // Attackers, Defenders, Goalie, Substitutes
-        }
+    test('should sort players by goal scoring priority', () => {
+      const shuffledPlayers = [
+        mockSubstituteFrank,    // Priority 4
+        mockGoalieEve,          // Priority 3
+        mockDefenderCharlie,    // Priority 2
+        mockAttackerAlice       // Priority 1 (highest)
       ];
+
+      const sorted = sortPlayersByGoalScoringRelevance(shuffledPlayers);
       
-      testCases.forEach(({ mode, formation, players, expectedOrder }) => {
-        const sorted = sortPlayersByGoalScoringRelevance(players, formation, mode);
-        const actualOrder = sorted.map(p => p.id);
-        expect(actualOrder).toEqual(expectedOrder);
+      expect(sorted.map(p => p.id)).toEqual(['p1', 'p3', 'p5', 'p6']);
+    });
+
+    test('should sort PAIRS_7 mode players correctly', () => {
+      const pairsPlayers = [
+        { id: 'p1', name: 'Alice', stats: { currentRole: 'Defender', currentPairKey: 'leftPair' }},
+        { id: 'p2', name: 'Bob', stats: { currentRole: 'Attacker', currentPairKey: 'leftPair' }},
+        { id: 'p3', name: 'Charlie', stats: { currentRole: 'Defender', currentPairKey: 'rightPair' }},
+        { id: 'p4', name: 'Diana', stats: { currentRole: 'Attacker', currentPairKey: 'rightPair' }},
+        { id: 'p5', name: 'Eve', stats: { currentRole: 'Substitute', currentPairKey: 'subPair' }},
+        { id: 'p6', name: 'Frank', stats: { currentRole: 'Substitute', currentPairKey: 'subPair' }},
+        { id: 'p7', name: 'Grace', stats: { currentRole: 'Goalie', currentPairKey: 'goalie' }}
+      ];
+
+      const sorted = sortPlayersByGoalScoringRelevance(pairsPlayers);
+      
+      // Should prioritize: Attackers first (p2, p4), then Defenders (p1, p3), then Goalie (p7), then Substitutes (p5, p6)
+      expect(sorted.map(p => p.id)).toEqual(['p2', 'p4', 'p1', 'p3', 'p7', 'p5', 'p6']);
+    });
+
+    test('should handle PAIRS_7 players with null currentRole (before game initialization)', () => {
+      const pairsPlayersWithNullRoles = [
+        { id: 'p1', name: 'Alice', stats: { currentRole: null, currentPairKey: 'leftPair' }},
+        { id: 'p2', name: 'Bob', stats: { currentRole: null, currentPairKey: 'leftPair' }},
+        { id: 'p3', name: 'Charlie', stats: { currentRole: null, currentPairKey: 'rightPair' }},
+        { id: 'p4', name: 'Diana', stats: { currentRole: null, currentPairKey: 'rightPair' }},
+        { id: 'p5', name: 'Eve', stats: { currentRole: null, currentPairKey: 'subPair' }},
+        { id: 'p6', name: 'Frank', stats: { currentRole: null, currentPairKey: 'subPair' }},
+        { id: 'p7', name: 'Grace', stats: { currentRole: null, currentPairKey: 'goalie' }}
+      ];
+
+      const sorted = sortPlayersByGoalScoringRelevance(pairsPlayersWithNullRoles);
+      
+      // All should be treated as substitutes and sorted alphabetically
+      expect(sorted.map(p => p.name)).toEqual(['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace']);
+      
+      // All should have SUBSTITUTE role priority  
+      sorted.forEach(player => {
+        expect(getPlayerCurrentRole(player)).toBe('SUBSTITUTE');
       });
     });
 
-    test('should sort players by relevance for PAIRS_7 mode', () => {
-      const sorted = sortPlayersByGoalScoringRelevance(mockPlayers, mockFormationPairs7, TEAM_MODES.PAIRS_7);
-      
-      // Should be: Attackers (p1, p2), Defenders (p3, p4), Goalie (p5), Substitutes (p6, p7)
-      const expectedOrder = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
-      const actualOrder = sorted.map(p => p.id);
-      
-      expect(actualOrder).toEqual(expectedOrder);
-    });
-
     test('should sort alphabetically within same role category', () => {
-      // Create players with different names to test alphabetical sorting
-      const playersForAlphabetTest = [
-        { id: 'p1', name: 'Zoe' },      // Attacker
-        { id: 'p2', name: 'Adam' },     // Attacker
-        { id: 'p3', name: 'Yvonne' },  // Defender
-        { id: 'p4', name: 'Ben' }       // Defender
+      const playersWithSameRoles = [
+        { id: 'p2', name: 'Zoe', stats: { currentRole: 'Attacker' }},
+        { id: 'p1', name: 'Alice', stats: { currentRole: 'Attacker' }},
+        { id: 'p4', name: 'Diana', stats: { currentRole: 'Defender' }},
+        { id: 'p3', name: 'Bob', stats: { currentRole: 'Defender' }}
       ];
 
-      const sorted = sortPlayersByGoalScoringRelevance(
-        playersForAlphabetTest, 
-        mockFormationIndividual6, 
-        TEAM_MODES.INDIVIDUAL_6
-      );
+      const sorted = sortPlayersByGoalScoringRelevance(playersWithSameRoles);
       
-      // Attackers should be alphabetical: Adam, Zoe
-      // Defenders should be alphabetical: Ben, Yvonne
-      const expectedOrder = ['p2', 'p1', 'p4', 'p3']; // Adam, Zoe, Ben, Yvonne
-      const actualOrder = sorted.map(p => p.id);
-      
-      expect(actualOrder).toEqual(expectedOrder);
+      // Should be attackers first (Alice, Zoe), then defenders (Bob, Diana)
+      expect(sorted.map(p => p.name)).toEqual(['Alice', 'Zoe', 'Bob', 'Diana']);
     });
 
     test('should handle empty player array', () => {
-      const sorted = sortPlayersByGoalScoringRelevance([], mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
-      expect(sorted).toEqual([]);
+      expect(sortPlayersByGoalScoringRelevance([])).toEqual([]);
     });
 
     test('should handle null/undefined inputs', () => {
-      expect(sortPlayersByGoalScoringRelevance(null, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBeNull();
-      expect(sortPlayersByGoalScoringRelevance(undefined, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBeUndefined();
+      expect(sortPlayersByGoalScoringRelevance(null)).toBeNull();
+      expect(sortPlayersByGoalScoringRelevance(undefined)).toBeUndefined();
     });
 
     test('should not mutate original array', () => {
-      const originalPlayers = [...mockPlayers];
-      const sorted = sortPlayersByGoalScoringRelevance(mockPlayers, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
+      const originalPlayers = [mockSubstituteFrank, mockAttackerAlice];
+      const originalOrder = originalPlayers.map(p => p.id);
       
-      expect(mockPlayers).toEqual(originalPlayers);
-      expect(sorted).not.toBe(mockPlayers);
+      sortPlayersByGoalScoringRelevance(originalPlayers);
+      
+      expect(originalPlayers.map(p => p.id)).toEqual(originalOrder);
     });
   });
 
   describe('getPlayerPositionDisplay', () => {
-    test('should return correct position names for individual modes', () => {
-      // Test that individual modes have consistent position display logic
-      const testCases = [
-        {
-          mode: TEAM_MODES.INDIVIDUAL_6,
-          formation: mockFormationIndividual6,
-          expectedPositions: {
-            'p1': 'Left Attacker',
-            'p2': 'Right Attacker', 
-            'p3': 'Left Defender',
-            'p4': 'Right Defender',
-            'p5': 'Goalie',
-            'p6': 'Substitute'
-          }
-        },
-        {
-          mode: TEAM_MODES.INDIVIDUAL_7,
-          formation: mockFormationIndividual7,
-          expectedPositions: {
-            'p1': 'Left Attacker',
-            'p2': 'Right Attacker',
-            'p3': 'Left Defender', 
-            'p4': 'Right Defender',
-            'p5': 'Goalie',
-            'p6': 'Substitute',
-            'p7': 'Substitute'
-          }
-        }
-      ];
-      
-      testCases.forEach(({ mode, formation, expectedPositions }) => {
-        Object.entries(expectedPositions).forEach(([playerId, expectedPosition]) => {
-          expect(getPlayerPositionDisplay(playerId, formation, mode)).toBe(expectedPosition);
-        });
-      });
+    test('should return correct position names from player data', () => {
+      expect(getPlayerPositionDisplay(mockAttackerAlice)).toBe('Left Attacker');
+      expect(getPlayerPositionDisplay(mockAttackerBob)).toBe('Right Attacker');
+      expect(getPlayerPositionDisplay(mockDefenderCharlie)).toBe('Left Defender');
+      expect(getPlayerPositionDisplay(mockDefenderDiana)).toBe('Right Defender');
+      expect(getPlayerPositionDisplay(mockGoalieEve)).toBe('Goalie');
+      expect(getPlayerPositionDisplay(mockSubstituteFrank)).toBe('Substitute 1');
+      expect(getPlayerPositionDisplay(mockSubstituteGrace)).toBe('Substitute 2');
     });
 
-    test('should return correct position names for PAIRS_7 mode', () => {
-      expect(getPlayerPositionDisplay('p1', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('Left Attacker');
-      expect(getPlayerPositionDisplay('p2', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('Right Attacker');
-      expect(getPlayerPositionDisplay('p3', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('Left Defender');
-      expect(getPlayerPositionDisplay('p4', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('Right Defender');
-      expect(getPlayerPositionDisplay('p5', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('Goalie');
-      expect(getPlayerPositionDisplay('p6', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('Sub Attacker');
-      expect(getPlayerPositionDisplay('p7', mockFormationPairs7, TEAM_MODES.PAIRS_7)).toBe('Sub Defender');
+    test('should handle different substitute positions', () => {
+      const sub3Player = { 
+        stats: { currentPairKey: 'substitute_3' }
+      };
+      const genericSubPlayer = { 
+        stats: { currentPairKey: 'substitute' }
+      };
+      
+      expect(getPlayerPositionDisplay(sub3Player)).toBe('Substitute 3');
+      expect(getPlayerPositionDisplay(genericSubPlayer)).toBe('Substitute');
+    });
+
+    test('should handle PAIRS_7 mode position names with role-based display', () => {
+      const leftPairDefender = { 
+        stats: { currentPairKey: 'leftPair', currentRole: 'Defender' }
+      };
+      const leftPairAttacker = { 
+        stats: { currentPairKey: 'leftPair', currentRole: 'Attacker' }
+      };
+      const rightPairDefender = { 
+        stats: { currentPairKey: 'rightPair', currentRole: 'Defender' }
+      };
+      const rightPairAttacker = { 
+        stats: { currentPairKey: 'rightPair', currentRole: 'Attacker' }
+      };
+      const subPairDefender = { 
+        stats: { currentPairKey: 'subPair', currentRole: 'Defender' }
+      };
+      const subPairAttacker = { 
+        stats: { currentPairKey: 'subPair', currentRole: 'Attacker' }
+      };
+      
+      expect(getPlayerPositionDisplay(leftPairDefender)).toBe('Left Defender');
+      expect(getPlayerPositionDisplay(leftPairAttacker)).toBe('Left Attacker');
+      expect(getPlayerPositionDisplay(rightPairDefender)).toBe('Right Defender');
+      expect(getPlayerPositionDisplay(rightPairAttacker)).toBe('Right Attacker');
+      expect(getPlayerPositionDisplay(subPairDefender)).toBe('Sub Defender');
+      expect(getPlayerPositionDisplay(subPairAttacker)).toBe('Sub Attacker');
     });
 
     test('should handle null/undefined inputs', () => {
-      expect(getPlayerPositionDisplay(null, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6)).toBe('Substitute');
-      expect(getPlayerPositionDisplay('p1', null, TEAM_MODES.INDIVIDUAL_6)).toBe('Substitute');
+      expect(getPlayerPositionDisplay(null)).toBe('Substitute');
+      expect(getPlayerPositionDisplay({})).toBe('Substitute');
+      expect(getPlayerPositionDisplay({ stats: {} })).toBe('Substitute');
     });
   });
 
   describe('isPlayerOnField', () => {
-    test('should correctly identify field players across all team modes', () => {
-      // Test configuration-driven field detection across all modes
-      const testCases = [
-        {
-          mode: TEAM_MODES.INDIVIDUAL_6,
-          formation: mockFormationIndividual6,
-          onFieldPlayers: ['p1', 'p3', 'p5'], // Attacker, Defender, Goalie
-          substitutePlayers: ['p6']
-        },
-        {
-          mode: TEAM_MODES.INDIVIDUAL_7,
-          formation: mockFormationIndividual7,
-          onFieldPlayers: ['p1', 'p3', 'p5'], // Attacker, Defender, Goalie
-          substitutePlayers: ['p6']
-        },
-        {
-          mode: TEAM_MODES.PAIRS_7,
-          formation: mockFormationPairs7,
-          onFieldPlayers: ['p1', 'p3', 'p5'], // Attacker, Defender, Goalie
-          substitutePlayers: ['p6'] // SubPair is substitute
-        }
-      ];
+    test('should correctly identify field players', () => {
+      expect(isPlayerOnField(mockAttackerAlice)).toBe(true);
+      expect(isPlayerOnField(mockDefenderCharlie)).toBe(true);
+      expect(isPlayerOnField(mockGoalieEve)).toBe(true);
+      expect(isPlayerOnField(mockSubstituteFrank)).toBe(false);
+      expect(isPlayerOnField(mockSubstituteGrace)).toBe(false);
+    });
+
+    test('should handle different status values', () => {
+      const inactivePlayer = { 
+        stats: { currentStatus: 'inactive' }
+      };
       
-      testCases.forEach(({ mode, formation, onFieldPlayers, substitutePlayers }) => {
-        onFieldPlayers.forEach(playerId => {
-          expect(isPlayerOnField(playerId, formation, mode)).toBe(true);
-        });
-        substitutePlayers.forEach(playerId => {
-          expect(isPlayerOnField(playerId, formation, mode)).toBe(false);
-        });
-      });
+      expect(isPlayerOnField(inactivePlayer)).toBe(false);
+    });
+
+    test('should handle null/undefined inputs', () => {
+      expect(isPlayerOnField(null)).toBe(false);
+      expect(isPlayerOnField({})).toBe(false);
+      expect(isPlayerOnField({ stats: {} })).toBe(false);
     });
   });
 
   describe('groupPlayersByRole', () => {
-    test('should group players correctly', () => {
-      const groups = groupPlayersByRole(mockPlayers, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
+    test('should group players correctly by role', () => {
+      const groups = groupPlayersByRole(mockPlayers);
       
       expect(groups.attackers.map(p => p.id)).toEqual(['p1', 'p2']);
       expect(groups.defenders.map(p => p.id)).toEqual(['p3', 'p4']);
       expect(groups.goalie.map(p => p.id)).toEqual(['p5']);
-      expect(groups.substitutes.map(p => p.id)).toEqual(['p6', 'p7']); // p7 not in formation = substitute
+      expect(groups.substitutes.map(p => p.id)).toEqual(['p6', 'p7']);
     });
 
     test('should handle null players array', () => {
-      const groups = groupPlayersByRole(null, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
-      
+      const groups = groupPlayersByRole(null);
       expect(groups.attackers).toEqual([]);
       expect(groups.defenders).toEqual([]);
       expect(groups.goalie).toEqual([]);
@@ -355,8 +321,7 @@ describe('playerSortingUtils', () => {
     });
 
     test('should handle empty players array', () => {
-      const groups = groupPlayersByRole([], mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
-      
+      const groups = groupPlayersByRole([]);
       expect(groups.attackers).toEqual([]);
       expect(groups.defenders).toEqual([]);
       expect(groups.goalie).toEqual([]);
@@ -364,31 +329,36 @@ describe('playerSortingUtils', () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    test('should handle formation with missing positions', () => {
-      const incompleteFormation = {
-        leftAttacker: 'p1',
-        goalie: 'p5'
-        // Missing other positions
-      };
+  // Legacy functions that still use formation data (not changed in this refactor)
+  describe('Legacy formation-based functions', () => {
+    const mockFormation = {
+      leftAttacker: 'p1',
+      rightAttacker: 'p2',
+      leftDefender: 'p3',
+      rightDefender: 'p4',
+      goalie: 'p5'
+    };
 
-      const sorted = sortPlayersByGoalScoringRelevance(mockPlayers, incompleteFormation, TEAM_MODES.INDIVIDUAL_6);
-      
-      // p1 should be first (attacker), p5 second (goalie), rest are substitutes
-      expect(sorted[0].id).toBe('p1');
-      expect(sorted[1].id).toBe('p5');
-      // Other players should be in alphabetical order as substitutes
+    describe('getCurrentAttackers', () => {
+      test('should get attackers from formation', () => {
+        const attackers = getCurrentAttackers(mockFormation, TEAM_MODES.INDIVIDUAL_7);
+        expect(attackers).toEqual(['p1', 'p2']);
+      });
+
+      test('should handle missing formation', () => {
+        expect(getCurrentAttackers(null, TEAM_MODES.INDIVIDUAL_7)).toEqual([]);
+      });
     });
 
-    test('should handle players not in formation', () => {
-      const extraPlayer = { id: 'p8', name: 'Henry' };
-      const playersWithExtra = [...mockPlayers, extraPlayer];
-      
-      const sorted = sortPlayersByGoalScoringRelevance(playersWithExtra, mockFormationIndividual6, TEAM_MODES.INDIVIDUAL_6);
-      
-      // Extra player should be treated as substitute and sorted at the end
-      const extraPlayerIndex = sorted.findIndex(p => p.id === 'p8');
-      expect(extraPlayerIndex).toBeGreaterThan(4); // After field players and goalie
+    describe('getCurrentDefenders', () => {
+      test('should get defenders from formation', () => {
+        const defenders = getCurrentDefenders(mockFormation, TEAM_MODES.INDIVIDUAL_7);
+        expect(defenders).toEqual(['p3', 'p4']);
+      });
+
+      test('should handle missing formation', () => {
+        expect(getCurrentDefenders(null, TEAM_MODES.INDIVIDUAL_7)).toEqual([]);
+      });
     });
   });
 });

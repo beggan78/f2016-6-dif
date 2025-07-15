@@ -3,8 +3,9 @@ import {
   calculateSubstitution, 
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
-  calculateSubstituteSwap,
-  calculateUndo
+  calculateUndo,
+  calculatePairPositionSwap,
+  calculateSubstituteReorder
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
@@ -47,7 +48,7 @@ export const createSubstitutionHandlers = (
     openFieldPlayerModal
   } = modalHandlers;
 
-  const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
+  const isIndividualMode = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8].includes(teamMode);
   const supportsInactive = supportsInactiveUsers(teamMode);
 
   /**
@@ -177,22 +178,33 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSetAsNextToGoIn = (substituteModal, formation) => {
-    if (substituteModal.playerId && isIndividual7Mode) {
+    if (substituteModal.playerId && isIndividualMode) {
       const playerId = substituteModal.playerId;
+      const gameState = gameStateFactory();
       
-      // Find current positions
-      const substitute_1Id = formation.substitute_1;
-      const substitute_2Id = formation.substitute_2;
+      // Get team mode configuration
+      const definition = MODE_DEFINITIONS[teamMode];
+      if (!definition || !definition.supportsNextNextIndicators) {
+        console.warn('Team mode does not support next-to-go-in functionality');
+        closeSubstituteModal();
+        return;
+      }
       
-      // Only proceed if the player is substitute_2 (next-next to go in)
-      if (playerId === substitute_2Id) {
+      // Find current player position
+      const currentPosition = Object.keys(formation).find(pos => formation[pos] === playerId);
+      
+      // Check if player can be set as next to go in
+      const canSetAsNext = definition.substitutePositions.includes(currentPosition) && 
+                          currentPosition !== 'substitute_1' &&
+                          !gameState.allPlayers.find(p => p.id === playerId)?.stats?.isInactive;
+      
+      if (canSetAsNext) {
         const currentTime = Date.now();
-        const gameState = gameStateFactory();
         
-        // Use the new animation system for substitute swap
+        // Use the new substitute reorder function
         animateStateChange(
           gameState,
-          (state) => calculateSubstituteSwap(state, substitute_1Id, substitute_2Id),
+          (state) => calculateSubstituteReorder(state, currentPosition),
           (newGameState) => {
             // Apply the state changes
             setFormation(newGameState.formation);
@@ -200,17 +212,16 @@ export const createSubstitutionHandlers = (
 
             // Log substitute order change event
             try {
-              const player1 = gameState.allPlayers.find(p => p.id === substitute_1Id);
-              const player2 = gameState.allPlayers.find(p => p.id === substitute_2Id);
+              const targetPlayer = gameState.allPlayers.find(p => p.id === playerId);
               
-              if (player1 && player2) {
+              if (targetPlayer) {
                 logEvent(EVENT_TYPES.POSITION_CHANGE, {
-                  type: 'substitute_order_swap',
-                  player1Id: substitute_1Id,
-                  player2Id: substitute_2Id,
-                  player1Name: player1.name,
-                  player2Name: player2.name,
-                  description: `${player2.name} moved to next-to-go-in position`,
+                  type: 'substitute_order_reorder',
+                  playerId: playerId,
+                  playerName: targetPlayer.name,
+                  fromPosition: currentPosition,
+                  toPosition: 'substitute_1',
+                  description: `${targetPlayer.name} moved to next-to-go-in position with cascading reorder`,
                   beforeFormation: getFormationDescription(gameState.formation, teamMode),
                   afterFormation: getFormationDescription(newGameState.formation, teamMode),
                   teamMode,
@@ -220,7 +231,7 @@ export const createSubstitutionHandlers = (
                 });
               }
             } catch (error) {
-              console.error('Failed to log substitute swap event:', error);
+              console.error('Failed to log substitute reorder event:', error);
             }
           },
           setAnimationState,
@@ -533,8 +544,42 @@ export const createSubstitutionHandlers = (
     } else if (action === 'swap-pair-positions') {
       // Handle pair position swapping (for pairs mode)
       if (fieldPlayerModal.target && fieldPlayerModal.type === 'pair') {
-        // This would handle swapping attacker and defender within a pair
-        // Implementation depends on pair swapping logic
+        console.log(`🔄 Swapping positions within ${fieldPlayerModal.target} pair`);
+        
+        const currentTime = Date.now();
+        
+        animateStateChange(
+          gameStateFactory(),
+          (state) => calculatePairPositionSwap(state, fieldPlayerModal.target),
+          (newGameState) => {
+            // Apply state updates
+            setFormation(newGameState.formation);
+            setAllPlayers(newGameState.allPlayers);
+            
+            // Log position change event
+            const pairKey = fieldPlayerModal.target;
+            const pair = newGameState.formation[pairKey];
+            if (pair) {
+              const defenderPlayer = findPlayerById(newGameState.allPlayers, pair.defender);
+              const attackerPlayer = findPlayerById(newGameState.allPlayers, pair.attacker);
+              
+              logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                timestamp: currentTime,
+                player1Id: pair.defender,
+                player1Name: defenderPlayer?.name || 'Unknown',
+                player2Id: pair.attacker,
+                player2Name: attackerPlayer?.name || 'Unknown',
+                pairKey: pairKey,
+                description: `${defenderPlayer?.name || 'Unknown'} and ${attackerPlayer?.name || 'Unknown'} swapped positions within ${pairKey}`,
+                teamMode: teamMode
+              });
+            }
+          },
+          setAnimationState,
+          setHideNextOffIndicator,
+          setRecentlySubstitutedPlayers
+        );
+        
         closeFieldPlayerModal();
       }
     } else if (action === null) {

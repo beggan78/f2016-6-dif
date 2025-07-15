@@ -96,7 +96,7 @@ describe('Goalie Queue State Update Integration', () => {
   });
   
   it('should handle multiple team modes correctly', () => {
-    const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.PAIRS_7];
+    const teamModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.PAIRS_7];
     
     teamModes.forEach(teamMode => {
       console.log(`\nTesting ${teamMode} queue state update`);

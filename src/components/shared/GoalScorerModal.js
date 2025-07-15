@@ -17,9 +17,7 @@ const GoalScorerModal = ({
   mode = 'new', // 'new', 'correct', 'view'
   existingGoalData = null,
   matchTime = '00:00',
-  team = 'home',
-  formation = null,
-  teamMode = null
+  team = 'home'
 }) => {
   // Default to "No specific scorer" for new goals, existing scorer for corrections
   const [selectedPlayerId, setSelectedPlayerId] = useState(
@@ -32,14 +30,14 @@ const GoalScorerModal = ({
       // For new goals, default to "No specific scorer", for corrections use existing scorer
       setSelectedPlayerId(mode === 'new' ? null : (existingGoalData?.scorerId || null));
     }
-  }, [isOpen, existingGoalData, mode]);
+  }, [isOpen, existingGoalData, mode, eligiblePlayers]);
 
   // Get position icon for a player
-  const getPositionIcon = (playerId) => {
-    if (!formation || !teamMode) return RotateCcw;
+  const getPositionIcon = (player) => {
+    if (!player) return RotateCcw;
     
-    const position = getPlayerPositionDisplay(playerId, formation, teamMode);
-    const onField = isPlayerOnField(playerId, formation, teamMode);
+    const position = getPlayerPositionDisplay(player);
+    const onField = isPlayerOnField(player);
     
     if (!onField) return RotateCcw; // Substitute
     if (position.includes('Attacker')) return Sword;
@@ -49,11 +47,11 @@ const GoalScorerModal = ({
   };
 
   // Get position color classes
-  const getPositionColorClasses = (playerId) => {
-    if (!formation || !teamMode) return 'text-gray-400';
+  const getPositionColorClasses = (player) => {
+    if (!player) return 'text-gray-400';
     
-    const position = getPlayerPositionDisplay(playerId, formation, teamMode);
-    const onField = isPlayerOnField(playerId, formation, teamMode);
+    const position = getPlayerPositionDisplay(player);
+    const onField = isPlayerOnField(player);
     
     if (!onField) return 'text-gray-400';
     if (position.includes('Attacker')) return 'text-red-500';
@@ -162,8 +160,8 @@ const GoalScorerModal = ({
               
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {eligiblePlayers.map((player) => {
-                  const PositionIcon = getPositionIcon(player.id);
-                  const positionColorClass = getPositionColorClasses(player.id);
+                  const PositionIcon = getPositionIcon(player);
+                  const positionColorClass = getPositionColorClasses(player);
                   
                   return (
                     <button
