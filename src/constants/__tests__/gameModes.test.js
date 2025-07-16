@@ -14,7 +14,6 @@ import {
   supportsInactiveUsers,
   supportsNextNextIndicators,
   getAllPositions,
-  getOutfieldPositions,
   getValidPositions,
   initializePlayerRoleAndStatus,
   isIndividualMode,

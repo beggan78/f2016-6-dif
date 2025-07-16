@@ -266,6 +266,15 @@ export const createMockGameStateDependencies = () => ({
     reactivatePlayer: jest.fn(),
     removePlayer: jest.fn(),
     addPlayer: jest.fn(),
+    getNextActivePlayer: jest.fn().mockImplementation((count = 1) => {
+      const queue = ['1', '2', '3', '4', '5', '6'];
+      if (count === 1) {
+        return queue[0] || null;
+      }
+      return queue.slice(0, count);
+    }),
+    activeSize: jest.fn().mockReturnValue(6),
+    getPosition: jest.fn().mockReturnValue(0),
     toArray: jest.fn().mockReturnValue(['1', '2', '3', '4', '5', '6'])
   }),
   getPositionRole: jest.fn().mockReturnValue(PLAYER_ROLES.DEFENDER),

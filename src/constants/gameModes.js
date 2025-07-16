@@ -195,7 +195,12 @@ export function getPlayerCountForMode(teamMode) {
   const definition = MODE_DEFINITIONS[teamMode];
   if (!definition) return null;
   
-  // Calculate from position order length
+  if (teamMode === TEAM_MODES.PAIRS_7) {
+    // Pairs mode: 3 pairs × 2 players each + 1 goalie = 7 players
+    return 7;
+  }
+  
+  // For individual modes, each position corresponds to one player
   return definition.positionOrder.length;
 }
 

@@ -22,6 +22,68 @@ App
 └── StatsScreen (Game results and export)
 ```
 
+## Configuration-Driven Architecture
+
+### MODE_DEFINITIONS System
+**Location**: `/src/constants/gameModes.js`
+**Purpose**: Single source of truth for all formation logic and team mode configurations
+
+The application uses a sophisticated configuration-driven approach where all team mode behavior is defined in `MODE_DEFINITIONS`. This eliminates scattered constants and hardcoded logic throughout the codebase.
+
+#### Configuration Structure
+Each team mode definition includes:
+- **positions**: Object mapping position keys to their properties (role, type)
+- **expectedCounts**: Player count requirements (`outfield`, `onField`)
+- **positionOrder**: Array defining rendering order of positions
+- **fieldPositions**: Positions for players currently on field
+- **substitutePositions**: Substitute/bench positions
+- **supportsInactiveUsers**: Whether players can be temporarily deactivated
+- **supportsNextNextIndicators**: Whether next-next substitution tracking is enabled
+- **substituteRotationPattern**: Carousel pattern for substitutions (`simple`, `carousel`, `advanced_carousel`)
+- **initialFormationTemplate**: Template for creating new formations
+- **validationMessage**: Mode-specific validation text
+
+#### Utility Functions (18 available)
+- **Position Queries**: `getFormationPositions()`, `getOutfieldPositions()`, `getAllPositions()`
+- **Mode Detection**: `isIndividualMode()`, `isIndividual6Mode()`, `isIndividual7Mode()`, `isIndividual8Mode()`
+- **Capability Checks**: `supportsInactiveUsers()`, `supportsNextNextIndicators()`
+- **Player Counting**: `getPlayerCountForMode()`, `getMaxInactiveCount()`
+- **Formation Helpers**: `getInitialFormationTemplate()`, `getValidationMessage()`
+- **Role Mapping**: Table-driven lookups via `POSITION_ROLE_MAP`
+
+### Team Mode Configurations
+
+#### PAIRS_7 (7-Player Pairs Mode)
+- **Players**: 7 total (6 outfield + 1 goalie)
+- **Structure**: 3 pairs (leftPair, rightPair, subPair) + goalie
+- **Field Players**: 4 (2 pairs of defender/attacker)
+- **Substitution**: Entire pairs swap in/out
+- **Rotation**: Simple pair-based rotation
+
+#### INDIVIDUAL_6 (6-Player Individual Mode)
+- **Players**: 6 total (5 outfield + 1 goalie)
+- **Positions**: leftDefender, rightDefender, leftAttacker, rightAttacker, substitute_1, goalie
+- **Field Players**: 4 individual positions
+- **Substitution**: Individual player swaps
+- **Rotation Pattern**: `simple` (direct field ↔ substitute swap)
+- **Capabilities**: Supports inactive users, no next-next indicators
+
+#### INDIVIDUAL_7 (7-Player Individual Mode)
+- **Players**: 7 total (6 outfield + 1 goalie)
+- **Positions**: Same as INDIVIDUAL_6 plus substitute_2
+- **Field Players**: 4 individual positions
+- **Substitution**: Individual player swaps with carousel rotation
+- **Rotation Pattern**: `carousel` (3-position rotation: field → substitute_2 → substitute_1 → field)
+- **Capabilities**: Supports inactive users and next-next indicators
+
+#### INDIVIDUAL_8 (8-Player Individual Mode)
+- **Players**: 8 total (7 outfield + 1 goalie)
+- **Positions**: Same as INDIVIDUAL_7 plus substitute_3
+- **Field Players**: 4 individual positions
+- **Substitution**: Individual player swaps with advanced carousel
+- **Rotation Pattern**: `advanced_carousel` (all substitutes shift up when player substituted)
+- **Capabilities**: Supports inactive users and next-next indicators
+
 ## Component Categories
 
 ### 1. Screen Components (Top-level views)
@@ -33,14 +95,14 @@ App
 - **Purpose**: Initial team and game setup
 - **Key Features**: Squad selection, team mode auto-selection, game settings
 - **State Management**: Heavy form state, validation logic
-- **Testing**: 48 tests covering all user interactions
+- **Testing**: Tests covering all user interactions, squad selection, and team mode auto-selection
 
 #### PeriodSetupScreen  
 - **File**: `src/components/setup/PeriodSetupScreen.js`
 - **Purpose**: Formation assignment for game periods
 - **Key Features**: Player-to-position assignment, drag-and-drop, validation
 - **State Management**: Complex formation state with position tracking
-- **Testing**: 44 tests covering all team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7)
+- **Testing**: Tests covering all team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
 
 #### GameScreen
 - **File**: `src/components/game/GameScreen.js`
@@ -64,7 +126,7 @@ App
 - **File**: `src/components/game/formations/FormationRenderer.js`
 - **Purpose**: Route to appropriate formation component based on team mode
 - **Pattern**: Component factory/router pattern
-- **Testing**: 20 tests covering all team modes and error scenarios
+- **Testing**: Tests covering component routing, props passing, and error scenarios
 
 #### PairsFormation
 - **File**: `src/components/game/formations/PairsFormation.js`
@@ -74,9 +136,9 @@ App
 
 #### IndividualFormation
 - **File**: `src/components/game/formations/IndividualFormation.js`
-- **Purpose**: Display individual formations (6-player and 7-player modes)
-- **Key Features**: Individual positioning, flexible player counts
-- **Testing**: 39 tests covering both 6 and 7-player modes
+- **Purpose**: Display individual formations (6, 7, and 8-player modes)
+- **Key Features**: Individual positioning, flexible player counts, carousel rotation patterns
+- **Testing**: Tests covering all individual modes
 
 ### 3. Modal Components (Overlays)
 **Location**: `/src/components/shared/`
@@ -133,7 +195,39 @@ export function ScreenName({
 }
 ```
 
-### 2. Formation Component Pattern
+### 2. Configuration-Driven Component Pattern
+```javascript
+// Modern components use utility functions instead of hardcoded logic
+import { 
+  isIndividualMode, 
+  getOutfieldPositions, 
+  supportsInactiveUsers 
+} from '../constants/gameModes';
+
+export function ModernComponent({ teamMode, formation, ...props }) {
+  // Use utility functions for conditional logic
+  const positions = getOutfieldPositions(teamMode);
+  const supportsInactive = supportsInactiveUsers(teamMode);
+  
+  // Event handlers work across all modes via configuration
+  const handlePlayerAssignment = (position, playerId) => {
+    // Logic uses getOutfieldPositions(teamMode) dynamically
+    // Works for all individual modes (6, 7, 8) automatically
+  };
+  
+  return (
+    <div>
+      {/* Conditional rendering based on mode capabilities */}
+      {isIndividualMode(teamMode) && (
+        <IndividualModeUI positions={positions} />
+      )}
+      {supportsInactive && <InactivePlayerControls />}
+    </div>
+  );
+}
+```
+
+### 3. Formation Component Pattern
 ```javascript
 // Formation components receive standardized props
 export function FormationComponent({
@@ -149,7 +243,7 @@ export function FormationComponent({
 }
 ```
 
-### 3. Modal Component Pattern
+### 4. Modal Component Pattern
 ```javascript
 // Modal components follow controlled pattern
 export function ModalComponent({ 
@@ -176,6 +270,76 @@ export function ModalComponent({
   );
 }
 ```
+
+## Carousel Pattern System
+
+### Overview
+**Location**: `/src/game/logic/carouselPatterns.js`
+**Purpose**: Configurable rotation patterns for individual mode substitutions
+
+The carousel system provides flexible, configurable substitution patterns that determine how players rotate through field and substitute positions during individual mode games.
+
+### Rotation Patterns
+
+#### Simple Pattern (6-Player Mode)
+```javascript
+// Direct field ↔ substitute swap
+const simplePattern = {
+  fieldPlayer: 'substitute_1',    // Field player goes to substitute_1
+  substitute_1: 'fieldPosition'  // substitute_1 takes field position
+};
+```
+**Used by**: INDIVIDUAL_6 mode
+**Behavior**: Direct swap between field player and single substitute
+
+#### Carousel Pattern (7-Player Mode)  
+```javascript
+// 3-position rotation: field → substitute_2 → substitute_1 → field
+const carouselPattern = {
+  fieldPlayer: 'substitute_2',    // Field player goes to substitute_2
+  substitute_2: 'substitute_1',   // substitute_2 moves to substitute_1
+  substitute_1: 'fieldPosition'  // substitute_1 takes field position
+};
+```
+**Used by**: INDIVIDUAL_7 mode
+**Behavior**: Ensures fair rotation through all substitute positions
+
+#### Advanced Carousel Pattern (8-Player Mode)
+```javascript
+// All substitutes shift up when field player substituted
+const advancedCarouselPattern = {
+  fieldPlayer: 'substitute_3',    // Field player goes to substitute_3
+  substitute_3: 'substitute_2',   // substitute_3 moves to substitute_2
+  substitute_2: 'substitute_1',   // substitute_2 moves to substitute_1
+  substitute_1: 'fieldPosition'  // substitute_1 takes field position
+};
+```
+**Used by**: INDIVIDUAL_8 mode
+**Behavior**: Maintains ordered rotation through three substitute positions
+
+### Integration with MODE_DEFINITIONS
+Each individual mode's configuration includes a `substituteRotationPattern` property that links to the appropriate carousel pattern:
+
+```javascript
+[TEAM_MODES.INDIVIDUAL_6]: {
+  substituteRotationPattern: 'simple',
+  // ... other configuration
+},
+[TEAM_MODES.INDIVIDUAL_7]: {
+  substituteRotationPattern: 'carousel',
+  // ... other configuration
+},
+[TEAM_MODES.INDIVIDUAL_8]: {
+  substituteRotationPattern: 'advanced_carousel',
+  // ... other configuration
+}
+```
+
+### Pattern Functions
+- **getCarouselMapping()**: Returns position mapping for given pattern
+- **getPlayerFieldPosition()**: Finds current field position for player
+- **applyCarouselMapping()**: Applies pattern mapping to formation
+- **validateCarouselPattern()**: Validates pattern can be applied safely
 
 ## State Management Patterns
 
@@ -212,19 +376,25 @@ const [isValid, setIsValid] = useState(false);
 
 ## Data Flow Patterns
 
-### 1. Top-Down Data Flow
+### 1. Configuration-Driven Data Flow
+```
+MODE_DEFINITIONS → Utility Functions → Component Props → Component Behavior
+```
+Configuration drives component behavior through utility functions rather than hardcoded logic.
+
+### 2. Top-Down Data Flow
 ```
 App → useGameState → GameScreen → FormationRenderer → Formation Components
 ```
 Game state flows down through props, actions bubble up through callbacks.
 
-### 2. Form Data Flow
+### 3. Form Data Flow
 ```
 User Input → Local State → Validation → Parent Callback → Global State
 ```
 Forms manage local state, validate, then update global state on submission.
 
-### 3. Modal Data Flow
+### 4. Modal Data Flow
 ```
 Trigger → Modal Open → User Action → Callback → Modal Close → State Update
 ```

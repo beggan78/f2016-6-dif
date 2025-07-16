@@ -132,49 +132,6 @@ export function PeriodSetupScreen({
     }));
   };
 
-  const handleIndividual7PlayerAssignment = (position, playerId) => {
-    // If formation is complete, allow player switching
-    if (isFormationComplete() && playerId) {
-      // Find where the selected player is currently assigned
-      let currentPlayerPosition = null;
-      getOutfieldPositions(teamMode).forEach(pos => {
-        if (formation[pos] === playerId) {
-          currentPlayerPosition = pos;
-        }
-      });
-
-      if (currentPlayerPosition) {
-        // Get the player currently in the target position
-        const currentPlayerInTargetPosition = formation[position];
-        
-        // Swap the players
-        setFormation(prev => ({
-          ...prev,
-          [position]: playerId,
-          [currentPlayerPosition]: currentPlayerInTargetPosition
-        }));
-        return;
-      }
-    }
-
-    // Original logic for incomplete formation
-    const otherAssignments = [];
-    getOutfieldPositions(teamMode).forEach(pos => {
-      if (pos !== position && formation[pos]) {
-        otherAssignments.push(formation[pos]);
-      }
-    });
-
-    if (playerId && otherAssignments.includes(playerId)) {
-      alert(`${allPlayers.find(p=>p.id === playerId)?.name || 'Player'} is already assigned. Choose a different player.`);
-      return;
-    }
-
-    setFormation(prev => ({
-      ...prev,
-      [position]: playerId
-    }));
-  };
 
   const getAvailableForSelect = (currentPairKey, currentRole) => {
     // If formation is complete, show all players except goalie
@@ -484,7 +441,7 @@ export function PeriodSetupScreen({
             title="Left Defender"
             position="leftDefender"
             playerId={formation.leftDefender}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -492,7 +449,7 @@ export function PeriodSetupScreen({
             title="Right Defender"
             position="rightDefender"
             playerId={formation.rightDefender}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -500,7 +457,7 @@ export function PeriodSetupScreen({
             title="Left Attacker"
             position="leftAttacker"
             playerId={formation.leftAttacker}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -508,7 +465,7 @@ export function PeriodSetupScreen({
             title="Right Attacker"
             position="rightAttacker"
             playerId={formation.rightAttacker}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -516,7 +473,7 @@ export function PeriodSetupScreen({
             title="Substitute" // Please never change this title! But yes, it is the NEXT to sub in
             position="substitute_1"
             playerId={formation.substitute_1}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -524,7 +481,7 @@ export function PeriodSetupScreen({
             title="Substitute"  // Please never change this title! But yes, it is the NEXT-NEXT to sub in
             position="substitute_2"
             playerId={formation.substitute_2}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -537,7 +494,7 @@ export function PeriodSetupScreen({
             title="Left Defender"
             position="leftDefender"
             playerId={formation.leftDefender}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -545,7 +502,7 @@ export function PeriodSetupScreen({
             title="Right Defender"
             position="rightDefender"
             playerId={formation.rightDefender}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -553,7 +510,7 @@ export function PeriodSetupScreen({
             title="Left Attacker"
             position="leftAttacker"
             playerId={formation.leftAttacker}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -561,7 +518,7 @@ export function PeriodSetupScreen({
             title="Right Attacker"
             position="rightAttacker"
             playerId={formation.rightAttacker}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -569,7 +526,7 @@ export function PeriodSetupScreen({
             title="Substitute" // Next to substitute in
             position="substitute_1"
             playerId={formation.substitute_1}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -577,7 +534,7 @@ export function PeriodSetupScreen({
             title="Substitute" // Second to substitute in
             position="substitute_2"
             playerId={formation.substitute_2}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
@@ -585,7 +542,7 @@ export function PeriodSetupScreen({
             title="Substitute" // Third to substitute in
             position="substitute_3"
             playerId={formation.substitute_3}
-            onPlayerAssign={handleIndividual7PlayerAssignment}
+            onPlayerAssign={handleIndividualPlayerAssignment}
             getAvailableOptions={getAvailableForIndividualSelect}
             currentPeriodNumber={currentPeriodNumber}
           />
