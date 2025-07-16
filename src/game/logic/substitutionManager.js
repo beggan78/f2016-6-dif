@@ -1,5 +1,5 @@
 import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
-import { MODE_DEFINITIONS } from '../../constants/gameModes';
+import { MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
 import { getPositionRole, getFieldPositions } from './positionUtils';
@@ -425,15 +425,12 @@ export class SubstitutionManager {
    * Main substitution handler - delegates to appropriate method based on team mode
    */
   executeSubstitution(context) {
-    switch (this.teamMode) {
-      case TEAM_MODES.PAIRS_7:
-        return this.handlePairsSubstitution(context);
-      case TEAM_MODES.INDIVIDUAL_6:
-      case TEAM_MODES.INDIVIDUAL_7:
-      case TEAM_MODES.INDIVIDUAL_8:
-        return this.handleIndividualModeSubstitution(context);
-      default:
-        throw new Error(`Unknown team mode: ${this.teamMode}`);
+    if (this.teamMode === TEAM_MODES.PAIRS_7) {
+      return this.handlePairsSubstitution(context);
+    } else if (isIndividualMode(this.teamMode)) {
+      return this.handleIndividualModeSubstitution(context);
+    } else {
+      throw new Error(`Unknown team mode: ${this.teamMode}`);
     }
   }
 }

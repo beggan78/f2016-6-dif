@@ -13,7 +13,7 @@ import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
-import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, MODE_DEFINITIONS } from '../../constants/gameModes';
+import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
 
 /**
  * Calculate the result of a substitution without modifying any state
@@ -524,12 +524,7 @@ export const calculateUndo = (gameState, lastSubstitution) => {
         else if (beforeFormation.leftPair?.attacker === player.id) restoredPosition = 'leftPair';
         else if (beforeFormation.rightPair?.defender === player.id) restoredPosition = 'rightPair';
         else if (beforeFormation.rightPair?.attacker === player.id) restoredPosition = 'rightPair';
-      } else if (lastSubstitution.teamMode === TEAM_MODES.INDIVIDUAL_6) {
-        if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
-        else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
-        else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
-        else if (beforeFormation.rightAttacker === player.id) restoredPosition = 'rightAttacker';
-      } else if (lastSubstitution.teamMode === TEAM_MODES.INDIVIDUAL_7) {
+      } else if (isIndividualMode(lastSubstitution.teamMode)) {
         if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
         else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
         else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';

@@ -15,6 +15,9 @@
 # screenshots
 /screenshots
 
+# Supabase
+.env
+
 # misc
 .DS_Store
 .env.local

@@ -9,6 +9,7 @@
 import { calculateGoalieSwitch } from '../../game/logic/gameStateLogic';
 import { gameStateScenarios } from '../fixtures/mockGameData';
 import { TEAM_MODES } from '../../constants/playerConstants';
+import { isIndividualMode } from '../../constants/gameModes';
 
 describe('Goalie Queue Position Fix Integration Tests', () => {
   
@@ -38,9 +39,7 @@ describe('Goalie Queue Position Fix Integration Tests', () => {
       if (!newGoalieId) {
         if (teamMode === TEAM_MODES.PAIRS_7) {
           newGoalieId = gameState.formation.leftPair.defender;
-        } else if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
-          newGoalieId = gameState.formation.leftDefender;
-        } else {
+        } else if (isIndividualMode(teamMode)) {
           newGoalieId = gameState.formation.leftDefender;
         }
         originalQueuePosition = gameState.rotationQueue.indexOf(newGoalieId);

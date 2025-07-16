@@ -43,7 +43,7 @@ import {
 import { createMockHookSet } from './utils/mockHooks';
 import { gameStateScenarios, playerDataScenarios } from './fixtures/mockGameData';
 import { TEAM_MODES } from '../constants/playerConstants';
-import { MODE_DEFINITIONS } from '../constants/gameModes';
+import { MODE_DEFINITIONS, getPlayerCountForMode } from '../constants/gameModes';
 import { getAllModeTestCases, getIndividualModeTestCases } from '../game/testUtils';
 
 // Mock external dependencies
@@ -222,7 +222,7 @@ describe('Baseline Integration Tests', () => {
   // Helper function for player data flow validation
   const assertPlayerDataFlow = async (gameState, screen) => {
     // Verify all expected players are rendered
-    const expectedPlayerCount = gameState.teamMode === TEAM_MODES.INDIVIDUAL_6 ? 6 : 7;
+    const expectedPlayerCount = getPlayerCountForMode(gameState.teamMode);
     const playerElements = screen.getAllByTestId(/player-/i);
     
     // Should have at least the expected number of players visible

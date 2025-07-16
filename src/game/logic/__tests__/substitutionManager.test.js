@@ -1,6 +1,7 @@
 import { createSubstitutionManager, SubstitutionManager } from '../substitutionManager';
 import { updatePlayerTimeStats } from '../../time/stintManager';
 import { TEAM_MODES, PLAYER_ROLES } from '../../../constants/playerConstants';
+import { getPlayerCountForMode } from '../../../constants/gameModes';
 
 describe('SubstitutionManager', () => {
   let manager;
@@ -124,7 +125,8 @@ describe('SubstitutionManager', () => {
         mockPlayers.push({ id: '6', stats: { currentStatus: 'substitute', currentRole: PLAYER_ROLES.SUBSTITUTE, lastStintStartTimeEpoch: 1000, isInactive: false } });
       }
       
-      const rotationQueue = teamMode === TEAM_MODES.INDIVIDUAL_6 ? ['1', '2', '3', '4', '5'] : ['1', '2', '3', '4', '5', '6'];
+      const playerCount = getPlayerCountForMode(teamMode);
+      const rotationQueue = Array.from({length: playerCount - 1}, (_, i) => String(i + 1)); // -1 for goalie
       
       const context = {
         formation,
@@ -307,7 +309,8 @@ describe('SubstitutionManager', () => {
           },
         ];
 
-        const rotationQueue = teamMode === TEAM_MODES.INDIVIDUAL_6 ? ['1', '2', '3', '4', '5'] : ['1', '2', '3', '4', '5', '8'];
+        const playerCount = getPlayerCountForMode(teamMode);
+        const rotationQueue = Array.from({length: playerCount - 1}, (_, i) => String(i + 1)); // -1 for goalie
 
         const context = {
           formation,

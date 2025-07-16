@@ -817,8 +817,8 @@ export function useGameState() {
       
       setNextPlayerIdToSubOut(selectedPlayerId);
       
-      // For 7-player individual mode, update rotation queue and next-next tracking
-      if (teamMode === TEAM_MODES.INDIVIDUAL_7 && selectedPlayerId !== currentNextPlayerId) {
+      // For modes that support next-next indicators, update rotation queue and next-next tracking
+      if (supportsNextNextIndicators(teamMode) && selectedPlayerId !== currentNextPlayerId) {
         // Update rotation queue to put selected player first
         setRotationQueue(prev => {
           const queueManager = createRotationQueue(prev, createPlayerLookup(allPlayers));

@@ -4,7 +4,7 @@ import { Select, Button } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
-import { getOutfieldPositions } from '../../constants/gameModes';
+import { getOutfieldPositions, isIndividual6Mode, isIndividual7Mode, isIndividual8Mode } from '../../constants/gameModes';
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
@@ -29,9 +29,6 @@ export function PeriodSetupScreen({
 }) {
   // Determine formation mode
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
-  const isIndividual6Mode = teamMode === TEAM_MODES.INDIVIDUAL_6;
-  const isIndividual7Mode = teamMode === TEAM_MODES.INDIVIDUAL_7;
-  const isIndividual8Mode = teamMode === TEAM_MODES.INDIVIDUAL_8;
   
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -436,7 +433,7 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {formation.goalie && isIndividual6Mode && (
+      {formation.goalie && isIndividual6Mode(teamMode) && (
         <>
           <IndividualPositionCard
             title="Left Defender"
@@ -481,7 +478,7 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {formation.goalie && isIndividual7Mode && (
+      {formation.goalie && isIndividual7Mode(teamMode) && (
         <>
           <IndividualPositionCard
             title="Left Defender"
@@ -534,7 +531,7 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {formation.goalie && isIndividual8Mode && (
+      {formation.goalie && isIndividual8Mode(teamMode) && (
         <>
           <IndividualPositionCard
             title="Left Defender"

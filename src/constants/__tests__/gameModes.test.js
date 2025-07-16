@@ -14,10 +14,14 @@ import {
   supportsInactiveUsers,
   supportsNextNextIndicators,
   getAllPositions,
-  getAllOutfieldPositions,
+  getOutfieldPositions,
   getValidPositions,
   initializePlayerRoleAndStatus,
-  isIndividualMode
+  isIndividualMode,
+  getPlayerCountForMode,
+  isIndividual6Mode,
+  isIndividual7Mode,
+  isIndividual8Mode
 } from '../gameModes';
 
 import { TEAM_MODES, PLAYER_ROLES } from '../playerConstants';
@@ -322,6 +326,47 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(isIndividualMode('unknown_mode')).toBe(false);
       expect(isIndividualMode(null)).toBe(false);
       expect(isIndividualMode(undefined)).toBe(false);
+    });
+  });
+
+  describe('getPlayerCountForMode helper function', () => {
+    test('should return correct player counts for all team modes', () => {
+      expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_6)).toBe(6);
+      expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_7)).toBe(7);
+      expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_8)).toBe(8);
+      expect(getPlayerCountForMode(TEAM_MODES.PAIRS_7)).toBe(7);
+    });
+
+    test('should return null for invalid team modes', () => {
+      expect(getPlayerCountForMode('unknown_mode')).toBe(null);
+      expect(getPlayerCountForMode(null)).toBe(null);
+      expect(getPlayerCountForMode(undefined)).toBe(null);
+    });
+  });
+
+  describe('specific individual mode checker functions', () => {
+    test('isIndividual6Mode should only return true for INDIVIDUAL_6', () => {
+      expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
+      expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual6Mode(TEAM_MODES.PAIRS_7)).toBe(false);
+      expect(isIndividual6Mode(null)).toBe(false);
+    });
+
+    test('isIndividual7Mode should only return true for INDIVIDUAL_7', () => {
+      expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+      expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual7Mode(TEAM_MODES.PAIRS_7)).toBe(false);
+      expect(isIndividual7Mode(null)).toBe(false);
+    });
+
+    test('isIndividual8Mode should only return true for INDIVIDUAL_8', () => {
+      expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(true);
+      expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+      expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isIndividual8Mode(TEAM_MODES.PAIRS_7)).toBe(false);
+      expect(isIndividual8Mode(null)).toBe(false);
     });
   });
 });

@@ -4,6 +4,7 @@
  */
 
 import { TEAM_MODES } from '../constants/playerConstants';
+import { isIndividualMode } from '../constants/gameModes';
 
 /**
  * Position priority for goal scoring relevance
@@ -50,20 +51,12 @@ export const getCurrentAttackers = (formation, teamMode) => {
 
   const attackers = [];
 
-  switch (teamMode) {
-    case TEAM_MODES.INDIVIDUAL_6:
-    case TEAM_MODES.INDIVIDUAL_7:
-      if (formation.leftAttacker) attackers.push(formation.leftAttacker);
-      if (formation.rightAttacker) attackers.push(formation.rightAttacker);
-      break;
-
-    case TEAM_MODES.PAIRS_7:
-      if (formation.leftPair?.attacker) attackers.push(formation.leftPair.attacker);
-      if (formation.rightPair?.attacker) attackers.push(formation.rightPair.attacker);
-      break;
-
-    default:
-      break;
+  if (isIndividualMode(teamMode)) {
+    if (formation.leftAttacker) attackers.push(formation.leftAttacker);
+    if (formation.rightAttacker) attackers.push(formation.rightAttacker);
+  } else if (teamMode === TEAM_MODES.PAIRS_7) {
+    if (formation.leftPair?.attacker) attackers.push(formation.leftPair.attacker);
+    if (formation.rightPair?.attacker) attackers.push(formation.rightPair.attacker);
   }
 
   return attackers;
@@ -80,20 +73,12 @@ export const getCurrentDefenders = (formation, teamMode) => {
 
   const defenders = [];
 
-  switch (teamMode) {
-    case TEAM_MODES.INDIVIDUAL_6:
-    case TEAM_MODES.INDIVIDUAL_7:
-      if (formation.leftDefender) defenders.push(formation.leftDefender);
-      if (formation.rightDefender) defenders.push(formation.rightDefender);
-      break;
-
-    case TEAM_MODES.PAIRS_7:
-      if (formation.leftPair?.defender) defenders.push(formation.leftPair.defender);
-      if (formation.rightPair?.defender) defenders.push(formation.rightPair.defender);
-      break;
-
-    default:
-      break;
+  if (isIndividualMode(teamMode)) {
+    if (formation.leftDefender) defenders.push(formation.leftDefender);
+    if (formation.rightDefender) defenders.push(formation.rightDefender);
+  } else if (teamMode === TEAM_MODES.PAIRS_7) {
+    if (formation.leftPair?.defender) defenders.push(formation.leftPair.defender);
+    if (formation.rightPair?.defender) defenders.push(formation.rightPair.defender);
   }
 
   return defenders;

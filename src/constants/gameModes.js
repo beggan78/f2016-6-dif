@@ -189,18 +189,43 @@ export function isIndividualMode(teamMode) {
 }
 
 /**
+ * Get the total number of players for a given team mode
+ */
+export function getPlayerCountForMode(teamMode) {
+  const definition = MODE_DEFINITIONS[teamMode];
+  if (!definition) return null;
+  
+  // Calculate from position order length
+  return definition.positionOrder.length;
+}
+
+/**
+ * Check if a team mode is specifically the 6-player individual mode
+ */
+export function isIndividual6Mode(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_6;
+}
+
+/**
+ * Check if a team mode is specifically the 7-player individual mode
+ */
+export function isIndividual7Mode(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_7;
+}
+
+/**
+ * Check if a team mode is specifically the 8-player individual mode
+ */
+export function isIndividual8Mode(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_8;
+}
+
+/**
  * Get all positions for a team mode (including goalie)
  */
 export function getAllPositions(teamMode) {
   const definition = MODE_DEFINITIONS[teamMode];
   return definition ? definition.positionOrder : [];
-}
-
-/**
- * Get all positions for a team mode (excluding goalie) - alias for getOutfieldPositions
- */
-export function getAllOutfieldPositions(teamMode) {
-  return getOutfieldPositions(teamMode);
 }
 
 /**

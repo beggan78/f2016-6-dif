@@ -10,7 +10,7 @@ import {
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
-import { MODE_DEFINITIONS, supportsInactiveUsers, getBottomSubstitutePosition } from '../../constants/gameModes';
+import { MODE_DEFINITIONS, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createSubstitutionHandlers = (
@@ -48,7 +48,6 @@ export const createSubstitutionHandlers = (
     openFieldPlayerModal
   } = modalHandlers;
 
-  const isIndividualMode = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8].includes(teamMode);
   const supportsInactive = supportsInactiveUsers(teamMode);
 
   /**
@@ -178,7 +177,7 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSetAsNextToGoIn = (substituteModal, formation) => {
-    if (substituteModal.playerId && isIndividualMode) {
+    if (substituteModal.playerId && isIndividualMode(teamMode)) {
       const playerId = substituteModal.playerId;
       const gameState = gameStateFactory();
       
