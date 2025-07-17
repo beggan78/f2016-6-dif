@@ -37,7 +37,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: CI=true && npm test
+        run: CI=true npm test -- --verbose=false --silent --reporters=default
 
       - name: Build
         run: CI=true && npm run build
