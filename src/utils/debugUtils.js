@@ -56,7 +56,7 @@ export const randomizeGoalieAssignments = (selectedPlayers, numPeriods) => {
 /**
  * Randomize formation positions for different team modes
  * @param {Array} availablePlayers - Players available for positioning (excluding goalie)
- * @param {string} teamMode - Team mode (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
+ * @param {string} teamMode - Team mode (PAIRS_7, INDIVIDUAL_5, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
  * @returns {Object} Formation object with randomized player assignments
  */
 export const randomizeFormationPositions = (availablePlayers, teamMode) => {
@@ -77,6 +77,12 @@ export const randomizeFormationPositions = (availablePlayers, teamMode) => {
       defender: shuffled[4]?.id || null,
       attacker: shuffled[5]?.id || null
     };
+  } else if (teamMode === 'individual_5') {
+    // Individual 5-player mode: 4 field positions + 0 substitutes
+    formation.leftDefender = shuffled[0]?.id || null;
+    formation.rightDefender = shuffled[1]?.id || null;
+    formation.leftAttacker = shuffled[2]?.id || null;
+    formation.rightAttacker = shuffled[3]?.id || null;
   } else if (teamMode === 'individual_6') {
     // Individual 6-player mode: 4 field positions + 1 substitute
     formation.leftDefender = shuffled[0]?.id || null;

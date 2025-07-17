@@ -133,6 +133,39 @@ describe('8-Player Individual Mode', () => {
     });
   });
 
+  describe('None Carousel Pattern (5-player mode)', () => {
+    it('should return empty object for none pattern', () => {
+      const formation = {
+        leftDefender: 'player1',
+        rightDefender: 'player2',
+        leftAttacker: 'player3',
+        rightAttacker: 'player4',
+        goalie: 'player5'
+      };
+
+      const mapping = getCarouselMapping(
+        'none',
+        'player1', // outgoing field player
+        [], // no substitute positions for 5-player mode
+        formation
+      );
+
+      expect(mapping).toEqual({});
+    });
+
+    it('should be available in CAROUSEL_PATTERNS', () => {
+      expect(CAROUSEL_PATTERNS.none).toBeDefined();
+      expect(typeof CAROUSEL_PATTERNS.none.getSubstitutionMapping).toBe('function');
+    });
+
+    it('should handle 5-player mode configuration', () => {
+      const mode5 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_5];
+      expect(mode5.substituteRotationPattern).toBe('none');
+      expect(mode5.substitutePositions).toEqual([]);
+      expect(mode5.expectedCounts).toEqual({ outfield: 4, onField: 4 });
+    });
+  });
+
   describe('Backwards Compatibility', () => {
     it('should not break existing 6-player mode', () => {
       const mode6 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6];

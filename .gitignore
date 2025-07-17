@@ -17,6 +17,7 @@
 
 # Supabase
 .env
+db-schema.sql
 
 # misc
 .DS_Store

@@ -17,6 +17,30 @@ export const MODE_DEFINITIONS = {
     fieldPositions: ['leftPair', 'rightPair'],
     substitutePositions: ['subPair']
   },
+  [TEAM_MODES.INDIVIDUAL_5]: {
+    positions: {
+      goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
+      leftDefender: { key: 'leftDefender', role: PLAYER_ROLES.DEFENDER },
+      rightDefender: { key: 'rightDefender', role: PLAYER_ROLES.DEFENDER },
+      leftAttacker: { key: 'leftAttacker', role: PLAYER_ROLES.ATTACKER },
+      rightAttacker: { key: 'rightAttacker', role: PLAYER_ROLES.ATTACKER }
+    },
+    expectedCounts: { outfield: 4, onField: 4 },
+    positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
+    fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
+    substitutePositions: [],
+    supportsInactiveUsers: false,
+    supportsNextNextIndicators: false,
+    substituteRotationPattern: 'none',
+    initialFormationTemplate: {
+      goalie: null,
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null
+    },
+    validationMessage: "Please complete the team formation with 1 goalie and 4 unique outfield players."
+  },
   [TEAM_MODES.INDIVIDUAL_6]: {
     positions: {
       goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
@@ -185,7 +209,7 @@ export function supportsNextNextIndicators(teamMode) {
  * Check if a team mode is an individual mode (any individual player count)
  */
 export function isIndividualMode(teamMode) {
-  return [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8].includes(teamMode);
+  return [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8].includes(teamMode);
 }
 
 /**
@@ -202,6 +226,13 @@ export function getPlayerCountForMode(teamMode) {
   
   // For individual modes, each position corresponds to one player
   return definition.positionOrder.length;
+}
+
+/**
+ * Check if a team mode is specifically the 5-player individual mode
+ */
+export function isIndividual5Mode(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_5;
 }
 
 /**

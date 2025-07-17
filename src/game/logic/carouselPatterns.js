@@ -10,6 +10,13 @@
  * Defines carousel substitution patterns for different individual modes
  */
 export const CAROUSEL_PATTERNS = {
+  none: {
+    // 5-player: no substitutes available, no carousel rotation
+    getSubstitutionMapping: (outgoingPlayer, substitutePositions, formation) => ({
+      // No substitution possible with 0 substitutes
+    })
+  },
+  
   simple: {
     // 6-player: direct swap between field player and substitute_1
     getSubstitutionMapping: (outgoingPlayer, substitutePositions, formation) => ({
@@ -52,7 +59,7 @@ export const CAROUSEL_PATTERNS = {
 /**
  * Gets the carousel substitution mapping for a given pattern
  * 
- * @param {string} pattern - The carousel pattern type ('simple', 'carousel', 'advanced_carousel')
+ * @param {string} pattern - The carousel pattern type ('none', 'simple', 'carousel', 'advanced_carousel')
  * @param {string} outgoingPlayer - The field player being substituted out
  * @param {Array<string>} substitutePositions - Array of substitute position keys for the team mode
  * @param {Object} formation - Current formation object

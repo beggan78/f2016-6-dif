@@ -4,7 +4,53 @@ import { Select, Button } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
-import { getOutfieldPositions, isIndividual6Mode, isIndividual7Mode, isIndividual8Mode } from '../../constants/gameModes';
+import { getOutfieldPositions, MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
+
+// Position configuration map for individual modes
+const POSITION_CONFIG = {
+  leftDefender: { title: 'Left Defender', position: 'leftDefender' },
+  rightDefender: { title: 'Right Defender', position: 'rightDefender' },
+  leftAttacker: { title: 'Left Attacker', position: 'leftAttacker' },
+  rightAttacker: { title: 'Right Attacker', position: 'rightAttacker' },
+  substitute_1: { title: 'Substitute', position: 'substitute_1' },
+  substitute_2: { title: 'Substitute', position: 'substitute_2' },
+  substitute_3: { title: 'Substitute', position: 'substitute_3' }
+};
+
+// Dynamic component for rendering individual position cards
+function IndividualPositionCards({ teamMode, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
+  const modeDefinition = MODE_DEFINITIONS[teamMode];
+  if (!modeDefinition) {
+    return null;
+  }
+
+  const { fieldPositions, substitutePositions } = modeDefinition;
+  const allPositions = [...fieldPositions, ...substitutePositions];
+
+  return (
+    <>
+      {allPositions.map(position => {
+        const config = POSITION_CONFIG[position];
+        if (!config) {
+          console.warn(`No position config found for position: ${position}`);
+          return null;
+        }
+
+        return (
+          <IndividualPositionCard
+            key={position}
+            title={config.title}
+            position={config.position}
+            playerId={formation[position]}
+            onPlayerAssign={onPlayerAssign}
+            getAvailableOptions={getAvailableOptions}
+            currentPeriodNumber={currentPeriodNumber}
+          />
+        );
+      })}
+    </>
+  );
+}
 
 export function PeriodSetupScreen({ 
   currentPeriodNumber, 
@@ -390,163 +436,14 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {formation.goalie && isIndividual6Mode(teamMode) && (
-        <>
-          <IndividualPositionCard
-            title="Left Defender"
-            position="leftDefender"
-            playerId={formation.leftDefender}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Right Defender"
-            position="rightDefender"
-            playerId={formation.rightDefender}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Left Attacker"
-            position="leftAttacker"
-            playerId={formation.leftAttacker}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Right Attacker"
-            position="rightAttacker"
-            playerId={formation.rightAttacker}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Substitute"
-            position="substitute_1"
-            playerId={formation.substitute_1}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-        </>
-      )}
-
-      {formation.goalie && isIndividual7Mode(teamMode) && (
-        <>
-          <IndividualPositionCard
-            title="Left Defender"
-            position="leftDefender"
-            playerId={formation.leftDefender}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Right Defender"
-            position="rightDefender"
-            playerId={formation.rightDefender}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Left Attacker"
-            position="leftAttacker"
-            playerId={formation.leftAttacker}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Right Attacker"
-            position="rightAttacker"
-            playerId={formation.rightAttacker}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Substitute" // Please never change this title! But yes, it is the NEXT to sub in
-            position="substitute_1"
-            playerId={formation.substitute_1}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Substitute"  // Please never change this title! But yes, it is the NEXT-NEXT to sub in
-            position="substitute_2"
-            playerId={formation.substitute_2}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-        </>
-      )}
-
-      {formation.goalie && isIndividual8Mode(teamMode) && (
-        <>
-          <IndividualPositionCard
-            title="Left Defender"
-            position="leftDefender"
-            playerId={formation.leftDefender}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Right Defender"
-            position="rightDefender"
-            playerId={formation.rightDefender}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Left Attacker"
-            position="leftAttacker"
-            playerId={formation.leftAttacker}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Right Attacker"
-            position="rightAttacker"
-            playerId={formation.rightAttacker}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Substitute" // Next to substitute in
-            position="substitute_1"
-            playerId={formation.substitute_1}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Substitute" // Second to substitute in
-            position="substitute_2"
-            playerId={formation.substitute_2}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <IndividualPositionCard
-            title="Substitute" // Third to substitute in
-            position="substitute_3"
-            playerId={formation.substitute_3}
-            onPlayerAssign={handleIndividualPlayerAssignment}
-            getAvailableOptions={getAvailableForIndividualSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-        </>
+      {formation.goalie && isIndividualMode(teamMode) && (
+        <IndividualPositionCards
+          teamMode={teamMode}
+          formation={formation}
+          onPlayerAssign={handleIndividualPlayerAssignment}
+          getAvailableOptions={getAvailableForIndividualSelect}
+          currentPeriodNumber={currentPeriodNumber}
+        />
       )}
 
       <Button onClick={handleStartGame} disabled={!isFormationComplete()} Icon={Play}>

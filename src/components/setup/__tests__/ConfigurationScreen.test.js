@@ -495,7 +495,18 @@ describe('ConfigurationScreen', () => {
       expect(screen.getByText('Assign Goalies')).toBeInTheDocument();
     });
 
-    it('should not show goalie assignment with fewer than 6 players', () => {
+    it('should not show goalie assignment with fewer than 5 players', () => {
+      const props = {
+        ...defaultProps,
+        selectedSquadIds: ['1', '2', '3', '4']
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.queryByText('Assign Goalies')).not.toBeInTheDocument();
+    });
+
+    it('should show goalie assignment for 5 players', () => {
       const props = {
         ...defaultProps,
         selectedSquadIds: ['1', '2', '3', '4', '5']
@@ -503,7 +514,7 @@ describe('ConfigurationScreen', () => {
       
       render(<ConfigurationScreen {...props} />);
       
-      expect(screen.queryByText('Assign Goalies')).not.toBeInTheDocument();
+      expect(screen.getByText('Assign Goalies')).toBeInTheDocument();
     });
 
     it('should create goalie selects for each period', () => {

@@ -34,7 +34,9 @@ export function ConfigurationScreen({
       const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
       
       // Auto-set team mode based on squad size
-      if (newIds.length === 6) {
+      if (newIds.length === 5) {
+        setTeamMode(TEAM_MODES.INDIVIDUAL_5);
+      } else if (newIds.length === 6) {
         setTeamMode(TEAM_MODES.INDIVIDUAL_6);
       } else if (newIds.length === 7 && teamMode === TEAM_MODES.INDIVIDUAL_6) {
         setTeamMode(TEAM_MODES.PAIRS_7); // Default to pairs for 7-player
@@ -188,7 +190,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Goalie Assignment */}
-      {(selectedSquadIds.length === 6 || selectedSquadIds.length === 7 || selectedSquadIds.length === 8) && (
+      {(selectedSquadIds.length === 5 || selectedSquadIds.length === 6 || selectedSquadIds.length === 7 || selectedSquadIds.length === 8) && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">

@@ -18,6 +18,7 @@ import {
   initializePlayerRoleAndStatus,
   isIndividualMode,
   getPlayerCountForMode,
+  isIndividual5Mode,
   isIndividual6Mode,
   isIndividual7Mode,
   isIndividual8Mode
@@ -28,7 +29,7 @@ import { TEAM_MODES, PLAYER_ROLES } from '../playerConstants';
 describe('MODE_DEFINITIONS Configuration', () => {
   describe('configuration structure validation', () => {
     test('should have definitions for all team modes', () => {
-      const expectedModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
+      const expectedModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
       
       expectedModes.forEach(mode => {
         expect(MODE_DEFINITIONS).toHaveProperty(mode);
@@ -78,7 +79,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('should have valid individual mode configurations', () => {
-      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
+      const individualModes = [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
       
       individualModes.forEach(mode => {
         const definition = MODE_DEFINITIONS[mode];
@@ -103,6 +104,11 @@ describe('MODE_DEFINITIONS Configuration', () => {
 
     test('should have correct expected counts', () => {
       const testCases = [
+        {
+          mode: TEAM_MODES.INDIVIDUAL_5,
+          expectedOutfield: 4,
+          expectedOnField: 4
+        },
         {
           mode: TEAM_MODES.INDIVIDUAL_6,
           expectedOutfield: 5,
@@ -177,7 +183,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('getInitialFormationTemplate should create valid templates', () => {
-      const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
+      const individualModes = [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
       
       individualModes.forEach(mode => {
         const template = getInitialFormationTemplate(mode);
@@ -204,10 +210,12 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('individual mode support functions should be accurate', () => {
+      expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
       expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
       expect(supportsInactiveUsers(TEAM_MODES.PAIRS_7)).toBe(false);
       
+      expect(supportsNextNextIndicators(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(supportsNextNextIndicators(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(supportsNextNextIndicators(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
       expect(supportsNextNextIndicators(TEAM_MODES.PAIRS_7)).toBe(false);
@@ -287,25 +295,30 @@ describe('MODE_DEFINITIONS Configuration', () => {
 
   describe('configuration edge cases', () => {
     test('should maintain consistency between individual modes', () => {
+      const individual5 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_5];
       const individual6 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6];
       const individual7 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_7];
       const individual8 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_8];
       
       // Field positions should be identical across all individual modes
-      expect(individual6.fieldPositions).toEqual(individual7.fieldPositions);
-      expect(individual6.fieldPositions).toEqual(individual8.fieldPositions);
+      expect(individual5.fieldPositions).toEqual(individual6.fieldPositions);
+      expect(individual5.fieldPositions).toEqual(individual7.fieldPositions);
+      expect(individual5.fieldPositions).toEqual(individual8.fieldPositions);
       
       // OnField count should be the same across all individual modes
-      expect(individual6.expectedCounts.onField).toBe(individual7.expectedCounts.onField);
-      expect(individual6.expectedCounts.onField).toBe(individual8.expectedCounts.onField);
+      expect(individual5.expectedCounts.onField).toBe(individual6.expectedCounts.onField);
+      expect(individual5.expectedCounts.onField).toBe(individual7.expectedCounts.onField);
+      expect(individual5.expectedCounts.onField).toBe(individual8.expectedCounts.onField);
       
       // Should all have goalie position
+      expect(individual5.positionOrder).toContain('goalie');
       expect(individual6.positionOrder).toContain('goalie');
       expect(individual7.positionOrder).toContain('goalie');
       expect(individual8.positionOrder).toContain('goalie');
     });
 
     test('should have correct substitute counts', () => {
+      expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_5].substitutePositions).toHaveLength(0);
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6].substitutePositions).toHaveLength(1);
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_7].substitutePositions).toHaveLength(2);
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_8].substitutePositions).toHaveLength(3);
@@ -315,6 +328,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
 
   describe('isIndividualMode helper function', () => {
     test('should return true for all individual modes', () => {
+      expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_5)).toBe(true);
       expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
       expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
       expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_8)).toBe(true);
@@ -330,6 +344,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
 
   describe('getPlayerCountForMode helper function', () => {
     test('should return correct player counts for all team modes', () => {
+      expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_5)).toBe(5);
       expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_6)).toBe(6);
       expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_7)).toBe(7);
       expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_8)).toBe(8);
@@ -344,8 +359,18 @@ describe('MODE_DEFINITIONS Configuration', () => {
   });
 
   describe('specific individual mode checker functions', () => {
+    test('isIndividual5Mode should only return true for INDIVIDUAL_5', () => {
+      expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(true);
+      expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+      expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual5Mode(TEAM_MODES.PAIRS_7)).toBe(false);
+      expect(isIndividual5Mode(null)).toBe(false);
+    });
+
     test('isIndividual6Mode should only return true for INDIVIDUAL_6', () => {
       expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
+      expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
       expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
       expect(isIndividual6Mode(TEAM_MODES.PAIRS_7)).toBe(false);
@@ -354,6 +379,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
 
     test('isIndividual7Mode should only return true for INDIVIDUAL_7', () => {
       expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+      expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
       expect(isIndividual7Mode(TEAM_MODES.PAIRS_7)).toBe(false);
@@ -362,6 +388,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
 
     test('isIndividual8Mode should only return true for INDIVIDUAL_8', () => {
       expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(true);
+      expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
       expect(isIndividual8Mode(TEAM_MODES.PAIRS_7)).toBe(false);
