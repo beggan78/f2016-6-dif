@@ -58,7 +58,6 @@ export const calculateCurrentStintDuration = (lastStintStartTimeEpoch, currentTi
  */
 export const calculateUndoTimerTarget = (timerValueAtSubstitution, substitutionTimestamp, currentTimestamp = Date.now()) => {
   if (!substitutionTimestamp || substitutionTimestamp <= 0) {
-    console.warn('Invalid substitution timestamp for undo calculation');
     return timerValueAtSubstitution;
   }
   

@@ -260,19 +260,10 @@ describe('timeCalculator', () => {
     test('should return original value for invalid substitution timestamp', () => {
       const timerValueAtSubstitution = 120;
       
-      // Suppress expected console warnings for invalid timestamp tests
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
       expect(calculateUndoTimerTarget(timerValueAtSubstitution, 0)).toBe(120);
       expect(calculateUndoTimerTarget(timerValueAtSubstitution, -1000)).toBe(120);
       expect(calculateUndoTimerTarget(timerValueAtSubstitution, null)).toBe(120);
       expect(calculateUndoTimerTarget(timerValueAtSubstitution, undefined)).toBe(120);
-      
-      // Verify the warning was called for each invalid timestamp
-      expect(consoleWarnSpy).toHaveBeenCalledTimes(4);
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Invalid substitution timestamp for undo calculation');
-      
-      consoleWarnSpy.mockRestore();
     });
 
     test('should handle large time differences', () => {

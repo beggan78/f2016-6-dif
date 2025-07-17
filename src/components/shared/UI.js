@@ -105,7 +105,8 @@ export function FieldPlayerModal({
   showPositionChange = false,
   showPositionOptions = false,
   showSwapPositions = false,
-  showSubstitutionOptions = true
+  showSubstitutionOptions = true,
+  canSubstitute = true
 }) {
   if (!isOpen) return null;
 
@@ -153,10 +154,20 @@ export function FieldPlayerModal({
                 </Button>
                 {showSubstitutionOptions && (
                   <>
-                    <Button onClick={onSetNext} variant="primary">
+                    <Button 
+                      onClick={onSetNext} 
+                      variant="primary"
+                      disabled={!canSubstitute}
+                      title={canSubstitute ? "Set as next to substitute" : "All substitutes are inactive - cannot set as next"}
+                    >
                       Set as next sub
                     </Button>
-                    <Button onClick={onSubNow} variant="danger">
+                    <Button 
+                      onClick={onSubNow} 
+                      variant="danger" 
+                      disabled={!canSubstitute}
+                      title={canSubstitute ? "Substitute this player now" : "All substitutes are inactive - cannot substitute"}
+                    >
                       Substitute now
                     </Button>
                   </>

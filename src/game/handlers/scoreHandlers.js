@@ -28,11 +28,8 @@ export const createScoreHandlers = (
   };
 
   const handleAddHomeGoal = (gameState = null) => {
-    console.log('[DEBUG] handleAddHomeGoal called with gameState:', gameState);
-    
     // For backward compatibility, if no gameState provided, just add goal immediately
     if (!gameState) {
-      console.log('[DEBUG] No gameState provided, adding goal immediately');
       addHomeGoal();
       return;
     }
@@ -53,12 +50,10 @@ export const createScoreHandlers = (
       timestamp: now
     };
     
-    console.log('[DEBUG] Storing pending goal data:', pendingGoalData);
     setPendingGoalData(pendingGoalData);
     
     // Show goal scorer modal for attribution
     if (openGoalScorerModal) {
-      console.log('[DEBUG] Opening goal scorer modal');
       openGoalScorerModal({
         eventId,
         team: 'home',
@@ -93,27 +88,19 @@ export const createScoreHandlers = (
   };
 
   const handleSelectGoalScorer = (eventId, scorerId) => {
-    console.log('[DEBUG] handleSelectGoalScorer called with eventId:', eventId, 'scorerId:', scorerId);
-    
     // Get pending goal data
     const pendingGoal = getPendingGoalData();
-    console.log('[DEBUG] Retrieved pending goal:', pendingGoal);
     
     // If there's a pending goal, confirm it now
     if (pendingGoal && pendingGoal.eventId === eventId) {
-      console.log('[DEBUG] Confirming pending goal');
-      
       // Increment the score
       if (pendingGoal.type === EVENT_TYPES.GOAL_HOME) {
-        console.log('[DEBUG] Adding home goal to score');
         addHomeGoal();
       } else if (pendingGoal.type === EVENT_TYPES.GOAL_AWAY) {
-        console.log('[DEBUG] Adding away goal to score');
         addAwayGoal();
       }
       
       // Log the goal event
-      console.log('[DEBUG] Logging goal event');
       logEvent(pendingGoal.type, {
         eventId: pendingGoal.eventId,
         periodNumber: pendingGoal.periodNumber,
@@ -124,13 +111,9 @@ export const createScoreHandlers = (
       });
       
       // Clear pending goal
-      console.log('[DEBUG] Clearing pending goal');
       clearPendingGoal();
-    } else {
-      console.log('[DEBUG] No matching pending goal - this should not happen for initial scorer selection');
     }
     
-    console.log('[DEBUG] Closing goal scorer modal');
     closeGoalScorerModal();
   };
 
@@ -161,18 +144,13 @@ export const createScoreHandlers = (
   };
 
   const handleCancelGoalScorer = () => {
-    console.log('[DEBUG] handleCancelGoalScorer called');
-    
     // Get and clear pending goal data
     const pendingGoal = getPendingGoalData();
-    console.log('[DEBUG] Cancelling pending goal:', pendingGoal);
     
     if (pendingGoal) {
-      console.log('[DEBUG] Clearing pending goal data');
       clearPendingGoal();
     }
     
-    console.log('[DEBUG] Closing goal scorer modal');
     closeGoalScorerModal();
   };
   

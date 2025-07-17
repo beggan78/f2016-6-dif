@@ -139,10 +139,8 @@ export const createSubstitutionHandlers = (
 
       // Always log as regular substitution event
       const substitutionEvent = logEvent(EVENT_TYPES.SUBSTITUTION, eventData);
-      console.log(`Substitution logged: ${playersGoingOff.join(', ')} off, ${playersComingOn.join(', ')} on`);
       return substitutionEvent;
     } catch (error) {
-      console.error('Failed to log substitution event:', error);
       // Don't throw - substitution should continue even if logging fails
       return null;
     }
@@ -184,7 +182,6 @@ export const createSubstitutionHandlers = (
       // Get team mode configuration
       const definition = MODE_DEFINITIONS[teamMode];
       if (!definition || !definition.supportsNextNextIndicators) {
-        console.warn('Team mode does not support next-to-go-in functionality');
         closeSubstituteModal();
         return;
       }
@@ -230,7 +227,6 @@ export const createSubstitutionHandlers = (
                 });
               }
             } catch (error) {
-              console.error('Failed to log substitute reorder event:', error);
             }
           },
           setAnimationState,
@@ -283,7 +279,6 @@ export const createSubstitutionHandlers = (
             });
           }
         } catch (error) {
-          console.error('Failed to log player inactivation event:', error);
         }
       } else {
         // Use animation system for substitute position swap during inactivation
@@ -319,8 +314,7 @@ export const createSubstitutionHandlers = (
                 });
               }
             } catch (error) {
-              console.error('Failed to log player inactivation event:', error);
-            }
+                }
           },
           setAnimationState,
           setHideNextOffIndicator,
@@ -329,7 +323,6 @@ export const createSubstitutionHandlers = (
       }
     } else if (substituteModal.playerId) {
       // Mode doesn't support inactive players, no action taken
-      console.warn('Attempted to inactivate player in mode that does not support inactive players:', teamMode);
     }
     closeSubstituteModal();
     if (removeModalFromStack) {
@@ -376,7 +369,6 @@ export const createSubstitutionHandlers = (
               });
             }
           } catch (error) {
-            console.error('Failed to log player activation event:', error);
           }
         },
         setAnimationState,
@@ -385,7 +377,6 @@ export const createSubstitutionHandlers = (
       );
     } else if (substituteModal.playerId) {
       // Mode doesn't support inactive players, no action taken
-      console.warn('Attempted to activate player in mode that does not support inactive players:', teamMode);
     }
     closeSubstituteModal();
     if (removeModalFromStack) {
@@ -405,7 +396,6 @@ export const createSubstitutionHandlers = (
     
     // Check if substitution is possible (at least one active substitute)
     if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamMode)) {
-      console.warn('Cannot substitute: all substitutes are inactive');
       return;
     }
     
@@ -543,7 +533,6 @@ export const createSubstitutionHandlers = (
     } else if (action === 'swap-pair-positions') {
       // Handle pair position swapping (for pairs mode)
       if (fieldPlayerModal.target && fieldPlayerModal.type === 'pair') {
-        console.log(`🔄 Swapping positions within ${fieldPlayerModal.target} pair`);
         
         const currentTime = Date.now();
         
@@ -628,7 +617,6 @@ export const createSubstitutionHandlers = (
               });
             }
           } catch (error) {
-            console.error('Failed to log position change event:', error);
             // Don't throw - position switch should continue even if logging fails
           }
         },
@@ -645,7 +633,6 @@ export const createSubstitutionHandlers = (
 
   const handleUndo = (lastSubstitution) => {
     if (!lastSubstitution) {
-      console.warn('No substitution to undo');
       return;
     }
 
@@ -671,10 +658,7 @@ export const createSubstitutionHandlers = (
         try {
           if (lastSubstitution.eventId) {
             // Remove the original substitution event from the timeline
-            const removeSuccess = removeEvent(lastSubstitution.eventId);
-            if (removeSuccess) {
-              console.log(`Substitution event ${lastSubstitution.eventId} removed from timeline`);
-            }
+            removeEvent(lastSubstitution.eventId);
           }
 
           // Log the undo action itself
@@ -695,7 +679,6 @@ export const createSubstitutionHandlers = (
             periodNumber: newGameState.currentPeriodNumber || 1
           });
         } catch (error) {
-          console.error('Failed to log undo event:', error);
           // Don't throw - undo should continue even if logging fails
         }
 

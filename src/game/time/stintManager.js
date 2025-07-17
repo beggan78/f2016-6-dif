@@ -55,7 +55,6 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
   
   // Validate stint duration
   if (isNaN(stintDurationSeconds) || stintDurationSeconds < 0) {
-    console.warn('applyStintTimeToCounters: Invalid stint duration:', stintDurationSeconds);
     return updatedStats;
   }
   
@@ -82,7 +81,6 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
       
     default:
       // Unknown status - don't allocate time
-      console.warn(`Unknown player status: ${stats.currentStatus}`);
       break;
   }
   
@@ -98,7 +96,6 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
 export const startNewStint = (player, currentTimeEpoch) => {
   // Validation
   if (!currentTimeEpoch || currentTimeEpoch <= 0) {
-    console.warn(`startNewStint: Invalid currentTimeEpoch for player ${player.id}:`, currentTimeEpoch);
     currentTimeEpoch = Date.now(); // Fallback to current time
   }
   
@@ -145,7 +142,6 @@ export const completeCurrentStint = (player, currentTimeEpoch, isSubTimerPaused 
 export const resetPlayerStintTimer = (player, currentTimeEpoch) => {
   // Validation
   if (!currentTimeEpoch || currentTimeEpoch <= 0) {
-    console.warn(`resetPlayerStintTimer: Invalid currentTimeEpoch for player ${player.id}:`, currentTimeEpoch);
     currentTimeEpoch = Date.now(); // Fallback to current time
   }
 

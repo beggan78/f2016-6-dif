@@ -5,6 +5,7 @@ import GoalScorerModal from '../shared/GoalScorerModal';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
+import { isIndividualMode } from '../../constants/gameModes';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 
 // New modular imports
@@ -210,7 +211,6 @@ export function GameScreen({
   const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
     if (!player) {
-      console.warn(`getPlayerTimeStats: Player not found for ID: ${playerId}`);
       return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
     }
     
@@ -331,7 +331,7 @@ export function GameScreen({
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
-          hideNextOffIndicator={uiState.hideNextOffIndicator}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || (isIndividualMode(teamMode) && !canSubstitute)}
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
@@ -390,6 +390,7 @@ export function GameScreen({
           modalHandlers.modals.fieldPlayer.type === 'player' || 
           (modalHandlers.modals.fieldPlayer.type === 'pair' && modalHandlers.modals.fieldPlayer.target !== 'subPair')
         }
+        canSubstitute={isIndividualMode(teamMode) ? canSubstitute : true}
       />
 
       {/* Substitute Player Modal */}

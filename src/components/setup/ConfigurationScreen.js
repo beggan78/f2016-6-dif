@@ -61,12 +61,6 @@ export function ConfigurationScreen({
     // Empty string means no captain selected
     const captainId = playerId === "" ? null : playerId;
     
-    console.log('[DEBUG] ConfigurationScreen.handleCaptainChange:', {
-      selectedValue: playerId,
-      captainId: captainId,
-      selectedSquadPlayers: selectedSquadPlayers.map(p => ({ id: p.id, name: p.name }))
-    });
-    
     setCaptain(captainId);
   };
 

@@ -68,19 +68,6 @@ export function IndividualFormation({
       player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions
     );
     
-    // DEBUG: Log rendering of indicators for players
-    if (isNextOff || isNextOn) {
-      console.log(`[RENDER DEBUG] Rendering player ${playerId} (${player?.name}) at ${position}:`);
-      console.log(`  - isNextOff: ${isNextOff} → will show ${isNextOff && !hideNextOffIndicator ? 'RED DOWN arrow' : 'no down arrow'}`);
-      console.log(`  - isNextOn: ${isNextOn} → will show ${isNextOn && !hideNextOffIndicator ? 'GREEN UP arrow' : 'no up arrow'}`);
-      console.log(`  - isInactive: ${isInactive}`);
-      console.log(`  - hideNextOffIndicator: ${hideNextOffIndicator}`);
-      
-      // Alert if dual indicators will be rendered
-      if (isNextOff && isNextOn && !hideNextOffIndicator) {
-        console.error(`🚨 RENDERING DUAL INDICATORS for ${playerId} at ${position}!`);
-      }
-    }
 
     // Get styling and animation using utilities
     const { animationClass, zIndexClass, styleProps } = getPlayerAnimation(playerId, animationState);

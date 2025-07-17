@@ -61,7 +61,6 @@ export const calculateSubstitution = (gameState) => {
 
     return newGameState;
   } catch (error) {
-    console.error('Substitution calculation failed:', error);
     return gameState; // Return unchanged state on error
   }
 };
@@ -73,7 +72,6 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   const { allPlayers, formation, teamMode, isSubTimerPaused = false } = gameState;
 
   if (!player1Id || !player2Id || player1Id === player2Id) {
-    console.warn('Invalid player IDs for position switch');
     return gameState;
   }
 
@@ -81,13 +79,11 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   const player2 = findPlayerById(allPlayers, player2Id);
   
   if (!player1 || !player2) {
-    console.warn('Players not found for position switch');
     return gameState;
   }
 
   // Don't allow switching with goalie
   if (player1.id === formation.goalie || player2.id === formation.goalie) {
-    console.warn('Cannot switch positions with goalie');
     return gameState;
   }
 
@@ -97,7 +93,6 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   // Validate positions
   const currentValidPositions = getValidPositions(teamMode);
   if (!currentValidPositions.includes(player1Position) || !currentValidPositions.includes(player2Position)) {
-    console.warn('One or both players are not in valid positions for switching');
     return gameState;
   }
 
@@ -214,18 +209,15 @@ export const calculatePairPositionSwap = (gameState, pairKey) => {
   const { allPlayers, formation, teamMode } = gameState;
   
   if (teamMode !== TEAM_MODES.PAIRS_7) {
-    console.warn('Pair position swap only supported in PAIRS_7 mode');
     return gameState;
   }
   
   if (!pairKey || !['leftPair', 'rightPair', 'subPair'].includes(pairKey)) {
-    console.warn('Invalid pair key for position swap');
     return gameState;
   }
   
   const pair = formation[pairKey];
   if (!pair || !pair.defender || !pair.attacker) {
-    console.warn(`Cannot swap positions: ${pairKey} is not fully populated`);
     return gameState;
   }
   
@@ -280,7 +272,6 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   
 
   if (!newGoalieId || newGoalieId === formation.goalie) {
-    console.warn('Invalid new goalie ID or same as current goalie');
     return gameState;
   }
 
@@ -288,13 +279,11 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   const newGoalie = findPlayerById(allPlayers, newGoalieId);
   
   if (!currentGoalie || !newGoalie) {
-    console.warn('Goalie not found for switch');
     return gameState;
   }
 
   // Don't allow switching with inactive player
   if (newGoalie.stats.isInactive) {
-    console.warn('Cannot switch to inactive player as goalie');
     return gameState;
   }
 
@@ -470,7 +459,6 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
  */
 export const calculateUndo = (gameState, lastSubstitution) => {
   if (!lastSubstitution) {
-    console.warn('No substitution to undo');
     return gameState;
   }
 
@@ -633,19 +621,16 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
   const { allPlayers, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, teamMode } = gameState;
 
   if (!supportsInactiveUsers(teamMode)) {
-    console.warn('Player inactivation only supported in modes with inactive user support');
     return gameState;
   }
 
   const player = findPlayerById(allPlayers, playerId);
   if (!player) {
-    console.warn('Player not found for inactivation toggle');
     return gameState;
   }
 
   const definition = MODE_DEFINITIONS[teamMode];
   if (!definition) {
-    console.warn('Invalid team mode for player inactivation');
     return gameState;
   }
 
@@ -656,7 +641,6 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
   
   // Only allow inactivating/activating substitute players
   if (!isSubstitute) {
-    console.warn('Only substitute players can be inactivated');
     return gameState;
   }
 
@@ -678,14 +662,6 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
   // Update rotation queue and positions
   if (currentlyInactive) {
     // DEBUG: Log initial state before reactivation
-    console.log(`🔄 [REACTIVATION START] Player ${playerId} being reactivated:`);
-    console.log(`  - Current nextPlayerIdToSubOut: ${nextPlayerIdToSubOut}`);
-    console.log(`  - Current nextNextPlayerIdToSubOut: ${nextNextPlayerIdToSubOut}`);
-    console.log(`  - Current rotationQueue:`, rotationQueue);
-    console.log(`  - Current formation substitute positions:`, {
-      substitute_1: formation.substitute_1,
-      substitute_2: formation.substitute_2
-    });
     
     // Player is being reactivated - they become substitute_1 and all others cascade down
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
@@ -693,7 +669,6 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     queueManager.reactivatePlayer(playerId);
     newRotationQueue = queueManager.toArray();
     
-    console.log(`  - Queue after reactivatePlayer():`, newRotationQueue);
     
     // Apply reactivation cascade to formation and player positions
     const cascade = createReactivationCascade(playerId, definition.substitutePositions, formation, newAllPlayers);
@@ -718,35 +693,24 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     });
     
     // DEBUG: Log reactivation state changes
-    console.log(`🔄 [REACTIVATION DEBUG] Player ${playerId} being reactivated:`);
-    console.log(`  - Original nextPlayerIdToSubOut: ${nextPlayerIdToSubOut}`);
-    console.log(`  - Queue after reactivation:`, queueManager.toArray());
-    console.log(`  - Formation after cascade:`, Object.entries(cascade.formation));
-    console.log(`  - Player positions after cascade:`, Object.entries(cascade.players));
     
     // ✅ FIXED: Reactivated player should be "next to go ON", not "next to come OFF"
     // The nextPlayerIdToSubOut should point to the first field player in the rotation queue
     // The reactivated player is now substitute_1 (next to go on) via the cascade logic
-    console.log(`✅ FIXED: NOT setting reactivated player ${playerId} as nextPlayerIdToSubOut`);
-    console.log(`✅ Reactivated player is now substitute_1 (next to go on) via formation cascade`);
     
     // Set nextPlayerIdToSubOut to the first player in the rotation queue (should be a field player)
     const nextActivePlayers = queueManager.getNextActivePlayer(2);
     if (nextActivePlayers.length > 0) {
       newNextPlayerIdToSubOut = nextActivePlayers[0];
-      console.log(`✅ Setting nextPlayerIdToSubOut to first field player: ${nextActivePlayers[0]}`);
     } else {
       // Keep the original value if queue is empty (shouldn't happen)
       newNextPlayerIdToSubOut = nextPlayerIdToSubOut;
-      console.log(`✅ Keeping original nextPlayerIdToSubOut: ${nextPlayerIdToSubOut}`);
     }
     
     if (supportsNextNextIndicators(teamMode)) {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
-      console.log(`  - Next active players from queue:`, nextActivePlayers);
       if (nextActivePlayers.length >= 2) {
         newNextNextPlayerIdToSubOut = nextActivePlayers[1];
-        console.log(`  - Setting nextNextPlayerIdToSubOut to: ${nextActivePlayers[1]}`);
       }
     }
   } else {
@@ -828,13 +792,11 @@ export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPositi
   const { allPlayers, formation, teamMode } = gameState;
   
   if (!supportsNextNextIndicators(teamMode)) {
-    console.warn('Substitute swap only supported in modes with multiple substitute support');
     return gameState;
   }
   
   const definition = MODE_DEFINITIONS[teamMode];
   if (!definition || !definition.substitutePositions.includes(fromPosition) || !definition.substitutePositions.includes(toPosition)) {
-    console.warn('Invalid substitute positions for swap');
     return gameState;
   }
   
@@ -842,7 +804,6 @@ export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPositi
   const toPlayerId = formation[toPosition];
   
   if (!fromPlayerId || !toPlayerId) {
-    console.warn('Missing players in substitute positions for swap');
     return gameState;
   }
   
@@ -880,12 +841,10 @@ export const calculateSubstituteSwap = (gameState, substitute_1Id, substitute_2I
   const { allPlayers, formation, teamMode } = gameState;
   
   if (!supportsNextNextIndicators(teamMode)) {
-    console.warn('Substitute swap only supported in modes with multiple substitute support');
     return gameState;
   }
   
   if (!substitute_1Id || !substitute_2Id) {
-    console.warn('Invalid substitute IDs for swap');
     return gameState;
   }
   
@@ -923,25 +882,21 @@ export const calculateSubstituteReorder = (gameState, targetPosition) => {
   const { allPlayers, formation, teamMode } = gameState;
   
   if (!supportsNextNextIndicators(teamMode)) {
-    console.warn('Substitute reorder only supported in modes with multiple substitute support');
     return gameState;
   }
   
   const definition = MODE_DEFINITIONS[teamMode];
   if (!definition || !definition.substitutePositions.includes(targetPosition)) {
-    console.warn('Invalid substitute position for reorder');
     return gameState;
   }
   
   // Cannot reorder substitute_1 (already next to go in)
   if (targetPosition === 'substitute_1') {
-    console.warn('Cannot reorder substitute_1 - already next to go in');
     return gameState;
   }
   
   const targetPlayerId = formation[targetPosition];
   if (!targetPlayerId) {
-    console.warn('No player found in target position for reorder');
     return gameState;
   }
   
@@ -949,7 +904,6 @@ export const calculateSubstituteReorder = (gameState, targetPosition) => {
   const targetIndex = substitutePositions.indexOf(targetPosition);
   
   if (targetIndex === -1) {
-    console.warn('Target position not found in substitute positions');
     return gameState;
   }
   

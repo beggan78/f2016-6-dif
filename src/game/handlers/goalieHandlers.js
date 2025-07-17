@@ -88,7 +88,6 @@ export const createGoalieHandlers = (
             });
           }
         } catch (error) {
-          console.error('Failed to log goalie switch event:', error);
         }
       },
       setAnimationState,

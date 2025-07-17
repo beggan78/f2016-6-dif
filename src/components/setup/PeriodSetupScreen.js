@@ -32,7 +32,6 @@ function IndividualPositionCards({ teamMode, formation, onPlayerAssign, getAvail
       {allPositions.map(position => {
         const config = POSITION_CONFIG[position];
         if (!config) {
-          console.warn(`No position config found for position: ${position}`);
           return null;
         }
 

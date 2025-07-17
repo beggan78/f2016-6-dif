@@ -148,16 +148,11 @@ describe('stintManager', () => {
         }
       });
       
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
       const currentTime = timeHelpers.getTimeAfter(5);
       const result = updatePlayerTimeStats(player, currentTime, false);
       
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Unknown player status: unknown_status');
       expect(result.timeOnFieldSeconds).toBe(100); // No time added for unknown status
       expect(result.lastStintStartTimeEpoch).toBe(currentTime); // But stint timer updated
-      
-      consoleWarnSpy.mockRestore();
     });
 
     test('should not update stint timer when calculation is skipped', () => {
@@ -474,17 +469,10 @@ describe('stintManager', () => {
         }
       });
       
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
       const result = resetPlayerStintTimer(player, 0); // Invalid time
       
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'resetPlayerStintTimer: Invalid currentTimeEpoch for player 1:', 0
-      );
       expect(result.stats.timeOnFieldSeconds).toBe(100); // Unchanged
       expect(result.stats.lastStintStartTimeEpoch).toBeGreaterThan(0); // Fallback time applied
-      
-      consoleWarnSpy.mockRestore();
     });
 
     test('should preserve all player stats except stint timer', () => {

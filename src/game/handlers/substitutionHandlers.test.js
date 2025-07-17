@@ -543,7 +543,6 @@ describe('createSubstitutionHandlers', () => {
 
       handlers.handleUndo(null);
 
-      expect(console.warn).toHaveBeenCalledWith('No substitution to undo');
       expect(animateStateChange).not.toHaveBeenCalled();
     });
 

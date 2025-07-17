@@ -40,7 +40,6 @@ export const createTimerHandlers = (
       
       pauseSubTimer(updatePlayerStatsForPause);
     } catch (error) {
-      console.error('Error logging timer pause event:', error);
       // Continue with pause operation even if logging fails
       pauseSubTimer(updatePlayerStatsForPause);
     }
@@ -64,7 +63,6 @@ export const createTimerHandlers = (
       
       resumeSubTimer(updatePlayerStatsForPause);
     } catch (error) {
-      console.error('Error logging timer resume event:', error);
       // Continue with resume operation even if logging fails
       resumeSubTimer(updatePlayerStatsForPause);
     }
