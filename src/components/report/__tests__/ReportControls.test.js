@@ -218,7 +218,7 @@ describe('ReportControls', () => {
       expect(mockNavigator.share).not.toHaveBeenCalled();
     });
 
-    (process.env.CI ? it.skip : it)('uses navigator.share when available and no custom handler provided', async () => {
+    it('uses navigator.share when available and no custom handler provided', async () => {
       const props = { ...defaultProps, onShare: undefined };
       const mockShare = jest.fn().mockResolvedValue();
       Object.defineProperty(global, 'navigator', {
@@ -243,7 +243,7 @@ describe('ReportControls', () => {
       });
     });
 
-    (process.env.CI ? it.skip : it)('handles navigator.share error gracefully', async () => {
+    it('handles navigator.share error gracefully', async () => {
       const props = { ...defaultProps, onShare: undefined };
       const shareError = new Error('Share failed');
       const mockShare = jest.fn().mockRejectedValue(shareError);
@@ -265,7 +265,7 @@ describe('ReportControls', () => {
       });
     });
 
-    (process.env.CI ? it.skip : it)('falls back to clipboard when navigator.share is not available', async () => {
+    it('falls back to clipboard when navigator.share is not available', async () => {
       const props = { ...defaultProps, onShare: undefined };
       Object.defineProperty(global, 'navigator', {
         value: {
