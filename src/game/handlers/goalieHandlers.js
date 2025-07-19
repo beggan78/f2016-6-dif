@@ -40,10 +40,20 @@ export const createGoalieHandlers = (
     // Get available players for goalie replacement (outfield squad players)
     const selectedSquadIds = selectedSquadPlayers.map(p => p.id);
     const outfieldPlayers = getOutfieldPlayers(allPlayers, selectedSquadIds, formation.goalie);
-    const availablePlayers = outfieldPlayers.map(player => ({
-      id: player.id,
-      name: formatPlayerName(player)
-    }));
+    const availablePlayers = outfieldPlayers
+      .map(player => ({
+        id: player.id,
+        name: formatPlayerName(player),
+        isInactive: player.stats?.isInactive || false
+      }))
+      .sort((a, b) => {
+        // Sort by inactive status first (active players first)
+        if (a.isInactive !== b.isInactive) {
+          return a.isInactive ? 1 : -1;
+        }
+        // Then sort alphabetically by name within each group
+        return a.name.localeCompare(b.name);
+      });
 
     openGoalieModal({
       currentGoalieName: currentGoalieName,

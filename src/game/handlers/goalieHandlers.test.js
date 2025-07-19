@@ -92,7 +92,7 @@ describe('createGoalieHandlers', () => {
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
         availablePlayers: expect.arrayContaining([
-          { id: expect.any(String), name: expect.any(String) }
+          { id: expect.any(String), name: expect.any(String), isInactive: expect.any(Boolean) }
         ])
       });
     });
@@ -138,14 +138,101 @@ describe('createGoalieHandlers', () => {
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
         availablePlayers: expect.arrayContaining([
-          { id: '1', name: 'Player 1' },
-          { id: '2', name: 'Player 2' },
-          { id: '3', name: 'Player 3' },
-          { id: '4', name: 'Player 4' },
-          { id: '5', name: 'Player 5' },
-          { id: '6', name: 'Player 6' }
+          { id: '1', name: 'Player 1', isInactive: false },
+          { id: '2', name: 'Player 2', isInactive: false },
+          { id: '3', name: 'Player 3', isInactive: false },
+          { id: '4', name: 'Player 4', isInactive: false },
+          { id: '5', name: 'Player 5', isInactive: false },
+          { id: '6', name: 'Player 6', isInactive: false }
         ])
       });
+    });
+
+    it('should include isInactive property for inactive players', () => {
+      // Mock players with some inactive
+      const playersWithInactive = mockPlayers.map(p => 
+        p.id === '3' ? { ...p, stats: { ...p.stats, isInactive: true }} : p
+      );
+
+      getOutfieldPlayers.mockReturnValue(playersWithInactive.slice(0, 6));
+
+      const handlers = createGoalieHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        playersWithInactive,
+        playersWithInactive
+      );
+
+      const mockFormation = { goalie: '7' };
+      handlers.handleGoalieLongPress(mockFormation);
+
+      expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
+        currentGoalieName: 'Player 7',
+        availablePlayers: expect.arrayContaining([
+          { id: '1', name: 'Player 1', isInactive: false },
+          { id: '2', name: 'Player 2', isInactive: false },
+          { id: '3', name: 'Player 3', isInactive: true },
+          { id: '4', name: 'Player 4', isInactive: false },
+          { id: '5', name: 'Player 5', isInactive: false },
+          { id: '6', name: 'Player 6', isInactive: false }
+        ])
+      });
+    });
+
+    it('should sort players with active players first, then inactive players', () => {
+      // Mock players with mixed inactive status and names for sorting test
+      const playersWithMixedStatus = [
+        { id: '1', name: 'Zoe Smith', stats: { isInactive: true }},
+        { id: '2', name: 'Alice Brown', stats: { isInactive: false }},
+        { id: '3', name: 'Bob Wilson', stats: { isInactive: true }},
+        { id: '4', name: 'Charlie Davis', stats: { isInactive: false }},
+        { id: '5', name: 'Anna Johnson', stats: { isInactive: false }},
+        { id: '6', name: 'David Lee', stats: { isInactive: true }}
+      ];
+
+      getOutfieldPlayers.mockReturnValue(playersWithMixedStatus);
+
+      const handlers = createGoalieHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        playersWithMixedStatus,
+        playersWithMixedStatus
+      );
+
+      const mockFormation = { goalie: '7' };
+      handlers.handleGoalieLongPress(mockFormation);
+
+      // Get the actual call arguments to verify order
+      const callArgs = mockDependencies.modalHandlers.openGoalieModal.mock.calls[0][0];
+      const availablePlayers = callArgs.availablePlayers;
+
+      // Verify that active players come first
+      const activePlayersEnd = availablePlayers.findIndex(p => p.isInactive === true);
+      const inactivePlayersStart = activePlayersEnd === -1 ? availablePlayers.length : activePlayersEnd;
+      
+      // Check that all players before the first inactive player are active
+      for (let i = 0; i < inactivePlayersStart; i++) {
+        expect(availablePlayers[i].isInactive).toBe(false);
+      }
+      
+      // Check that all players from the first inactive player onwards are inactive
+      for (let i = inactivePlayersStart; i < availablePlayers.length; i++) {
+        expect(availablePlayers[i].isInactive).toBe(true);
+      }
+
+      // Verify alphabetical order within active players
+      const activeNames = availablePlayers.slice(0, inactivePlayersStart).map(p => p.name);
+      const sortedActiveNames = [...activeNames].sort();
+      expect(activeNames).toEqual(sortedActiveNames);
+
+      // Verify alphabetical order within inactive players
+      const inactiveNames = availablePlayers.slice(inactivePlayersStart).map(p => p.name);
+      const sortedInactiveNames = [...inactiveNames].sort();
+      expect(inactiveNames).toEqual(sortedInactiveNames);
     });
   });
 
