@@ -317,8 +317,6 @@ export const logEvent = (type, data = {}) => {
       throw new Error('Failed to save event to storage');
     }
     
-    console.log(`Event logged: ${type} at ${event.matchTime}`, event);
-    
     return event;
   } catch (error) {
     console.error('Failed to log event:', error);

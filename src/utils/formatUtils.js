@@ -70,16 +70,6 @@ export const formatPlayerName = (player) => {
   const isCaptain = player.stats?.isCaptain;
   const formattedName = isCaptain ? `${player.name} (C)` : player.name;
   
-  if (isCaptain) {
-    console.log('[DEBUG] formatPlayerName - Captain found:', {
-      playerId: player.id,
-      playerName: player.name,
-      isCaptain: isCaptain,
-      formattedName: formattedName,
-      playerStats: player.stats
-    });
-  }
-  
   return formattedName;
 };
 

@@ -139,17 +139,14 @@ export function useGameModals(pushModalState, removeModalFromStack) {
   
   // Pending goal management functions
   const setPendingGoalData = useCallback((goalData) => {
-    console.log('[DEBUG] useGameModals - Setting pending goal:', goalData);
     setPendingGoal(goalData);
   }, []);
   
   const getPendingGoalData = useCallback(() => {
-    console.log('[DEBUG] useGameModals - Getting pending goal:', pendingGoal);
     return pendingGoal;
   }, [pendingGoal]);
   
   const clearPendingGoal = useCallback(() => {
-    console.log('[DEBUG] useGameModals - Clearing pending goal');
     setPendingGoal(null);
   }, []);
 

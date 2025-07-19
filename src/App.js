@@ -158,7 +158,6 @@ function App() {
 
   const handleRestartMatch = () => {
     // Clear all game events from previous games
-    console.log('[DEBUG] App.handleRestartMatch - Clearing all game events');
     clearAllEvents();
     
     // Reset all timer state and clear localStorage

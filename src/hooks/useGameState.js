@@ -619,7 +619,7 @@ export function useGameState() {
       // Clear captain assignment
       setCaptainId(null);
     } else {
-      console.warn('[DEBUG] Failed to clear game events');
+      console.warn('Failed to clear game events');
     }
     
     // Create backup before clearing

@@ -562,7 +562,6 @@ export function PeriodSetupScreen({
       
       // Auto-run recommendations with new goalie
       setTimeout(() => {
-        console.log('[MODAL-DEBUG] Executing auto-recommendations with goalie override:', playerId);
         preparePeriodWithGameLog(currentPeriodNumber, gameLog, playerId);
       }, 10);
       return;
