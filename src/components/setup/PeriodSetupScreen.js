@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, Play, ArrowLeft, Shuffle } from 'lucide-react';
-import { Select, Button } from '../shared/UI';
+import { Select, Button, ConfirmationModal } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
@@ -57,6 +57,7 @@ export function PeriodSetupScreen({
   setFormation,
   availableForPairing, 
   allPlayers, 
+  setAllPlayers,
   handleStartGame, 
   gameLog, 
   selectedSquadPlayers, 
@@ -70,17 +71,280 @@ export function PeriodSetupScreen({
   opponentTeamName,
   rotationQueue,
   setRotationQueue,
+  preparePeriodWithGameLog,
   debugMode = false
 }) {
   // Determine formation mode
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
   
+  // Flag to track when we're replacing an inactive goalie (vs active goalie)
+  const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
+  
+  // Confirmation modal state for inactive player selection
+  const [confirmationModal, setConfirmationModal] = useState({
+    isOpen: false,
+    type: 'direct', // 'direct', 'indirect', 'inactive-goalie', 'recommendation-rerun'
+    playerName: '',
+    playerId: '',
+    position: '',
+    role: '', // For pairs mode
+    originalValue: '', // To restore dropdown if cancelled
+    // For indirect swaps
+    swapDetails: null, // Contains swap information for indirect scenarios
+    // For recommendation re-run
+    newGoalieId: null,
+    formerGoalieId: null
+  });
+  
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Detect if pre-selected goalie is inactive (for periods 2+)
+  useEffect(() => {
+    if (formation.goalie && currentPeriodNumber > 1) {
+      const goaliePlayer = allPlayers.find(p => p.id === formation.goalie);
+      if (goaliePlayer?.stats?.isInactive && !isReplacingInactiveGoalie) {
+        // Auto-trigger confirmation modal for inactive goalie (only if not already in replacement process)
+        setConfirmationModal({
+          isOpen: true,
+          type: 'inactive-goalie',
+          playerName: goaliePlayer.name,
+          playerId: goaliePlayer.id,
+          position: 'goalie',
+          role: '',
+          originalValue: formation.goalie,
+          swapDetails: null
+        });
+      }
+    }
+  }, [formation.goalie, allPlayers, currentPeriodNumber, isReplacingInactiveGoalie]);
 
-  const handlePlayerAssignment = (pairKey, role, playerId) => {
+  // Helper function to check if a player is inactive
+  const isPlayerInactive = (playerId) => {
+    const player = allPlayers.find(p => p.id === playerId);
+    return player?.stats?.isInactive || false;
+  };
+
+  // Helper function to check if a position is a field position (not substitute)
+  const isFieldPosition = (position, role = null) => {
+    if (isPairsMode) {
+      return position === 'leftPair' || position === 'rightPair';
+    } else {
+      return position === 'leftDefender' || position === 'rightDefender' || 
+             position === 'leftAttacker' || position === 'rightAttacker';
+    }
+  };
+
+  // Helper function to find where a player is currently positioned
+  const findPlayerCurrentPosition = (playerId) => {
+    if (isPairsMode) {
+      const pairKeys = ['leftPair', 'rightPair', 'subPair'];
+      for (const pairKey of pairKeys) {
+        const pair = formation[pairKey];
+        if (pair?.defender === playerId) {
+          return { position: pairKey, role: 'defender' };
+        }
+        if (pair?.attacker === playerId) {
+          return { position: pairKey, role: 'attacker' };
+        }
+      }
+    } else {
+      const positions = getOutfieldPositions(teamMode);
+      for (const position of positions) {
+        if (formation[position] === playerId) {
+          return { position };
+        }
+      }
+    }
+    return null;
+  };
+
+  // Helper function to detect if a swap would place an inactive player in a field position
+  const wouldPlaceInactivePlayerInFieldPosition = (selectedPlayerId, targetPosition, targetRole = null) => {
+    // If target is a field position, this is direct selection (already handled)
+    if (isFieldPosition(targetPosition, targetRole)) {
+      return null;
+    }
+
+    // Find where the selected player currently is
+    const currentPlayerPosition = findPlayerCurrentPosition(selectedPlayerId);
+    if (!currentPlayerPosition || !isFieldPosition(currentPlayerPosition.position, currentPlayerPosition.role)) {
+      return null; // Selected player is not in a field position
+    }
+
+    // Find who is currently in the target position (substitute position)
+    let displacedPlayerId = null;
+    if (isPairsMode && targetRole) {
+      displacedPlayerId = formation[targetPosition]?.[targetRole];
+    } else if (!isPairsMode) {
+      displacedPlayerId = formation[targetPosition];
+    }
+
+    // Check if the displaced player is inactive
+    if (displacedPlayerId && isPlayerInactive(displacedPlayerId)) {
+      const displacedPlayer = allPlayers.find(p => p.id === displacedPlayerId);
+      return {
+        displacedPlayerId,
+        displacedPlayerName: displacedPlayer?.name || 'Player',
+        selectedPlayerId,
+        targetPosition,
+        targetRole,
+        fieldPosition: currentPlayerPosition.position,
+        fieldRole: currentPlayerPosition.role
+      };
+    }
+
+    return null;
+  };
+
+  // Helper function to show confirmation modal for inactive player (direct selection)
+  const showInactivePlayerConfirmation = (playerName, playerId, position, role = '', originalValue = '') => {
+    setConfirmationModal({
+      isOpen: true,
+      type: 'direct',
+      playerName,
+      playerId,
+      position,
+      role,
+      originalValue,
+      swapDetails: null
+    });
+  };
+
+  // Helper function to show confirmation modal for indirect inactive player displacement
+  const showIndirectInactivePlayerConfirmation = (swapInfo, originalValue = '') => {
+    setConfirmationModal({
+      isOpen: true,
+      type: 'indirect',
+      playerName: swapInfo.displacedPlayerName,
+      playerId: swapInfo.displacedPlayerId, // The inactive player being displaced
+      position: swapInfo.targetPosition,
+      role: swapInfo.targetRole,
+      originalValue,
+      swapDetails: swapInfo
+    });
+  };
+
+  // Helper function to activate player and complete assignment
+  const activatePlayerAndAssign = () => {
+    const { type, playerId, position, role, swapDetails } = confirmationModal;
+    
+    // Activate the player (for direct, indirect, and inactive-goalie scenarios)
+    setAllPlayers(prevPlayers => 
+      prevPlayers.map(player => {
+        if (player.id === playerId) {
+          return {
+            ...player,
+            stats: {
+              ...player.stats,
+              isInactive: false
+            }
+          };
+        }
+        return player;
+      })
+    );
+    
+    // Complete the assignment based on type
+    if (type === 'direct') {
+      // Direct assignment - assign the selected player to the position
+      if (isPairsMode) {
+        originalHandlePlayerAssignment(position, role, playerId);
+      } else {
+        originalHandleIndividualPlayerAssignment(position, playerId);
+      }
+    } else if (type === 'indirect' && swapDetails) {
+      // Indirect assignment - execute the swap that caused the displacement
+      if (isPairsMode) {
+        originalHandlePlayerAssignment(position, role, swapDetails.selectedPlayerId);
+      } else {
+        originalHandleIndividualPlayerAssignment(position, swapDetails.selectedPlayerId);
+      }
+    } else if (type === 'inactive-goalie') {
+      // Inactive goalie - player is already activated above, formation.goalie is already set
+      // No additional assignment needed - just keep the current goalie selection
+    } else if (type === 'recommendation-rerun') {
+      // Re-run recommendations with new goalie
+      const { newGoalieId, formerGoalieId } = confirmationModal;
+      
+      // First perform the goalie change
+      performGoalieChange(newGoalieId, formerGoalieId);
+      
+      // Then re-run recommendations with the new goalie
+      if (preparePeriodWithGameLog && gameLog.length > 0) {
+        // Update the period goalie IDs first so recommendations use the new goalie
+        setPeriodGoalieIds(prev => {
+          const updatedIds = { ...prev, [currentPeriodNumber]: newGoalieId };
+          
+          // Use setTimeout to ensure state update is applied before re-running recommendations
+          setTimeout(() => {
+            preparePeriodWithGameLog(currentPeriodNumber, gameLog, newGoalieId);
+          }, 10);
+          
+          return updatedIds;
+        });
+      }
+    }
+    
+    // Close the modal
+    setConfirmationModal({ 
+      isOpen: false, 
+      type: 'direct', 
+      playerName: '', 
+      playerId: '', 
+      position: '', 
+      role: '', 
+      originalValue: '',
+      swapDetails: null 
+    });
+  };
+
+  // Helper function to cancel inactive player assignment
+  const cancelInactivePlayerAssignment = () => {
+    const { type, position, role, originalValue } = confirmationModal;
+    
+    if (type === 'inactive-goalie') {
+      // For inactive goalie, clear the goalie selection and set flag for auto-recommendations
+      setIsReplacingInactiveGoalie(true);
+      setFormation(prev => ({
+        ...prev,
+        goalie: null
+      }));
+    } else if (type === 'recommendation-rerun') {
+      // For recommendation re-run, just perform the goalie change without re-running recommendations
+      const { newGoalieId, formerGoalieId } = confirmationModal;
+      performGoalieChange(newGoalieId, formerGoalieId);
+    } else {
+      // For other types, restore the original dropdown value
+      if (isPairsMode) {
+        setFormation(prev => ({
+          ...prev,
+          [position]: { ...prev[position], [role]: originalValue }
+        }));
+      } else {
+        setFormation(prev => ({
+          ...prev,
+          [position]: originalValue
+        }));
+      }
+    }
+    
+    // Close the modal
+    setConfirmationModal({ 
+      isOpen: false, 
+      type: 'direct', 
+      playerName: '', 
+      playerId: '', 
+      position: '', 
+      role: '', 
+      originalValue: '',
+      swapDetails: null 
+    });
+  };
+
+  // Store original handlers for use in confirmation flow
+  const originalHandlePlayerAssignment = (pairKey, role, playerId) => {
     // If formation is complete, allow player switching
     if (isFormationComplete() && playerId) {
       // Find where the selected player is currently assigned
@@ -133,7 +397,47 @@ export function PeriodSetupScreen({
     }));
   };
 
-  const handleIndividualPlayerAssignment = (position, playerId) => {
+  // New handler with inactive player check
+  const handlePlayerAssignment = (pairKey, role, playerId) => {
+    // If no player selected, proceed normally
+    if (!playerId) {
+      return originalHandlePlayerAssignment(pairKey, role, playerId);
+    }
+
+    // Check for direct inactive player selection for field position
+    if (isPlayerInactive(playerId) && isFieldPosition(pairKey, role)) {
+      const player = allPlayers.find(p => p.id === playerId);
+      const originalValue = formation[pairKey]?.[role] || '';
+      
+      // Show confirmation modal for direct selection
+      showInactivePlayerConfirmation(
+        player?.name || 'Player',
+        playerId,
+        pairKey,
+        role,
+        originalValue
+      );
+      return;
+    }
+
+    // Check for indirect inactive player displacement (when formation is complete)
+    if (isFormationComplete() && playerId) {
+      const swapInfo = wouldPlaceInactivePlayerInFieldPosition(playerId, pairKey, role);
+      if (swapInfo) {
+        const originalValue = formation[pairKey]?.[role] || '';
+        
+        // Show confirmation modal for indirect displacement
+        showIndirectInactivePlayerConfirmation(swapInfo, originalValue);
+        return;
+      }
+    }
+
+    // Proceed with normal assignment
+    originalHandlePlayerAssignment(pairKey, role, playerId);
+  };
+
+  // Store original individual handler for use in confirmation flow
+  const originalHandleIndividualPlayerAssignment = (position, playerId) => {
     // If formation is complete, allow player switching
     if (isFormationComplete() && playerId) {
       // Find where the selected player is currently assigned
@@ -177,6 +481,45 @@ export function PeriodSetupScreen({
     }));
   };
 
+  // New individual handler with inactive player check
+  const handleIndividualPlayerAssignment = (position, playerId) => {
+    // If no player selected, proceed normally
+    if (!playerId) {
+      return originalHandleIndividualPlayerAssignment(position, playerId);
+    }
+
+    // Check for direct inactive player selection for field position
+    if (isPlayerInactive(playerId) && isFieldPosition(position)) {
+      const player = allPlayers.find(p => p.id === playerId);
+      const originalValue = formation[position] || '';
+      
+      // Show confirmation modal for direct selection
+      showInactivePlayerConfirmation(
+        player?.name || 'Player',
+        playerId,
+        position,
+        '', // No role for individual mode
+        originalValue
+      );
+      return;
+    }
+
+    // Check for indirect inactive player displacement (when formation is complete)
+    if (isFormationComplete() && playerId) {
+      const swapInfo = wouldPlaceInactivePlayerInFieldPosition(playerId, position);
+      if (swapInfo) {
+        const originalValue = formation[position] || '';
+        
+        // Show confirmation modal for indirect displacement
+        showIndirectInactivePlayerConfirmation(swapInfo, originalValue);
+        return;
+      }
+    }
+
+    // Proceed with normal assignment
+    originalHandleIndividualPlayerAssignment(position, playerId);
+  };
+
 
   const getAvailableForSelect = (currentPairKey, currentRole) => {
     // If formation is complete, show all players except goalie
@@ -203,91 +546,107 @@ export function PeriodSetupScreen({
   const handleGoalieChangeForCurrentPeriod = (playerId) => {
     const formerGoalieId = formation.goalie;
     
-    // Add automatic position swapping when formation is complete (like other position handlers)
-    if (isFormationComplete() && playerId && formerGoalieId) {
-      
-      // Find where the new goalie is currently assigned
-      let newGoalieCurrentPosition = null;
-      
-      if (isPairsMode) {
-        // Search pairs mode positions
-        ['leftPair', 'rightPair', 'subPair'].forEach(pairKey => {
-          if (formation[pairKey]?.defender === playerId) {
-            newGoalieCurrentPosition = { pairKey, role: 'defender' };
-          } else if (formation[pairKey]?.attacker === playerId) {
-            newGoalieCurrentPosition = { pairKey, role: 'attacker' };
-          }
-        });
-      } else {
-        // Search individual mode positions (supports both 6 and 7 player modes)
-        getOutfieldPositions(teamMode).forEach(position => {
-          if (formation[position] === playerId) {
-            newGoalieCurrentPosition = { position };
-          }
-        });
-      }
-      
-      if (newGoalieCurrentPosition) {
-        
-        // Perform the position swap
-        if (isPairsMode) {
-          // Pairs mode: update nested object structure
-          setFormation(prev => ({
-            ...prev,
-            goalie: playerId,
-            [newGoalieCurrentPosition.pairKey]: {
-              ...prev[newGoalieCurrentPosition.pairKey],
-              [newGoalieCurrentPosition.role]: formerGoalieId
-            }
-          }));
-        } else {
-          // Individual modes: update flat structure
-          setFormation(prev => ({
-            ...prev,
-            goalie: playerId,
-            [newGoalieCurrentPosition.position]: formerGoalieId
-          }));
-        }
-        
-        // Still update goalie IDs for period tracking
-        setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
-        
-        // Continue with existing rotation queue logic below
-      }
-    }
+    // If no change, do nothing
+    if (playerId === formerGoalieId) return;
     
-    // If no swapping occurred, use original logic
-    let swapOccurred = false;
-    if (isFormationComplete() && playerId && formerGoalieId) {
-      // Check if we found the new goalie in a field position
-      if (isPairsMode) {
-        swapOccurred = ['leftPair', 'rightPair', 'subPair'].some(pk => 
-          formation[pk]?.defender === playerId || formation[pk]?.attacker === playerId);
-      } else {
-        // Check individual mode positions (supports both 6 and 7 player modes)
-        swapOccurred = getOutfieldPositions(teamMode).some(pos =>
-          formation[pos] === playerId);
-      }
-    }
-    
-    if (!swapOccurred) {
+    // Check if we're replacing an inactive goalie - auto-run recommendations
+    if (isReplacingInactiveGoalie && currentPeriodNumber > 1 && playerId && preparePeriodWithGameLog) {
+      // Reset the replacement flag first
+      setIsReplacingInactiveGoalie(false);
       
+      // First update periodGoalieIds so preparePeriodWithGameLog uses the new goalie
       setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
-      // Also update the formation.goalie immediately
+      
+      // Perform goalie change (formerGoalieId will be null since we cleared it)
+      performGoalieChange(playerId, formerGoalieId);
+      
+      // Auto-run recommendations with new goalie
+      setTimeout(() => {
+        console.log('[MODAL-DEBUG] Executing auto-recommendations with goalie override:', playerId);
+        preparePeriodWithGameLog(currentPeriodNumber, gameLog, playerId);
+      }, 10);
+      return;
+    }
+    
+    // For periods 2+ with existing recommendations and active goalie, ask about re-running recommendations
+    if (currentPeriodNumber > 1 && playerId && formerGoalieId && preparePeriodWithGameLog) {
+      setConfirmationModal({
+        isOpen: true,
+        type: 'recommendation-rerun',
+        playerName: allPlayers.find(p => p.id === playerId)?.name || 'Player',
+        playerId: playerId,
+        position: 'goalie',
+        role: '',
+        originalValue: formerGoalieId,
+        swapDetails: null,
+        newGoalieId: playerId,
+        formerGoalieId: formerGoalieId
+      });
+      return;
+    }
+    
+    // Perform the goalie change immediately (for period 1 or when no recommendations exist)
+    performGoalieChange(playerId, formerGoalieId);
+  };
+
+  // Helper function to perform the actual goalie change with swapping
+  const performGoalieChange = (newGoalieId, formerGoalieId) => {
+    // Find where the new goalie is currently positioned
+    let newGoalieCurrentPosition = null;
+    
+    if (isPairsMode) {
+      // Search pairs mode positions
+      ['leftPair', 'rightPair', 'subPair'].forEach(pairKey => {
+        if (formation[pairKey]?.defender === newGoalieId) {
+          newGoalieCurrentPosition = { pairKey, role: 'defender' };
+        } else if (formation[pairKey]?.attacker === newGoalieId) {
+          newGoalieCurrentPosition = { pairKey, role: 'attacker' };
+        }
+      });
+    } else {
+      // Search individual mode positions
+      getOutfieldPositions(teamMode).forEach(position => {
+        if (formation[position] === newGoalieId) {
+          newGoalieCurrentPosition = { position };
+        }
+      });
+    }
+    
+    // Perform the position swap or simple assignment
+    if (newGoalieCurrentPosition && formerGoalieId) {
+      // Swap positions between new goalie and former goalie
+      if (isPairsMode) {
+        setFormation(prev => ({
+          ...prev,
+          goalie: newGoalieId,
+          [newGoalieCurrentPosition.pairKey]: {
+            ...prev[newGoalieCurrentPosition.pairKey],
+            [newGoalieCurrentPosition.role]: formerGoalieId
+          }
+        }));
+      } else {
+        setFormation(prev => ({
+          ...prev,
+          goalie: newGoalieId,
+          [newGoalieCurrentPosition.position]: formerGoalieId
+        }));
+      }
+    } else {
+      // Simple assignment (new goalie not in formation or no former goalie)
       setFormation(prev => ({
         ...prev,
-        goalie: playerId,
-        // Potentially clear pairs if new goalie was in one, or let user resolve
-        // For simplicity, just update goalie. User must re-evaluate pairs.
+        goalie: newGoalieId
       }));
     }
-
-    // Update rotation queue if it exists and we're in individual modes (periods 2+)
+    
+    // Update period goalie tracking
+    setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: newGoalieId }));
+    
+    // Update rotation queue for individual modes
     if (rotationQueue && rotationQueue.length > 0 && teamMode !== TEAM_MODES.PAIRS_7) {
-      const newGoalieIndex = rotationQueue.findIndex(id => id === playerId);
+      const newGoalieIndex = rotationQueue.findIndex(id => id === newGoalieId);
       
       if (newGoalieIndex !== -1) {
-        // New goalie is in the rotation queue
         const updatedQueue = [...rotationQueue];
         
         if (formerGoalieId) {
@@ -396,15 +755,27 @@ export function PeriodSetupScreen({
         </div>
       </div>
 
-      <div className="p-2 bg-slate-700 rounded-md">
-        <h3 className="text-sm font-medium text-sky-200 mb-1">Goalie for Period {currentPeriodNumber}</h3>
-        <Select
-          value={formation.goalie || ""}
-          onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
-          options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-          placeholder="Select Goalie for this Period"
-        />
-      </div>
+      {/* Enhanced goalie section with inactive player detection */}
+      {(() => {
+        const isGoalieInactive = formation.goalie && isPlayerInactive(formation.goalie);
+        const sectionBgColor = isGoalieInactive ? 'bg-amber-700 border border-amber-500' : 'bg-slate-700';
+        const headerColor = isGoalieInactive ? 'text-amber-200' : 'text-sky-200';
+        const warningText = isGoalieInactive ? ' (Inactive - needs activation)' : '';
+        
+        return (
+          <div className={`p-2 ${sectionBgColor} rounded-md`}>
+            <h3 className={`text-sm font-medium ${headerColor} mb-1`}>
+              Goalie for Period {currentPeriodNumber}{warningText}
+            </h3>
+            <Select
+              value={formation.goalie || ""}
+              onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
+              options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
+              placeholder="Select Goalie for this Period"
+            />
+          </div>
+        );
+      })()}
 
       {formation.goalie && isPairsMode && (
         <>
@@ -466,6 +837,36 @@ export function PeriodSetupScreen({
           Back to Configuration
         </Button>
       )}
+
+      {/* Confirmation Modal for Inactive Player Selection */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onConfirm={activatePlayerAndAssign}
+        onCancel={cancelInactivePlayerAssignment}
+        title={
+          confirmationModal.type === 'inactive-goalie' ? 'Inactive Goalie Detected' :
+          confirmationModal.type === 'recommendation-rerun' ? 'Re-run Formation Recommendations?' :
+          'Activate Player'
+        }
+        message={
+          confirmationModal.type === 'inactive-goalie'
+            ? `${confirmationModal.playerName} is currently inactive but selected as goalie for next period. Do you want to continue with ${confirmationModal.playerName} as goalie?`
+            : confirmationModal.type === 'recommendation-rerun'
+            ? `You've changed the goalie from ${allPlayers.find(p => p.id === confirmationModal.formerGoalieId)?.name || 'Unknown'} to ${confirmationModal.playerName}. Would you like to re-run the formation recommendations with the new goalie?`
+            : `Put ${confirmationModal.playerName} back into rotation?`
+        }
+        confirmText={
+          confirmationModal.type === 'inactive-goalie' ? 'Activate & Continue' :
+          confirmationModal.type === 'recommendation-rerun' ? 'Yes, Re-run Recommendations' :
+          'Activate'
+        }
+        cancelText={
+          confirmationModal.type === 'inactive-goalie' ? 'Choose Different Goalie' :
+          confirmationModal.type === 'recommendation-rerun' ? 'No, Keep Current Formation' :
+          'Cancel'
+        }
+        variant="primary"
+      />
     </div>
   );
 }

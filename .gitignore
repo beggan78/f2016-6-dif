@@ -17,6 +17,7 @@
 
 # Supabase
 .env
+.env.local
 db-schema.sql
 
 # misc

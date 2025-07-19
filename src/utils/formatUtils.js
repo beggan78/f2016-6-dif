@@ -47,15 +47,18 @@ export const formatTimeDifference = (diffSeconds) => {
 export const getPlayerLabel = (player, currentPeriodNumber) => {
   const baseLabel = formatPlayerName(player);
   
+  // Add inactive indicator if player is inactive
+  const inactiveLabel = player.stats?.isInactive ? `${baseLabel} (Inactive)` : baseLabel;
+  
   // Only show accumulated time for periods 2 and 3
   if (currentPeriodNumber > 1) {
     const outfieldTime = formatTime(player.stats.timeOnFieldSeconds);
     const attackDefenderDiff = player.stats.timeAsAttackerSeconds - player.stats.timeAsDefenderSeconds;
     const diffFormatted = formatTimeDifference(attackDefenderDiff);
     
-    return `${baseLabel}  ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
+    return `${inactiveLabel}  ⏱️ ${outfieldTime}  ⚔️ ${diffFormatted}`;
   }
-  return baseLabel;
+  return inactiveLabel;
 };
 
 /**

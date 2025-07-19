@@ -269,8 +269,8 @@ export function useGameState() {
 
 
 
-  const preparePeriodWithGameLog = useCallback((periodNum, gameLogToUse) => {
-    const currentGoalieId = periodGoalieIds[periodNum];
+  const preparePeriodWithGameLog = useCallback((periodNum, gameLogToUse, goalieIdOverride = null) => {
+    const currentGoalieId = goalieIdOverride || periodGoalieIds[periodNum];
 
     setFormation(prev => ({
       ...prev,

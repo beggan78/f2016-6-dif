@@ -77,6 +77,16 @@ jest.mock('../../shared/UI', () => ({
       {Icon && <Icon data-testid="button-icon" />}
       {children}
     </button>
+  ),
+  ConfirmationModal: ({ isOpen, onConfirm, onCancel, title, message, confirmText, cancelText, ...props }) => (
+    isOpen ? (
+      <div data-testid="confirmation-modal" {...props}>
+        <h3>{title}</h3>
+        <p>{message}</p>
+        <button onClick={onConfirm}>{confirmText}</button>
+        <button onClick={onCancel}>{cancelText}</button>
+      </div>
+    ) : null
   )
 }));
 
@@ -90,6 +100,7 @@ describe('PeriodSetupScreen', () => {
     
     mockSetters = {
       setFormation: jest.fn(),
+      setAllPlayers: jest.fn(),
       handleStartGame: jest.fn(),
       setPeriodGoalieIds: jest.fn(),
       setView: jest.fn(),
@@ -358,6 +369,179 @@ describe('PeriodSetupScreen', () => {
       // Verify setFormation was called with swapping logic
       expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
       expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('should detect and show modal for inactive goalie in period 2+', () => {
+      // Setup players with one inactive player who is selected as goalie
+      const inactivePlayers = mockPlayers.map(player => ({
+        ...player,
+        stats: {
+          ...player.stats,
+          isInactive: player.id === '7' // Make player 7 inactive
+        }
+      }));
+      
+      const props = {
+        ...defaultProps,
+        currentPeriodNumber: 2, // Period 2 (not period 1)
+        allPlayers: inactivePlayers,
+        formation: {
+          ...defaultProps.formation,
+          goalie: '7' // Pre-selected inactive goalie
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Should show the confirmation modal for inactive goalie
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+      expect(screen.getByText('Inactive Goalie Detected')).toBeInTheDocument();
+      expect(screen.getByText(/Player 7 is currently inactive but selected as goalie/)).toBeInTheDocument();
+      expect(screen.getByText('Activate & Continue')).toBeInTheDocument();
+      expect(screen.getByText('Choose Different Goalie')).toBeInTheDocument();
+    });
+
+    it('should show visual warning for inactive goalie in period 2+', () => {
+      // Setup players with one inactive player who is selected as goalie
+      const inactivePlayers = mockPlayers.map(player => ({
+        ...player,
+        stats: {
+          ...player.stats,
+          isInactive: player.id === '7' // Make player 7 inactive
+        }
+      }));
+      
+      const props = {
+        ...defaultProps,
+        currentPeriodNumber: 2,
+        allPlayers: inactivePlayers,
+        formation: {
+          ...defaultProps.formation,
+          goalie: '7' // Pre-selected inactive goalie
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Should show warning text in goalie section header
+      expect(screen.getByText(/Goalie for Period 2 \(Inactive - needs activation\)/)).toBeInTheDocument();
+    });
+
+    it('should not show inactive goalie modal for period 1', () => {
+      // Setup players with one inactive player who is selected as goalie
+      const inactivePlayers = mockPlayers.map(player => ({
+        ...player,
+        stats: {
+          ...player.stats,
+          isInactive: player.id === '7' // Make player 7 inactive
+        }
+      }));
+      
+      const props = {
+        ...defaultProps,
+        currentPeriodNumber: 1, // Period 1 - should not trigger modal
+        allPlayers: inactivePlayers,
+        formation: {
+          ...defaultProps.formation,
+          goalie: '7' // Inactive goalie
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Should NOT show the confirmation modal (period 1 doesn't have pre-selected goalies)
+      expect(screen.queryByTestId('confirmation-modal')).not.toBeInTheDocument();
+    });
+
+    it('should show recommendation re-run modal when goalie changes in period 2+', () => {
+      const mockPreparePeriodWithGameLog = jest.fn();
+      const mockGameLog = [
+        {
+          periodNumber: 1,
+          formation: { goalie: '7' },
+          finalStatsSnapshotForAllPlayers: mockPlayers
+        }
+      ];
+      
+      const props = {
+        ...defaultProps,
+        currentPeriodNumber: 2,
+        gameLog: mockGameLog,
+        preparePeriodWithGameLog: mockPreparePeriodWithGameLog,
+        formation: {
+          ...defaultProps.formation,
+          goalie: '7' // Currently selected goalie
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Change goalie from '7' to '5'
+      const selects = screen.getAllByTestId('select');
+      const goalieSelect = selects[0];
+      fireEvent.change(goalieSelect, { target: { value: '5' } });
+      
+      // Should show recommendation re-run modal
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+      expect(screen.getByText('Re-run Formation Recommendations?')).toBeInTheDocument();
+      expect(screen.getByText(/You've changed the goalie from Player 7 to Player 5/)).toBeInTheDocument();
+      expect(screen.getByText('Yes, Re-run Recommendations')).toBeInTheDocument();
+      expect(screen.getByText('No, Keep Current Formation')).toBeInTheDocument();
+    });
+
+    it('should auto-run recommendations when replacing inactive goalie in period 2+', () => {
+      const mockPreparePeriodWithGameLog = jest.fn();
+      const mockGameLog = [
+        {
+          periodNumber: 1,
+          formation: { goalie: '7' },
+          finalStatsSnapshotForAllPlayers: mockPlayers
+        }
+      ];
+      
+      // Setup players with one inactive player who is selected as goalie
+      const inactivePlayers = mockPlayers.map(player => ({
+        ...player,
+        stats: {
+          ...player.stats,
+          isInactive: player.id === '7' // Make player 7 inactive
+        }
+      }));
+      
+      const props = {
+        ...defaultProps,
+        currentPeriodNumber: 2,
+        allPlayers: inactivePlayers,
+        gameLog: mockGameLog,
+        preparePeriodWithGameLog: mockPreparePeriodWithGameLog,
+        formation: {
+          ...defaultProps.formation,
+          goalie: '7' // Pre-selected inactive goalie
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      // Modal should appear for inactive goalie
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+      
+      // Click "Choose Different Goalie"
+      const chooseDifferentButton = screen.getByText('Choose Different Goalie');
+      fireEvent.click(chooseDifferentButton);
+      
+      // Modal should close and goalie should be cleared
+      expect(screen.queryByTestId('confirmation-modal')).not.toBeInTheDocument();
+      
+      // Now select a new goalie - this should auto-run recommendations (no modal)
+      const selects = screen.getAllByTestId('select');
+      const goalieSelect = selects[0];
+      fireEvent.change(goalieSelect, { target: { value: '5' } });
+      
+      // Should have called setPeriodGoalieIds to update goalie tracking
+      expect(mockSetters.setPeriodGoalieIds).toHaveBeenCalledWith(expect.any(Function));
+      
+      // The goalie change should have been processed (we can't easily test the async setTimeout in Jest)
+      // But we can verify that the replacement flag logic was triggered
     });
   });
 

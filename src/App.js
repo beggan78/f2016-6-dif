@@ -257,6 +257,7 @@ function App() {
             setFormation={gameState.setFormation}
             availableForPairing={availableForPairing}
             allPlayers={gameState.allPlayers}
+            setAllPlayers={gameState.setAllPlayers}
             handleStartGame={handleStartGame}
             gameLog={gameState.gameLog}
             selectedSquadPlayers={selectedSquadPlayers}
@@ -270,6 +271,7 @@ function App() {
             opponentTeamName={gameState.opponentTeamName}
             rotationQueue={gameState.rotationQueue}
             setRotationQueue={gameState.setRotationQueue}
+            preparePeriodWithGameLog={gameState.preparePeriodWithGameLog}
             debugMode={debugMode}
           />
         );
