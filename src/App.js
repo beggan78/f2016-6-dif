@@ -20,6 +20,7 @@ import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
 import { isDebugMode } from './utils/debugUtils';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Main App Component
 function App() {
@@ -373,53 +374,55 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
-      <header className="w-full max-w-2xl relative text-center mb-4">
-        <div className="absolute top-0 right-0">
-          <HamburgerMenu 
-            onRestartMatch={handleRestartMatch} 
-            onAddPlayer={handleAddPlayer}
-            currentView={gameState.view}
-            teamMode={gameState.teamMode}
-            onSplitPairs={gameState.splitPairs}
-            onFormPairs={gameState.formPairs}
-            allPlayers={gameState.allPlayers}
-            selectedSquadIds={gameState.selectedSquadIds}
-          />
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
-      </header>
-      <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
-        {renderView()}
-      </main>
-      <footer className="mt-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
-      </footer>
-      
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onConfirm={handleConfirmEndPeriod}
-        onCancel={handleCancelEndPeriod}
-        title="End Period Early?"
-        message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
-      />
-      
-      <AddPlayerModal
-        isOpen={showAddPlayerModal}
-        onClose={handleAddPlayerCancel}
-        onAddPlayer={handleAddPlayerConfirm}
-      />
-      
-      <ConfirmationModal
-        isOpen={showNewGameModal}
-        onConfirm={handleConfirmNewGame}
-        onCancel={handleCancelNewGame}
-        title="Start a new game?"
-        message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
-        confirmText="Yes, start new game"
-        cancelText="Cancel"
-      />
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
+        <header className="w-full max-w-2xl relative text-center mb-4">
+          <div className="absolute top-0 right-0">
+            <HamburgerMenu 
+              onRestartMatch={handleRestartMatch} 
+              onAddPlayer={handleAddPlayer}
+              currentView={gameState.view}
+              teamMode={gameState.teamMode}
+              onSplitPairs={gameState.splitPairs}
+              onFormPairs={gameState.formPairs}
+              allPlayers={gameState.allPlayers}
+              selectedSquadIds={gameState.selectedSquadIds}
+            />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
+        </header>
+        <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
+          {renderView()}
+        </main>
+        <footer className="mt-8 text-center text-sm text-slate-500">
+          <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
+        </footer>
+        
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onConfirm={handleConfirmEndPeriod}
+          onCancel={handleCancelEndPeriod}
+          title="End Period Early?"
+          message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
+        />
+        
+        <AddPlayerModal
+          isOpen={showAddPlayerModal}
+          onClose={handleAddPlayerCancel}
+          onAddPlayer={handleAddPlayerConfirm}
+        />
+        
+        <ConfirmationModal
+          isOpen={showNewGameModal}
+          onConfirm={handleConfirmNewGame}
+          onCancel={handleCancelNewGame}
+          title="Start a new game?"
+          message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
+          confirmText="Yes, start new game"
+          cancelText="Cancel"
+        />
+      </div>
+    </AuthProvider>
   );
 }
 

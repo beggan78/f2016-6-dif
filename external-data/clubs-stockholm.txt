@@ -1,0 +1,369 @@
+A C Camelen
+AC Azzurri
+AC Farsta
+AC Sundbyberg
+AFC Hemmesta
+Afghanska FF
+AIK FF
+AIK Fotboll AB
+AIK Framtid FK
+AK Stockholmsatleterna
+All Stars FF
+All Stripes SC
+Alvik FC
+Anatolia IF
+Apollon Solna FK
+Arameisk-Syrianska IF
+Argentinska Stockholm IF
+AS Maria
+AS Solna FF
+Aspuddens FF
+Assyriska Botkyrka SK
+Assyriska FF Babylon
+Assyriska KF Botkyrka
+Astra FC
+Athletic FC Järfälla
+Atletic Blåsut FC
+AZ Milan SC
+Bagarmossen Kärrtorp BK
+Ballers FC
+Banjul FC
+Bele Barkarby FF
+Bellevue United FC
+Bemannia FC Stockholm
+BK Bleket
+BK Borsten
+BK Buffalo
+BK Bussenhus
+BK Fyren
+BK Fyren Ungdomsfotboll
+BK Gömmaren
+BK Hammarby
+BK Karlbergare
+BK Träsket
+BK Yardies
+Bollmora Internacional IKF
+Bollstanäs SK
+Bondegatans Bajare FF
+Boo FF
+Boo FK
+Boo SK
+Botkyrka Academy FC
+Botkyrka City FC
+Botkyrka Konya KUF
+Botkyrka Kuluspor FF
+Botkyrkakurd FF
+Bredden FC
+Bro IK
+Bromma TFF
+Brommapojkarna DFF
+Bromstens IK
+Bussenhus IK
+Bällsta FF
+Camdja IKF
+Cassi FF
+Colo-Colo International FK
+Dalarö SK
+Danderyd FF
+Danderyds SK FF
+Danderyds SK FK
+Danderyds United FC
+Dardania Stockholm FF
+Djurgårdens Elitfotboll AB
+Djurgårdens IF FF
+Djurgårdens TFF
+Djurö-Vindö IF
+Dynamo Täby FC
+Edessa Syrianska KIF
+Ekerö IK
+Elite Stockholm FF
+Enebybergs IF
+Enskede FF
+Enskede IK
+Enskede United FC
+Erikslunds KF
+Espanyol Academy IF
+Essinge IK
+Essinge Rovers IK
+FC Arninge
+FC Atletico Stockholm
+FC Ayen
+FC Balingsnäs
+FC Baloch
+FC Björnligan
+FC Brandbergen
+FC Croatia Stockholm
+FC De barrio
+FC Djursholm
+FC Djursholm United
+FC Första
+FC Järfälla
+FC Järvastaden
+FC Krukan
+FC Kungsholmen
+FC Milano Stockholm
+FC Plavi Team Stockholm
+FC Rotebro
+FC Rönninge
+FC Sampierdarenese
+FC Sollentuna
+FC Stockholm Internazionale
+FC Stockholm Internazionale AB
+FC Söder
+FC Södra FK
+FC Thebe
+FC Tolkarna
+FC Tyresö United
+FC Ukrainska
+FC Väsby Akademiska
+FF Aura
+Fisksätra IF
+Fittja IF
+FK Bosna 08
+FK Bromma
+Flemingsberg IF
+Flemingsberg United FC
+FoC Farsta FF
+Fryshuset IF
+Fullersta FK
+Futsal Club Bosna
+Föreningen Svenska Österbotten
+Gamla Skanstull BK
+Gimonäs FC
+Grödinge SK
+Gröndals FF
+Gröndals IK
+Gustavsbergs IF FK
+Hagalunds IS
+Hallunda IF
+Hammarby Fotboll AB
+Hammarby IF FF
+Hammarby TFF Herrfotboll
+Handelskamraternas IS
+Haninge IF
+Hanvikens SK
+Huddinge IF
+Husby FF
+Huvudsta Dragonz IF
+Hägersten FC Stockholm
+Hägersten SK
+Hässelby SK FF
+Högalids IF
+Högdalens AIS
+Iberoamericana IF
+IF Atletico Camelen
+IF Brommapojkarna
+IF Lokomotiv Blackeberg
+IF Olympia
+IF Söderkamraterna
+IF Wasa
+IFK Aspudden-Tellus
+IFK Bergshamra
+IFK Haninge
+IFK Lidingö BK
+IFK Lidingö FK
+IFK Sollentuna
+IFK Stockholm FK
+IFK Stocksund
+IFK Tumba FK
+IFK Vaxholm
+IFK Viksjö
+IK Frej Talangfotbollsförening
+IK Frej Täby FF
+IK Hephata
+IK Makkabi
+IK Sture
+IK Säbysjön
+Ingarö City FK
+Ingarö IF
+Jarlabergs IF
+Joga Bonito IF
+Johanneshovs FF
+Järfälla AIF
+Järfälla FF
+Järfälla FF Academy
+Järla IF FK
+Järva IKF
+Kallhälls FF
+Karlbergs BK
+Karlbergs BK FF
+KIF Söderort
+KIF Söderort FF
+Kilimanjaro FF
+Kista SC KFUM
+Kofkella Kultur o IF
+Konglig Samhällsbyggnadssektion FC
+Konyaspor Kultur och IF
+Korpen Stockholms Motionsidrottsförening
+Kransen United FF
+Kronobergs BK
+Kulturelitens FF
+Kungsholmen United FF
+Kungsholmens Folkfotbollsförening
+Kungsängens IF
+Kvarteret IF
+Kälvesta IoF
+Kärrdal Bollklubb
+Lado Sur FC
+Lidingö Gazoliners FC
+Lidingö Spartans FC
+Lindhagen FF
+Lion Academy FC
+Ljungbackens IF
+Ljusterö IS
+Los Ché IF
+Los Copihues IF
+Lux FC
+Långbro FF
+Långholmen FC
+Maj FC
+Mariebergs SK
+Marockanska FC
+Munsö IF
+Mälarhöjden-Hägersten FF
+Mälarhöjdens IK Fotboll
+Mörtnäs IF
+Nacka FC
+Nackdala AIS
+Newroz FC
+Newroz FC AB
+Nockebyhovs IF
+Norrtulls SK
+Norsborg FC
+Norsborgs IF
+Nynäshamns IF FK
+Olympique Nacka FC
+Oracle's Blues FF
+Oranje FK
+Orminge IF
+Oromo Stockholm IK
+Parsian IF
+Polonia Falcons FF
+Preben BoIS
+Qaran IKF
+Real Väsby FC
+Reymersholms FF
+Reymersholms IK
+Rinkeby Bussenhus IK
+Rinkeby United FC
+Rissne IF
+Roslags-Kulla IF
+Rotebro IS FF
+Runby IF
+Rydbo IF
+Rågsveds IF
+Råsunda FC
+Råsunda IS
+RödaMarkerna IF
+Rönninge Salem Fotboll
+Saltsjöbadens IF
+Saltsjö-Boo IF
+Segeltorps IF Fotboll
+Sickla IF
+Sjöstaden IF
+Skarpnäck FF
+Skogås-Trångsunds FF
+Skå IK & Bygdegård
+Sköndals IK FK
+Solberga BK
+Sollentuna FK
+Sollentuna Utveckling FK
+Solna FC
+Som United Fotbollsförening
+Somaliska KoIF
+Sorunda IF
+Spartak Trollbäcken FC
+Sporting FC Sollentuna
+Spånga IS FF
+Spånga IS FK
+Spårvägens FF
+Stockholm Athletic FF
+Stockholm Craft BC
+Stockholm Cranes IF
+Stockholm Folks FK
+Stockholm Framefotboll IF
+Stockholm Gaels IF
+Stockholm StreetSoccer FF
+Stockholm Södra FF
+Stockholm United FC
+Stockholms Universitets FF
+Stockholms-Postens IK
+Stocksunds IF
+Storkyrkopojkarna
+Storskogens SK
+Stureby FF
+Stureby SK
+Stuvsta FF
+Stuvsta IF
+Style United FC
+Sundbyberg FC
+Sundbybergs IK
+SuS IF
+Svensk-Palestinska FF
+Syrianska Tensta IF
+Sätra SK
+Söder Futsalklubb
+Söder United FC
+Söderort United FF
+Söderorts IF
+Sörskogens IF
+Tallkrogens IF
+Tekniska Högskolan FC
+Tian United FC
+Toofan Skärholmen FF
+Top FC
+Topkapi FF
+Tudor Arms FC
+Tullinge BK
+Tullinge FF
+Tullinge Triangel Pojkar FK
+Tullingebollen IF
+Tungelsta IF
+Tyresö FF
+Tyresö IF
+Tyresö Strand FC
+Täby FK
+Upplands-Bro United FK
+Ursvik IK
+Uruguayanska FF
+Vallentuna BK
+Vallentuna Futsal Club
+Vasalund FF
+Vasalund Fotboll AB
+Vasalund IF
+Vasalund Stockholm IF
+Vasastans BK
+Waxholm FF
+Vaxö AIF
+Vega FC
+Vendelsö IK
+Wermdö FC
+Westermalms IF FK
+Viggbyholms IK FF
+Viginti Quattuor FC
+Viña del Mar IF
+Vision Generation BIF
+Vistaberg IF
+Wollmars FF
+Vårby United FC
+Vällingby AIK
+Värmdö IF
+Värtans IK
+Väsby FF
+Västerhaninge IF
+Yenaris FF
+Åkersberga FC
+Åkeshovs Idrott och FK
+Årsta FF
+Älta IF
+Älvsjö AIK DFF
+Älvsjö AIK FF
+Ängby IF
+Äppelvikens SK
+Örby IS
+Örnarna IF
+Örnsbronx FF
+Ösmo GIF FK
+Östberga City FC
+Österåker United BK
+Österåker United FK
