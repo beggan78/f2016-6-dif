@@ -15,6 +15,7 @@ import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
+import { ProfileScreen } from './components/profile/ProfileScreen';
 import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -368,6 +369,12 @@ function App() {
             debugMode={debugMode}
           />
         );
+      case VIEWS.PROFILE:
+        return (
+          <ProfileScreen 
+            setView={gameState.setView}
+          />
+        );
       default:
         return <div>Unknown view</div>;
     }
@@ -387,6 +394,7 @@ function App() {
               onFormPairs={gameState.formPairs}
               allPlayers={gameState.allPlayers}
               selectedSquadIds={gameState.selectedSquadIds}
+              setView={gameState.setView}
             />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>

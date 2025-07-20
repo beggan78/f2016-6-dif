@@ -52,7 +52,24 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         
         if (session?.user) {
+          // Try to fetch existing profile
           await fetchUserProfile(session.user.id);
+          
+          // If user just signed up, try to create profile
+          if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
+            // Check if profile exists, if not create it
+            const { data: existingProfile } = await supabase
+              .from('user_profile')
+              .select('id')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (!existingProfile) {
+              // Extract name from user metadata if available
+              const userData = session.user.user_metadata || {};
+              await createUserProfile(session.user, userData);
+            }
+          }
         } else {
           setUserProfile(null);
         }
@@ -90,6 +107,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Create user profile in the database
+  const createUserProfile = async (user, userData = {}) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profile')
+        .insert([
+          {
+            id: user.id,
+            name: userData.name || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating user profile:', error.message);
+        return;
+      }
+
+      setUserProfile(data);
+      return data;
+    } catch (error) {
+      console.error('Error in createUserProfile:', error.message);
+    }
+  };
+
   // Sign up function
   const signUp = async (email, password, userData = {}) => {
     try {
@@ -110,13 +155,18 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Create user profile if sign up was successful
-      if (data.user && !data.user.email_confirmed_at) {
-        // User needs to confirm email
-        return { 
-          user: data.user, 
-          error: null, 
-          message: 'Please check your email to confirm your account.' 
-        };
+      if (data.user) {
+        // If email confirmation is required, return confirmation message
+        if (!data.user.email_confirmed_at) {
+          return { 
+            user: data.user, 
+            error: null, 
+            message: 'Please check your email to confirm your account.' 
+          };
+        }
+
+        // If user is immediately confirmed, create profile
+        await createUserProfile(data.user, userData);
       }
 
       return { user: data.user, error: null };

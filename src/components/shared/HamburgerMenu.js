@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { hasInactivePlayersInSquad } from '../../utils/playerUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthModal, useAuthModal } from '../auth/AuthModal';
+import { VIEWS } from '../../constants/viewConstants';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile, signOut } = useAuth();
   const authModal = useAuthModal();
@@ -53,8 +54,9 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
 
   const handleProfile = () => {
     setIsOpen(false);
-    // TODO: Implement profile navigation in Phase 4
-    console.log('Profile clicked - to be implemented in Phase 4');
+    if (setView) {
+      setView(VIEWS.PROFILE);
+    }
   };
 
   const isConfigScreen = currentView === 'config';
