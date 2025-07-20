@@ -394,14 +394,16 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
         formation[positionKey] = rotationQueue[4]?.id || null;
       } else if (substitutePositions.length >= 2) {
         // INDIVIDUAL_7+ modes: handle inactive players and substitute rotation
-        if (index === 0) {
-          // First substitute position gets first active substitute
-          formation[positionKey] = activeSubstitutes[0]?.id || null;
-        } else if (index === substitutePositions.length - 1 && inactivePlayers.length > 0) {
-          // Last substitute position gets inactive player if available, otherwise next active substitute
-          formation[positionKey] = inactivePlayers[0]?.id || activeSubstitutes[index]?.id || null;
+        // Calculate how many positions from the bottom should be filled with inactive players
+        const bottomPositionsForInactive = Math.min(inactivePlayers.length, substitutePositions.length);
+        const isBottomPosition = index >= substitutePositions.length - bottomPositionsForInactive;
+        
+        if (isBottomPosition && inactivePlayers.length > 0) {
+          // Bottom positions get inactive players (starting from the last position)
+          const inactivePlayerIndex = index - (substitutePositions.length - inactivePlayers.length);
+          formation[positionKey] = inactivePlayers[inactivePlayerIndex]?.id || null;
         } else {
-          // Middle substitute positions get active substitutes in order
+          // Top positions get active substitutes in order
           formation[positionKey] = activeSubstitutes[index]?.id || null;
         }
       }

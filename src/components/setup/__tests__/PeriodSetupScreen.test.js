@@ -96,7 +96,7 @@ describe('PeriodSetupScreen', () => {
   let mockSetters;
 
   beforeEach(() => {
-    mockPlayers = createMockPlayers(7);
+    mockPlayers = createMockPlayers(10);
     
     mockSetters = {
       setFormation: jest.fn(),
@@ -967,6 +967,221 @@ describe('PeriodSetupScreen', () => {
       
       const substitutes = screen.getAllByText('Substitute');
       expect(substitutes).toHaveLength(3);
+    });
+  });
+
+  describe('INDIVIDUAL_9 Mode Tests', () => {
+    beforeEach(() => {
+      defaultProps.teamMode = TEAM_MODES.INDIVIDUAL_9;
+      defaultProps.formation = {
+        goalie: '9',
+        leftDefender: '',
+        rightDefender: '',
+        leftAttacker: '',
+        rightAttacker: '',
+        substitute_1: '',
+        substitute_2: '',
+        substitute_3: '',
+        substitute_4: ''
+      };
+      defaultProps.availableForPairing = mockPlayers.slice(0, 8); // 8 field players
+    });
+
+    it('should render individual position cards for 9-player mode', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      expect(screen.getByText('Left Defender')).toBeInTheDocument();
+      expect(screen.getByText('Right Defender')).toBeInTheDocument();
+      expect(screen.getByText('Left Attacker')).toBeInTheDocument();
+      expect(screen.getByText('Right Attacker')).toBeInTheDocument();
+      
+      // Should show four substitute positions (all labeled "Substitute")
+      const substitutes = screen.getAllByText('Substitute');
+      expect(substitutes).toHaveLength(4);
+    });
+
+    it('should handle individual 9 player assignment', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      const selects = screen.getAllByTestId('select');
+      const leftDefenderSelect = selects[0]; // Goalie is first, so leftDefender is next
+      
+      fireEvent.change(leftDefenderSelect, { target: { value: '1' } });
+      
+      expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('should calculate formation completion for individual 9 mode', () => {
+      const completeProps = {
+        ...defaultProps,
+        formation: {
+          goalie: '9',
+          leftDefender: '1',
+          rightDefender: '2', 
+          leftAttacker: '3',
+          rightAttacker: '4',
+          substitute_1: '5',
+          substitute_2: '6',
+          substitute_3: '7',
+          substitute_4: '8'
+        }
+      };
+      
+      render(<PeriodSetupScreen {...completeProps} />);
+      
+      const startButton = screen.getByText('Start Period 1');
+      expect(startButton).not.toBeDisabled();
+    });
+
+    it('should prevent duplicate assignments in individual 9 mode', () => {
+      const props = {
+        ...defaultProps,
+        formation: {
+          ...defaultProps.formation,
+          leftDefender: '1' // Player 1 already assigned
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      expect(mockSetters.setFormation).toBeDefined();
+    });
+
+    it('should allow position swapping in complete individual 9 formation', () => {
+      const props = {
+        ...defaultProps,
+        formation: {
+          goalie: '9',
+          leftDefender: '1',
+          rightDefender: '2',
+          leftAttacker: '3', 
+          rightAttacker: '4',
+          substitute_1: '5',
+          substitute_2: '6',
+          substitute_3: '7',
+          substitute_4: '8'
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      expect(mockSetters.setFormation).toBeDefined();
+    });
+
+    it('should show correct substitute styling for all four substitutes', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      const substitutes = screen.getAllByText('Substitute');
+      expect(substitutes).toHaveLength(4);
+    });
+  });
+
+  describe('INDIVIDUAL_10 Mode Tests', () => {
+    beforeEach(() => {
+      defaultProps.teamMode = TEAM_MODES.INDIVIDUAL_10;
+      defaultProps.formation = {
+        goalie: '10',
+        leftDefender: '',
+        rightDefender: '',
+        leftAttacker: '',
+        rightAttacker: '',
+        substitute_1: '',
+        substitute_2: '',
+        substitute_3: '',
+        substitute_4: '',
+        substitute_5: ''
+      };
+      defaultProps.availableForPairing = mockPlayers.slice(0, 9); // 9 field players
+    });
+
+    it('should render individual position cards for 10-player mode', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      expect(screen.getByText('Left Defender')).toBeInTheDocument();
+      expect(screen.getByText('Right Defender')).toBeInTheDocument();
+      expect(screen.getByText('Left Attacker')).toBeInTheDocument();
+      expect(screen.getByText('Right Attacker')).toBeInTheDocument();
+      
+      // Should show five substitute positions (all labeled "Substitute")
+      const substitutes = screen.getAllByText('Substitute');
+      expect(substitutes).toHaveLength(5);
+    });
+
+    it('should handle individual 10 player assignment', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      const selects = screen.getAllByTestId('select');
+      const leftDefenderSelect = selects[0]; // Goalie is first, so leftDefender is next
+      
+      fireEvent.change(leftDefenderSelect, { target: { value: '1' } });
+      
+      expect(mockSetters.setFormation).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('should calculate formation completion for individual 10 mode', () => {
+      const completeProps = {
+        ...defaultProps,
+        formation: {
+          goalie: '10',
+          leftDefender: '1',
+          rightDefender: '2', 
+          leftAttacker: '3',
+          rightAttacker: '4',
+          substitute_1: '5',
+          substitute_2: '6',
+          substitute_3: '7',
+          substitute_4: '8',
+          substitute_5: '9'
+        }
+      };
+      
+      render(<PeriodSetupScreen {...completeProps} />);
+      
+      const startButton = screen.getByText('Start Period 1');
+      expect(startButton).not.toBeDisabled();
+    });
+
+    it('should prevent duplicate assignments in individual 10 mode', () => {
+      const props = {
+        ...defaultProps,
+        formation: {
+          ...defaultProps.formation,
+          leftDefender: '1' // Player 1 already assigned
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      expect(mockSetters.setFormation).toBeDefined();
+    });
+
+    it('should allow position swapping in complete individual 10 formation', () => {
+      const props = {
+        ...defaultProps,
+        formation: {
+          goalie: '10',
+          leftDefender: '1',
+          rightDefender: '2',
+          leftAttacker: '3', 
+          rightAttacker: '4',
+          substitute_1: '5',
+          substitute_2: '6',
+          substitute_3: '7',
+          substitute_4: '8',
+          substitute_5: '9'
+        }
+      };
+      
+      render(<PeriodSetupScreen {...props} />);
+      
+      expect(mockSetters.setFormation).toBeDefined();
+    });
+
+    it('should show correct substitute styling for all five substitutes', () => {
+      render(<PeriodSetupScreen {...defaultProps} />);
+      
+      const substitutes = screen.getAllByText('Substitute');
+      expect(substitutes).toHaveLength(5);
     });
   });
 

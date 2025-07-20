@@ -87,7 +87,7 @@ describe('ConfigurationScreen', () => {
   let mockSetters;
 
   beforeEach(() => {
-    mockPlayers = createMockPlayers(8); // Create 8 players for testing selection limits
+    mockPlayers = createMockPlayers(10); // Create 10 players for testing selection limits
     
     mockSetters = {
       setSelectedSquadIds: jest.fn(),
@@ -145,7 +145,7 @@ describe('ConfigurationScreen', () => {
     it('should show squad selection count', () => {
       render(<ConfigurationScreen {...defaultProps} />);
       
-      expect(screen.getByText('Select Squad (0/6-8 Players)')).toBeInTheDocument();
+      expect(screen.getByText('Select Squad (5-10 Players) - Selected: 0')).toBeInTheDocument();
     });
 
     it('should render game settings section', () => {
@@ -182,13 +182,13 @@ describe('ConfigurationScreen', () => {
       
       render(<ConfigurationScreen {...props} />);
       
-      expect(screen.getByText('Select Squad (3/6-8 Players)')).toBeInTheDocument();
+      expect(screen.getByText('Select Squad (5-10 Players) - Selected: 3')).toBeInTheDocument();
     });
 
-    it('should disable checkboxes when 8 players are selected', () => {
+    it('should disable checkboxes when 10 players are selected', () => {
       const props = {
         ...defaultProps,
-        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7', '8']
+        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
       };
       
       render(<ConfigurationScreen {...props} />);

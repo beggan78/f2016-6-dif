@@ -2,7 +2,7 @@
  * Generalized carousel substitution patterns for individual modes
  * 
  * This module provides a unified system for handling substitution patterns across
- * all individual modes (6, 7, and 8-player), replacing hardcoded logic with
+ * all individual modes (5, 6, 7, 8, 9, and 10-player), replacing hardcoded logic with
  * configuration-driven patterns.
  */
 
@@ -36,17 +36,19 @@ export const CAROUSEL_PATTERNS = {
   },
   
   advanced_carousel: {
-    // 8-player: Field player goes to bottom, all substitutes move up
-    // Field player → substitute_3, substitute_1 → field, substitute_2 → substitute_1, substitute_3 → substitute_2
+    // 8+player: Field player goes to bottom, all substitutes move up
+    // Supports variable number of substitute positions (3, 4, or 5)
     getSubstitutionMapping: (outgoingPlayer, substitutePositions, formation) => {
       const mapping = {};
+      const lastSubIndex = substitutePositions.length - 1;
       
       // Field player goes to bottom substitute position
-      mapping[outgoingPlayer] = substitutePositions[2]; // substitute_3
+      mapping[outgoingPlayer] = substitutePositions[lastSubIndex];
       
-      // All substitutes move up one position
-      mapping[formation[substitutePositions[1]]] = substitutePositions[0]; // substitute_2 → substitute_1
-      mapping[formation[substitutePositions[2]]] = substitutePositions[1]; // substitute_3 → substitute_2
+      // All substitutes move up one position (except the first one who goes to field)
+      for (let i = 1; i < substitutePositions.length; i++) {
+        mapping[formation[substitutePositions[i]]] = substitutePositions[i - 1];
+      }
       
       // substitute_1 goes to field (this is handled by the field position assignment)
       // We don't need to explicitly map it since it's handled by the calling code

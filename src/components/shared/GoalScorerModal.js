@@ -27,10 +27,11 @@ const GoalScorerModal = ({
   // Reset selection when modal opens or when existingGoalData changes
   useEffect(() => {
     if (isOpen) {
-      // For new goals, default to "No specific scorer", for corrections use existing scorer
-      setSelectedPlayerId(mode === 'new' ? null : (existingGoalData?.scorerId || null));
+      const newSelection = mode === 'new' ? null : (existingGoalData?.scorerId || null);
+      setSelectedPlayerId(newSelection);
     }
-  }, [isOpen, existingGoalData, mode, eligiblePlayers]);
+  }, [isOpen, existingGoalData, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Note: eligiblePlayers is intentionally excluded to prevent selection reset on re-renders
 
   // Get position icon for a player
   const getPositionIcon = (player) => {

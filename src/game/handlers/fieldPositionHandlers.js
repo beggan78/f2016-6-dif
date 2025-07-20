@@ -101,15 +101,15 @@ export const createFieldPositionHandlers = (
     positionCallbacks.rightPairCallback = createPositionCallback('rightPair');
     positionCallbacks.subPairCallback = createPositionCallback('subPair');
   } else {
-    // Individual modes
-    const positions = [
-      'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker',
-      'substitute_1', 'substitute_2', 'substitute_3'
-    ];
-    
-    positions.forEach(position => {
-      positionCallbacks[`${position}Callback`] = createPositionCallback(position);
-    });
+    // Individual modes - dynamically get all positions from team mode definition
+    const definition = MODE_DEFINITIONS[teamMode];
+    if (definition) {
+      const allPositions = [...definition.fieldPositions, ...definition.substitutePositions];
+      
+      allPositions.forEach(position => {
+        positionCallbacks[`${position}Callback`] = createPositionCallback(position);
+      });
+    }
   }
 
   return positionCallbacks;

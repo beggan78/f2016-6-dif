@@ -14,7 +14,9 @@ const POSITION_CONFIG = {
   rightAttacker: { title: 'Right Attacker', position: 'rightAttacker' },
   substitute_1: { title: 'Substitute', position: 'substitute_1' },
   substitute_2: { title: 'Substitute', position: 'substitute_2' },
-  substitute_3: { title: 'Substitute', position: 'substitute_3' }
+  substitute_3: { title: 'Substitute', position: 'substitute_3' },
+  substitute_4: { title: 'Substitute', position: 'substitute_4' },
+  substitute_5: { title: 'Substitute', position: 'substitute_5' }
 };
 
 // Dynamic component for rendering individual position cards
@@ -908,7 +910,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
   const availableOptions = getAvailableOptions(position);
 
   // Use same colors as GameScreen: sky for on-field, slate for substitutes
-  const isSubstitute = position === 'substitute_1' || position === 'substitute_2' || position === 'substitute_3';
+  const isSubstitute = position.startsWith('substitute_');
   const bgColor = isSubstitute ? 'bg-slate-700' : 'bg-sky-700';
   const headerColor = isSubstitute ? 'text-slate-200' : 'text-sky-200';
 

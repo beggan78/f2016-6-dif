@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Square, Pause, Play, Undo2, RotateCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
@@ -74,6 +74,12 @@ export function GameScreen({
 
   // Helper functions
   const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
+  
+  // Memoize eligible players to prevent unnecessary re-renders and state resets
+  const eligiblePlayers = useMemo(() => {
+    const filteredPlayers = selectedSquadPlayers.filter(p => p.stats && !p.stats.isInactive);
+    return sortPlayersByGoalScoringRelevance(filteredPlayers);
+  }, [selectedSquadPlayers]);
   
   // Determine which formation mode we're using
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
@@ -443,10 +449,7 @@ export function GameScreen({
         onClose={scoreHandlers.handleCancelGoalScorer}
         onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
-        eligiblePlayers={(() => {
-          const filteredPlayers = selectedSquadPlayers.filter(p => p.stats && !p.stats.isInactive);
-          return sortPlayersByGoalScoringRelevance(filteredPlayers);
-        })()}
+        eligiblePlayers={eligiblePlayers}
         mode={modalHandlers.modals.goalScorer.mode}
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}

@@ -1,4 +1,4 @@
-import { generateRecommendedFormation, generateBalancedFormationForPeriod3 } from './formationGenerator';
+import { generateRecommendedFormation, generateBalancedFormationForPeriod3, generateIndividualFormationRecommendation } from './formationGenerator';
 
 describe('Formation Generator - Pair Mode', () => {
   // Mock player data
@@ -389,6 +389,262 @@ describe('Formation Generator - Pair Mode', () => {
       expect(
         firstToRotateOffPair.defender === 'p1' || firstToRotateOffPair.attacker === 'p1'
       ).toBe(true);
+    });
+  });
+});
+
+describe('Formation Generator - Individual Mode', () => {
+  // Mock player data for individual modes
+  const createIndividualPlayer = (id, name, timeOnField = 0, isInactive = false) => ({
+    id,
+    name,
+    stats: {
+      timeOnFieldSeconds: timeOnField,
+      timeAsDefenderSeconds: timeOnField / 2,
+      timeAsAttackerSeconds: timeOnField / 2,
+      timeAsGoalieSeconds: 0,
+      isInactive
+    }
+  });
+
+  describe('9-Player Mode Inactive Player Handling', () => {
+    const squad9 = [
+      createIndividualPlayer('p1', 'Player 1', 300),
+      createIndividualPlayer('p2', 'Player 2', 280),
+      createIndividualPlayer('p3', 'Player 3', 260),
+      createIndividualPlayer('p4', 'Player 4', 240),
+      createIndividualPlayer('p5', 'Player 5', 220, true), // inactive
+      createIndividualPlayer('p6', 'Player 6', 200, true), // inactive
+      createIndividualPlayer('p7', 'Player 7', 180),
+      createIndividualPlayer('p8', 'Player 8', 160),
+      createIndividualPlayer('g1', 'Goalie 1', 0)
+    ];
+
+    test('should place 1 inactive player in substitute_4 position', () => {
+      const squad = squad9.map(p => ({ ...p, stats: { ...p.stats, isInactive: p.id === 'p5' } }));
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad,
+        squad,
+        'individual_9'
+      );
+
+      expect(result.formation.substitute_4).toBe('p5');
+      expect(result.formation.substitute_3).not.toBe('p5');
+      expect(result.formation.substitute_2).not.toBe('p5');
+      expect(result.formation.substitute_1).not.toBe('p5');
+    });
+
+    test('should place 2 inactive players in substitute_3 and substitute_4 positions', () => {
+      const squad = squad9.map(p => ({ 
+        ...p, 
+        stats: { ...p.stats, isInactive: p.id === 'p5' || p.id === 'p6' } 
+      }));
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad,
+        squad,
+        'individual_9'
+      );
+
+      const inactivePositions = [result.formation.substitute_3, result.formation.substitute_4];
+      expect(inactivePositions).toContain('p5');
+      expect(inactivePositions).toContain('p6');
+      expect(result.formation.substitute_1).not.toBe('p5');
+      expect(result.formation.substitute_1).not.toBe('p6');
+      expect(result.formation.substitute_2).not.toBe('p5');
+      expect(result.formation.substitute_2).not.toBe('p6');
+    });
+
+    test('should place 3 inactive players in substitute_2, substitute_3, and substitute_4 positions', () => {
+      const squad = squad9.map(p => ({ 
+        ...p, 
+        stats: { ...p.stats, isInactive: p.id === 'p5' || p.id === 'p6' || p.id === 'p7' } 
+      }));
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad,
+        squad,
+        'individual_9'
+      );
+
+      const inactivePositions = [
+        result.formation.substitute_2, 
+        result.formation.substitute_3, 
+        result.formation.substitute_4
+      ];
+      expect(inactivePositions).toContain('p5');
+      expect(inactivePositions).toContain('p6');
+      expect(inactivePositions).toContain('p7');
+      expect(result.formation.substitute_1).not.toBe('p5');
+      expect(result.formation.substitute_1).not.toBe('p6');
+      expect(result.formation.substitute_1).not.toBe('p7');
+    });
+
+    test('should place 4 inactive players in all substitute positions', () => {
+      const squad = squad9.map(p => ({ 
+        ...p, 
+        stats: { ...p.stats, isInactive: ['p5', 'p6', 'p7', 'p8'].includes(p.id) } 
+      }));
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad,
+        squad,
+        'individual_9'
+      );
+
+      const allSubstitutePositions = [
+        result.formation.substitute_1,
+        result.formation.substitute_2, 
+        result.formation.substitute_3, 
+        result.formation.substitute_4
+      ];
+      expect(allSubstitutePositions).toContain('p5');
+      expect(allSubstitutePositions).toContain('p6');
+      expect(allSubstitutePositions).toContain('p7');
+      expect(allSubstitutePositions).toContain('p8');
+    });
+  });
+
+  describe('10-Player Mode Inactive Player Handling', () => {
+    const squad10 = [
+      createIndividualPlayer('p1', 'Player 1', 300),
+      createIndividualPlayer('p2', 'Player 2', 280),
+      createIndividualPlayer('p3', 'Player 3', 260),
+      createIndividualPlayer('p4', 'Player 4', 240),
+      createIndividualPlayer('p5', 'Player 5', 220),
+      createIndividualPlayer('p6', 'Player 6', 200),
+      createIndividualPlayer('p7', 'Player 7', 180),
+      createIndividualPlayer('p8', 'Player 8', 160),
+      createIndividualPlayer('p9', 'Player 9', 140),
+      createIndividualPlayer('g1', 'Goalie 1', 0)
+    ];
+
+    test('should place 1 inactive player in substitute_5 position', () => {
+      const squad = squad10.map(p => ({ ...p, stats: { ...p.stats, isInactive: p.id === 'p9' } }));
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad,
+        squad,
+        'individual_10'
+      );
+
+      expect(result.formation.substitute_5).toBe('p9');
+      expect(result.formation.substitute_4).not.toBe('p9');
+      expect(result.formation.substitute_3).not.toBe('p9');
+      expect(result.formation.substitute_2).not.toBe('p9');
+      expect(result.formation.substitute_1).not.toBe('p9');
+    });
+
+    test('should place 3 inactive players in substitute_3, substitute_4, and substitute_5 positions', () => {
+      const squad = squad10.map(p => ({ 
+        ...p, 
+        stats: { ...p.stats, isInactive: ['p7', 'p8', 'p9'].includes(p.id) } 
+      }));
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad,
+        squad,
+        'individual_10'
+      );
+
+      const inactivePositions = [
+        result.formation.substitute_3, 
+        result.formation.substitute_4,
+        result.formation.substitute_5
+      ];
+      expect(inactivePositions).toContain('p7');
+      expect(inactivePositions).toContain('p8');
+      expect(inactivePositions).toContain('p9');
+      expect(result.formation.substitute_1).not.toBe('p7');
+      expect(result.formation.substitute_1).not.toBe('p8');
+      expect(result.formation.substitute_1).not.toBe('p9');
+      expect(result.formation.substitute_2).not.toBe('p7');
+      expect(result.formation.substitute_2).not.toBe('p8');
+      expect(result.formation.substitute_2).not.toBe('p9');
+    });
+
+    test('should place 5 inactive players in all substitute positions', () => {
+      const squad = squad10.map(p => ({ 
+        ...p, 
+        stats: { ...p.stats, isInactive: ['p5', 'p6', 'p7', 'p8', 'p9'].includes(p.id) } 
+      }));
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad,
+        squad,
+        'individual_10'
+      );
+
+      const allSubstitutePositions = [
+        result.formation.substitute_1,
+        result.formation.substitute_2, 
+        result.formation.substitute_3, 
+        result.formation.substitute_4,
+        result.formation.substitute_5
+      ];
+      expect(allSubstitutePositions).toContain('p5');
+      expect(allSubstitutePositions).toContain('p6');
+      expect(allSubstitutePositions).toContain('p7');
+      expect(allSubstitutePositions).toContain('p8');
+      expect(allSubstitutePositions).toContain('p9');
+    });
+  });
+
+  describe('Backward Compatibility', () => {
+    test('should maintain existing 7-player mode behavior', () => {
+      const squad7 = [
+        createIndividualPlayer('p1', 'Player 1', 300),
+        createIndividualPlayer('p2', 'Player 2', 280),
+        createIndividualPlayer('p3', 'Player 3', 260),
+        createIndividualPlayer('p4', 'Player 4', 240),
+        createIndividualPlayer('p5', 'Player 5', 220, true), // inactive
+        createIndividualPlayer('p6', 'Player 6', 200),
+        createIndividualPlayer('g1', 'Goalie 1', 0)
+      ];
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad7,
+        squad7,
+        'individual_7'
+      );
+
+      // Should place inactive player in substitute_2 (last position for 7-player mode)
+      expect(result.formation.substitute_2).toBe('p5');
+      expect(result.formation.substitute_1).not.toBe('p5');
+    });
+
+    test('should maintain existing 8-player mode behavior', () => {
+      const squad8 = [
+        createIndividualPlayer('p1', 'Player 1', 300),
+        createIndividualPlayer('p2', 'Player 2', 280),
+        createIndividualPlayer('p3', 'Player 3', 260),
+        createIndividualPlayer('p4', 'Player 4', 240),
+        createIndividualPlayer('p5', 'Player 5', 220),
+        createIndividualPlayer('p6', 'Player 6', 200, true), // inactive
+        createIndividualPlayer('p7', 'Player 7', 180),
+        createIndividualPlayer('g1', 'Goalie 1', 0)
+      ];
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1', // current goalie
+        squad8,
+        squad8,
+        'individual_8'
+      );
+
+      // Should place inactive player in substitute_3 (last position for 8-player mode)
+      expect(result.formation.substitute_3).toBe('p6');
+      expect(result.formation.substitute_1).not.toBe('p6');
+      expect(result.formation.substitute_2).not.toBe('p6');
     });
   });
 });

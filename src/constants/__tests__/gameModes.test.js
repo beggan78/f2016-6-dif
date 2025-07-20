@@ -21,7 +21,9 @@ import {
   isIndividual5Mode,
   isIndividual6Mode,
   isIndividual7Mode,
-  isIndividual8Mode
+  isIndividual8Mode,
+  isIndividual9Mode,
+  isIndividual10Mode
 } from '../gameModes';
 
 import { TEAM_MODES, PLAYER_ROLES } from '../playerConstants';
@@ -29,7 +31,7 @@ import { TEAM_MODES, PLAYER_ROLES } from '../playerConstants';
 describe('MODE_DEFINITIONS Configuration', () => {
   describe('configuration structure validation', () => {
     test('should have definitions for all team modes', () => {
-      const expectedModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
+      const expectedModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.INDIVIDUAL_9, TEAM_MODES.INDIVIDUAL_10];
       
       expectedModes.forEach(mode => {
         expect(MODE_DEFINITIONS).toHaveProperty(mode);
@@ -79,7 +81,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('should have valid individual mode configurations', () => {
-      const individualModes = [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
+      const individualModes = [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.INDIVIDUAL_9, TEAM_MODES.INDIVIDUAL_10];
       
       individualModes.forEach(mode => {
         const definition = MODE_DEFINITIONS[mode];
@@ -120,6 +122,21 @@ describe('MODE_DEFINITIONS Configuration', () => {
           expectedOnField: 4
         },
         {
+          mode: TEAM_MODES.INDIVIDUAL_8,
+          expectedOutfield: 7,
+          expectedOnField: 4
+        },
+        {
+          mode: TEAM_MODES.INDIVIDUAL_9,
+          expectedOutfield: 8,
+          expectedOnField: 4
+        },
+        {
+          mode: TEAM_MODES.INDIVIDUAL_10,
+          expectedOutfield: 9,
+          expectedOnField: 4
+        },
+        {
           mode: TEAM_MODES.PAIRS_7,
           expectedOutfield: 6,
           expectedOnField: 4
@@ -143,7 +160,10 @@ describe('MODE_DEFINITIONS Configuration', () => {
         leftAttacker: PLAYER_ROLES.ATTACKER,
         rightAttacker: PLAYER_ROLES.ATTACKER,
         substitute_1: PLAYER_ROLES.SUBSTITUTE,
-        substitute_2: PLAYER_ROLES.SUBSTITUTE
+        substitute_2: PLAYER_ROLES.SUBSTITUTE,
+        substitute_3: PLAYER_ROLES.SUBSTITUTE,
+        substitute_4: PLAYER_ROLES.SUBSTITUTE,
+        substitute_5: PLAYER_ROLES.SUBSTITUTE
       };
       
       Object.entries(expectedMappings).forEach(([position, expectedRole]) => {
@@ -183,7 +203,7 @@ describe('MODE_DEFINITIONS Configuration', () => {
     });
 
     test('getInitialFormationTemplate should create valid templates', () => {
-      const individualModes = [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8];
+      const individualModes = [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.INDIVIDUAL_9, TEAM_MODES.INDIVIDUAL_10];
       
       individualModes.forEach(mode => {
         const template = getInitialFormationTemplate(mode);
@@ -299,22 +319,30 @@ describe('MODE_DEFINITIONS Configuration', () => {
       const individual6 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6];
       const individual7 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_7];
       const individual8 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_8];
+      const individual9 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_9];
+      const individual10 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_10];
       
       // Field positions should be identical across all individual modes
       expect(individual5.fieldPositions).toEqual(individual6.fieldPositions);
       expect(individual5.fieldPositions).toEqual(individual7.fieldPositions);
       expect(individual5.fieldPositions).toEqual(individual8.fieldPositions);
+      expect(individual5.fieldPositions).toEqual(individual9.fieldPositions);
+      expect(individual5.fieldPositions).toEqual(individual10.fieldPositions);
       
       // OnField count should be the same across all individual modes
       expect(individual5.expectedCounts.onField).toBe(individual6.expectedCounts.onField);
       expect(individual5.expectedCounts.onField).toBe(individual7.expectedCounts.onField);
       expect(individual5.expectedCounts.onField).toBe(individual8.expectedCounts.onField);
+      expect(individual5.expectedCounts.onField).toBe(individual9.expectedCounts.onField);
+      expect(individual5.expectedCounts.onField).toBe(individual10.expectedCounts.onField);
       
       // Should all have goalie position
       expect(individual5.positionOrder).toContain('goalie');
       expect(individual6.positionOrder).toContain('goalie');
       expect(individual7.positionOrder).toContain('goalie');
       expect(individual8.positionOrder).toContain('goalie');
+      expect(individual9.positionOrder).toContain('goalie');
+      expect(individual10.positionOrder).toContain('goalie');
     });
 
     test('should have correct substitute counts', () => {
@@ -322,6 +350,8 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6].substitutePositions).toHaveLength(1);
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_7].substitutePositions).toHaveLength(2);
       expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_8].substitutePositions).toHaveLength(3);
+      expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_9].substitutePositions).toHaveLength(4);
+      expect(MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_10].substitutePositions).toHaveLength(5);
       expect(MODE_DEFINITIONS[TEAM_MODES.PAIRS_7].substitutePositions).toHaveLength(1);
     });
   });
@@ -332,6 +362,8 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
       expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
       expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_8)).toBe(true);
+      expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_9)).toBe(true);
+      expect(isIndividualMode(TEAM_MODES.INDIVIDUAL_10)).toBe(true);
     });
 
     test('should return false for non-individual modes', () => {
@@ -348,6 +380,8 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_6)).toBe(6);
       expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_7)).toBe(7);
       expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_8)).toBe(8);
+      expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_9)).toBe(9);
+      expect(getPlayerCountForMode(TEAM_MODES.INDIVIDUAL_10)).toBe(10);
       expect(getPlayerCountForMode(TEAM_MODES.PAIRS_7)).toBe(7);
     });
 
@@ -364,6 +398,8 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
       expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_9)).toBe(false);
+      expect(isIndividual5Mode(TEAM_MODES.INDIVIDUAL_10)).toBe(false);
       expect(isIndividual5Mode(TEAM_MODES.PAIRS_7)).toBe(false);
       expect(isIndividual5Mode(null)).toBe(false);
     });
@@ -373,6 +409,8 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
       expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_9)).toBe(false);
+      expect(isIndividual6Mode(TEAM_MODES.INDIVIDUAL_10)).toBe(false);
       expect(isIndividual6Mode(TEAM_MODES.PAIRS_7)).toBe(false);
       expect(isIndividual6Mode(null)).toBe(false);
     });
@@ -382,6 +420,8 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_9)).toBe(false);
+      expect(isIndividual7Mode(TEAM_MODES.INDIVIDUAL_10)).toBe(false);
       expect(isIndividual7Mode(TEAM_MODES.PAIRS_7)).toBe(false);
       expect(isIndividual7Mode(null)).toBe(false);
     });
@@ -391,8 +431,32 @@ describe('MODE_DEFINITIONS Configuration', () => {
       expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
       expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
       expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_9)).toBe(false);
+      expect(isIndividual8Mode(TEAM_MODES.INDIVIDUAL_10)).toBe(false);
       expect(isIndividual8Mode(TEAM_MODES.PAIRS_7)).toBe(false);
       expect(isIndividual8Mode(null)).toBe(false);
+    });
+
+    test('isIndividual9Mode should only return true for INDIVIDUAL_9', () => {
+      expect(isIndividual9Mode(TEAM_MODES.INDIVIDUAL_9)).toBe(true);
+      expect(isIndividual9Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
+      expect(isIndividual9Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+      expect(isIndividual9Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isIndividual9Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual9Mode(TEAM_MODES.INDIVIDUAL_10)).toBe(false);
+      expect(isIndividual9Mode(TEAM_MODES.PAIRS_7)).toBe(false);
+      expect(isIndividual9Mode(null)).toBe(false);
+    });
+
+    test('isIndividual10Mode should only return true for INDIVIDUAL_10', () => {
+      expect(isIndividual10Mode(TEAM_MODES.INDIVIDUAL_10)).toBe(true);
+      expect(isIndividual10Mode(TEAM_MODES.INDIVIDUAL_5)).toBe(false);
+      expect(isIndividual10Mode(TEAM_MODES.INDIVIDUAL_6)).toBe(false);
+      expect(isIndividual10Mode(TEAM_MODES.INDIVIDUAL_7)).toBe(false);
+      expect(isIndividual10Mode(TEAM_MODES.INDIVIDUAL_8)).toBe(false);
+      expect(isIndividual10Mode(TEAM_MODES.INDIVIDUAL_9)).toBe(false);
+      expect(isIndividual10Mode(TEAM_MODES.PAIRS_7)).toBe(false);
+      expect(isIndividual10Mode(null)).toBe(false);
     });
   });
 });

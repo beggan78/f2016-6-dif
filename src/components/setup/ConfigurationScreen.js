@@ -42,6 +42,10 @@ export function ConfigurationScreen({
         setTeamMode(TEAM_MODES.PAIRS_7); // Default to pairs for 7-player
       } else if (newIds.length === 8) {
         setTeamMode(TEAM_MODES.INDIVIDUAL_8); // Auto-set 8-player individual mode
+      } else if (newIds.length === 9) {
+        setTeamMode(TEAM_MODES.INDIVIDUAL_9); // Auto-set 9-player individual mode
+      } else if (newIds.length === 10) {
+        setTeamMode(TEAM_MODES.INDIVIDUAL_10); // Auto-set 10-player individual mode
       }
       
       // Clear captain if the captain is being deselected
@@ -96,7 +100,7 @@ export function ConfigurationScreen({
 
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
-        <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad ({selectedSquadIds.length}/6-8 Players)</h3>
+        <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad (5-10 Players) - Selected: {selectedSquadIds.length}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {allPlayers.map(player => (
             <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
@@ -105,7 +109,7 @@ export function ConfigurationScreen({
                 checked={selectedSquadIds.includes(player.id)}
                 onChange={() => togglePlayerSelection(player.id)}
                 className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
-                disabled={selectedSquadIds.length >= 8 && !selectedSquadIds.includes(player.id)}
+                disabled={selectedSquadIds.length >= 10 && !selectedSquadIds.includes(player.id)}
               />
               <span>{formatPlayerName(player)}</span>
             </label>
@@ -184,7 +188,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Goalie Assignment */}
-      {(selectedSquadIds.length === 5 || selectedSquadIds.length === 6 || selectedSquadIds.length === 7 || selectedSquadIds.length === 8) && (
+      {(selectedSquadIds.length >= 5 && selectedSquadIds.length <= 10) && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">
@@ -226,7 +230,7 @@ export function ConfigurationScreen({
 
       <Button 
         onClick={handleStartPeriodSetup} 
-        disabled={(selectedSquadIds.length < 5 || selectedSquadIds.length > 8) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
+        disabled={(selectedSquadIds.length < 5 || selectedSquadIds.length > 10) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
         Icon={Play}
       >
         Proceed to Period Setup

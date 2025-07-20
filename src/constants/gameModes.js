@@ -124,6 +124,72 @@ export const MODE_DEFINITIONS = {
       substitute_3: null
     },
     validationMessage: "Please complete the team formation with 1 goalie and 7 unique outfield players."
+  },
+  [TEAM_MODES.INDIVIDUAL_9]: {
+    positions: {
+      goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
+      leftDefender: { key: 'leftDefender', role: PLAYER_ROLES.DEFENDER },
+      rightDefender: { key: 'rightDefender', role: PLAYER_ROLES.DEFENDER },
+      leftAttacker: { key: 'leftAttacker', role: PLAYER_ROLES.ATTACKER },
+      rightAttacker: { key: 'rightAttacker', role: PLAYER_ROLES.ATTACKER },
+      substitute_1: { key: 'substitute_1', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_2: { key: 'substitute_2', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_3: { key: 'substitute_3', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_4: { key: 'substitute_4', role: PLAYER_ROLES.SUBSTITUTE }
+    },
+    expectedCounts: { outfield: 8, onField: 4 },
+    positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2', 'substitute_3', 'substitute_4'],
+    fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
+    substitutePositions: ['substitute_1', 'substitute_2', 'substitute_3', 'substitute_4'],
+    supportsInactiveUsers: true,
+    supportsNextNextIndicators: true,
+    substituteRotationPattern: 'advanced_carousel',
+    initialFormationTemplate: {
+      goalie: null,
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null,
+      substitute_1: null,
+      substitute_2: null,
+      substitute_3: null,
+      substitute_4: null
+    },
+    validationMessage: "Please complete the team formation with 1 goalie and 8 unique outfield players."
+  },
+  [TEAM_MODES.INDIVIDUAL_10]: {
+    positions: {
+      goalie: { key: 'goalie', role: PLAYER_ROLES.GOALIE },
+      leftDefender: { key: 'leftDefender', role: PLAYER_ROLES.DEFENDER },
+      rightDefender: { key: 'rightDefender', role: PLAYER_ROLES.DEFENDER },
+      leftAttacker: { key: 'leftAttacker', role: PLAYER_ROLES.ATTACKER },
+      rightAttacker: { key: 'rightAttacker', role: PLAYER_ROLES.ATTACKER },
+      substitute_1: { key: 'substitute_1', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_2: { key: 'substitute_2', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_3: { key: 'substitute_3', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_4: { key: 'substitute_4', role: PLAYER_ROLES.SUBSTITUTE },
+      substitute_5: { key: 'substitute_5', role: PLAYER_ROLES.SUBSTITUTE }
+    },
+    expectedCounts: { outfield: 9, onField: 4 },
+    positionOrder: ['goalie', 'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2', 'substitute_3', 'substitute_4', 'substitute_5'],
+    fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
+    substitutePositions: ['substitute_1', 'substitute_2', 'substitute_3', 'substitute_4', 'substitute_5'],
+    supportsInactiveUsers: true,
+    supportsNextNextIndicators: true,
+    substituteRotationPattern: 'advanced_carousel',
+    initialFormationTemplate: {
+      goalie: null,
+      leftDefender: null,
+      rightDefender: null,
+      leftAttacker: null,
+      rightAttacker: null,
+      substitute_1: null,
+      substitute_2: null,
+      substitute_3: null,
+      substitute_4: null,
+      substitute_5: null
+    },
+    validationMessage: "Please complete the team formation with 1 goalie and 9 unique outfield players."
   }
 };
 
@@ -138,7 +204,9 @@ export const POSITION_ROLE_MAP = {
   rightAttacker: PLAYER_ROLES.ATTACKER,
   substitute_1: PLAYER_ROLES.SUBSTITUTE,
   substitute_2: PLAYER_ROLES.SUBSTITUTE,
-  substitute_3: PLAYER_ROLES.SUBSTITUTE
+  substitute_3: PLAYER_ROLES.SUBSTITUTE,
+  substitute_4: PLAYER_ROLES.SUBSTITUTE,
+  substitute_5: PLAYER_ROLES.SUBSTITUTE
 };
 
 /**
@@ -209,7 +277,7 @@ export function supportsNextNextIndicators(teamMode) {
  * Check if a team mode is an individual mode (any individual player count)
  */
 export function isIndividualMode(teamMode) {
-  return [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8].includes(teamMode);
+  return [TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.INDIVIDUAL_9, TEAM_MODES.INDIVIDUAL_10].includes(teamMode);
 }
 
 /**
@@ -254,6 +322,20 @@ export function isIndividual7Mode(teamMode) {
  */
 export function isIndividual8Mode(teamMode) {
   return teamMode === TEAM_MODES.INDIVIDUAL_8;
+}
+
+/**
+ * Check if a team mode is specifically the 9-player individual mode
+ */
+export function isIndividual9Mode(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_9;
+}
+
+/**
+ * Check if a team mode is specifically the 10-player individual mode
+ */
+export function isIndividual10Mode(teamMode) {
+  return teamMode === TEAM_MODES.INDIVIDUAL_10;
 }
 
 /**

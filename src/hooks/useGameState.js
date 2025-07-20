@@ -369,7 +369,7 @@ export function useGameState() {
   }, [preparePeriodWithGameLog, gameLog]);
 
   const handleStartPeriodSetup = useCallback(() => {
-    if (selectedSquadIds.length < 5 || selectedSquadIds.length > 8) {
+    if (selectedSquadIds.length < 5 || selectedSquadIds.length > 10) {
       alert("Please select 5-8 players for the squad."); // Replace with modal
       return;
     }

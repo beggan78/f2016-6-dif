@@ -30,6 +30,9 @@ jest.mock('lucide-react', () => {
 describe('UI positionUtils', () => {
   const mockSubstitutePositions6 = [POSITION_KEYS.SUBSTITUTE_1];
   const mockSubstitutePositions7 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2];
+  const mockSubstitutePositions8 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2, POSITION_KEYS.SUBSTITUTE_3];
+  const mockSubstitutePositions9 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2, POSITION_KEYS.SUBSTITUTE_3, 'substitute_4'];
+  const mockSubstitutePositions10 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2, POSITION_KEYS.SUBSTITUTE_3, 'substitute_4', 'substitute_5'];
   const mockSubstitutePositionsPairs = [POSITION_KEYS.SUB_PAIR];
 
   describe('getPositionIcon', () => {
@@ -104,6 +107,29 @@ describe('UI positionUtils', () => {
       expect(getPositionDisplayName('rightAttacker', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Attacker');
       expect(getPositionDisplayName('substitute_1', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
       expect(getPositionDisplayName('substitute_2', null, TEAM_MODES.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
+    });
+
+    test('should return proper display names for individual 9 positions', () => {
+      expect(getPositionDisplayName('leftDefender', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Left Defender');
+      expect(getPositionDisplayName('rightDefender', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Right Defender');
+      expect(getPositionDisplayName('leftAttacker', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Left Attacker');
+      expect(getPositionDisplayName('rightAttacker', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Right Attacker');
+      expect(getPositionDisplayName('substitute_1', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_2', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_3', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_4', null, TEAM_MODES.INDIVIDUAL_9, mockSubstitutePositions9)).toBe('Substitute');
+    });
+
+    test('should return proper display names for individual 10 positions', () => {
+      expect(getPositionDisplayName('leftDefender', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Left Defender');
+      expect(getPositionDisplayName('rightDefender', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Right Defender');
+      expect(getPositionDisplayName('leftAttacker', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Left Attacker');
+      expect(getPositionDisplayName('rightAttacker', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Right Attacker');
+      expect(getPositionDisplayName('substitute_1', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_2', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_3', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_4', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_5', null, TEAM_MODES.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
     });
 
     test('should return proper display names for pair positions', () => {

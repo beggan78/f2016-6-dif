@@ -345,8 +345,7 @@ describe('createFieldPositionHandlers', () => {
         'leftAttackerCallback',
         'rightAttackerCallback',
         'substitute_1Callback',
-        'substitute_2Callback',
-        'substitute_3Callback'
+        'substitute_2Callback'
       ];
 
       expectedCallbacks.forEach(callback => {
@@ -369,6 +368,59 @@ describe('createFieldPositionHandlers', () => {
       expect(handlers.subPairCallback).toBeDefined();
       expect(handlers.leftDefenderCallback).toBeUndefined();
       expect(handlers.substitute_1Callback).toBeUndefined();
+    });
+
+    it('should generate callbacks for substitute_4 and substitute_5 in 9-player and 10-player modes', () => {
+      // Test 9-player mode
+      const handlers9 = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_9,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      const expectedCallbacks9 = [
+        'leftDefenderCallback',
+        'rightDefenderCallback', 
+        'leftAttackerCallback',
+        'rightAttackerCallback',
+        'substitute_1Callback',
+        'substitute_2Callback',
+        'substitute_3Callback',
+        'substitute_4Callback'
+      ];
+
+      expectedCallbacks9.forEach(callback => {
+        expect(handlers9[callback]).toBeDefined();
+        expect(typeof handlers9[callback]).toBe('function');
+      });
+
+      // Test 10-player mode
+      const handlers10 = createFieldPositionHandlers(
+        TEAM_MODES.INDIVIDUAL_10,
+        mockFormation,
+        mockPlayers,
+        '1',
+        mockModalHandlers
+      );
+
+      const expectedCallbacks10 = [
+        'leftDefenderCallback',
+        'rightDefenderCallback', 
+        'leftAttackerCallback',
+        'rightAttackerCallback',
+        'substitute_1Callback',
+        'substitute_2Callback',
+        'substitute_3Callback',
+        'substitute_4Callback',
+        'substitute_5Callback'
+      ];
+
+      expectedCallbacks10.forEach(callback => {
+        expect(handlers10[callback]).toBeDefined();
+        expect(typeof handlers10[callback]).toBe('function');
+      });
     });
   });
 });
