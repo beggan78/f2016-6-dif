@@ -34,7 +34,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
   const [players, setPlayers] = useState([]);
 
   // Form state
-  const [clubForm, setClubForm] = useState({ name: '', shortName: '' });
+  const [clubForm, setClubForm] = useState({ name: '', shortName: '', longName: '' });
   const [teamForm, setTeamForm] = useState({ name: '' });
   const [playerForm, setPlayerForm] = useState({ name: '' });
   const [errors, setErrors] = useState({});
@@ -58,7 +58,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
   // Handle create new club from autocomplete
   const handleCreateNewClub = useCallback((clubName) => {
-    setClubForm({ name: clubName, shortName: '' });
+    setClubForm({ name: clubName, shortName: '', longName: '' });
     setCurrentStep(STEPS.CLUB_CREATION);
   }, []);
 
@@ -74,7 +74,8 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
     const club = await createClub({
       name: clubForm.name.trim(),
-      shortName: clubForm.shortName.trim() || null
+      shortName: clubForm.shortName.trim() || null,
+      longName: clubForm.longName.trim() || null
     });
 
     if (club) {
@@ -178,8 +179,24 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
       </div>
 
       <div>
+        <label htmlFor="clubLongName" className="block text-sm font-medium text-slate-300 mb-2">
+          Full Club Name *
+        </label>
+        <Input
+          id="clubLongName"
+          value={clubForm.longName}
+          onChange={(e) => setClubForm(prev => ({ ...prev, longName: sanitizeNameInput(e.target.value) }))}
+          placeholder="e.g., Djurgårdens IF FF"
+          className={errors.clubLongName ? 'border-rose-500' : ''}
+        />
+        {errors.clubLongName && (
+          <p className="text-rose-400 text-sm mt-1">{errors.clubLongName}</p>
+        )}
+      </div>
+
+      <div>
         <label htmlFor="clubName" className="block text-sm font-medium text-slate-300 mb-2">
-          Club Name *
+          Display Name *
         </label>
         <Input
           id="clubName"

@@ -191,37 +191,42 @@ export const AuthProvider = ({ children }) => {
   
   // Wrapped state setters with essential logging
   const setUser = useCallback((newUser) => {
-    if (process.env.NODE_ENV === 'development') {
-      debugLog('🔄 STATE: setUser', {
-        previous: user?.id || 'null',
-        new: newUser?.id || 'null'
-      });
-    }
-    _setUser(newUser);
-  }, [user]);
-  
+    _setUser(currentUser => {
+      if (process.env.NODE_ENV === 'development') {
+        debugLog('🔄 STATE: setUser', {
+          previous: currentUser?.id || 'null',
+          new: newUser?.id || 'null'
+        });
+      }
+      return newUser;
+    });
+  }, []);
+
   const setUserProfile = useCallback((newProfile) => {
-    if (process.env.NODE_ENV === 'development') {
-      debugLog('🔄 STATE: setUserProfile', {
-        previous: userProfile?.id || 'null',
-        new: newProfile?.id || 'null',
-        name: newProfile?.name || 'null'
-      });
-    }
-    _setUserProfile(newProfile);
-  }, [userProfile]);
-  
+    _setUserProfile(currentProfile => {
+      if (process.env.NODE_ENV === 'development') {
+        debugLog('🔄 STATE: setUserProfile', {
+          previous: currentProfile?.id || 'null',
+          new: newProfile?.id || 'null',
+          name: newProfile?.name || 'null'
+        });
+      }
+      return newProfile;
+    });
+  }, []);
+
   const setLoading = useCallback((newLoading) => {
-    // Only log loading state changes for significant operations
-    if (process.env.NODE_ENV === 'development' && loading !== newLoading) {
-      debugLog('🔄 STATE: setLoading', {
-        previous: loading,
-        new: newLoading
-      });
-    }
-    _setLoading(newLoading);
-  }, [loading]);
-  
+    _setLoading(currentLoading => {
+      if (process.env.NODE_ENV === 'development' && currentLoading !== newLoading) {
+        debugLog('🔄 STATE: setLoading', {
+          previous: currentLoading,
+          new: newLoading
+        });
+      }
+      return newLoading;
+    });
+  }, []);
+
   const setAuthError = useCallback((newError) => {
     // Always log errors
     if (newError) {
@@ -231,26 +236,30 @@ export const AuthProvider = ({ children }) => {
     }
     _setAuthError(newError);
   }, []);
-  
+
   const setSessionExpiry = useCallback((newExpiry) => {
-    if (process.env.NODE_ENV === 'development') {
-      debugLog('🔄 STATE: setSessionExpiry', {
-        previous: sessionExpiry?.toISOString() || 'null',
-        new: newExpiry?.toISOString() || 'null'
-      });
-    }
-    _setSessionExpiry(newExpiry);
-  }, [sessionExpiry]);
-  
+    _setSessionExpiry(currentExpiry => {
+      if (process.env.NODE_ENV === 'development') {
+        debugLog('🔄 STATE: setSessionExpiry', {
+          previous: currentExpiry?.toISOString() || 'null',
+          new: newExpiry?.toISOString() || 'null'
+        });
+      }
+      return newExpiry;
+    });
+  }, []);
+
   const setShowSessionWarning = useCallback((newWarning) => {
-    if (process.env.NODE_ENV === 'development' && newWarning !== showSessionWarning) {
-      debugLog('🔄 STATE: setShowSessionWarning', {
-        previous: showSessionWarning,
-        new: newWarning
-      });
-    }
-    _setShowSessionWarning(newWarning);
-  }, [showSessionWarning]);
+    _setShowSessionWarning(currentWarning => {
+      if (process.env.NODE_ENV === 'development' && newWarning !== currentWarning) {
+        debugLog('🔄 STATE: setShowSessionWarning', {
+          previous: currentWarning,
+          new: newWarning
+        });
+      }
+      return newWarning;
+    });
+  }, []);
   
   const setLastActivity = useCallback((newActivity) => {
     // Don't log activity updates - too verbose
@@ -519,10 +528,13 @@ export const AuthProvider = ({ children }) => {
               isInitialLoad: isAuthInitializing
             });
             
-            // Set user first
+            const previousUserId = user?.id;
+            const newUserId = session?.user?.id;
+
+            // Set user first, which is crucial for dependency updates
             setUser(session?.user ?? null);
-            
-            // IMPORTANT: Set loading=false here - this is when auth state is actually ready!
+
+            // Mark auth as initialized and set loading to false on the first event
             if (isAuthInitializing) {
               debugLog('✅ Auth initialization complete via onAuthStateChange', {
                 eventType,
@@ -532,126 +544,74 @@ export const AuthProvider = ({ children }) => {
               setLoading(false);
               isAuthInitializing = false;
             }
-        
-        if (session?.user) {
-          const userId = session.user.id;
-          const expiryTime = session.expires_at ? new Date(session.expires_at * 1000) : null;
-          
-          // Handle different event types appropriately
-          if (eventType === 'SIGNED_IN' || eventType === 'UNKNOWN' || eventType === null) {
-            // New login or page reload - full setup needed
-            debugLog('✅ Processing new session (login or page reload)', {
-              eventType,
-              eventId,
-              userId,
-              expiryTime: expiryTime?.toISOString()
-            });
-            
-            debugLog('⏱️ Setting session expiry and monitoring', {
-              expiryTime: expiryTime?.toISOString(),
-              eventId
-            });
-            setSessionExpiry(expiryTime);
-            setupSessionMonitoring(expiryTime);
-            
-            debugLog('👆 Updating last activity', { eventId });
-            setLastActivity(Date.now());
-            
-            // Fetch profile with retry logic
-            debugLog('📋 Starting profile fetch', { userId, eventId });
-            const profileResult = await fetchUserProfile(userId);
-            
-            // Only create profile for actual signup events
-            if (eventType === 'SIGNED_UP') {
-              console.log('🆕 New signup detected, checking if profile exists...');
-              if (!profileResult) {
-                console.log('🔨 Creating new user profile for signup...');
-                const userData = session.user.user_metadata || {};
-                await createUserProfile(session.user, userData);
-              }
-            }
-            
-          } else if (eventType === 'TOKEN_REFRESHED') {
-            // Token refresh - minimal updates needed
-            debugLog('🔄 Token refreshed - minimal updates only', {
-              eventId,
-              userId,
-              expiryTime: expiryTime?.toISOString(),
-              preservingProfile: true
-            });
-            
-            // Update session expiry time but don't re-fetch profile or reset timers
-            debugLog('📅 Updating session expiry for token refresh', { eventId });
-            setSessionExpiry(expiryTime);
-            
-            // Only update session monitoring if expiry changed significantly
-            const currentExpiry = sessionExpiry?.getTime();
-            const newExpiry = expiryTime?.getTime();
-            const timeDiff = Math.abs(newExpiry - currentExpiry);
-            
-            if (!currentExpiry || !newExpiry || timeDiff > 60000) {
-              debugLog('📅 Session expiry changed significantly, updating monitoring', {
-                eventId,
-                currentExpiry: new Date(currentExpiry).toISOString(),
-                newExpiry: new Date(newExpiry).toISOString(),
-                timeDiff
-              });
-              setupSessionMonitoring(expiryTime);
-            } else {
-              debugLog('📅 Session expiry change minimal, skipping monitoring update', {
-                eventId,
-                timeDiff
-              });
-            }
-            
-            debugLog('👆 Updating last activity for token refresh', { eventId });
-            setLastActivity(Date.now());
-            
-            debugLog('🔕 Clearing session warnings', { eventId });
-            setShowSessionWarning(false);
-            
-            // Don't re-fetch profile during token refresh to avoid state corruption
-            debugLog('ℹ️ Preserving existing profile during token refresh', { eventId });
-            
-          } else if (eventType === 'SIGNED_UP') {
-            // Brand new signup
-            console.log('🆕 Brand new user signup detected');
-            
-            setSessionExpiry(expiryTime);
-            setupSessionMonitoring(expiryTime);
-            setLastActivity(Date.now());
-            
-            // For new signups, try to create profile immediately
-            console.log('🔨 Creating profile for new signup...');
-            const userData = session.user.user_metadata || {};
-            await createUserProfile(session.user, userData);
-            
-          } else {
-            // Other events - minimal handling
-            console.log(`ℹ️ Handling other auth event: ${eventType}`);
-            setSessionExpiry(expiryTime);
-            setLastActivity(Date.now());
-          }
-          
-        } else {
-          debugLog('❌ No session - clearing all auth state', {
-            eventType,
-            eventId,
-            clearingProfile: true,
-            clearingMonitoring: true
-          });
-          // Clear session monitoring when logged out
-          clearSessionMonitoring();
-          setUserProfile(null);
-          setSessionExpiry(null);
-          setShowSessionWarning(false);
-        }
 
-        // Clear any previous auth errors on successful auth changes
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          debugLog('🧹 Clearing auth errors', { eventType, eventId });
-          setAuthError(null);
-        }
+            if (newUserId) {
+              const expiryTime = session.expires_at ? new Date(session.expires_at * 1000) : null;
+
+              // Scenario 1: A new user has logged in (or initial load with a user)
+              if (newUserId !== previousUserId) {
+                debugLog('✅ New user detected or initial load. Performing full setup.', {
+                  eventType,
+                  eventId,
+                  userId: newUserId,
+                  previousUserId: previousUserId || 'none'
+                });
+
+                // Full setup: session, monitoring, profile fetch
+                setSessionExpiry(expiryTime);
+                setupSessionMonitoring(expiryTime);
+                setLastActivity(Date.now());
+                
+                const profile = await fetchUserProfile(newUserId);
+
+                // If it was a signup event, ensure profile is created
+                if (eventType === 'SIGNED_UP' && !profile) {
+                  debugLog('🔨 Creating new user profile for signup event...', { eventId });
+                  await createUserProfile(session.user, session.user.user_metadata || {});
+                }
+              } 
+              // Scenario 2: Same user, session is just being refreshed
+              else {
+                debugLog('🔄 Session refresh for existing user. Performing minimal updates.', {
+                  eventType,
+                  eventId,
+                  userId: newUserId
+                });
+                
+                // Minimal setup: update expiry, activity, but don't re-fetch profile
+                _setSessionExpiry(currentExpiry => {
+                  const newExpiryTime = expiryTime?.getTime();
+                  const currentExpiryTime = currentExpiry?.getTime();
+                  const timeDiff = newExpiryTime && currentExpiryTime ? Math.abs(newExpiryTime - currentExpiryTime) : Infinity;
+
+                  if (timeDiff > 60000) { // Update monitoring if expiry changed by > 1 min
+                    setupSessionMonitoring(expiryTime);
+                  }
+                  return expiryTime;
+                });
+                
+                setLastActivity(Date.now());
+                setShowSessionWarning(false);
+                debugLog('ℹ️ Preserving existing profile during session refresh.', { eventId });
+              }
+            } 
+            // Scenario 3: User has logged out
+            else {
+              debugLog('❌ No session - clearing all auth state', {
+                eventType,
+                eventId
+              });
+              clearSessionMonitoring();
+              setUserProfile(null);
+              setSessionExpiry(null);
+              setShowSessionWarning(false);
+            }
+
+            // Clear any previous auth errors on successful auth changes
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              debugLog('🧹 Clearing auth errors', { eventType, eventId });
+              setAuthError(null);
+            }
         
             debugLog('🏁 Auth event processing completed', {
               eventType,
@@ -702,7 +662,7 @@ export const AuthProvider = ({ children }) => {
       clearSessionMonitoring();
       isAuthInitializing = false;
     };
-  }, [clearSessionMonitoring, setupSessionMonitoring, createUserProfile, fetchUserProfile, sessionExpiry, setAuthError, setLastActivity, setLoading, setSessionExpiry, setShowSessionWarning, setUser, setUserProfile, user?.id]);
+  }, [clearSessionMonitoring, setupSessionMonitoring, createUserProfile, fetchUserProfile, setAuthError, setLastActivity, setLoading, setSessionExpiry, setShowSessionWarning, setUser, setUserProfile, user?.id]);
 
   // Optimized activity tracking with debouncing
   const lastActivityUpdateTime = useRef(0);

@@ -158,9 +158,9 @@ export function ClubAutocomplete({
               <div className="flex items-center space-x-2">
                 <Building className="h-4 w-4 text-sky-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-slate-100 font-medium truncate">{club.name}</div>
+                  <div className="text-slate-100 font-medium truncate">{club.long_name || club.name}</div>
                   {club.short_name && (
-                    <div className="text-slate-400 text-xs truncate">({club.short_name})</div>
+                    <div className="text-slate-400 text-xs truncate">({club.name}, {club.short_name})</div>
                   )}
                 </div>
               </div>

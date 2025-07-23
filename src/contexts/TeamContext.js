@@ -87,8 +87,8 @@ export const TeamProvider = ({ children }) => {
       
       const { data, error } = await supabase
         .from('club')
-        .select('id, name, short_name')
-        .or(`name.ilike.%${searchTerm}%,short_name.ilike.%${searchTerm}%`)
+        .select('id, name, short_name, long_name')
+        .or(`name.ilike.%${searchTerm}%,short_name.ilike.%${searchTerm}%,long_name.ilike.%${searchTerm}%`)
         .order('name')
         .limit(10);
 
