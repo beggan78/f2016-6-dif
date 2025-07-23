@@ -21,12 +21,26 @@ import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
 import { isDebugMode } from './utils/debugUtils';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TeamProvider } from './contexts/TeamContext';
+import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
+import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 
-// Main App Component
-function App() {
+// Main App Content Component (needs to be inside AuthProvider to access useAuth)
+function AppContent() {
   const gameState = useGameState();
   const timers = useTimers(gameState.periodDurationMinutes);
+  const { 
+    showSessionWarning, 
+    sessionExpiry, 
+    extendSession, 
+    dismissSessionWarning, 
+    signOut,
+    loading: authLoading 
+  } = useAuth();
+  
+  // Authentication modal
+  const authModal = useAuthModal();
   
   // Debug mode detection
   const debugMode = isDebugMode();
@@ -248,6 +262,7 @@ function App() {
             captainId={gameState.captainId}
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}
+            authModal={authModal}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -341,6 +356,7 @@ function App() {
             resetScore={gameState.resetScore}
             setOpponentTeamName={gameState.setOpponentTeamName}
             navigateToMatchReport={gameState.navigateToMatchReport}
+            authModal={authModal}
           />
         );
       case VIEWS.MATCH_REPORT:
@@ -381,8 +397,7 @@ function App() {
   };
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
         <header className="w-full max-w-2xl relative text-center mb-4">
           <div className="absolute top-0 right-0">
             <HamburgerMenu 
@@ -395,6 +410,7 @@ function App() {
               allPlayers={gameState.allPlayers}
               selectedSquadIds={gameState.selectedSquadIds}
               setView={gameState.setView}
+              authModal={authModal}
             />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
@@ -429,7 +445,34 @@ function App() {
           confirmText="Yes, start new game"
           cancelText="Cancel"
         />
-      </div>
+
+        {/* Session Expiry Warning Modal */}
+        <SessionExpiryModal
+          isOpen={showSessionWarning}
+          onExtend={extendSession}
+          onDismiss={dismissSessionWarning}
+          onSignOut={signOut}
+          sessionExpiry={sessionExpiry}
+          loading={authLoading}
+        />
+
+        {/* Authentication Modal */}
+        <AuthModal
+          isOpen={authModal.isOpen}
+          onClose={authModal.closeModal}
+          initialMode={authModal.mode}
+        />
+    </div>
+  );
+}
+
+// Main App Component with AuthProvider and TeamProvider
+function App() {
+  return (
+    <AuthProvider>
+      <TeamProvider>
+        <AppContent />
+      </TeamProvider>
     </AuthProvider>
   );
 }

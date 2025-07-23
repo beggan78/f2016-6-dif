@@ -1,11 +1,16 @@
-    import React from 'react';
-import { Settings, Play, Shuffle } from 'lucide-react';
+    import React, { useState, useEffect } from 'react';
+import { Settings, Play, Shuffle, Cloud, Upload } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTeam } from '../../contexts/TeamContext';
+import { TeamManagement } from '../team/TeamManagement';
+import { dataSyncManager } from '../../utils/DataSyncManager';
+import { FeatureGate } from '../auth/FeatureGate';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -27,8 +32,37 @@ export function ConfigurationScreen({
   setOpponentTeamName,
   captainId,
   setCaptain,
-  debugMode = false
+  debugMode = false,
+  authModal
 }) {
+  const { isAuthenticated, user } = useAuth();
+  const { currentTeam, teamPlayers, hasTeams } = useTeam();
+  const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
+  const [showMigration, setShowMigration] = useState(false);
+
+  // Update DataSyncManager when user changes
+  useEffect(() => {
+    if (user?.id) {
+      dataSyncManager.setUserId(user.id);
+      
+      // Check if user has local data that could be migrated
+      const localMatches = dataSyncManager.getLocalMatches();
+      setShowMigration(localMatches.length > 0);
+    } else {
+      dataSyncManager.setUserId(null);
+      setShowMigration(false);
+    }
+  }, [user]);
+
+  // Determine which players to show
+  const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0 
+    ? teamPlayers.map(player => ({ 
+        id: player.id, 
+        name: player.name, 
+        jerseyNumber: player.jersey_number 
+      }))
+    : allPlayers;
+
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {
       const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
@@ -75,7 +109,7 @@ export function ConfigurationScreen({
     setCaptain(null);
     
     // Randomly select 7 players from roster
-    const randomPlayers = getRandomPlayers(allPlayers, 7);
+    const randomPlayers = getRandomPlayers(playersToShow, 7);
     const randomPlayerIds = randomPlayers.map(p => p.id);
     setSelectedSquadIds(randomPlayerIds);
     
@@ -92,8 +126,134 @@ export function ConfigurationScreen({
     setOpponentTeamName(randomOpponent);
   };
 
+  const handleMigrateData = async () => {
+    setSyncStatus({ loading: true, message: 'Migrating local data to cloud...', error: null });
+    
+    try {
+      const result = await dataSyncManager.migrateLocalDataToCloud();
+      
+      if (result.success) {
+        setSyncStatus({
+          loading: false,
+          message: result.message,
+          error: null
+        });
+        setShowMigration(false);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSyncStatus({ loading: false, message: '', error: null });
+        }, 5000);
+      } else {
+        setSyncStatus({
+          loading: false,
+          message: '',
+          error: result.error || 'Migration failed'
+        });
+      }
+    } catch (error) {
+      setSyncStatus({
+        loading: false,
+        message: '',
+        error: 'Migration failed: ' + error.message
+      });
+    }
+  };
+
+  const handleDismissMigration = () => {
+    setShowMigration(false);
+  };
+
+  // Show team management for authenticated users who need to set up teams
+  if (isAuthenticated && (!hasTeams || !currentTeam)) {
+    return (
+      <div className="space-y-4">
+        <TeamManagement />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {isAuthenticated && currentTeam && (
+        <div className="p-3 bg-sky-600/20 border border-sky-500 rounded-lg">
+          <div className="text-sky-200 font-medium">Current Team: {currentTeam.name}</div>
+          <div className="text-sky-300 text-sm">{currentTeam.club?.name}</div>
+        </div>
+      )}
+
+      {/* Cloud Data Sync Section */}
+      {isAuthenticated ? (
+        <div className="space-y-3">
+          {/* Data Migration Alert */}
+          {showMigration && (
+            <div className="p-4 bg-emerald-900/30 border border-emerald-600/50 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Upload className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-emerald-300 text-sm">Migrate Local Data</h3>
+                  <p className="text-emerald-200 text-sm mt-1">
+                    We found match history saved locally. Would you like to sync it to your cloud account?
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      onClick={handleMigrateData}
+                      variant="primary"
+                      size="sm"
+                      disabled={syncStatus.loading}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      {syncStatus.loading ? 'Migrating...' : 'Migrate Data'}
+                    </Button>
+                    <Button
+                      onClick={handleDismissMigration}
+                      variant="secondary"
+                      size="sm"
+                      disabled={syncStatus.loading}
+                    >
+                      Later
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sync Status Messages */}
+          {syncStatus.message && (
+            <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
+              <p className="text-emerald-200 text-sm">✓ {syncStatus.message}</p>
+            </div>
+          )}
+          
+          {syncStatus.error && (
+            <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
+              <p className="text-rose-200 text-sm">❌ {syncStatus.error}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Cloud Sync Features for Anonymous Users */
+        <FeatureGate
+          feature="cloud synchronization"
+          description="Save your team, configurations and match data. Access your data from any device and unlock season statistics."
+          variant="inline"
+          authModal={authModal}
+        >
+          <div className="p-4 bg-slate-800 border border-slate-600 rounded-lg opacity-50">
+            <div className="flex items-center space-x-3">
+              <Cloud className="w-8 h-8 text-slate-400" />
+              <div>
+                <div className="text-slate-300 font-medium">Cloud Sync Available</div>
+                <div className="text-slate-400 text-sm">Keep your data safe across devices</div>
+              </div>
+            </div>
+          </div>
+        </FeatureGate>
+      )}
+      
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
         <Settings className="mr-2 h-6 w-6" />Game & Squad Configuration
       </h2>
@@ -102,7 +262,7 @@ export function ConfigurationScreen({
       <div className="p-3 bg-slate-700 rounded-md">
         <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad (5-10 Players) - Selected: {selectedSquadIds.length}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {allPlayers.map(player => (
+          {playersToShow.map(player => (
             <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
               <input
                 type="checkbox"

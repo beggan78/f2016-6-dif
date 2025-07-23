@@ -2,8 +2,8 @@
 -- This file provides sample data for development and testing
 
 -- Insert sample club
-INSERT INTO public.club (name, short_name, long_name) VALUES
-('Djurgården', 'DIF', 'Djurgårdens IF');
+INSERT INTO public.club (id, name, short_name, long_name) VALUES
+('11111111-1111-1111-1111-111111111111', 'Djurgården', 'DIF', 'Djurgårdens IF');
 
 -- Insert sample team
 INSERT INTO public.team (id, club_id, name, configuration, active) VALUES

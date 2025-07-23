@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { VIEWS } from '../../constants/viewConstants';
 
 export function ProfileScreen({ setView }) {
-  const { user, userProfile, updateProfile, loading, authError, clearAuthError } = useAuth();
+  const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.name || '');
   const [errors, setErrors] = useState({});
@@ -119,7 +119,7 @@ export function ProfileScreen({ setView }) {
           variant="secondary"
           size="sm"
         >
-          Back to App
+          Back
         </Button>
       </div>
 
@@ -220,7 +220,7 @@ export function ProfileScreen({ setView }) {
                 ) : (
                   <div className="flex items-center justify-between">
                     <span className="text-slate-100">
-                      {userProfile?.name || 'Not set'}
+                      {profileName}
                     </span>
                     <Button
                       onClick={handleEdit}

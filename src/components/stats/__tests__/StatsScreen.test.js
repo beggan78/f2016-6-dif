@@ -103,6 +103,14 @@ describe('StatsScreen', () => {
       homeScore: 3,
       awayScore: 1,
       opponentTeamName: 'Test Opponent',
+      authModal: {
+        isOpen: false,
+        mode: 'login',
+        openModal: jest.fn(),
+        closeModal: jest.fn(),
+        openLogin: jest.fn(),
+        openSignup: jest.fn()
+      },
       ...mockSetters
     };
 

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { ListChecks, PlusCircle, Copy, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ListChecks, PlusCircle, Copy, FileText, Save, History } from 'lucide-react';
 import { Button } from '../shared/UI';
+import { useAuth } from '../../contexts/AuthContext';
+import { FeatureGate } from '../auth/FeatureGate';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
 import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
+import { dataSyncManager } from '../../utils/DataSyncManager';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -22,10 +25,31 @@ export function StatsScreen({
   opponentTeamName,
   resetScore,
   setOpponentTeamName,
-  navigateToMatchReport
+  navigateToMatchReport,
+  // Additional props for match data persistence
+  teamMode,
+  numPeriods,
+  periodDurationMinutes,
+  captainId,
+  matchEvents,
+  gameLog,
+  authModal
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const { isAuthenticated, user } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
+
+  // Update DataSyncManager when user changes
+  useEffect(() => {
+    if (user?.id) {
+      dataSyncManager.setUserId(user.id);
+    } else {
+      dataSyncManager.setUserId(null);
+    }
+  }, [user]);
 
 
   const copyStatsToClipboard = async () => {
@@ -37,6 +61,59 @@ export function StatsScreen({
     } catch (err) {
       console.error('Failed to copy stats to clipboard:', err);
     }
+  };
+
+  const handleSaveMatchHistory = async () => {
+    setSaving(true);
+    setSaveError(null);
+    
+    try {
+      // Prepare match data for saving
+      const matchData = {
+        players: squadForStats,
+        homeScore: homeScore || 0,
+        awayScore: awayScore || 0,
+        opponentTeamName: opponentTeamName || 'Opponent',
+        teamMode: teamMode || 'individual_6',
+        numPeriods: numPeriods || 3,
+        periodDurationMinutes: periodDurationMinutes || 15,
+        captainId: captainId || null,
+        matchEvents: matchEvents || [],
+        gameLog: gameLog || [],
+        matchDate: new Date().toISOString(),
+        // Additional metadata
+        totalPlayers: squadForStats.length,
+        matchDuration: (numPeriods || 3) * (periodDurationMinutes || 15),
+        result: homeScore > awayScore ? 'win' : homeScore < awayScore ? 'loss' : 'draw'
+      };
+
+      console.log('Saving match data:', matchData);
+      
+      const result = await dataSyncManager.saveMatch(matchData);
+      
+      if (result.success) {
+        setSaveSuccess(true);
+        console.log('Match saved successfully:', result);
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 3000);
+      } else {
+        setSaveError(result.error || 'Failed to save match');
+        console.error('Failed to save match:', result);
+      }
+    } catch (err) {
+      console.error('Exception while saving match:', err);
+      setSaveError(err.message || 'An unexpected error occurred');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleViewMatchHistory = () => {
+    // TODO: Navigate to match history view
+    console.log('Navigating to match history...');
   };
 
 
@@ -129,6 +206,65 @@ export function StatsScreen({
           <span className="text-green-400 text-sm font-medium">
             ✓ Statistics copied to clipboard!
           </span>
+        )}
+      </div>
+
+      {/* Match History Features - Protected */}
+      <div className="space-y-4">
+        {isAuthenticated ? (
+          <div className="space-y-3">
+            {/* Save Match Button for Authenticated Users */}
+            <div className="space-y-2">
+              <div className="flex gap-3 items-center">
+                <Button 
+                  onClick={handleSaveMatchHistory} 
+                  Icon={Save}
+                  variant="primary"
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save Match to History'}
+                </Button>
+                {saveSuccess && (
+                  <span className="text-emerald-400 text-sm font-medium">
+                    ✓ Match saved successfully!
+                  </span>
+                )}
+              </div>
+              
+              {saveError && (
+                <div className="p-2 bg-rose-900/20 border border-rose-600 rounded text-rose-200 text-sm">
+                  ❌ {saveError}
+                </div>
+              )}
+            </div>
+
+            {/* View Match History Button */}
+            <Button 
+              onClick={handleViewMatchHistory} 
+              Icon={History}
+              variant="secondary"
+            >
+              View Match History
+            </Button>
+          </div>
+        ) : (
+          /* Authentication Gate for Anonymous Users */
+          <FeatureGate
+            feature="match history"
+            description="Save this match to your history and track your team's performance over time"
+            compact
+            authModal={authModal}
+          >
+            <div className="space-y-3">
+              <Button Icon={Save} variant="primary" disabled>
+                Save Match to History
+              </Button>
+              <Button Icon={History} variant="secondary" disabled>
+                View Match History
+              </Button>
+            </div>
+          </FeatureGate>
         )}
       </div>
 

@@ -1,5 +1,168 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+// import { createClient } from '@supabase/supabase-js'; // Removed - not used after simplifying recovery approach
+
+// Debug logging utility with environment-aware verbosity
+const debugLog = (message, data = null, isError = false) => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // Always log errors, but filter debug messages based on environment
+  if (isError || isDevelopment) {
+    const timestamp = new Date().toISOString();
+    const ms = performance.now().toFixed(3);
+    const prefix = isError ? '💥' : '🔍';
+    
+    if (data) {
+      console.log(`${prefix} [${timestamp}] [${ms}ms] ${message}`, data);
+    } else {
+      console.log(`${prefix} [${timestamp}] [${ms}ms] ${message}`);
+    }
+  }
+};
+
+// Global auth subscription management to prevent React Strict Mode duplicates
+let globalAuthSubscription = null;
+let globalAuthSubscriptionCount = 0;
+let isAuthInitializing = false;
+
+// Auth operation queue to prevent concurrent processing and state corruption
+let authOperationQueue = [];
+let isProcessingAuthEvent = false;
+
+const queueAuthOperation = async (operationObj) => {
+  return new Promise((resolve, reject) => {
+    const queueItem = {
+      operation: operationObj.execute || operationObj,
+      operationName: operationObj.name || 'anonymous',
+      resolve,
+      reject,
+      timestamp: Date.now()
+    };
+    
+    authOperationQueue.push(queueItem);
+    debugLog('📥 Queued auth operation', {
+      queueLength: authOperationQueue.length,
+      operationName: queueItem.operationName,
+      timestamp: queueItem.timestamp
+    });
+    
+    // Process queue if not already processing
+    if (!isProcessingAuthEvent) {
+      processAuthQueue();
+    }
+  });
+};
+
+const processAuthQueue = async () => {
+  if (isProcessingAuthEvent || authOperationQueue.length === 0) {
+    return;
+  }
+  
+  isProcessingAuthEvent = true;
+  debugLog('🔄 Starting auth queue processing', {
+    queueLength: authOperationQueue.length
+  });
+  
+  while (authOperationQueue.length > 0) {
+    const queueItem = authOperationQueue.shift();
+    const { operation, operationName, resolve, reject, timestamp } = queueItem;
+    
+    try {
+      debugLog('⚡ Processing auth operation', {
+        operationName,
+        queuedFor: `${Date.now() - timestamp}ms`,
+        remainingInQueue: authOperationQueue.length
+      });
+      
+      const result = await operation();
+      resolve(result);
+      
+      debugLog('✅ Auth operation completed', {
+        operationName
+      });
+    } catch (error) {
+      debugLog('❌ Auth operation failed', {
+        operationName,
+        error: error.message
+      }, true);
+      reject(error);
+    }
+  }
+  
+  isProcessingAuthEvent = false;
+  debugLog('🏁 Auth queue processing completed');
+};
+
+// Event tracking for deduplication
+let eventCounter = 0;
+const recentEvents = new Map(); // eventType -> {count, lastTimestamp, eventId}
+
+const trackAuthEvent = (eventType, sessionInfo) => {
+  eventCounter++;
+  const eventId = `evt-${eventCounter}-${Date.now()}`;
+  const now = Date.now();
+  
+  // Check for potential duplicates
+  if (recentEvents.has(eventType)) {
+    const recent = recentEvents.get(eventType);
+    const timeDiff = now - recent.lastTimestamp;
+    
+    if (timeDiff < 1000) { // Less than 1 second apart
+      debugLog(`⚠️ POTENTIAL DUPLICATE AUTH EVENT: "${eventType}" (${timeDiff}ms apart)`, {
+        eventId,
+        previousEventId: recent.eventId,
+        timeDiff,
+        count: recent.count + 1,
+        sessionInfo
+      }, true);
+    }
+    
+    recent.count++;
+    recent.lastTimestamp = now;
+    recent.eventId = eventId;
+  } else {
+    recentEvents.set(eventType, {
+      count: 1,
+      lastTimestamp: now,
+      eventId
+    });
+  }
+  
+  return eventId;
+};
+
+// Detect React Strict Mode double mounting
+const detectStrictMode = () => {
+  globalAuthSubscriptionCount++;
+  const isStrictMode = globalAuthSubscriptionCount > 1;
+  
+  if (isStrictMode) {
+    debugLog(`⚠️ REACT STRICT MODE DETECTED: AuthProvider mounted ${globalAuthSubscriptionCount} times`, {
+      subscriptionCount: globalAuthSubscriptionCount,
+      hasExistingSubscription: !!globalAuthSubscription,
+      isInitializing: isAuthInitializing,
+      isDevelopment: process.env.NODE_ENV === 'development',
+      recommendation: 'This is normal in development with React Strict Mode enabled'
+    }, true);
+    
+    // Development-only helpful message
+    if (process.env.NODE_ENV === 'development') {
+      console.group('🔧 React Strict Mode Information');
+      console.log('React Strict Mode intentionally double-mounts components in development to help detect side effects.');
+      console.log('Our AuthProvider is now protected against this - only one auth subscription will be active.');
+      console.log('This behavior does not occur in production builds.');
+      console.log('Learn more: https://reactjs.org/docs/strict-mode.html');
+      console.groupEnd();
+    }
+  } else {
+    debugLog('✅ First AuthProvider mount - initializing auth system', {
+      subscriptionCount: globalAuthSubscriptionCount,
+      isDevelopment: process.env.NODE_ENV === 'development'
+    });
+  }
+  
+  return isStrictMode;
+};
 
 // Create the authentication context
 const AuthContext = createContext({});
@@ -15,111 +178,251 @@ export const useAuth = () => {
 
 // AuthProvider component to wrap the app and provide authentication state
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState(null);
+  // Enhanced state setters with debug logging
+  const [user, _setUser] = useState(null);
+  const [userProfile, _setUserProfile] = useState(null);
+  const [loading, _setLoading] = useState(true);
+  const [authError, _setAuthError] = useState(null);
+  const [sessionExpiry, _setSessionExpiry] = useState(null);
+  const [showSessionWarning, _setShowSessionWarning] = useState(false);
+  const [lastActivity, _setLastActivity] = useState(Date.now());
+  
+  // Simplified approach - use original supabase client
+  
+  // Wrapped state setters with essential logging
+  const setUser = useCallback((newUser) => {
+    if (process.env.NODE_ENV === 'development') {
+      debugLog('🔄 STATE: setUser', {
+        previous: user?.id || 'null',
+        new: newUser?.id || 'null'
+      });
+    }
+    _setUser(newUser);
+  }, [user]);
+  
+  const setUserProfile = useCallback((newProfile) => {
+    if (process.env.NODE_ENV === 'development') {
+      debugLog('🔄 STATE: setUserProfile', {
+        previous: userProfile?.id || 'null',
+        new: newProfile?.id || 'null',
+        name: newProfile?.name || 'null'
+      });
+    }
+    _setUserProfile(newProfile);
+  }, [userProfile]);
+  
+  const setLoading = useCallback((newLoading) => {
+    // Only log loading state changes for significant operations
+    if (process.env.NODE_ENV === 'development' && loading !== newLoading) {
+      debugLog('🔄 STATE: setLoading', {
+        previous: loading,
+        new: newLoading
+      });
+    }
+    _setLoading(newLoading);
+  }, [loading]);
+  
+  const setAuthError = useCallback((newError) => {
+    // Always log errors
+    if (newError) {
+      debugLog('🔄 STATE: setAuthError', {
+        error: newError
+      }, true);
+    }
+    _setAuthError(newError);
+  }, []);
+  
+  const setSessionExpiry = useCallback((newExpiry) => {
+    if (process.env.NODE_ENV === 'development') {
+      debugLog('🔄 STATE: setSessionExpiry', {
+        previous: sessionExpiry?.toISOString() || 'null',
+        new: newExpiry?.toISOString() || 'null'
+      });
+    }
+    _setSessionExpiry(newExpiry);
+  }, [sessionExpiry]);
+  
+  const setShowSessionWarning = useCallback((newWarning) => {
+    if (process.env.NODE_ENV === 'development' && newWarning !== showSessionWarning) {
+      debugLog('🔄 STATE: setShowSessionWarning', {
+        previous: showSessionWarning,
+        new: newWarning
+      });
+    }
+    _setShowSessionWarning(newWarning);
+  }, [showSessionWarning]);
+  
+  const setLastActivity = useCallback((newActivity) => {
+    // Don't log activity updates - too verbose
+    _setLastActivity(newActivity);
+  }, []);
+  
+  // Refs for timers and tracking
+  const sessionWarningTimer = useRef(null);
+  const sessionExpiryTimer = useRef(null);
+  const activityTimer = useRef(null);
+  const isActive = useRef(true);
 
-  // Initialize authentication state on component mount
-  useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Error getting initial session:', error.message);
-          setAuthError(error.message);
-        } else {
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            await fetchUserProfile(session.user.id);
-          }
-        }
-      } catch (error) {
-        console.error('Error in getInitialSession:', error.message);
-        setAuthError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        if (session?.user) {
-          // Try to fetch existing profile
-          await fetchUserProfile(session.user.id);
-          
-          // If user just signed up, try to create profile
-          if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
-            // Check if profile exists, if not create it
-            const { data: existingProfile } = await supabase
-              .from('user_profile')
-              .select('id')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (!existingProfile) {
-              // Extract name from user metadata if available
-              const userData = session.user.user_metadata || {};
-              await createUserProfile(session.user, userData);
-            }
-          }
-        } else {
-          setUserProfile(null);
-        }
-
-        // Clear any previous auth errors on successful auth changes
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setAuthError(null);
-        }
-      }
-    );
-
-    // Cleanup subscription on unmount
-    return () => {
-      subscription?.unsubscribe();
-    };
+  // Session monitoring functions
+  const clearSessionMonitoring = useCallback(() => {
+    if (sessionWarningTimer.current) {
+      clearTimeout(sessionWarningTimer.current);
+      sessionWarningTimer.current = null;
+    }
+    if (sessionExpiryTimer.current) {
+      clearTimeout(sessionExpiryTimer.current);
+      sessionExpiryTimer.current = null;
+    }
+    if (activityTimer.current) {
+      clearTimeout(activityTimer.current);
+      activityTimer.current = null;
+    }
   }, []);
 
-  // Fetch user profile from the database
-  const fetchUserProfile = async (userId) => {
+  const handleSessionExpired = useCallback(async () => {
+    console.log('Handling session expiry');
+    setShowSessionWarning(false);
+    setAuthError('Your session has expired. Please sign in again.');
+    
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error during automatic signout:', error.message);
+      }
+      
+      // Clear local state
+      setUser(null);
+      setUserProfile(null);
+    } catch (error) {
+      console.error('Exception during automatic signout:', error);
+    }
+  }, [setShowSessionWarning, setAuthError, setUser, setUserProfile]);
+
+  const setupSessionMonitoring = useCallback((expiryTime) => {
+    // Clear existing timers first
+    if (sessionWarningTimer.current) {
+      clearTimeout(sessionWarningTimer.current);
+      sessionWarningTimer.current = null;
+    }
+    if (sessionExpiryTimer.current) {
+      clearTimeout(sessionExpiryTimer.current);
+      sessionExpiryTimer.current = null;
+    }
+    
+    if (!expiryTime) return;
+    
+    const now = Date.now();
+    const timeUntilExpiry = expiryTime.getTime() - now;
+    const warningTime = timeUntilExpiry - (5 * 60 * 1000); // 5 minutes before expiry
+    
+    console.log(`Session expires at: ${expiryTime.toLocaleTimeString()}`);
+    console.log(`Warning in: ${Math.max(0, warningTime / 1000 / 60)} minutes`);
+    
+    // Set warning timer (5 minutes before expiry)
+    if (warningTime > 0) {
+      sessionWarningTimer.current = setTimeout(() => {
+        console.log('Session expiring soon, showing warning');
+        setShowSessionWarning(true);
+      }, warningTime);
+    }
+    
+    // Set expiry timer
+    if (timeUntilExpiry > 0) {
+      sessionExpiryTimer.current = setTimeout(() => {
+        console.log('Session expired, signing out');
+        handleSessionExpired();
+      }, timeUntilExpiry);
+    }
+  }, [handleSessionExpired, setShowSessionWarning]);
+
+  // Fetch user profile from the database with retry logic and timeout
+  const fetchUserProfile = useCallback(async (userId, attempt = 1, maxRetries = 3) => {
+    try {
+      console.log(`📋 Fetching profile for user: ${userId} (attempt ${attempt}/${maxRetries})`);
+      
+      // Add timeout to prevent hanging
+      const timeoutMs = 10000; // 10 seconds
+      const fetchPromise = supabase
         .from('user_profile')
         .select('*')
         .eq('id', userId)
         .single();
+      
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Profile fetch timeout after ${timeoutMs}ms`)), timeoutMs)
+      );
+      
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error fetching user profile:', error.message);
-        return;
+        console.error(`❌ Error fetching user profile (attempt ${attempt}):`, error.message, error.details);
+        
+        // Retry on certain error types if we haven't exceeded max retries
+        if (attempt < maxRetries && (
+          error.message.includes('timeout') ||
+          error.message.includes('network') ||
+          error.message.includes('connection') ||
+          error.message.includes('Profile fetch timeout') ||
+          error.code === 'PGRST301' // JWT expired during fetch
+        )) {
+          console.log(`🔄 Retrying profile fetch in ${attempt * 1000}ms...`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+          return await fetchUserProfile(userId, attempt + 1, maxRetries);
+        }
+        
+        // If not retryable or max retries exceeded, log error but don't crash
+        console.error(`💥 Profile fetch failed after ${attempt} attempts, continuing without profile`);
+        setUserProfile(null);
+        return null;
       }
 
-      setUserProfile(data);
+      if (data) {
+        console.log('✅ Profile fetched successfully:', { id: data.id, name: data.name });
+        
+        // Validate profile data consistency
+        if (data.id !== userId) {
+          console.warn('⚠️ Profile ID mismatch! Expected:', userId, 'Got:', data.id);
+          return null;
+        }
+        
+        setUserProfile(data);
+        return data;
+      } else {
+        console.log('📭 No profile found for user:', userId);
+        setUserProfile(null);
+        return null;
+      }
+      
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error.message);
+      console.error(`❌ Exception in fetchUserProfile (attempt ${attempt}):`, error.message);
+      
+      // Retry on exceptions (including timeouts) if we haven't exceeded max retries
+      if (attempt < maxRetries) {
+        console.log(`🔄 Retrying after exception in ${attempt * 1000}ms...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        return await fetchUserProfile(userId, attempt + 1, maxRetries);
+      }
+      
+      // Max retries exceeded
+      console.error(`💥 Profile fetch failed with exception after ${attempt} attempts`);
+      setUserProfile(null);
+      return null;
     }
-  };
+  }, [setUserProfile]);
 
   // Create user profile in the database
-  const createUserProfile = async (user, userData = {}) => {
+  const createUserProfile = useCallback(async (user, userData = {}) => {
     try {
+      const profileData = {
+        id: user.id,
+        name: userData.name || user.user_metadata?.name || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
       const { data, error } = await supabase
         .from('user_profile')
-        .insert([
-          {
-            id: user.id,
-            name: userData.name || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }
-        ])
+        .insert([profileData])
         .select()
         .single();
 
@@ -131,9 +434,337 @@ export const AuthProvider = ({ children }) => {
       setUserProfile(data);
       return data;
     } catch (error) {
-      console.error('Error in createUserProfile:', error.message);
+      console.error('Exception in createUserProfile:', error);
     }
-  };
+  }, [setUserProfile]);
+
+  // Initialize authentication state on component mount
+  useEffect(() => {
+    const isStrictMode = detectStrictMode();
+    
+    // If this is a duplicate mount from React Strict Mode, don't initialize again
+    if (isStrictMode && globalAuthSubscription) {
+      debugLog('🛑 SKIPPING duplicate AuthProvider initialization due to React Strict Mode', {
+        subscriptionCount: globalAuthSubscriptionCount,
+        hasExistingSubscription: true
+      }, true);
+      
+      // Still need to set loading false for this instance
+      setLoading(false);
+      return () => {
+        debugLog('🧹 Cleaning up duplicate AuthProvider (no-op)');
+      };
+    }
+    
+    // Prevent concurrent initialization
+    if (isAuthInitializing) {
+      debugLog('🛑 SKIPPING concurrent auth initialization', {
+        isInitializing: isAuthInitializing
+      }, true);
+      setLoading(false);
+      return () => {};
+    }
+    
+    isAuthInitializing = true;
+    debugLog('🚀 Starting primary auth initialization', {
+      subscriptionCount: globalAuthSubscriptionCount,
+      isStrictMode
+    });
+
+    // AI Agent's recommended approach: Don't call getSession immediately!
+    // Instead, let onAuthStateChange handle session restoration
+    debugLog('🔄 Following AI agent pattern - waiting for onAuthStateChange instead of calling getSession immediately');
+    
+    // We'll set loading=false in the onAuthStateChange handler once we know the auth state
+
+    // Listen for auth changes - enhanced with event-specific handling
+    debugLog('🔌 Setting up GLOBAL onAuthStateChange subscription', {
+      replacingExisting: !!globalAuthSubscription
+    });
+    
+    // Clean up existing subscription if it exists
+    if (globalAuthSubscription) {
+      debugLog('🧹 Cleaning up previous global auth subscription');
+      globalAuthSubscription.unsubscribe();
+    }
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const eventType = event || 'UNKNOWN';
+        const sessionInfo = session ? {
+          email: session.user.email,
+          userId: session.user.id,
+          expiresAt: new Date(session.expires_at * 1000).toISOString()
+        } : null;
+        
+        // Track and detect duplicate events
+        const eventId = trackAuthEvent(eventType, sessionInfo);
+        
+        debugLog(`🔄 AUTH EVENT RECEIVED: "${eventType}"`, {
+          eventId,
+          sessionInfo,
+          hasSession: !!session,
+          stackTrace: new Error().stack.split('\n').slice(1, 4).join('\n')
+        });
+        
+        // Queue this auth event to prevent concurrent processing
+        const authEventOperation = {
+          name: `authEvent_${eventType}_${eventId}`,
+          execute: async () => {
+            debugLog('🔄 Processing auth state change - AI agent pattern', {
+              eventType,
+              eventId,
+              previousUser: user?.id,
+              newUser: session?.user?.id,
+              isInitialLoad: isAuthInitializing
+            });
+            
+            // Set user first
+            setUser(session?.user ?? null);
+            
+            // IMPORTANT: Set loading=false here - this is when auth state is actually ready!
+            if (isAuthInitializing) {
+              debugLog('✅ Auth initialization complete via onAuthStateChange', {
+                eventType,
+                eventId,
+                hasSession: !!session
+              });
+              setLoading(false);
+              isAuthInitializing = false;
+            }
+        
+        if (session?.user) {
+          const userId = session.user.id;
+          const expiryTime = session.expires_at ? new Date(session.expires_at * 1000) : null;
+          
+          // Handle different event types appropriately
+          if (eventType === 'SIGNED_IN' || eventType === 'UNKNOWN' || eventType === null) {
+            // New login or page reload - full setup needed
+            debugLog('✅ Processing new session (login or page reload)', {
+              eventType,
+              eventId,
+              userId,
+              expiryTime: expiryTime?.toISOString()
+            });
+            
+            debugLog('⏱️ Setting session expiry and monitoring', {
+              expiryTime: expiryTime?.toISOString(),
+              eventId
+            });
+            setSessionExpiry(expiryTime);
+            setupSessionMonitoring(expiryTime);
+            
+            debugLog('👆 Updating last activity', { eventId });
+            setLastActivity(Date.now());
+            
+            // Fetch profile with retry logic
+            debugLog('📋 Starting profile fetch', { userId, eventId });
+            const profileResult = await fetchUserProfile(userId);
+            
+            // Only create profile for actual signup events
+            if (eventType === 'SIGNED_UP') {
+              console.log('🆕 New signup detected, checking if profile exists...');
+              if (!profileResult) {
+                console.log('🔨 Creating new user profile for signup...');
+                const userData = session.user.user_metadata || {};
+                await createUserProfile(session.user, userData);
+              }
+            }
+            
+          } else if (eventType === 'TOKEN_REFRESHED') {
+            // Token refresh - minimal updates needed
+            debugLog('🔄 Token refreshed - minimal updates only', {
+              eventId,
+              userId,
+              expiryTime: expiryTime?.toISOString(),
+              preservingProfile: true
+            });
+            
+            // Update session expiry time but don't re-fetch profile or reset timers
+            debugLog('📅 Updating session expiry for token refresh', { eventId });
+            setSessionExpiry(expiryTime);
+            
+            // Only update session monitoring if expiry changed significantly
+            const currentExpiry = sessionExpiry?.getTime();
+            const newExpiry = expiryTime?.getTime();
+            const timeDiff = Math.abs(newExpiry - currentExpiry);
+            
+            if (!currentExpiry || !newExpiry || timeDiff > 60000) {
+              debugLog('📅 Session expiry changed significantly, updating monitoring', {
+                eventId,
+                currentExpiry: new Date(currentExpiry).toISOString(),
+                newExpiry: new Date(newExpiry).toISOString(),
+                timeDiff
+              });
+              setupSessionMonitoring(expiryTime);
+            } else {
+              debugLog('📅 Session expiry change minimal, skipping monitoring update', {
+                eventId,
+                timeDiff
+              });
+            }
+            
+            debugLog('👆 Updating last activity for token refresh', { eventId });
+            setLastActivity(Date.now());
+            
+            debugLog('🔕 Clearing session warnings', { eventId });
+            setShowSessionWarning(false);
+            
+            // Don't re-fetch profile during token refresh to avoid state corruption
+            debugLog('ℹ️ Preserving existing profile during token refresh', { eventId });
+            
+          } else if (eventType === 'SIGNED_UP') {
+            // Brand new signup
+            console.log('🆕 Brand new user signup detected');
+            
+            setSessionExpiry(expiryTime);
+            setupSessionMonitoring(expiryTime);
+            setLastActivity(Date.now());
+            
+            // For new signups, try to create profile immediately
+            console.log('🔨 Creating profile for new signup...');
+            const userData = session.user.user_metadata || {};
+            await createUserProfile(session.user, userData);
+            
+          } else {
+            // Other events - minimal handling
+            console.log(`ℹ️ Handling other auth event: ${eventType}`);
+            setSessionExpiry(expiryTime);
+            setLastActivity(Date.now());
+          }
+          
+        } else {
+          debugLog('❌ No session - clearing all auth state', {
+            eventType,
+            eventId,
+            clearingProfile: true,
+            clearingMonitoring: true
+          });
+          // Clear session monitoring when logged out
+          clearSessionMonitoring();
+          setUserProfile(null);
+          setSessionExpiry(null);
+          setShowSessionWarning(false);
+        }
+
+        // Clear any previous auth errors on successful auth changes
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          debugLog('🧹 Clearing auth errors', { eventType, eventId });
+          setAuthError(null);
+        }
+        
+            debugLog('🏁 Auth event processing completed', {
+              eventType,
+              eventId,
+              hasSession: !!session,
+              processingTime: `${(performance.now() - Number(eventId.split('-')[2])).toFixed(3)}ms`
+            });
+          }
+        };
+        
+        // Queue the operation to prevent race conditions
+        await queueAuthOperation(authEventOperation);
+      }
+    );
+    
+    // Store as global subscription
+    globalAuthSubscription = subscription;
+    debugLog('✅ Global auth subscription established', {
+      subscriptionId: subscription.id || 'unknown'
+    });
+
+    // AI Agent pattern: Add fallback timeout in case no auth events fire
+    // This handles the case where user is not logged in at all
+    const fallbackTimer = setTimeout(() => {
+      if (isAuthInitializing) {
+        debugLog('⏰ Auth initialization fallback - no auth events received, assuming no session');
+        setLoading(false);
+        isAuthInitializing = false;
+      }
+    }, 1000); // Give Supabase 1 second to fire auth events
+
+    // Cleanup subscription on unmount
+    return () => {
+      debugLog('🧹 Cleaning up PRIMARY auth subscription and timers');
+      
+      // Clear fallback timer
+      clearTimeout(fallbackTimer);
+      
+      // Only clean up if this is the global subscription
+      if (globalAuthSubscription === subscription) {
+        debugLog('🧹 Unsubscribing global auth subscription');
+        globalAuthSubscription?.unsubscribe();
+        globalAuthSubscription = null;
+      } else {
+        debugLog('🧹 Skipping cleanup - not the global subscription');
+      }
+      
+      clearSessionMonitoring();
+      isAuthInitializing = false;
+    };
+  }, [clearSessionMonitoring, setupSessionMonitoring, createUserProfile, fetchUserProfile, sessionExpiry, setAuthError, setLastActivity, setLoading, setSessionExpiry, setShowSessionWarning, setUser, setUserProfile, user?.id]);
+
+  // Optimized activity tracking with debouncing
+  const lastActivityUpdateTime = useRef(0);
+  const activityUpdateDebounceMs = 5000; // Only update activity every 5 seconds
+  
+  const trackActivity = useCallback(() => {
+    if (!user) return;
+    
+    const now = Date.now();
+    isActive.current = true;
+    
+    // Debounce activity updates to prevent excessive React renders
+    const timeSinceLastUpdate = now - lastActivityUpdateTime.current;
+    if (timeSinceLastUpdate >= activityUpdateDebounceMs) {
+      // Only log in development and not too frequently
+      if (process.env.NODE_ENV === 'development' && timeSinceLastUpdate > 30000) {
+        debugLog('👆 Updating last activity (debounced)', {
+          timeSinceLastUpdate,
+          debounceMs: activityUpdateDebounceMs
+        });
+      }
+      setLastActivity(now);
+      lastActivityUpdateTime.current = now;
+    }
+    
+    // Clear existing activity timer
+    if (activityTimer.current) {
+      clearTimeout(activityTimer.current);
+    }
+    
+    // Set user as inactive after 30 minutes of no activity
+    activityTimer.current = setTimeout(() => {
+      isActive.current = false;
+      debugLog('👤 User marked as inactive due to no activity');
+    }, 30 * 60 * 1000); // 30 minutes
+  }, [user, setLastActivity]);
+
+  // Set up activity listeners
+  useEffect(() => {
+    if (!user) return;
+    
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      trackActivity();
+    };
+    
+    // Add event listeners
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true);
+    });
+    
+    // Initial activity tracking
+    trackActivity();
+    
+    // Cleanup event listeners
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true);
+      });
+    };
+  }, [user, trackActivity]);
 
   // Sign up function
   const signUp = async (email, password, userData = {}) => {
@@ -181,50 +812,172 @@ export const AuthProvider = ({ children }) => {
 
   // Sign in function
   const signIn = async (email, password) => {
+    debugLog('🔐 STARTING signIn process', { email });
+    
     try {
+      debugLog('🔄 Setting loading=true and clearing auth error');
       setLoading(true);
       setAuthError(null);
 
+      debugLog('📞 Calling supabase.auth.signInWithPassword', { email });
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      
+      debugLog('📨 signInWithPassword response received', {
+        hasUser: !!data?.user,
+        userId: data?.user?.id,
+        hasError: !!error,
+        errorMessage: error?.message,
+        willTriggerOnAuthStateChange: !!data?.user
+      });
 
       if (error) {
+        debugLog('❌ Sign in failed', { error: error.message }, true);
         setAuthError(error.message);
         return { user: null, error };
       }
 
+      debugLog('✅ Sign in successful', {
+        userId: data.user.id,
+        email: data.user.email,
+        willTriggerAuthEvents: true
+      });
       return { user: data.user, error: null };
     } catch (error) {
       const errorMessage = error.message || 'An unexpected error occurred during sign in';
+      debugLog('💥 Exception in signIn', { errorMessage }, true);
       setAuthError(errorMessage);
       return { user: null, error: { message: errorMessage } };
     } finally {
+      debugLog('🏁 signIn process completed, setting loading=false');
       setLoading(false);
     }
   };
 
-  // Sign out function
+  // Sign out function - enhanced with explicit cleanup
   const signOut = async () => {
     try {
+      console.log('\ud83d\udeaa Starting sign out process...');
       setLoading(true);
       setAuthError(null);
 
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        setAuthError(error.message);
-        return { error };
+      // Clear all session monitoring timers FIRST
+      console.log('\ud83e\uddfd Clearing session monitoring...');
+      clearSessionMonitoring();
+
+      // Call Supabase signOut
+      console.log('\ud83d\udcde Calling Supabase signOut...');
+      // Create timeout promise to prevent hanging
+      const timeoutMs = 5000; // 5 second timeout (reduced for better UX)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Supabase signOut timed out after ${timeoutMs}ms - investigating root cause`));
+        }, timeoutMs);
+      });
+      
+      // Diagnostic logging before signOut call
+      debugLog('🔍 Pre-signOut diagnostics', {
+        authQueueLength: authOperationQueue.length,
+        isProcessingAuth: isProcessingAuthEvent,
+        hasGlobalSubscription: !!globalAuthSubscription,
+        networkOnline: navigator.onLine,
+        currentUser: user?.id
+      });
+
+      // Create the signOut promise  
+      const signOutPromise = supabase.auth.signOut();
+
+      // Race the signOut vs timeout
+      let supabaseResult;
+      try {
+        supabaseResult = await Promise.race([signOutPromise, timeoutPromise]);
+        
+        if (supabaseResult && supabaseResult.error) {
+          console.error('\u274c Supabase signOut error:', supabaseResult.error.message);
+          // Don't return early - continue with cleanup
+        } else {
+          console.log('\u2705 Supabase signOut successful');
+        }
+      } catch (timeoutOrError) {
+        if (timeoutOrError.message && timeoutOrError.message.includes('timed out')) {
+          debugLog('⏰ Supabase signOut timed out - analyzing cause', {
+            error: timeoutOrError.message,
+            authQueueLength: authOperationQueue.length,
+            isProcessingAuth: isProcessingAuthEvent,
+            hasGlobalSubscription: !!globalAuthSubscription,
+            sessionExpiryState: sessionExpiry?.toISOString()
+          }, true);
+          
+          // Run quick diagnostics to understand why it timed out
+          debugLog('🔍 Timeout root cause analysis starting');
+          try {
+            await testSignOutDiagnostics();
+          } catch (diagError) {
+            debugLog('❌ Diagnostic test failed during timeout', { error: diagError.message }, true);
+          }
+          
+          await forceSignOutCleanup();
+        } else {
+          debugLog('❌ Supabase signOut failed with error', { 
+            error: timeoutOrError.message,
+            stack: timeoutOrError.stack?.substring(0, 200)
+          }, true);
+        }
+        // Continue with our cleanup regardless
       }
 
-      // Clear local state
+      // Explicit cleanup of ALL auth-related state
+      console.log('\ud83e\uddfd Clearing all auth state...');
       setUser(null);
       setUserProfile(null);
-      
+      setSessionExpiry(null);
+      setShowSessionWarning(false);
+      setLastActivity(Date.now());
+
+      // Explicit localStorage cleanup (in case Supabase didn't clear it)
+      console.log('\ud83e\uddfd Clearing localStorage...');
+      try {
+        // Clear common Supabase storage keys
+        const keysToRemove = [
+          'sb-localhost-auth-token',
+          'supabase.auth.token',
+          'sb-auth-token',
+        ];
+        
+        keysToRemove.forEach(key => {
+          if (localStorage.getItem(key)) {
+            console.log(`\u2699\ufe0f Removing localStorage key: ${key}`);
+            localStorage.removeItem(key);
+          }
+        });
+
+        // Also clear anything that starts with 'sb-' which is Supabase's pattern
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.includes('auth')) {
+            console.log(`\u2699\ufe0f Removing localStorage key: ${key}`);
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (storageError) {
+        console.warn('\u26a0\ufe0f localStorage cleanup error:', storageError);
+      }
+
+      console.log('\u2705 Sign out completed successfully');
       return { error: null };
     } catch (error) {
+      console.error('\u274c Exception during sign out:', error);
       const errorMessage = error.message || 'An unexpected error occurred during sign out';
       setAuthError(errorMessage);
+      
+      // Even if there's an error, try to clear local state
+      setUser(null);
+      setUserProfile(null);
+      setSessionExpiry(null);
+      setShowSessionWarning(false);
+      clearSessionMonitoring();
+      
       return { error: { message: errorMessage } };
     } finally {
       setLoading(false);
@@ -269,17 +1022,20 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setAuthError(null);
 
+      const updateData = {
+        id: user.id,
+        ...profileData,
+        updated_at: new Date().toISOString(),
+      };
+
       const { data, error } = await supabase
         .from('user_profile')
-        .upsert({
-          id: user.id,
-          ...profileData,
-          updated_at: new Date().toISOString(),
-        })
+        .upsert(updateData)
         .select()
         .single();
 
       if (error) {
+        console.error('Profile update error:', error.message);
         setAuthError(error.message);
         return { data: null, error };
       }
@@ -287,6 +1043,7 @@ export const AuthProvider = ({ children }) => {
       setUserProfile(data);
       return { data, error: null };
     } catch (error) {
+      console.error('Exception in updateProfile:', error);
       const errorMessage = error.message || 'An unexpected error occurred while updating profile';
       setAuthError(errorMessage);
       return { data: null, error: { message: errorMessage } };
@@ -300,7 +1057,328 @@ export const AuthProvider = ({ children }) => {
     setAuthError(null);
   };
 
-  // Context value object
+  // Session extension function
+  const extendSession = useCallback(async () => {
+    try {
+      console.log('Extending session...');
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('Session extension failed:', error.message);
+        setAuthError('Failed to extend session. Please sign in again.');
+        return false;
+      }
+      
+      if (data.session) {
+        console.log('Session extended successfully');
+        const expiryTime = new Date(data.session.expires_at * 1000);
+        setSessionExpiry(expiryTime);
+        setupSessionMonitoring(expiryTime);
+        setShowSessionWarning(false);
+        setAuthError(null);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Session extension error:', error);
+      setAuthError('Failed to extend session. Please sign in again.');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [setupSessionMonitoring, setLoading, setAuthError, setSessionExpiry, setShowSessionWarning]);
+
+  // Dismiss session warning (user chose to ignore)
+  const dismissSessionWarning = useCallback(() => {
+    setShowSessionWarning(false);
+    console.log('Session warning dismissed by user');
+  }, [setShowSessionWarning]);
+
+  // Comprehensive Supabase client health diagnostics
+  const testSupabaseClientHealth = useCallback(async () => {
+    const testId = `clientHealth-${Date.now()}`;
+    debugLog('🏥 Starting Supabase client health check', { testId });
+    
+    const results = {};
+    
+    try {
+      // Test 1: Check localStorage auth tokens
+      debugLog('🧪 Test 1: Auth token state', { testId });
+      const authKeys = Object.keys(localStorage).filter(key => 
+        key.includes('supabase') || key.startsWith('sb-') || key.includes('auth')
+      );
+      
+      const tokenInfo = {};
+      authKeys.forEach(key => {
+        try {
+          const value = localStorage.getItem(key);
+          if (value && value.startsWith('{')) {
+            const parsed = JSON.parse(value);
+            tokenInfo[key] = {
+              hasAccessToken: !!parsed.access_token,
+              hasRefreshToken: !!parsed.refresh_token,
+              expiresAt: parsed.expires_at ? new Date(parsed.expires_at * 1000).toISOString() : null,
+              tokenLength: parsed.access_token?.length || 0
+            };
+          } else {
+            tokenInfo[key] = { rawValue: value?.substring(0, 50) + '...' };
+          }
+        } catch (e) {
+          tokenInfo[key] = { parseError: e.message };
+        }
+      });
+      
+      debugLog('📋 Auth token analysis', { testId, tokenInfo });
+      
+      // Test 2: Test Supabase client basic functionality
+      debugLog('🧪 Test 2: Supabase client basic operations', { testId });
+      
+      // 2a: getSession (should work - no network) with timeout
+      const sessionStart = performance.now();
+      try {
+        debugLog('🔍 Starting getSession test with 2s timeout', { testId });
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('getSession timeout after 2s')), 2000)
+        );
+        
+        const { data: sessionData, error: sessionError } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]);
+        const sessionEnd = performance.now();
+        debugLog('✅ getSession test completed', {
+          testId,
+          duration: `${sessionEnd - sessionStart}ms`,
+          hasSession: !!sessionData.session,
+          hasError: !!sessionError,
+          userId: sessionData.session?.user?.id
+        });
+      } catch (sessionTestError) {
+        const sessionEnd = performance.now();
+        debugLog('❌ getSession test failed', {
+          testId,
+          duration: `${sessionEnd - sessionStart}ms`,
+          error: sessionTestError.message,
+          isTimeout: sessionTestError.message.includes('timeout')
+        }, true);
+      }
+      
+      // 2b: Try a simple network operation (profile count)
+      debugLog('🧪 Test 2b: Network operation test', { testId });
+      const networkStart = performance.now();
+      try {
+        const { data, error } = await Promise.race([
+          supabase.from('user_profile').select('id', { count: 'exact' }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Network test timeout')), 3000))
+        ]);
+        const networkEnd = performance.now();
+        debugLog('✅ Network operation test completed', {
+          testId,
+          duration: `${networkEnd - networkStart}ms`,
+          hasData: !!data,
+          hasError: !!error,
+          errorMessage: error?.message
+        });
+      } catch (networkTestError) {
+        debugLog('❌ Network operation test failed', {
+          testId,
+          error: networkTestError.message,
+          isTimeout: networkTestError.message.includes('timeout')
+        }, true);
+      }
+      
+      // Test 3: Check if client URL and configuration are correct
+      debugLog('🧪 Test 3: Client configuration', { testId });
+      debugLog('📋 Supabase client config', {
+        testId,
+        supabaseUrl: supabase.supabaseUrl,
+        supabaseKey: supabase.supabaseKey?.substring(0, 20) + '...',
+        authUrl: supabase.auth?.url,
+        authSettings: {
+          autoRefreshToken: supabase.auth?.settings?.autoRefreshToken,
+          persistSession: supabase.auth?.settings?.persistSession,
+          detectSessionInUrl: supabase.auth?.settings?.detectSessionInUrl
+        }
+      });
+      
+      // Test 4: Check global subscription state
+      debugLog('🧪 Test 4: Global subscription health', {
+        testId,
+        hasGlobalSubscription: !!globalAuthSubscription,
+        subscriptionId: globalAuthSubscription?.id,
+        isProcessing: isProcessingAuthEvent,
+        queueLength: authOperationQueue.length
+      });
+      
+      // Test 5: Try creating a new Supabase client instance
+      debugLog('🧪 Test 5: Fresh client test', { testId });
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const freshClient = createClient(
+          supabase.supabaseUrl,
+          supabase.supabaseKey,
+          {
+            auth: {
+              autoRefreshToken: true,
+              persistSession: true,
+              detectSessionInUrl: true,
+              flowType: 'pkce'
+            }
+          }
+        );
+        
+        const freshTestStart = performance.now();
+        const { data: freshData, error: freshError } = await Promise.race([
+          freshClient.auth.getSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Fresh client timeout')), 2000))
+        ]);
+        const freshTestEnd = performance.now();
+        
+        debugLog('✅ Fresh client test completed', {
+          testId,
+          duration: `${freshTestEnd - freshTestStart}ms`,
+          hasSession: !!freshData.session,
+          hasError: !!freshError,
+          sameUserId: freshData.session?.user?.id === user?.id
+        });
+      } catch (freshTestError) {
+        debugLog('❌ Fresh client test failed', {
+          testId,
+          error: freshTestError.message
+        }, true);
+      }
+      
+    } catch (healthTestError) {
+      debugLog('❌ Client health check failed', {
+        testId,
+        error: healthTestError.message
+      }, true);
+    } finally {
+      debugLog('🏁 Client health check completed', { 
+        testId, 
+        results,
+        summary: 'Check individual test results above for details'
+      });
+      return results;
+    }
+  }, [user]);
+
+  // Manual cleanup function for when Supabase signOut hangs
+  const forceSignOutCleanup = useCallback(async () => {
+    debugLog('🔨 Forcing manual sign out cleanup');
+    
+    try {
+      // Aggressive localStorage cleanup
+      debugLog('🧽 Aggressive localStorage cleanup');
+      const allKeys = Object.keys(localStorage);
+      const supabaseKeys = allKeys.filter(key => 
+        key.includes('supabase') || 
+        key.startsWith('sb-') || 
+        key.includes('auth-token') ||
+        key.includes('pkce')
+      );
+      
+      supabaseKeys.forEach(key => {
+        debugLog(`💥 Force removing: ${key}`);
+        localStorage.removeItem(key);
+      });
+      
+      // Also try sessionStorage cleanup
+      const sessionKeys = Object.keys(sessionStorage);
+      const supabaseSessionKeys = sessionKeys.filter(key => 
+        key.includes('supabase') || key.startsWith('sb-')
+      );
+      
+      supabaseSessionKeys.forEach(key => {
+        debugLog(`💥 Force removing from session: ${key}`);
+        sessionStorage.removeItem(key);
+      });
+      
+    } catch (cleanupError) {
+      debugLog('❌ Error during force cleanup', { error: cleanupError.message }, true);
+    }
+  }, []);
+
+  // Quick diagnostics for signOut timeout scenarios  
+  const testSignOutDiagnostics = useCallback(async () => {
+    const testId = `signOutDiag-${Date.now()}`;
+    debugLog('🔬 Quick signOut diagnostics', { testId });
+    
+    try {
+      // Test if basic auth operations work
+      const sessionTest = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session test timeout')), 1000))
+      ]);
+      
+      debugLog('📋 Session test result', {
+        testId,
+        hasSession: !!sessionTest.data?.session,
+        error: sessionTest.error?.message
+      });
+      
+      // Test if network requests work at all
+      const networkTest = await Promise.race([
+        fetch(window.location.origin),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Network test timeout')), 1000))
+      ]);
+      
+      debugLog('🌐 Network test result', {
+        testId,
+        status: networkTest.status,
+        online: navigator.onLine
+      });
+      
+    } catch (diagError) {
+      debugLog('❌ SignOut diagnostics failed', {
+        testId,
+        error: diagError.message,
+        isTimeout: diagError.message.includes('timeout')
+      }, true);
+    }
+  }, []);
+
+  // Simplified approach - no need for complex recovery mechanism
+
+  // Quick test for immediate debugging
+  const testSupabaseQuick = useCallback(async () => {
+    const testId = `quick-${Date.now()}`;
+    debugLog('⚡ Quick Supabase test starting', { testId });
+    
+    try {
+      // Test 1: getSession with short timeout
+      debugLog('🔍 Testing getSession with 1s timeout', { testId });
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('getSession timeout')), 1000))
+      ]);
+      debugLog('✅ getSession works', { 
+        testId, 
+        hasSession: !!sessionResult.data?.session,
+        userId: sessionResult.data?.session?.user?.id
+      });
+    } catch (error) {
+      debugLog('❌ getSession failed', { testId, error: error.message }, true);
+    }
+    
+    try {
+      // Test 2: Simple network request
+      debugLog('🔍 Testing network request with 1s timeout', { testId });
+      const networkResult = await Promise.race([
+        fetch(window.location.origin + '/favicon.ico'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('network timeout')), 1000))
+      ]);
+      debugLog('✅ Network works', { testId, status: networkResult.status });
+    } catch (error) {
+      debugLog('❌ Network failed', { testId, error: error.message }, true);
+    }
+  }, []);
+
+  // Context value object with state validation
   const value = {
     user,
     userProfile,
@@ -312,10 +1390,39 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     updateProfile,
     clearAuthError,
+    // Session management
+    sessionExpiry,
+    showSessionWarning,
+    lastActivity,
+    extendSession,
+    dismissSessionWarning,
+    trackActivity,
+    // Diagnostic functions (development only)
+    testSignOutDiagnostics: process.env.NODE_ENV === 'development' ? testSignOutDiagnostics : undefined,
+    testSupabaseClientHealth,
+    testSupabaseQuick,
     // Computed properties
     isAuthenticated: !!user,
     isEmailConfirmed: user?.email_confirmed_at != null,
+    isActive: isActive.current,
+    // State validation helpers
+    hasValidProfile: !!userProfile && !!userProfile.id && userProfile.id === user?.id,
+    profileName: userProfile?.name || 'Not set',
+    debugInfo: {
+      userId: user?.id,
+      profileId: userProfile?.id,
+      sessionExpires: sessionExpiry?.toISOString(),
+      lastActiveTime: new Date(lastActivity).toISOString(),
+      authQueueLength: authOperationQueue.length,
+      isProcessingAuth: isProcessingAuthEvent,
+      globalSubscription: !!globalAuthSubscription
+    },
   };
+
+  // Expose auth context to window for debugging (development only)
+  if (process.env.NODE_ENV === 'development') {
+    window.auth = value;
+  }
 
   return (
     <AuthContext.Provider value={value}>
