@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Square, Pause, Play, Undo2, RotateCcw } from 'lucide-react';
+import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { TEAM_MODES } from '../../constants/playerConstants';
@@ -280,6 +280,8 @@ export function GameScreen({
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber}</h2>
 
+      
+
       {/* Timers */}
       <div className="grid grid-cols-2 gap-4 text-center">
         <div className="p-2 bg-slate-700 rounded-lg">
@@ -353,7 +355,7 @@ export function GameScreen({
         <div className="flex gap-2">
           <Button 
             onClick={substitutionHandlers.handleSubstitutionWithHighlight} 
-            Icon={RotateCcw} 
+            Icon={RefreshCcw} 
             className="flex-1"
             disabled={!canSubstitute}
             title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}

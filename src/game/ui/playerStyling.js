@@ -11,13 +11,18 @@ export function getPlayerStyling({
   isNextOn = false,
   isRecentlySubstituted = false,
   hideNextOffIndicator = false,
-  supportsInactivePlayers = false
+  supportsInactivePlayers = false,
+  role = null // Add role prop
 }) {
   // Background color logic
   let bgColor = FORMATION_STYLES.bgColors.substitute; // Default for substitute
   
   if (isFieldPosition) {
-    bgColor = FORMATION_STYLES.bgColors.field;
+    if (role === 'Defender') {
+      bgColor = FORMATION_STYLES.bgColors.defenderField;
+    } else {
+      bgColor = FORMATION_STYLES.bgColors.field;
+    }
   }
   
   // Inactive players get dimmed appearance (only for formations that support it)

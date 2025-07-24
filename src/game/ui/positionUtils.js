@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Sword, RotateCcw } from 'lucide-react';
+import { Shield, Sword, RotateCcw, Hand } from 'lucide-react';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
 import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
 
@@ -12,7 +12,9 @@ import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constan
  * Get the appropriate icon for a position
  */
 export function getPositionIcon(position, substitutePositions) {
-  if (substitutePositions.includes(position)) {
+  if (position.includes('goalie')) {
+    return <Hand className={ICON_STYLES.small} />;
+  } else if (substitutePositions.includes(position)) {
     return <RotateCcw className={ICON_STYLES.small} />;
   } else if (position.includes('Defender')) {
     return <Shield className={ICON_STYLES.small} />;

@@ -7,7 +7,8 @@ export const FORMATION_STYLES = {
   
   // Background colors
   bgColors: {
-    field: 'bg-sky-700',        // Players on field
+    field: 'bg-sky-700',        // Players on field (default for attackers)
+    defenderField: 'bg-sky-900', // Defender players on field
     substitute: 'bg-slate-700', // Substitute players
     inactive: 'bg-slate-800'    // Inactive players (7+ modes)
   },

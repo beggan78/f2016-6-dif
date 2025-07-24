@@ -69,6 +69,8 @@ export function IndividualFormation({
     );
     
 
+    const playerRole = position.includes('Defender') ? 'Defender' : (position.includes('Attacker') ? 'Attacker' : null);
+
     // Get styling and animation using utilities
     const { animationClass, zIndexClass, styleProps } = getPlayerAnimation(playerId, animationState);
     const { bgColor, textColor, borderColor, glowClass } = getPlayerStyling({
@@ -78,7 +80,8 @@ export function IndividualFormation({
       isNextOn,
       isRecentlySubstituted,
       hideNextOffIndicator,
-      supportsInactivePlayers: modeSupportsInactive
+      supportsInactivePlayers: modeSupportsInactive,
+      role: playerRole
     });
 
     // Get utilities
