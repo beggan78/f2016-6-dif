@@ -2,6 +2,7 @@ export const PLAYER_ROLES = {
   GOALIE: 'Goalie',
   DEFENDER: 'Defender',
   ATTACKER: 'Attacker',
+  MIDFIELDER: 'Midfielder', // Used for 1-2-1 formation and future tactical formations
   SUBSTITUTE: 'Substitute', // Used for initial status
   ON_FIELD: 'On Field' // Used for initial status
 };

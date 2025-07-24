@@ -17,6 +17,7 @@ export const initializePlayers = (roster) => roster.map((name, index) => ({
     // Role-specific time tracking for new points system
     timeAsDefenderSeconds: 0, // Total time spent as defender
     timeAsAttackerSeconds: 0, // Total time spent as attacker
+    timeAsMidfielderSeconds: 0, // Total time spent as midfielder (1-2-1 formation)
     // Temporary per-period tracking
     currentRole: null, // 'Goalie', 'Defender', 'Attacker'
     currentStatus: null, // 'on_field', 'substitute', 'goalie'
