@@ -81,7 +81,8 @@ export function IndividualFormation({
       isRecentlySubstituted,
       hideNextOffIndicator,
       supportsInactivePlayers: modeSupportsInactive,
-      role: playerRole
+      role: playerRole,
+      isGoalie: isGoaliePosition
     });
 
     // Get utilities

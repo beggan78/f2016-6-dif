@@ -10,7 +10,8 @@ export const FORMATION_STYLES = {
     field: 'bg-sky-700',        // Players on field (default for attackers)
     defenderField: 'bg-sky-900', // Defender players on field
     substitute: 'bg-slate-700', // Substitute players
-    inactive: 'bg-slate-800'    // Inactive players (7+ modes)
+    inactive: 'bg-slate-800',    // Inactive players (7+ modes)
+    goalie: 'bg-emerald-700'      // Goalie player (suggestions: bg-emerald-700, bg-purple-700, bg-indigo-700)
   },
   
   // Text colors

@@ -56,7 +56,9 @@ export function PairsFormation({
       isNextOn,
       isRecentlySubstituted: hasRecentlySubstitutedPlayer,
       hideNextOffIndicator,
-      supportsInactivePlayers: false
+      supportsInactivePlayers: false,
+      role: null, // No specific role for pairs
+      isGoalie: false
     });
 
     const longPressEvents = getPositionEvents(longPressHandlers, pairKey);
@@ -108,7 +110,8 @@ export function PairsFormation({
       isNextOn: false,
       isRecentlySubstituted,
       hideNextOffIndicator,
-      supportsInactivePlayers: false
+      supportsInactivePlayers: false,
+      isGoalie: true
     });
 
     const longPressEvents = goalieHandlers ? goalieHandlers.goalieEvents : {};

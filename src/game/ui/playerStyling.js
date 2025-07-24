@@ -12,12 +12,15 @@ export function getPlayerStyling({
   isRecentlySubstituted = false,
   hideNextOffIndicator = false,
   supportsInactivePlayers = false,
-  role = null // Add role prop
+  role = null, // Add role prop
+  isGoalie = false // Add isGoalie prop
 }) {
   // Background color logic
   let bgColor = FORMATION_STYLES.bgColors.substitute; // Default for substitute
   
-  if (isFieldPosition) {
+  if (isGoalie) {
+    bgColor = FORMATION_STYLES.bgColors.goalie;
+  } else if (isFieldPosition) {
     if (role === 'Defender') {
       bgColor = FORMATION_STYLES.bgColors.defenderField;
     } else {
