@@ -25,6 +25,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TeamProvider } from './contexts/TeamContext';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
+import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
@@ -36,7 +37,8 @@ function AppContent() {
     extendSession, 
     dismissSessionWarning, 
     signOut,
-    loading: authLoading 
+    loading: authLoading,
+    needsProfileCompletion
   } = useAuth();
   
   // Authentication modal
@@ -462,6 +464,13 @@ function AppContent() {
           onClose={authModal.closeModal}
           initialMode={authModal.mode}
         />
+
+        {/* Profile Completion Prompt */}
+        {needsProfileCompletion && (
+          <ProfileCompletionPrompt
+            setView={gameState.setView}
+          />
+        )}
     </div>
   );
 }

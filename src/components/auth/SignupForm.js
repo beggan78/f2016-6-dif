@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
+import { validateSignupForm, getPasswordRequirementsText } from '../../utils/authValidation';
+import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
 
 export function SignupForm({ onSwitchToLogin, onClose }) {
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -30,40 +31,9 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    // Name validation
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
-    }
-    
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password)) {
-      newErrors.password = 'Password must contain both uppercase and lowercase letters';
-    }
-    
-    // Confirm password validation
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const { isValid, errors: validationErrors } = validateSignupForm(formData);
+    setErrors(validationErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
@@ -76,8 +46,7 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
     try {
       const { user, error, message } = await signUp(
         formData.email, 
-        formData.password, 
-        { name: formData.name.trim() }
+        formData.password
       );
       
       if (error) {
@@ -85,7 +54,7 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
       } else if (message) {
         // Email confirmation required
         setSuccessMessage(message);
-        setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+        setFormData({ email: '', password: '', confirmPassword: '' });
       } else if (user) {
         // Success - close the modal
         onClose();
@@ -95,11 +64,13 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
     }
   };
 
-  const getErrorMessage = () => {
-    if (errors.general) return errors.general;
-    if (authError) return authError;
-    return null;
-  };
+  const primaryError = getPrimaryErrorMessage({
+    formErrors: {}, // Don't show field errors in banner
+    authError,
+    generalError: errors.general
+  });
+
+  const errorClasses = getErrorDisplayClasses(!!primaryError, 'banner');
 
   // If success message is shown, display that instead of the form
   if (successMessage) {
@@ -148,36 +119,18 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-sky-300">Create Account</h2>
-        <p className="text-slate-400 mt-2">Join the DIF F16-6 Coach community</p>
+        <p className="text-slate-400 mt-2">Get started with email verification</p>
       </div>
 
       {/* Error Message */}
-      {getErrorMessage() && (
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-          <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
+      {primaryError && (
+        <div className={errorClasses.container}>
+          <p className={errorClasses.text}>{primaryError}</p>
         </div>
       )}
 
       {/* Signup Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
-            Full Name
-          </label>
-          <Input
-            id="name"
-            type="text"
-            value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            placeholder="Enter your full name"
-            disabled={loading}
-            className={errors.name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
-          />
-          {errors.name && (
-            <p className="text-rose-400 text-sm mt-1">{errors.name}</p>
-          )}
-        </div>
-
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
             Email Address
@@ -189,10 +142,10 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
             onChange={(e) => handleInputChange('email', e.target.value)}
             placeholder="Enter your email"
             disabled={loading}
-            className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            className={getErrorDisplayClasses(!!errors.email, 'field').container}
           />
           {errors.email && (
-            <p className="text-rose-400 text-sm mt-1">{errors.email}</p>
+            <p className={getErrorDisplayClasses(!!errors.email, 'field').text}>{errors.email}</p>
           )}
         </div>
 
@@ -207,13 +160,13 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
             onChange={(e) => handleInputChange('password', e.target.value)}
             placeholder="Create a secure password"
             disabled={loading}
-            className={errors.password ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            className={getErrorDisplayClasses(!!errors.password, 'field').container}
           />
           {errors.password && (
-            <p className="text-rose-400 text-sm mt-1">{errors.password}</p>
+            <p className={getErrorDisplayClasses(!!errors.password, 'field').text}>{errors.password}</p>
           )}
           <p className="text-slate-500 text-xs mt-1">
-            Must be at least 6 characters with uppercase and lowercase letters
+            {getPasswordRequirementsText()}
           </p>
         </div>
 
@@ -228,10 +181,10 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
             onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
             placeholder="Confirm your password"
             disabled={loading}
-            className={errors.confirmPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            className={getErrorDisplayClasses(!!errors.confirmPassword, 'field').container}
           />
           {errors.confirmPassword && (
-            <p className="text-rose-400 text-sm mt-1">{errors.confirmPassword}</p>
+            <p className={getErrorDisplayClasses(!!errors.confirmPassword, 'field').text}>{errors.confirmPassword}</p>
           )}
         </div>
 

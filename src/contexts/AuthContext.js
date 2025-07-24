@@ -186,6 +186,7 @@ export const AuthProvider = ({ children }) => {
   const [sessionExpiry, _setSessionExpiry] = useState(null);
   const [showSessionWarning, _setShowSessionWarning] = useState(false);
   const [lastActivity, _setLastActivity] = useState(Date.now());
+  const [needsProfileCompletion, _setNeedsProfileCompletion] = useState(false);
   
   // Simplified approach - use original supabase client
   
@@ -264,6 +265,18 @@ export const AuthProvider = ({ children }) => {
   const setLastActivity = useCallback((newActivity) => {
     // Don't log activity updates - too verbose
     _setLastActivity(newActivity);
+  }, []);
+
+  const setNeedsProfileCompletion = useCallback((needsCompletion) => {
+    _setNeedsProfileCompletion(currentNeedsCompletion => {
+      if (process.env.NODE_ENV === 'development' && needsCompletion !== currentNeedsCompletion) {
+        debugLog('🔄 STATE: setNeedsProfileCompletion', {
+          previous: currentNeedsCompletion,
+          new: needsCompletion
+        });
+      }
+      return needsCompletion;
+    });
   }, []);
   
   // Refs for timers and tracking
@@ -564,10 +577,28 @@ export const AuthProvider = ({ children }) => {
                 
                 const profile = await fetchUserProfile(newUserId);
 
-                // If it was a signup event, ensure profile is created
-                if (eventType === 'SIGNED_UP' && !profile) {
-                  debugLog('🔨 Creating new user profile for signup event...', { eventId });
-                  await createUserProfile(session.user, session.user.user_metadata || {});
+                // Create profile for new users (both SIGNED_UP and first-time SIGNED_IN after email confirmation)
+                if (!profile) {
+                  debugLog('🔨 Creating new user profile for new user...', { 
+                    eventId, 
+                    eventType,
+                    isNewUser: true 
+                  });
+                  const newProfile = await createUserProfile(session.user, session.user.user_metadata || {});
+                  
+                  // Check if the new user needs to complete their profile (no name)
+                  if (!newProfile?.name) {
+                    debugLog('👤 New user needs profile completion', { eventId });
+                    setNeedsProfileCompletion(true);
+                  }
+                } else {
+                  // Check existing profile for completeness
+                  if (!profile.name) {
+                    debugLog('👤 Existing user needs profile completion', { eventId });
+                    setNeedsProfileCompletion(true);
+                  } else {
+                    setNeedsProfileCompletion(false);
+                  }
                 }
               } 
               // Scenario 2: Same user, session is just being refreshed
@@ -605,6 +636,7 @@ export const AuthProvider = ({ children }) => {
               setUserProfile(null);
               setSessionExpiry(null);
               setShowSessionWarning(false);
+              setNeedsProfileCompletion(false);
             }
 
             // Clear any previous auth errors on successful auth changes
@@ -662,7 +694,7 @@ export const AuthProvider = ({ children }) => {
       clearSessionMonitoring();
       isAuthInitializing = false;
     };
-  }, [clearSessionMonitoring, setupSessionMonitoring, createUserProfile, fetchUserProfile, setAuthError, setLastActivity, setLoading, setSessionExpiry, setShowSessionWarning, setUser, setUserProfile, user?.id]);
+  }, [clearSessionMonitoring, setupSessionMonitoring, createUserProfile, fetchUserProfile, setAuthError, setLastActivity, setLoading, setSessionExpiry, setShowSessionWarning, setUser, setUserProfile, setNeedsProfileCompletion, user?.id]);
 
   // Optimized activity tracking with debouncing
   const lastActivityUpdateTime = useRef(0);
@@ -745,9 +777,8 @@ export const AuthProvider = ({ children }) => {
         return { user: null, error };
       }
 
-      // Create user profile if sign up was successful
       if (data.user) {
-        // If email confirmation is required, return confirmation message
+        // Check if email confirmation is required
         if (!data.user.email_confirmed_at) {
           return { 
             user: data.user, 
@@ -755,9 +786,7 @@ export const AuthProvider = ({ children }) => {
             message: 'Please check your email to confirm your account.' 
           };
         }
-
-        // If user is immediately confirmed, create profile
-        await createUserProfile(data.user, userData);
+        // Note: Profile creation is now handled by onAuthStateChange for all new users
       }
 
       return { user: data.user, error: null };
@@ -1016,6 +1045,11 @@ export const AuthProvider = ({ children }) => {
   const clearAuthError = () => {
     setAuthError(null);
   };
+
+  // Mark profile as completed
+  const markProfileCompleted = useCallback(() => {
+    setNeedsProfileCompletion(false);
+  }, [setNeedsProfileCompletion]);
 
   // Session extension function
   const extendSession = useCallback(async () => {
@@ -1350,6 +1384,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     updateProfile,
     clearAuthError,
+    markProfileCompleted,
     // Session management
     sessionExpiry,
     showSessionWarning,
@@ -1368,6 +1403,7 @@ export const AuthProvider = ({ children }) => {
     // State validation helpers
     hasValidProfile: !!userProfile && !!userProfile.id && userProfile.id === user?.id,
     profileName: userProfile?.name || 'Not set',
+    needsProfileCompletion,
     debugInfo: {
       userId: user?.id,
       profileId: userProfile?.id,

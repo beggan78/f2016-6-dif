@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button } from '../shared/UI';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
+import { AuthButtonPair } from './AuthButtons';
 
 /**
  * AnonymousAlert - User-friendly prompt for anonymous users to sign up
@@ -39,35 +39,17 @@ export function AnonymousAlert({
   const displayBenefits = benefits.length > 0 ? benefits : defaultBenefits;
   const displayTitle = title || (requireProfile ? "Complete Your Profile" : `Sign in to use ${feature}`);
 
-  const handleSignIn = () => {
-    authModal.openLogin();
-  };
-
-  const handleSignUp = () => {
-    authModal.openSignup();
-  };
-
   // Minimal variant for inline use
   if (variant === 'minimal') {
     return (
       <div className="text-center py-2">
         <p className="text-slate-400 text-sm mb-3">{description}</p>
-        <div className="flex gap-2 justify-center">
-          <Button
-            onClick={handleSignIn}
-            variant="secondary"
-            size="sm"
-          >
-            Sign In
-          </Button>
-          <Button
-            onClick={handleSignUp}
-            variant="primary"
-            size="sm"
-          >
-            Sign Up
-          </Button>
-        </div>
+        <AuthButtonPair
+          authModal={authModal}
+          variant="compact"
+          signUpText="Sign Up"
+          className="justify-center"
+        />
       </div>
     );
   }
@@ -87,21 +69,12 @@ export function AnonymousAlert({
           <div className="flex-1">
             <h3 className="font-semibold text-sky-300 text-sm">{displayTitle}</h3>
             <p className="text-slate-400 text-sm mt-1">{description}</p>
-            <div className="flex gap-2 mt-3">
-              <Button
-                onClick={handleSignIn}
-                variant="secondary"
-                size="sm"
-              >
-                Sign In
-              </Button>
-              <Button
-                onClick={handleSignUp}
-                variant="primary"
-                size="sm"
-              >
-                Create Account
-              </Button>
+            <div className="mt-3">
+              <AuthButtonPair
+                authModal={authModal}
+                variant="compact"
+                signUpText="Create Account"
+              />
             </div>
           </div>
         </div>
@@ -154,25 +127,11 @@ export function AnonymousAlert({
         )}
 
         {/* Action Buttons */}
-        <div className="space-y-3">
-          <Button
-            onClick={handleSignUp}
-            variant="primary"
-            size="lg"
-            className="w-full"
-          >
-            Create Free Account
-          </Button>
-          
-          <Button
-            onClick={handleSignIn}
-            variant="secondary"
-            size="lg"
-            className="w-full"
-          >
-            Sign In
-          </Button>
-        </div>
+        <AuthButtonPair
+          authModal={authModal}
+          variant="stacked"
+          signUpText="Create Free Account"
+        />
 
         {/* Fine Print */}
         <p className="text-xs text-slate-500 mt-4">

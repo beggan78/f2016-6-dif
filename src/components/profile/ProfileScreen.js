@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { VIEWS } from '../../constants/viewConstants';
 
 export function ProfileScreen({ setView }) {
-  const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName } = useAuth();
+  const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.name || '');
   const [errors, setErrors] = useState({});
@@ -61,6 +61,10 @@ export function ProfileScreen({ setView }) {
       } else if (data) {
         setIsEditing(false);
         setSuccessMessage('Profile updated successfully!');
+        // Mark profile as completed if name was added
+        if (data.name && data.name.trim()) {
+          markProfileCompleted();
+        }
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccessMessage('');

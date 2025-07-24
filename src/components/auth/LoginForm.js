@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
+import { validateLoginForm } from '../../utils/authValidation';
+import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
 
 export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
   const [email, setEmail] = useState('');
@@ -16,20 +18,9 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
   }, [email, password, authError, clearAuthError]);
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password is required';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const { isValid, errors: validationErrors } = validateLoginForm({ email, password });
+    setErrors(validationErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
@@ -53,11 +44,13 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
     }
   };
 
-  const getErrorMessage = () => {
-    if (errors.general) return errors.general;
-    if (authError) return authError;
-    return null;
-  };
+  const primaryError = getPrimaryErrorMessage({
+    formErrors: {}, // Don't show field errors in banner
+    authError,
+    generalError: errors.general
+  });
+
+  const errorClasses = getErrorDisplayClasses(!!primaryError, 'banner');
 
   return (
     <div className="space-y-6">
@@ -68,9 +61,9 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
       </div>
 
       {/* Error Message */}
-      {getErrorMessage() && (
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-          <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
+      {primaryError && (
+        <div className={errorClasses.container}>
+          <p className={errorClasses.text}>{primaryError}</p>
         </div>
       )}
 
@@ -87,10 +80,10 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             disabled={loading}
-            className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            className={getErrorDisplayClasses(!!errors.email, 'field').container}
           />
           {errors.email && (
-            <p className="text-rose-400 text-sm mt-1">{errors.email}</p>
+            <p className={getErrorDisplayClasses(!!errors.email, 'field').text}>{errors.email}</p>
           )}
         </div>
 
@@ -105,10 +98,10 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
             disabled={loading}
-            className={errors.password ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            className={getErrorDisplayClasses(!!errors.password, 'field').container}
           />
           {errors.password && (
-            <p className="text-rose-400 text-sm mt-1">{errors.password}</p>
+            <p className={getErrorDisplayClasses(!!errors.password, 'field').text}>{errors.password}</p>
           )}
         </div>
 
