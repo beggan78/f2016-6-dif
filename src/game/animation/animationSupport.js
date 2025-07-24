@@ -236,7 +236,7 @@ const calculateDistance = (fromIndex, toIndex, teamMode) => {
   
   const mode = teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual';
   const boxHeight = getBoxHeight(mode);
-  const distance = Math.abs(toIndex - fromIndex) * boxHeight;
+  const distance = Math.abs(toIndex - fromIndex) * boxHeight * 0.9025;
   return toIndex > fromIndex ? distance : -distance;
 };
 
