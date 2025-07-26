@@ -15,6 +15,7 @@ import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
+import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -220,6 +221,18 @@ function App() {
     removeModalFromStack();
   };
 
+  const handleNavigateToTacticalBoard = () => {
+    gameState.setView(VIEWS.TACTICAL_BOARD);
+  };
+
+  const handleNavigateFromTacticalBoard = () => {
+    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
+    if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      const targetView = gameState.currentPeriodNumber > 0 ? VIEWS.GAME : VIEWS.CONFIG;
+      gameState.setView(targetView);
+    }
+  };
+
   // Render logic
   const renderView = () => {
     switch (gameState.view) {
@@ -367,6 +380,14 @@ function App() {
             debugMode={debugMode}
           />
         );
+      case VIEWS.TACTICAL_BOARD:
+        return (
+          <TacticalBoardScreen 
+            onNavigateBack={handleNavigateFromTacticalBoard}
+            pushModalState={pushModalState}
+            removeModalFromStack={removeModalFromStack}
+          />
+        );
       default:
         return <div>Unknown view</div>;
     }
@@ -379,6 +400,7 @@ function App() {
           <HamburgerMenu 
             onRestartMatch={handleRestartMatch} 
             onAddPlayer={handleAddPlayer}
+            onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
             teamMode={gameState.teamMode}
             onSplitPairs={gameState.splitPairs}

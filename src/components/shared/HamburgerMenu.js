@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { hasInactivePlayersInSquad } from '../../utils/playerUtils';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -26,6 +26,11 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
   const handleFormPairs = () => {
     setIsOpen(false);
     onFormPairs();
+  };
+
+  const handleNavigateToTacticalBoard = () => {
+    setIsOpen(false);
+    onNavigateToTacticalBoard();
   };
 
   const isConfigScreen = currentView === 'config';
@@ -69,6 +74,12 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
           />
           <div className="absolute right-0 mt-2 w-48 bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-20">
             <div className="py-1">
+              <button
+                onClick={handleNavigateToTacticalBoard}
+                className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+              >
+                Tactical Board
+              </button>
               <button
                 onClick={handleAddPlayer}
                 disabled={!isConfigScreen}
