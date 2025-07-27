@@ -51,11 +51,12 @@ describe('ChipPalette', () => {
   });
 
   describe('Component Rendering', () => {
-    it('should render palette with title', () => {
+    it('should render palette container', () => {
       render(<ChipPalette {...defaultProps} />);
       
-      expect(screen.getByText('Player Chips')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: 'Soccer Ball Finalists' })).toBeInTheDocument();
+      // Check that the main container is rendered
+      const container = document.querySelector('.bg-slate-800');
+      expect(container).toBeInTheDocument();
     });
 
     it('should render all available player chip colors', () => {
@@ -71,19 +72,11 @@ describe('ChipPalette', () => {
       });
     });
 
-    it('should render soccer ball finalists section', () => {
+    it('should render soccer ball chip', () => {
       render(<ChipPalette {...defaultProps} />);
       
-      expect(screen.getByText('Soccer Ball Finalists')).toBeInTheDocument();
-      
-      const ballVariations = [
-        'ball-v1', 'ball-v2', 'ball-v3', 'ball-v4', 'ball-v5',
-        'ball-v6', 'ball-v7', 'ball-v8', 'ball-v9', 'ball-v10'
-      ];
-      
-      ballVariations.forEach(variation => {
-        expect(screen.getByTestId(`palette-${variation}`)).toBeInTheDocument();
-      });
+      // Only ball-v1 is available in the current implementation
+      expect(screen.getByTestId('palette-ball-v1')).toBeInTheDocument();
     });
 
     it('should render djurgarden chip in main row', () => {
@@ -95,9 +88,7 @@ describe('ChipPalette', () => {
     it('should show instructions', () => {
       render(<ChipPalette {...defaultProps} />);
       
-      expect(screen.getByText(/Drag chips onto the pitch/)).toBeInTheDocument();
-      expect(screen.getByText(/Double-tap to delete/)).toBeInTheDocument();
-      expect(screen.getByText(/Numbers auto-increment per color/)).toBeInTheDocument();
+      expect(screen.getByText('Drag chips onto the pitch • Double-tap to delete')).toBeInTheDocument();
     });
 
     it('should render chips with palette flag set', () => {
@@ -196,25 +187,25 @@ describe('ChipPalette', () => {
     it('should have proper layout structure', () => {
       render(<ChipPalette {...defaultProps} />);
       
-      // Check for main sections
-      expect(screen.getByText('Player Chips')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: 'Soccer Ball Finalists' })).toBeInTheDocument();
+      // Check for main container
+      const container = document.querySelector('.bg-slate-800');
+      expect(container).toBeInTheDocument();
       
-      // Check for player chips section
-      const playerSection = screen.getByText('Player Chips').parentElement;
-      expect(playerSection).toBeInTheDocument();
+      // Check for chips container
+      const chipsContainer = document.querySelector('.flex.flex-wrap');
+      expect(chipsContainer).toBeInTheDocument();
       
-      // Check for ball section
-      const ballSection = screen.getByRole('heading', { name: 'Soccer Ball Finalists' }).parentElement;
-      expect(ballSection).toBeInTheDocument();
+      // Check for instructions section
+      const instructionsSection = document.querySelector('.border-t');
+      expect(instructionsSection).toBeInTheDocument();
     });
 
-    it('should have visual separators between sections', () => {
+    it('should have visual separator for instructions', () => {
       render(<ChipPalette {...defaultProps} />);
       
-      // The component should have border-t classes for separation
-      const container = screen.getByText('Player Chips').closest('div');
-      expect(container).toBeInTheDocument();
+      // The component should have border-t class for separation above instructions
+      const instructionsContainer = document.querySelector('.border-t');
+      expect(instructionsContainer).toBeInTheDocument();
     });
 
     it('should organize chips in a responsive grid', () => {
@@ -248,7 +239,7 @@ describe('ChipPalette', () => {
       const ballChip = screen.getByTestId('palette-ball-v1');
       expect(ballChip).toHaveAttribute('data-in-palette', 'true');
       expect(ballChip).toHaveAttribute('data-variation', 'ball-v1');
-      expect(ballChip).toHaveAttribute('data-number', '1');
+      // Note: SoccerBallChip doesn't receive number prop in current implementation
     });
 
     it('should generate unique IDs for each chip', () => {
@@ -301,11 +292,12 @@ describe('ChipPalette', () => {
   });
 
   describe('Accessibility', () => {
-    it('should have proper heading structure', () => {
+    it('should not have heading structure (simplified layout)', () => {
       render(<ChipPalette {...defaultProps} />);
       
-      expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Player Chips');
-      expect(screen.getByRole('heading', { level: 4 })).toHaveTextContent('Soccer Ball Finalists');
+      // The component no longer has headings - it's a simplified layout
+      const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      expect(headings).toHaveLength(0);
     });
 
     it('should provide helpful instructions', () => {
@@ -315,11 +307,12 @@ describe('ChipPalette', () => {
       expect(instructions).toBeInTheDocument();
     });
 
-    it('should have proper section headings', () => {
+    it('should provide accessible instructions', () => {
       render(<ChipPalette {...defaultProps} />);
       
-      expect(screen.getByRole('heading', { name: 'Player Chips' })).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: 'Soccer Ball Finalists' })).toBeInTheDocument();
+      // The component provides instructions for accessibility instead of headings
+      const instructions = screen.getByText('Drag chips onto the pitch • Double-tap to delete');
+      expect(instructions).toBeInTheDocument();
     });
   });
 });

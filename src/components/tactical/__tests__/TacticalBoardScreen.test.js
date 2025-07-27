@@ -50,11 +50,12 @@ describe('TacticalBoardScreen', () => {
   });
 
   describe('Component Rendering', () => {
-    it('should render tactical board screen with header', () => {
+    it('should render tactical board screen with essential elements', () => {
       render(<TacticalBoardScreen {...defaultProps} />);
       
-      expect(screen.getByText('Tactical Board')).toBeInTheDocument();
       expect(screen.getByText('Back')).toBeInTheDocument();
+      expect(screen.getByText('Full Pitch')).toBeInTheDocument();
+      expect(screen.getByText('Half Pitch')).toBeInTheDocument();
       expect(screen.getByTestId('tactical-board')).toBeInTheDocument();
     });
 

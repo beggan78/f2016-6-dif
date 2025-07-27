@@ -1,22 +1,7 @@
 import React, { useCallback } from 'react';
 import { PlayerChip } from './PlayerChip';
 import { SoccerBallChip } from './SoccerBallChip';
-
-const AVAILABLE_COLORS = [
-  'djurgarden',
-  'white',
-  'red', 
-  'blue',
-  'yellow',
-  'green',
-  'orange',
-  'purple',
-  'black'
-];
-
-const SOCCER_BALL_VARIATIONS = [
-  'ball-v1'
-];
+import { AVAILABLE_COLORS, SOCCER_BALL_VARIATIONS } from '../../config/tacticalBoardConfig';
 
 export function ChipPalette({ onDragStart, isDragging }) {
   

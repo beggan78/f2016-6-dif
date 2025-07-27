@@ -1,4 +1,6 @@
-import React, { useCallback, useRef } from 'react';
+import React from 'react';
+import { BaseChip } from './BaseChip';
+import { CHIP_APPEARANCE } from '../../config/tacticalBoardConfig';
 
 export function SoccerBallChip({ 
   id, 
@@ -11,75 +13,22 @@ export function SoccerBallChip({
   isInPalette = false,
   style = {}
 }) {
-  const lastTapRef = useRef(0);
-  const tapTimeoutRef = useRef(null);
-
-  const handlePointerStart = useCallback((event) => {
-    onPointerStart?.(event);
-  }, [onPointerStart]);
-
-  const handleDoubleClick = useCallback(() => {
-    onDoubleClick?.();
-  }, [onDoubleClick]);
-
-  // Custom double-tap detection for better touch device support
-  const handleTouchStart = useCallback((event) => {
-    const now = Date.now();
-    const timeDiff = now - lastTapRef.current;
-    
-    if (timeDiff < 300 && timeDiff > 0) {
-      // Double tap detected
-      event.preventDefault();
-      event.stopPropagation();
-      onDoubleClick?.();
-      lastTapRef.current = 0; // Reset to prevent triple-tap
-    } else {
-      // Single tap - start timeout for potential double tap
-      lastTapRef.current = now;
-      
-      // Clear any existing timeout
-      if (tapTimeoutRef.current) {
-        clearTimeout(tapTimeoutRef.current);
-      }
-      
-      // Set timeout to reset tap timing
-      tapTimeoutRef.current = setTimeout(() => {
-        lastTapRef.current = 0;
-      }, 300);
-    }
-  }, [onDoubleClick]);
+  const soccerBallClasses = `
+    ${CHIP_APPEARANCE.SOCCER_BALL_CHIP.WIDTH}
+    rounded-full 
+    overflow-hidden
+  `.trim();
 
   return (
-    <div
-      className={`
-        ${isInPalette ? 'relative' : 'absolute'} 
-        w-4 h-4 sm:w-5 sm:h-5 
-        rounded-full 
-        cursor-move 
-        select-none 
-        shadow-lg
-        hover:shadow-xl
-        transition-all
-        duration-200
-        transform
-        hover:scale-105
-        overflow-hidden
-      `}
-      style={{
-        ...(isInPalette
-          ? {}
-          : {
-              left: `${x}%`,
-              top: `${y}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: 10
-            }),
-        touchAction: 'none',
-        ...style
-      }}
-      onPointerDown={handlePointerStart}
-      onDoubleClick={handleDoubleClick}
-      onTouchStart={handleTouchStart}
+    <BaseChip
+      id={id}
+      x={x}
+      y={y}
+      onPointerStart={onPointerStart}
+      onDoubleClick={onDoubleClick}
+      isInPalette={isInPalette}
+      style={style}
+      className={soccerBallClasses}
     >
       {/* Soccer ball pattern variations */}
       <div className="absolute inset-0 bg-white rounded-full">
@@ -100,6 +49,6 @@ export function SoccerBallChip({
           {number}
         </span>
       )}
-    </div>
+    </BaseChip>
   );
 }
