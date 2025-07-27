@@ -52,7 +52,7 @@ export function TacticalBoard({
         });
         setDragOffset({ x: 0, y: 0 });
       } else {
-        // For existing chips, calculate offset for smooth dragging
+        // For existing chips, create ghost chip at current position
         const chipX = (chipData.x / 100) * rect.width;
         const chipY = (chipData.y / 100) * rect.height;
         
@@ -60,7 +60,16 @@ export function TacticalBoard({
           x: event.clientX - rect.left - chipX,
           y: event.clientY - rect.top - chipY
         });
-        setGhostChip(null);
+        
+        // Create ghost chip for existing chip
+        setGhostChip({
+          type: chipData.type,
+          color: chipData.color,
+          variation: chipData.variation,
+          number: chipData.number,
+          x: chipData.x,
+          y: chipData.y
+        });
       }
     }
     
@@ -71,37 +80,37 @@ export function TacticalBoard({
   }, [getNextChipNumber]);
 
   const handlePointerMove = useCallback((event) => {
-    if (!isDragging || !draggedChip || !boardRef.current) return;
+    if (!isDragging || !draggedChip || !boardRef.current || !ghostChip) return;
     
     event.preventDefault();
     const rect = boardRef.current.getBoundingClientRect();
     
-    if (draggedChip.isNewChip && ghostChip) {
-      // Update ghost chip position for new chips from palette
-      const x = ((event.clientX - rect.left) / rect.width) * 100;
-      const y = ((event.clientY - rect.top) / rect.height) * 100;
-      
-      setGhostChip(prev => ({
-        ...prev,
-        x: Math.max(3, Math.min(97, x)),
-        y: Math.max(3, Math.min(97, y))
-      }));
-    } else if (!draggedChip.isNewChip) {
-      // For existing chips, update position in real-time
-      const x = ((event.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-      const y = ((event.clientY - rect.top - dragOffset.y) / rect.height) * 100;
-      const clampedX = Math.max(3, Math.min(97, x));
-      const clampedY = Math.max(3, Math.min(97, y));
-      onChipMove(draggedChip.id, { x: clampedX, y: clampedY });
+    // Update ghost chip position for both new and existing chips
+    let x, y;
+    
+    if (draggedChip.isNewChip) {
+      // For new chips from palette
+      x = ((event.clientX - rect.left) / rect.width) * 100;
+      y = ((event.clientY - rect.top) / rect.height) * 100;
+    } else {
+      // For existing chips, use drag offset for smooth movement
+      x = ((event.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+      y = ((event.clientY - rect.top - dragOffset.y) / rect.height) * 100;
     }
-  }, [isDragging, draggedChip, dragOffset, ghostChip, onChipMove]);
+    
+    setGhostChip(prev => ({
+      ...prev,
+      x: Math.max(3, Math.min(97, x)),
+      y: Math.max(3, Math.min(97, y))
+    }));
+  }, [isDragging, draggedChip, dragOffset, ghostChip]);
 
   const handlePointerEnd = useCallback((event) => {
-    if (!isDragging || !draggedChip || !boardRef.current) return;
+    if (!isDragging || !draggedChip || !boardRef.current || !ghostChip) return;
     
     event.preventDefault();
     
-    if (draggedChip.isNewChip && ghostChip) {
+    if (draggedChip.isNewChip) {
       // Create new chip from palette using ghost chip position
       const newChip = {
         id: `chip-${nextChipId.current++}`,
@@ -113,6 +122,9 @@ export function TacticalBoard({
         y: ghostChip.y
       };
       onChipPlace(newChip);
+    } else {
+      // Update existing chip position using ghost chip final position
+      onChipMove(draggedChip.id, { x: ghostChip.x, y: ghostChip.y });
     }
 
     // Clear all drag state
@@ -120,7 +132,7 @@ export function TacticalBoard({
     setIsDragging(false);
     setDragOffset({ x: 0, y: 0 });
     setGhostChip(null);
-  }, [isDragging, draggedChip, ghostChip, onChipPlace]);
+  }, [isDragging, draggedChip, ghostChip, onChipPlace, onChipMove]);
 
   // Add global pointer event listeners
   useEffect(() => {
@@ -161,8 +173,11 @@ export function TacticalBoard({
         >
 
           {/* Placed Chips */}
-          {placedChips.map((chip) => (
-            chip.type === 'player' ? (
+          {placedChips.map((chip) => {
+            // Hide the chip if it's currently being dragged
+            const isBeingDragged = isDragging && draggedChip && !draggedChip.isNewChip && draggedChip.id === chip.id;
+            
+            return chip.type === 'player' ? (
               <PlayerChip
                 key={chip.id}
                 id={chip.id}
@@ -172,6 +187,10 @@ export function TacticalBoard({
                 y={chip.y}
                 onPointerStart={(event) => handlePointerStart(chip, event)}
                 onDoubleClick={() => handleChipDoubleClick(chip.id)}
+                style={{
+                  opacity: isBeingDragged ? 0 : 1,
+                  transition: isBeingDragged ? 'none' : 'opacity 0.1s ease'
+                }}
               />
             ) : (
               <SoccerBallChip
@@ -182,9 +201,13 @@ export function TacticalBoard({
                 variation={chip.variation}
                 onPointerStart={(event) => handlePointerStart(chip, event)}
                 onDoubleClick={() => handleChipDoubleClick(chip.id)}
+                style={{
+                  opacity: isBeingDragged ? 0 : 1,
+                  transition: isBeingDragged ? 'none' : 'opacity 0.1s ease'
+                }}
               />
-            )
-          ))}
+            );
+          })}
 
           {/* Ghost Chip for Drag Preview */}
           {ghostChip && (

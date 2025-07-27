@@ -20,7 +20,8 @@ export function PlayerChip({
   y, 
   onPointerStart, 
   onDoubleClick,
-  isInPalette = false 
+  isInPalette = false,
+  style = {}
 }) {
   const lastTapRef = useRef(0);
   const tapTimeoutRef = useRef(null);
@@ -98,7 +99,8 @@ export function PlayerChip({
               transform: 'translate(-50%, -50%)',
               zIndex: 10
             }),
-        touchAction: 'none'
+        touchAction: 'none',
+        ...style
       }}
       onPointerDown={handlePointerStart}
       onDoubleClick={handleDoubleClick}
