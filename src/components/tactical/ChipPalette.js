@@ -42,8 +42,6 @@ export function ChipPalette({ onDragStart, isDragging }) {
 
   return (
     <div className={`bg-slate-800 rounded-lg p-4 shadow-lg transition-opacity duration-200 ${isDragging ? 'opacity-90' : ''}`}>
-      <h3 className="text-lg font-semibold text-sky-400 mb-3">Chips</h3>
-      
       <div className="flex flex-wrap gap-3 justify-center items-end">
         {AVAILABLE_COLORS.map((color) => (
           <PlayerChip
@@ -69,7 +67,7 @@ export function ChipPalette({ onDragStart, isDragging }) {
       {/* Instructions */}
       <div className="border-t border-slate-700 pt-4 mt-4">
         <p className="text-xs text-slate-400 text-center">
-          Drag chips onto the pitch • Double-tap to delete • Numbers auto-increment per color
+          Drag chips onto the pitch • Double-tap to delete
         </p>
       </div>
     </div>

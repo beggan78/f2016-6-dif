@@ -409,7 +409,7 @@ function App() {
             selectedSquadIds={gameState.selectedSquadIds}
           />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
       </header>
       <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
         {renderView()}

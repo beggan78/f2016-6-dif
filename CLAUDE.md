@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# DIF F16-6 Coach - Claude Code Memory
+# Sport Wizard - Claude Code Memory
 
 ## Project Overview
 Mobile-first web application for coaching youth soccer teams. Manages player rotations, tracks playing time, and maintains fair substitution patterns during 5v5 games with 6-7 player squads.

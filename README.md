@@ -1,10 +1,10 @@
-# DIF F16-6 Coach
+# Sport Wizard
 
 A mobile-first web application designed for coaching youth soccer teams. This app helps manage player rotations, track playing time, and maintain fair substitution patterns during games with 5v5 formations.
 
 ## Overview
 
-DIF F16-6 Coach is built specifically for managing a soccer team of 14 players where 6-7 players are selected for each game. The app supports three distinct team modes: 7-player pairs, 6-player individual, and 7-player individual modes, each with intelligent rotation systems to ensure fair playing time distribution.
+Sport Wizard is built specifically for managing a soccer team of 14 players where 6-7 players are selected for each game. The app supports three distinct team modes: 7-player pairs, 6-player individual, and 7-player individual modes, each with intelligent rotation systems to ensure fair playing time distribution.
 
 ### Key Features
 
