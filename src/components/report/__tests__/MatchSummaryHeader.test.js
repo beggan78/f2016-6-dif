@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MatchSummaryHeader } from '../MatchSummaryHeader';
+import { describePerformance, expectPerformance } from '../../../__tests__/performanceTestUtils';
 
 // Mock the formatTime utility
 jest.mock('../../../utils/formatUtils', () => ({
@@ -1193,26 +1194,48 @@ describe('MatchSummaryHeader', () => {
       // Should unmount cleanly
       expect(() => unmount()).not.toThrow();
     });
+  });
+});
 
-    it('handles component updates efficiently', () => {
-      const startTime = performance.now();
-      
-      const { rerender } = render(<MatchSummaryHeader {...defaultProps} />);
-      
-      // Test multiple rapid updates
-      for (let i = 0; i < 20; i++) {
-        rerender(
-          <MatchSummaryHeader 
-            {...defaultProps} 
-            homeScore={i}
-          />
-        );
+// Performance Tests - Uses environment-aware utilities
+describePerformance('MatchSummaryHeader Performance', () => {
+  let defaultProps;
+
+  beforeEach(() => {
+    defaultProps = {
+      homeTeamName: 'Djurgården',
+      awayTeamName: 'Hammarby',
+      homeScore: 2,
+      awayScore: 1,
+      matchStartTime: 1640995200000,
+      matchDuration: 900,
+      totalPeriods: 2,
+      periodDurationMinutes: 12
+    };
+    
+    jest.clearAllMocks();
+  });
+
+  it('handles rapid component updates efficiently', async () => {
+    await expectPerformance(
+      () => {
+        const { rerender } = render(<MatchSummaryHeader {...defaultProps} />);
+        
+        // Test multiple rapid updates to simulate real-world usage
+        for (let i = 0; i < 20; i++) {
+          rerender(
+            <MatchSummaryHeader 
+              {...defaultProps} 
+              homeScore={i}
+              awayScore={i + 1}
+            />
+          );
+        }
+      },
+      { 
+        operation: 'fast', 
+        enableLogging: true 
       }
-      
-      const endTime = performance.now();
-      
-      // Should complete quickly (arbitrary but reasonable threshold)
-      expect(endTime - startTime).toBeLessThan(100);
-    });
+    );
   });
 });
