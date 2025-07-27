@@ -42,10 +42,9 @@ export function ChipPalette({ onDragStart, isDragging }) {
 
   return (
     <div className={`bg-slate-800 rounded-lg p-4 shadow-lg transition-opacity duration-200 ${isDragging ? 'opacity-90' : ''}`}>
-      <h3 className="text-lg font-semibold text-sky-400 mb-3">Player Chips</h3>
+      <h3 className="text-lg font-semibold text-sky-400 mb-3">Chips</h3>
       
-      {/* Player Chips */}
-      <div className="flex flex-wrap gap-3 justify-center mb-4">
+      <div className="flex flex-wrap gap-3 justify-center items-end">
         {AVAILABLE_COLORS.map((color) => (
           <PlayerChip
             key={color}
@@ -56,23 +55,15 @@ export function ChipPalette({ onDragStart, isDragging }) {
             onPointerStart={(event) => handlePlayerChipPointerStart(color, event)}
           />
         ))}
-      </div>
-
-      {/* Soccer Ball Variations */}
-      <div className="border-t border-slate-700 pt-4">
-        <h4 className="text-md font-medium text-sky-400 mb-2">Soccer Ball</h4>
-        <div className="flex flex-wrap gap-3 justify-center pb-8">
-          {SOCCER_BALL_VARIATIONS.map((variation, index) => (
-            <SoccerBallChip
-              key={variation}
-              id={`palette-${variation}`}
-              variation={variation}
-              number={index + 1}
-              isInPalette={true}
-              onPointerStart={(event) => handleBallChipPointerStart(variation, event)}
-            />
-          ))}
-        </div>
+        {SOCCER_BALL_VARIATIONS.map((variation) => (
+          <SoccerBallChip
+            key={variation}
+            id={`palette-${variation}`}
+            variation={variation}
+            isInPalette={true}
+            onPointerStart={(event) => handleBallChipPointerStart(variation, event)}
+          />
+        ))}
       </div>
 
       {/* Instructions */}
