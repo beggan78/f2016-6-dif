@@ -3,6 +3,7 @@ import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateSignupForm, getPasswordRequirementsText } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
+import { EmailVerificationForm } from './EmailVerificationForm';
 
 export function SignupForm({ onSwitchToLogin, onClose }) {
   const [formData, setFormData] = useState({
@@ -12,6 +13,8 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
   });
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
   const { signUp, loading, authError, clearAuthError } = useAuth();
 
   // Clear auth errors when component mounts or when user starts typing
@@ -52,8 +55,10 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
       if (error) {
         setErrors({ general: error.message });
       } else if (message) {
-        // Email confirmation required
+        // Email confirmation required - show OTP verification
+        setUserEmail(formData.email);
         setSuccessMessage(message);
+        setShowOtpVerification(true);
         setFormData({ email: '', password: '', confirmPassword: '' });
       } else if (user) {
         // Success - close the modal
@@ -64,6 +69,11 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
     }
   };
 
+  const handleOtpVerificationSuccess = () => {
+    // OTP verification successful - close modal
+    onClose();
+  };
+
   const primaryError = getPrimaryErrorMessage({
     formErrors: {}, // Don't show field errors in banner
     authError,
@@ -71,6 +81,18 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
   });
 
   const errorClasses = getErrorDisplayClasses(!!primaryError, 'banner');
+
+  // If OTP verification is needed, show EmailVerificationForm
+  if (showOtpVerification) {
+    return (
+      <EmailVerificationForm
+        email={userEmail}
+        onSuccess={handleOtpVerificationSuccess}
+        onSwitchToLogin={onSwitchToLogin}
+        onClose={onClose}
+      />
+    );
+  }
 
   // If success message is shown, display that instead of the form
   if (successMessage) {
@@ -86,17 +108,31 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
           <p className="text-slate-400 mt-2">{successMessage}</p>
         </div>
         
-        <div className="bg-sky-900/50 border border-sky-600 rounded-lg p-4">
-          <p className="text-sky-200 text-sm">
-            Please check your email and click the confirmation link to complete your registration.
-          </p>
+        <div className="space-y-4">
+          <Button
+            onClick={() => setShowOtpVerification(true)}
+            variant="primary"
+            size="lg"
+            className="w-full"
+          >
+            Enter 6-Digit Code
+          </Button>
+          
+          <div className="bg-slate-700 rounded-lg p-4">
+            <p className="text-slate-300 text-sm mb-2">
+              <strong>Alternative:</strong> Check your email for a confirmation link
+            </p>
+            <p className="text-slate-400 text-xs">
+              You can also click the link in your email to verify your account
+            </p>
+          </div>
         </div>
 
         <div className="space-y-3">
           <Button
             onClick={onSwitchToLogin}
-            variant="primary"
-            size="lg"
+            variant="secondary"
+            size="md"
             className="w-full"
           >
             Back to Sign In

@@ -694,7 +694,7 @@ export const AuthProvider = ({ children }) => {
       clearSessionMonitoring();
       isAuthInitializing = false;
     };
-  }, [clearSessionMonitoring, setupSessionMonitoring, createUserProfile, fetchUserProfile, setAuthError, setLastActivity, setLoading, setSessionExpiry, setShowSessionWarning, setUser, setUserProfile, setNeedsProfileCompletion, user?.id]);
+  }, [clearSessionMonitoring, setupSessionMonitoring, fetchUserProfile, createUserProfile, setAuthError, setLastActivity, setLoading, setSessionExpiry, setShowSessionWarning, setUser, setUserProfile, setNeedsProfileCompletion, user?.id]);
 
   // Optimized activity tracking with debouncing
   const lastActivityUpdateTime = useRef(0);
@@ -786,7 +786,7 @@ export const AuthProvider = ({ children }) => {
             message: 'Please check your email to confirm your account.' 
           };
         }
-        // Note: Profile creation is now handled by onAuthStateChange for all new users
+        // Note: Profile creation is deferred until user signs in and is prompted via ProfileCompletionPrompt
       }
 
       return { user: data.user, error: null };
@@ -997,6 +997,64 @@ export const AuthProvider = ({ children }) => {
       setAuthError(errorMessage);
       return { error: { message: errorMessage } };
     } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify email OTP function
+  const verifyEmailOtp = async (email, token) => {
+    debugLog('🔐 STARTING verifyEmailOtp process', { email, tokenLength: token?.length });
+    
+    try {
+      debugLog('🔄 Setting loading=true and clearing auth error');
+      setLoading(true);
+      setAuthError(null);
+
+      debugLog('📞 Calling supabase.auth.verifyOtp', { email, type: 'signup' });
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'signup'
+      });
+      
+      debugLog('📨 verifyOtp response received', {
+        hasUser: !!data?.user,
+        userId: data?.user?.id,
+        hasError: !!error,
+        errorMessage: error?.message,
+        isEmailConfirmed: data?.user?.email_confirmed_at ? true : false
+      });
+
+      if (error) {
+        debugLog('❌ Email verification failed', { error: error.message }, true);
+        setAuthError(error.message);
+        return { user: null, error };
+      }
+
+      if (data.user) {
+        debugLog('✅ Email verification successful', {
+          userId: data.user.id,
+          email: data.user.email,
+          emailConfirmed: !!data.user.email_confirmed_at
+        });
+
+        // The onAuthStateChange handler will be triggered automatically by Supabase
+        // and will handle profile creation and other setup
+        return { user: data.user, error: null };
+      }
+
+      // This shouldn't happen, but handle it gracefully
+      debugLog('⚠️ Unexpected verifyOtp response - no user and no error', { data });
+      setAuthError('Verification failed. Please try again.');
+      return { user: null, error: { message: 'Verification failed. Please try again.' } };
+
+    } catch (error) {
+      const errorMessage = error.message || 'An unexpected error occurred during verification';
+      debugLog('💥 Exception in verifyEmailOtp', { errorMessage }, true);
+      setAuthError(errorMessage);
+      return { user: null, error: { message: errorMessage } };
+    } finally {
+      debugLog('🏁 verifyEmailOtp process completed, setting loading=false');
       setLoading(false);
     }
   };
@@ -1382,6 +1440,7 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signOut,
     resetPassword,
+    verifyEmailOtp,
     updateProfile,
     clearAuthError,
     markProfileCompleted,

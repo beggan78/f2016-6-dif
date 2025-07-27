@@ -42,6 +42,12 @@ export const VALIDATION_MESSAGES = {
     required: 'Please confirm your password',
     mismatch: 'Passwords do not match'
   },
+  otp: {
+    required: 'Verification code is required',
+    invalid: 'Please enter a valid 6-digit code',
+    tooShort: 'Verification code must be 6 digits',
+    notNumeric: 'Verification code must contain only numbers'
+  },
   general: {
     unexpected: 'An unexpected error occurred. Please try again.'
   }
@@ -243,6 +249,43 @@ export const validateResetPasswordForm = (formData) => {
   return {
     isValid: Object.keys(errors).length === 0,
     errors
+  };
+};
+
+/**
+ * Validates an OTP/verification code
+ * @param {string} code - The OTP code to validate
+ * @returns {Object} { isValid: boolean, error: string|null }
+ */
+export const validateOtpCode = (code) => {
+  if (!code || !code.trim()) {
+    return {
+      isValid: false,
+      error: VALIDATION_MESSAGES.otp.required
+    };
+  }
+  
+  const trimmedCode = code.trim();
+  
+  // Must be exactly 6 characters
+  if (trimmedCode.length !== 6) {
+    return {
+      isValid: false,
+      error: VALIDATION_MESSAGES.otp.tooShort
+    };
+  }
+  
+  // Must be all numeric
+  if (!/^\d{6}$/.test(trimmedCode)) {
+    return {
+      isValid: false,
+      error: VALIDATION_MESSAGES.otp.notNumeric
+    };
+  }
+  
+  return {
+    isValid: true,
+    error: null
   };
 };
 
