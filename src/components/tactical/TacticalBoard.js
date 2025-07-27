@@ -151,11 +151,11 @@ export function TacticalBoard({
           className="relative w-full"
           style={{ 
             backgroundImage: pitchMode === 'full' ? `url(${fullFieldImage})` : `url(${halfFieldImage})`,
-            backgroundSize: 'cover', // Use cover to fill the full width
+            backgroundSize: 'cover', // Use cover to fill the rounded container completely
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             touchAction: 'none', // Prevent default touch behaviors
-            aspectRatio: pitchMode === 'full' ? '1 / 1.4' : '1 / 1', // Let CSS handle aspect ratio
+            aspectRatio: pitchMode === 'full' ? '16 / 23' : '5 / 4', // Full pitch perfect, half pitch adjusted for full vertical height
             width: '100%'
           }}
         >
