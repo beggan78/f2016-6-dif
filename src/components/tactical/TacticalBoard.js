@@ -155,7 +155,7 @@ export function TacticalBoard({
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             touchAction: 'none', // Prevent default touch behaviors
-            aspectRatio: pitchMode === 'full' ? '16 / 23' : '5 / 4', // Full pitch perfect, half pitch adjusted for full vertical height
+            aspectRatio: pitchMode === 'full' ? '16 / 23' : '5 / 4',
             width: '100%'
           }}
         >
