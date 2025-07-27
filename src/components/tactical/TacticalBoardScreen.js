@@ -37,24 +37,18 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
-      {/* Header */}
+      {/* Navigation and Pitch Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-4">
-          <Button 
-            onClick={handleBackPress}
-            variant="secondary"
-            size="sm"
-            Icon={ArrowLeft}
-            className="flex-shrink-0"
-          >
-            Back
-          </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-sky-400">Tactical Board</h1>
-        </div>
-      </div>
-
-      {/* Pitch Mode Toggle */}
-      <div className="flex justify-center mb-4">
+        <Button 
+          onClick={handleBackPress}
+          variant="secondary"
+          size="sm"
+          Icon={ArrowLeft}
+          className="flex-shrink-0"
+        >
+          Back
+        </Button>
+        
         <div className="bg-slate-700 rounded-lg p-1 inline-flex">
           <button
             onClick={() => handlePitchModeToggle('full')}
@@ -77,6 +71,8 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
             Half Pitch
           </button>
         </div>
+        
+        <div className="w-16"></div> {/* Spacer for visual balance */}
       </div>
 
       {/* Tactical Board */}
