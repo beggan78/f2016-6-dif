@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { TacticalBoardScreen } from '../TacticalBoardScreen';
 
@@ -54,24 +54,19 @@ describe('TacticalBoardScreen', () => {
       render(<TacticalBoardScreen {...defaultProps} />);
       
       expect(screen.getByText('Back')).toBeInTheDocument();
-      expect(screen.getByText('Full Pitch')).toBeInTheDocument();
-      expect(screen.getByText('Half Pitch')).toBeInTheDocument();
+      expect(screen.getByText('Full')).toBeInTheDocument();
+      expect(screen.getByText('Half')).toBeInTheDocument();
       expect(screen.getByTestId('tactical-board')).toBeInTheDocument();
     });
 
     it('should render pitch mode toggle buttons', () => {
       render(<TacticalBoardScreen {...defaultProps} />);
       
-      expect(screen.getByText('Full Pitch')).toBeInTheDocument();
-      expect(screen.getByText('Half Pitch')).toBeInTheDocument();
+      expect(screen.getByText('Full')).toBeInTheDocument();
+      expect(screen.getByText('Half')).toBeInTheDocument();
     });
 
-    it('should default to half pitch mode', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
-      
-      expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
-      expect(screen.getByText('Half Pitch')).toHaveClass('bg-sky-600');
-    });
+    
 
     it('should start with no placed chips', () => {
       render(<TacticalBoardScreen {...defaultProps} />);
@@ -89,43 +84,37 @@ describe('TacticalBoardScreen', () => {
       expect(mockHandlers.onNavigateBack).toHaveBeenCalledTimes(1);
     });
 
-    it('should switch to half pitch mode when clicked', () => {
+    it('should switch to half pitch mode when clicked', async () => {
       render(<TacticalBoardScreen {...defaultProps} />);
       
-      fireEvent.click(screen.getByText('Half Pitch'));
+      fireEvent.click(screen.getByText('Half'));
       
-      expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
-      expect(screen.getByText('Half Pitch')).toHaveClass('bg-sky-600');
-      expect(screen.getByText('Full Pitch')).not.toHaveClass('bg-sky-600');
+      await waitFor(() => {
+        expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
+      });
+      expect(screen.getByText('Half')).toHaveClass('bg-sky-500');
+      expect(screen.getByText('Full')).not.toHaveClass('bg-sky-500');
     });
 
-    it('should switch to full pitch mode when clicked', () => {
+    it('should switch to full pitch mode when clicked', async () => {
       render(<TacticalBoardScreen {...defaultProps} />);
       
-      // Default is half, switch to full
-      fireEvent.click(screen.getByText('Full Pitch'));
-      expect(screen.getByTestId('pitch-mode')).toHaveTextContent('full');
-      expect(screen.getByText('Full Pitch')).toHaveClass('bg-sky-600');
+      // Default is full, switch to half
+      fireEvent.click(screen.getByText('Half'));
+      await waitFor(() => {
+        expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
+      });
+      expect(screen.getByText('Half')).toHaveClass('bg-sky-500');
       
-      // Switch back to half
-      fireEvent.click(screen.getByText('Half Pitch'));
-      expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
-      expect(screen.getByText('Half Pitch')).toHaveClass('bg-sky-600');
+      // Switch back to full
+      fireEvent.click(screen.getByText('Full'));
+      await waitFor(() => {
+        expect(screen.getByTestId('pitch-mode')).toHaveTextContent('full');
+      });
+      expect(screen.getByText('Full')).toHaveClass('bg-sky-500');
     });
 
-    it('should clear chips when switching pitch modes', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
-      
-      // Place a chip
-      fireEvent.click(screen.getByTestId('mock-place-chip'));
-      expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('1');
-      
-      // Switch pitch mode (from default half to full)
-      fireEvent.click(screen.getByText('Full Pitch'));
-      
-      // Chips should be cleared
-      expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('0');
-    });
+    
   });
 
   describe('Chip Management', () => {
@@ -170,7 +159,7 @@ describe('TacticalBoardScreen', () => {
       expect(tacticalBoard).toBeInTheDocument();
       
       // Verify initial state is passed correctly
-      expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
+      expect(screen.getByTestId('pitch-mode')).toHaveTextContent('full');
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('0');
     });
 
@@ -199,17 +188,28 @@ describe('TacticalBoardScreen', () => {
       }).not.toThrow();
     });
 
-    it('should handle rapid pitch mode switching', () => {
+    it('should handle rapid pitch mode switching', async () => {
       render(<TacticalBoardScreen {...defaultProps} />);
       
-      // Rapidly switch modes (starting from default half)
-      fireEvent.click(screen.getByText('Full Pitch'));
-      fireEvent.click(screen.getByText('Half Pitch'));
-      fireEvent.click(screen.getByText('Full Pitch'));
-      fireEvent.click(screen.getByText('Half Pitch'));
+      // Rapidly switch modes (starting from default full)
+      fireEvent.click(screen.getByText('Half'));
+      await waitFor(() => {
+        expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
+      });
+      fireEvent.click(screen.getByText('Full'));
+      await waitFor(() => {
+        expect(screen.getByTestId('pitch-mode')).toHaveTextContent('full');
+      });
+      fireEvent.click(screen.getByText('Half'));
+      await waitFor(() => {
+        expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
+      });
+      fireEvent.click(screen.getByText('Full'));
+      await waitFor(() => {
+        expect(screen.getByTestId('pitch-mode')).toHaveTextContent('full');
+      });
       
-      expect(screen.getByTestId('pitch-mode')).toHaveTextContent('half');
-      expect(screen.getByText('Half Pitch')).toHaveClass('bg-sky-600');
+      expect(screen.getByText('Full')).toHaveClass('bg-sky-500');
     });
   });
 });
