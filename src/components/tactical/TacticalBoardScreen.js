@@ -51,15 +51,12 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
       {/* Navigation and Pitch Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
-        <Button 
+        <button 
           onClick={handleBackPress}
-          variant="secondary"
-          size="sm"
-          Icon={ArrowLeft}
-          className="flex-shrink-0"
+          className="bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-200 shadow-md flex-shrink-0"
         >
           Back
-        </Button>
+        </button>
         
         <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
           <button
