@@ -49,26 +49,26 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
           Back
         </Button>
         
-        <div className="bg-slate-700 rounded-lg p-1 inline-flex">
+        <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
           <button
             onClick={() => handlePitchModeToggle('full')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               pitchMode === 'full'
-                ? 'bg-sky-600 text-white'
-                : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                ? 'bg-sky-500 text-white'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            Full Pitch
+            Full
           </button>
           <button
             onClick={() => handlePitchModeToggle('half')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               pitchMode === 'half'
-                ? 'bg-sky-600 text-white'
-                : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                ? 'bg-sky-500 text-white'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            Half Pitch
+            Half
           </button>
         </div>
         
