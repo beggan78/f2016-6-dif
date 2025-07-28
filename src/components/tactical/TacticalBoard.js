@@ -126,6 +126,19 @@ export function TacticalBoard({
               )}
             </div>
           )}
+
+          {/* Vecteezy Attribution - Required for Free License */}
+          <div className="absolute bottom-0 right-1 z-20">
+            <a
+              href="https://www.vecteezy.com/free-vector/football-pitch"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-2xs text-green-200 hover:text-green-200 transition-colors duration-200"
+              style={{ fontSize: '10px' }}
+            >
+              Design by Vecteezy
+            </a>
+          </div>
         </div>
       </div>
 
