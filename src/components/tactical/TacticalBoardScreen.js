@@ -1,11 +1,21 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { TacticalBoard } from './TacticalBoard';
+import { createPersistenceManager } from '../../utils/persistenceManager';
 
 export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack }) {
-  const [pitchMode, setPitchMode] = useState('half'); // 'full' or 'half' - default to half
+  // Create persistence manager for tactical board preferences
+  const persistenceManager = createPersistenceManager('sport-wizard-tactical-preferences', { pitchMode: 'full' });
+  
+  const [pitchMode, setPitchMode] = useState('full'); // 'full' or 'half' - default to full
   const [placedChips, setPlacedChips] = useState([]);
+
+  // Load saved pitch mode preference on component mount
+  useEffect(() => {
+    const savedPreferences = persistenceManager.loadState();
+    setPitchMode(savedPreferences.pitchMode);
+  }, []);
 
   const handleBackPress = useCallback(() => {
     onNavigateBack();
@@ -13,9 +23,11 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
 
   const handlePitchModeToggle = useCallback((mode) => {
     setPitchMode(mode);
+    // Save the preference to localStorage
+    persistenceManager.saveState({ pitchMode: mode });
     // Clear placed chips when switching modes since positions won't be valid
     setPlacedChips([]);
-  }, []);
+  }, [persistenceManager]);
 
   const handleChipPlace = useCallback((chip) => {
     setPlacedChips(prev => [...prev, chip]);
