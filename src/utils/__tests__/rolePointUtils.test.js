@@ -15,6 +15,7 @@ describe('calculateRolePoints', () => {
       expect(result).toEqual({
         goaliePoints: 3,
         defenderPoints: 0,
+        midfielderPoints: 0,
         attackerPoints: 0
       });
     });
@@ -32,6 +33,7 @@ describe('calculateRolePoints', () => {
       expect(result).toEqual({
         goaliePoints: 5,
         defenderPoints: 0,
+        midfielderPoints: 0,
         attackerPoints: 0
       });
     });
@@ -47,7 +49,7 @@ describe('calculateRolePoints', () => {
 
       const result = calculateRolePoints(player);
       expect(result.goaliePoints).toBe(2);
-      expect(result.defenderPoints + result.attackerPoints).toBe(1);
+      expect(result.defenderPoints + result.midfielderPoints + result.attackerPoints).toBe(1);
       expect(result.defenderPoints).toBe(0.5);
       expect(result.attackerPoints).toBe(0.5);
     });
@@ -67,6 +69,7 @@ describe('calculateRolePoints', () => {
       expect(result).toEqual({
         goaliePoints: 0,
         defenderPoints: 1.5,
+        midfielderPoints: 0,
         attackerPoints: 1.5
       });
     });
@@ -84,6 +87,7 @@ describe('calculateRolePoints', () => {
       expect(result).toEqual({
         goaliePoints: 0,
         defenderPoints: 3,
+        midfielderPoints: 0,
         attackerPoints: 0
       });
     });
@@ -101,6 +105,7 @@ describe('calculateRolePoints', () => {
       expect(result).toEqual({
         goaliePoints: 0,
         defenderPoints: 0,
+        midfielderPoints: 0,
         attackerPoints: 3
       });
     });
@@ -120,6 +125,43 @@ describe('calculateRolePoints', () => {
       expect(result.attackerPoints).toBe(1);
       expect(result.defenderPoints + result.attackerPoints).toBe(3);
     });
+
+    it('should allocate points correctly for midfielder-only player', () => {
+      const player = {
+        stats: {
+          periodsAsGoalie: 0,
+          timeAsDefenderSeconds: 0,
+          timeAsMidfielderSeconds: 900,
+          timeAsAttackerSeconds: 0
+        }
+      };
+
+      const result = calculateRolePoints(player);
+      expect(result).toEqual({
+        goaliePoints: 0,
+        defenderPoints: 0,
+        midfielderPoints: 3,
+        attackerPoints: 0
+      });
+    });
+
+    it('should split points among all three roles for mixed player', () => {
+      const player = {
+        stats: {
+          periodsAsGoalie: 0,
+          timeAsDefenderSeconds: 300, // 5 minutes
+          timeAsMidfielderSeconds: 600, // 10 minutes  
+          timeAsAttackerSeconds: 300 // 5 minutes
+        }
+      };
+
+      const result = calculateRolePoints(player);
+      expect(result.goaliePoints).toBe(0);
+      expect(result.defenderPoints).toBe(1); // 25% of 1200 -> 0.75 -> rounds to 1.0
+      expect(result.midfielderPoints).toBe(1); // 50% of 1200 -> 1.5 -> rounds to 1.0 (due to rounding adjustment)
+      expect(result.attackerPoints).toBe(1); // 25% of 1200 -> 0.75 -> rounds to 1.0 (due to rounding adjustment)
+      expect(result.defenderPoints + result.midfielderPoints + result.attackerPoints).toBe(3);
+    });
   });
 
   describe('no playing time scenarios', () => {
@@ -136,6 +178,7 @@ describe('calculateRolePoints', () => {
       expect(result).toEqual({
         goaliePoints: 0,
         defenderPoints: 0,
+        midfielderPoints: 0,
         attackerPoints: 0
       });
     });
@@ -153,6 +196,7 @@ describe('calculateRolePoints', () => {
       expect(result).toEqual({
         goaliePoints: 1,
         defenderPoints: 0,
+        midfielderPoints: 0,
         attackerPoints: 0
       });
     });

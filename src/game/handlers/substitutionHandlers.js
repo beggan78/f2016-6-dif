@@ -10,7 +10,7 @@ import {
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
-import { MODE_DEFINITIONS, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
+import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 
 export const createSubstitutionHandlers = (
@@ -20,6 +20,35 @@ export const createSubstitutionHandlers = (
   modalHandlers,
   teamMode
 ) => {
+  // Helper to get mode definition - handles both legacy strings and team config objects
+  const getDefinition = (teamModeOrConfig) => {
+    // Handle null/undefined
+    if (!teamModeOrConfig) {
+      return null;
+    }
+    
+    if (typeof teamModeOrConfig === 'string') {
+      // Map legacy team modes to team configurations
+      const legacyMappings = {
+        [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+        [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
+      };
+      
+      const teamConfig = legacyMappings[teamModeOrConfig];
+      if (!teamConfig) {
+        console.warn(`Unknown legacy team mode: ${teamModeOrConfig}`);
+        return null;
+      }
+      
+      return getModeDefinition(teamConfig);
+    }
+    return getModeDefinition(teamModeOrConfig);
+  };
   const {
     setFormation,
     setAllPlayers,
@@ -72,7 +101,7 @@ export const createSubstitutionHandlers = (
       };
     } else {
       // Generic formation normalizer for individual modes using MODE_DEFINITIONS
-      const definition = MODE_DEFINITIONS[teamMode];
+      const definition = getDefinition(teamMode);
       if (!definition) return formation;
       
       const normalized = { goalie: formation.goalie };
@@ -180,7 +209,7 @@ export const createSubstitutionHandlers = (
       const gameState = gameStateFactory();
       
       // Get team mode configuration
-      const definition = MODE_DEFINITIONS[teamMode];
+      const definition = getDefinition(teamMode);
       if (!definition || !definition.supportsNextNextIndicators) {
         closeSubstituteModal();
         return;
@@ -512,7 +541,7 @@ export const createSubstitutionHandlers = (
             const currentPairKey = fullPlayerData.stats.currentPairKey;
             
             // Exclude substitutes based on team mode using MODE_DEFINITIONS
-            const definition = MODE_DEFINITIONS[gameState.teamMode];
+            const definition = getDefinition(gameState.teamMode);
             if (!definition) return true;
             
             // Use configuration-driven substitute exclusion

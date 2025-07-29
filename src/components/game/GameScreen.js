@@ -49,6 +49,7 @@ export function GameScreen({
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
   teamMode,
+  selectedFormation,
   alertMinutes,
   pushModalState,
   removeModalFromStack,
@@ -89,6 +90,7 @@ export function GameScreen({
     formation,
     allPlayers,
     teamMode,
+    selectedFormation,
     nextPhysicalPairToSubOut,
     nextPlayerToSubOut,
     nextPlayerIdToSubOut,
@@ -104,7 +106,7 @@ export function GameScreen({
     homeScore,
     awayScore
   }), [
-    formation, allPlayers, teamMode, nextPhysicalPairToSubOut,
+    formation, allPlayers, teamMode, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, homeScore, awayScore
@@ -251,6 +253,8 @@ export function GameScreen({
       } else if (stats.currentRole === 'Defender') {
         defenderTime += currentStintTime;
       }
+      // Note: Midfielder time is intentionally not added to attacker-defender difference
+      // as per user requirements - midfielders should not affect the balance
     }
     
     const attackDefenderDiff = attackerTime - defenderTime;
@@ -335,6 +339,7 @@ export function GameScreen({
       {/* Field & Subs Visualization */}
       <FormationRenderer
           teamMode={teamMode}
+          selectedFormation={selectedFormation}
           formation={formation}
           allPlayers={allPlayers}
           animationState={uiState.animationState}

@@ -62,6 +62,7 @@ export function PlayerStatsTable({
         if (currentRole === 'GOALIE') return 'Goalie';
         if (currentRole === 'ATTACKER') return 'Attacker';
         if (currentRole === 'DEFENDER') return 'Defender';
+        if (currentRole === 'MIDFIELDER') return 'Midfielder';
         if (currentRole === 'SUBSTITUTE') return 'Sub';
         
         // Fallback to starting role if we can't determine current role
@@ -99,6 +100,16 @@ export function PlayerStatsTable({
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
         const time = player.stats?.timeAsDefenderSeconds || 0;
+        return time > 0 ? formatTime(time) : '--';
+      }
+    },
+    {
+      key: 'timeAsMidfielder',
+      label: 'Time as Midfielder',
+      sortable: true,
+      className: 'text-center text-slate-300 font-mono',
+      render: (player) => {
+        const time = player.stats?.timeAsMidfielderSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
     },
@@ -157,6 +168,10 @@ export function PlayerStatsTable({
         case 'timeAsDefender':
           aValue = a.stats?.timeAsDefenderSeconds || 0;
           bValue = b.stats?.timeAsDefenderSeconds || 0;
+          break;
+        case 'timeAsMidfielder':
+          aValue = a.stats?.timeAsMidfielderSeconds || 0;
+          bValue = b.stats?.timeAsMidfielderSeconds || 0;
           break;
         case 'timeAsGoalie':
           aValue = a.stats?.timeAsGoalieSeconds || 0;

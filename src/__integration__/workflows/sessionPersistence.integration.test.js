@@ -25,7 +25,7 @@ jest.mock('../../components/setup/ConfigurationScreen', () => {
         props.setNumPeriods(3);
         props.setPeriodDurationMinutes(15);
         props.setPeriodGoalieIds({ 1: 'p1', 2: 'p2', 3: 'p3' });
-        props.setTeamMode('INDIVIDUAL_7');
+        props.setTeamMode('individual_7'); // TEAM_MODES.INDIVIDUAL_7
         props.setAlertMinutes(2);
         props.setOpponentTeamName('Test Opponent');
         setIsConfigured(true);

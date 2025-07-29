@@ -273,10 +273,10 @@ describe('formationUtils', () => {
   describe('error handling and edge cases', () => {
     it('should handle case-sensitive team mode names', () => {
       expect(getAllPositions('PAIRS_7')).toEqual([]);
-      expect(getAllPositions('pairs_7')).not.toEqual([]);
+      expect(getAllPositions(TEAM_MODES.PAIRS_7)).not.toEqual([]);
       
       expect(getModeDefinition('INDIVIDUAL_6')).toBeNull();
-      expect(getModeDefinition('individual_6')).not.toBeNull();
+      expect(getModeDefinition(TEAM_MODES.INDIVIDUAL_6)).not.toBeNull();
     });
 
     it('should handle numeric inputs', () => {

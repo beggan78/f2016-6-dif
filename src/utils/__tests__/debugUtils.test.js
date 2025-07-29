@@ -192,6 +192,66 @@ describe('debugUtils', () => {
       expect(allAssignedIds).toHaveLength(uniqueIds.length);
     });
 
+    it('should create 1-2-1 formation correctly with team config object', () => {
+      const teamConfig = {
+        format: '5v5',
+        squadSize: 7,
+        formation: '1-2-1',
+        substitutionType: 'individual'
+      };
+      
+      const formation = randomizeFormationPositions(mockPlayers, teamConfig);
+      
+      // Should have 1-2-1 formation positions
+      expect(formation).toHaveProperty('defender');
+      expect(formation).toHaveProperty('left');
+      expect(formation).toHaveProperty('right');
+      expect(formation).toHaveProperty('attacker');
+      expect(formation).toHaveProperty('substitute_1');
+      expect(formation).toHaveProperty('substitute_2');
+      
+      // Should NOT have 2-2 formation positions
+      expect(formation).not.toHaveProperty('leftDefender');
+      expect(formation).not.toHaveProperty('rightDefender');
+      expect(formation).not.toHaveProperty('leftAttacker');
+      expect(formation).not.toHaveProperty('rightAttacker');
+    });
+
+    it('should create 2-2 formation with team config object when formation is 2-2', () => {
+      const teamConfig = {
+        format: '5v5',
+        squadSize: 6,
+        formation: '2-2',
+        substitutionType: 'individual'
+      };
+      
+      const formation = randomizeFormationPositions(mockPlayers, teamConfig);
+      
+      // Should have 2-2 formation positions
+      expect(formation).toHaveProperty('leftDefender');
+      expect(formation).toHaveProperty('rightDefender');
+      expect(formation).toHaveProperty('leftAttacker');
+      expect(formation).toHaveProperty('rightAttacker');
+      expect(formation).toHaveProperty('substitute_1');
+      
+      // Should NOT have 1-2-1 formation positions
+      expect(formation).not.toHaveProperty('defender');
+      expect(formation).not.toHaveProperty('left');
+      expect(formation).not.toHaveProperty('right');
+      expect(formation).not.toHaveProperty('attacker');
+    });
+
+    it('should default to 2-2 formation for legacy string inputs', () => {
+      const formation = randomizeFormationPositions(mockPlayers, 'individual_6');
+      
+      // Legacy calls should default to 2-2 formation
+      expect(formation).toHaveProperty('leftDefender');
+      expect(formation).toHaveProperty('rightDefender');
+      expect(formation).toHaveProperty('leftAttacker');
+      expect(formation).toHaveProperty('rightAttacker');
+      expect(formation).toHaveProperty('substitute_1');
+    });
+
     it('should handle unknown team mode gracefully', () => {
       const formation = randomizeFormationPositions(mockPlayers, 'unknown_mode');
       

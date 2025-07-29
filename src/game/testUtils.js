@@ -5,7 +5,7 @@
 
 import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { POSITION_KEYS } from '../constants/positionConstants';
-import { MODE_DEFINITIONS } from '../constants/gameModes';
+import { getModeDefinition } from '../constants/gameModes';
 
 /**
  * Creates a mock player with standard structure
@@ -31,11 +31,38 @@ export const createMockPlayer = (id, overrides = {}) => ({
 });
 
 /**
+ * Helper to get mode definition from either legacy string or team config object
+ */
+const getDefinitionForTests = (teamModeOrConfig) => {
+  if (typeof teamModeOrConfig === 'string') {
+    // Convert legacy team mode strings to team config objects
+    const legacyMappings = {
+      [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+      [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
+    };
+    
+    const teamConfig = legacyMappings[teamModeOrConfig];
+    if (!teamConfig) {
+      throw new Error(`Unknown legacy team mode: ${teamModeOrConfig}`);
+    }
+    
+    return getModeDefinition(teamConfig);
+  }
+  
+  return getModeDefinition(teamModeOrConfig);
+};
+
+/**
  * Creates an array of mock players with varied statuses using configuration-driven approach
  */
 export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7) => {
   const players = [];
-  const definition = MODE_DEFINITIONS[teamMode];
+  const definition = getDefinitionForTests(teamMode);
   
   if (!definition) {
     throw new Error(`Unknown team mode: ${teamMode}`);
@@ -101,7 +128,7 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
  * Creates a mock formation for the specified team mode using configuration-driven approach
  */
 export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-  const definition = MODE_DEFINITIONS[teamMode];
+  const definition = getDefinitionForTests(teamMode);
   
   if (!definition) {
     throw new Error(`Unknown team mode: ${teamMode}`);
@@ -297,7 +324,7 @@ export const getAllModeTestCases = () => [
  * Create configuration-driven formation assertions
  */
 export const expectFormationConsistency = (formation, teamMode) => {
-  const definition = MODE_DEFINITIONS[teamMode];
+  const definition = getDefinitionForTests(teamMode);
   
   if (!definition) {
     throw new Error(`Unknown team mode: ${teamMode}`);

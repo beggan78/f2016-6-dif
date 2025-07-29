@@ -237,6 +237,10 @@ function App() {
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             teamMode={gameState.teamMode}
             setTeamMode={gameState.setTeamMode}
+            teamConfig={gameState.teamConfig}
+            selectedFormation={gameState.selectedFormation}
+            updateFormationSelection={gameState.updateFormationSelection}
+            createTeamConfigFromSquadSize={gameState.createTeamConfigFromSquadSize}
             alertMinutes={gameState.alertMinutes}
             setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
@@ -264,6 +268,7 @@ function App() {
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             numPeriods={gameState.numPeriods}
             teamMode={gameState.teamMode}
+            selectedFormation={gameState.selectedFormation}
             setView={gameState.setView}
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
@@ -301,6 +306,7 @@ function App() {
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}
             teamMode={gameState.teamMode}
+            selectedFormation={gameState.selectedFormation}
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
             switchPlayerPositions={gameState.switchPlayerPositions}

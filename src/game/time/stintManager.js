@@ -49,6 +49,7 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
     timeOnFieldSeconds: stats.timeOnFieldSeconds || 0,
     timeAsAttackerSeconds: stats.timeAsAttackerSeconds || 0,
     timeAsDefenderSeconds: stats.timeAsDefenderSeconds || 0,
+    timeAsMidfielderSeconds: stats.timeAsMidfielderSeconds || 0,
     timeAsSubSeconds: stats.timeAsSubSeconds || 0,
     timeAsGoalieSeconds: stats.timeAsGoalieSeconds || 0
   };
@@ -68,6 +69,8 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
         updatedStats.timeAsDefenderSeconds += stintDurationSeconds;
       } else if (stats.currentRole === PLAYER_ROLES.ATTACKER) {
         updatedStats.timeAsAttackerSeconds += stintDurationSeconds;
+      } else if (stats.currentRole === PLAYER_ROLES.MIDFIELDER) {
+        updatedStats.timeAsMidfielderSeconds += stintDurationSeconds;
       }
       break;
       
@@ -107,6 +110,7 @@ export const startNewStint = (player, currentTimeEpoch) => {
       timeOnFieldSeconds: player.stats.timeOnFieldSeconds || 0,
       timeAsAttackerSeconds: player.stats.timeAsAttackerSeconds || 0,
       timeAsDefenderSeconds: player.stats.timeAsDefenderSeconds || 0,
+      timeAsMidfielderSeconds: player.stats.timeAsMidfielderSeconds || 0,
       timeAsSubSeconds: player.stats.timeAsSubSeconds || 0,
       timeAsGoalieSeconds: player.stats.timeAsGoalieSeconds || 0,
       lastStintStartTimeEpoch: currentTimeEpoch

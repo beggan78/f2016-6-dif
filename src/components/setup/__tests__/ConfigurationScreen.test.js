@@ -21,6 +21,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { TEAM_MODES } from '../../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../../constants/gameConfig';
+import { FORMATIONS } from '../../../constants/teamConfiguration';
 import {
   createMockPlayers,
   userInteractions
@@ -34,7 +35,18 @@ jest.mock('../../../utils/inputSanitization', () => ({
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   Settings: ({ className, ...props }) => <div data-testid="settings-icon" className={className} {...props} />,
-  Play: ({ className, ...props }) => <div data-testid="play-icon" className={className} {...props} />
+  Play: ({ className, ...props }) => <div data-testid="play-icon" className={className} {...props} />,
+  Shuffle: ({ className, ...props }) => <div data-testid="shuffle-icon" className={className} {...props} />,
+  Layers: ({ className, ...props }) => <div data-testid="layers-icon" className={className} {...props} />
+}));
+
+// Mock FormationPreview component
+jest.mock('../FormationPreview', () => ({
+  FormationPreview: ({ formation, className }) => (
+    <div data-testid="formation-preview" className={className}>
+      Formation: {formation}
+    </div>
+  )
 }));
 
 // Mock UI components
@@ -97,7 +109,10 @@ describe('ConfigurationScreen', () => {
       setTeamMode: jest.fn(),
       setAlertMinutes: jest.fn(),
       handleStartPeriodSetup: jest.fn(),
-      setOpponentTeamName: jest.fn()
+      setOpponentTeamName: jest.fn(),
+      updateFormationSelection: jest.fn(),
+      createTeamConfigFromSquadSize: jest.fn(),
+      setCaptain: jest.fn()
     };
 
     defaultProps = {
@@ -107,9 +122,12 @@ describe('ConfigurationScreen', () => {
       periodDurationMinutes: 15,
       periodGoalieIds: {},
       teamMode: TEAM_MODES.INDIVIDUAL_6,
+      teamConfig: null,
+      selectedFormation: FORMATIONS.FORMATION_2_2,
       alertMinutes: 2,
       selectedSquadPlayers: [],
       opponentTeamName: '',
+      captainId: null,
       ...mockSetters
     };
 
@@ -313,8 +331,12 @@ describe('ConfigurationScreen', () => {
       selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7']
     };
 
-    it('should show team mode selection when 7 players are selected', () => {
-      const props = { ...defaultProps, ...sevenPlayerProps };
+    it('should show team mode selection when 7 players are selected with 2-2 formation', () => {
+      const props = { 
+        ...defaultProps, 
+        ...sevenPlayerProps,
+        selectedFormation: FORMATIONS.FORMATION_2_2
+      };
       
       render(<ConfigurationScreen {...props} />);
       
@@ -349,6 +371,7 @@ describe('ConfigurationScreen', () => {
       const props = { 
         ...defaultProps, 
         ...sevenPlayerProps,
+        selectedFormation: FORMATIONS.FORMATION_2_2,
         teamMode: TEAM_MODES.INDIVIDUAL_7
       };
       
@@ -364,6 +387,7 @@ describe('ConfigurationScreen', () => {
       const props = { 
         ...defaultProps, 
         ...sevenPlayerProps,
+        selectedFormation: FORMATIONS.FORMATION_2_2,
         teamMode: TEAM_MODES.PAIRS_7
       };
       
@@ -376,12 +400,30 @@ describe('ConfigurationScreen', () => {
     });
 
     it('should show correct team mode descriptions', () => {
-      const props = { ...defaultProps, ...sevenPlayerProps };
+      const props = { 
+        ...defaultProps, 
+        ...sevenPlayerProps,
+        selectedFormation: FORMATIONS.FORMATION_2_2
+      };
       
       render(<ConfigurationScreen {...props} />);
       
       expect(screen.getByText(/Players organized in defender-attacker pairs/)).toBeInTheDocument();
       expect(screen.getByText(/Individual positions with 2 substitutes/)).toBeInTheDocument();
+    });
+
+    it('should not show team mode selection when 7 players are selected with 1-2-1 formation', () => {
+      const props = { 
+        ...defaultProps, 
+        ...sevenPlayerProps,
+        selectedFormation: FORMATIONS.FORMATION_1_2_1
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      expect(screen.queryByText('Substitution Mode')).not.toBeInTheDocument();
+      expect(screen.queryByText('Pairs')).not.toBeInTheDocument();
+      expect(screen.queryByText('Individual (7-player)')).not.toBeInTheDocument();
     });
   });
 

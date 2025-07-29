@@ -1,10 +1,13 @@
-import { MODE_DEFINITIONS, POSITION_ROLE_MAP } from '../../constants/gameModes';
+import { POSITION_ROLE_MAP } from '../../constants/gameModes';
 
 /**
  * Core position utilities for game logic
  * Pure functions for position-to-role mapping and formation structure queries
  * Used throughout game logic for position validation and role determination
  */
+
+// Use the centralized mode definition system that handles both legacy strings and team config objects
+import { getDefinition } from '../../constants/gameModes';
 
 /**
  * Maps position keys to player roles using table-driven lookup
@@ -19,7 +22,7 @@ export function getPositionRole(position) {
  * Replaces FORMATION_POSITIONS from positionConstants
  */
 export function getOutfieldPositions(teamMode) {
-  const definition = MODE_DEFINITIONS[teamMode];
+  const definition = getDefinition(teamMode);
   return definition ? definition.positionOrder.filter(pos => pos !== 'goalie') : [];
 }
 
@@ -27,7 +30,7 @@ export function getOutfieldPositions(teamMode) {
  * Gets the list of field positions (excludes substitutes) for a given team mode
  */
 export function getFieldPositions(teamMode) {
-  const definition = MODE_DEFINITIONS[teamMode];
+  const definition = getDefinition(teamMode);
   const result = definition ? definition.fieldPositions : [];
   
   return result;
@@ -37,7 +40,7 @@ export function getFieldPositions(teamMode) {
  * Gets the list of substitute positions for a given team mode
  */
 export function getSubstitutePositions(teamMode) {
-  const definition = MODE_DEFINITIONS[teamMode];
+  const definition = getDefinition(teamMode);
   const result = definition ? definition.substitutePositions : [];
   
   return result;
@@ -64,7 +67,7 @@ export function isSubstitutePosition(position, teamMode) {
  * Replaces EXPECTED_PLAYER_COUNTS from playerConstants
  */
 export function getExpectedCounts(teamMode) {
-  const definition = MODE_DEFINITIONS[teamMode];
+  const definition = getDefinition(teamMode);
   return definition ? definition.expectedCounts : { outfield: 0, onField: 0 };
 }
 

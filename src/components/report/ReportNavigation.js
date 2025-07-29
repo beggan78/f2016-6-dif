@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, ArrowLeft } from 'lucide-react';
 import { Button } from '../shared/UI';
 
 /**
@@ -28,15 +28,19 @@ export function ReportNavigation({
           variant="secondary" 
           Icon={BarChart3}
           size="sm"
+          data-testid="button-quick-stats"
         >
           Quick Stats
         </Button>
       )}
+      
       {onBackToGame && (
         <Button 
           onClick={onBackToGame} 
           variant="secondary" 
+          Icon={ArrowLeft}
           size="sm"
+          data-testid="button-back-to-game"
         >
           Back to Game
         </Button>

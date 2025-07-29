@@ -147,7 +147,7 @@ describe('PlayerStatsTable', () => {
 
     // Count all instances of "--" in the table
     const dashElements = screen.getAllByText('--');
-    expect(dashElements).toHaveLength(6); // All time columns + goals column should show "--"
+    expect(dashElements).toHaveLength(7); // All time columns (including midfielder) + goals column should show "--"
   });
 
   it('renders sortable column headers', () => {

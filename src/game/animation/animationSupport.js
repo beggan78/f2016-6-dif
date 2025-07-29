@@ -156,7 +156,7 @@
 // No longer using findPlayerById in this file
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { getFormationPositionsWithGoalie, MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
+import { getFormationPositionsWithGoalie, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -208,8 +208,13 @@ const getBoxHeight = (mode) => {
  * getPositionIndex('substitute', TEAM_MODES.INDIVIDUAL_6);   // Returns 5
  */
 const getPositionIndex = (position, teamMode) => {
-  const positions = getFormationPositionsWithGoalie(teamMode);
-  return positions.indexOf(position);
+  try {
+    const positions = getFormationPositionsWithGoalie(teamMode);
+    return positions.indexOf(position);
+  } catch (error) {
+    console.warn(`Error getting position index for ${position} in ${teamMode}:`, error);
+    return -1;
+  }
 };
 
 /**
@@ -302,8 +307,28 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
       }
     });
   } else if (isIndividualMode(teamMode)) {
-    // Unified individual mode handling using MODE_DEFINITIONS
-    const modeDefinition = MODE_DEFINITIONS[teamMode];
+    // Unified individual mode handling using dynamic definitions
+    // For legacy team mode strings, we need to convert to team config first
+    let modeDefinition;
+    if (typeof teamMode === 'string') {
+      // Use getLegacyModeDefinition via getModeDefinition wrapper
+      const legacyMappings = {
+        'pairs_7': { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+        'individual_5': { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
+        'individual_6': { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
+        'individual_7': { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+        'individual_8': { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
+        'individual_9': { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
+        'individual_10': { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
+      };
+      const teamConfig = legacyMappings[teamMode];
+      if (teamConfig) {
+        modeDefinition = getModeDefinition(teamConfig);
+      }
+    } else {
+      modeDefinition = getModeDefinition(teamMode);
+    }
+    
     if (modeDefinition) {
       const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
       allPositions.forEach(pos => {

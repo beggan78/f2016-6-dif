@@ -1282,20 +1282,20 @@ describe('GameEventTimeline', () => {
       expect(screen.getByText(/Goal for Djurgården/)).toBeInTheDocument();
     });
 
-    it('should document null data handling issue', () => {
-      // This test documents a potential bug: null data causes component to crash
-      // The component should handle null data gracefully by defaulting to empty object
+    it('should handle null data gracefully', () => {
+      // This test verifies that the component handles null data gracefully
+      // by defaulting to empty object when event.data is null
       const eventWithNullData = {
         id: 'null-data-event',
         type: EVENT_TYPES.GOAL_HOME,
         timestamp: 1000000120000,
         matchTime: '02:00',
         sequence: 1,
-        data: null, // This currently causes a crash
+        data: null, // Component should handle this gracefully
         undone: false
       };
 
-      // Currently this throws due to renderEventDetails trying to access data.homeScore on null
+      // Should not throw when data is null
       expect(() => {
         render(
           <GameEventTimeline
@@ -1305,10 +1305,10 @@ describe('GameEventTimeline', () => {
             homeTeamName="Djurgården"
           />
         );
-      }).toThrow('Cannot read properties of null');
+      }).not.toThrow();
       
-      // To fix this, the component should use: const { data = {} } = event;
-      // instead of just destructuring data
+      // Should render the event with fallback text for missing data
+      expect(screen.getByText(/Goal for Djurgården/)).toBeInTheDocument();
     });
 
     it('should handle events with missing or null player IDs', () => {

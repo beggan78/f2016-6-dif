@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { jest } from '@jest/globals';
+import { TEAM_MODES } from '../../constants/playerConstants';
 
 // ===================================================================
 // BASIC COMPONENT MOCKS
@@ -297,7 +298,7 @@ export const MockPeriodSetupScreen = ({
         </div>
         
         <div data-testid="formation-positions">
-          {teamMode === 'INDIVIDUAL_7' && (
+          {teamMode === TEAM_MODES.INDIVIDUAL_7 && (
             <>
               {['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].map(position => (
                 <select 

@@ -176,16 +176,16 @@ export const hasActiveSubstitutes = (allPlayers, teamMode) => {
 
   // Import inside function to avoid circular dependency issues
   const gameModes = require('../constants/gameModes');
-  const MODE_DEFINITIONS = gameModes.MODE_DEFINITIONS;
   
-  const definition = MODE_DEFINITIONS[teamMode];
-  if (!definition?.substitutePositions?.length) {
+  // Use the new utility function that handles both legacy strings and config objects
+  const substitutePositions = gameModes.getSubstitutePositions ? gameModes.getSubstitutePositions(teamMode) : [];
+  if (!substitutePositions.length) {
     return false;
   }
   
   // Find players in substitute positions
   const substitutePlayers = allPlayers.filter(player => 
-    definition.substitutePositions.includes(player.stats?.currentPairKey)
+    substitutePositions.includes(player.stats?.currentPairKey)
   );
   
   // Check if at least one substitute is not inactive

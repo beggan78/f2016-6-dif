@@ -12,6 +12,14 @@ export const FORMATS = {
   FORMAT_7V7: '7v7'  // Future support
 };
 
+// Game configuration constants
+export const GAME_CONSTANTS = {
+  FIELD_PLAYERS_5V5: 4,        // Number of field players in 5v5 format
+  GOALIE_COUNT: 1,             // Number of goalies
+  MIN_SQUAD_SIZE: 5,           // Minimum squad size
+  MAX_SQUAD_SIZE: 15           // Maximum squad size
+};
+
 // Tactical formations available for different formats
 export const FORMATIONS = {
   FORMATION_2_2: '2-2',
@@ -76,8 +84,8 @@ export const validateTeamConfig = (teamConfig) => {
   }
   
   // Validate squad size
-  if (squadSize < 5 || squadSize > 15) {
-    throw new Error(`Invalid squad size: ${squadSize}. Must be between 5 and 15 players`);
+  if (squadSize < GAME_CONSTANTS.MIN_SQUAD_SIZE || squadSize > GAME_CONSTANTS.MAX_SQUAD_SIZE) {
+    throw new Error(`Invalid squad size: ${squadSize}. Must be between ${GAME_CONSTANTS.MIN_SQUAD_SIZE} and ${GAME_CONSTANTS.MAX_SQUAD_SIZE} players`);
   }
   
   // Validate formation for the given format

@@ -1,5 +1,5 @@
 import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
-import { MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
+import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
 import { getPositionRole, getFieldPositions } from './positionUtils';
@@ -48,8 +48,41 @@ const applyActiveCascade = (formation, cascade) => {
  * Manages substitution logic for different team modes
  */
 export class SubstitutionManager {
-  constructor(teamMode) {
+  constructor(teamMode, selectedFormation = null) {
     this.teamMode = teamMode;
+    this.selectedFormation = selectedFormation;
+  }
+
+  /**
+   * Gets mode definition for this team mode, handling both legacy strings and team config objects
+   */
+  getModeConfig() {
+    if (typeof this.teamMode === 'string') {
+      // Convert legacy team mode strings to team config objects
+      const legacyMappings = {
+        [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+        [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
+      };
+      
+      const teamConfig = legacyMappings[this.teamMode];
+      if (!teamConfig) {
+        throw new Error(`Unknown legacy team mode: ${this.teamMode}`);
+      }
+      
+      // Override formation if selectedFormation is provided
+      const formationAwareConfig = this.selectedFormation 
+        ? { ...teamConfig, formation: this.selectedFormation }
+        : teamConfig;
+      
+      return getModeDefinition(formationAwareConfig);
+    }
+    
+    return getModeDefinition(this.teamMode);
   }
 
 
@@ -175,7 +208,7 @@ export class SubstitutionManager {
       isSubTimerPaused
     } = context;
 
-    const modeConfig = MODE_DEFINITIONS[this.teamMode];
+    const modeConfig = this.getModeConfig();
     const { substitutePositions, supportsInactiveUsers, substituteRotationPattern } = modeConfig;
 
     const playerGoingOffId = nextPlayerIdToSubOut;
@@ -474,6 +507,6 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
 /**
  * Factory function to create substitution manager
  */
-export function createSubstitutionManager(teamMode) {
-  return new SubstitutionManager(teamMode);
+export function createSubstitutionManager(teamMode, selectedFormation = null) {
+  return new SubstitutionManager(teamMode, selectedFormation);
 }

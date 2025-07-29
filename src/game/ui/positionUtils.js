@@ -1,7 +1,8 @@
 import React from 'react';
-import { Shield, Sword, RotateCcw, Hand } from 'lucide-react';
+import { Shield, Sword, RotateCcw, Hand, Circle } from 'lucide-react';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
-import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
+import { supportsInactiveUsers, supportsNextNextIndicators, POSITION_ROLE_MAP } from '../../constants/gameModes';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 /**
  * Game-screen UI utilities for position rendering
@@ -9,17 +10,36 @@ import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constan
  */
 
 /**
- * Get the appropriate icon for a position
+ * Get the appropriate icon for a position based on role mapping
  */
 export function getPositionIcon(position, substitutePositions) {
-  if (position.includes('goalie')) {
+  // Handle goalie position
+  if (position === 'goalie') {
     return <Hand className={ICON_STYLES.small} />;
-  } else if (substitutePositions.includes(position)) {
+  }
+  
+  // Handle substitute positions
+  if (substitutePositions && substitutePositions.includes(position)) {
     return <RotateCcw className={ICON_STYLES.small} />;
-  } else if (position.includes('Defender')) {
-    return <Shield className={ICON_STYLES.small} />;
-  } else {
-    return <Sword className={ICON_STYLES.small} />;
+  }
+  
+  // Use role mapping for field positions
+  const role = POSITION_ROLE_MAP[position];
+  
+  switch (role) {
+    case PLAYER_ROLES.DEFENDER:
+      return <Shield className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.MIDFIELDER:
+      return <Circle className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.ATTACKER:
+      return <Sword className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.GOALIE:
+      return <Hand className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.SUBSTITUTE:
+      return <RotateCcw className={ICON_STYLES.small} />;
+    default:
+      // Fallback for unknown positions
+      return <Sword className={ICON_STYLES.small} />;
   }
 }
 

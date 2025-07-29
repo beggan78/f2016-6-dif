@@ -1,4 +1,41 @@
-import { MODE_DEFINITIONS } from '../constants/gameModes';
+import { getModeDefinition } from '../constants/gameModes';
+import { TEAM_MODES } from '../constants/playerConstants';
+import { FORMATIONS } from '../constants/teamConfiguration';
+
+// Helper to get mode definition - handles both legacy strings and team config objects
+const getDefinition = (teamModeOrConfig, selectedFormation = null) => {
+  // Handle null/undefined
+  if (!teamModeOrConfig) {
+    return null;
+  }
+  
+  if (typeof teamModeOrConfig === 'string') {
+    // Map legacy team modes to team configurations with formation override
+    const legacyMappings = {
+      [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+      [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
+      [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
+    };
+    
+    const teamConfig = legacyMappings[teamModeOrConfig];
+    if (!teamConfig) {
+      console.warn(`Unknown legacy team mode: ${teamModeOrConfig}`);
+      return null;
+    }
+    
+    // Override formation if selectedFormation is provided
+    const formationAwareConfig = selectedFormation 
+      ? { ...teamConfig, formation: selectedFormation }
+      : teamConfig;
+    
+    return getModeDefinition(formationAwareConfig);
+  }
+  return getModeDefinition(teamModeOrConfig);
+};
 
 /**
  * Generates formation recommendations for period 3 in pair mode with role balance enforcement
@@ -252,24 +289,68 @@ function determineSubstituteRecommendations(finalPairs, outfieldersWithStats) {
  * Generates formation recommendations for individual modes (6, 7, or 8+ players)
  * For Period 1 (no stats), creates basic positional rotation queue
  * For Period 2+, creates time-based rotation queue
+ * 
+ * @param {string} currentGoalieId - ID of the current goalie
+ * @param {Array} playerStats - Array of player stats
+ * @param {Array} squad - Array of squad players
+ * @param {string|Object} teamMode - Team mode string or team config object
+ * @param {string} selectedFormation - Formation type (2-2, 1-2-1, etc.)
+ * @returns {Object} Formation recommendation with formation, rotationQueue, and nextToRotateOff
  */
-const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, teamMode) => {
+const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, teamMode, selectedFormation = null) => {
+  // Extract formation from team config or direct parameter
+  const formation = selectedFormation || 
+    (typeof teamMode === 'object' ? teamMode.formation : null) ||
+    FORMATIONS.FORMATION_2_2; // Default to 2-2 formation
+  
+  // Route to appropriate algorithm based on formation type
+  if (formation === FORMATIONS.FORMATION_1_2_1) {
+    return generate121FormationRecommendation(currentGoalieId, playerStats, squad, teamMode);
+  }
+  
+  // Default to existing 2-2 algorithm
+  return generate22FormationRecommendation(currentGoalieId, playerStats, squad, teamMode);
+};
+
+/**
+ * Generate formation recommendations for both 2-2 and 1-2-1 formations (consolidated logic)
+ */
+const generateFormationRecommendation = (currentGoalieId, playerStats, squad, teamMode, formation) => {
   const outfielders = squad.filter(p => p.id !== currentGoalieId);
   
-  // Get stats for all outfielders
+  // Get stats for all outfielders - include midfielder time for 1-2-1 formations
   const outfieldersWithStats = outfielders.map(p => {
     const pStats = playerStats.find(s => s.id === p.id);
     const defenderTime = pStats?.stats.timeAsDefenderSeconds || 0;
+    const midfielderTime = pStats?.stats.timeAsMidfielderSeconds || 0;
     const attackerTime = pStats?.stats.timeAsAttackerSeconds || 0;
+    const totalOutfieldTime = pStats?.stats.timeOnFieldSeconds || 0;
     
-    return {
+    const baseStats = {
       ...p,
-      totalOutfieldTime: pStats?.stats.timeOnFieldSeconds || 0,
+      totalOutfieldTime,
       defenderTime,
+      midfielderTime,
       attackerTime,
-      surplusAttackerTime: attackerTime - defenderTime, // Positive means more attacker time
       isInactive: pStats?.stats.isInactive || false
     };
+
+    // Add formation-specific stats
+    if (formation === FORMATIONS.FORMATION_1_2_1) {
+      return {
+        ...baseStats,
+        // Calculate role deficits for 1-2-1 balancing
+        defenderDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, 'defender'),
+        midfielderDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, 'midfielder'),
+        attackerDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, 'attacker')
+      };
+    } else {
+      return {
+        ...baseStats,
+        // Calculate surplus attacker time for 2-2 balancing
+        surplusAttackerTime: attackerTime - defenderTime
+      };
+    }
   });
 
   // Separate active and inactive players
@@ -277,145 +358,237 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
   const inactivePlayers = outfieldersWithStats.filter(p => p.isInactive);
 
   // Handle the case where there are no active substitutes (≤4 active players)
-  // This covers 5-player mode and any individual mode with all substitutes inactive
   if (activePlayers.length <= 4) {
-    // Only work with available active players for field positions
-    const availableActivePlayers = activePlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-    
-    // Create formation with only field positions filled
-    let formation = {
-      goalie: currentGoalieId
-    };
-    
-    // Get mode configuration to determine field positions
-    const modeConfig = MODE_DEFINITIONS[teamMode];
-    const fieldPositions = modeConfig?.fieldPositions || [];
-    const substitutePositions = modeConfig?.substitutePositions || [];
-    
-    // Assign field positions based on role balancing
-    if (availableActivePlayers.length >= 4) {
-      // Sort by surplus attacker time for role assignment
-      const fieldPlayersByAttackerSurplus = [...availableActivePlayers.slice(0, 4)].sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
-      
-      const defenders = fieldPlayersByAttackerSurplus.slice(0, 2); // Most surplus attacker time -> defenders
-      const attackers = fieldPlayersByAttackerSurplus.slice(2, 4); // Least surplus attacker time -> attackers
-      
-      // Assign field positions
-      formation.leftDefender = defenders[0]?.id || null;
-      formation.rightDefender = defenders[1]?.id || null;
-      formation.leftAttacker = attackers[0]?.id || null;
-      formation.rightAttacker = attackers[1]?.id || null;
-    } else {
-      // Less than 4 active players - assign what we can
-      fieldPositions.forEach((position, index) => {
-        formation[position] = availableActivePlayers[index]?.id || null;
-      });
-    }
-    
-    // Set all substitute positions to null
-    substitutePositions.forEach(position => {
-      formation[position] = null;
-    });
-    
-    // Assign all inactive players to available substitute positions (from last to first)
-    if (inactivePlayers.length > 0 && substitutePositions.length > 0) {
-      const availableSubPositions = [...substitutePositions].reverse(); // Start from last position
-      
-      inactivePlayers.forEach((inactivePlayer, index) => {
-        if (index < availableSubPositions.length) {
-          formation[availableSubPositions[index]] = inactivePlayer.id;
-        }
-      });
-    }
-    
-    return {
-      formation,
-      rotationQueue: [], // No rotation possible without active substitutes
-      nextToRotateOff: null // No substitutions possible
-    };
+    return handleLimitedPlayersFormation(currentGoalieId, activePlayers, inactivePlayers, teamMode, formation);
   }
 
-  // Create rotation queue for active players
-  // Sort by accumulated field time (ascending - least time first)
+  // Create rotation queue for active players (same logic for both formations)
   const sortedByTime = activePlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-
-  // Get the 4 players with least accumulated field time (they will be on field)
   const leastTimePlayers = sortedByTime.slice(0, 4);
-  // Get remaining players (they will be substitutes, ordered by most time at end)
   const remainingPlayers = sortedByTime.slice(4);
-
-  // For the first 4 positions (indices 0-3): order by MOST time first within this group
-  // Index 0 = most time among the 4 least-time players (rotates off first)
-  // Index 3 = least time among the 4 least-time players (stays on field longest)
   const fieldPlayersOrdered = leastTimePlayers.sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
-
-  // For remaining players: order by MOST time at the end
   const substitutesOrdered = remainingPlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-
-  // Combine into final rotation queue
   const rotationQueue = [...fieldPlayersOrdered, ...substitutesOrdered];
 
-  // Field players are the first 4 in rotation queue (indices 0-3)
+  // Create formation based on type
   const fieldPlayers = rotationQueue.slice(0, 4);
-  
-  // Among field players, assign roles based on surplus attacker time
-  // Sort by surplus attacker time (descending - most surplus attacker time first)
-  // Players with most surplus attacker time should be defenders to balance
-  const fieldPlayersByAttackerSurplus = [...fieldPlayers].sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
-  
-  const defenders = fieldPlayersByAttackerSurplus.slice(0, 2); // Top 2 with most surplus attacker time
-  const attackers = fieldPlayersByAttackerSurplus.slice(2, 4); // Bottom 2
+  let formationResult;
 
-  // Create formation object based on team mode
-  let formation = {
-    goalie: currentGoalieId
-  };
+  if (formation === FORMATIONS.FORMATION_1_2_1) {
+    // Assign 1-2-1 positions based on role deficits
+    const positionAssignments = assign121Positions(fieldPlayers);
+    formationResult = {
+      goalie: currentGoalieId,
+      defender: positionAssignments.defender?.id || null,
+      left: positionAssignments.left?.id || null,
+      right: positionAssignments.right?.id || null,
+      attacker: positionAssignments.attacker?.id || null
+    };
+  } else {
+    // Assign 2-2 positions based on surplus attacker time
+    const fieldPlayersByAttackerSurplus = [...fieldPlayers].sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
+    const defenders = fieldPlayersByAttackerSurplus.slice(0, 2);
+    const attackers = fieldPlayersByAttackerSurplus.slice(2, 4);
 
-  // Get mode configuration to determine substitute count
-  const modeConfig = MODE_DEFINITIONS[teamMode];
-  const substitutePositions = modeConfig?.substitutePositions || [];
-  
-  if (substitutePositions.length > 0 && substitutePositions[0].startsWith('substitute_')) {
-    // Base formation for all individual modes (same field positions)
-    formation = {
-      ...formation,
+    formationResult = {
+      goalie: currentGoalieId,
       leftDefender: defenders[0]?.id || null,
       rightDefender: defenders[1]?.id || null,
       leftAttacker: attackers[0]?.id || null,
       rightAttacker: attackers[1]?.id || null
     };
+  }
+
+  // Add substitute positions dynamically based on mode configuration
+  const modeConfig = getDefinition(teamMode, formation);
+  const substitutePositions = modeConfig?.substitutePositions || [];
+  const activeSubstitutes = rotationQueue.slice(4);
+
+  addSubstitutePositions(formationResult, substitutePositions, activeSubstitutes, inactivePlayers, rotationQueue);
+
+  return {
+    formation: formationResult,
+    rotationQueue: rotationQueue.map(p => p.id),
+    nextToRotateOff: rotationQueue[0]?.id || null
+  };
+};
+
+/**
+ * Handle formation when there are ≤4 active players (consolidated for both formations)
+ */
+const handleLimitedPlayersFormation = (currentGoalieId, activePlayers, inactivePlayers, teamMode, formation) => {
+  const availableActivePlayers = activePlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+  
+  let formationResult = { goalie: currentGoalieId };
+  
+  // Get mode configuration to determine positions
+  const modeConfig = getDefinition(teamMode, formation);
+  const fieldPositions = modeConfig?.fieldPositions || [];
+  const substitutePositions = modeConfig?.substitutePositions || [];
+  
+  // Assign field positions based on formation type
+  if (availableActivePlayers.length >= 4) {
+    if (formation === FORMATIONS.FORMATION_1_2_1) {
+      const fieldAssignments = assign121Positions(availableActivePlayers.slice(0, 4));
+      formationResult.defender = fieldAssignments.defender?.id || null;
+      formationResult.left = fieldAssignments.left?.id || null;
+      formationResult.right = fieldAssignments.right?.id || null;
+      formationResult.attacker = fieldAssignments.attacker?.id || null;
+    } else {
+      // 2-2 formation
+      const fieldPlayersByAttackerSurplus = [...availableActivePlayers.slice(0, 4)]
+        .sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
+      const defenders = fieldPlayersByAttackerSurplus.slice(0, 2);
+      const attackers = fieldPlayersByAttackerSurplus.slice(2, 4);
+      
+      formationResult.leftDefender = defenders[0]?.id || null;
+      formationResult.rightDefender = defenders[1]?.id || null;
+      formationResult.leftAttacker = attackers[0]?.id || null;
+      formationResult.rightAttacker = attackers[1]?.id || null;
+    }
+  } else {
+    // Less than 4 active players - assign what we can using field positions
+    fieldPositions.forEach((position, index) => {
+      formationResult[position] = availableActivePlayers[index]?.id || null;
+    });
+  }
+  
+  // Set all substitute positions to null initially
+  substitutePositions.forEach(position => {
+    formationResult[position] = null;
+  });
+  
+  // Assign inactive players to available substitute positions
+  assignInactivePlayersToSubstitutes(formationResult, substitutePositions, inactivePlayers);
+  
+  return {
+    formation: formationResult,
+    rotationQueue: [],
+    nextToRotateOff: null
+  };
+};
+
+/**
+ * Add substitute positions to formation (consolidated logic)
+ */
+const addSubstitutePositions = (formation, substitutePositions, activeSubstitutes, inactivePlayers, rotationQueue) => {
+  substitutePositions.forEach((positionKey, index) => {
+    if (substitutePositions.length === 1) {
+      formation[positionKey] = rotationQueue[4]?.id || null;
+    } else if (substitutePositions.length >= 2) {
+      const bottomPositionsForInactive = Math.min(inactivePlayers.length, substitutePositions.length);
+      const isBottomPosition = index >= substitutePositions.length - bottomPositionsForInactive;
+      
+      if (isBottomPosition && inactivePlayers.length > 0) {
+        const inactivePlayerIndex = index - (substitutePositions.length - inactivePlayers.length);
+        formation[positionKey] = inactivePlayers[inactivePlayerIndex]?.id || null;
+      } else {
+        formation[positionKey] = activeSubstitutes[index]?.id || null;
+      }
+    }
+  });
+};
+
+/**
+ * Assign inactive players to substitute positions (consolidated logic)
+ */
+const assignInactivePlayersToSubstitutes = (formation, substitutePositions, inactivePlayers) => {
+  if (inactivePlayers.length > 0 && substitutePositions.length > 0) {
+    const availableSubPositions = [...substitutePositions].reverse();
     
-    // Add substitute positions dynamically based on mode configuration
-    const activeSubstitutes = rotationQueue.slice(4); // Players beyond the first 4
-    
-    substitutePositions.forEach((positionKey, index) => {
-      if (substitutePositions.length === 1) {
-        // INDIVIDUAL_6: single substitute (5th player)
-        formation[positionKey] = rotationQueue[4]?.id || null;
-      } else if (substitutePositions.length >= 2) {
-        // INDIVIDUAL_7+ modes: handle inactive players and substitute rotation
-        // Calculate how many positions from the bottom should be filled with inactive players
-        const bottomPositionsForInactive = Math.min(inactivePlayers.length, substitutePositions.length);
-        const isBottomPosition = index >= substitutePositions.length - bottomPositionsForInactive;
-        
-        if (isBottomPosition && inactivePlayers.length > 0) {
-          // Bottom positions get inactive players (starting from the last position)
-          const inactivePlayerIndex = index - (substitutePositions.length - inactivePlayers.length);
-          formation[positionKey] = inactivePlayers[inactivePlayerIndex]?.id || null;
-        } else {
-          // Top positions get active substitutes in order
-          formation[positionKey] = activeSubstitutes[index]?.id || null;
-        }
+    inactivePlayers.forEach((inactivePlayer, index) => {
+      if (index < availableSubPositions.length) {
+        formation[availableSubPositions[index]] = inactivePlayer.id;
       }
     });
   }
-
-  return {
-    formation,
-    rotationQueue: rotationQueue.map(p => p.id),
-    nextToRotateOff: rotationQueue[0]?.id || null // Player with most field time rotates off first
-  };
 };
+
+/**
+ * Generate formation recommendations for 2-2 formation (wrapper)
+ */
+const generate22FormationRecommendation = (currentGoalieId, playerStats, squad, teamMode) => {
+  return generateFormationRecommendation(currentGoalieId, playerStats, squad, teamMode, FORMATIONS.FORMATION_2_2);
+};
+
+/**
+ * Generate formation recommendations for 1-2-1 formation (wrapper)
+ */
+const generate121FormationRecommendation = (currentGoalieId, playerStats, squad, teamMode) => {
+  return generateFormationRecommendation(currentGoalieId, playerStats, squad, teamMode, FORMATIONS.FORMATION_1_2_1);
+};
+
+/**
+ * Calculate role deficit for time balancing in 1-2-1 formation
+ */
+const calculateRoleDeficit = (defenderTime, midfielderTime, attackerTime, role) => {
+  const totalOutfieldTime = defenderTime + midfielderTime + attackerTime;
+  
+  if (totalOutfieldTime === 0) return 0;
+  
+  const expectedRoleTime = totalOutfieldTime / 3; // Equal distribution across 3 roles
+  let currentRoleTime;
+  
+  switch (role) {
+    case 'defender':
+      currentRoleTime = defenderTime;
+      break;
+    case 'midfielder':
+      currentRoleTime = midfielderTime;
+      break;
+    case 'attacker':
+      currentRoleTime = attackerTime;
+      break;
+    default:
+      return 0;
+  }
+  
+  return Math.max(0, expectedRoleTime - currentRoleTime);
+};
+
+/**
+ * Assign 1-2-1 positions ensuring no conflicts
+ */
+const assign121Positions = (fieldPlayers) => {
+  // Sort candidates by role deficits
+  const defenderCandidates = [...fieldPlayers].sort((a, b) => b.defenderDeficit - a.defenderDeficit);
+  const midfielderCandidates = [...fieldPlayers].sort((a, b) => b.midfielderDeficit - a.midfielderDeficit);
+  const attackerCandidates = [...fieldPlayers].sort((a, b) => b.attackerDeficit - a.attackerDeficit);
+  
+  const assignments = {};
+  const usedPlayers = new Set();
+  
+  // Assign defender first (highest deficit)
+  const defender = defenderCandidates.find(p => !usedPlayers.has(p.id));
+  if (defender) {
+    assignments.defender = defender;
+    usedPlayers.add(defender.id);
+  }
+  
+  // Assign attacker second (highest deficit among remaining)
+  const attacker = attackerCandidates.find(p => !usedPlayers.has(p.id));
+  if (attacker) {
+    assignments.attacker = attacker;
+    usedPlayers.add(attacker.id);
+  }
+  
+  // Assign midfielders (highest deficits among remaining)
+  const midfielders = midfielderCandidates.filter(p => !usedPlayers.has(p.id)).slice(0, 2);
+  assignments.left = midfielders[0] || null;
+  assignments.right = midfielders[1] || null;
+  
+  // Fill any missing positions with remaining players
+  const remainingPlayers = fieldPlayers.filter(p => !usedPlayers.has(p.id));
+  if (!assignments.left && remainingPlayers.length > 0) {
+    assignments.left = remainingPlayers.shift();
+  }
+  if (!assignments.right && remainingPlayers.length > 0) {
+    assignments.right = remainingPlayers.shift();
+  }
+  
+  return assignments;
+};
+
 
 /**
  * Generates formation recommendations for periods 2+ in pair mode
