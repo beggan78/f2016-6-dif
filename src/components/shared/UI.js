@@ -147,7 +147,7 @@ export function FieldPlayerModal({
                     variant="primary"
                     className="text-left"
                   >
-                    Switch with {formatPlayerName(player)}
+                    {formatPlayerName(player)}
                   </Button>
                 ))}
               </div>

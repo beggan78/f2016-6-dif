@@ -32,15 +32,7 @@ export function ReportNavigation({
           Quick Stats
         </Button>
       )}
-      {onBackToGame && (
-        <Button 
-          onClick={onBackToGame} 
-          variant="secondary" 
-          size="sm"
-        >
-          Back to Game
-        </Button>
-      )}
+      
     </div>
   );
 }

@@ -497,26 +497,31 @@ export const createSubstitutionHandlers = (
           const selectedSquadIds = gameState.selectedSquadPlayers.map(p => p.id);
           
           // Use utility function to get outfield players, then filter by status
+          const definition = MODE_DEFINITIONS[gameState.teamMode];
+          if (!definition) return true;
+
+          const sourcePlayerRole = definition.positions[fieldPlayerModal.target]?.role;
+
           const availablePlayers = getOutfieldPlayers(
-            gameState.allPlayers, 
-            selectedSquadIds, 
+            gameState.allPlayers,
+            selectedSquadIds,
             goalieId
           ).filter(player => {
-            // Exclude the source player
             if (player.id === sourcePlayerId) return false;
-            
-            // Find full player data for status checking
             const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
             if (!fullPlayerData) return false;
-            
             const currentPairKey = fullPlayerData.stats.currentPairKey;
-            
-            // Exclude substitutes based on team mode using MODE_DEFINITIONS
-            const definition = MODE_DEFINITIONS[gameState.teamMode];
-            if (!definition) return true;
-            
-            // Use configuration-driven substitute exclusion
             return !definition.substitutePositions.includes(currentPairKey);
+          }).map(player => {
+            const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
+            const role = definition.positions[fullPlayerData.stats.currentPairKey]?.role;
+            return { ...player, role };
+          }).sort((a, b) => {
+            const aHasSameRole = a.role === sourcePlayerRole;
+            const bHasSameRole = b.role === sourcePlayerRole;
+            if (aHasSameRole && !bHasSameRole) return 1;
+            if (!aHasSameRole && bHasSameRole) return -1;
+            return 0;
           });
           
           // Update modal state to show position options

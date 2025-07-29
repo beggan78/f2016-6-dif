@@ -123,7 +123,7 @@ export function GameEventTimeline({
         
         // Show position change events if the selected player is involved
         if (type === EVENT_TYPES.POSITION_CHANGE) {
-          return data.player1Id === selectedPlayerId || data.player2Id === selectedPlayerId;
+          return data.sourcePlayerId === selectedPlayerId || data.targetPlayerId === selectedPlayerId;
         }
         
         // Hide other events for specific player filter
@@ -371,8 +371,8 @@ export function GameEventTimeline({
         const assignedGoalieName = data.goalieName || assignedGoalie;
         return data.description || `${assignedGoalieName} is goalie`;
       case EVENT_TYPES.POSITION_CHANGE:
-        const player1 = data.player1Id ? (getPlayerName ? (getPlayerName(data.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        const player2 = data.player2Id ? (getPlayerName ? (getPlayerName(data.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
+        const player1 = data.sourcePlayerId ? (getPlayerName ? (getPlayerName(data.sourcePlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const player2 = data.targetPlayerId ? (getPlayerName ? (getPlayerName(data.targetPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
         return `Position switch: ${player1} ↔ ${player2}`;
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;

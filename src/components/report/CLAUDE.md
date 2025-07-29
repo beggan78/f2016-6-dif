@@ -1,7 +1,7 @@
 # Report Components - Claude Code Memory
 
 ## Purpose
-The report components provide comprehensive post-match analysis and reporting capabilities for the DIF F16-6 Coach application. This module transforms raw game data into structured, visual reports that coaches can use to analyze team performance, track player statistics, and review match events.
+The report components provide comprehensive post-match analysis and reporting capabilities for the Sport Wizard application. This module transforms raw game data into structured, visual reports that coaches can use to analyze team performance, track player statistics, and review match events.
 
 ## Component Architecture
 

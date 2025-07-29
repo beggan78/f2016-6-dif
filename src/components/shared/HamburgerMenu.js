@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard,, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile, signOut } = useAuth();
   const { hasTeams, currentTeam } = useTeam();
@@ -31,6 +31,11 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
   const handleFormPairs = () => {
     setIsOpen(false);
     onFormPairs();
+  };
+
+  const handleNavigateToTacticalBoard = () => {
+    setIsOpen(false);
+    onNavigateToTacticalBoard();
   };
 
   const handleLogin = () => {
@@ -150,7 +155,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Profile Button */}
                   <button
                     onClick={handleProfile}
@@ -158,7 +163,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
                   >
                     Profile
                   </button>
-                  
+
                   {/* Team Management - Protected Feature */}
                   {hasTeams ? (
                     <button
@@ -185,7 +190,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
                       </div>
                     </button>
                   )}
-                  
+
                   {/* Match History - Protected Feature */}
                   <button
                     onClick={handleMatchHistory}
@@ -214,10 +219,10 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
                   >
                     Create Account
                   </button>
-                  
+
                   {/* Divider */}
                   <div className="border-t border-slate-600 my-1"></div>
-                  
+
                   {/* Protected Features Preview for Anonymous Users */}
                   <div className="px-4 py-2">
                     <p className="text-xs text-slate-400 mb-2">Sign in to unlock:</p>
@@ -266,13 +271,19 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, currentView, teamMo
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Divider */}
                   <div className="border-t border-slate-600 my-1"></div>
                 </>
               )}
 
               {/* App Functions */}
+              <button
+                onClick={handleNavigateToTacticalBoard}
+                className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+              >
+                Tactical Board
+              </button>
               <button
                 onClick={handleAddPlayer}
                 disabled={!isConfigScreen}

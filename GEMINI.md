@@ -1,4 +1,4 @@
-# Gemini Project Brief: DIF F16-6 Coach
+# Gemini Project Brief: Sport Wizard
 
 ## 1. Project Overview
 This is a mobile-first React web application for coaching youth soccer teams, focusing on managing player rotations, tracking playing time, and ensuring fair substitution patterns in 5v5 games.

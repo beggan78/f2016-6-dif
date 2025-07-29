@@ -15,6 +15,7 @@ import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
+import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
@@ -31,19 +32,19 @@ import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionProm
 function AppContent() {
   const gameState = useGameState();
   const timers = useTimers(gameState.periodDurationMinutes);
-  const { 
-    showSessionWarning, 
-    sessionExpiry, 
-    extendSession, 
-    dismissSessionWarning, 
+  const {
+    showSessionWarning,
+    sessionExpiry,
+    extendSession,
+    dismissSessionWarning,
     signOut,
     loading: authLoading,
     needsProfileCompletion
   } = useAuth();
-  
+
   // Authentication modal
   const authModal = useAuthModal();
-  
+
   // Debug mode detection
   const debugMode = isDebugMode();
   
@@ -238,6 +239,18 @@ function AppContent() {
     removeModalFromStack();
   };
 
+  const handleNavigateToTacticalBoard = () => {
+    gameState.setView(VIEWS.TACTICAL_BOARD);
+  };
+
+  const handleNavigateFromTacticalBoard = () => {
+    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
+    if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      const targetView = gameState.currentPeriodNumber > 0 ? VIEWS.GAME : VIEWS.CONFIG;
+      gameState.setView(targetView);
+    }
+  };
+
   // Render logic
   const renderView = () => {
     switch (gameState.view) {
@@ -389,8 +402,16 @@ function AppContent() {
         );
       case VIEWS.PROFILE:
         return (
-          <ProfileScreen 
+          <ProfileScreen
             setView={gameState.setView}
+          />
+        );
+      case VIEWS.TACTICAL_BOARD:
+        return (
+          <TacticalBoardScreen
+            onNavigateBack={handleNavigateFromTacticalBoard}
+            pushModalState={pushModalState}
+            removeModalFromStack={removeModalFromStack}
           />
         );
       default:
@@ -400,53 +421,54 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
-        <header className="w-full max-w-2xl relative text-center mb-4">
-          <div className="absolute top-0 right-0">
-            <HamburgerMenu 
-              onRestartMatch={handleRestartMatch} 
-              onAddPlayer={handleAddPlayer}
-              currentView={gameState.view}
-              teamMode={gameState.teamMode}
-              onSplitPairs={gameState.splitPairs}
-              onFormPairs={gameState.formPairs}
-              allPlayers={gameState.allPlayers}
-              selectedSquadIds={gameState.selectedSquadIds}
-              setView={gameState.setView}
-              authModal={authModal}
-            />
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
-        </header>
-        <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
-          {renderView()}
-        </main>
-        <footer className="mt-8 text-center text-sm text-slate-500">
-          <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
-        </footer>
-        
-        <ConfirmationModal
-          isOpen={showConfirmModal}
-          onConfirm={handleConfirmEndPeriod}
-          onCancel={handleCancelEndPeriod}
-          title="End Period Early?"
-          message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
-        />
-        
-        <AddPlayerModal
-          isOpen={showAddPlayerModal}
-          onClose={handleAddPlayerCancel}
-          onAddPlayer={handleAddPlayerConfirm}
-        />
-        
-        <ConfirmationModal
-          isOpen={showNewGameModal}
-          onConfirm={handleConfirmNewGame}
-          onCancel={handleCancelNewGame}
-          title="Start a new game?"
-          message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
-          confirmText="Yes, start new game"
-          cancelText="Cancel"
-        />
+      <header className="w-full max-w-2xl relative text-center mb-4">
+        <div className="absolute top-0 right-0">
+          <HamburgerMenu 
+            onRestartMatch={handleRestartMatch} 
+            onAddPlayer={handleAddPlayer}
+            onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
+            currentView={gameState.view}
+            teamMode={gameState.teamMode}
+            onSplitPairs={gameState.splitPairs}
+            onFormPairs={gameState.formPairs}
+            allPlayers={gameState.allPlayers}
+            selectedSquadIds={gameState.selectedSquadIds}
+            setView={gameState.setView}
+            authModal={authModal}
+          />
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
+      </header>
+      <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
+        {renderView()}
+      </main>
+      <footer className="mt-8 text-center text-sm text-slate-500">
+        <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
+      </footer>
+      
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onConfirm={handleConfirmEndPeriod}
+        onCancel={handleCancelEndPeriod}
+        title="End Period Early?"
+        message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
+      />
+      
+      <AddPlayerModal
+        isOpen={showAddPlayerModal}
+        onClose={handleAddPlayerCancel}
+        onAddPlayer={handleAddPlayerConfirm}
+      />
+      
+      <ConfirmationModal
+        isOpen={showNewGameModal}
+        onConfirm={handleConfirmNewGame}
+        onCancel={handleCancelNewGame}
+        title="Start a new game?"
+        message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
+        confirmText="Yes, start new game"
+        cancelText="Cancel"
+      />
 
         {/* Session Expiry Warning Modal */}
         <SessionExpiryModal
@@ -471,7 +493,7 @@ function AppContent() {
             setView={gameState.setView}
           />
         )}
-    </div>
+      </div>
   );
 }
 

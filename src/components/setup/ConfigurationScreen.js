@@ -92,7 +92,17 @@ export function ConfigurationScreen({
   };
 
   const handleGoalieChange = (period, playerId) => {
-    setPeriodGoalieIds(prev => ({ ...prev, [period]: playerId }));
+    setPeriodGoalieIds(prev => {
+      const newGoalieIds = { ...prev, [period]: playerId };
+      if (period === 1) {
+        for (let i = 2; i <= numPeriods; i++) {
+          if (prev[i] === prev[1] || !prev[i]) {
+            newGoalieIds[i] = playerId;
+          }
+        }
+      }
+      return newGoalieIds;
+    });
   };
 
   const handleCaptainChange = (playerId) => {
