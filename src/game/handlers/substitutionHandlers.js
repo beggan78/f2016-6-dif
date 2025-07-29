@@ -423,10 +423,23 @@ export const createSubstitutionHandlers = (
   const handleSubstitutionWithHighlight = () => {
     const gameState = gameStateFactory();
     
+    console.log('🔵 [SUB NOW] Button clicked - Initial game state:', {
+      teamMode: gameState.teamMode,
+      selectedFormation: gameState.selectedFormation,
+      nextPlayerIdToSubOut: gameState.nextPlayerIdToSubOut,
+      nextPlayerToSubOut: gameState.nextPlayerToSubOut,
+      rotationQueue: gameState.rotationQueue?.slice(),
+      currentFormation: gameState.formation,
+      timestamp: new Date().toISOString()
+    });
+    
     // Check if substitution is possible (at least one active substitute)
     if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamMode)) {
+      console.log('❌ [SUB NOW] No active substitutes available');
       return;
     }
+    
+    console.log('✅ [SUB NOW] Active substitutes found, proceeding with substitution');
     
     // Capture before-state for undo functionality
     const substitutionTimestamp = Date.now();
@@ -442,6 +455,17 @@ export const createSubstitutionHandlers = (
       gameState,
       calculateSubstitution,
       (newGameState) => {
+        console.log('🟡 [SUB NOW] calculateSubstitution returned new state:', {
+          newNextPlayerIdToSubOut: newGameState.nextPlayerIdToSubOut,
+          newNextPlayerToSubOut: newGameState.nextPlayerToSubOut,
+          newNextNextPlayerIdToSubOut: newGameState.nextNextPlayerIdToSubOut,
+          newRotationQueue: newGameState.rotationQueue?.slice(),
+          substitutionResult: newGameState.substitutionResult,
+          playersToHighlight: newGameState.playersToHighlight
+        });
+        
+        console.log('🟠 [SUB NOW] Applying state changes to React state...');
+        
         // Apply the state changes
         setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
@@ -451,7 +475,12 @@ export const createSubstitutionHandlers = (
         setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
         if (newGameState.rotationQueue) {
           setRotationQueue(newGameState.rotationQueue);
+          console.log('🔄 [SUB NOW] Applied new rotation queue:', newGameState.rotationQueue.slice());
+        } else {
+          console.log('⚠️ [SUB NOW] No rotation queue in new state!');
         }
+        
+        console.log('✅ [SUB NOW] State changes applied successfully');
         
         // Get players going off and coming on from substitution manager result
         const substitutionResult = newGameState.substitutionResult || {};

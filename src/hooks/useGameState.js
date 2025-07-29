@@ -600,11 +600,10 @@ export function useGameState() {
 
     // Initialize rotation queue for individual modes only if not already set by formation generator
     // For Period 1 or when formation generator hasn't provided a queue
-    if ((isIndividualMode(teamMode)) && nextPlayerToSubOut && rotationQueue.length === 0) {
-      const initialPlayerToSubOut = formation[nextPlayerToSubOut];
+    if ((isIndividualMode(teamMode)) && rotationQueue.length === 0) {
+      console.log('🔧 [handleStartGame] Initializing rotation queue for Period 1');
       
-      // Get field positions only for rotation queue with formation awareness
-      // Create formation-aware team config for position utilities
+      // Get field positions with formation awareness
       const formationAwareTeamConfig = selectedFormation && typeof teamMode === 'string' ? {
         format: '5v5',
         squadSize: parseInt(teamMode.split('_')[1]) || 7,
@@ -614,16 +613,61 @@ export function useGameState() {
       
       const definition = getModeDefinition(formationAwareTeamConfig);
       const fieldPositions = definition?.fieldPositions || [];
-      const initialQueue = fieldPositions.map(pos => formation[pos]).filter(Boolean);
+      const substitutePositions = definition?.substitutePositions || [];
+      
+      console.log('🔧 [handleStartGame] Field positions:', fieldPositions);
+      console.log('🔧 [handleStartGame] Substitute positions:', substitutePositions);
+      
+      // Get all outfield players from formation
+      const fieldPlayersInFormation = fieldPositions.map(pos => formation[pos]).filter(Boolean);
+      const substitutePlayersInFormation = substitutePositions.map(pos => formation[pos]).filter(Boolean);
+      
+      // Build proper rotation queue: field players first (ordered by time), then substitutes
+      const allOutfieldPlayers = [...fieldPlayersInFormation, ...substitutePlayersInFormation];
+      const outfieldPlayersWithTime = allOutfieldPlayers.map(playerId => {
+        const player = allPlayers.find(p => p.id === playerId);
+        return {
+          id: playerId,
+          totalOutfieldTime: player?.stats?.timeOnFieldSeconds || 0
+        };
+      });
+      
+      // Sort field players by most time first (ready to rotate off)
+      const fieldPlayersSorted = outfieldPlayersWithTime
+        .filter(p => fieldPlayersInFormation.includes(p.id))
+        .sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
+      
+      // Sort substitutes by least time first (ready to come on)
+      const substitutePlayersSorted = outfieldPlayersWithTime
+        .filter(p => substitutePlayersInFormation.includes(p.id))
+        .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+      
+      // Create rotation queue: field players first, then substitutes
+      const initialQueue = [...fieldPlayersSorted.map(p => p.id), ...substitutePlayersSorted.map(p => p.id)];
+      
+      // The first field player (most time) is next to rotate off
+      const nextPlayerToRotateOff = fieldPlayersSorted[0]?.id || null;
+      
+      console.log('🔧 [handleStartGame] Built rotation queue:', initialQueue);
+      console.log('🔧 [handleStartGame] Next to rotate off:', nextPlayerToRotateOff);
       
       // Only set values if we have a complete formation
-      const expectedQueueLength = fieldPositions.length;
-      if (initialPlayerToSubOut && initialQueue.length === expectedQueueLength) {
-        setNextPlayerIdToSubOut(initialPlayerToSubOut);
+      if (nextPlayerToRotateOff && initialQueue.length >= fieldPositions.length) {
+        setNextPlayerIdToSubOut(nextPlayerToRotateOff);
         setRotationQueue(initialQueue);
+        
+        // Update nextPlayerToSubOut to match the position of the nextPlayerIdToSubOut
+        const nextPlayerPosition = fieldPositions.find(pos => formation[pos] === nextPlayerToRotateOff);
+        if (nextPlayerPosition) {
+          setNextPlayerToSubOut(nextPlayerPosition);
+        }
         
         // Set next-next player using unified logic
         updateNextNextPlayerIfSupported(teamMode, initialQueue, setNextNextPlayerIdToSubOut);
+        
+        console.log('🔧 [handleStartGame] Queue initialization complete');
+      } else {
+        console.warn('🔧 [handleStartGame] Could not initialize rotation queue - incomplete formation');
       }
     }
 

@@ -62,8 +62,22 @@ export const calculateSubstitution = (gameState) => {
     isSubTimerPaused = false
   } = gameState;
 
+  console.log('🟢 [GameStateLogic] calculateSubstitution called with:', {
+    teamMode,
+    selectedFormation,
+    nextPlayerIdToSubOut,
+    rotationQueue: rotationQueue?.slice(),
+    formationKeys: Object.keys(formation),
+    isSubTimerPaused
+  });
+
   const currentTimeEpoch = Date.now();
   const substitutionManager = createSubstitutionManager(teamMode, selectedFormation);
+  
+  console.log('🟢 [GameStateLogic] Created substitution manager for:', {
+    teamMode,
+    selectedFormation
+  });
   
   const context = {
     formation,
@@ -76,7 +90,19 @@ export const calculateSubstitution = (gameState) => {
   };
 
   try {
+    console.log('🟢 [GameStateLogic] Calling substitutionManager.executeSubstitution...');
     const result = substitutionManager.executeSubstitution(context);
+    
+    console.log('🟢 [GameStateLogic] SubstitutionManager returned result:', {
+      newNextPlayerIdToSubOut: result.newNextPlayerIdToSubOut,
+      newNextPlayerToSubOut: result.newNextPlayerToSubOut,
+      newNextNextPlayerIdToSubOut: result.newNextNextPlayerIdToSubOut,
+      newRotationQueue: result.newRotationQueue?.slice(),
+      playersComingOnIds: result.playersComingOnIds,
+      playersGoingOffIds: result.playersGoingOffIds,
+      hasNewFormation: !!result.newFormation,
+      hasUpdatedPlayers: !!result.updatedPlayers
+    });
     
     const newGameState = {
       ...gameState,
@@ -92,8 +118,17 @@ export const calculateSubstitution = (gameState) => {
       substitutionResult: result
     };
 
+    console.log('🟢 [GameStateLogic] Final new game state:', {
+      nextPlayerIdToSubOut: newGameState.nextPlayerIdToSubOut,
+      nextPlayerToSubOut: newGameState.nextPlayerToSubOut,
+      nextNextPlayerIdToSubOut: newGameState.nextNextPlayerIdToSubOut,
+      rotationQueue: newGameState.rotationQueue?.slice(),
+      playersToHighlight: newGameState.playersToHighlight
+    });
+
     return newGameState;
   } catch (error) {
+    console.error('❌ [GameStateLogic] Error during substitution calculation:', error);
     return gameState; // Return unchanged state on error
   }
 };

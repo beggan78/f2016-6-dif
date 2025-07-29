@@ -85,27 +85,53 @@ export function GameScreen({
   // Determine which formation mode we're using
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
 
+  // Debug: Track state changes
+  React.useEffect(() => {
+    console.log('🔷 [GameScreen] nextPlayerIdToSubOut changed:', nextPlayerIdToSubOut, 'at', new Date().toISOString());
+  }, [nextPlayerIdToSubOut]);
+
+  React.useEffect(() => {
+    console.log('🔷 [GameScreen] rotationQueue changed:', rotationQueue?.slice(), 'at', new Date().toISOString());
+  }, [rotationQueue]);
+
+  React.useEffect(() => {
+    console.log('🔷 [GameScreen] nextPlayerToSubOut changed:', nextPlayerToSubOut, 'at', new Date().toISOString());
+  }, [nextPlayerToSubOut]);
+
   // Helper to create game state object for pure logic functions
-  const createGameState = React.useCallback(() => ({
-    formation,
-    allPlayers,
-    teamMode,
-    selectedFormation,
-    nextPhysicalPairToSubOut,
-    nextPlayerToSubOut,
-    nextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut,
-    rotationQueue,
-    selectedSquadPlayers,
-    fieldPlayerModal: modalHandlers.modals.fieldPlayer,
-    lastSubstitution: uiState.lastSubstitution,
-    subTimerSeconds,
-    isSubTimerPaused,
-    currentPeriodNumber,
-    matchTimerSeconds,
-    homeScore,
-    awayScore
-  }), [
+  const createGameState = React.useCallback(() => {
+    const gameState = {
+      formation,
+      allPlayers,
+      teamMode,
+      selectedFormation,
+      nextPhysicalPairToSubOut,
+      nextPlayerToSubOut,
+      nextPlayerIdToSubOut,
+      nextNextPlayerIdToSubOut,
+      rotationQueue,
+      selectedSquadPlayers,
+      fieldPlayerModal: modalHandlers.modals.fieldPlayer,
+      lastSubstitution: uiState.lastSubstitution,
+      subTimerSeconds,
+      isSubTimerPaused,
+      currentPeriodNumber,
+      matchTimerSeconds,
+      homeScore,
+      awayScore
+    };
+    
+    console.log('🔵 [GameScreen] createGameState called, current values:', {
+      nextPlayerIdToSubOut,
+      nextPlayerToSubOut,
+      rotationQueue: rotationQueue?.slice(),
+      teamMode,
+      selectedFormation,
+      timestamp: new Date().toISOString()
+    });
+    
+    return gameState;
+  }, [
     formation, allPlayers, teamMode, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,

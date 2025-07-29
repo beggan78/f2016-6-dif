@@ -362,21 +362,48 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
     return handleLimitedPlayersFormation(currentGoalieId, activePlayers, inactivePlayers, teamMode, formation);
   }
 
-  // Create rotation queue for active players (same logic for both formations)
+  // Create rotation queue for active players - Fixed: Ensure field players come first
+  console.log('🔧 [FormationGenerator] Building rotation queue for', activePlayers.length, 'active players');
+  
+  // Get field positions for current formation type
+  const modeConfig = getDefinition(teamMode, formation);
+  const fieldPositions = modeConfig?.fieldPositions || [];
+  
+  console.log('🔧 [FormationGenerator] Field positions for', formation, ':', fieldPositions);
+  
+  // For formation recommendation, we don't have existing formation data
+  // So we'll determine field vs substitute based on time (least time = field players)
   const sortedByTime = activePlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-  const leastTimePlayers = sortedByTime.slice(0, 4);
-  const remainingPlayers = sortedByTime.slice(4);
-  const fieldPlayersOrdered = leastTimePlayers.sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
-  const substitutesOrdered = remainingPlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+  const currentFieldPlayers = sortedByTime.slice(0, 4); // 4 field players
+  const currentSubstitutes = sortedByTime.slice(4); // Remaining are substitutes
+  
+  console.log('🔧 [FormationGenerator] Current field players:', currentFieldPlayers.map(p => p.id));
+  console.log('🔧 [FormationGenerator] Current substitutes:', currentSubstitutes.map(p => p.id));
+  
+  // Sort field players by most time first (ready to rotate off)
+  const fieldPlayersOrdered = currentFieldPlayers.sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
+  
+  // Sort substitutes by least time first (ready to come on)
+  const substitutesOrdered = currentSubstitutes.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+  
+  // Build rotation queue: field players first (can rotate off), then substitutes
   const rotationQueue = [...fieldPlayersOrdered, ...substitutesOrdered];
+  
+  console.log('🔧 [FormationGenerator] Final rotation queue:', rotationQueue.map(p => `${p.id}(${p.totalOutfieldTime}s)`));
 
-  // Create formation based on type
-  const fieldPlayers = rotationQueue.slice(0, 4);
+  // Create formation based on type - Fixed: Use players with least time for field positions
+  // We want the 4 players with the least total time to be on the field (for fairness)
+  const playersForField = activePlayers
+    .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime)
+    .slice(0, 4);
+  
+  console.log('🔧 [FormationGenerator] Players selected for field positions:', playersForField.map(p => `${p.id}(${p.totalOutfieldTime}s)`));
+  
   let formationResult;
 
   if (formation === FORMATIONS.FORMATION_1_2_1) {
     // Assign 1-2-1 positions based on role deficits
-    const positionAssignments = assign121Positions(fieldPlayers);
+    const positionAssignments = assign121Positions(playersForField);
     formationResult = {
       goalie: currentGoalieId,
       defender: positionAssignments.defender?.id || null,
@@ -386,7 +413,7 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
     };
   } else {
     // Assign 2-2 positions based on surplus attacker time
-    const fieldPlayersByAttackerSurplus = [...fieldPlayers].sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
+    const fieldPlayersByAttackerSurplus = [...playersForField].sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
     const defenders = fieldPlayersByAttackerSurplus.slice(0, 2);
     const attackers = fieldPlayersByAttackerSurplus.slice(2, 4);
 
@@ -400,16 +427,22 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   }
 
   // Add substitute positions dynamically based on mode configuration
-  const modeConfig = getDefinition(teamMode, formation);
   const substitutePositions = modeConfig?.substitutePositions || [];
   const activeSubstitutes = rotationQueue.slice(4);
 
   addSubstitutePositions(formationResult, substitutePositions, activeSubstitutes, inactivePlayers, rotationQueue);
 
+  // Ensure nextToRotateOff is always a field player (never a substitute)
+  const nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
+  
+  console.log('🔧 [FormationGenerator] Next to rotate off:', nextToRotateOff);
+  console.log('🔧 [FormationGenerator] Validation - is field player?', 
+    nextToRotateOff ? fieldPositions.some(pos => formationResult[pos] === nextToRotateOff) : 'null');
+
   return {
     formation: formationResult,
     rotationQueue: rotationQueue.map(p => p.id),
-    nextToRotateOff: rotationQueue[0]?.id || null
+    nextToRotateOff: nextToRotateOff
   };
 };
 
