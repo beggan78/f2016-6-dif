@@ -47,7 +47,7 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
   );
 }
 
-export function Button({ onClick, children, Icon, variant = 'primary', size = 'md', disabled = false, className = '' }) {
+export function Button({ onClick, children, Icon, variant = 'primary', size = 'md', disabled = false, className = '', type = 'button' }) {
   const baseStyle = "font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-150 ease-in-out flex items-center justify-center space-x-2";
 
   const sizeStyles = {
@@ -65,7 +65,7 @@ export function Button({ onClick, children, Icon, variant = 'primary', size = 'm
 
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={`${baseStyle} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}

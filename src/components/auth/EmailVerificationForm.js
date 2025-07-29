@@ -171,6 +171,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
 
         {/* Submit Button */}
         <Button
+          type="submit"
           onClick={handleSubmit}
           variant="primary"
           size="lg"

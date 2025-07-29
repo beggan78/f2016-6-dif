@@ -107,6 +107,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
 
         {/* Submit Button */}
         <Button
+          type="submit"
           onClick={handleSubmit}
           variant="primary"
           size="lg"

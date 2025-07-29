@@ -226,6 +226,7 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
 
         {/* Submit Button */}
         <Button
+          type="submit"
           onClick={handleSubmit}
           variant="primary"
           size="lg"
