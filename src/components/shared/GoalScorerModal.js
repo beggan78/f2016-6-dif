@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Users, Trophy, Sword, Shield, Goal, RotateCcw } from 'lucide-react';
+import { X, Users, Trophy, Sword, Shield, Goal, RotateCcw, ArrowDownUp } from 'lucide-react';
 import { getPlayerName } from '../../utils/playerUtils';
-import { getPlayerPositionDisplay, isPlayerOnField } from '../../utils/playerSortingUtils';
+import { getPlayerPositionDisplay, isPlayerOnField, getPlayerCurrentRole } from '../../utils/playerSortingUtils';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 const GoalScorerModal = ({
   isOpen,
@@ -37,28 +38,40 @@ const GoalScorerModal = ({
   const getPositionIcon = (player) => {
     if (!player) return RotateCcw;
     
-    const position = getPlayerPositionDisplay(player);
-    const onField = isPlayerOnField(player);
+    const role = getPlayerCurrentRole(player);
     
-    if (!onField) return RotateCcw; // Substitute
-    if (position.includes('Attacker')) return Sword;
-    if (position.includes('Defender')) return Shield;
-    if (position.includes('Goalie')) return Goal;
-    return RotateCcw;
+    switch (role) {
+      case PLAYER_ROLES.ATTACKER:
+        return Sword;
+      case PLAYER_ROLES.DEFENDER:
+        return Shield;
+      case PLAYER_ROLES.MIDFIELDER:
+        return ArrowDownUp;
+      case PLAYER_ROLES.GOALIE:
+        return Goal;
+      default:
+        return RotateCcw;
+    }
   };
 
   // Get position color classes
   const getPositionColorClasses = (player) => {
     if (!player) return 'text-gray-400';
     
-    const position = getPlayerPositionDisplay(player);
-    const onField = isPlayerOnField(player);
+    const role = getPlayerCurrentRole(player);
     
-    if (!onField) return 'text-gray-400';
-    if (position.includes('Attacker')) return 'text-red-500';
-    if (position.includes('Defender')) return 'text-blue-500';
-    if (position.includes('Goalie')) return 'text-green-500';
-    return 'text-gray-400';
+    switch (role) {
+      case PLAYER_ROLES.ATTACKER:
+        return 'text-red-500';
+      case PLAYER_ROLES.DEFENDER:
+        return 'text-blue-500';
+      case PLAYER_ROLES.MIDFIELDER:
+        return 'text-yellow-500';
+      case PLAYER_ROLES.GOALIE:
+        return 'text-green-500';
+      default:
+        return 'text-gray-400';
+    }
   };
 
   // Determine modal title and primary action based on mode

@@ -12,9 +12,10 @@ import { isIndividualMode } from '../constants/gameModes';
  */
 const GOAL_SCORING_PRIORITY = {
   ATTACKER: 1,
-  DEFENDER: 2, 
-  GOALIE: 3,
-  SUBSTITUTE: 4
+  MIDFIELDER: 2,
+  DEFENDER: 3,
+  GOALIE: 4,
+  SUBSTITUTE: 5
 };
 
 /**
@@ -23,18 +24,27 @@ const GOAL_SCORING_PRIORITY = {
  * @returns {string} Role: 'ATTACKER', 'DEFENDER', 'GOALIE', or 'SUBSTITUTE'
  */
 export const getPlayerCurrentRole = (player) => {
-  if (!player?.stats?.currentRole) {
+  if (!player?.stats) {
     return 'SUBSTITUTE';
   }
 
-  // Map stored role values to the expected format
-  const role = player.stats.currentRole;
-  
-  // Handle different possible role formats
-  if (role === 'Goalie' || role === 'GOALIE') return 'GOALIE';
-  if (role === 'Attacker' || role === 'ATTACKER') return 'ATTACKER';
-  if (role === 'Defender' || role === 'DEFENDER') return 'DEFENDER';
-  if (role === 'Substitute' || role === 'SUBSTITUTE') return 'SUBSTITUTE';
+  const { currentRole, currentStatus } = player.stats;
+
+  // Prioritize currentRole if available and not 'On Field'
+  if (currentRole && currentRole !== 'On Field') {
+    const role = currentRole.toUpperCase();
+    if (role === 'GOALIE' || role === 'ATTACKER' || role === 'DEFENDER' || role === 'MIDFIELDER' || role === 'SUBSTITUTE') {
+      return role;
+    }
+  }
+
+  // Fallback for on-field players where role is in currentStatus
+  if (currentStatus) {
+    const status = currentStatus.toUpperCase();
+    if (status === 'GOALIE' || status === 'ATTACKER' || status === 'DEFENDER' || status === 'MIDFIELDER') {
+      return status;
+    }
+  }
   
   // Default fallback
   return 'SUBSTITUTE';

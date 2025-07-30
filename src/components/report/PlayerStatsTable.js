@@ -59,11 +59,11 @@ export function PlayerStatsTable({
       render: (player) => {
         // First check current role based on formation
         const currentRole = getPlayerCurrentRole(player);
-        if (currentRole === 'GOALIE') return 'Goalie';
-        if (currentRole === 'ATTACKER') return 'Attacker';
-        if (currentRole === 'DEFENDER') return 'Defender';
-        if (currentRole === 'MIDFIELDER') return 'Midfielder';
-        if (currentRole === 'SUBSTITUTE') return 'Sub';
+        if (currentRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+        if (currentRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
+        if (currentRole === PLAYER_ROLES.DEFENDER) return 'Defender';
+        if (currentRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
+        if (currentRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
         
         // Fallback to starting role if we can't determine current role
         const role = player.stats?.startedMatchAs;
