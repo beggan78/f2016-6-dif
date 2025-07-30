@@ -1,6 +1,7 @@
 import React from 'react';
-import { Shield, Zap, Users, ArrowDownUp } from 'lucide-react';
+import { Shield, Sword, Hand, ArrowDownUp } from 'lucide-react';
 import { FORMATIONS } from '../../constants/teamConfiguration';
+import fieldImage from '../../assets/images/full-field-perspective.png';
 
 /**
  * FormationPreview - Visual preview component for tactical formations
@@ -14,13 +15,13 @@ export function FormationPreview({ formation, className = '' }) {
       case FORMATIONS.FORMATION_2_2:
         return {
           name: '2-2 Formation',
-          description: 'Classic formation with balanced attack and defense',
+          description: '2 defenders, 2 attackers',
           positions: [
-            { name: 'Left Attacker', icon: Zap, x: 25, y: 20, color: 'text-red-400' },
-            { name: 'Right Attacker', icon: Zap, x: 75, y: 20, color: 'text-red-400' },
-            { name: 'Left Defender', icon: Shield, x: 25, y: 60, color: 'text-blue-400' },
-            { name: 'Right Defender', icon: Shield, x: 75, y: 60, color: 'text-blue-400' },
-            { name: 'Goalie', icon: Users, x: 50, y: 85, color: 'text-green-400' }
+            { name: 'Left Attacker', icon: Sword, x: 38, y: 25, color: 'text-red-400' },
+            { name: 'Right Attacker', icon: Sword, x: 62, y: 25, color: 'text-red-400' },
+            { name: 'Left Defender', icon: Shield, x: 35, y: 55, color: 'text-blue-400' },
+            { name: 'Right Defender', icon: Shield, x: 65, y: 55, color: 'text-blue-400' },
+            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-green-400' }
           ],
           roles: [
             { role: 'Defenders', count: 2, color: 'text-blue-400' },
@@ -31,13 +32,13 @@ export function FormationPreview({ formation, className = '' }) {
       case FORMATIONS.FORMATION_1_2_1:
         return {
           name: '1-2-1 Formation',
-          description: 'Modern formation with midfield control',
+          description: '1 defender, 2 midfielders, 1 attacker',
           positions: [
-            { name: 'Attacker', icon: Zap, x: 50, y: 15, color: 'text-red-400' },
-            { name: 'Left Mid', icon: ArrowDownUp, x: 25, y: 40, color: 'text-yellow-400' },
-            { name: 'Right Mid', icon: ArrowDownUp, x: 75, y: 40, color: 'text-yellow-400' },
+            { name: 'Attacker', icon: Sword, x: 50, y: 20, color: 'text-red-400' },
+            { name: 'Left Mid', icon: ArrowDownUp, x: 30, y: 45, color: 'text-yellow-400' },
+            { name: 'Right Mid', icon: ArrowDownUp, x: 70, y: 45, color: 'text-yellow-400' },
             { name: 'Defender', icon: Shield, x: 50, y: 65, color: 'text-blue-400' },
-            { name: 'Goalie', icon: Users, x: 50, y: 85, color: 'text-green-400' }
+            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-green-400' }
           ],
           roles: [
             { role: 'Defender', count: 1, color: 'text-blue-400' },
@@ -62,18 +63,10 @@ export function FormationPreview({ formation, className = '' }) {
       </div>
       
       {/* Field visualization */}
-      <div className="relative bg-green-900 rounded-md border border-green-700 h-32 mb-3">
-        {/* Field lines */}
-        <div className="absolute inset-x-0 top-1/2 h-px bg-green-600"></div>
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-green-600"></div>
-        
-        {/* Center circle */}
-        <div className="absolute left-1/2 top-1/2 w-6 h-6 border border-green-600 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-        
-        {/* Goal areas */}
-        <div className="absolute inset-x-0 bottom-0 h-4 border-t border-green-600"></div>
-        <div className="absolute inset-x-0 top-0 h-4 border-b border-green-600"></div>
-        
+      <div 
+        className="relative rounded-md border border-green-700 h-48 mb-3 bg-cover bg-center"
+        style={{ backgroundImage: `url(${fieldImage})` }}
+      >
         {/* Position markers */}
         {layout.positions.map((position, index) => {
           const Icon = position.icon;
@@ -96,16 +89,7 @@ export function FormationPreview({ formation, className = '' }) {
       
       {/* Role distribution */}
       <div className="flex justify-between text-xs">
-        {layout.roles.map((role, index) => (
-          <div key={index} className="text-center">
-            <div className={`font-medium ${role.color}`}>{role.count}</div>
-            <div className="text-slate-400">{role.role}</div>
-          </div>
-        ))}
-        <div className="text-center">
-          <div className="font-medium text-green-400">1</div>
-          <div className="text-slate-400">Goalie</div>
-        </div>
+        {/* Role counts removed as requested */}
       </div>
     </div>
   );
