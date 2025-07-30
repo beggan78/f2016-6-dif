@@ -24,6 +24,12 @@ const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
  * @returns {Object} Team configuration object
  */
 const migrateFromLegacyTeamMode = (legacyTeamMode) => {
+  console.log('🔧 [Migration] migrateFromLegacyTeamMode called with:', {
+    legacyTeamMode,
+    PAIRS_7_constant: TEAM_MODES.PAIRS_7,
+    isMatch: legacyTeamMode === TEAM_MODES.PAIRS_7
+  });
+  
   const legacyMappings = {
     [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
     [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
@@ -34,13 +40,18 @@ const migrateFromLegacyTeamMode = (legacyTeamMode) => {
     [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
   };
   
+  console.log('🔧 [Migration] Available mappings:', Object.keys(legacyMappings));
+  
   const mapping = legacyMappings[legacyTeamMode];
   if (!mapping) {
     console.warn(`Unknown legacy team mode: ${legacyTeamMode}, falling back to individual_7`);
     return createTeamConfig('5v5', 7, '2-2', 'individual');
   }
   
-  return createTeamConfig(mapping.format, mapping.squadSize, mapping.formation, mapping.substitutionType);
+  console.log('🔧 [Migration] Found mapping:', mapping);
+  const result = createTeamConfig(mapping.format, mapping.squadSize, mapping.formation, mapping.substitutionType);
+  console.log('🔧 [Migration] Created teamConfig:', result);
+  return result;
 };
 
 /**
@@ -102,7 +113,13 @@ export function useGameState() {
   
   // Migration: Convert legacy teamMode to teamConfig if needed
   if (initialState.teamMode && typeof initialState.teamMode === 'string' && !initialState.teamConfig) {
+    console.log('🔧 [Migration] Converting legacy teamMode to modern teamConfig:', {
+      legacyTeamMode: initialState.teamMode,
+      teamModeType: typeof initialState.teamMode,
+      hasTeamConfig: !!initialState.teamConfig
+    });
     initialState.teamConfig = migrateFromLegacyTeamMode(initialState.teamMode);
+    console.log('🔧 [Migration] Result teamConfig:', initialState.teamConfig);
   }
   
   // Ensure teamConfig exists

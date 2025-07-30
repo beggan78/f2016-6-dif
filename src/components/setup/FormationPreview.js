@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Zap, Users } from 'lucide-react';
+import { Shield, Zap, Users, ArrowDownUp } from 'lucide-react';
 import { FORMATIONS } from '../../constants/teamConfiguration';
 
 /**
@@ -34,8 +34,8 @@ export function FormationPreview({ formation, className = '' }) {
           description: 'Modern formation with midfield control',
           positions: [
             { name: 'Attacker', icon: Zap, x: 50, y: 15, color: 'text-red-400' },
-            { name: 'Left Mid', icon: Users, x: 25, y: 40, color: 'text-yellow-400' },
-            { name: 'Right Mid', icon: Users, x: 75, y: 40, color: 'text-yellow-400' },
+            { name: 'Left Mid', icon: ArrowDownUp, x: 25, y: 40, color: 'text-yellow-400' },
+            { name: 'Right Mid', icon: ArrowDownUp, x: 75, y: 40, color: 'text-yellow-400' },
             { name: 'Defender', icon: Shield, x: 50, y: 65, color: 'text-blue-400' },
             { name: 'Goalie', icon: Users, x: 50, y: 85, color: 'text-green-400' }
           ],

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Sword, RotateCcw, Hand, Circle } from 'lucide-react';
+import { Shield, Sword, RotateCcw, Hand, ArrowDownUp } from 'lucide-react';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
 import { supportsInactiveUsers, supportsNextNextIndicators, POSITION_ROLE_MAP } from '../../constants/gameModes';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -30,7 +30,7 @@ export function getPositionIcon(position, substitutePositions) {
     case PLAYER_ROLES.DEFENDER:
       return <Shield className={ICON_STYLES.small} />;
     case PLAYER_ROLES.MIDFIELDER:
-      return <Circle className={ICON_STYLES.small} />;
+      return <ArrowDownUp className={ICON_STYLES.small} />;
     case PLAYER_ROLES.ATTACKER:
       return <Sword className={ICON_STYLES.small} />;
     case PLAYER_ROLES.GOALIE:

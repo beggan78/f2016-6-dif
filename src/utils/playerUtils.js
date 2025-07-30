@@ -171,15 +171,31 @@ export const setCaptain = (allPlayers, newCaptainId) => {
 export const hasActiveSubstitutes = (allPlayers, teamMode) => {
   // Guard against undefined/null allPlayers
   if (!allPlayers || !Array.isArray(allPlayers)) {
+    console.log('❌ [hasActiveSubstitutes] Invalid allPlayers:', allPlayers);
     return false;
   }
 
   // Import inside function to avoid circular dependency issues
   const gameModes = require('../constants/gameModes');
   
-  // Use the new utility function that handles both legacy strings and config objects
-  const substitutePositions = gameModes.getSubstitutePositions ? gameModes.getSubstitutePositions(teamMode) : [];
+  console.log('🔍 [hasActiveSubstitutes] Checking for active substitutes:', {
+    teamMode,
+    teamModeType: typeof teamMode,
+    playersCount: allPlayers.length
+  });
+  
+  // Use the modern getDefinition helper that handles both legacy strings and config objects
+  const modeDefinition = gameModes.getDefinition ? gameModes.getDefinition(teamMode) : null;
+  if (!modeDefinition) {
+    console.log('❌ [hasActiveSubstitutes] No mode definition found for teamMode:', teamMode);
+    return false;
+  }
+  
+  const substitutePositions = modeDefinition.substitutePositions || [];
+  console.log('🔍 [hasActiveSubstitutes] Substitute positions:', substitutePositions);
+  
   if (!substitutePositions.length) {
+    console.log('❌ [hasActiveSubstitutes] No substitute positions for this mode');
     return false;
   }
   
@@ -188,6 +204,18 @@ export const hasActiveSubstitutes = (allPlayers, teamMode) => {
     substitutePositions.includes(player.stats?.currentPairKey)
   );
   
+  console.log('🔍 [hasActiveSubstitutes] Found substitute players:', {
+    substitutePlayersCount: substitutePlayers.length,
+    players: substitutePlayers.map(p => ({
+      id: p.id,
+      currentPairKey: p.stats?.currentPairKey,
+      isInactive: p.stats?.isInactive
+    }))
+  });
+  
   // Check if at least one substitute is not inactive
-  return substitutePlayers.some(player => !player.stats?.isInactive);
+  const hasActive = substitutePlayers.some(player => !player.stats?.isInactive);
+  console.log('✅ [hasActiveSubstitutes] Result:', hasActive);
+  
+  return hasActive;
 };

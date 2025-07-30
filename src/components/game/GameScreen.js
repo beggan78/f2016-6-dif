@@ -195,8 +195,9 @@ export function GameScreen({
       formation,
       allPlayers,
       nextPlayerIdToSubOut,
-      modalHandlers
-    ), [teamMode, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers]
+      modalHandlers,
+      selectedFormation  // NEW: Pass selectedFormation for formation-aware position callbacks
+    ), [teamMode, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
   );
 
   const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamMode);

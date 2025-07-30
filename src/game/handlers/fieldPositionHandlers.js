@@ -7,11 +7,13 @@ export const createFieldPositionHandlers = (
   formation,
   allPlayers,
   nextPlayerIdToSubOut,
-  modalHandlers
+  modalHandlers,
+  selectedFormation = null  // NEW: Add selectedFormation parameter for formation-aware callbacks
 ) => {
   const { openFieldPlayerModal, openSubstituteModal } = modalHandlers;
   
   // Helper to get mode definition - handles both legacy strings and team config objects
+  // NOW FORMATION-AWARE!
   const getDefinition = (teamModeOrConfig) => {
     // Handle null/undefined
     if (!teamModeOrConfig) {
@@ -19,15 +21,18 @@ export const createFieldPositionHandlers = (
     }
     
     if (typeof teamModeOrConfig === 'string') {
-      // Map legacy team modes to team configurations
+      // Formation-aware legacy mappings - use selectedFormation instead of hardcoded '2-2'
+      const formationToUse = selectedFormation || '2-2'; // Default to 2-2 if no formation specified
+      console.log('📱 [FieldPositionHandlers] Using formation-aware mapping:', { teamMode, selectedFormation, formationToUse });
+      
       const legacyMappings = {
-        [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
-        [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
+        [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'pairs' },
+        [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: formationToUse, substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: formationToUse, substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: formationToUse, substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: formationToUse, substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: formationToUse, substitutionType: 'individual' }
       };
       
       const teamConfig = legacyMappings[teamModeOrConfig];
@@ -36,7 +41,14 @@ export const createFieldPositionHandlers = (
         return null;
       }
       
-      return getModeDefinition(teamConfig);
+      const modeDefinition = getModeDefinition(teamConfig);
+      console.log('📱 [FieldPositionHandlers] Mode definition loaded:', {
+        fieldPositions: modeDefinition.fieldPositions,
+        substitutePositions: modeDefinition.substitutePositions,
+        formation: modeDefinition.formation
+      });
+      
+      return modeDefinition;
     }
     return getModeDefinition(teamModeOrConfig);
   };
