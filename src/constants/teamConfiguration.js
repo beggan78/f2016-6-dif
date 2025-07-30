@@ -32,11 +32,11 @@ export const FORMATIONS = {
 // Detailed formation definitions, including status
 export const FORMATION_DEFINITIONS = {
   [FORMATIONS.FORMATION_2_2]: { 
-    label: '2-2 (2 Defenders, 2 Attackers)', 
+    label: '2-2', 
     status: 'available' 
   },
   [FORMATIONS.FORMATION_1_2_1]: { 
-    label: '1-2-1 (1 Defender, 2 Midfielders, 1 Attacker)', 
+    label: '1-2-1', 
     status: 'available' 
   },
   [FORMATIONS.FORMATION_1_3]: { 
