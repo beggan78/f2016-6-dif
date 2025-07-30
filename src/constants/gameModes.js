@@ -503,7 +503,9 @@ export function getBottomSubstitutePosition(teamModeOrConfig) {
  */
 export function initializePlayerRoleAndStatus(playerId, formation, teamModeOrConfig) {
   const definition = getDefinition(teamModeOrConfig);
-  if (!definition) return { role: null, status: null, pairKey: null };
+  if (!definition) {
+    return { role: null, status: null, pairKey: null };
+  }
   
   // Check if player is goalie
   if (playerId === formation.goalie) {
@@ -514,29 +516,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamModeOrCon
     };
   }
   
-  // Check field positions
-  for (const position of definition.fieldPositions) {
-    if (playerId === formation[position]) {
-      return {
-        role: definition.positions[position].role,
-        status: 'on_field',
-        pairKey: position
-      };
-    }
-  }
-  
-  // Check substitute positions
-  for (const position of definition.substitutePositions) {
-    if (playerId === formation[position]) {
-      return {
-        role: definition.positions[position].role,
-        status: 'substitute',
-        pairKey: position
-      };
-    }
-  }
-  
-  // Handle pairs mode (special case)
+  // Handle pairs mode FIRST (special case) - this should come before individual position checks
   const isPairs = (typeof teamModeOrConfig === 'string' && teamModeOrConfig === TEAM_MODES.PAIRS_7) ||
                   (typeof teamModeOrConfig === 'object' && teamModeOrConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS);
   
@@ -546,20 +526,47 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamModeOrCon
       const pair = formation[pairKey];
       if (pair) {
         if (playerId === pair.defender) {
-          return {
+          const result = {
             role: pairKey === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.DEFENDER,
             status: pairKey === 'subPair' ? 'substitute' : 'on_field',
             pairKey
           };
+          return result;
         }
         if (playerId === pair.attacker) {
-          return {
+          const result = {
             role: pairKey === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.ATTACKER,
             status: pairKey === 'subPair' ? 'substitute' : 'on_field',
             pairKey
           };
+          return result;
         }
       }
+    }
+    return { role: null, status: null, pairKey: null };
+  }
+  
+  // Check field positions (for individual modes)
+  for (const position of definition.fieldPositions) {
+    if (playerId === formation[position]) {
+      const result = {
+        role: definition.positions[position].role,
+        status: 'on_field',
+        pairKey: position
+      };
+      return result;
+    }
+  }
+  
+  // Check substitute positions (for individual modes)
+  for (const position of definition.substitutePositions) {
+    if (playerId === formation[position]) {
+      const result = {
+        role: definition.positions[position].role,
+        status: 'substitute',
+        pairKey: position
+      };
+      return result;
     }
   }
   

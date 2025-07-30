@@ -3,11 +3,12 @@ import { Settings, Play, Shuffle, Layers } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, getValidFormations } from '../../constants/teamConfiguration';
+import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { FormationPreview } from './FormationPreview';
+import FeatureVoteModal from '../shared/FeatureVoteModal';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -35,6 +36,24 @@ export function ConfigurationScreen({
   setCaptain,
   debugMode = false
 }) {
+  const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
+  const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
+
+  const handleFormationChange = (newFormation) => {
+    const definition = FORMATION_DEFINITIONS[newFormation];
+    if (definition && definition.status === 'coming-soon') {
+      setFormationToVoteFor(newFormation);
+      setIsVoteModalOpen(true);
+    } else {
+      updateFormationSelection(newFormation);
+    }
+  };
+
+  const handleVoteConfirm = () => {
+    console.log(`Voted for ${formationToVoteFor}`);
+    // Here you would typically send the vote to a server
+    setIsVoteModalOpen(false);
+  };
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {
       const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
@@ -163,11 +182,10 @@ export function ConfigurationScreen({
               <Select
                 id="formation"
                 value={selectedFormation}
-                onChange={e => updateFormationSelection(e.target.value)}
+                onChange={e => handleFormationChange(e.target.value)}
                 options={getValidFormations('5v5', selectedSquadIds.length).map(formation => ({
                   value: formation,
-                  label: formation === FORMATIONS.FORMATION_2_2 ? '2-2 (2 Defenders, 2 Attackers)' : 
-                         formation === FORMATIONS.FORMATION_1_2_1 ? '1-2-1 (1 Defender, 2 Midfielders, 1 Attacker)' : formation
+                  label: FORMATION_DEFINITIONS[formation].label
                 }))}
               />
               <p className="text-xs text-slate-400 mt-1">
@@ -280,6 +298,15 @@ export function ConfigurationScreen({
           🎲 Randomize Configuration (Debug)
         </Button>
       )}
+
+      <FeatureVoteModal
+        isOpen={isVoteModalOpen}
+        onClose={() => setIsVoteModalOpen(false)}
+        onConfirm={handleVoteConfirm}
+        featureName={formationToVoteFor}
+      >
+        <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
+      </FeatureVoteModal>
     </div>
   );
 }

@@ -24,7 +24,33 @@ export const GAME_CONSTANTS = {
 export const FORMATIONS = {
   FORMATION_2_2: '2-2',
   FORMATION_1_2_1: '1-2-1',
-  // Future formations: '1-3', '3-1', '2-1-1', 'diamond', etc.
+  FORMATION_1_3: '1-3',
+  FORMATION_1_1_2: '1-1-2',
+  FORMATION_2_1_1: '2-1-1',
+};
+
+// Detailed formation definitions, including status
+export const FORMATION_DEFINITIONS = {
+  [FORMATIONS.FORMATION_2_2]: { 
+    label: '2-2 (2 Defenders, 2 Attackers)', 
+    status: 'available' 
+  },
+  [FORMATIONS.FORMATION_1_2_1]: { 
+    label: '1-2-1 (1 Defender, 2 Midfielders, 1 Attacker)', 
+    status: 'available' 
+  },
+  [FORMATIONS.FORMATION_1_3]: { 
+    label: '1-3 (Coming soon - Select to up-vote)', 
+    status: 'coming-soon' 
+  },
+  [FORMATIONS.FORMATION_1_1_2]: { 
+    label: '1-1-2 (Coming soon - Select to up-vote)', 
+    status: 'coming-soon' 
+  },
+  [FORMATIONS.FORMATION_2_1_1]: { 
+    label: '2-1-1 (Coming soon - Select to up-vote)', 
+    status: 'coming-soon' 
+  },
 };
 
 // Substitution styles available
@@ -56,8 +82,8 @@ export const createTeamConfig = (format, squadSize, formation, substitutionType)
  */
 export const getValidFormations = (format, squadSize) => {
   if (format === FORMATS.FORMAT_5V5) {
-    // For 5v5, both 2-2 and 1-2-1 formations are valid for any squad size
-    return [FORMATIONS.FORMATION_2_2, FORMATIONS.FORMATION_1_2_1];
+    // For 5v5, all defined formations are returned
+    return Object.keys(FORMATION_DEFINITIONS);
   }
   
   // Future: 7v7 formations

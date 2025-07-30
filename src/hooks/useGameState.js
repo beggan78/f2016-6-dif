@@ -223,32 +223,36 @@ export function useGameState() {
       format: '5v5',
       squadSize: parseInt(teamMode.split('_')[1]) || 7,
       formation: selectedFormation,
-      substitutionType: 'individual'
+      substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
     } : teamMode;
     
     // Update player roles based on current formation
-    setAllPlayers(prev => prev.map(player => {
-      if (!selectedSquadIds.includes(player.id)) return player;
-      
-      const { role, status, pairKey } = initializePlayerRoleAndStatus(player.id, formation, formationAwareTeamMode);
-      
-      // Only update if the role/status actually changed to avoid unnecessary re-renders
-      if (player.stats.currentRole !== role || 
-          player.stats.currentStatus !== status || 
-          player.stats.currentPairKey !== pairKey) {
-        return {
-          ...player,
-          stats: {
-            ...player.stats,
-            currentRole: role,
-            currentStatus: status,
-            currentPairKey: pairKey
-          }
-        };
-      }
-      
-      return player;
-    }));
+    setAllPlayers(prev => {
+      const updated = prev.map(player => {
+        if (!selectedSquadIds.includes(player.id)) return player;
+        
+        const { role, status, pairKey } = initializePlayerRoleAndStatus(player.id, formation, formationAwareTeamMode);
+        
+        // Only update if the role/status actually changed to avoid unnecessary re-renders
+        if (player.stats.currentRole !== role || 
+            player.stats.currentStatus !== status || 
+            player.stats.currentPairKey !== pairKey) {
+          return {
+            ...player,
+            stats: {
+              ...player.stats,
+              currentRole: role,
+              currentStatus: status,
+              currentPairKey: pairKey
+            }
+          };
+        }
+        
+        return player;
+      });
+
+      return updated;
+    });
   }, [formation, teamMode, selectedFormation, selectedSquadIds]);
 
   // Function to sync match data from gameEventLogger
@@ -438,7 +442,7 @@ export function useGameState() {
           format: '5v5',
           squadSize: parseInt(teamMode.split('_')[1]) || 7,
           formation: selectedFormation,
-          substitutionType: 'individual'
+          substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
         } : teamMode;
         
         const definition = getModeDefinition(formationAwareTeamConfigForPos);
@@ -586,7 +590,7 @@ export function useGameState() {
       format: '5v5',
       squadSize: parseInt(teamMode.split('_')[1]) || 7,
       formation: selectedFormation,
-      substitutionType: 'individual'
+      substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
     } : teamMode;
     
     // Initialize player statuses and roles for the period
@@ -625,7 +629,7 @@ export function useGameState() {
         format: '5v5',
         squadSize: parseInt(teamMode.split('_')[1]) || 7,
         formation: selectedFormation,
-        substitutionType: 'individual'
+        substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
       } : teamMode;
       
       const definition = getModeDefinition(formationAwareTeamConfig);

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
-import { TEAM_MODES } from '../../constants/playerConstants';
+import { TEAM_MODES, PLAYER_ROLES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { isIndividualMode } from '../../constants/gameModes';
@@ -275,9 +275,9 @@ export function GameScreen({
     let defenderTime = stats.timeAsDefenderSeconds || 0;
     
     if (stats.currentStatus === 'on_field' && stats.currentRole) {
-      if (stats.currentRole === 'Attacker') {
+      if (stats.currentRole === PLAYER_ROLES.ATTACKER) {  // Use constant
         attackerTime += currentStintTime;
-      } else if (stats.currentRole === 'Defender') {
+      } else if (stats.currentRole === PLAYER_ROLES.DEFENDER) {  // Use constant
         defenderTime += currentStintTime;
       }
       // Note: Midfielder time is intentionally not added to attacker-defender difference

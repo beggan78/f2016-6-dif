@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Users, Trophy, Sword, Shield, Goal, RotateCcw, ArrowDownUp } from 'lucide-react';
+import { X, Users, Trophy, Sword, Shield, RotateCcw, ArrowDownUp, Hand } from 'lucide-react';
 import { getPlayerName } from '../../utils/playerUtils';
-import { getPlayerPositionDisplay, isPlayerOnField, getPlayerCurrentRole } from '../../utils/playerSortingUtils';
+import { getPlayerCurrentRole } from '../../utils/playerSortingUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 const GoalScorerModal = ({
@@ -48,7 +48,7 @@ const GoalScorerModal = ({
       case PLAYER_ROLES.MIDFIELDER:
         return ArrowDownUp;
       case PLAYER_ROLES.GOALIE:
-        return Goal;
+        return Hand;
       default:
         return RotateCcw;
     }
