@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Shield, Sword } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, Hand } from 'lucide-react';
 import { getPositionEvents } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAnimation';
@@ -33,6 +33,7 @@ export function PairsFormation({
   const renderPair = (pairKey, pairDisplayName, renderIndex) => {
     const pairData = formation[pairKey];
     if (!pairData) return null;
+
 
     const isNextOff = pairKey === nextPhysicalPairToSubOut;
     const isNextOn = pairKey === 'subPair';
@@ -125,7 +126,7 @@ export function PairsFormation({
       >
         <h3 className="text-sm font-semibold mb-1">Goalie</h3>
         <div className="flex items-center justify-between">
-          <div>{getPlayerNameById ? getPlayerNameById(goalieId) : goalieId}</div>
+          <div><Hand className={ICON_STYLES.small} /> {getPlayerNameById ? getPlayerNameById(goalieId) : goalieId}</div>
           <PlayerStatsDisplay playerId={goalieId} getPlayerTimeStats={getPlayerTimeStats} />
         </div>
         <p className={FORMATION_STYLES.helpText}>Hold to replace goalie</p>

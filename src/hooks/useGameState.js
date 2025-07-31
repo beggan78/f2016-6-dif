@@ -239,7 +239,7 @@ export function useGameState() {
             player.stats.currentPairKey !== pairKey) {
           return {
             ...player,
-            stats: {
+        stats: {
               ...player.stats,
               currentRole: role,
               currentStatus: status,

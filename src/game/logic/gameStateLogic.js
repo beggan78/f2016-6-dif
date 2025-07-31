@@ -274,7 +274,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
  * Calculate the result of swapping defender and attacker positions within a pair (PAIRS_7 mode)
  */
 export const calculatePairPositionSwap = (gameState, pairKey) => {
-  const { allPlayers, formation, teamMode } = gameState;
+  const { allPlayers, formation, teamMode, isSubTimerPaused = false } = gameState;
   
   if (teamMode !== TEAM_MODES.PAIRS_7) {
     return gameState;
@@ -289,6 +289,7 @@ export const calculatePairPositionSwap = (gameState, pairKey) => {
     return gameState;
   }
   
+  
   // Create new formation with swapped positions
   const newFormation = {
     ...formation,
@@ -298,7 +299,8 @@ export const calculatePairPositionSwap = (gameState, pairKey) => {
     }
   };
   
-  // Update player roles and stats
+  // Update player roles and stats with proper time tracking
+  const currentTimeEpoch = Date.now();
   const newAllPlayers = allPlayers.map(player => {
     if (player.id === pair.defender || player.id === pair.attacker) {
       // Determine new role based on new position
@@ -311,18 +313,28 @@ export const calculatePairPositionSwap = (gameState, pairKey) => {
         newRole = player.id === pair.defender ? PLAYER_ROLES.ATTACKER : PLAYER_ROLES.DEFENDER;
       }
       
-      // Update player with new role but maintain current status and pair key
+      
+      // Use handleRoleChange to properly manage time tracking and role transitions
+      const playerWithRoleChange = handleRoleChange(
+        player,
+        newRole,
+        currentTimeEpoch,
+        isSubTimerPaused
+      );
+      
+      // Maintain current status and pair key (handleRoleChange doesn't change these)
       return {
-        ...player,
+        ...playerWithRoleChange,
         stats: {
-          ...player.stats,
-          currentRole: newRole
-          // currentStatus and currentPairKey remain the same
+          ...playerWithRoleChange.stats,
+          currentStatus: player.stats.currentStatus,
+          currentPairKey: player.stats.currentPairKey
         }
       };
     }
     return player;
   });
+  
   
   return {
     ...gameState,

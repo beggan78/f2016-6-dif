@@ -246,12 +246,12 @@ export function GameScreen({
   const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
     if (!player) {
+      console.log('🔍 [DEBUG] getPlayerTimeStats - Player not found:', playerId);
       return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
     }
     
     const stats = player.stats;
     
-    // Debug logging for time field validation (removed non-relevant logs)
     
     // When timer is paused, only use the stored stats without calculating current stint
     if (isSubTimerPaused) {
