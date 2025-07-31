@@ -555,7 +555,7 @@ export const createSubstitutionHandlers = (
           const selectedSquadIds = gameState.selectedSquadPlayers.map(p => p.id);
           
           // Use utility function to get outfield players, then filter by status
-          const definition = MODE_DEFINITIONS[gameState.teamMode];
+          const definition = getDefinition(gameState.teamMode);
           if (!definition) return true;
 
           const sourcePlayerRole = definition.positions[fieldPlayerModal.target]?.role;
