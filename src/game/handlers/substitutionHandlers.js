@@ -26,7 +26,7 @@ export const createSubstitutionHandlers = (
     if (!teamModeOrConfig) {
       return null;
     }
-    
+
     if (typeof teamModeOrConfig === 'string') {
       // Map legacy team modes to team configurations
       const legacyMappings = {
@@ -38,13 +38,13 @@ export const createSubstitutionHandlers = (
         [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
         [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
       };
-      
+
       const teamConfig = legacyMappings[teamModeOrConfig];
       if (!teamConfig) {
         console.warn(`Unknown legacy team mode: ${teamModeOrConfig}`);
         return null;
       }
-      
+
       return getModeDefinition(teamConfig);
     }
     return getModeDefinition(teamModeOrConfig);
@@ -432,7 +432,7 @@ export const createSubstitutionHandlers = (
       currentFormation: gameState.formation,
       timestamp: new Date().toISOString()
     });
-    
+
     // Check if substitution is possible (at least one active substitute)
     if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamMode)) {
       console.log('❌ [SUB NOW] No active substitutes available');
@@ -440,7 +440,7 @@ export const createSubstitutionHandlers = (
     }
     
     console.log('✅ [SUB NOW] Active substitutes found, proceeding with substitution');
-    
+
     // Capture before-state for undo functionality
     const substitutionTimestamp = Date.now();
     const beforeFormation = { ...gameState.formation };
@@ -463,9 +463,9 @@ export const createSubstitutionHandlers = (
           substitutionResult: newGameState.substitutionResult,
           playersToHighlight: newGameState.playersToHighlight
         });
-        
+
         console.log('🟠 [SUB NOW] Applying state changes to React state...');
-        
+
         // Apply the state changes
         setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
@@ -479,9 +479,9 @@ export const createSubstitutionHandlers = (
         } else {
           console.log('⚠️ [SUB NOW] No rotation queue in new state!');
         }
-        
+
         console.log('✅ [SUB NOW] State changes applied successfully');
-        
+
         // Get players going off and coming on from substitution manager result
         const substitutionResult = newGameState.substitutionResult || {};
         const playersGoingOffIds = substitutionResult.playersGoingOffIds || [];
@@ -555,18 +555,19 @@ export const createSubstitutionHandlers = (
           const selectedSquadIds = gameState.selectedSquadPlayers.map(p => p.id);
           
           // Use utility function to get outfield players, then filter by status
+          const definition = MODE_DEFINITIONS[gameState.teamMode];
+          if (!definition) return true;
+
+          const sourcePlayerRole = definition.positions[fieldPlayerModal.target]?.role;
+
           const availablePlayers = getOutfieldPlayers(
-            gameState.allPlayers, 
-            selectedSquadIds, 
+            gameState.allPlayers,
+            selectedSquadIds,
             goalieId
           ).filter(player => {
-            // Exclude the source player
             if (player.id === sourcePlayerId) return false;
-            
-            // Find full player data for status checking
             const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
             if (!fullPlayerData) return false;
-            
             const currentPairKey = fullPlayerData.stats.currentPairKey;
             
             // Exclude substitutes based on team mode using MODE_DEFINITIONS
@@ -575,6 +576,16 @@ export const createSubstitutionHandlers = (
             
             // Use configuration-driven substitute exclusion
             return !definition.substitutePositions.includes(currentPairKey);
+          }).map(player => {
+            const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
+            const role = definition.positions[fullPlayerData.stats.currentPairKey]?.role;
+            return { ...player, role };
+          }).sort((a, b) => {
+            const aHasSameRole = a.role === sourcePlayerRole;
+            const bHasSameRole = b.role === sourcePlayerRole;
+            if (aHasSameRole && !bHasSameRole) return 1;
+            if (!aHasSameRole && bHasSameRole) return -1;
+            return 0;
           });
           
           // Update modal state to show position options

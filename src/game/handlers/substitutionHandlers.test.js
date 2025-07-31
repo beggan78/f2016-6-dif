@@ -396,19 +396,41 @@ describe('createSubstitutionHandlers', () => {
   });
 
   describe('handleChangePosition', () => {
-    it('should show position options for individual modes', () => {
+    it('should sort available players by role when showing position options', () => {
+      const formation = {
+        goalie: '7',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6',
+      };
+
+      const playersInFormation = mockPlayers.map(p => {
+        const position = Object.keys(formation).find(key => formation[key] === p.id);
+        return {
+          ...p,
+          stats: {
+            ...p.stats,
+            currentPairKey: position || null,
+          },
+        };
+      });
+
       const mockGameStateWithModal = {
         ...mockGameState,
+        formation,
+        allPlayers: playersInFormation,
         fieldPlayerModal: {
           type: 'player',
-          target: 'leftDefender',
-          playerName: 'Player 1'
+          target: 'leftDefender', // Source player is a Defender
+          playerName: 'Player 1',
+          sourcePlayerId: '1',
         },
-        selectedSquadPlayers: mockPlayers
+        selectedSquadPlayers: playersInFormation,
       };
       mockGameStateFactory.mockReturnValue(mockGameStateWithModal);
-
-      getOutfieldPlayers.mockReturnValue(mockPlayers.slice(0, 6));
 
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
@@ -420,12 +442,12 @@ describe('createSubstitutionHandlers', () => {
 
       handlers.handleChangePosition('show-options');
 
-      expect(mockDependencies.modalHandlers.openFieldPlayerModal).toHaveBeenCalledWith(
-        expect.objectContaining({
-          showPositionOptions: true,
-          availablePlayers: expect.any(Array)
-        })
-      );
+      const openModalCall = mockDependencies.modalHandlers.openFieldPlayerModal.mock.calls[0][0];
+      const availablePlayers = openModalCall.availablePlayers;
+
+      // Source player '1' is a Defender.
+      // Expected order: Attackers ('3', '4'), then the other Defender ('2').
+      expect(availablePlayers.map(p => p.id)).toEqual(['3', '4', '2']);
     });
 
     it('should show alert for pairs mode position change', () => {

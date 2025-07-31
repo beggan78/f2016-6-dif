@@ -802,7 +802,13 @@ export function PeriodSetupScreen({
             <Select
               value={formation.goalie || ""}
               onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
-              options={selectedSquadPlayers.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
+              options={[...selectedSquadPlayers].sort((a, b) => {
+                const aInactive = a.stats?.isInactive || false;
+                const bInactive = b.stats?.isInactive || false;
+                if (aInactive && !bInactive) return 1;
+                if (!aInactive && bInactive) return -1;
+                return 0;
+              }).map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
               placeholder="Select Goalie for this Period"
             />
           </div>

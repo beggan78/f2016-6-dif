@@ -1,4 +1,4 @@
-## DIF F16-6 Coach
+## Sport Wizard
 
 I need a mobile-first webapp for my soccer team that I'm coaching. Every game is played in 3 periods.
 Every period is 15 minutes long.

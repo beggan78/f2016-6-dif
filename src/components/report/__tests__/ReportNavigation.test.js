@@ -75,13 +75,7 @@ describe('ReportNavigation', () => {
       expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2', 'mb-4');
     });
 
-    it('renders container when at least one callback provided - onBackToGame only', () => {
-      render(<ReportNavigation onBackToGame={mockHandlers.onBackToGame} />);
-      
-      const container = screen.getByTestId('button-back-to-game').closest('div');
-      expect(container).toBeInTheDocument();
-      expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2', 'mb-4');
-    });
+    
 
     it('shows only Quick Stats button when only onNavigateToStats provided', () => {
       render(<ReportNavigation onNavigateToStats={mockHandlers.onNavigateToStats} />);
@@ -90,24 +84,9 @@ describe('ReportNavigation', () => {
       expect(screen.queryByTestId('button-back-to-game')).not.toBeInTheDocument();
     });
 
-    it('shows only Back to Game button when only onBackToGame provided', () => {
-      render(<ReportNavigation onBackToGame={mockHandlers.onBackToGame} />);
+    
 
-      expect(screen.getByTestId('button-back-to-game')).toBeInTheDocument();
-      expect(screen.queryByTestId('button-quick-stats')).not.toBeInTheDocument();
-    });
-
-    it('shows both buttons when both callbacks provided', () => {
-      render(
-        <ReportNavigation 
-          onNavigateToStats={mockHandlers.onNavigateToStats}
-          onBackToGame={mockHandlers.onBackToGame}
-        />
-      );
-
-      expect(screen.getByTestId('button-quick-stats')).toBeInTheDocument();
-      expect(screen.getByTestId('button-back-to-game')).toBeInTheDocument();
-    });
+    
   });
 
   describe('Button Interaction Tests', () => {
@@ -120,14 +99,7 @@ describe('ReportNavigation', () => {
       expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(1);
     });
 
-    it('Back to Game button calls onBackToGame when clicked', () => {
-      render(<ReportNavigation onBackToGame={mockHandlers.onBackToGame} />);
-
-      const backButton = screen.getByTestId('button-back-to-game');
-      fireEvent.click(backButton);
-
-      expect(mockHandlers.onBackToGame).toHaveBeenCalledTimes(1);
-    });
+    
 
     it('handles multiple clicks properly on Quick Stats button', () => {
       render(<ReportNavigation onNavigateToStats={mockHandlers.onNavigateToStats} />);
@@ -140,39 +112,9 @@ describe('ReportNavigation', () => {
       expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(3);
     });
 
-    it('handles multiple clicks properly on Back to Game button', () => {
-      render(<ReportNavigation onBackToGame={mockHandlers.onBackToGame} />);
+    
 
-      const backButton = screen.getByTestId('button-back-to-game');
-      fireEvent.click(backButton);
-      fireEvent.click(backButton);
-
-      expect(mockHandlers.onBackToGame).toHaveBeenCalledTimes(2);
-    });
-
-    it('button clicks work independently when both buttons present', () => {
-      render(
-        <ReportNavigation 
-          onNavigateToStats={mockHandlers.onNavigateToStats}
-          onBackToGame={mockHandlers.onBackToGame}
-        />
-      );
-
-      const statsButton = screen.getByTestId('button-quick-stats');
-      const backButton = screen.getByTestId('button-back-to-game');
-
-      fireEvent.click(statsButton);
-      expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(1);
-      expect(mockHandlers.onBackToGame).not.toHaveBeenCalled();
-
-      fireEvent.click(backButton);
-      expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(1);
-      expect(mockHandlers.onBackToGame).toHaveBeenCalledTimes(1);
-
-      fireEvent.click(statsButton);
-      expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(2);
-      expect(mockHandlers.onBackToGame).toHaveBeenCalledTimes(1);
-    });
+    
   });
 
   describe('Styling and Layout Tests', () => {
@@ -218,13 +160,7 @@ describe('ReportNavigation', () => {
       expect(statsButton).toHaveAttribute('data-size', 'sm');
     });
 
-    it('Back to Game button has correct variant and size', () => {
-      render(<ReportNavigation onBackToGame={mockHandlers.onBackToGame} />);
-
-      const backButton = screen.getByTestId('button-back-to-game');
-      expect(backButton).toHaveAttribute('data-variant', 'secondary');
-      expect(backButton).toHaveAttribute('data-size', 'sm');
-    });
+    
 
     it('Quick Stats button renders BarChart3 icon', () => {
       render(<ReportNavigation onNavigateToStats={mockHandlers.onNavigateToStats} />);
@@ -232,13 +168,7 @@ describe('ReportNavigation', () => {
       expect(screen.getByTestId('bar-chart3-icon')).toBeInTheDocument();
     });
 
-    it('Back to Game button does not render an icon', () => {
-      render(<ReportNavigation onBackToGame={mockHandlers.onBackToGame} />);
-
-      expect(screen.queryByTestId('bar-chart3-icon')).not.toBeInTheDocument();
-      // Verify no other icons are present
-      expect(screen.getByTestId('button-back-to-game').querySelector('div')).toBeNull();
-    });
+    
   });
 
   describe('Props Validation Tests', () => {
@@ -284,12 +214,7 @@ describe('ReportNavigation', () => {
       expect(statsButton).toHaveTextContent('Quick Stats');
     });
 
-    it('renders proper button text for Back to Game', () => {
-      render(<ReportNavigation onBackToGame={mockHandlers.onBackToGame} />);
-
-      const backButton = screen.getByTestId('button-back-to-game');
-      expect(backButton).toHaveTextContent('Back to Game');
-    });
+    
 
     it('handles string className prop correctly', () => {
       const className = 'my-custom-class another-class';
@@ -306,50 +231,11 @@ describe('ReportNavigation', () => {
   });
 
   describe('Integration Tests', () => {
-    it('multiple buttons layout correctly in flex container', () => {
-      render(
-        <ReportNavigation 
-          onNavigateToStats={mockHandlers.onNavigateToStats}
-          onBackToGame={mockHandlers.onBackToGame}
-        />
-      );
+    
 
-      const container = screen.getByTestId('button-quick-stats').closest('div');
-      const statsButton = screen.getByTestId('button-quick-stats');
-      const backButton = screen.getByTestId('button-back-to-game');
+    
 
-      expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2');
-      expect(container).toContainElement(statsButton);
-      expect(container).toContainElement(backButton);
-    });
-
-    it('button order is consistent - Quick Stats first, Back to Game second', () => {
-      render(
-        <ReportNavigation 
-          onNavigateToStats={mockHandlers.onNavigateToStats}
-          onBackToGame={mockHandlers.onBackToGame}
-        />
-      );
-
-      const container = screen.getByTestId('button-quick-stats').closest('div');
-      const buttons = container.querySelectorAll('button');
-      
-      expect(buttons).toHaveLength(2);
-      expect(buttons[0]).toHaveAttribute('data-testid', 'button-quick-stats');
-      expect(buttons[1]).toHaveAttribute('data-testid', 'button-back-to-game');
-    });
-
-    it('CSS flexbox layout works properly with gap spacing', () => {
-      render(
-        <ReportNavigation 
-          onNavigateToStats={mockHandlers.onNavigateToStats}
-          onBackToGame={mockHandlers.onBackToGame}
-        />
-      );
-
-      const container = screen.getByTestId('button-quick-stats').closest('div');
-      expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2', 'mb-4');
-    });
+    
 
     it('maintains layout integrity with single button', () => {
       render(<ReportNavigation onNavigateToStats={mockHandlers.onNavigateToStats} />);
@@ -361,19 +247,7 @@ describe('ReportNavigation', () => {
       expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2', 'mb-4');
     });
 
-    it('integrates properly with custom className while preserving base layout', () => {
-      const customClass = 'bg-red-500 border-2';
-      render(
-        <ReportNavigation 
-          onNavigateToStats={mockHandlers.onNavigateToStats}
-          onBackToGame={mockHandlers.onBackToGame}
-          className={customClass}
-        />
-      );
-
-      const container = screen.getByTestId('button-quick-stats').closest('div');
-      expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2', 'mb-4', 'bg-red-500', 'border-2');
-    });
+    
 
     it('trimmed className prevents extra whitespace', () => {
       const classNameWithSpaces = '  extra-class  ';

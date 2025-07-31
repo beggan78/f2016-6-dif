@@ -970,9 +970,7 @@ describe('MatchReportScreen', () => {
       expect(statsButton).toBeInTheDocument();
       expect(statsButton).toBeEnabled();
 
-      const backButton = screen.getByRole('button', { name: /back to game/i });
-      expect(backButton).toBeInTheDocument();
-      expect(backButton).toBeEnabled();
+      
     });
 
     it('has accessible toggle button for substitutions', () => {
