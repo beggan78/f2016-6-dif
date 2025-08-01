@@ -25,7 +25,7 @@ jest.mock('../../components/setup/ConfigurationScreen', () => {
         props.setNumPeriods(3);
         props.setPeriodDurationMinutes(15);
         props.setPeriodGoalieIds({ 1: 'p1', 2: 'p2', 3: 'p3' });
-        props.setTeamMode('individual_7'); // TEAM_MODES.INDIVIDUAL_7
+        props.setTeamMode('individual_7');
         props.setAlertMinutes(2);
         props.setOpponentTeamName('Test Opponent');
         setIsConfigured(true);
@@ -51,13 +51,32 @@ jest.mock('../../components/setup/ConfigurationScreen', () => {
 
 jest.mock('../../components/setup/PeriodSetupScreen', () => ({
   __esModule: true,
-  PeriodSetupScreen: (props) => (
-    <div data-testid="period-setup-screen">
-      <button onClick={() => props.handleStartGame()}>
-        Mock Start Game
-      </button>
-    </div>
-  ),
+  PeriodSetupScreen: (props) => {
+    const React = require('react');
+    
+    React.useEffect(() => {
+      // Set up a valid formation for individual_7 mode when the component mounts
+      if (props.setFormation && props.formation && !props.formation.leftDefender) {
+        props.setFormation({
+          goalie: 'p7',
+          leftDefender: 'p1',
+          rightDefender: 'p2',
+          leftAttacker: 'p3',
+          rightAttacker: 'p4',
+          substitute_1: 'p5',
+          substitute_2: 'p6'
+        });
+      }
+    }, [props]);
+    
+    return (
+      <div data-testid="period-setup-screen">
+        <button onClick={() => props.handleStartGame()}>
+          Mock Start Game
+        </button>
+      </div>
+    );
+  },
 }));
 
 jest.mock('../../components/game/GameScreen', () => ({
@@ -128,9 +147,18 @@ describe('Integration: Session Persistence', () => {
     // Arrange: Create a mock game state and save it to localStorage
     const mockGameState = {
       view: 'game',
-      teamMode: TEAM_MODES.PAIRS_7,
+      teamMode: TEAM_MODES.INDIVIDUAL_7,
       allPlayers: initialRoster.slice(0, 7),
       selectedSquadIds: initialRoster.slice(0, 7).map(p => p.id),
+      formation: {
+        goalie: 'p7',
+        leftDefender: 'p1',
+        rightDefender: 'p2',
+        leftAttacker: 'p3',
+        rightAttacker: 'p4',
+        substitute_1: 'p5',
+        substitute_2: 'p6'
+      }
       // ... other necessary state properties
     };
     localStorage.setItem(persistenceManager.storageKey, JSON.stringify(mockGameState));

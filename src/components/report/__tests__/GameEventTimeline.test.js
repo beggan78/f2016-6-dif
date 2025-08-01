@@ -1162,7 +1162,7 @@ describe('GameEventTimeline', () => {
           timestamp: 1000000060000,
           matchTime: '01:00',
           sequence: 1,
-          data: { sourcePlayerId: 'player1', targetPlayerId: 'player2' },
+          data: { player1Id: 'player1', player2Id: 'player2' },
           undone: false
         },
         {
@@ -1171,7 +1171,7 @@ describe('GameEventTimeline', () => {
           timestamp: 1000000120000,
           matchTime: '02:00',
           sequence: 2,
-          data: { sourcePlayerId: 'player3', targetPlayerId: 'player4' },
+          data: { player1Id: 'player3', player2Id: 'player4' },
           undone: false
         }
       ];

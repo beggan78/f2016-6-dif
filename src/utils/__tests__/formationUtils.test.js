@@ -1,5 +1,5 @@
 import { getAllPositions, getModeDefinition } from '../formationUtils';
-import { TEAM_MODES } from '../../constants/playerConstants';
+import { TEAM_MODES, PLAYER_ROLES } from '../../constants/playerConstants';
 
 describe('formationUtils', () => {
   describe('getAllPositions', () => {
@@ -34,8 +34,13 @@ describe('formationUtils', () => {
     });
 
     it('should return empty array for unknown team mode', () => {
+      // Suppress expected console warning for unknown mode
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      
       const positions = getAllPositions('UNKNOWN_MODE');
       expect(positions).toEqual([]);
+      
+      consoleSpy.mockRestore();
     });
 
     it('should return empty array for null team mode', () => {
@@ -114,8 +119,13 @@ describe('formationUtils', () => {
     });
 
     it('should return null for unknown team mode', () => {
+      // Suppress expected console warning for unknown mode
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      
       const definition = getModeDefinition('UNKNOWN_MODE');
       expect(definition).toBeNull();
+      
+      consoleSpy.mockRestore();
     });
 
     it('should return null for null team mode', () => {
@@ -203,22 +213,22 @@ describe('formationUtils', () => {
     it('should handle INDIVIDUAL_6 roles correctly', () => {
       const definition = getModeDefinition(TEAM_MODES.INDIVIDUAL_6);
       
-      expect(definition.positions.leftDefender.role).toBe('Defender');
-      expect(definition.positions.rightDefender.role).toBe('Defender');
-      expect(definition.positions.leftAttacker.role).toBe('Attacker');
-      expect(definition.positions.rightAttacker.role).toBe('Attacker');
-      expect(definition.positions.substitute_1.role).toBe('Substitute');
+      expect(definition.positions.leftDefender.role).toBe(PLAYER_ROLES.DEFENDER);
+      expect(definition.positions.rightDefender.role).toBe(PLAYER_ROLES.DEFENDER);
+      expect(definition.positions.leftAttacker.role).toBe(PLAYER_ROLES.ATTACKER);
+      expect(definition.positions.rightAttacker.role).toBe(PLAYER_ROLES.ATTACKER);
+      expect(definition.positions.substitute_1.role).toBe(PLAYER_ROLES.SUBSTITUTE);
     });
 
     it('should handle INDIVIDUAL_7 roles correctly', () => {
       const definition = getModeDefinition(TEAM_MODES.INDIVIDUAL_7);
       
-      expect(definition.positions.leftDefender.role).toBe('Defender');
-      expect(definition.positions.rightDefender.role).toBe('Defender');
-      expect(definition.positions.leftAttacker.role).toBe('Attacker');
-      expect(definition.positions.rightAttacker.role).toBe('Attacker');
-      expect(definition.positions.substitute_1.role).toBe('Substitute');
-      expect(definition.positions.substitute_2.role).toBe('Substitute');
+      expect(definition.positions.leftDefender.role).toBe(PLAYER_ROLES.DEFENDER);
+      expect(definition.positions.rightDefender.role).toBe(PLAYER_ROLES.DEFENDER);
+      expect(definition.positions.leftAttacker.role).toBe(PLAYER_ROLES.ATTACKER);
+      expect(definition.positions.rightAttacker.role).toBe(PLAYER_ROLES.ATTACKER);
+      expect(definition.positions.substitute_1.role).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(definition.positions.substitute_2.role).toBe(PLAYER_ROLES.SUBSTITUTE);
     });
 
     it('should have correct substitute count for each mode', () => {
@@ -272,11 +282,16 @@ describe('formationUtils', () => {
 
   describe('error handling and edge cases', () => {
     it('should handle case-sensitive team mode names', () => {
+      // Suppress expected console warning for legacy mode
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      
       expect(getAllPositions('PAIRS_7')).toEqual([]);
       expect(getAllPositions(TEAM_MODES.PAIRS_7)).not.toEqual([]);
       
       expect(getModeDefinition('INDIVIDUAL_6')).toBeNull();
       expect(getModeDefinition(TEAM_MODES.INDIVIDUAL_6)).not.toBeNull();
+      
+      consoleSpy.mockRestore();
     });
 
     it('should handle numeric inputs', () => {

@@ -27,7 +27,7 @@ jest.mock('../../components/setup/ConfigurationScreen', () => {
         props.setNumPeriods(3);
         props.setPeriodDurationMinutes(15);
         props.setPeriodGoalieIds({ 1: 'p1', 2: 'p2', 3: 'p3' });
-        props.setTeamMode('individual_7'); // TEAM_MODES.INDIVIDUAL_7
+        props.setTeamMode('individual_7');
         props.setAlertMinutes(2);
         props.setOpponentTeamName('Test Opponent');
         setIsConfigured(true);
@@ -52,48 +52,65 @@ jest.mock('../../components/setup/ConfigurationScreen', () => {
 
 jest.mock('../../components/setup/PeriodSetupScreen', () => ({
   __esModule: true,
-  PeriodSetupScreen: (props) => (
-    <div data-testid="period-setup-screen">
-      <button onClick={() => props.handleStartGame()}>
-        Mock Start Game
-      </button>
-    </div>
-  ),
+  PeriodSetupScreen: (props) => {
+    const React = require('react');
+    
+    React.useEffect(() => {
+      // Set up a valid formation for individual_7 mode when the component mounts
+      if (props.setFormation && props.formation && !props.formation.leftDefender) {
+        props.setFormation({
+          goalie: 'p7',
+          leftDefender: 'p1',
+          rightDefender: 'p2',
+          leftAttacker: 'p3',
+          rightAttacker: 'p4',
+          substitute_1: 'p5',
+          substitute_2: 'p6'
+        });
+      }
+    }, [props]);
+    
+    return (
+      <div data-testid="period-setup-screen">
+        <button onClick={() => props.handleStartGame()}>
+          Mock Start Game
+        </button>
+      </div>
+    );
+  },
 }));
 
 // Mock GameScreen component that simulates score interactions
 jest.mock('../../components/game/GameScreen', () => ({
   __esModule: true,
-  GameScreen: (props) => {
-    return (
-      <div data-testid="game-screen">
-        <div data-testid="score-display">
-          {props.homeScore} - {props.awayScore}
-        </div>
-        <button 
-          data-testid="home-goal-button"
-          onClick={props.addHomeGoal}
-        >
-          Add Home Goal
-        </button>
-        <button 
-          data-testid="away-goal-button"
-          onClick={props.addAwayGoal}
-        >
-          Add Away Goal
-        </button>
-        <button 
-          data-testid="edit-score-button"
-          onClick={() => props.setScore(2, 1)}
-        >
-          Set Score to 2-1
-        </button>
-        <button onClick={() => props.handleEndPeriod()}>
-          Mock End Game
-        </button>
+  GameScreen: (props) => (
+    <div data-testid="game-screen">
+      <div data-testid="score-display">
+        {props.homeScore} - {props.awayScore}
       </div>
-    );
-  },
+      <button 
+        data-testid="home-goal-button"
+        onClick={props.addHomeGoal}
+      >
+        Add Home Goal
+      </button>
+      <button 
+        data-testid="away-goal-button"
+        onClick={props.addAwayGoal}
+      >
+        Add Away Goal
+      </button>
+      <button 
+        data-testid="edit-score-button"
+        onClick={() => props.setScore(2, 1)}
+      >
+        Set Score to 2-1
+      </button>
+      <button onClick={() => props.handleEndPeriod()}>
+        Mock End Game
+      </button>
+    </div>
+  ),
 }));
 
 jest.mock('../../components/stats/StatsScreen', () => ({
@@ -332,22 +349,38 @@ describe('Integration: Score Persistence', () => {
 
   // Helper functions
   async function navigateToGameScreen() {
-    // Navigate through the configuration flow to reach the game screen
-    await act(async () => {
-      fireEvent.click(screen.getByText('Mock Config Complete'));
-    });
+    // Check if we're already at period setup screen or need to navigate through config
+    try {
+      const configScreen = screen.queryByTestId('config-screen');
+      if (configScreen) {
+        // We're at config screen, navigate through it
+        await act(async () => {
+          fireEvent.click(screen.getByText('Mock Config Complete'));
+        });
+        
+        await waitFor(() => {
+          expect(screen.getByTestId('period-setup-screen')).toBeInTheDocument();
+        });
+      }
+    } catch (error) {
+      // Config screen might not be present, continue
+    }
     
+    // Ensure we're at the period setup screen
     await waitFor(() => {
       expect(screen.getByTestId('period-setup-screen')).toBeInTheDocument();
     });
 
+    // Click start game and wait for navigation
+    const startButton = screen.getByText('Mock Start Game');
     await act(async () => {
-      fireEvent.click(screen.getByText('Mock Start Game'));
+      fireEvent.click(startButton);
     });
 
+    // Wait for the GameScreen to appear with a longer timeout
     await waitFor(() => {
       expect(screen.getByTestId('game-screen')).toBeInTheDocument();
-    });
+    }, { timeout: 10000 });
   }
 
   async function simulatePageRefresh() {

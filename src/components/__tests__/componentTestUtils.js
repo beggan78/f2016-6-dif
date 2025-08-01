@@ -150,7 +150,7 @@ export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
         rightDefender: '2',
         leftAttacker: '3',
         rightAttacker: '4',
-        substitute: '5'
+        substitute_1: '5'
       };
       
     case TEAM_MODES.INDIVIDUAL_7:

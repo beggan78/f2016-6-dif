@@ -67,7 +67,7 @@ export const calculateSubstitution = (gameState) => {
     selectedFormation,
     nextPlayerIdToSubOut,
     rotationQueue: rotationQueue?.slice(),
-    formationKeys: Object.keys(formation),
+    formationKeys: formation ? Object.keys(formation) : 'undefined',
     isSubTimerPaused
   });
 
