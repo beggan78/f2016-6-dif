@@ -42,6 +42,10 @@ jest.mock('../../../game/handlers/fieldPositionHandlers');
 jest.mock('../../../game/handlers/timerHandlers');
 jest.mock('../../../game/handlers/scoreHandlers');
 jest.mock('../../../game/handlers/goalieHandlers');
+jest.mock('../../../utils/playerUtils', () => ({
+  ...jest.requireActual('../../../utils/playerUtils'),
+  hasActiveSubstitutes: jest.fn()
+}));
 jest.mock('../formations/FormationRenderer', () => ({
   FormationRenderer: ({ 
     children, 
@@ -174,8 +178,8 @@ describe('GameScreen', () => {
       handleTouchMove: jest.fn()
     });
 
-    // Setup handler creator mocks to return properly structured objects
-    require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers.mockReturnValue({
+    // Create a persistent mock handlers object that will be returned by all calls
+    const persistentMockHandlers = {
       handleSubstitution: jest.fn(),
       handleSubstitutionWithHighlight: jest.fn(),
       handleUndo: jest.fn(),
@@ -187,7 +191,13 @@ describe('GameScreen', () => {
       handleActivatePlayer: jest.fn(),
       handleCancelSubstituteModal: jest.fn(),
       handleSetAsNextToGoIn: jest.fn()
-    });
+    };
+
+    // Store the handlers in a way that tests can access them
+    global.mockSubstitutionHandlers = persistentMockHandlers;
+
+    // Setup handler creator mocks to return the same object every time
+    require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers.mockReturnValue(persistentMockHandlers);
 
     require('../../../game/handlers/fieldPositionHandlers').createFieldPositionHandlers.mockReturnValue({
       handleFieldPlayerClick: jest.fn(),
@@ -217,11 +227,15 @@ describe('GameScreen', () => {
       handleCancelGoalieModal: jest.fn(),
       handleSelectNewGoalie: jest.fn()
     });
+
+    // Mock hasActiveSubstitutes to return true by default (button enabled)
+    require('../../../utils/playerUtils').hasActiveSubstitutes.mockReturnValue(true);
   });
 
   afterEach(() => {
     mockEnvironment.cleanup();
     jest.restoreAllMocks();
+    delete global.mockSubstitutionHandlers;
   });
 
   describe('Rendering & Props', () => {
@@ -393,14 +407,12 @@ describe('GameScreen', () => {
     });
 
     it('should handle substitution button click', async () => {
-      const mockHandlers = require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers();
-      
       render(<GameScreen {...defaultProps} />);
       
       const subButton = screen.getByText(/SUB NOW/i);
       await userInteractions.clickElement(subButton);
       
-      expect(mockHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
+      expect(global.mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
     });
 
     it('should display next player to substitute information', () => {
@@ -442,8 +454,7 @@ describe('GameScreen', () => {
       });
 
       // Mock the substitution handler to simulate the state change and highlight
-      const mockSubstitutionHandlers = require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers();
-      mockSubstitutionHandlers.handleSubstitutionWithHighlight.mockImplementation(() => {
+      global.mockSubstitutionHandlers.handleSubstitutionWithHighlight.mockImplementation(() => {
         // Simulate the state update that animateStateChange would trigger
         // This is a simplified mock, in a real scenario, animateStateChange would handle this
         // For this test, we directly call the setRecentlySubstitutedPlayers as if animation completed
@@ -470,7 +481,7 @@ describe('GameScreen', () => {
       await userEvent.click(subButton);
 
       // Expect handleSubstitutionWithHighlight to be called
-      expect(mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
+      expect(global.mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
 
       // Wait for the animation and glow to be applied
       await waitFor(() => {

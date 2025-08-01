@@ -7,9 +7,11 @@ export const FORMATION_STYLES = {
   
   // Background colors
   bgColors: {
-    field: 'bg-sky-700',        // Players on field
+    field: 'bg-sky-700',        // Players on field (default for attackers)
+    defenderField: 'bg-sky-900', // Defender players on field
     substitute: 'bg-slate-700', // Substitute players
-    inactive: 'bg-slate-800'    // Inactive players (7+ modes)
+    inactive: 'bg-slate-800',    // Inactive players (7+ modes)
+    goalie: 'bg-emerald-700'      // Goalie player (suggestions: bg-emerald-700, bg-purple-700, bg-indigo-700)
   },
   
   // Text colors
@@ -56,10 +58,19 @@ export const ICON_STYLES = {
 
 // Position display name mappings
 export const POSITION_DISPLAY_NAMES = {
+  // 2-2 Formation positions
   leftDefender: 'Left Defender',
   rightDefender: 'Right Defender', 
   leftAttacker: 'Left Attacker',
   rightAttacker: 'Right Attacker',
+  
+  // 1-2-1 Formation positions
+  defender: 'Defender',
+  left: 'Left Mid',
+  right: 'Right Mid',
+  attacker: 'Attacker',
+  
+  // Substitute positions
   substitute_1: 'Substitute',
   substitute_2: 'Substitute',
   substitute_3: 'Substitute',

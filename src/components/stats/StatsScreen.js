@@ -79,7 +79,7 @@ export function StatsScreen({
         <table className="min-w-full divide-y divide-slate-600">
           <thead className="bg-slate-800">
             <tr>
-              {['Spelare', 'Start', 'M', 'B', 'A', 'Ute', 'Back', 'Fw', 'Mv'].map(header => (
+              {['Spelare', 'Start', 'M', 'B', 'Mit', 'A', 'Ute', 'Back', 'Mid', 'Fw', 'Mv'].map(header => (
                 <th key={header} scope="col" className="px-3 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
                   {header}
                 </th>
@@ -88,7 +88,7 @@ export function StatsScreen({
           </thead>
           <tbody className="bg-slate-700 divide-y divide-slate-600">
             {squadForStats.map(player => {
-              const { goaliePoints, defenderPoints, attackerPoints } = calculateRolePoints(player);
+              const { goaliePoints, defenderPoints, midfielderPoints, attackerPoints } = calculateRolePoints(player);
               return (
                 <tr key={player.id}>
                   <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{formatPlayerName(player)}</td>
@@ -99,9 +99,11 @@ export function StatsScreen({
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(goaliePoints)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(defenderPoints)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(midfielderPoints)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(attackerPoints)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeOnFieldSeconds)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsDefenderSeconds)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsMidfielderSeconds || 0)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsAttackerSeconds)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsGoalieSeconds)}</td>
                 </tr>
@@ -116,7 +118,7 @@ export function StatsScreen({
         <ul className="space-y-1">
           <li>• Each player gets exactly 3 points total</li>
           <li>• 1 point per period as goalie (M)</li>
-          <li>• Remaining points split between defender (B) and attacker (A) based on time played</li>
+          <li>• Remaining points split between defender (B), midfielder (Mit), and attacker (A) based on time played</li>
           <li>• Points awarded in 0.5 increments</li>
         </ul>
       </div>

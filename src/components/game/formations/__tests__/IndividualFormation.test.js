@@ -109,14 +109,14 @@ describe('IndividualFormation', () => {
     
     getSubstitutePositions.mockImplementation((teamMode) => {
       if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
-        return ['substitute'];
+        return ['substitute_1'];
       }
       return ['substitute_1', 'substitute_2'];
     });
     
     getAllPositions.mockImplementation((teamMode) => {
       if (teamMode === TEAM_MODES.INDIVIDUAL_6) {
-        return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute', 'goalie'];
+        return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'goalie'];
       }
       return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2', 'goalie'];
     });
@@ -377,7 +377,7 @@ describe('IndividualFormation', () => {
           rightDefender: null,
           leftAttacker: undefined,
           rightAttacker: '4',
-          substitute: '5',
+          substitute_1: '5',
           goalie: '6'
         },
         expectedSubstitutePlayers: ['5'],

@@ -43,7 +43,7 @@ import {
 import { createMockHookSet } from './utils/mockHooks';
 import { gameStateScenarios, playerDataScenarios } from './fixtures/mockGameData';
 import { TEAM_MODES } from '../constants/playerConstants';
-import { MODE_DEFINITIONS, getPlayerCountForMode } from '../constants/gameModes';
+import { getPlayerCountForMode } from '../constants/gameModes';
 import { getAllModeTestCases, getIndividualModeTestCases } from '../game/testUtils';
 
 // Mock external dependencies

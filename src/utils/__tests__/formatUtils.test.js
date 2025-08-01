@@ -213,10 +213,10 @@ describe('generateStatsText', () => {
     const result = generateStatsText(mockSquadPlayers, 3, 1, 'Hammarby');
     
     expect(result).toContain('Final Score: Djurgården 3 - 1 Hammarby');
-    expect(result).toContain('Spelare\t\tStart\tM\tB\tA\tUte\tBack\tFw\tMv');
-    expect(result).toContain('Player One\t\tM\t2.5\t1.5\t1.5\t05:00\t02:30\t02:30\t15:00');
-    expect(result).toContain('Player Two\t\tS\t0\t4\t2\t10:00\t06:40\t03:20\t00:00');
-    expect(result).toContain('Player Three\t\tA\t0\t2.3\t2.3\t07:30\t03:45\t03:45\t00:00');
+    expect(result).toContain('Spelare\t\tStart\tM\tB\tMit\tA\tUte\tBack\tMid\tFw\tMv');
+    expect(result).toContain('Player One\t\tM\t2.5\t1.5\t0\t1.5\t05:00\t02:30\t00:00\t02:30\t15:00');
+    expect(result).toContain('Player Two\t\tS\t0\t4\t0\t2\t10:00\t06:40\t00:00\t03:20\t00:00');
+    expect(result).toContain('Player Three\t\tA\t0\t2.3\t0\t2.3\t07:30\t03:45\t00:00\t03:45\t00:00');
   });
 
   it('should handle missing opponent team name', () => {
@@ -265,15 +265,15 @@ describe('generateStatsText', () => {
 
     const result = generateStatsText(playersWithUnknownStart, 1, 0, 'Test Team');
     
-    expect(result).toContain('Unknown Player\t\t-\t0\t1.5\t1.5\t05:00\t02:30\t02:30\t00:00');
+    expect(result).toContain('Unknown Player\t\t-\t0\t1.5\t0\t1.5\t05:00\t02:30\t00:00\t02:30\t00:00');
   });
 
   it('should handle empty squad', () => {
     const result = generateStatsText([], 0, 0, 'Empty Team');
     
     expect(result).toContain('Final Score: Djurgården 0 - 0 Empty Team');
-    expect(result).toContain('Spelare\t\tStart\tM\tB\tA\tUte\tBack\tFw\tMv');
-    expect(result).toContain('------\t\t-------\t-\t-\t-\t----------\t----\t--\t--');
+    expect(result).toContain('Spelare\t\tStart\tM\tB\tMit\tA\tUte\tBack\tMid\tFw\tMv');
+    expect(result).toContain('------\t\t-------\t-\t-\t---\t-\t----------\t----\t---\t--\t--');
     // Should not contain any player data
     expect(result.split('\n')).toHaveLength(5); // Score + empty + header + separator + empty line
   });
@@ -287,7 +287,7 @@ describe('generateStatsText', () => {
 
     const result = generateStatsText([mockSquadPlayers[0]], 1, 1, 'Test');
     
-    expect(result).toContain('Player One\t\tM\t1.3\t2.8\t0.5\t'); // Rounded to 1 decimal
+    expect(result).toContain('Player One\t\tM\t1.3\t2.8\t0\t0.5\t'); // Rounded to 1 decimal
   });
 
   it('should handle very long player names', () => {
@@ -310,7 +310,7 @@ describe('generateStatsText', () => {
 
     const result = generateStatsText([playerWithLongName], 1, 0, 'Test');
     
-    expect(result).toContain('Very Long Player Name That Might Cause Issues\t\tS\t0\t1.5\t1.5\t');
+    expect(result).toContain('Very Long Player Name That Might Cause Issues\t\tS\t0\t1.5\t0\t1.5\t');
   });
 });
 

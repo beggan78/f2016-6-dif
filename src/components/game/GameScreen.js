@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { Square, Pause, Play, Undo2, RotateCcw } from 'lucide-react';
+import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
-import { TEAM_MODES } from '../../constants/playerConstants';
+import { TEAM_MODES, PLAYER_ROLES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { isIndividualMode } from '../../constants/gameModes';
@@ -49,6 +49,7 @@ export function GameScreen({
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
   teamMode,
+  selectedFormation,
   alertMinutes,
   pushModalState,
   removeModalFromStack,
@@ -84,27 +85,54 @@ export function GameScreen({
   // Determine which formation mode we're using
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
 
+  // Debug: Track state changes
+  React.useEffect(() => {
+    console.log('🔷 [GameScreen] nextPlayerIdToSubOut changed:', nextPlayerIdToSubOut, 'at', new Date().toISOString());
+  }, [nextPlayerIdToSubOut]);
+
+  React.useEffect(() => {
+    console.log('🔷 [GameScreen] rotationQueue changed:', rotationQueue?.slice(), 'at', new Date().toISOString());
+  }, [rotationQueue]);
+
+  React.useEffect(() => {
+    console.log('🔷 [GameScreen] nextPlayerToSubOut changed:', nextPlayerToSubOut, 'at', new Date().toISOString());
+  }, [nextPlayerToSubOut]);
+
   // Helper to create game state object for pure logic functions
-  const createGameState = React.useCallback(() => ({
-    formation,
-    allPlayers,
-    teamMode,
-    nextPhysicalPairToSubOut,
-    nextPlayerToSubOut,
-    nextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut,
-    rotationQueue,
-    selectedSquadPlayers,
-    fieldPlayerModal: modalHandlers.modals.fieldPlayer,
-    lastSubstitution: uiState.lastSubstitution,
-    subTimerSeconds,
-    isSubTimerPaused,
-    currentPeriodNumber,
-    matchTimerSeconds,
-    homeScore,
-    awayScore
-  }), [
-    formation, allPlayers, teamMode, nextPhysicalPairToSubOut,
+  const createGameState = React.useCallback(() => {
+    const gameState = {
+      formation,
+      allPlayers,
+      teamMode,
+      selectedFormation,
+      nextPhysicalPairToSubOut,
+      nextPlayerToSubOut,
+      nextPlayerIdToSubOut,
+      nextNextPlayerIdToSubOut,
+      rotationQueue,
+      selectedSquadPlayers,
+      fieldPlayerModal: modalHandlers.modals.fieldPlayer,
+      lastSubstitution: uiState.lastSubstitution,
+      subTimerSeconds,
+      isSubTimerPaused,
+      currentPeriodNumber,
+      matchTimerSeconds,
+      homeScore,
+      awayScore
+    };
+    
+    console.log('🔵 [GameScreen] createGameState called, current values:', {
+      nextPlayerIdToSubOut,
+      nextPlayerToSubOut,
+      rotationQueue: rotationQueue?.slice(),
+      teamMode,
+      selectedFormation,
+      timestamp: new Date().toISOString()
+    });
+    
+    return gameState;
+  }, [
+    formation, allPlayers, teamMode, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, homeScore, awayScore
@@ -167,8 +195,9 @@ export function GameScreen({
       formation,
       allPlayers,
       nextPlayerIdToSubOut,
-      modalHandlers
-    ), [teamMode, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers]
+      modalHandlers,
+      selectedFormation  // NEW: Pass selectedFormation for formation-aware position callbacks
+    ), [teamMode, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
   );
 
   const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamMode);
@@ -217,12 +246,12 @@ export function GameScreen({
   const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
     if (!player) {
+      console.log('🔍 [DEBUG] getPlayerTimeStats - Player not found:', playerId);
       return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
     }
     
     const stats = player.stats;
     
-    // Debug logging for time field validation (removed non-relevant logs)
     
     // When timer is paused, only use the stored stats without calculating current stint
     if (isSubTimerPaused) {
@@ -246,11 +275,13 @@ export function GameScreen({
     let defenderTime = stats.timeAsDefenderSeconds || 0;
     
     if (stats.currentStatus === 'on_field' && stats.currentRole) {
-      if (stats.currentRole === 'Attacker') {
+      if (stats.currentRole === PLAYER_ROLES.ATTACKER) {  // Use constant
         attackerTime += currentStintTime;
-      } else if (stats.currentRole === 'Defender') {
+      } else if (stats.currentRole === PLAYER_ROLES.DEFENDER) {  // Use constant
         defenderTime += currentStintTime;
       }
+      // Note: Midfielder time is intentionally not added to attacker-defender difference
+      // as per user requirements - midfielders should not affect the balance
     }
     
     const attackDefenderDiff = attackerTime - defenderTime;
@@ -279,6 +310,8 @@ export function GameScreen({
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber}</h2>
+
+      
 
       {/* Timers */}
       <div className="grid grid-cols-2 gap-4 text-center">
@@ -333,6 +366,7 @@ export function GameScreen({
       {/* Field & Subs Visualization */}
       <FormationRenderer
           teamMode={teamMode}
+          selectedFormation={selectedFormation}
           formation={formation}
           allPlayers={allPlayers}
           animationState={uiState.animationState}
@@ -353,7 +387,7 @@ export function GameScreen({
         <div className="flex gap-2">
           <Button 
             onClick={substitutionHandlers.handleSubstitutionWithHighlight} 
-            Icon={RotateCcw} 
+            Icon={RefreshCcw} 
             className="flex-1"
             disabled={!canSubstitute}
             title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}

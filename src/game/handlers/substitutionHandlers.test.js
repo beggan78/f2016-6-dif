@@ -80,12 +80,12 @@ describe('createSubstitutionHandlers', () => {
 
     hasActiveSubstitutes.mockImplementation((allPlayers, teamMode) => {
       // For test purposes, return true if there are any substitute players that are not inactive
-      const { MODE_DEFINITIONS } = require('../../constants/gameModes');
-      const definition = MODE_DEFINITIONS[teamMode];
-      if (!definition?.substitutePositions?.length) return false;
+      const { getSubstitutePositions } = require('../../constants/gameModes');
+      const substitutePositions = getSubstitutePositions(teamMode);
+      if (!substitutePositions.length) return false;
       
       const substitutePlayers = allPlayers.filter(player => 
-        definition.substitutePositions.includes(player.stats?.currentPairKey)
+        substitutePositions.includes(player.stats?.currentPairKey)
       );
       
       return substitutePlayers.some(player => !player.stats?.isInactive);

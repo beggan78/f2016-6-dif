@@ -39,7 +39,8 @@ jest.mock('lucide-react', () => ({
   ArrowUpCircle: ({ className, ...props }) => <div data-testid="arrow-up-icon" className={className} {...props} />,
   ArrowDownCircle: ({ className, ...props }) => <div data-testid="arrow-down-icon" className={className} {...props} />,
   Shield: ({ className, ...props }) => <div data-testid="shield-icon" className={className} {...props} />,
-  Sword: ({ className, ...props }) => <div data-testid="sword-icon" className={className} {...props} />
+  Sword: ({ className, ...props }) => <div data-testid="sword-icon" className={className} {...props} />,
+  Hand: ({ className, ...props }) => <div data-testid="hand-icon" className={className} {...props} />
 }));
 
 describe('PairsFormation', () => {

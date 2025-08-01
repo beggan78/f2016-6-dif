@@ -6,6 +6,7 @@
  */
 
 import { act, waitFor, fireEvent, within } from '@testing-library/react';
+import { TEAM_MODES } from '../../constants/playerConstants';
 
 // ===================================================================
 // COMMON INTEGRATION TEST PATTERNS
@@ -670,7 +671,7 @@ export const localStoragePersistenceHelpers = {
       currentPeriodNumber: 2,
       homeScore: 3,
       awayScore: 1,
-      teamMode: 'INDIVIDUAL_7'
+      teamMode: TEAM_MODES.INDIVIDUAL_7
     };
     
     const testTimerState = {

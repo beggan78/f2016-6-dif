@@ -17,6 +17,7 @@ export const initializePlayers = (roster) => roster.map((name, index) => ({
     // Role-specific time tracking for new points system
     timeAsDefenderSeconds: 0, // Total time spent as defender
     timeAsAttackerSeconds: 0, // Total time spent as attacker
+    timeAsMidfielderSeconds: 0, // Total time spent as midfielder (1-2-1 formation)
     // Temporary per-period tracking
     currentRole: null, // 'Goalie', 'Defender', 'Attacker'
     currentStatus: null, // 'on_field', 'substitute', 'goalie'
@@ -175,18 +176,30 @@ export const hasActiveSubstitutes = (allPlayers, teamMode) => {
 
   // Import inside function to avoid circular dependency issues
   const gameModes = require('../constants/gameModes');
-  const MODE_DEFINITIONS = gameModes.MODE_DEFINITIONS;
   
-  const definition = MODE_DEFINITIONS[teamMode];
-  if (!definition?.substitutePositions?.length) {
+  // Use the modern getDefinition helper that handles both legacy strings and config objects
+  const modeDefinition = gameModes.getDefinition ? gameModes.getDefinition(teamMode) : null;
+  if (!modeDefinition) {
     return false;
+  }
+  
+  const substitutePositions = modeDefinition.substitutePositions || [];
+
+  if (!substitutePositions.length) {
+    return false;
+  }
+  
+  // DEBUG: Show ALL player states for pairs mode
+  if (teamMode === 'pairs_7') {
   }
   
   // Find players in substitute positions
   const substitutePlayers = allPlayers.filter(player => 
-    definition.substitutePositions.includes(player.stats?.currentPairKey)
+    substitutePositions.includes(player.stats?.currentPairKey)
   );
-  
+
   // Check if at least one substitute is not inactive
-  return substitutePlayers.some(player => !player.stats?.isInactive);
+  const hasActive = substitutePlayers.some(player => !player.stats?.isInactive);
+
+  return hasActive;
 };

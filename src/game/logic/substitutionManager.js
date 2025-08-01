@@ -1,8 +1,8 @@
 import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
-import { MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
+import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
-import { getPositionRole, getFieldPositions } from './positionUtils';
+import { getPositionRole } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
 import { getCarouselMapping } from './carouselPatterns';
 
@@ -48,8 +48,70 @@ const applyActiveCascade = (formation, cascade) => {
  * Manages substitution logic for different team modes
  */
 export class SubstitutionManager {
-  constructor(teamMode) {
+  constructor(teamMode, selectedFormation = null) {
     this.teamMode = teamMode;
+    this.selectedFormation = selectedFormation;
+  }
+
+  /**
+   * Gets mode definition for this team mode, handling both legacy strings and team config objects
+   */
+  getModeConfig() {
+    console.log('⚙️ [SubstitutionManager] Getting mode config:', {
+      teamMode: this.teamMode,
+      selectedFormation: this.selectedFormation,
+      teamModeType: typeof this.teamMode,
+      isLegacyString: typeof this.teamMode === 'string',
+      timestamp: new Date().toISOString()
+    });
+
+    if (typeof this.teamMode === 'string') {
+      // Convert legacy team mode strings to team config objects
+      const legacyMappings = {
+        [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+        [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
+        [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
+      };
+      
+      const teamConfig = legacyMappings[this.teamMode];
+      if (!teamConfig) {
+        console.error('❌ [SubstitutionManager] Unknown legacy team mode:', this.teamMode);
+        throw new Error(`Unknown legacy team mode: ${this.teamMode}`);
+      }
+      
+      // Override formation if selectedFormation is provided
+      const formationAwareConfig = this.selectedFormation 
+        ? { ...teamConfig, formation: this.selectedFormation }
+        : teamConfig;
+      
+      console.log('🔄 [SubstitutionManager] Legacy mapping applied:', {
+        originalTeamMode: this.teamMode,
+        mappedConfig: teamConfig,
+        formationAwareConfig,
+        formationOverridden: !!this.selectedFormation
+      });
+      
+      const modeDefinition = getModeDefinition(formationAwareConfig);
+      
+      console.log('📋 [SubstitutionManager] Final mode definition:', {
+        fieldPositions: modeDefinition.fieldPositions,
+        substitutePositions: modeDefinition.substitutePositions,
+        formation: modeDefinition.formation,
+        substitutionType: modeDefinition.substitutionType,
+        supportsInactiveUsers: modeDefinition.supportsInactiveUsers,
+        substituteRotationPattern: modeDefinition.substituteRotationPattern
+      });
+      
+      return modeDefinition;
+    }
+    
+    const modeDefinition = getModeDefinition(this.teamMode);
+    console.log('📋 [SubstitutionManager] Mode definition (direct):', modeDefinition);
+    return modeDefinition;
   }
 
 
@@ -175,8 +237,57 @@ export class SubstitutionManager {
       isSubTimerPaused
     } = context;
 
-    const modeConfig = MODE_DEFINITIONS[this.teamMode];
+    // Validate rotation queue integrity
+    console.log('🔍 [SubstitutionManager] Queue validation - checking integrity');
+    if (!rotationQueue || rotationQueue.length === 0) {
+      console.error('❌ [SubstitutionManager] CRITICAL: Rotation queue is empty or null!', {
+        rotationQueue,
+        nextPlayerIdToSubOut,
+        teamMode: this.teamMode,
+        selectedFormation: this.selectedFormation
+      });
+      throw new Error('Rotation queue cannot be empty during substitution');
+    }
+    
+    if (!nextPlayerIdToSubOut) {
+      console.error('❌ [SubstitutionManager] CRITICAL: nextPlayerIdToSubOut is null or undefined!', {
+        nextPlayerIdToSubOut,
+        rotationQueue: rotationQueue.slice()
+      });
+      throw new Error('nextPlayerIdToSubOut cannot be null during substitution');
+    }
+
+    const modeConfig = this.getModeConfig();
     const { substitutePositions, supportsInactiveUsers, substituteRotationPattern } = modeConfig;
+    
+    // Validate that nextPlayerIdToSubOut is actually in a field position
+    const fieldPositions = modeConfig.fieldPositions;
+    const nextPlayerPosition = fieldPositions.find(pos => formation[pos] === nextPlayerIdToSubOut);
+    
+    if (!nextPlayerPosition) {
+      console.error('❌ [SubstitutionManager] CRITICAL: Next player to sub out is not in a field position!', {
+        nextPlayerIdToSubOut,
+        fieldPositions,
+        currentFormation: Object.keys(formation).reduce((acc, key) => {
+          if (fieldPositions.includes(key)) {
+            acc[key] = formation[key];
+          }
+          return acc;
+        }, {}),
+        substitutePositions: substitutePositions.reduce((acc, key) => {
+          acc[key] = formation[key];
+          return acc;
+        }, {})
+      });
+      throw new Error('Player to substitute out must be in a field position, not a substitute position');
+    }
+    
+    console.log('✅ [SubstitutionManager] Queue validation passed:', {
+      queueLength: rotationQueue.length,
+      nextPlayerIdToSubOut,
+      nextPlayerPosition,
+      isFieldPlayer: true
+    });
 
     const playerGoingOffId = nextPlayerIdToSubOut;
     const firstSubstitutePosition = substitutePositions[0]; // Get first substitute position dynamically
@@ -392,15 +503,61 @@ export class SubstitutionManager {
     const rotationQueueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
     rotationQueueManager.initialize(); // Separate active and inactive players
     
+    console.log('🔄 [SubstitutionManager] Queue rotation - Before:', {
+      playerGoingOffId,
+      originalQueue: rotationQueue.slice(),
+      nextPlayerIdToSubOut: nextPlayerIdToSubOut,
+      queueLength: rotationQueue.length,
+      queueManagerState: {
+        activeQueue: rotationQueueManager.getActiveQueue?.() || 'method not available',
+        inactiveQueue: rotationQueueManager.getInactiveQueue?.() || 'method not available'
+      },
+      timestamp: new Date().toISOString()
+    });
+    
     // Move the substituted player to the end of the queue
     rotationQueueManager.rotatePlayer(playerGoingOffId);
     const newRotationQueue = rotationQueueManager.toArray();
     const nextPlayerToSubOutId = newRotationQueue[0];
-
-    const fieldPositions = getFieldPositions(this.teamMode);
-    const nextPlayerPosition = fieldPositions.find(pos => 
+    
+    console.log('🔄 [SubstitutionManager] Queue rotation - After rotatePlayer():', {
+      newQueue: newRotationQueue.slice(),
+      nextPlayerToSubOutId,
+      playerMovedFromIndex: rotationQueue.indexOf(playerGoingOffId),
+      playerMovedToIndex: newRotationQueue.indexOf(playerGoingOffId),
+      queueLengthBefore: rotationQueue.length,
+      queueLengthAfter: newRotationQueue.length,
+      rotationSuccessful: newRotationQueue.indexOf(playerGoingOffId) !== rotationQueue.indexOf(playerGoingOffId)
+    });
+    
+    // Use formation-aware field positions (already declared in validation section above)
+    const nextPlayerPositionInNewFormation = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
+
+    console.log('🎯 [SubstitutionManager] Formation-aware position detection:', {
+      teamMode: this.teamMode,
+      selectedFormation: this.selectedFormation,
+      modeConfig: {
+        fieldPositions: modeConfig.fieldPositions,
+        substitutePositions: modeConfig.substitutePositions,
+        formation: modeConfig.formation
+      },
+      nextPlayerToSubOutId,
+      nextPlayerPositionInNewFormation,
+      newFormation: Object.keys(newFormation).reduce((acc, key) => {
+        if (fieldPositions.includes(key)) {
+          acc[key] = newFormation[key];
+        }
+        return acc;
+      }, {}),
+      positionSearchResults: fieldPositions.map(pos => ({
+        position: pos,
+        playerId: newFormation[pos],
+        isMatch: newFormation[pos] === nextPlayerToSubOutId
+      })),
+      timestamp: new Date().toISOString()
+    });
 
     // Build return object with mode-specific fields
     const result = {
@@ -408,7 +565,7 @@ export class SubstitutionManager {
       updatedPlayers,
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
-      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender',
+      newNextPlayerToSubOut: nextPlayerPositionInNewFormation || 'leftDefender',
       playersComingOnIds: [playerComingOnId],
       playersGoingOffIds: [playerGoingOffId]
     };
@@ -417,6 +574,17 @@ export class SubstitutionManager {
     if (substituteRotationPattern === 'carousel' || substituteRotationPattern === 'advanced_carousel') {
       result.newNextNextPlayerIdToSubOut = newRotationQueue[1] || null;
     }
+
+    console.log('✅ [SubstitutionManager] Final result ready:', {
+      newNextPlayerIdToSubOut: result.newNextPlayerIdToSubOut,
+      newNextPlayerToSubOut: result.newNextPlayerToSubOut,
+      newNextNextPlayerIdToSubOut: result.newNextNextPlayerIdToSubOut,
+      playersComingOnIds: result.playersComingOnIds,
+      playersGoingOffIds: result.playersGoingOffIds,
+      newRotationQueue: result.newRotationQueue?.slice(),
+      resultComplete: !!(result.newFormation && result.updatedPlayers && result.newRotationQueue),
+      timestamp: new Date().toISOString()
+    });
 
     return result;
   }
@@ -474,6 +642,6 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
 /**
  * Factory function to create substitution manager
  */
-export function createSubstitutionManager(teamMode) {
-  return new SubstitutionManager(teamMode);
+export function createSubstitutionManager(teamMode, selectedFormation = null) {
+  return new SubstitutionManager(teamMode, selectedFormation);
 }

@@ -72,6 +72,33 @@ describe('stintManager', () => {
       expect(result.lastStintStartTimeEpoch).toBe(currentTime);
     });
 
+    test('should update time stats for field player with midfielder role', () => {
+      shouldSkipTimeCalculation.mockReturnValue(false);
+      calculateCurrentStintDuration.mockReturnValue(4); // 4 seconds
+      
+      const player = createMockPlayer('1', {
+        stats: {
+          currentStatus: PLAYER_STATUS.ON_FIELD,
+          currentRole: PLAYER_ROLES.MIDFIELDER,
+          timeOnFieldSeconds: 80,
+          timeAsDefenderSeconds: 30,
+          timeAsAttackerSeconds: 25,
+          timeAsMidfielderSeconds: 20,
+          lastStintStartTimeEpoch: timeHelpers.baseTime
+        }
+      });
+      
+      const currentTime = timeHelpers.getTimeAfter(4);
+      const result = updatePlayerTimeStats(player, currentTime, false);
+      
+      expect(calculateCurrentStintDuration).toHaveBeenCalledWith(timeHelpers.baseTime, currentTime);
+      expect(result.timeOnFieldSeconds).toBe(84); // 80 + 4
+      expect(result.timeAsDefenderSeconds).toBe(30); // Unchanged
+      expect(result.timeAsAttackerSeconds).toBe(25); // Unchanged
+      expect(result.timeAsMidfielderSeconds).toBe(24); // 20 + 4
+      expect(result.lastStintStartTimeEpoch).toBe(currentTime);
+    });
+
     test('should update time stats for field player with attacker role', () => {
       shouldSkipTimeCalculation.mockReturnValue(false);
       calculateCurrentStintDuration.mockReturnValue(3); // 3 seconds

@@ -15,6 +15,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { TEAM_MODES } from '../../constants/playerConstants';
 
 // Import the component under test and related components
 // import { COMPONENT_NAME } from '../../components/path/to/COMPONENT_NAME';
@@ -474,7 +475,7 @@ describe('COMPONENT_NAME Integration Tests', () => {
     it('should maintain performance standards during component integration', async () => {
       // Arrange
       const largeGameState = createRealisticGameState({
-        teamMode: 'INDIVIDUAL_7',
+        teamMode: TEAM_MODES.INDIVIDUAL_7,
         withStatistics: true,
         withGameHistory: true
       });

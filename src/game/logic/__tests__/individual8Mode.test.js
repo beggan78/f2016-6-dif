@@ -3,7 +3,8 @@
  */
 
 import { TEAM_MODES } from '../../../constants/playerConstants';
-import { MODE_DEFINITIONS } from '../../../constants/gameModes';
+import { getModeDefinition } from '../../../constants/gameModes';
+import { SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
 import { getCarouselMapping, CAROUSEL_PATTERNS } from '../carouselPatterns';
 import { createSubstitutionManager } from '../substitutionManager';
 import { calculateGeneralSubstituteSwap } from '../gameStateLogic';
@@ -11,7 +12,13 @@ import { calculateGeneralSubstituteSwap } from '../gameStateLogic';
 describe('8-Player Individual Mode', () => {
   describe('Mode Configuration', () => {
     it('should have correct INDIVIDUAL_8 mode definition', () => {
-      const mode = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_8];
+      const teamConfig = {
+        format: '5v5',
+        squadSize: 8,
+        formation: '2-2',
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      };
+      const mode = getModeDefinition(teamConfig);
       
       expect(mode).toBeDefined();
       expect(mode.fieldPositions).toEqual(['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker']);
@@ -159,7 +166,13 @@ describe('8-Player Individual Mode', () => {
     });
 
     it('should handle 5-player mode configuration', () => {
-      const mode5 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_5];
+      const teamConfig5 = {
+        format: '5v5',
+        squadSize: 5,
+        formation: '2-2',
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      };
+      const mode5 = getModeDefinition(teamConfig5);
       expect(mode5.substituteRotationPattern).toBe('none');
       expect(mode5.substitutePositions).toEqual([]);
       expect(mode5.expectedCounts).toEqual({ outfield: 4, onField: 4 });
@@ -168,13 +181,25 @@ describe('8-Player Individual Mode', () => {
 
   describe('Backwards Compatibility', () => {
     it('should not break existing 6-player mode', () => {
-      const mode6 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_6];
+      const teamConfig6 = {
+        format: '5v5',
+        squadSize: 6,
+        formation: '2-2',
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      };
+      const mode6 = getModeDefinition(teamConfig6);
       expect(mode6.substituteRotationPattern).toBe('simple');
       expect(mode6.substitutePositions).toEqual(['substitute_1']);
     });
 
     it('should not break existing 7-player mode', () => {
-      const mode7 = MODE_DEFINITIONS[TEAM_MODES.INDIVIDUAL_7];
+      const teamConfig7 = {
+        format: '5v5',
+        squadSize: 7,
+        formation: '2-2',
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      };
+      const mode7 = getModeDefinition(teamConfig7);
       expect(mode7.substituteRotationPattern).toBe('carousel');
       expect(mode7.substitutePositions).toEqual(['substitute_1', 'substitute_2']);
     });
