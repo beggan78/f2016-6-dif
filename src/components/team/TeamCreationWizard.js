@@ -94,10 +94,15 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
   // Handle create new club from autocomplete
   const handleCreateNewClub = useCallback((clubName) => {
-    setClubForm({ 
-      name: clubName,        // Use as display name (prevents validation error)
-      shortName: '', 
-      longName: clubName     // Also use as full name (user can modify both)
+    const displayName = clubName
+      .split(' ')
+      .filter(word => word !== word.toUpperCase())
+      .join(' ');
+
+    setClubForm({
+      name: displayName.trim() || clubName,
+      shortName: '',
+      longName: clubName
     });
     setCurrentStep(STEPS.CLUB_CREATION);
   }, []);

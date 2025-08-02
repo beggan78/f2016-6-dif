@@ -147,11 +147,19 @@ CREATE TABLE public.club (
   created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
 
+-- User profile table
+CREATE TABLE public.user_profile (
+  id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  name text CHECK (char_length(name) >= 2 AND char_length(name) <= 100),
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 -- Club user membership table
 CREATE TABLE public.club_user (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   club_id uuid REFERENCES public.club(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES public.user_profile(id) ON DELETE CASCADE NOT NULL,
   role public.club_user_role DEFAULT 'member'::public.club_user_role NOT NULL,
   status public.club_user_status DEFAULT 'active'::public.club_user_status NOT NULL,
   joined_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
@@ -177,7 +185,7 @@ CREATE TABLE public.team (
 CREATE TABLE public.team_user (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   team_id uuid REFERENCES public.team(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES public.user_profile(id) ON DELETE CASCADE NOT NULL,
   role public.user_role DEFAULT 'parent'::public.user_role NOT NULL,
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -188,11 +196,11 @@ CREATE TABLE public.team_user (
 CREATE TABLE public.team_access_request (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   team_id uuid REFERENCES public.team(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES public.user_profile(id) ON DELETE CASCADE NOT NULL,
   requested_role public.user_role DEFAULT 'parent'::public.user_role NOT NULL,
   message text CHECK (char_length(message) <= 1000),
   status public.request_status DEFAULT 'pending'::public.request_status NOT NULL,
-  reviewed_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  reviewed_by uuid REFERENCES public.user_profile(id) ON DELETE SET NULL,
   reviewed_at timestamp with time zone,
   review_notes text CHECK (char_length(review_notes) <= 500),
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -358,14 +366,6 @@ CREATE TABLE public.player_match_stats (
   CONSTRAINT valid_substitutions CHECK (
     substitutions_in >= 0 AND substitutions_out >= 0
   )
-);
-
--- User profile table
-CREATE TABLE public.user_profile (
-  id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  name text CHECK (char_length(name) >= 2 AND char_length(name) <= 100),
-  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 ---------------------------------------------------------------------------
@@ -652,9 +652,15 @@ CREATE POLICY "Team members can view team memberships" ON public.team_user
     public.is_team_member(team_id, auth.uid())
   );
 
-CREATE POLICY "Users can add themselves as coaches" ON public.team_user
+CREATE POLICY "Team user management access" ON public.team_user
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (
+    -- Users can add themselves as coaches (existing functionality)
+    user_id = auth.uid()
+    OR
+    -- Team managers can add approved users to their teams
+    public.is_team_manager(team_id, auth.uid())
+  );
 
 CREATE POLICY "Team admins can manage memberships" ON public.team_user
   FOR UPDATE TO authenticated
@@ -711,9 +717,29 @@ CREATE POLICY "Team coaches can manage players" ON public.player
   );
 
 -- User profile policies
-CREATE POLICY "Users can view own profile" ON public.user_profile
+CREATE POLICY "Team-aware profile access" ON public.user_profile
   FOR SELECT TO authenticated
-  USING (auth.uid() = id);
+  USING (
+    -- Users can always view their own profile
+    auth.uid() = id 
+    OR
+    -- Team members can view profiles of other team members
+    id IN (
+      SELECT tu.user_id 
+      FROM public.team_user tu
+      WHERE tu.team_id IN (
+        SELECT team_id FROM public.team_user 
+        WHERE user_id = auth.uid()
+      )
+    )
+    OR
+    -- Team managers can view profiles of users requesting access to their teams
+    id IN (
+      SELECT tar.user_id 
+      FROM public.team_access_request tar
+      WHERE public.is_team_manager(tar.team_id, auth.uid())
+    )
+  );
 
 -- Allow profile creation during signup with more permissive INSERT policy
 CREATE POLICY "Users can insert own profile during signup" ON public.user_profile

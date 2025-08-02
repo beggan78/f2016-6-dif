@@ -189,8 +189,7 @@ export function ConfigurationScreen({
     <div className="space-y-4">
       {isAuthenticated && currentTeam && (
         <div className="p-3 bg-sky-600/20 border border-sky-500 rounded-lg">
-          <div className="text-sky-200 font-medium">Current Team: {currentTeam.name}</div>
-          <div className="text-sky-300 text-sm">{currentTeam.club?.name}</div>
+          <div className="text-sky-200 font-medium">Team: {currentTeam.club?.name} {currentTeam.name}</div>
         </div>
       )}
 
