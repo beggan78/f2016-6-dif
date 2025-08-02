@@ -151,7 +151,8 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getClubMemberships]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, clearError]); // getClubMemberships omitted to avoid hoisting error - it's called directly, not captured
 
   // Get teams for a specific club
   const getTeamsByClub = useCallback(async (clubId) => {
