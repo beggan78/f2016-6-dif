@@ -12,7 +12,7 @@ const VIEWS = {
 
 export function TeamManagement() {
   const { user } = useAuth();
-  const { hasTeams, loading: teamLoading } = useTeam();
+  const { hasTeams, hasClubs, loading: teamLoading } = useTeam();
   const [currentView, setCurrentView] = useState(VIEWS.SELECTOR);
 
   // Only show loading while initial team fetch is happening and we don't have any result yet
@@ -45,8 +45,8 @@ export function TeamManagement() {
     setCurrentView(VIEWS.SELECTOR);
   };
 
-  // Show wizard if user has no teams or if explicitly requested
-  if (!hasTeams || currentView === VIEWS.WIZARD) {
+  // Show wizard if user needs to create/join clubs or teams, or if explicitly requested
+  if (!hasClubs || (hasClubs && !hasTeams) || currentView === VIEWS.WIZARD) {
     return (
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-sky-300 flex items-center">

@@ -1,7 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Users, Building, UserPlus, Check, Plus } from 'lucide-react';
 import { Button, Input } from '../shared/UI';
 import { ClubAutocomplete } from './ClubAutocomplete';
+import { ClubJoinModal } from './ClubJoinModal';
+import { TeamAccessRequestModal } from './TeamAccessRequestModal';
 import { useTeam } from '../../contexts/TeamContext';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 
@@ -21,6 +23,9 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     createTeam, 
     createPlayer,
     switchCurrentTeam,
+    isClubCreator,
+    hasClubs,
+    userClubs,
     loading, 
     error, 
     clearError 
@@ -32,6 +37,10 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
   const [clubTeams, setClubTeams] = useState([]);
   const [createdTeam, setCreatedTeam] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [showClubJoinModal, setShowClubJoinModal] = useState(false);
+  const [clubToJoin, setClubToJoin] = useState(null);
+  const [showTeamAccessModal, setShowTeamAccessModal] = useState(false);
+  const [selectedTeamForAccess, setSelectedTeamForAccess] = useState(null);
 
   // Form state
   const [clubForm, setClubForm] = useState({ name: '', shortName: '', longName: '' });
@@ -44,17 +53,44 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     clearError();
   }, [clearError]);
 
+  // Initialize wizard step based on user's club status
+  useEffect(() => {
+    if (hasClubs && userClubs.length === 1) {
+      // If user has exactly one club, auto-select it and go to team selection
+      const clubMembership = userClubs[0];
+      const club = clubMembership.club; // Extract actual club object
+      setSelectedClub(club);
+      getTeamsByClub(club.id).then(teams => {
+        setClubTeams(teams);
+        setCurrentStep(STEPS.TEAM_SELECTION);
+      });
+    } else if (hasClubs && userClubs.length > 1) {
+      // If user has multiple clubs, they need to choose which one
+      // We could show a club selector, but for now let them use the regular flow
+      setCurrentStep(STEPS.CLUB_SELECTION);
+    } else {
+      // If user has no clubs, start with club selection
+      setCurrentStep(STEPS.CLUB_SELECTION);
+    }
+  }, [hasClubs, userClubs, getTeamsByClub]);
+
   // Handle club selection from autocomplete
   const handleClubSelect = useCallback(async (club) => {
-    setSelectedClub(club);
     clearFormErrors();
     
-    // Load teams for this club
-    const teams = await getTeamsByClub(club.id);
-    setClubTeams(teams);
-    
-    setCurrentStep(STEPS.TEAM_SELECTION);
-  }, [getTeamsByClub, clearFormErrors]);
+    // Check if user is the creator of this club
+    if (isClubCreator(club)) {
+      // User created this club, proceed directly
+      setSelectedClub(club);
+      const teams = await getTeamsByClub(club.id);
+      setClubTeams(teams);
+      setCurrentStep(STEPS.TEAM_SELECTION);
+    } else {
+      // User didn't create this club, show join modal
+      setClubToJoin(club);
+      setShowClubJoinModal(true);
+    }
+  }, [getTeamsByClub, clearFormErrors, isClubCreator]);
 
   // Handle create new club from autocomplete
   const handleCreateNewClub = useCallback((clubName) => {
@@ -89,12 +125,11 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     }
   }, [clubForm, createClub, clearFormErrors]);
 
-  // Handle existing team selection
-  const handleExistingTeamSelect = useCallback(async (team) => {
-    // Switch to this team and complete
-    await switchCurrentTeam(team.id);
-    onComplete();
-  }, [switchCurrentTeam, onComplete]);
+  // Handle existing team selection - show team access request modal
+  const handleExistingTeamSelect = useCallback((team) => {
+    setSelectedTeamForAccess(team);
+    setShowTeamAccessModal(true);
+  }, []);
 
   // Handle team creation
   const handleTeamCreation = useCallback(async () => {
@@ -147,6 +182,43 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
       onComplete();
     }, 1500);
   }, [onComplete]);
+
+  // Handle club join modal success
+  const handleClubJoinSuccess = useCallback(async () => {
+    if (!clubToJoin) return;
+    
+    // Close modal
+    setShowClubJoinModal(false);
+    
+    // Set as selected club and proceed to team selection
+    setSelectedClub(clubToJoin);
+    const teams = await getTeamsByClub(clubToJoin.id);
+    setClubTeams(teams);
+    setCurrentStep(STEPS.TEAM_SELECTION);
+    
+    // Clear modal state
+    setClubToJoin(null);
+  }, [clubToJoin, getTeamsByClub]);
+
+  // Handle club join modal close
+  const handleClubJoinClose = useCallback(() => {
+    setShowClubJoinModal(false);
+    setClubToJoin(null);
+  }, []);
+
+  // Handle team access request modal success
+  const handleTeamAccessSuccess = useCallback(() => {
+    // Close modal and complete wizard
+    setShowTeamAccessModal(false);
+    setSelectedTeamForAccess(null);
+    onComplete();
+  }, [onComplete]);
+
+  // Handle team access request modal close
+  const handleTeamAccessClose = useCallback(() => {
+    setShowTeamAccessModal(false);
+    setSelectedTeamForAccess(null);
+  }, []);
 
   const renderClubSelection = () => (
     <div className="space-y-4">
@@ -448,14 +520,34 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
   };
 
   return (
-    <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
-      {error && (
-        <div className="mb-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
-          <p className="text-rose-200 text-sm">{error}</p>
-        </div>
+    <>
+      <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
+        {error && (
+          <div className="mb-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
+            <p className="text-rose-200 text-sm">{error}</p>
+          </div>
+        )}
+        
+        {renderCurrentStep()}
+      </div>
+
+      {/* Club Join Modal */}
+      {showClubJoinModal && clubToJoin && (
+        <ClubJoinModal
+          club={clubToJoin}
+          onSuccess={handleClubJoinSuccess}
+          onClose={handleClubJoinClose}
+        />
       )}
-      
-      {renderCurrentStep()}
-    </div>
+
+      {/* Team Access Request Modal */}
+      {showTeamAccessModal && selectedTeamForAccess && (
+        <TeamAccessRequestModal
+          team={selectedTeamForAccess}
+          onSuccess={handleTeamAccessSuccess}
+          onClose={handleTeamAccessClose}
+        />
+      )}
+    </>
   );
 }

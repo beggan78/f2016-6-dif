@@ -4,10 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard,, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile, signOut } = useAuth();
-  const { hasTeams, currentTeam } = useTeam();
+  const { hasTeams, currentTeam, isTeamAdmin, canManageTeam } = useTeam();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -66,8 +66,9 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const handleTeamManagement = () => {
     setIsOpen(false);
-    // TODO: Navigate to team management view
-    console.log('Team management clicked');
+    if (currentTeam && onOpenTeamAdminModal) {
+      onOpenTeamAdminModal(currentTeam);
+    }
   };
 
   const handleMatchHistory = () => {
@@ -171,7 +172,21 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                       className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
                     >
                       <div className="flex items-center justify-between">
-                        <span>Manage Teams</span>
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {isTeamAdmin ? 'Admin Panel' : canManageTeam ? 'Manage Team' : 'Team Info'}
+                          </span>
+                          {isTeamAdmin && (
+                            <span className="text-xs bg-emerald-600 text-emerald-100 px-2 py-0.5 rounded-full">
+                              Admin
+                            </span>
+                          )}
+                          {canManageTeam && !isTeamAdmin && (
+                            <span className="text-xs bg-sky-600 text-sky-100 px-2 py-0.5 rounded-full">
+                              Coach
+                            </span>
+                          )}
+                        </div>
                         <span className="text-xs text-sky-400">
                           {currentTeam ? currentTeam.name : `${hasTeams ? 'Multiple' : 'None'}`}
                         </span>

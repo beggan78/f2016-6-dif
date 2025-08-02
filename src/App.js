@@ -27,6 +27,7 @@ import { TeamProvider } from './contexts/TeamContext';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
+import { TeamAccessRequestModal } from './components/team/TeamAccessRequestModal';
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
@@ -52,6 +53,8 @@ function AppContent() {
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
+  const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   
   // Create a ref to store the pushModalState function to avoid circular dependency
   const pushModalStateRef = useRef(null);
@@ -242,6 +245,29 @@ function AppContent() {
   const handleNavigateToTacticalBoard = () => {
     gameState.setView(VIEWS.TACTICAL_BOARD);
   };
+
+  // Team admin modal handlers
+  const handleOpenTeamAdminModal = useCallback((team) => {
+    setSelectedTeamForAdmin(team);
+    setShowTeamAdminModal(true);
+    // Add modal to browser back button handling
+    pushModalState(() => {
+      setShowTeamAdminModal(false);
+      setSelectedTeamForAdmin(null);
+    });
+  }, [pushModalState]);
+
+  const handleCloseTeamAdminModal = useCallback(() => {
+    setShowTeamAdminModal(false);
+    setSelectedTeamForAdmin(null);
+    removeModalFromStack();
+  }, [removeModalFromStack]);
+
+  const handleTeamAdminSuccess = useCallback((message) => {
+    // Optional: Show success message
+    console.log('Team admin action successful:', message);
+    // Keep modal open for continued management
+  }, []);
 
   const handleNavigateFromTacticalBoard = () => {
     // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
@@ -435,6 +461,7 @@ function AppContent() {
             selectedSquadIds={gameState.selectedSquadIds}
             setView={gameState.setView}
             authModal={authModal}
+            onOpenTeamAdminModal={handleOpenTeamAdminModal}
           />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
@@ -486,6 +513,16 @@ function AppContent() {
           onClose={authModal.closeModal}
           initialMode={authModal.mode}
         />
+
+        {/* Team Admin Modal */}
+        {showTeamAdminModal && selectedTeamForAdmin && (
+          <TeamAccessRequestModal
+            team={selectedTeamForAdmin}
+            onClose={handleCloseTeamAdminModal}
+            onSuccess={handleTeamAdminSuccess}
+            isStandaloneMode={true}
+          />
+        )}
 
         {/* Profile Completion Prompt */}
         {needsProfileCompletion && (

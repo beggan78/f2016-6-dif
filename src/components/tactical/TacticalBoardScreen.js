@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '../shared/UI';
+// import { ArrowLeft } from 'lucide-react';
+// import { Button } from '../shared/UI';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 
@@ -15,7 +15,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
   useEffect(() => {
     const savedPreferences = persistenceManager.loadState();
     setPitchMode(savedPreferences.pitchMode);
-  }, []);
+  }, [persistenceManager]);
 
   const handleBackPress = useCallback(() => {
     onNavigateBack();

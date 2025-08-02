@@ -16,6 +16,7 @@ export const TeamProvider = ({ children }) => {
   const { user, userProfile } = useAuth();
   const [currentTeam, setCurrentTeam] = useState(null);
   const [userTeams, setUserTeams] = useState([]);
+  const [userClubs, setUserClubs] = useState([]);
   const [teamPlayers, setTeamPlayers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -104,7 +105,7 @@ export const TeamProvider = ({ children }) => {
     }
   }, []);
 
-  // Create a new club
+  // Create a new club using atomic function
   const createClub = useCallback(async (clubData) => {
     if (!user) {
       setError('Must be logged in to create club');
@@ -115,41 +116,34 @@ export const TeamProvider = ({ children }) => {
       setLoading(true);
       clearError();
 
-      // Step 1: Create the club
-      const { data: club, error: clubError } = await supabase
-        .from('club')
-        .insert([{
-          name: clubData.name,
-          short_name: clubData.shortName || null,
-          long_name: clubData.longName || null
-        }])
-        .select()
-        .single();
+      // Use atomic creation function to ensure creator becomes admin
+      const { data, error } = await supabase.rpc('create_club_with_admin', {
+        club_name: clubData.name,
+        club_short_name: clubData.shortName || null,
+        club_long_name: clubData.longName || null
+      });
 
-      if (clubError) {
-        console.error('Error creating club:', clubError);
+      if (error) {
+        console.error('Error calling create_club_with_admin:', error);
         setError('Failed to create club');
         return null;
       }
 
-      // Step 2: Add creator as club admin
-      const { error: membershipError } = await supabase
-        .from('club_user')
-        .insert([{
-          club_id: club.id,
-          user_id: user.id,
-          role: 'admin',
-          status: 'active'
-        }]);
-
-      if (membershipError) {
-        console.error('Error adding club admin membership:', membershipError);
-        // Note: We don't fail the entire operation since the club was created successfully
-        // The user can manually join the club if needed
-        console.warn('Club created but admin membership failed. User may need to manually join club.');
+      // Check if the function returned an error result
+      if (!data.success) {
+        console.error('Create club function failed:', data.error);
+        setError(data.message || 'Failed to create club');
+        return null;
       }
 
-      return club;
+      console.log('Club created successfully:', data.message);
+      
+      // Refresh user club memberships to reflect the new admin membership
+      const updatedClubs = await getClubMemberships();
+      setUserClubs(updatedClubs);
+      console.log('Updated club memberships after creation:', updatedClubs.length, 'clubs');
+      
+      return data.club;
     } catch (err) {
       console.error('Exception in createClub:', err);
       setError('Failed to create club');
@@ -157,7 +151,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, getClubMemberships]);
 
   // Get teams for a specific club
   const getTeamsByClub = useCallback(async (clubId) => {
@@ -181,7 +175,7 @@ export const TeamProvider = ({ children }) => {
     }
   }, []);
 
-  // Create a new team
+  // Create a new team using atomic function
   const createTeam = useCallback(async (teamData) => {
     if (!user) {
       setError('User must be authenticated to create a team');
@@ -192,41 +186,32 @@ export const TeamProvider = ({ children }) => {
       setLoading(true);
       clearError();
 
-      // Create the team
-      const { data: team, error: teamError } = await supabase
-        .from('team')
-        .insert([{
-          club_id: teamData.clubId,
-          name: teamData.name,
-          configuration: teamData.configuration || {}
-        }])
-        .select()
-        .single();
+      // Use atomic creation function to ensure creator becomes admin
+      const { data, error } = await supabase.rpc('create_team_with_admin', {
+        p_club_id: teamData.clubId,
+        team_name: teamData.name,
+        team_config: teamData.configuration || {}
+      });
 
-      if (teamError) {
-        console.error('Error creating team:', teamError);
+      if (error) {
+        console.error('Error calling create_team_with_admin:', error);
         setError('Failed to create team');
         return null;
       }
 
-      // Create team_user relationship (user becomes admin)
-      const { error: relationError } = await supabase
-        .from('team_user')
-        .insert([{
-          team_id: team.id,
-          user_id: user.id,
-          role: 'admin'
-        }]);
-
-      if (relationError) {
-        console.error('Error creating team-user relationship:', relationError);
-        // Don't fail completely, team was created successfully
+      // Check if the function returned an error result
+      if (!data.success) {
+        console.error('Create team function failed:', data.error);
+        setError(data.message || 'Failed to create team');
+        return null;
       }
+
+      console.log('Team created successfully:', data.message);
 
       // Refresh user teams
       await getUserTeams();
 
-      return team;
+      return data.team;
     } catch (err) {
       console.error('Exception in createTeam:', err);
       setError('Failed to create team');
@@ -319,27 +304,59 @@ export const TeamProvider = ({ children }) => {
     localStorage.setItem('currentTeamId', teamId);
   }, [userTeams, getTeamPlayers]);
 
-  // Initialize team data when user is authenticated
+  // Get user's club memberships
+  const getClubMemberships = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('club_user')
+        .select(`
+          id, role, status, joined_at,
+          club:club_id (id, name, short_name, long_name)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('joined_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching club memberships:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (err) {
+      console.error('Exception in getClubMemberships:', err);
+      return [];
+    }
+  }, [user]);
+
+  // Initialize team and club data when user is authenticated
   useEffect(() => {
     if (user && userProfile && !initializationDone.current) {
       initializationDone.current = true;
       
-      getUserTeams().then((teams) => {
+      // Load both teams and clubs in parallel
+      Promise.all([
+        getUserTeams(),
+        getClubMemberships()
+      ]).then(([teams, clubs]) => {
         console.log('Teams loaded:', teams.length);
+        console.log('Clubs loaded:', clubs.length);
+        setUserClubs(clubs);
         // Team switching logic will be handled by separate useEffect
       }).catch((error) => {
-        console.error('Error initializing teams:', error);
-        setError('Failed to initialize team data');
+        console.error('Error initializing user data:', error);
+        setError('Failed to initialize user data');
       });
     } else if (!user) {
-      // Clear team state when user is not authenticated
+      // Clear all user state when user is not authenticated
       initializationDone.current = false;
       setCurrentTeam(null);
       setUserTeams([]);
+      setUserClubs([]);
       setTeamPlayers([]);
       localStorage.removeItem('currentTeamId');
     }
-  }, [user, userProfile, getUserTeams]);
+  }, [user, userProfile, getUserTeams, getClubMemberships]);
 
   // Handle team switching when userTeams changes
   useEffect(() => {
@@ -377,11 +394,31 @@ export const TeamProvider = ({ children }) => {
   // CLUB MEMBERSHIP FUNCTIONS
   // ============================================================================
 
-  // Request membership in a club
-  const requestClubMembership = useCallback(async (clubId, message = '') => {
+  // Join a club directly (self-registration model)
+  const joinClub = useCallback(async (clubId) => {
     try {
       setLoading(true);
       clearError();
+
+      // Check if user is already a member of this club
+      const { data: existingMembership, error: checkError } = await supabase
+        .from('club_user')
+        .select('id, role, status')
+        .eq('club_id', clubId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error checking existing club membership:', checkError);
+        setError('Failed to check club membership');
+        return null;
+      }
+
+      if (existingMembership) {
+        console.log('User is already a member of this club:', existingMembership);
+        setError('You are already a member of this club');
+        return null;
+      }
 
       const { data, error } = await supabase
         .from('club_user')
@@ -389,7 +426,7 @@ export const TeamProvider = ({ children }) => {
           club_id: clubId,
           user_id: user.id,
           role: 'member',
-          status: 'pending'
+          status: 'active'
         }])
         .select(`
           id, role, status, created_at,
@@ -398,45 +435,30 @@ export const TeamProvider = ({ children }) => {
         .single();
 
       if (error) {
-        console.error('Error requesting club membership:', error);
-        setError('Failed to request club membership');
+        console.error('Error joining club:', error);
+        // Handle specific duplicate key error
+        if (error.code === '23505') {
+          setError('You are already a member of this club');
+        } else {
+          setError('Failed to join club');
+        }
         return null;
       }
 
+      // Refresh user clubs after successful join
+      const updatedClubs = await getClubMemberships();
+      setUserClubs(updatedClubs);
+
       return data;
     } catch (err) {
-      console.error('Exception in requestClubMembership:', err);
-      setError('Failed to request club membership');
+      console.error('Exception in joinClub:', err);
+      setError('Failed to join club');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, getClubMemberships]);
 
-  // Get user's club memberships
-  const getClubMemberships = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('club_user')
-        .select(`
-          id, role, status, joined_at,
-          club:club_id (id, name, short_name, long_name)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('joined_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching club memberships:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (err) {
-      console.error('Exception in getClubMemberships:', err);
-      return [];
-    }
-  }, [user]);
 
   // Get pending club membership requests (for club admins)
   const getPendingClubRequests = useCallback(async () => {
@@ -759,10 +781,102 @@ export const TeamProvider = ({ children }) => {
     }
   }, [user, clearError]);
 
+  // Get team members (for admins to manage roles)
+  const getTeamMembers = useCallback(async (teamId) => {
+    try {
+      const { data, error } = await supabase
+        .from('team_user')
+        .select(`
+          id, role, created_at,
+          user:user_id (id, name)
+        `)
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching team members:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (err) {
+      console.error('Exception in getTeamMembers:', err);
+      return [];
+    }
+  }, []);
+
+  // Update team member role (for admins)
+  const updateTeamMemberRole = useCallback(async (teamUserId, newRole) => {
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase
+        .from('team_user')
+        .update({ role: newRole })
+        .eq('id', teamUserId)
+        .select(`
+          id, role, created_at,
+          user:user_id (id, name)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error updating team member role:', error);
+        setError('Failed to update member role');
+        return null;
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in updateTeamMemberRole:', err);
+      setError('Failed to update member role');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [clearError]);
+
+  // Remove team member (for admins)
+  const removeTeamMember = useCallback(async (teamUserId) => {
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase
+        .from('team_user')
+        .delete()
+        .eq('id', teamUserId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error removing team member:', error);
+        setError('Failed to remove team member');
+        return null;
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in removeTeamMember:', err);
+      setError('Failed to remove team member');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [clearError]);
+
+  // Check if current user is the creator of a club
+  const isClubCreator = useCallback((club) => {
+    if (!user || !club) return false;
+    return club.created_by === user.id;
+  }, [user]);
+
   const value = {
     // State
     currentTeam,
     userTeams,
+    userClubs,
     teamPlayers,
     loading,
     error,
@@ -776,9 +890,10 @@ export const TeamProvider = ({ children }) => {
     createPlayer,
     switchCurrentTeam,
     clearError,
+    isClubCreator,
     
     // Club membership actions
-    requestClubMembership,
+    joinClub,
     getClubMemberships,
     getPendingClubRequests,
     approveClubMembership,
@@ -792,9 +907,17 @@ export const TeamProvider = ({ children }) => {
     rejectTeamAccess,
     cancelTeamAccess,
     
+    // Team member management actions
+    getTeamMembers,
+    updateTeamMemberRole,
+    removeTeamMember,
+    
     // Computed properties
     hasTeams: userTeams.length > 0,
+    hasClubs: userClubs.length > 0,
     isCoach: currentTeam?.userRole === 'coach',
+    isTeamAdmin: currentTeam?.userRole === 'admin',
+    canManageTeam: currentTeam?.userRole === 'admin' || currentTeam?.userRole === 'coach',
   };
 
   return (

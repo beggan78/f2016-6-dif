@@ -36,7 +36,7 @@ export function ConfigurationScreen({
   authModal
 }) {
   const { isAuthenticated, user } = useAuth();
-  const { currentTeam, teamPlayers, hasTeams } = useTeam();
+  const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
 
@@ -175,7 +175,9 @@ export function ConfigurationScreen({
   };
 
   // Show team management for authenticated users who need to set up teams
-  if (isAuthenticated && (!hasTeams || !currentTeam)) {
+  // If user has no clubs at all, they need to create/join a club first
+  // If user has clubs but no teams, they need to create/join a team
+  if (isAuthenticated && (!hasClubs || (hasClubs && !hasTeams) || !currentTeam)) {
     return (
       <div className="space-y-4">
         <TeamManagement />
