@@ -49,7 +49,8 @@ jest.mock('../../../utils/playerUtils', () => ({
 jest.mock('../formations/FormationRenderer', () => ({
   FormationRenderer: ({ 
     children, 
-    teamMode, 
+    teamConfig, 
+    selectedFormation,
     formation,
     allPlayers, 
     longPressHandlers,
@@ -63,7 +64,7 @@ jest.mock('../formations/FormationRenderer', () => ({
     getPlayerTimeStats,
     ...otherProps 
   }) => (
-    <div data-testid="formation-renderer" data-team-mode={teamMode}>
+    <div data-testid="formation-renderer" data-team-config={JSON.stringify(teamConfig)}>
       {children || 'Mock Formation'}
     </div>
   )
@@ -259,10 +260,15 @@ describe('GameScreen', () => {
       expect(screen.getByText('3 - 1')).toBeInTheDocument();
     });
 
-    it('should render with PAIRS_7 team mode', () => {
+    it('should render with pairs team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
+        teamConfig: {
+          format: '5v5',
+          squadSize: 7,
+          formation: '2-2',
+          substitutionType: 'pairs'
+        },
         formation: createMockFormation(TEAM_MODES.PAIRS_7)
       };
       
@@ -272,10 +278,15 @@ describe('GameScreen', () => {
       expect(formationRenderer).toBeInTheDocument();
     });
 
-    it('should render with INDIVIDUAL_6 team mode', () => {
+    it('should render with individual team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        teamConfig: {
+          format: '5v5',
+          squadSize: 6,
+          formation: '2-2',
+          substitutionType: 'individual'
+        },
         formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
       };
       
@@ -633,10 +644,10 @@ describe('GameScreen', () => {
       expect(() => render(<GameScreen {...props} />)).not.toThrow();
     });
 
-    it('should handle invalid team mode', () => {
+    it('should handle invalid team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: 'INVALID_MODE'
+        teamConfig: null
       };
       
       expect(() => render(<GameScreen {...props} />)).not.toThrow();

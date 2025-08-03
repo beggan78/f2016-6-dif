@@ -12,9 +12,14 @@ import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerC
  * Create mock props for GameScreen component
  */
 export const createMockGameScreenProps = (overrides = {}) => {
-  const teamMode = overrides.teamMode || TEAM_MODES.INDIVIDUAL_7;
-  const formation = overrides.formation || createMockFormation(teamMode);
-  const allPlayers = overrides.allPlayers || createMockPlayers(7, teamMode);
+  const teamConfig = overrides.teamConfig || {
+    format: '5v5',
+    squadSize: 7,
+    formation: '2-2',
+    substitutionType: 'individual'
+  };
+  const formation = overrides.formation || createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+  const allPlayers = overrides.allPlayers || createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
   
   return {
     currentPeriodNumber: 1,
@@ -35,7 +40,7 @@ export const createMockGameScreenProps = (overrides = {}) => {
     resetSubTimer: jest.fn(),
     handleUndoSubstitution: jest.fn(),
     handleEndPeriod: jest.fn(),
-    nextPhysicalPairToSubOut: teamMode === TEAM_MODES.PAIRS_7 ? 'leftPair' : 'leftDefender',
+    nextPhysicalPairToSubOut: teamConfig?.substitutionType === 'pairs' ? 'leftPair' : 'leftDefender',
     nextPlayerToSubOut: 'leftDefender',
     nextPlayerIdToSubOut: '1',
     nextNextPlayerIdToSubOut: '2',
@@ -44,7 +49,8 @@ export const createMockGameScreenProps = (overrides = {}) => {
     setNextPhysicalPairToSubOut: jest.fn(),
     setNextPlayerToSubOut: jest.fn(),
     setNextPlayerIdToSubOut: jest.fn(),
-    teamMode,
+    teamConfig,
+    selectedFormation: teamConfig?.formation || '2-2',
     alertMinutes: 2,
     pushModalState: jest.fn(),
     removeModalFromStack: jest.fn(),
