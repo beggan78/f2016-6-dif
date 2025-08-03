@@ -884,7 +884,7 @@ export function PeriodSetupScreen({
           confirmationModal.type === 'recommendation-rerun' ? 'No, Keep Current Formation' :
           'Cancel'
         }
-        variant="primary"
+        variant="accent"
       />
     </div>
   );

@@ -69,7 +69,7 @@ export function Button({ onClick, children, Icon, variant = 'primary', size = 'm
   );
 }
 
-export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message, confirmText = "Confirm", cancelText = "Cancel" }) {
+export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message, confirmText = "Confirm", cancelText = "Cancel", variant = "danger" }) {
   if (!isOpen) return null;
 
   return (
@@ -84,7 +84,7 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message,
             <Button onClick={onCancel} variant="secondary" className="sm:order-1">
               {cancelText}
             </Button>
-            <Button onClick={onConfirm} variant="danger" className="sm:order-2">
+            <Button onClick={onConfirm} variant={variant} className="sm:order-2">
               {confirmText}
             </Button>
           </div>
