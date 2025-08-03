@@ -319,7 +319,7 @@ describe('PairsFormation', () => {
       // All calls should have inactive features disabled
       expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
         isInactive: false,
-        supportsInactivePlayers: false
+        supportsInactiveUsers: false
       }));
     });
   });

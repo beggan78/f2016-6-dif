@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
-import { PLAYER_ROLES, TEAM_MODES } from '../constants/playerConstants';
+import { PLAYER_ROLES } from '../constants/playerConstants';
 import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
-import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, isIndividualMode, getModeDefinition } from '../constants/gameModes';
+import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
@@ -14,88 +14,24 @@ import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents } from '../utils/gameEventLogger';
 import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
+import { migrateFromLegacyTeamMode as migrateFromLegacy } from '../utils/formationConfigUtils';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
 
-/**
- * Migration helper: Convert legacy team mode strings to team config objects
- * @param {string} legacyTeamMode - Legacy team mode string (e.g., 'pairs_7', 'individual_6')
- * @returns {Object} Team configuration object
- */
-const migrateFromLegacyTeamMode = (legacyTeamMode) => {
-  console.log('🔧 [Migration] migrateFromLegacyTeamMode called with:', {
-    legacyTeamMode,
-    PAIRS_7_constant: TEAM_MODES.PAIRS_7,
-    isMatch: legacyTeamMode === TEAM_MODES.PAIRS_7
-  });
-  
-  const legacyMappings = {
-    [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
-    [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
-  };
-  
-  console.log('🔧 [Migration] Available mappings:', Object.keys(legacyMappings));
-  
-  const mapping = legacyMappings[legacyTeamMode];
-  if (!mapping) {
-    console.warn(`Unknown legacy team mode: ${legacyTeamMode}, falling back to individual_7`);
-    return createTeamConfig('5v5', 7, '2-2', 'individual');
-  }
-  
-  console.log('🔧 [Migration] Found mapping:', mapping);
-  const result = createTeamConfig(mapping.format, mapping.squadSize, mapping.formation, mapping.substitutionType);
-  console.log('🔧 [Migration] Created teamConfig:', result);
-  return result;
-};
-
-/**
- * Migration helper: Convert team config objects back to legacy team mode strings for backward compatibility
- * @param {Object} teamConfig - Team configuration object
- * @returns {string} Legacy team mode string
- */
-const migrateToLegacyTeamMode = (teamConfig) => {
-  if (typeof teamConfig === 'string') {
-    return teamConfig; // Already a legacy string
-  }
-  
-  const { squadSize, substitutionType } = teamConfig;
-  
-  if (substitutionType === 'pairs' && squadSize === 7) {
-    return TEAM_MODES.PAIRS_7;
-  }
-  
-  if (substitutionType === 'individual') {
-    switch (squadSize) {
-      case 5: return TEAM_MODES.INDIVIDUAL_5;
-      case 6: return TEAM_MODES.INDIVIDUAL_6;
-      case 7: return TEAM_MODES.INDIVIDUAL_7;
-      case 8: return TEAM_MODES.INDIVIDUAL_8;
-      case 9: return TEAM_MODES.INDIVIDUAL_9;
-      case 10: return TEAM_MODES.INDIVIDUAL_10;
-      default: return TEAM_MODES.INDIVIDUAL_7; // Fallback
-    }
-  }
-  
-  // Fallback to individual_7
-  return TEAM_MODES.INDIVIDUAL_7;
-};
+// Use centralized migration utilities
+const migrateFromLegacyTeamMode = migrateFromLegacy;
 
 /**
  * Unified utility function for handling nextNext player logic
  * Consolidates scattered nextNext conditionals into a single reusable pattern
- * @param {string} teamMode - The current team mode
+ * @param {Object} teamConfig - The current team configuration
  * @param {Array} playerList - Array of players (rotation queue or other player array)
  * @param {Function} setNextNextPlayerIdToSubOut - Setter function for nextNext player
  * @param {number} targetIndex - Index to use for nextNext player (defaults to 1)
  */
-const updateNextNextPlayerIfSupported = (teamMode, playerList, setNextNextPlayerIdToSubOut, targetIndex = 1) => {
-  if (supportsNextNextIndicators(teamMode) && playerList.length >= (targetIndex + 1)) {
+const updateNextNextPlayerIfSupported = (teamConfig, playerList, setNextNextPlayerIdToSubOut, targetIndex = 1) => {
+  if (supportsNextNextIndicators(teamConfig) && playerList.length >= (targetIndex + 1)) {
     setNextNextPlayerIdToSubOut(playerList[targetIndex]);
   } else {
     setNextNextPlayerIdToSubOut(null);
@@ -113,13 +49,7 @@ export function useGameState() {
   
   // Migration: Convert legacy teamMode to teamConfig if needed
   if (initialState.teamMode && typeof initialState.teamMode === 'string' && !initialState.teamConfig) {
-    console.log('🔧 [Migration] Converting legacy teamMode to modern teamConfig:', {
-      legacyTeamMode: initialState.teamMode,
-      teamModeType: typeof initialState.teamMode,
-      hasTeamConfig: !!initialState.teamConfig
-    });
     initialState.teamConfig = migrateFromLegacyTeamMode(initialState.teamMode);
-    console.log('🔧 [Migration] Result teamConfig:', initialState.teamConfig);
   }
   
   // Ensure teamConfig exists
@@ -154,7 +84,6 @@ export function useGameState() {
   const [numPeriods, setNumPeriods] = useState(initialState.numPeriods);
   const [periodDurationMinutes, setPeriodDurationMinutes] = useState(initialState.periodDurationMinutes);
   const [periodGoalieIds, setPeriodGoalieIds] = useState(initialState.periodGoalieIds);
-  const [teamMode, setTeamMode] = useState(initialState.teamMode); // Legacy compatibility
   const [teamConfig, setTeamConfig] = useState(initialState.teamConfig); // New team configuration
   const [selectedFormation, setSelectedFormation] = useState(initialState.selectedFormation || FORMATIONS.FORMATION_2_2); // UI formation selection
   const [alertMinutes, setAlertMinutes] = useState(initialState.alertMinutes);
@@ -203,6 +132,11 @@ export function useGameState() {
     }
   }, [captainId]);
 
+  // Team Configuration Management Functions
+  const updateTeamConfig = useCallback((newTeamConfig) => {
+    setTeamConfig(newTeamConfig);
+  }, []);
+
   // Sync player roles with formation changes (fixes PAIRS_7 Goal Scorer modal sorting)
   useEffect(() => {
     // Only update roles if we have a formation and selected squad players
@@ -218,20 +152,18 @@ export function useGameState() {
     if (!hasAnyAssignedPositions) return;
     
     // Create formation-aware team config for role initialization
-    // Use selectedFormation if available, otherwise fall back to legacy behavior
-    const formationAwareTeamMode = selectedFormation && typeof teamMode === 'string' ? {
-      format: '5v5',
-      squadSize: parseInt(teamMode.split('_')[1]) || 7,
-      formation: selectedFormation,
-      substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
-    } : teamMode;
+    // Use selectedFormation if available to override the teamConfig formation
+    const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
+      ...teamConfig,
+      formation: selectedFormation
+    } : teamConfig;
     
     // Update player roles based on current formation
     setAllPlayers(prev => {
       const updated = prev.map(player => {
         if (!selectedSquadIds.includes(player.id)) return player;
         
-        const { role, status, pairKey } = initializePlayerRoleAndStatus(player.id, formation, formationAwareTeamMode);
+        const { role, status, pairKey } = initializePlayerRoleAndStatus(player.id, formation, formationAwareTeamConfig);
         
         // Only update if the role/status actually changed to avoid unnecessary re-renders
         if (player.stats.currentRole !== role || 
@@ -253,7 +185,7 @@ export function useGameState() {
 
       return updated;
     });
-  }, [formation, teamMode, selectedFormation, selectedSquadIds]);
+  }, [formation, teamConfig, selectedFormation, selectedSquadIds]);
 
   // Function to sync match data from gameEventLogger
   const syncMatchDataFromEventLogger = useCallback(() => {
@@ -343,9 +275,8 @@ export function useGameState() {
       numPeriods,
       periodDurationMinutes,
       periodGoalieIds,
-      teamMode, // Legacy compatibility
-      teamConfig, // New team configuration
-      selectedFormation, // UI formation selection
+      teamConfig, // Team configuration
+      selectedFormation, // Formation selection
       alertMinutes,
       currentPeriodNumber,
       formation,
@@ -372,7 +303,7 @@ export function useGameState() {
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamMode, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
 
 
 
@@ -397,7 +328,7 @@ export function useGameState() {
     if (periodNum > 1 && gameLogToUse.length > 0) {
       const lastPeriodLog = gameLogToUse[gameLogToUse.length - 1];
       const playersWithLastPeriodStats = lastPeriodLog.finalStatsSnapshotForAllPlayers;
-      if (teamMode === TEAM_MODES.PAIRS_7) {
+      if (teamConfig.substitutionType === 'pairs') {
         // 7-player pairs formation generation
         const { recommendedLeft, recommendedRight, recommendedSubs, firstToSubRec } = generateRecommendedFormation(
             periodNum,
@@ -417,18 +348,18 @@ export function useGameState() {
         
         setFormation(pairsFormation);
         setNextPhysicalPairToSubOut(firstToSubRec); // 'leftPair' or 'rightPair'
-      } else if (isIndividualMode(teamMode)) {
+      } else if (teamConfig.substitutionType === 'individual') {
         // Unified individual mode formation generation
         const result = generateIndividualFormationRecommendation(
           currentGoalieId,
           playersWithLastPeriodStats,
           selectedSquadIds.map(id => allPlayers.find(p => p.id === id)),
-          teamMode,
+          teamConfig,
           selectedFormation
         );
         
         // Create formation using the template and result data
-        const unifiedFormation = getInitialFormationTemplate(teamMode, currentGoalieId);
+        const unifiedFormation = getInitialFormationTemplate(teamConfig, currentGoalieId);
         Object.assign(unifiedFormation, result.formation);
         
         setFormation(unifiedFormation);
@@ -438,12 +369,10 @@ export function useGameState() {
         
         // Find the position of the next player to substitute using formation-aware field positions only
         // Create formation-aware team config for position utilities
-        const formationAwareTeamConfigForPos = selectedFormation && typeof teamMode === 'string' ? {
-          format: '5v5',
-          squadSize: parseInt(teamMode.split('_')[1]) || 7,
-          formation: selectedFormation,
-          substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
-        } : teamMode;
+        const formationAwareTeamConfigForPos = selectedFormation && selectedFormation !== teamConfig.formation ? {
+          ...teamConfig,
+          formation: selectedFormation
+        } : teamConfig;
         
         const definition = getModeDefinition(formationAwareTeamConfigForPos);
         const fieldPositions = definition?.fieldPositions || [];
@@ -454,32 +383,32 @@ export function useGameState() {
         setRotationQueue(result.rotationQueue);
         
         // Set next-next player using unified logic
-        updateNextNextPlayerIfSupported(teamMode, result.rotationQueue, setNextNextPlayerIdToSubOut);
+        updateNextNextPlayerIfSupported(teamConfig, result.rotationQueue, setNextNextPlayerIdToSubOut);
       }
 
     } else {
       // For P1, or if recommendations fail, reset formation (user fills manually)
-      if (teamMode === TEAM_MODES.PAIRS_7) {
+      if (teamConfig.substitutionType === 'pairs') {
         setFormation({
           goalie: currentGoalieId,
           leftPair: { defender: null, attacker: null },
           rightPair: { defender: null, attacker: null },
           subPair: { defender: null, attacker: null },
         });
-      } else if (isIndividualMode(teamMode)) {
+      } else if (teamConfig.substitutionType === 'individual') {
         // Use unified formation template for individual modes
-        setFormation(getInitialFormationTemplate(teamMode, currentGoalieId));
+        setFormation(getInitialFormationTemplate(teamConfig, currentGoalieId));
       }
       setNextPhysicalPairToSubOut('leftPair');
       
       // Initialize next player and rotation queue for individual modes in P1
-      if (isIndividualMode(teamMode)) {
+      if (teamConfig.substitutionType === 'individual') {
         setNextPlayerToSubOut('leftDefender');
         // Initialize basic rotation queue for Period 1 (will be filled when game starts)
         setRotationQueue([]);
       }
     }
-  }, [periodGoalieIds, selectedSquadIds, allPlayers, teamMode, selectedFormation]);
+  }, [periodGoalieIds, selectedSquadIds, allPlayers, teamConfig, selectedFormation]);
 
   const preparePeriod = useCallback((periodNum) => {
     preparePeriodWithGameLog(periodNum, gameLog);
@@ -524,7 +453,7 @@ export function useGameState() {
   const handleStartGame = () => {
     // Validate formation based on team mode
     
-    if (teamMode === TEAM_MODES.PAIRS_7) {
+    if (teamConfig.substitutionType === 'pairs') {
       // 7-player pairs validation
       const allOutfieldersInFormation = [
         formation.leftPair.defender, formation.leftPair.attacker,
@@ -536,7 +465,7 @@ export function useGameState() {
         alert("Please complete the team formation with 1 goalie and 6 unique outfield players in pairs."); // Replace with modal
         return;
       }
-    } else if (isIndividualMode(teamMode)) {
+    } else if (teamConfig.substitutionType === 'individual') {
       // Formation-aware individual mode validation
       // Detect formation type from actual positions assigned
       const hasOneTwoOnePositions = formation.defender && formation.left && formation.right && formation.attacker;
@@ -586,17 +515,15 @@ export function useGameState() {
     const currentTimeEpoch = Date.now();
     
     // Create formation-aware team config for role initialization
-    const formationAwareTeamMode = selectedFormation && typeof teamMode === 'string' ? {
-      format: '5v5',
-      squadSize: parseInt(teamMode.split('_')[1]) || 7,
-      formation: selectedFormation,
-      substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
-    } : teamMode;
+    const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
+      ...teamConfig,
+      formation: selectedFormation
+    } : teamConfig;
     
     // Initialize player statuses and roles for the period
     setAllPlayers(prevPlayers => prevPlayers.map(p => {
       // Use unified role initialization function
-      const { role, status, pairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamMode);
+      const { role, status, pairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
 
       if (selectedSquadIds.includes(p.id)) {
         const initialStats = { ...p.stats };
@@ -621,23 +548,18 @@ export function useGameState() {
 
     // Initialize rotation queue for individual modes only if not already set by formation generator
     // For Period 1 or when formation generator hasn't provided a queue
-    if ((isIndividualMode(teamMode)) && rotationQueue.length === 0) {
-      console.log('🔧 [handleStartGame] Initializing rotation queue for Period 1');
+    if ((teamConfig.substitutionType === 'individual') && rotationQueue.length === 0) {
       
       // Get field positions with formation awareness
-      const formationAwareTeamConfig = selectedFormation && typeof teamMode === 'string' ? {
-        format: '5v5',
-        squadSize: parseInt(teamMode.split('_')[1]) || 7,
-        formation: selectedFormation,
-        substitutionType: teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual'  // FIX: Detect pairs mode
-      } : teamMode;
+      const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
+        ...teamConfig,
+        formation: selectedFormation
+      } : teamConfig;
       
       const definition = getModeDefinition(formationAwareTeamConfig);
       const fieldPositions = definition?.fieldPositions || [];
       const substitutePositions = definition?.substitutePositions || [];
       
-      console.log('🔧 [handleStartGame] Field positions:', fieldPositions);
-      console.log('🔧 [handleStartGame] Substitute positions:', substitutePositions);
       
       // Get all outfield players from formation
       const fieldPlayersInFormation = fieldPositions.map(pos => formation[pos]).filter(Boolean);
@@ -669,8 +591,6 @@ export function useGameState() {
       // The first field player (most time) is next to rotate off
       const nextPlayerToRotateOff = fieldPlayersSorted[0]?.id || null;
       
-      console.log('🔧 [handleStartGame] Built rotation queue:', initialQueue);
-      console.log('🔧 [handleStartGame] Next to rotate off:', nextPlayerToRotateOff);
       
       // Only set values if we have a complete formation
       if (nextPlayerToRotateOff && initialQueue.length >= fieldPositions.length) {
@@ -684,9 +604,8 @@ export function useGameState() {
         }
         
         // Set next-next player using unified logic
-        updateNextNextPlayerIfSupported(teamMode, initialQueue, setNextNextPlayerIdToSubOut);
+        updateNextNextPlayerIfSupported(teamConfig, initialQueue, setNextNextPlayerIdToSubOut);
         
-        console.log('🔧 [handleStartGame] Queue initialization complete');
       } else {
         console.warn('🔧 [handleStartGame] Could not initialize rotation queue - incomplete formation');
       }
@@ -708,7 +627,7 @@ export function useGameState() {
     requestWakeLock();
     startAlertTimer();
 
-    const substitutionManager = createSubstitutionManager(teamMode);
+    const substitutionManager = createSubstitutionManager(teamConfig);
     
     const context = {
       formation,
@@ -876,7 +795,7 @@ export function useGameState() {
 
   // Team mode switching functions
   const splitPairs = useCallback(() => {
-    if (teamMode !== TEAM_MODES.PAIRS_7) return;
+    if (teamConfig?.substitutionType !== 'pairs') return;
     
     // Import queue state utilities
     const { analyzePairsRotationState, createIndividualQueueFromPairs } = require('../game/utils/queueStateUtils');
@@ -930,8 +849,9 @@ export function useGameState() {
       return { ...p, stats };
     }));
 
-    // Update team mode
-    setTeamMode(TEAM_MODES.INDIVIDUAL_7);
+    // Update team config to individual mode
+    const newTeamConfig = createTeamConfig('5v5', 7, selectedFormation, 'individual');
+    updateTeamConfig(newTeamConfig);
     
     // Create individual rotation queue that preserves pairs rotation order
     const individualQueue = createIndividualQueueFromPairs(pairsAnalysis, {
@@ -944,10 +864,10 @@ export function useGameState() {
     setNextPlayerIdToSubOut(individualQueue.nextPlayerId);
     setNextNextPlayerIdToSubOut(individualQueue.nextNextPlayerId);
     setNextPlayerToSubOut('leftDefender');
-  }, [teamMode, selectedSquadIds, formation, nextPhysicalPairToSubOut]);
+  }, [teamConfig, selectedSquadIds, formation, nextPhysicalPairToSubOut, selectedFormation, updateTeamConfig]);
 
   const formPairs = useCallback(() => {
-    if (teamMode !== TEAM_MODES.INDIVIDUAL_7) return;
+    if (teamConfig?.substitutionType !== 'individual' || teamConfig?.squadSize !== 7) return;
     
     // Check for inactive players in the selected squad
     if (hasInactivePlayersInSquad(allPlayers, selectedSquadIds)) {
@@ -1004,8 +924,9 @@ export function useGameState() {
       return { ...p, stats };
     }));
 
-    // Update team mode
-    setTeamMode(TEAM_MODES.PAIRS_7);
+    // Update team config to pairs mode
+    const newTeamConfig = createTeamConfig('5v5', 7, selectedFormation, 'pairs');
+    updateTeamConfig(newTeamConfig);
     
     // Set the next pair to rotate based on individual queue analysis
     setNextPhysicalPairToSubOut(pairsAnalysis.nextPair);
@@ -1013,7 +934,7 @@ export function useGameState() {
     setNextPlayerIdToSubOut(null);
     setNextNextPlayerIdToSubOut(null);
     setNextPlayerToSubOut(null);
-  }, [teamMode, selectedSquadIds, allPlayers, rotationQueue, formation]);
+  }, [teamConfig, selectedSquadIds, allPlayers, rotationQueue, formation, selectedFormation, updateTeamConfig]);
 
   // Enhanced setters for manual selection - rotation logic already handles sequence correctly
   const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
@@ -1032,7 +953,7 @@ export function useGameState() {
       setNextPlayerIdToSubOut(selectedPlayerId);
       
       // For modes that support next-next indicators, update rotation queue and next-next tracking
-      if (supportsNextNextIndicators(teamMode) && selectedPlayerId !== currentNextPlayerId) {
+      if (supportsNextNextIndicators(teamConfig) && selectedPlayerId !== currentNextPlayerId) {
         // Update rotation queue to put selected player first
         setRotationQueue(prev => {
           const queueManager = createRotationQueue(prev, createPlayerLookup(allPlayers));
@@ -1045,17 +966,17 @@ export function useGameState() {
           const updatedQueue = queueManager.toArray();
           
           // Update next-next tracking to reflect new queue order using unified logic
-          updateNextNextPlayerIfSupported(teamMode, updatedQueue, setNextNextPlayerIdToSubOut);
+          updateNextNextPlayerIfSupported(teamConfig, updatedQueue, setNextNextPlayerIdToSubOut);
           
           return updatedQueue;
         });
       }
     }
-  }, [formation, teamMode, nextPlayerIdToSubOut, allPlayers]);
+  }, [formation, teamConfig, nextPlayerIdToSubOut, allPlayers]);
 
   // Player inactivation/activation functions for 7-player individual mode
   const togglePlayerInactive = useCallback((playerId, animationCallback = null, delayMs = 0) => {
-    if (teamMode !== TEAM_MODES.INDIVIDUAL_7) return;
+    if (teamConfig.squadSize !== 7 || teamConfig.substitutionType !== 'individual') return;
 
     const player = findPlayerById(allPlayers, playerId);
     if (!player) return;
@@ -1092,7 +1013,7 @@ export function useGameState() {
         const currentGameState = {
           formation,
           allPlayers,
-          teamMode,
+          teamConfig,
           rotationQueue,
           nextPlayerIdToSubOut,
           nextNextPlayerIdToSubOut,
@@ -1121,11 +1042,11 @@ export function useGameState() {
           const nextActivePlayers = queueManager.getNextActivePlayer(2);
           if (nextActivePlayers.length > 0) {
             setNextPlayerIdToSubOut(nextActivePlayers[0]);
-            updateNextNextPlayerIfSupported(teamMode, nextActivePlayers, setNextNextPlayerIdToSubOut);
+            updateNextNextPlayerIfSupported(teamConfig, nextActivePlayers, setNextNextPlayerIdToSubOut);
           }
         } else if (playerId === nextNextPlayerIdToSubOut) {
           const nextActivePlayers = queueManager.getNextActivePlayer(2);
-          updateNextNextPlayerIfSupported(teamMode, nextActivePlayers, setNextNextPlayerIdToSubOut);
+          updateNextNextPlayerIfSupported(teamConfig, nextActivePlayers, setNextNextPlayerIdToSubOut);
         }
         
         // Move inactive player to substitute_2 position if they were substitute_1
@@ -1166,7 +1087,7 @@ export function useGameState() {
     } else {
       performStateChanges();
     }
-  }, [teamMode, allPlayers, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, formation, nextPlayerToSubOut, nextPhysicalPairToSubOut]);
+  }, [teamConfig, allPlayers, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, formation, nextPlayerToSubOut, nextPhysicalPairToSubOut]);
 
   // Helper function to get inactive players for animation purposes
   const getInactivePlayerPosition = useCallback((playerId) => {
@@ -1199,7 +1120,7 @@ export function useGameState() {
     const player2Position = player2.stats.currentPairKey;
 
     // Don't allow switching if either player is not currently on field or substitute
-    const currentValidPositions = getValidPositions(teamMode);
+    const currentValidPositions = getValidPositions(teamConfig);
     if (!currentValidPositions.includes(player1Position) || !currentValidPositions.includes(player2Position)) {
       console.warn('One or both players are not in valid positions for switching');
       return false;
@@ -1209,7 +1130,7 @@ export function useGameState() {
     setFormation(prev => {
       const newFormation = { ...prev };
       
-      if (teamMode === TEAM_MODES.PAIRS_7) {
+      if (teamConfig.substitutionType === 'pairs') {
         // Handle pairs formation
         if (player1Position === 'leftPair') {
           if (prev.leftPair.defender === player1Id) {
@@ -1267,7 +1188,7 @@ export function useGameState() {
         // Determine the new role for player1 based on their new position
         let newRole = p.stats.currentRole; // Default to current role
         
-        if (teamMode === TEAM_MODES.PAIRS_7) {
+        if (teamConfig.substitutionType === 'pairs') {
           // For pairs, we need to determine the new role based on what position they took in the new pair
           // Since this is a position switch, player1 takes player2's role and vice versa
           newRole = player2.stats.currentRole;
@@ -1288,7 +1209,7 @@ export function useGameState() {
         // Determine the new role for player2 based on their new position
         let newRole = p.stats.currentRole; // Default to current role
         
-        if (teamMode === TEAM_MODES.PAIRS_7) {
+        if (teamConfig.substitutionType === 'pairs') {
           // For pairs, player2 takes player1's role
           newRole = player1.stats.currentRole;
         } else {
@@ -1311,7 +1232,7 @@ export function useGameState() {
     // Players keep their position in the queue, just their on-field positions change
     
     return true;
-  }, [allPlayers, formation, teamMode]);
+  }, [allPlayers, formation, teamConfig]);
 
   // Function to switch goalies
   const switchGoalie = useCallback((newGoalieId, isSubTimerPaused = false) => {
@@ -1344,7 +1265,7 @@ export function useGameState() {
       newFormation.goalie = newGoalieId;
       
       // Place current goalie in the position of the new goalie
-      if (teamMode === TEAM_MODES.PAIRS_7) {
+      if (teamConfig.substitutionType === 'pairs') {
         // Handle pairs formation
         if (newGoaliePosition === 'leftPair') {
           if (prev.leftPair.defender === newGoalieId) {
@@ -1385,7 +1306,7 @@ export function useGameState() {
         let newRole = PLAYER_ROLES.DEFENDER; // Default
         let newStatus = 'on_field'; // Default
         
-        if (teamMode === TEAM_MODES.PAIRS_7) {
+        if (teamConfig.substitutionType === 'pairs') {
           if (newGoaliePosition === 'leftPair' || newGoaliePosition === 'rightPair') {
             // Field positions
             const pairData = formation[newGoaliePosition];
@@ -1464,7 +1385,7 @@ export function useGameState() {
     });
 
     return true;
-  }, [allPlayers, formation, teamMode, setAllPlayers, setFormation, setRotationQueue]);
+  }, [allPlayers, formation, teamConfig, setAllPlayers, setFormation, setRotationQueue]);
 
   // Helper function to get all outfield players (excludes goalie)
   const getOutfieldPlayersForGame = useCallback(() => {
@@ -1512,20 +1433,15 @@ export function useGameState() {
     })));
   }, []);
 
-  // Team Configuration Management Functions
-  const updateTeamConfig = useCallback((newTeamConfig) => {
-    setTeamConfig(newTeamConfig);
-    // Keep teamMode in sync for backward compatibility
-    setTeamMode(migrateToLegacyTeamMode(newTeamConfig));
-  }, []);
-
   const updateFormationSelection = useCallback((newFormation) => {
     setSelectedFormation(newFormation);
     
-    // Automatically switch to INDIVIDUAL_7 when selecting 1-2-1 formation with 7 players
-    // PAIRS_7 is incompatible with 1-2-1 formation
-    if (newFormation === '1-2-1' && teamConfig?.squadSize === 7 && teamMode === TEAM_MODES.PAIRS_7) {
-      setTeamMode(TEAM_MODES.INDIVIDUAL_7);
+    // Automatically switch to individual mode when selecting 1-2-1 formation with 7 players
+    // Pairs mode is incompatible with 1-2-1 formation
+    if (newFormation === '1-2-1' && teamConfig?.squadSize === 7 && teamConfig?.substitutionType === 'pairs') {
+      const updatedConfig = createTeamConfig('5v5', 7, newFormation, 'individual');
+      updateTeamConfig(updatedConfig);
+      return;
     }
     
     // Update team config with new formation
@@ -1536,7 +1452,7 @@ export function useGameState() {
       };
       updateTeamConfig(updatedConfig);
     }
-  }, [teamConfig, updateTeamConfig, teamMode]);
+  }, [teamConfig, updateTeamConfig]);
 
   const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = 'individual') => {
     const newConfig = createTeamConfig(
@@ -1563,8 +1479,6 @@ export function useGameState() {
     setPeriodDurationMinutes,
     periodGoalieIds,
     setPeriodGoalieIds,
-    teamMode,
-    setTeamMode,
     teamConfig,
     setTeamConfig,
     selectedFormation,

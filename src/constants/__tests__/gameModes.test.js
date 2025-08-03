@@ -1,10 +1,9 @@
 /**
- * Tests for MODE_DEFINITIONS configuration and related utilities
- * Validates that the consolidated configuration is consistent and complete
+ * Tests for game mode configuration and related utilities
+ * Validates that the dynamic configuration system is consistent and complete
  */
 
 import { 
-  MODE_DEFINITIONS,
   getModeDefinition,
   POSITION_ROLE_MAP,
   getFormationPositions,
@@ -30,13 +29,8 @@ import {
 import { TEAM_MODES, PLAYER_ROLES } from '../playerConstants';
 import { createTeamConfig, SUBSTITUTION_TYPES, FORMATIONS } from '../teamConfiguration';
 
-describe('MODE_DEFINITIONS Configuration', () => {
+describe('Game Mode Configuration', () => {
   describe('Legacy compatibility', () => {
-    test('MODE_DEFINITIONS is empty for legacy compatibility', () => {
-      // MODE_DEFINITIONS is now empty - this is expected during transition
-      expect(MODE_DEFINITIONS).toEqual({});
-    });
-
     test('should work with legacy team mode strings via utility functions', () => {
       const expectedModes = [TEAM_MODES.PAIRS_7, TEAM_MODES.INDIVIDUAL_5, TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7, TEAM_MODES.INDIVIDUAL_8, TEAM_MODES.INDIVIDUAL_9, TEAM_MODES.INDIVIDUAL_10];
       

@@ -4,7 +4,7 @@ import {
   calculateSubstitution, 
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
-  calculateSubstituteSwap,
+  calculateGeneralSubstituteSwap,
   calculateUndo,
   calculateSubstituteReorder
 } from '../logic/gameStateLogic';
@@ -105,7 +105,7 @@ describe('createSubstitutionHandlers', () => {
 
     calculatePositionSwitch.mockImplementation((gameState) => gameState);
     calculatePlayerToggleInactive.mockImplementation((gameState) => gameState);
-    calculateSubstituteSwap.mockImplementation((gameState) => gameState);
+    calculateGeneralSubstituteSwap.mockImplementation((gameState) => gameState);
     calculateSubstituteReorder.mockImplementation((gameState) => gameState);
     calculateUndo.mockImplementation((gameState) => gameState);
   });

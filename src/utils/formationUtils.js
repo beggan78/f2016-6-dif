@@ -1,38 +1,10 @@
-import { getAllPositions as getPositionsFromGameModes, getModeDefinition as getModeDefinitionDynamic } from '../constants/gameModes';
-import { TEAM_MODES } from '../constants/playerConstants';
+import { getAllPositions as getPositionsFromGameModes, getDefinition } from '../constants/gameModes';
 
 /**
  * Cross-screen formation utilities
  * Core position logic has been moved to src/game/logic/positionUtils.js
  * These functions are used across multiple screens for general formation queries
  */
-
-/**
- * Legacy mode definition mapper for backward compatibility
- * Maps legacy team mode strings to team configurations
- */
-const getLegacyModeDefinition = (legacyTeamMode) => {
-  const legacyMappings = {
-    [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
-    [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
-  };
-  
-  const teamConfig = legacyMappings[legacyTeamMode];
-  if (!teamConfig) {
-    return null;
-  }
-  
-  try {
-    return getModeDefinitionDynamic(teamConfig);
-  } catch (error) {
-    return null;
-  }
-};
 
 /**
  * Gets all positions for a formation including goalie
@@ -63,5 +35,5 @@ export function getModeDefinition(teamMode) {
     return null;
   }
   
-  return getLegacyModeDefinition(teamMode);
+  return getDefinition(teamMode);
 }

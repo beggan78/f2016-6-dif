@@ -11,7 +11,7 @@ export function getPlayerStyling({
   isNextOn = false,
   isRecentlySubstituted = false,
   hideNextOffIndicator = false,
-  supportsInactivePlayers = false,
+  supportsInactiveUsers = false,
   role = null, // Add role prop
   isGoalie = false // Add isGoalie prop
 }) {
@@ -29,7 +29,7 @@ export function getPlayerStyling({
   }
   
   // Inactive players get dimmed appearance (only for formations that support it)
-  if (supportsInactivePlayers && isInactive) {
+  if (supportsInactiveUsers && isInactive) {
     bgColor = FORMATION_STYLES.bgColors.inactive;
   }
   
@@ -41,7 +41,7 @@ export function getPlayerStyling({
   }
   
   // Inactive players get dimmed text (only for formations that support it)
-  if (supportsInactivePlayers && isInactive) {
+  if (supportsInactiveUsers && isInactive) {
     textColor = FORMATION_STYLES.textColors.inactive;
   }
   

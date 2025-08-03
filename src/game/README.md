@@ -414,7 +414,7 @@ The UI module contains focused utilities for game screen rendering, separated fr
 - `getPositionDisplayName()`: Position names with inactive player support
 - `getIndicatorProps()`: Next/nextNext indicator logic for different team modes
 - `getPositionEvents()`: Extracts long press event handlers from position key
-- `supportsInactivePlayers()` / `supportsNextNextIndicators()`: Formation capability checks
+- `supportsInactiveUsers()` / `supportsNextNextIndicators()`: Formation capability checks
 
 **Key features**:
 - Formation-aware UI logic (handles differences between team modes)

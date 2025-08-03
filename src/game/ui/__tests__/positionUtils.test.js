@@ -9,9 +9,9 @@ import {
   getPositionDisplayName,
   getIndicatorProps,
   getPositionEvents,
-  supportsInactivePlayers,
   supportsNextNextIndicators
 } from '../positionUtils';
+import { supportsInactiveUsers } from '../../../constants/gameModes';
 
 import { TEAM_MODES } from '../../../constants/playerConstants';
 import { POSITION_KEYS } from '../../../constants/positionConstants';
@@ -284,17 +284,17 @@ describe('UI positionUtils', () => {
   });
 
   describe('formation support checks', () => {
-    describe('supportsInactivePlayers', () => {
+    describe('supportsInactiveUsers', () => {
       test('should return true for both individual modes (6-player and 7-player)', () => {
-        expect(supportsInactivePlayers(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
-        expect(supportsInactivePlayers(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
-        expect(supportsInactivePlayers(TEAM_MODES.PAIRS_7)).toBe(false);
+        expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_7)).toBe(true);
+        expect(supportsInactiveUsers(TEAM_MODES.INDIVIDUAL_6)).toBe(true);
+        expect(supportsInactiveUsers(TEAM_MODES.PAIRS_7)).toBe(false);
       });
 
       test('should return false for unknown team modes', () => {
-        expect(supportsInactivePlayers('UNKNOWN_TEAM_MODE')).toBe(false);
-        expect(supportsInactivePlayers(null)).toBe(false);
-        expect(supportsInactivePlayers(undefined)).toBe(false);
+        expect(supportsInactiveUsers('UNKNOWN_TEAM_MODE')).toBe(false);
+        expect(supportsInactiveUsers(null)).toBe(false);
+        expect(supportsInactiveUsers(undefined)).toBe(false);
       });
     });
 
@@ -323,7 +323,7 @@ describe('UI positionUtils', () => {
       
       teamModes.forEach(teamMode => {
         // Team mode support checks should be consistent
-        const supportsInactive = supportsInactivePlayers(teamMode);
+        const supportsInactive = supportsInactiveUsers(teamMode);
         const supportsNextNext = supportsNextNextIndicators(teamMode);
         
         expect(typeof supportsInactive).toBe('boolean');

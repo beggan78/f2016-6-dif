@@ -32,6 +32,7 @@ jest.mock('../../../../utils/formationUtils');
 jest.mock('../../../../game/ui/positionUtils');
 jest.mock('../../../../game/ui/playerStyling');
 jest.mock('../../../../game/ui/playerAnimation');
+jest.mock('../../../../constants/gameModes');
 
 jest.mock('../components/PlayerStatsDisplay', () => ({
   PlayerStatsDisplay: ({ playerId, getPlayerTimeStats, className }) => (
@@ -89,9 +90,9 @@ describe('IndividualFormation', () => {
       getPositionDisplayName, 
       getIndicatorProps, 
       getPositionEvents,
-      supportsInactivePlayers,
       supportsNextNextIndicators
     } = require('../../../../game/ui/positionUtils');
+    const { supportsInactiveUsers } = require('../../../../constants/gameModes');
     const { getPlayerStyling } = require('../../../../game/ui/playerStyling');
     const { getPlayerAnimation } = require('../../../../game/ui/playerAnimation');
     
@@ -156,7 +157,7 @@ describe('IndividualFormation', () => {
       'data-position': position
     }));
     
-    supportsInactivePlayers.mockImplementation((teamMode) => teamMode === TEAM_MODES.INDIVIDUAL_7 || teamMode === TEAM_MODES.INDIVIDUAL_6);
+    supportsInactiveUsers.mockImplementation((teamMode) => teamMode === TEAM_MODES.INDIVIDUAL_7 || teamMode === TEAM_MODES.INDIVIDUAL_6);
     
     supportsNextNextIndicators.mockImplementation((teamMode) => teamMode === TEAM_MODES.INDIVIDUAL_7);
     
@@ -606,7 +607,7 @@ describe('IndividualFormation', () => {
       // Should call getPlayerStyling with isInactive: true for inactive players
       expect(getPlayerStyling).toHaveBeenCalledWith(expect.objectContaining({
         isInactive: true,
-        supportsInactivePlayers: true
+        supportsInactiveUsers: true
       }));
     });
   });
@@ -709,16 +710,18 @@ describe('IndividualFormation', () => {
 
   describe('Formation Capability Detection', () => {
     it('should correctly detect INDIVIDUAL_7 capabilities', () => {
-      const { supportsInactivePlayers, supportsNextNextIndicators } = require('../../../../game/ui/positionUtils');
+      const { supportsNextNextIndicators } = require('../../../../game/ui/positionUtils');
+      const { supportsInactiveUsers } = require('../../../../constants/gameModes');
       
       render(<IndividualFormation {...defaultProps} />);
       
-      expect(supportsInactivePlayers).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_7);
+      expect(supportsInactiveUsers).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_7);
       expect(supportsNextNextIndicators).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_7);
     });
 
     it('should correctly detect INDIVIDUAL_6 capabilities', () => {
-      const { supportsInactivePlayers, supportsNextNextIndicators } = require('../../../../game/ui/positionUtils');
+      const { supportsNextNextIndicators } = require('../../../../game/ui/positionUtils');
+      const { supportsInactiveUsers } = require('../../../../constants/gameModes');
       
       const props = {
         ...defaultProps,
@@ -727,7 +730,7 @@ describe('IndividualFormation', () => {
       
       render(<IndividualFormation {...props} />);
       
-      expect(supportsInactivePlayers).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_6);
+      expect(supportsInactiveUsers).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_6);
       expect(supportsNextNextIndicators).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_6);
     });
   });

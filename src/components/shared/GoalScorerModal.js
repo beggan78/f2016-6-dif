@@ -31,8 +31,8 @@ const GoalScorerModal = ({
       const newSelection = mode === 'new' ? null : (existingGoalData?.scorerId || null);
       setSelectedPlayerId(newSelection);
     }
-  }, [isOpen, existingGoalData, mode]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Note: eligiblePlayers is intentionally excluded to prevent selection reset on re-renders
+  }, [isOpen, existingGoalData, mode]);
+  // Note: eligiblePlayers is intentionally excluded to prevent selection reset when player list updates
 
   // Get position icon for a player
   const getPositionIcon = (player) => {

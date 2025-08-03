@@ -43,6 +43,16 @@ export function useGameModals(pushModalState, removeModalFromStack) {
     }
   });
 
+  const closeModal = useCallback((modalType) => {
+    setModals(prev => ({
+      ...prev,
+      [modalType]: {
+        ...prev[modalType],
+        isOpen: false
+      }
+    }));
+  }, []);
+
   const openModal = useCallback((modalType, modalData = {}) => {
     setModals(prev => ({
       ...prev,
@@ -59,17 +69,7 @@ export function useGameModals(pushModalState, removeModalFromStack) {
         closeModal(modalType);
       });
     }
-  }, [pushModalState]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const closeModal = useCallback((modalType) => {
-    setModals(prev => ({
-      ...prev,
-      [modalType]: {
-        ...prev[modalType],
-        isOpen: false
-      }
-    }));
-  }, []);
+  }, [pushModalState, closeModal]);
 
   const closeModalWithNavigation = useCallback((modalType) => {
     closeModal(modalType);

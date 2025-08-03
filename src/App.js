@@ -248,9 +248,8 @@ function App() {
             setPeriodDurationMinutes={gameState.setPeriodDurationMinutes}
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
-            teamMode={gameState.teamMode}
-            setTeamMode={gameState.setTeamMode}
             teamConfig={gameState.teamConfig}
+            updateTeamConfig={gameState.updateTeamConfig}
             selectedFormation={gameState.selectedFormation}
             updateFormationSelection={gameState.updateFormationSelection}
             createTeamConfigFromSquadSize={gameState.createTeamConfigFromSquadSize}

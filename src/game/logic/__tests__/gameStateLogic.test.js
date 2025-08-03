@@ -9,7 +9,7 @@ import {
   calculateGoalieSwitch,
   calculateUndo,
   calculatePlayerToggleInactive,
-  calculateSubstituteSwap,
+  calculateGeneralSubstituteSwap,
   calculateSubstituteReorder,
   calculateNextSubstitutionTarget,
   calculatePairPositionSwap
@@ -703,10 +703,10 @@ describe('gameStateLogic', () => {
     });
   });
 
-  describe('calculateSubstituteSwap', () => {
-    test('should only work in 7-player individual mode', () => {
+  describe('calculateGeneralSubstituteSwap', () => {
+    test('should only work in modes that support next-next indicators', () => {
       const gameState6 = createMockGameState(TEAM_MODES.INDIVIDUAL_6);
-      const result6 = calculateSubstituteSwap(gameState6, '5', '6');
+      const result6 = calculateGeneralSubstituteSwap(gameState6, 'substitute_1', 'substitute_2');
       expect(result6).toBe(gameState6);
     });
 
@@ -715,7 +715,7 @@ describe('gameStateLogic', () => {
       const sub1Id = '5';
       const sub2Id = '6';
       
-      const result = calculateSubstituteSwap(gameState, sub1Id, sub2Id);
+      const result = calculateGeneralSubstituteSwap(gameState, 'substitute_1', 'substitute_2');
       
       expect(result.formation.substitute_1).toBe(sub2Id);
       expect(result.formation.substitute_2).toBe(sub1Id);
@@ -727,7 +727,7 @@ describe('gameStateLogic', () => {
       const sub1Id = '5';
       const sub2Id = '6';
       
-      const result = calculateSubstituteSwap(gameState, sub1Id, sub2Id);
+      const result = calculateGeneralSubstituteSwap(gameState, 'substitute_1', 'substitute_2');
       
       const player1 = result.allPlayers.find(p => p.id === sub1Id);
       const player2 = result.allPlayers.find(p => p.id === sub2Id);
@@ -736,10 +736,10 @@ describe('gameStateLogic', () => {
       expect(player2.stats.currentPairKey).toBe(POSITION_KEYS.SUBSTITUTE_1);
     });
 
-    test('should return unchanged state for invalid inputs', () => {
+    test('should return unchanged state for invalid positions', () => {
       const gameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
       
-      const result = calculateSubstituteSwap(gameState, null, '6');
+      const result = calculateGeneralSubstituteSwap(gameState, 'invalid_position', 'substitute_2');
       
       expect(result).toBe(gameState);
     });

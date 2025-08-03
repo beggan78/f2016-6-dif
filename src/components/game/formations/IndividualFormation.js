@@ -2,13 +2,12 @@ import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { findPlayerById } from '../../../utils/playerUtils';
 import { getFieldPositions, getSubstitutePositions } from '../../../game/logic/positionUtils';
-import { getAllPositions } from '../../../constants/gameModes';
+import { getAllPositions, supportsInactiveUsers } from '../../../constants/gameModes';
 import { 
   getPositionIcon, 
   getPositionDisplayName, 
   getIndicatorProps, 
   getPositionEvents,
-  supportsInactivePlayers,
   supportsNextNextIndicators
 } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
@@ -53,7 +52,7 @@ export function IndividualFormation({
   const allPositions = getAllPositions(formationAwareTeamMode); // Include goalie in formation rendering
 
   // Mode capabilities - use original teamMode for capability checks (legacy compatibility)
-  const modeSupportsInactive = supportsInactivePlayers(teamMode);
+  const modeSupportsInactive = supportsInactiveUsers(teamMode);
   const modeSupportsNextNext = supportsNextNextIndicators(teamMode);
 
   const renderIndividualPosition = (position, renderIndex) => {
@@ -91,7 +90,7 @@ export function IndividualFormation({
       isNextOn,
       isRecentlySubstituted,
       hideNextOffIndicator,
-      supportsInactivePlayers: modeSupportsInactive,
+      supportsInactiveUsers: modeSupportsInactive,
       role: playerRole,
       isGoalie: isGoaliePosition
     });
@@ -145,3 +144,6 @@ export function IndividualFormation({
     </div>
   );
 }
+
+// Memoize IndividualFormation to prevent unnecessary re-renders
+export default React.memo(IndividualFormation);

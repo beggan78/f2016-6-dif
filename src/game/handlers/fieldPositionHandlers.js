@@ -1,6 +1,7 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { supportsInactiveUsers, supportsNextNextIndicators, getModeDefinition } from '../../constants/gameModes';
+import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
 
 export const createFieldPositionHandlers = (
   teamMode,
@@ -21,32 +22,14 @@ export const createFieldPositionHandlers = (
     }
     
     if (typeof teamModeOrConfig === 'string') {
-      // Formation-aware legacy mappings - use selectedFormation instead of hardcoded '2-2'
-      const formationToUse = selectedFormation || '2-2'; // Default to 2-2 if no formation specified
-      console.log('📱 [FieldPositionHandlers] Using formation-aware mapping:', { teamMode, selectedFormation, formationToUse });
-      
-      const legacyMappings = {
-        [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'pairs' },
-        [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: formationToUse, substitutionType: 'individual' }
-      };
-      
-      const teamConfig = legacyMappings[teamModeOrConfig];
+      // Use centralized formation-aware team config creation
+      const teamConfig = createFormationAwareTeamConfig(teamModeOrConfig, selectedFormation);
       if (!teamConfig) {
-        console.warn(`Unknown legacy team mode: ${teamModeOrConfig}`);
+        console.warn(`Failed to create team config for: ${teamModeOrConfig}`);
         return null;
       }
       
       const modeDefinition = getModeDefinition(teamConfig);
-      console.log('📱 [FieldPositionHandlers] Mode definition loaded:', {
-        fieldPositions: modeDefinition.fieldPositions,
-        substitutePositions: modeDefinition.substitutePositions,
-        formation: modeDefinition.formation
-      });
       
       return modeDefinition;
     }

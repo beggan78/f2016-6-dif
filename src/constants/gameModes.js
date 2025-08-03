@@ -206,17 +206,26 @@ const buildIndividualModeDefinition = (teamConfig, formationLayout, substitutePo
 };
 
 /**
- * Unified helper to get mode definition from either legacy string or modern config object
- * @param {Object|string} teamModeOrConfig - Team mode string (legacy) or team config object
+ * Helper to get mode definition from team config object or legacy team mode string
+ * @param {Object|string} teamModeOrConfig - Team configuration object or legacy team mode string
  * @returns {Object|null} Mode definition object or null if invalid
  */
 export const getDefinition = (teamModeOrConfig) => {
   if (!teamModeOrConfig) {
     return null;
   }
+  
+  // If it's a legacy string, convert it to a team config first
   if (typeof teamModeOrConfig === 'string') {
-    return getLegacyModeDefinition(teamModeOrConfig);
+    const { migrateFromLegacyTeamModeStrict } = require('../utils/formationConfigUtils');
+    const teamConfig = migrateFromLegacyTeamModeStrict(teamModeOrConfig);
+    if (!teamConfig) {
+      return null; // Unknown legacy team mode
+    }
+    return getModeDefinition(teamConfig);
   }
+  
+  // If it's already a team config object, use it directly
   return getModeDefinition(teamModeOrConfig);
 };
 
@@ -269,9 +278,6 @@ export const getModeDefinition = (teamConfig) => {
   return modeDefinition;
 };
 
-// BREAKING CHANGE: Temporary export for test compatibility
-// This will be removed once all tests are updated to use getModeDefinition()
-export const MODE_DEFINITIONS = {};
 
 /**
  * Position-role lookup table - UPDATED: Includes 1-2-1 formation positions
@@ -401,12 +407,15 @@ export function isIndividualMode(teamModeOrConfig) {
 export function getPlayerCountForMode(teamModeOrConfig) {
   if (!teamModeOrConfig) return null;
   if (typeof teamModeOrConfig === 'string') {
-    const definition = getLegacyModeDefinition(teamModeOrConfig);
-    if (!definition) return null;
-    
+    // Handle legacy team mode strings
     if (teamModeOrConfig === TEAM_MODES.PAIRS_7) {
       return 7;
     }
+    
+    // Try to get definition through getDefinition
+    const definition = getDefinition(teamModeOrConfig);
+    if (!definition) return null;
+    
     return definition.positionOrder.length;
   }
   return teamModeOrConfig.squadSize;
@@ -573,28 +582,3 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamModeOrCon
   return { role: null, status: null, pairKey: null };
 }
 
-/**
- * Legacy mode definition mapper - TEMPORARY: For backward compatibility during transition
- * @param {string} legacyTeamMode - Legacy team mode string
- * @returns {Object} Mode definition object
- */
-function getLegacyModeDefinition(legacyTeamMode) {
-  // Map legacy team modes to team configurations
-  const legacyMappings = {
-    [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
-    [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
-    [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
-  };
-  
-  const teamConfig = legacyMappings[legacyTeamMode];
-  if (!teamConfig) {
-    console.warn(`Unknown legacy team mode: ${legacyTeamMode}`);
-    return null;
-  }
-  
-  return getModeDefinition(teamConfig);
-}

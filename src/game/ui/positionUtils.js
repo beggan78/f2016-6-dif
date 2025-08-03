@@ -48,10 +48,10 @@ export function getPositionIcon(position, substitutePositions) {
  */
 export function getPositionDisplayName(position, player, teamMode, substitutePositions) {
   // Check if this formation supports inactive players
-  const supportsInactivePlayers = supportsInactiveUsers(teamMode);
+  const supportsInactive = supportsInactiveUsers(teamMode);
   
   // For substitute positions with inactive support, check player status
-  if (supportsInactivePlayers && substitutePositions.includes(position)) {
+  if (supportsInactive && substitutePositions.includes(position)) {
     if (player?.stats.isInactive) {
       return 'Inactive';
     }
@@ -86,13 +86,6 @@ export function getPositionEvents(longPressHandlers, position) {
   return longPressHandlers[`${position}Events`] || {};
 }
 
-/**
- * Check if a formation supports inactive players
- * @deprecated Use supportsInactiveUsers from gameModes.js instead
- */
-export function supportsInactivePlayers(teamMode) {
-  return supportsInactiveUsers(teamMode);
-}
 
 /**
  * Re-export supportsNextNextIndicators from gameModes for backward compatibility

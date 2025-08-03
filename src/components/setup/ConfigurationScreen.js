@@ -1,9 +1,8 @@
     import React from 'react';
 import { Settings, Play, Shuffle, Layers } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
+import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES } from '../../constants/teamConfiguration';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
@@ -20,9 +19,8 @@ export function ConfigurationScreen({
   setPeriodDurationMinutes, 
   periodGoalieIds, 
   setPeriodGoalieIds, 
-  teamMode,
-  setTeamMode,
   teamConfig,
+  updateTeamConfig,
   selectedFormation,
   updateFormationSelection,
   createTeamConfigFromSquadSize,
@@ -38,6 +36,30 @@ export function ConfigurationScreen({
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
+
+  // Handle substitution mode changes
+  const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
+    if (!teamConfig) return;
+    
+    const newTeamConfig = createTeamConfig(
+      teamConfig.format || '5v5',
+      teamConfig.squadSize || selectedSquadIds.length,
+      teamConfig.formation || selectedFormation,
+      newSubstitutionType
+    );
+    
+    updateTeamConfig(newTeamConfig);
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
+
+  // Auto-select "Pairs" substitution mode when 7 players + 2-2 formation is selected
+  React.useEffect(() => {
+    if (selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2) {
+      // If no substitution type is set or if we need to default to pairs
+      if (!teamConfig?.substitutionType) {
+        handleSubstitutionModeChange(SUBSTITUTION_TYPES.PAIRS);
+      }
+    }
+  }, [selectedSquadIds.length, selectedFormation, teamConfig?.substitutionType, handleSubstitutionModeChange]);
 
   const handleFormationChange = (newFormation) => {
     const definition = FORMATION_DEFINITIONS[newFormation];
@@ -60,8 +82,8 @@ export function ConfigurationScreen({
       
       // Auto-create team configuration based on squad size
       if (newIds.length >= 5 && newIds.length <= 10) {
-        // Default to individual substitution, but allow pairs for 7-player
-        const defaultSubstitutionType = (newIds.length === 7 && teamMode === TEAM_MODES.INDIVIDUAL_6) ? 'pairs' : 'individual';
+        // Default to pairs for 7-player mode, individual for others
+        const defaultSubstitutionType = (newIds.length === 7) ? 'pairs' : 'individual';
         createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType);
       }
       
@@ -218,10 +240,10 @@ export function ConfigurationScreen({
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
-                name="teamMode"
-                value={TEAM_MODES.PAIRS_7}
-                checked={teamMode === TEAM_MODES.PAIRS_7}
-                onChange={e => setTeamMode(e.target.value)}
+                name="substitutionMode"
+                value={SUBSTITUTION_TYPES.PAIRS}
+                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS}
+                onChange={e => handleSubstitutionModeChange(e.target.value)}
                 className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
               />
               <div>
@@ -232,10 +254,10 @@ export function ConfigurationScreen({
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
-                name="teamMode"
-                value={TEAM_MODES.INDIVIDUAL_7}
-                checked={teamMode === TEAM_MODES.INDIVIDUAL_7}
-                onChange={e => setTeamMode(e.target.value)}
+                name="substitutionMode"
+                value={SUBSTITUTION_TYPES.INDIVIDUAL}
+                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL}
+                onChange={e => handleSubstitutionModeChange(e.target.value)}
                 className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
               />
               <div>

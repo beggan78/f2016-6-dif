@@ -17,11 +17,11 @@ export function FormationPreview({ formation, className = '' }) {
           name: '2-2 Formation',
           description: '2 defenders, 2 attackers',
           positions: [
-            { name: 'Left Attacker', icon: Sword, x: 38, y: 25, color: 'text-red-400' },
-            { name: 'Right Attacker', icon: Sword, x: 62, y: 25, color: 'text-red-400' },
+            { name: 'Left Attacker', icon: Sword, x: 38, y: 25, color: 'text-blue-400' },
+            { name: 'Right Attacker', icon: Sword, x: 62, y: 25, color: 'text-blue-400' },
             { name: 'Left Defender', icon: Shield, x: 35, y: 55, color: 'text-blue-400' },
             { name: 'Right Defender', icon: Shield, x: 65, y: 55, color: 'text-blue-400' },
-            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-green-400' }
+            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-blue-400' }
           ],
           roles: [
             { role: 'Defenders', count: 2, color: 'text-blue-400' },
@@ -34,11 +34,11 @@ export function FormationPreview({ formation, className = '' }) {
           name: '1-2-1 Formation',
           description: '1 defender, 2 midfielders, 1 attacker',
           positions: [
-            { name: 'Attacker', icon: Sword, x: 50, y: 20, color: 'text-red-400' },
-            { name: 'Left Mid', icon: ArrowDownUp, x: 30, y: 45, color: 'text-yellow-400' },
-            { name: 'Right Mid', icon: ArrowDownUp, x: 70, y: 45, color: 'text-yellow-400' },
+            { name: 'Attacker', icon: Sword, x: 50, y: 20, color: 'text-blue-400' },
+            { name: 'Left Mid', icon: ArrowDownUp, x: 30, y: 45, color: 'text-blue-400' },
+            { name: 'Right Mid', icon: ArrowDownUp, x: 70, y: 45, color: 'text-blue-400' },
             { name: 'Defender', icon: Shield, x: 50, y: 65, color: 'text-blue-400' },
-            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-green-400' }
+            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-blue-400' }
           ],
           roles: [
             { role: 'Defender', count: 1, color: 'text-blue-400' },

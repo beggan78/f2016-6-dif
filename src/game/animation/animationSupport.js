@@ -157,6 +157,7 @@
 import { TEAM_MODES } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
 import { getFormationPositionsWithGoalie, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
+import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -214,17 +215,8 @@ const getPositionIndex = (position, teamMode, selectedFormation = null) => {
     let teamModeToUse = teamMode;
     
     if (typeof teamMode === 'string' && selectedFormation && isIndividualMode(teamMode)) {
-      // Create formation-aware team config for individual modes
-      const formationToUse = selectedFormation || '2-2';
-      const legacyMappings = {
-        'individual_5': { format: '5v5', squadSize: 5, formation: formationToUse, substitutionType: 'individual' },
-        'individual_6': { format: '5v5', squadSize: 6, formation: formationToUse, substitutionType: 'individual' },
-        'individual_7': { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'individual' },
-        'individual_8': { format: '5v5', squadSize: 8, formation: formationToUse, substitutionType: 'individual' },
-        'individual_9': { format: '5v5', squadSize: 9, formation: formationToUse, substitutionType: 'individual' },
-        'individual_10': { format: '5v5', squadSize: 10, formation: formationToUse, substitutionType: 'individual' }
-      };
-      teamModeToUse = legacyMappings[teamMode] || teamMode;
+      // Use centralized formation-aware team config creation
+      teamModeToUse = createFormationAwareTeamConfig(teamMode, selectedFormation);
     }
     
     const positions = getFormationPositionsWithGoalie(teamModeToUse);
@@ -332,19 +324,8 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode, selec
     // For legacy team mode strings, we need to convert to team config first
     let modeDefinition;
     if (typeof teamMode === 'string') {
-      // Formation-aware legacy mappings - use selectedFormation instead of hardcoded '2-2'
-      const formationToUse = selectedFormation || '2-2'; // Default to 2-2 if no formation specified
-
-      const legacyMappings = {
-        'pairs_7': { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'pairs' },
-        'individual_5': { format: '5v5', squadSize: 5, formation: formationToUse, substitutionType: 'individual' },
-        'individual_6': { format: '5v5', squadSize: 6, formation: formationToUse, substitutionType: 'individual' },
-        'individual_7': { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'individual' },
-        'individual_8': { format: '5v5', squadSize: 8, formation: formationToUse, substitutionType: 'individual' },
-        'individual_9': { format: '5v5', squadSize: 9, formation: formationToUse, substitutionType: 'individual' },
-        'individual_10': { format: '5v5', squadSize: 10, formation: formationToUse, substitutionType: 'individual' }
-      };
-      const teamConfig = legacyMappings[teamMode];
+      // Use centralized formation-aware team config creation
+      const teamConfig = createFormationAwareTeamConfig(teamMode, selectedFormation);
       if (teamConfig) {
         modeDefinition = getModeDefinition(teamConfig);
       }

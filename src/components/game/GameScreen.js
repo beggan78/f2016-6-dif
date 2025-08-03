@@ -85,18 +85,6 @@ export function GameScreen({
   // Determine which formation mode we're using
   const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
 
-  // Debug: Track state changes
-  React.useEffect(() => {
-    console.log('🔷 [GameScreen] nextPlayerIdToSubOut changed:', nextPlayerIdToSubOut, 'at', new Date().toISOString());
-  }, [nextPlayerIdToSubOut]);
-
-  React.useEffect(() => {
-    console.log('🔷 [GameScreen] rotationQueue changed:', rotationQueue?.slice(), 'at', new Date().toISOString());
-  }, [rotationQueue]);
-
-  React.useEffect(() => {
-    console.log('🔷 [GameScreen] nextPlayerToSubOut changed:', nextPlayerToSubOut, 'at', new Date().toISOString());
-  }, [nextPlayerToSubOut]);
 
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => {
@@ -121,14 +109,6 @@ export function GameScreen({
       awayScore
     };
     
-    console.log('🔵 [GameScreen] createGameState called, current values:', {
-      nextPlayerIdToSubOut,
-      nextPlayerToSubOut,
-      rotationQueue: rotationQueue?.slice(),
-      teamMode,
-      selectedFormation,
-      timestamp: new Date().toISOString()
-    });
     
     return gameState;
   }, [
@@ -246,7 +226,6 @@ export function GameScreen({
   const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
     if (!player) {
-      console.log('🔍 [DEBUG] getPlayerTimeStats - Player not found:', playerId);
       return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
     }
     
@@ -492,3 +471,58 @@ export function GameScreen({
     </div>
   );
 }
+
+// Custom comparison function for React.memo
+const arePropsEqual = (prevProps, nextProps) => {
+  // Compare primitive props
+  const primitiveProps = [
+    'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
+    'teamMode', 'selectedFormation', 'nextPhysicalPairToSubOut', 'nextPlayerToSubOut',
+    'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'homeScore', 'awayScore'
+  ];
+  
+  for (const prop of primitiveProps) {
+    if (prevProps[prop] !== nextProps[prop]) {
+      return false;
+    }
+  }
+  
+  // Compare complex objects with shallow comparison
+  // Formation object comparison
+  if (JSON.stringify(prevProps.formation) !== JSON.stringify(nextProps.formation)) {
+    return false;
+  }
+  
+  // Players array comparison (shallow)
+  if (prevProps.allPlayers?.length !== nextProps.allPlayers?.length) {
+    return false;
+  }
+  
+  // Compare players by reference (assuming immutable updates)
+  if (prevProps.allPlayers && nextProps.allPlayers) {
+    for (let i = 0; i < prevProps.allPlayers.length; i++) {
+      if (prevProps.allPlayers[i] !== nextProps.allPlayers[i]) {
+        return false;
+      }
+    }
+  }
+  
+  // Rotation queue comparison
+  if (prevProps.rotationQueue?.length !== nextProps.rotationQueue?.length) {
+    return false;
+  }
+  
+  if (prevProps.rotationQueue && nextProps.rotationQueue) {
+    for (let i = 0; i < prevProps.rotationQueue.length; i++) {
+      if (prevProps.rotationQueue[i] !== nextProps.rotationQueue[i]) {
+        return false;
+      }
+    }
+  }
+  
+  // All props are equal
+  return true;
+};
+
+// Export memoized component
+export default React.memo(GameScreen, arePropsEqual);
