@@ -15,16 +15,33 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { FormationRenderer } from '../FormationRenderer';
 import { TEAM_MODES } from '../../../../constants/playerConstants';
+import { createTeamConfig } from '../../../../constants/teamConfiguration';
 import {
   createMockGameScreenProps,
   createMockPlayers,
   createMockFormation
 } from '../../../__tests__/componentTestUtils';
 
+// Helper function to convert legacy team mode to modern team config
+const teamModeToConfig = (teamMode) => {
+  switch (teamMode) {
+    case TEAM_MODES.PAIRS_7:
+      return createTeamConfig('5v5', 7, '2-2', 'pairs');
+    case TEAM_MODES.INDIVIDUAL_6:
+      return createTeamConfig('5v5', 6, '2-2', 'individual');
+    case TEAM_MODES.INDIVIDUAL_7:
+      return createTeamConfig('5v5', 7, '2-2', 'individual');
+    case TEAM_MODES.INDIVIDUAL_8:
+      return createTeamConfig('5v5', 8, '2-2', 'individual');
+    default:
+      return null;
+  }
+};
+
 // Mock the formation components  
 jest.mock('../PairsFormation', () => ({
   PairsFormation: (props) => (
-    <div data-testid="pairs-formation" data-team-mode={props.teamMode || 'none'}>
+    <div data-testid="pairs-formation" data-substitution-type="pairs">
       <div data-testid="pairs-formation-players">{props.allPlayers?.length || 0} players</div>
       <div data-testid="pairs-formation-goalie">{props.formation?.goalie || 'No goalie'}</div>
       Pairs Formation Component
@@ -34,7 +51,7 @@ jest.mock('../PairsFormation', () => ({
 
 jest.mock('../IndividualFormation', () => ({
   IndividualFormation: (props) => (
-    <div data-testid="individual-formation" data-team-mode={props.teamMode || 'none'}>
+    <div data-testid="individual-formation" data-substitution-type="individual">
       <div data-testid="individual-formation-players">{props.allPlayers?.length || 0} players</div>
       <div data-testid="individual-formation-goalie">{props.formation?.goalie || 'No goalie'}</div>
       Individual Formation Component
@@ -47,7 +64,8 @@ describe('FormationRenderer', () => {
 
   beforeEach(() => {
     defaultProps = {
-      teamMode: TEAM_MODES.INDIVIDUAL_7,
+      teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
+      selectedFormation: '2-2',
       formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
       allPlayers: createMockPlayers(),
       animationState: { type: 'none', phase: 'idle', data: {} },
@@ -66,100 +84,99 @@ describe('FormationRenderer', () => {
   });
 
   describe('Component Routing Logic', () => {
-    it('should render PairsFormation for PAIRS_7 team mode', () => {
+    it('should render PairsFormation for pairs substitution type', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
         formation: createMockFormation(TEAM_MODES.PAIRS_7)
       };
       
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByTestId('pairs-formation')).toBeInTheDocument();
-      // Note: FormationRenderer currently doesn't pass teamMode to PairsFormation
-      expect(screen.getByTestId('pairs-formation')).toHaveAttribute('data-team-mode', 'none');
+      expect(screen.getByTestId('pairs-formation')).toHaveAttribute('data-substitution-type', 'pairs');
       expect(screen.getByText('Pairs Formation Component')).toBeInTheDocument();
       expect(screen.queryByTestId('individual-formation')).not.toBeInTheDocument();
     });
 
-    it('should render IndividualFormation for INDIVIDUAL_6 team mode', () => {
+    it('should render IndividualFormation for individual substitution type (6 players)', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_6),
         formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
       };
       
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
-      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-team-mode', TEAM_MODES.INDIVIDUAL_6);
+      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
       expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
     });
 
-    it('should render IndividualFormation for INDIVIDUAL_7 team mode', () => {
+    it('should render IndividualFormation for individual substitution type (7 players)', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
         formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7)
       };
       
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
-      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-team-mode', TEAM_MODES.INDIVIDUAL_7);
+      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
       expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
     });
 
-    it('should render IndividualFormation for INDIVIDUAL_8 team mode', () => {
+    it('should render IndividualFormation for individual substitution type (8 players)', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_8,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_8),
         formation: createMockFormation(TEAM_MODES.INDIVIDUAL_8)
       };
       
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
-      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-team-mode', TEAM_MODES.INDIVIDUAL_8);
+      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
       expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
     });
 
-    it('should show error message for unsupported team mode', () => {
+    it('should show error message for unsupported substitution type', () => {
       const props = {
         ...defaultProps,
-        teamMode: 'INVALID_MODE'
+        teamConfig: { substitutionType: 'INVALID_TYPE' }
       };
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported team mode: INVALID_MODE/)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported substitution type: INVALID_TYPE/)).toBeInTheDocument();
       expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
       expect(screen.queryByTestId('individual-formation')).not.toBeInTheDocument();
     });
 
-    it('should show error message when teamMode is null', () => {
+    it('should show error message when teamConfig is null', () => {
       const props = {
         ...defaultProps,
-        teamMode: null
+        teamConfig: null
       };
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported team mode:/)).toBeInTheDocument();
+      expect(screen.getByText(/No team configuration available/)).toBeInTheDocument();
     });
 
-    it('should show error message when teamMode is undefined', () => {
+    it('should show error message when teamConfig is undefined', () => {
       const props = {
         ...defaultProps,
-        teamMode: undefined
+        teamConfig: undefined
       };
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported team mode:/)).toBeInTheDocument();
+      expect(screen.getByText(/No team configuration available/)).toBeInTheDocument();
     });
   });
 
@@ -167,7 +184,7 @@ describe('FormationRenderer', () => {
     it('should pass all props correctly to PairsFormation', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
         formation: createMockFormation(TEAM_MODES.PAIRS_7),
         allPlayers: createMockPlayers(7)
       };
@@ -182,7 +199,7 @@ describe('FormationRenderer', () => {
     it('should handle empty players array for PairsFormation', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
         formation: createMockFormation(TEAM_MODES.PAIRS_7),
         allPlayers: []
       };
@@ -195,7 +212,7 @@ describe('FormationRenderer', () => {
     it('should handle missing formation for PairsFormation', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
         formation: null
       };
       
@@ -206,10 +223,10 @@ describe('FormationRenderer', () => {
   });
 
   describe('Props Passing to IndividualFormation', () => {
-    it('should pass all props correctly to IndividualFormation for INDIVIDUAL_6', () => {
+    it('should pass all props correctly to IndividualFormation for 6-player individual', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_6,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_6),
         formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6),
         allPlayers: createMockPlayers(6)
       };
@@ -221,10 +238,10 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('individual-formation-goalie')).toHaveTextContent('6');
     });
 
-    it('should pass all props correctly to IndividualFormation for INDIVIDUAL_7', () => {
+    it('should pass all props correctly to IndividualFormation for 7-player individual', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
         formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
         allPlayers: createMockPlayers(7)
       };
@@ -236,10 +253,10 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('individual-formation-goalie')).toHaveTextContent('7');
     });
 
-    it('should pass all props correctly to IndividualFormation for INDIVIDUAL_8', () => {
+    it('should pass all props correctly to IndividualFormation for 8-player individual', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_8,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_8),
         formation: createMockFormation(TEAM_MODES.INDIVIDUAL_8),
         allPlayers: createMockPlayers(8)
       };
@@ -254,7 +271,7 @@ describe('FormationRenderer', () => {
     it('should handle empty players array for IndividualFormation', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
         allPlayers: []
       };
       
@@ -266,7 +283,7 @@ describe('FormationRenderer', () => {
     it('should handle missing formation for IndividualFormation', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
         formation: null
       };
       
@@ -286,7 +303,7 @@ describe('FormationRenderer', () => {
       
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
         longPressHandlers: mockHandlers
       };
       
@@ -302,7 +319,7 @@ describe('FormationRenderer', () => {
       
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_7,
+        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
         getPlayerNameById: mockGetPlayerName,
         getPlayerTimeStats: mockGetPlayerStats
       };
@@ -316,7 +333,7 @@ describe('FormationRenderer', () => {
 
   describe('Error Handling and Edge Cases', () => {
     it('should not crash with null props', () => {
-      expect(() => render(<FormationRenderer teamMode={TEAM_MODES.INDIVIDUAL_7} />)).not.toThrow();
+      expect(() => render(<FormationRenderer teamConfig={teamModeToConfig(TEAM_MODES.INDIVIDUAL_7)} />)).not.toThrow();
     });
 
     it('should not crash with undefined longPressHandlers', () => {
@@ -337,15 +354,15 @@ describe('FormationRenderer', () => {
       expect(() => render(<FormationRenderer {...props} />)).not.toThrow();
     });
 
-    it('should handle empty string teamMode', () => {
+    it('should handle empty teamConfig', () => {
       const props = {
         ...defaultProps,
-        teamMode: ''
+        teamConfig: {}
       };
       
       render(<FormationRenderer {...props} />);
       
-      expect(screen.getByText(/Unsupported team mode:/)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported substitution type:/)).toBeInTheDocument();
     });
   });
 });

@@ -163,12 +163,12 @@ export const setCaptain = (allPlayers, newCaptainId) => {
 };
 
 /**
- * Check if there are any active substitutes for a team mode
+ * Check if there are any active substitutes for a team config
  * @param {Array} allPlayers - Array of all players
- * @param {string} teamMode - Current team mode
+ * @param {Object} teamConfig - Current team configuration object
  * @returns {boolean} True if at least one substitute is active (not inactive)
  */
-export const hasActiveSubstitutes = (allPlayers, teamMode) => {
+export const hasActiveSubstitutes = (allPlayers, teamConfig) => {
   // Guard against undefined/null allPlayers
   if (!allPlayers || !Array.isArray(allPlayers)) {
     return false;
@@ -178,7 +178,7 @@ export const hasActiveSubstitutes = (allPlayers, teamMode) => {
   const gameModes = require('../constants/gameModes');
   
   // Use the modern getDefinition helper that handles both legacy strings and config objects
-  const modeDefinition = gameModes.getDefinition ? gameModes.getDefinition(teamMode) : null;
+  const modeDefinition = gameModes.getDefinition ? gameModes.getDefinition(teamConfig) : null;
   if (!modeDefinition) {
     return false;
   }
@@ -190,7 +190,7 @@ export const hasActiveSubstitutes = (allPlayers, teamMode) => {
   }
   
   // DEBUG: Show ALL player states for pairs mode
-  if (teamMode === 'pairs_7') {
+  if (teamConfig?.substitutionType === 'pairs') {
   }
   
   // Find players in substitute positions

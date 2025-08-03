@@ -128,12 +128,16 @@ export const randomizeFormationPositions = (availablePlayers, teamModeOrConfig) 
  * @returns {string} Equivalent legacy team mode string
  */
 const getTeamModeFromConfig = (teamConfig) => {
+  if (!teamConfig) {
+    return 'individual_7'; // Default fallback
+  }
+  
   if (teamConfig.substitutionType === 'pairs') {
     return 'pairs_7';
   }
   
   // Individual modes based on squad size
-  const squadSize = teamConfig.squadSize;
+  const squadSize = teamConfig.squadSize || 7; // Default to 7 if missing
   return `individual_${squadSize}`;
 };
 

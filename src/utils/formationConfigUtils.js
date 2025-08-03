@@ -28,11 +28,15 @@ const LEGACY_TEAM_MODE_MAPPINGS = {
 
 /**
  * Gets the legacy team mode mapping for a given legacy team mode string
- * @param {string} legacyTeamMode - Legacy team mode string (e.g., 'pairs_7', 'individual_6')
+ * @param {string} legacyTeamMode - Legacy team mode string (e.g., 'pairs_7', 'individual_6', 'PAIRS_7')
  * @returns {Object|null} Team configuration mapping or null if not found
  */
 export const getLegacyTeamModeMapping = (legacyTeamMode) => {
-  return LEGACY_TEAM_MODE_MAPPINGS[legacyTeamMode] || null;
+  if (!legacyTeamMode) return null;
+  
+  // Handle case-insensitive lookup for legacy data
+  const normalizedTeamMode = legacyTeamMode.toLowerCase();
+  return LEGACY_TEAM_MODE_MAPPINGS[normalizedTeamMode] || null;
 };
 
 /**

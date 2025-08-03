@@ -2,10 +2,9 @@ import React, { useMemo } from 'react';
 import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
-import { TEAM_MODES, PLAYER_ROLES } from '../../constants/playerConstants';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
-import { isIndividualMode } from '../../constants/gameModes';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 
 // New modular imports
@@ -48,7 +47,7 @@ export function GameScreen({
   setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
-  teamMode,
+  teamConfig,
   selectedFormation,
   alertMinutes,
   pushModalState,
@@ -83,7 +82,7 @@ export function GameScreen({
   }, [selectedSquadPlayers]);
   
   // Determine which formation mode we're using
-  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
+  const isPairsMode = teamConfig?.substitutionType === 'pairs';
 
 
   // Helper to create game state object for pure logic functions
@@ -91,7 +90,7 @@ export function GameScreen({
     const gameState = {
       formation,
       allPlayers,
-      teamMode,
+      teamConfig,
       selectedFormation,
       nextPhysicalPairToSubOut,
       nextPlayerToSubOut,
@@ -112,7 +111,7 @@ export function GameScreen({
     
     return gameState;
   }, [
-    formation, allPlayers, teamMode, selectedFormation, nextPhysicalPairToSubOut,
+    formation, allPlayers, teamConfig, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, homeScore, awayScore
@@ -165,22 +164,22 @@ export function GameScreen({
       stateUpdaters,
       animationHooks,
       modalHandlers,
-      teamMode
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamMode]
+      teamConfig
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>
     createFieldPositionHandlers(
-      teamMode,
+      teamConfig,
       formation,
       allPlayers,
       nextPlayerIdToSubOut,
       modalHandlers,
       selectedFormation  // NEW: Pass selectedFormation for formation-aware position callbacks
-    ), [teamMode, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
+    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
   );
 
-  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamMode);
+  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
 
   const timerHandlers = React.useMemo(() =>
     createTimerHandlers(
@@ -219,8 +218,8 @@ export function GameScreen({
 
   // Check if SUB NOW button should be enabled (at least one active substitute)
   const canSubstitute = React.useMemo(() => {
-    return hasActiveSubstitutes(allPlayers, teamMode);
-  }, [allPlayers, teamMode]);
+    return hasActiveSubstitutes(allPlayers, teamConfig);
+  }, [allPlayers, teamConfig]);
 
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
@@ -344,13 +343,13 @@ export function GameScreen({
 
       {/* Field & Subs Visualization */}
       <FormationRenderer
-          teamMode={teamMode}
+          teamConfig={teamConfig}
           selectedFormation={selectedFormation}
           formation={formation}
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
-          hideNextOffIndicator={uiState.hideNextOffIndicator || (isIndividualMode(teamMode) && !canSubstitute)}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
@@ -409,7 +408,7 @@ export function GameScreen({
           modalHandlers.modals.fieldPlayer.type === 'player' || 
           (modalHandlers.modals.fieldPlayer.type === 'pair' && modalHandlers.modals.fieldPlayer.target !== 'subPair')
         }
-        canSubstitute={isIndividualMode(teamMode) ? canSubstitute : true}
+        canSubstitute={teamConfig?.substitutionType === 'individual' ? canSubstitute : true}
       />
 
       {/* Substitute Player Modal */}
@@ -477,7 +476,7 @@ const arePropsEqual = (prevProps, nextProps) => {
   // Compare primitive props
   const primitiveProps = [
     'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
-    'teamMode', 'selectedFormation', 'nextPhysicalPairToSubOut', 'nextPlayerToSubOut',
+    'teamConfig', 'selectedFormation', 'nextPhysicalPairToSubOut', 'nextPlayerToSubOut',
     'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'homeScore', 'awayScore'
   ];
   

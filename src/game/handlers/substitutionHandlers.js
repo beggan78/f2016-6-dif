@@ -9,7 +9,6 @@ import {
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
@@ -19,7 +18,7 @@ export const createSubstitutionHandlers = (
   stateUpdaters,
   animationHooks,
   modalHandlers,
-  teamMode
+  teamConfig
 ) => {
   // Helper to get mode definition - handles both legacy strings and team config objects
   const getDefinition = (teamModeOrConfig, selectedFormation = null) => {
@@ -68,7 +67,7 @@ export const createSubstitutionHandlers = (
     openFieldPlayerModal
   } = modalHandlers;
 
-  const supportsInactive = supportsInactiveUsers(teamMode);
+  const supportsInactive = supportsInactiveUsers(teamConfig);
 
   /**
    * Generate unique event ID for substitution tracking
@@ -82,8 +81,8 @@ export const createSubstitutionHandlers = (
   /**
    * Get formation description for event logging
    */
-  const getFormationDescription = (formation, teamMode) => {
-    if (teamMode === TEAM_MODES.PAIRS_7) {
+  const getFormationDescription = (formation, teamConfig) => {
+    if (teamConfig?.substitutionType === 'pairs') {
       return {
         leftPair: formation.leftPair,
         rightPair: formation.rightPair,
@@ -92,7 +91,7 @@ export const createSubstitutionHandlers = (
       };
     } else {
       // Generic formation normalizer for individual modes using MODE_DEFINITIONS
-      const definition = getDefinition(teamMode);
+      const definition = getDefinition(teamConfig);
       if (!definition) return formation;
       
       const normalized = { goalie: formation.goalie };
@@ -104,8 +103,8 @@ export const createSubstitutionHandlers = (
       
       // Add substitute positions
       definition.substitutePositions.forEach(position => {
-        // For INDIVIDUAL_6, use 'substitute' as the key for substitute_1
-        if (teamMode === TEAM_MODES.INDIVIDUAL_6 && position === 'substitute_1') {
+        // For 6-player mode, use 'substitute' as the key for substitute_1
+        if (teamConfig?.squadSize === 6 && position === 'substitute_1') {
           normalized.substitute = formation[position];
         } else {
           normalized[position] = formation[position];
@@ -135,7 +134,7 @@ export const createSubstitutionHandlers = (
     playersComingOn, 
     beforeFormation, 
     afterFormation, 
-    teamMode, 
+    teamConfig, 
     allPlayers, 
     currentTime,
     periodNumber = 1
@@ -149,9 +148,9 @@ export const createSubstitutionHandlers = (
         playersOn: playersComingOn,
         playersOffNames: getPlayerNames(playersGoingOff, allPlayers),
         playersOnNames: getPlayerNames(playersComingOn, allPlayers),
-        teamMode,
-        beforeFormation: getFormationDescription(beforeFormation, teamMode),
-        afterFormation: getFormationDescription(afterFormation, teamMode),
+        teamConfig,
+        beforeFormation: getFormationDescription(beforeFormation, teamConfig),
+        afterFormation: getFormationDescription(afterFormation, teamConfig),
         periodNumber,
         matchTime: calculateMatchTime(currentTime),
         timestamp: currentTime
@@ -195,12 +194,12 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSetAsNextToGoIn = (substituteModal, formation) => {
-    if (substituteModal.playerId && isIndividualMode(teamMode)) {
+    if (substituteModal.playerId && isIndividualMode(teamConfig)) {
       const playerId = substituteModal.playerId;
       const gameState = gameStateFactory();
       
       // Get team mode configuration
-      const definition = getDefinition(teamMode);
+      const definition = getDefinition(teamConfig);
       if (!definition || !definition.supportsNextNextIndicators) {
         closeSubstituteModal();
         return;
@@ -238,9 +237,9 @@ export const createSubstitutionHandlers = (
                   fromPosition: currentPosition,
                   toPosition: 'substitute_1',
                   description: `${targetPlayer.name} moved to next-to-go-in position with cascading reorder`,
-                  beforeFormation: getFormationDescription(gameState.formation, teamMode),
-                  afterFormation: getFormationDescription(newGameState.formation, teamMode),
-                  teamMode,
+                  beforeFormation: getFormationDescription(gameState.formation, teamConfig),
+                  afterFormation: getFormationDescription(newGameState.formation, teamConfig),
+                  teamConfig,
                   matchTime: calculateMatchTime(currentTime),
                   timestamp: currentTime,
                   periodNumber: gameState.currentPeriodNumber || 1
@@ -266,7 +265,7 @@ export const createSubstitutionHandlers = (
       const currentTime = Date.now();
       const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
-      const bottomSubPosition = getBottomSubstitutePosition(teamMode);
+      const bottomSubPosition = getBottomSubstitutePosition(teamConfig);
       const isBottomSubBeingInactivated = playerBeingInactivated?.stats.currentPairKey === bottomSubPosition;
       
       if (isBottomSubBeingInactivated) {
@@ -292,7 +291,7 @@ export const createSubstitutionHandlers = (
               previousStatus: 'active_substitute',
               newStatus: 'inactive',
               description: `${playerBeingInactivated.name} marked as inactive`,
-              teamMode,
+              teamConfig,
               matchTime: calculateMatchTime(currentTime),
               timestamp: currentTime,
               periodNumber: gameState.currentPeriodNumber || 1
@@ -325,9 +324,9 @@ export const createSubstitutionHandlers = (
                   previousStatus: 'active_substitute',
                   newStatus: 'inactive',
                   description: `${playerBeingInactivated.name} marked as inactive (with position swap)`,
-                  beforeFormation: getFormationDescription(gameState.formation, teamMode),
-                  afterFormation: getFormationDescription(newGameState.formation, teamMode),
-                  teamMode,
+                  beforeFormation: getFormationDescription(gameState.formation, teamConfig),
+                  afterFormation: getFormationDescription(newGameState.formation, teamConfig),
+                  teamConfig,
                   matchTime: calculateMatchTime(currentTime),
                   timestamp: currentTime,
                   periodNumber: gameState.currentPeriodNumber || 1
@@ -380,9 +379,9 @@ export const createSubstitutionHandlers = (
                 previousStatus: 'inactive',
                 newStatus: 'active_substitute',
                 description: `${playerBeingActivated.name} reactivated`,
-                beforeFormation: getFormationDescription(gameState.formation, teamMode),
-                afterFormation: getFormationDescription(newGameState.formation, teamMode),
-                teamMode,
+                beforeFormation: getFormationDescription(gameState.formation, teamConfig),
+                afterFormation: getFormationDescription(newGameState.formation, teamConfig),
+                teamConfig,
                 matchTime: calculateMatchTime(currentTime),
                 timestamp: currentTime,
                 periodNumber: gameState.currentPeriodNumber || 1
@@ -416,7 +415,7 @@ export const createSubstitutionHandlers = (
     
 
     // Check if substitution is possible (at least one active substitute)
-    if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamMode)) {
+    if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamConfig)) {
       return;
     }
     
@@ -462,7 +461,7 @@ export const createSubstitutionHandlers = (
           playersComingOnIds,
           beforeFormation,
           newGameState.formation,
-          teamMode,
+          teamConfig,
           gameState.allPlayers,
           substitutionTimestamp,
           gameState.currentPeriodNumber || 1
@@ -479,7 +478,7 @@ export const createSubstitutionHandlers = (
           playersComingOnOriginalStats,
           playersComingOnIds,
           playersGoingOffIds,
-          teamMode,
+          teamConfig,
           subTimerSecondsAtSubstitution,
           eventId: substitutionEvent?.id || null // Store event ID for potential removal
         };
@@ -504,7 +503,7 @@ export const createSubstitutionHandlers = (
     
     if (action === 'show-options') {
       // Check if this is pairs mode - position change not supported
-      if (gameState.teamMode === TEAM_MODES.PAIRS_7) {
+      if (gameState.teamConfig?.substitutionType === 'pairs') {
         alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
         closeFieldPlayerModal();
         return;
@@ -520,7 +519,7 @@ export const createSubstitutionHandlers = (
           const selectedSquadIds = gameState.selectedSquadPlayers.map(p => p.id);
           
           // Use utility function to get outfield players, then filter by status
-          const definition = getDefinition(gameState.teamMode);
+          const definition = getDefinition(gameState.teamConfig);
           if (!definition) return true;
 
           const sourcePlayerRole = definition.positions[fieldPlayerModal.target]?.role;
@@ -536,7 +535,7 @@ export const createSubstitutionHandlers = (
             const currentPairKey = fullPlayerData.stats.currentPairKey;
             
             // Exclude substitutes based on team mode using MODE_DEFINITIONS
-            const definition = getDefinition(gameState.teamMode);
+            const definition = getDefinition(gameState.teamConfig);
             if (!definition) return true;
             
             // Use configuration-driven substitute exclusion
@@ -593,7 +592,7 @@ export const createSubstitutionHandlers = (
                 player2Name: attackerPlayer?.name || 'Unknown',
                 pairKey: pairKey,
                 description: `${defenderPlayer?.name || 'Unknown'} and ${attackerPlayer?.name || 'Unknown'} swapped positions within ${pairKey}`,
-                teamMode: teamMode
+                teamConfig: teamConfig
               });
             }
           },
@@ -642,9 +641,9 @@ export const createSubstitutionHandlers = (
                 targetPlayerName: targetPlayer.name,
                 sourcePosition: sourcePlayer.stats.currentPairKey,
                 targetPosition: targetPlayer.stats.currentPairKey,
-                beforeFormation: getFormationDescription(gameState.formation, teamMode),
-                afterFormation: getFormationDescription(newGameState.formation, teamMode),
-                teamMode,
+                beforeFormation: getFormationDescription(gameState.formation, teamConfig),
+                afterFormation: getFormationDescription(newGameState.formation, teamConfig),
+                teamConfig,
                 matchTime: calculateMatchTime(currentTime),
                 timestamp: currentTime,
                 periodNumber: gameState.currentPeriodNumber || 1
@@ -705,9 +704,9 @@ export const createSubstitutionHandlers = (
             playersComingBackOff: lastSubstitution.playersComingOnIds,
             playersGoingBackOnNames: getPlayerNames(lastSubstitution.playersGoingOffIds, newGameState.allPlayers),
             playersComingBackOffNames: getPlayerNames(lastSubstitution.playersComingOnIds, newGameState.allPlayers),
-            teamMode: lastSubstitution.teamMode,
-            beforeFormation: getFormationDescription(newGameState.formation, lastSubstitution.teamMode),
-            afterFormation: getFormationDescription(lastSubstitution.beforeFormation, lastSubstitution.teamMode),
+            teamConfig: lastSubstitution.teamConfig,
+            beforeFormation: getFormationDescription(newGameState.formation, lastSubstitution.teamConfig),
+            afterFormation: getFormationDescription(lastSubstitution.beforeFormation, lastSubstitution.teamConfig),
             reason: 'user_initiated_undo',
             matchTime: calculateMatchTime(currentTime),
             periodNumber: newGameState.currentPeriodNumber || 1

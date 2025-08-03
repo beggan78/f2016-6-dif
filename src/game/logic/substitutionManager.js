@@ -1,4 +1,4 @@
-import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
@@ -50,8 +50,8 @@ const applyActiveCascade = (formation, cascade) => {
  * Manages substitution logic for different team modes
  */
 export class SubstitutionManager {
-  constructor(teamMode, selectedFormation = null) {
-    this.teamMode = teamMode;
+  constructor(teamConfig, selectedFormation = null) {
+    this.teamConfig = teamConfig;
     this.selectedFormation = selectedFormation;
   }
 
@@ -60,9 +60,9 @@ export class SubstitutionManager {
    */
   getModeConfig() {
 
-    if (typeof this.teamMode === 'string') {
+    if (typeof this.teamConfig === 'string') {
       // Use centralized formation-aware config creation
-      const formationAwareConfig = createFormationAwareTeamConfig(this.teamMode, this.selectedFormation);
+      const formationAwareConfig = createFormationAwareTeamConfig(this.teamConfig, this.selectedFormation);
       
       
       const modeDefinition = getModeDefinition(formationAwareConfig);
@@ -71,7 +71,7 @@ export class SubstitutionManager {
       return modeDefinition;
     }
     
-    const modeDefinition = getModeDefinition(this.teamMode);
+    const modeDefinition = getModeDefinition(this.teamConfig);
     return modeDefinition;
   }
 
@@ -204,7 +204,7 @@ export class SubstitutionManager {
         operation: 'handleIndividualModeSubstitution',
         rotationQueue,
         nextPlayerIdToSubOut,
-        teamMode: this.teamMode,
+        teamConfig: this.teamConfig,
         selectedFormation: this.selectedFormation,
         severity: ERROR_SEVERITY.CRITICAL
       });
@@ -503,12 +503,12 @@ export class SubstitutionManager {
    * Main substitution handler - delegates to appropriate method based on team mode
    */
   executeSubstitution(context) {
-    if (this.teamMode === TEAM_MODES.PAIRS_7) {
+    if (this.teamConfig?.substitutionType === 'pairs') {
       return this.handlePairsSubstitution(context);
-    } else if (isIndividualMode(this.teamMode)) {
+    } else if (isIndividualMode(this.teamConfig)) {
       return this.handleIndividualModeSubstitution(context);
     } else {
-      throw new Error(`Unknown team mode: ${this.teamMode}`);
+      throw new Error(`Unknown team mode: ${this.teamConfig}`);
     }
   }
 }
@@ -552,6 +552,6 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
 /**
  * Factory function to create substitution manager
  */
-export function createSubstitutionManager(teamMode, selectedFormation = null) {
-  return new SubstitutionManager(teamMode, selectedFormation);
+export function createSubstitutionManager(teamConfig, selectedFormation = null) {
+  return new SubstitutionManager(teamConfig, selectedFormation);
 }

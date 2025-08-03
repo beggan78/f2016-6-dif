@@ -1,10 +1,9 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { supportsInactiveUsers, supportsNextNextIndicators, getModeDefinition } from '../../constants/gameModes';
 import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
 
 export const createFieldPositionHandlers = (
-  teamMode,
+  teamConfig,
   formation,
   allPlayers,
   nextPlayerIdToSubOut,
@@ -36,9 +35,9 @@ export const createFieldPositionHandlers = (
     return getModeDefinition(teamModeOrConfig);
   };
   
-  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
-  const supportsInactive = supportsInactiveUsers(teamMode);
-  const supportsNextNext = supportsNextNextIndicators(teamMode);
+  const isPairsMode = teamConfig?.substitutionType === 'pairs';
+  const supportsInactive = supportsInactiveUsers(teamConfig);
+  const supportsNextNext = supportsNextNextIndicators(teamConfig);
   
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
@@ -81,7 +80,7 @@ export const createFieldPositionHandlers = (
     // Only for individual modes that support inactive players
     if (!supportsInactive) return;
     
-    const definition = getDefinition(teamMode);
+    const definition = getDefinition(teamConfig);
     if (!definition?.substitutePositions.includes(position)) return;
     
     const playerId = formation[position];
@@ -109,7 +108,7 @@ export const createFieldPositionHandlers = (
   const createPositionCallback = (position) => {
     return () => {
       // Use substitute modal for substitute positions in modes that support inactive players
-      const definition = getDefinition(teamMode);
+      const definition = getDefinition(teamConfig);
       if (supportsInactive && definition?.substitutePositions.includes(position)) {
         handleSubstituteLongPress(position);
       } else {
@@ -127,7 +126,7 @@ export const createFieldPositionHandlers = (
     positionCallbacks.subPairCallback = createPositionCallback('subPair');
   } else {
     // Individual modes - dynamically get all positions from team mode definition
-    const definition = getDefinition(teamMode);
+    const definition = getDefinition(teamConfig);
     if (definition) {
       const allPositions = [...definition.fieldPositions, ...definition.substitutePositions];
       

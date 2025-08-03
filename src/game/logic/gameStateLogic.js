@@ -6,7 +6,7 @@
 
 import { createSubstitutionManager } from './substitutionManager';
 import { findPlayerById } from '../../utils/playerUtils';
-import { PLAYER_ROLES, TEAM_MODES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
 import { handleRoleChange } from './substitutionManager';
 import { updatePlayerTimeStats } from '../time/stintManager';
@@ -46,14 +46,14 @@ export const calculateSubstitution = (gameState) => {
     nextPlayerIdToSubOut,
     allPlayers,
     rotationQueue,
-    teamMode,
+    teamConfig,
     selectedFormation,
     isSubTimerPaused = false
   } = gameState;
 
 
   const currentTimeEpoch = Date.now();
-  const substitutionManager = createSubstitutionManager(teamMode, selectedFormation);
+  const substitutionManager = createSubstitutionManager(teamConfig, selectedFormation);
   
   
   const context = {
@@ -89,7 +89,7 @@ export const calculateSubstitution = (gameState) => {
     handleError(error, {
       category: ERROR_CATEGORIES.GAME_LOGIC,
       operation: 'calculateSubstitution',
-      teamMode,
+      teamConfig,
       selectedFormation,
       nextPlayerIdToSubOut
     });
@@ -101,7 +101,7 @@ export const calculateSubstitution = (gameState) => {
  * Calculate the result of switching positions between two players
  */
 export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
-  const { allPlayers, formation, teamMode, isSubTimerPaused = false } = gameState;
+  const { allPlayers, formation, teamConfig, isSubTimerPaused = false } = gameState;
 
   if (!player1Id || !player2Id || player1Id === player2Id) {
     return gameState;
@@ -123,7 +123,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   const player2Position = player2.stats.currentPairKey;
 
   // Validate positions
-  const currentValidPositions = getValidPositions(teamMode);
+  const currentValidPositions = getValidPositions(teamConfig);
   if (!currentValidPositions.includes(player1Position) || !currentValidPositions.includes(player2Position)) {
     return gameState;
   }
@@ -131,7 +131,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   // Create new formation with swapped positions
   const newFormation = { ...formation };
   
-  if (teamMode === TEAM_MODES.PAIRS_7) {
+  if (teamConfig?.substitutionType === 'pairs') {
     // Handle pairs formation
     if (player1Position === POSITION_KEYS.LEFT_PAIR) {
       if (formation.leftPair.defender === player1Id) {
@@ -185,7 +185,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
       // Determine the new role for player1 based on their new position
       let newRole = p.stats.currentRole; // Default to current role
       
-      if (teamMode === TEAM_MODES.PAIRS_7) {
+      if (teamConfig?.substitutionType === 'pairs') {
         // For pairs, player1 takes player2's role
         newRole = player2.stats.currentRole;
       } else {
@@ -206,7 +206,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
       // Determine the new role for player2 based on their new position
       let newRole = p.stats.currentRole; // Default to current role
       
-      if (teamMode === TEAM_MODES.PAIRS_7) {
+      if (teamConfig?.substitutionType === 'pairs') {
         // For pairs, player2 takes player1's role
         newRole = player1.stats.currentRole;
       } else {
@@ -238,9 +238,9 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
  * Calculate the result of swapping defender and attacker positions within a pair (PAIRS_7 mode)
  */
 export const calculatePairPositionSwap = (gameState, pairKey) => {
-  const { allPlayers, formation, teamMode, isSubTimerPaused = false } = gameState;
+  const { allPlayers, formation, teamConfig, isSubTimerPaused = false } = gameState;
   
-  if (teamMode !== TEAM_MODES.PAIRS_7) {
+  if (teamConfig?.substitutionType !== 'pairs') {
     return gameState;
   }
   
@@ -312,7 +312,7 @@ export const calculatePairPositionSwap = (gameState, pairKey) => {
  * Calculate the result of switching goalies
  */
 export const calculateGoalieSwitch = (gameState, newGoalieId) => {
-  const { allPlayers, formation, teamMode, isSubTimerPaused = false } = gameState;
+  const { allPlayers, formation, teamConfig, isSubTimerPaused = false } = gameState;
   
 
   if (!newGoalieId || newGoalieId === formation.goalie) {
@@ -341,7 +341,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   newFormation.goalie = newGoalieId;
   
   // Place current goalie in the position of the new goalie
-  if (teamMode === TEAM_MODES.PAIRS_7) {
+  if (teamConfig?.substitutionType === 'pairs') {
     // Handle pairs formation
     if (newGoaliePosition === POSITION_KEYS.LEFT_PAIR) {
       if (formation.leftPair.defender === newGoalieId) {
@@ -378,7 +378,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
       let newRole = PLAYER_ROLES.DEFENDER; // Default
       let newStatus = 'on_field'; // Default
       
-      if (teamMode === TEAM_MODES.PAIRS_7) {
+      if (teamConfig?.substitutionType === 'pairs') {
         if (newGoaliePosition === POSITION_KEYS.LEFT_PAIR || newGoaliePosition === POSITION_KEYS.RIGHT_PAIR) {
           const pairData = formation[newGoaliePosition];
           if (pairData) {
@@ -474,10 +474,10 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
     newNextPlayerIdToSubOut = updatedQueue[0] || null;
     
     // For modes with next-next tracking, also update next-next tracking
-    if (supportsNextNextIndicators(teamMode) && updatedQueue.length >= 2) {
+    if (supportsNextNextIndicators(teamConfig) && updatedQueue.length >= 2) {
       newNextNextPlayerIdToSubOut = updatedQueue[1];
     }
-  } else if (newGoalieId === gameState.nextNextPlayerIdToSubOut && supportsNextNextIndicators(teamMode)) {
+  } else if (newGoalieId === gameState.nextNextPlayerIdToSubOut && supportsNextNextIndicators(teamConfig)) {
     // New goalie was next-next to come off in 7-player mode
     const updatedQueue = queueManager.toArray();
     if (updatedQueue.length >= 2) {
@@ -551,12 +551,12 @@ export const calculateUndo = (gameState, lastSubstitution) => {
       
       // Find what position this player had before substitution
       let restoredPosition = null;
-      if (lastSubstitution.teamMode === 'PAIRS_7') {
+      if (lastSubstitution.teamConfig?.substitutionType === 'pairs') {
         if (beforeFormation.leftPair?.defender === player.id) restoredPosition = 'leftPair';
         else if (beforeFormation.leftPair?.attacker === player.id) restoredPosition = 'leftPair';
         else if (beforeFormation.rightPair?.defender === player.id) restoredPosition = 'rightPair';
         else if (beforeFormation.rightPair?.attacker === player.id) restoredPosition = 'rightPair';
-      } else if (isIndividualMode(lastSubstitution.teamMode)) {
+      } else if (isIndividualMode(lastSubstitution.teamConfig)) {
         if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
         else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
         else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
@@ -662,9 +662,9 @@ const createReactivationCascade = (reactivatedPlayerId, substitutePositions, for
  * Calculate the result of toggling a player's inactive status (all individual modes)
  */
 export const calculatePlayerToggleInactive = (gameState, playerId) => {
-  const { allPlayers, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, teamMode, selectedFormation } = gameState;
+  const { allPlayers, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, teamConfig, selectedFormation } = gameState;
 
-  if (!supportsInactiveUsers(teamMode)) {
+  if (!supportsInactiveUsers(teamConfig)) {
     return gameState;
   }
 
@@ -673,7 +673,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     return gameState;
   }
 
-  const definition = getDefinitionForGameLogic(teamMode, selectedFormation);
+  const definition = getDefinitionForGameLogic(teamConfig, selectedFormation);
   if (!definition) {
     return gameState;
   }
@@ -751,7 +751,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       newNextPlayerIdToSubOut = nextPlayerIdToSubOut;
     }
     
-    if (supportsNextNextIndicators(teamMode)) {
+    if (supportsNextNextIndicators(teamConfig)) {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length >= 2) {
         newNextNextPlayerIdToSubOut = nextActivePlayers[1];
@@ -769,11 +769,11 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length > 0) {
         newNextPlayerIdToSubOut = nextActivePlayers[0];
-        if (supportsNextNextIndicators(teamMode) && nextActivePlayers.length >= 2) {
+        if (supportsNextNextIndicators(teamConfig) && nextActivePlayers.length >= 2) {
           newNextNextPlayerIdToSubOut = nextActivePlayers[1];
         }
       }
-    } else if (supportsNextNextIndicators(teamMode) && playerId === nextNextPlayerIdToSubOut) {
+    } else if (supportsNextNextIndicators(teamConfig) && playerId === nextNextPlayerIdToSubOut) {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length >= 2) {
         newNextNextPlayerIdToSubOut = nextActivePlayers[1];
@@ -781,7 +781,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     }
     
     // Cascading inactivation: Move inactive player to bottom and shift others up
-    const bottomSubPosition = getBottomSubstitutePosition(teamMode);
+    const bottomSubPosition = getBottomSubstitutePosition(teamConfig);
     const currentPosition = player.stats.currentPairKey;
     
     if (bottomSubPosition && currentPosition !== bottomSubPosition) {
@@ -833,13 +833,13 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
  * Calculate the result of swapping any two substitute positions
  */
 export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPosition) => {
-  const { allPlayers, formation, teamMode, selectedFormation } = gameState;
+  const { allPlayers, formation, teamConfig, selectedFormation } = gameState;
   
-  if (!supportsNextNextIndicators(teamMode)) {
+  if (!supportsNextNextIndicators(teamConfig)) {
     return gameState;
   }
   
-  const definition = getDefinitionForGameLogic(teamMode, selectedFormation);
+  const definition = getDefinitionForGameLogic(teamConfig, selectedFormation);
   if (!definition || !definition.substitutePositions.includes(fromPosition) || !definition.substitutePositions.includes(toPosition)) {
     return gameState;
   }
@@ -883,13 +883,13 @@ export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPositi
  * The target player moves to substitute_1, all players ahead of them move down one position
  */
 export const calculateSubstituteReorder = (gameState, targetPosition) => {
-  const { allPlayers, formation, teamMode, selectedFormation } = gameState;
+  const { allPlayers, formation, teamConfig, selectedFormation } = gameState;
   
-  if (!supportsNextNextIndicators(teamMode)) {
+  if (!supportsNextNextIndicators(teamConfig)) {
     return gameState;
   }
   
-  const definition = getDefinitionForGameLogic(teamMode, selectedFormation);
+  const definition = getDefinitionForGameLogic(teamConfig, selectedFormation);
   if (!definition || !definition.substitutePositions.includes(targetPosition)) {
     return gameState;
   }

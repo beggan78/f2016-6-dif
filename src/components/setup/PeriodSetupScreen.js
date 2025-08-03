@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, Play, ArrowLeft, Shuffle } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
-import { getOutfieldPositions, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
+import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
 
 
 // Position configuration map for individual modes
@@ -76,7 +75,7 @@ export function PeriodSetupScreen({
   periodGoalieIds, 
   setPeriodGoalieIds, 
   numPeriods,
-  teamMode,
+  teamConfig,
   selectedFormation,
   setView,
   homeScore,
@@ -88,25 +87,7 @@ export function PeriodSetupScreen({
   debugMode = false
 }) {
   // Determine formation mode
-  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
-  
-  // Create team config object for formation-aware functions
-  const teamConfig = useMemo(() => {
-    if (typeof teamMode === 'string') {
-      // Convert legacy team mode to team config object with selected formation
-      const formationToUse = selectedFormation || '2-2';
-      
-      if (teamMode === TEAM_MODES.PAIRS_7) {
-        return { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'pairs' };
-      } else {
-        // Extract squad size from team mode name
-        const sizeMatch = teamMode.match(/(\d+)$/);
-        const squadSize = sizeMatch ? parseInt(sizeMatch[1]) : 6;
-        return { format: '5v5', squadSize, formation: formationToUse, substitutionType: 'individual' };
-      }
-    }
-    return teamMode; // Already a team config object
-  }, [teamMode, selectedFormation]);
+  const isPairsMode = teamConfig?.substitutionType === 'pairs';
   
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
@@ -675,7 +656,7 @@ export function PeriodSetupScreen({
     setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: newGoalieId }));
     
     // Update rotation queue for individual modes
-    if (rotationQueue && rotationQueue.length > 0 && teamMode !== TEAM_MODES.PAIRS_7) {
+    if (rotationQueue && rotationQueue.length > 0 && teamConfig?.substitutionType !== 'pairs') {
       const newGoalieIndex = rotationQueue.findIndex(id => id === newGoalieId);
       
       if (newGoalieIndex !== -1) {
@@ -844,7 +825,7 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {formation.goalie && isIndividualMode(teamMode) && (
+      {formation.goalie && teamConfig?.substitutionType === 'individual' && (
         <IndividualPositionCards
           teamConfig={teamConfig}
           formation={formation}
