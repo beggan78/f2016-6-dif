@@ -18,6 +18,7 @@ export const TeamProvider = ({ children }) => {
   const [userTeams, setUserTeams] = useState([]);
   const [userClubs, setUserClubs] = useState([]);
   const [teamPlayers, setTeamPlayers] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -391,6 +392,82 @@ export const TeamProvider = ({ children }) => {
     }
   }, [userTeams, currentTeam, getTeamPlayers]);
 
+  // Get team access requests for a team (for team coaches)
+  const getTeamAccessRequests = useCallback(async (teamId) => {
+    try {
+      const { data, error } = await supabase
+        .from('team_access_request')
+        .select(`
+          id, created_at, requested_role, message, status,
+          user:user_id (id, name)
+        `)
+        .eq('team_id', teamId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching team access requests:', error);
+        return [];
+      }
+
+      const requests = data || [];
+      
+      // Update local state if this is for the current team
+      if (currentTeam && currentTeam.id === teamId) {
+        setPendingRequests(requests);
+      }
+
+      return requests;
+    } catch (err) {
+      console.error('Exception in getTeamAccessRequests:', err);
+      return [];
+    }
+  }, [currentTeam]);
+
+  // Check for pending requests for current team (for automatic notification)
+  const checkPendingRequests = useCallback(async () => {
+    if (!currentTeam || !user || !userProfile) {
+      setPendingRequests([]);
+      return;
+    }
+
+    // Only check if user can manage the team
+    const userRole = currentTeam.userRole;
+    if (userRole !== 'admin' && userRole !== 'coach') {
+      setPendingRequests([]);
+      return;
+    }
+
+    try {
+      const requests = await getTeamAccessRequests(currentTeam.id);
+      // getTeamAccessRequests already updates setPendingRequests
+      return requests;
+    } catch (err) {
+      console.error('Exception in checkPendingRequests:', err);
+      setPendingRequests([]);
+      return [];
+    }
+  }, [currentTeam, user, userProfile, getTeamAccessRequests]);
+
+  // Automatic pending request check for team admins
+  useEffect(() => {
+    // Check if all required conditions are met for pending request check
+    if (user && userProfile && currentTeam) {
+      const userRole = currentTeam.userRole;
+      // Only check for admins and coaches
+      if (userRole === 'admin' || userRole === 'coach') {
+        console.log('Checking for pending requests for team admin/coach:', currentTeam.name);
+        checkPendingRequests();
+      } else {
+        // Clear pending requests if user is not admin/coach
+        setPendingRequests([]);
+      }
+    } else {
+      // Clear pending requests if conditions not met
+      setPendingRequests([]);
+    }
+  }, [user, userProfile, currentTeam, checkPendingRequests]);
+
   // ============================================================================
   // CLUB MEMBERSHIP FUNCTIONS
   // ============================================================================
@@ -605,30 +682,7 @@ export const TeamProvider = ({ children }) => {
     }
   }, [user, clearError]);
 
-  // Get team access requests for a team (for team coaches)
-  const getTeamAccessRequests = useCallback(async (teamId) => {
-    try {
-      const { data, error } = await supabase
-        .from('team_access_request')
-        .select(`
-          id, created_at, requested_role, message, status,
-          user:user_id (id, name)
-        `)
-        .eq('team_id', teamId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching team access requests:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (err) {
-      console.error('Exception in getTeamAccessRequests:', err);
-      return [];
-    }
-  }, []);
 
   // Get user's team access requests
   const getUserTeamRequests = useCallback(async () => {
@@ -710,6 +764,11 @@ export const TeamProvider = ({ children }) => {
         return null;
       }
 
+      // Refresh pending requests after approval
+      if (currentTeam) {
+        checkPendingRequests();
+      }
+
       return data;
     } catch (err) {
       console.error('Exception in approveTeamAccess:', err);
@@ -718,7 +777,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, currentTeam, checkPendingRequests]);
 
   // Reject team access request (for team coaches)
   const rejectTeamAccess = useCallback(async (requestId, reviewNotes = '') => {
@@ -748,6 +807,11 @@ export const TeamProvider = ({ children }) => {
         return null;
       }
 
+      // Refresh pending requests after rejection
+      if (currentTeam) {
+        checkPendingRequests();
+      }
+
       return data;
     } catch (err) {
       console.error('Exception in rejectTeamAccess:', err);
@@ -756,7 +820,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, currentTeam, checkPendingRequests]);
 
   // Cancel team access request (for users)
   const cancelTeamAccess = useCallback(async (requestId) => {
@@ -887,6 +951,7 @@ export const TeamProvider = ({ children }) => {
     userTeams,
     userClubs,
     teamPlayers,
+    pendingRequests,
     loading,
     error,
     
@@ -921,12 +986,17 @@ export const TeamProvider = ({ children }) => {
     updateTeamMemberRole,
     removeTeamMember,
     
+    // Pending request management
+    checkPendingRequests,
+    
     // Computed properties
     hasTeams: userTeams.length > 0,
     hasClubs: userClubs.length > 0,
     isCoach: currentTeam?.userRole === 'coach',
     isTeamAdmin: currentTeam?.userRole === 'admin',
     canManageTeam: currentTeam?.userRole === 'admin' || currentTeam?.userRole === 'coach',
+    hasPendingRequests: pendingRequests.length > 0,
+    pendingRequestsCount: pendingRequests.length,
   };
 
   return (

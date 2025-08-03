@@ -23,7 +23,7 @@ import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
 import { isDebugMode } from './utils/debugUtils';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { TeamProvider } from './contexts/TeamContext';
+import { TeamProvider, useTeam } from './contexts/TeamContext';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
@@ -42,6 +42,13 @@ function AppContent() {
     loading: authLoading,
     needsProfileCompletion
   } = useAuth();
+  
+  const {
+    currentTeam,
+    hasPendingRequests,
+    pendingRequestsCount,
+    canManageTeam
+  } = useTeam();
 
   // Authentication modal
   const authModal = useAuthModal();
@@ -281,6 +288,19 @@ function AppContent() {
       gameState.setView(targetView);
     }
   };
+
+  // Automatic pending request modal for team admins
+  useEffect(() => {
+    // Only show modal if:
+    // 1. User can manage team (admin or coach)
+    // 2. There are pending requests
+    // 3. No modal is currently open
+    // 4. User is not completing their profile
+    if (canManageTeam && hasPendingRequests && currentTeam && !showTeamAdminModal && !needsProfileCompletion) {
+      console.log(`Auto-opening admin modal for ${pendingRequestsCount} pending request(s) on team:`, currentTeam.name);
+      handleOpenTeamAdminModal(currentTeam);
+    }
+  }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal]);
 
   // Render logic
   const renderView = () => {

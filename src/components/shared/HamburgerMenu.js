@@ -7,7 +7,7 @@ import { VIEWS } from '../../constants/viewConstants';
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile, signOut } = useAuth();
-  const { hasTeams, currentTeam, isTeamAdmin, canManageTeam } = useTeam();
+  const { hasTeams, currentTeam, isTeamAdmin, canManageTeam, hasPendingRequests, pendingRequestsCount } = useTeam();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -184,6 +184,11 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                           {canManageTeam && !isTeamAdmin && (
                             <span className="text-xs bg-sky-600 text-sky-100 px-2 py-0.5 rounded-full">
                               Coach
+                            </span>
+                          )}
+                          {hasPendingRequests && canManageTeam && (
+                            <span className="text-xs bg-red-600 text-red-100 px-2 py-0.5 rounded-full font-medium">
+                              {pendingRequestsCount} pending
                             </span>
                           )}
                         </div>
