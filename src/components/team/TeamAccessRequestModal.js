@@ -37,6 +37,8 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
   const [pendingRequests, setPendingRequests] = useState([]);
   const [userRequests, setUserRequests] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
   const loadPendingRequests = useCallback(async () => {
     if (!team) return;
@@ -82,12 +84,21 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
     const result = await requestTeamAccess(
       team.id,
       requestForm.role,
-      requestForm.message.trim()
+      requestForm.message.trim(),
+      true // Skip loading state to prevent modal closure
     );
 
     if (result) {
-      onSuccess?.('Request submitted successfully');
+      // Show persistent success banner
+      setSuccessMessage('Request submitted successfully! The team admin will review your request.');
+      setJustSubmitted(true);
+      
+      // Don't auto-close modal - let user close manually after seeing confirmation
+      // onSuccess?.('Request submitted successfully');
+      
+      // Reload user requests to show the new request
       await loadUserRequests();
+      
       // Reset form
       setRequestForm({ role: 'coach', message: '' });
     }
@@ -147,19 +158,26 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
         </p>
       </div>
 
-      {hasExistingRequest ? (
+      {successMessage ? (
+        /* Show success banner when there's a success message */
+        <div className="p-4 bg-emerald-900/50 border border-emerald-600 rounded-lg">
+          <p className="text-emerald-200 text-sm">{successMessage}</p>
+        </div>
+      ) : hasExistingRequest && !justSubmitted ? (
+        /* Show pending warning only if user has existing request but didn't just submit */
         <div className="p-4 bg-amber-900/20 border border-amber-600/50 rounded-lg">
           <div className="flex items-center gap-3">
             <Clock className="h-5 w-5 text-amber-600" />
             <div>
-              <p className="text-amber-800 font-medium">Request Pending</p>
-              <p className="text-amber-700 text-sm">
+              <p className="text-amber-100 font-medium">Request Pending</p>
+              <p className="text-amber-200 text-sm">
                 You already have a pending request for this team
               </p>
             </div>
           </div>
         </div>
-      ) : (
+      ) : !successMessage ? (
+        /* Show form only if no success message */
         <>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -212,6 +230,18 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
             </Button>
           </div>
         </>
+      ) : null}
+
+      {/* Show Close button after successful submission */}
+      {successMessage && (
+        <div className="flex justify-center mt-4">
+          <Button 
+            onClick={onClose} 
+            variant="primary"
+          >
+            Close
+          </Button>
+        </div>
       )}
 
       {/* Show user's previous requests */}
@@ -456,6 +486,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
               </div>
             </div>
           )}
+
 
           {/* Tab Navigation */}
           {tabs.length > 1 && (

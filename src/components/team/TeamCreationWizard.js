@@ -41,6 +41,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
   const [clubToJoin, setClubToJoin] = useState(null);
   const [showTeamAccessModal, setShowTeamAccessModal] = useState(false);
   const [selectedTeamForAccess, setSelectedTeamForAccess] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Form state
   const [clubForm, setClubForm] = useState({ name: '', shortName: '', longName: '' });
@@ -212,11 +213,22 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
   }, []);
 
   // Handle team access request modal success
-  const handleTeamAccessSuccess = useCallback(() => {
-    // Close modal and complete wizard
-    setShowTeamAccessModal(false);
-    setSelectedTeamForAccess(null);
-    onComplete();
+  const handleTeamAccessSuccess = useCallback((message) => {
+    // Show success message if provided
+    if (message) {
+      setSuccessMessage(message);
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    }
+    
+    // Close modal and complete wizard after a brief delay to show success message
+    setTimeout(() => {
+      setShowTeamAccessModal(false);
+      setSelectedTeamForAccess(null);
+      onComplete();
+    }, message ? 1500 : 0); // Small delay if there's a success message
   }, [onComplete]);
 
   // Handle team access request modal close
@@ -530,6 +542,13 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         {error && (
           <div className="mb-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
             <p className="text-rose-200 text-sm">{error}</p>
+          </div>
+        )}
+        
+        {/* Success Message Banner */}
+        {successMessage && (
+          <div className="mb-4 p-3 bg-emerald-900/50 border border-emerald-600 rounded-lg">
+            <p className="text-emerald-200 text-sm">{successMessage}</p>
           </div>
         )}
         

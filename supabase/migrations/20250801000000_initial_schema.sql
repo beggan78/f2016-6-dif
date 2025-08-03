@@ -144,7 +144,8 @@ CREATE TABLE public.club (
   long_name text CHECK (char_length(long_name) >= 2 AND char_length(long_name) <= 200),
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
 
 -- User profile table
@@ -166,6 +167,8 @@ CREATE TABLE public.club_user (
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   review_notes text,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   UNIQUE(club_id, user_id)
 );
 
@@ -178,7 +181,8 @@ CREATE TABLE public.team (
   configuration jsonb DEFAULT '{}'::jsonb,
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
 
 -- Team user relationship table
@@ -189,6 +193,8 @@ CREATE TABLE public.team_user (
   role public.user_role DEFAULT 'parent'::public.user_role NOT NULL,
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   UNIQUE(team_id, user_id)
 );
 
@@ -205,7 +211,8 @@ CREATE TABLE public.team_access_request (
   review_notes text CHECK (char_length(review_notes) <= 500),
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  UNIQUE(team_id, user_id)
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
 
 -- Player table
@@ -217,6 +224,8 @@ CREATE TABLE public.player (
   on_roster boolean DEFAULT true NOT NULL,
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   UNIQUE(team_id, jersey_number)
 );
 
@@ -390,7 +399,7 @@ CREATE TRIGGER on_team_user_updated
 
 CREATE TRIGGER on_team_access_request_updated
   BEFORE UPDATE ON public.team_access_request
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at_only();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at_and_user();
 
 CREATE TRIGGER on_player_updated
   BEFORE UPDATE ON public.player
@@ -449,6 +458,12 @@ CREATE INDEX idx_team_access_request_team_id ON public.team_access_request(team_
 CREATE INDEX idx_team_access_request_user_id ON public.team_access_request(user_id);
 CREATE INDEX idx_team_access_request_status ON public.team_access_request(status);
 CREATE INDEX idx_team_access_request_created_at ON public.team_access_request(created_at);
+
+-- Partial unique index to allow only one pending request per user/team combination
+-- This allows users to reapply after rejection while preventing multiple pending requests
+CREATE UNIQUE INDEX unique_pending_request_idx 
+ON public.team_access_request (team_id, user_id) 
+WHERE status = 'pending';
 
 -- Player indexes
 CREATE INDEX idx_player_team_id ON public.player(team_id);

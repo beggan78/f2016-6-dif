@@ -55,6 +55,7 @@ function AppContent() {
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
   
   // Create a ref to store the pushModalState function to avoid circular dependency
   const pushModalStateRef = useRef(null);
@@ -264,8 +265,12 @@ function AppContent() {
   }, [removeModalFromStack]);
 
   const handleTeamAdminSuccess = useCallback((message) => {
-    // Optional: Show success message
-    console.log('Team admin action successful:', message);
+    // Show success message banner
+    setSuccessMessage(message);
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
     // Keep modal open for continued management
   }, []);
 
@@ -466,6 +471,16 @@ function AppContent() {
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
       </header>
+      
+      {/* Success Message Banner */}
+      {successMessage && (
+        <div className="w-full max-w-2xl mb-4">
+          <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
+            <p className="text-emerald-200 text-sm">{successMessage}</p>
+          </div>
+        </div>
+      )}
+      
       <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
         {renderView()}
       </main>

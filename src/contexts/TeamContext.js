@@ -560,10 +560,12 @@ export const TeamProvider = ({ children }) => {
   // ============================================================================
 
   // Request access to a team
-  const requestTeamAccess = useCallback(async (teamId, requestedRole = 'coach', message = '') => {
+  const requestTeamAccess = useCallback(async (teamId, requestedRole = 'coach', message = '', skipLoadingState = false) => {
     try {
-      setLoading(true);
-      clearError();
+      if (!skipLoadingState) {
+        setLoading(true);
+        clearError();
+      }
 
       const { data, error } = await supabase
         .from('team_access_request')
@@ -583,17 +585,23 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error requesting team access:', error);
-        setError('Failed to request team access');
+        if (!skipLoadingState) {
+          setError('Failed to request team access');
+        }
         return null;
       }
 
       return data;
     } catch (err) {
       console.error('Exception in requestTeamAccess:', err);
-      setError('Failed to request team access');
+      if (!skipLoadingState) {
+        setError('Failed to request team access');
+      }
       return null;
     } finally {
-      setLoading(false);
+      if (!skipLoadingState) {
+        setLoading(false);
+      }
     }
   }, [user, clearError]);
 
