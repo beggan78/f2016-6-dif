@@ -390,7 +390,7 @@ CREATE TRIGGER on_team_user_updated
 
 CREATE TRIGGER on_team_access_request_updated
   BEFORE UPDATE ON public.team_access_request
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at_and_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at_only();
 
 CREATE TRIGGER on_player_updated
   BEFORE UPDATE ON public.player
