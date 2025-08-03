@@ -12,12 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Disable IPv6
-        run: sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Force IPv4 resolution for Supabase host
+        run: |
+          DB_HOST="db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co"
+          IP_ADDR=$(getent ahosts "$DB_HOST" | grep -v '::' | awk '{ print $1 }' | head -n 1)
+          echo "$IP_ADDR $DB_HOST" | sudo tee -a /etc/hosts
 
       - name: Check Supabase connection
         run: supabase db diff --use-migra --linked
