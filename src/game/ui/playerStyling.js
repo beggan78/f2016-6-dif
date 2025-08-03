@@ -21,10 +21,14 @@ export function getPlayerStyling({
   if (isGoalie) {
     bgColor = FORMATION_STYLES.bgColors.goalie;
   } else if (isFieldPosition) {
-    if (role === 'Defender') {
+    if (role === 'DEFENDER') {
       bgColor = FORMATION_STYLES.bgColors.defenderField;
-    } else {
+    } else if (role === 'MIDFIELDER') {
+      bgColor = FORMATION_STYLES.bgColors.midfielderField;
+    } else if (role === 'ATTACKER') {
       bgColor = FORMATION_STYLES.bgColors.field;
+    } else {
+      bgColor = FORMATION_STYLES.bgColors.field; // Default fallback
     }
   }
   
