@@ -140,7 +140,7 @@ export const AUTH_REGEX = {
  */
 export const AUTH_LIMITS = {
   EMAIL_MAX_LENGTH: 254,
-  PASSWORD_MIN_LENGTH: 6,
+  PASSWORD_MIN_LENGTH: 8,
   PASSWORD_MAX_LENGTH: 128,
   NAME_MIN_LENGTH: 2,
   NAME_MAX_LENGTH: 50,
@@ -178,7 +178,7 @@ export const AUTH_A11Y = {
     HIDE_PASSWORD: 'Hide password'
   },
   DESCRIPTIONS: {
-    PASSWORD_REQUIREMENTS: 'Password must be at least 6 characters with uppercase and lowercase letters',
+    PASSWORD_REQUIREMENTS: 'Password must be at least 8 characters with uppercase and lowercase letters and numbers',
     EMAIL_FORMAT: 'Enter a valid email address in the format user@example.com',
     REQUIRED_FIELD: 'This field is required',
     OPTIONAL_FIELD: 'This field is optional'

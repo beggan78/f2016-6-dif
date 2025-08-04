@@ -112,7 +112,7 @@ describe('Authentication Validation Utilities', () => {
     });
 
     it('should reject passwords that are too short', () => {
-      const shortPasswords = ['1', '12', '123', '1234', '12345'];
+      const shortPasswords = ['1', '12', '123', '1234', '12345', '123456', '1234567'];
 
       shortPasswords.forEach(password => {
         const result = validatePassword(password);
@@ -121,13 +121,27 @@ describe('Authentication Validation Utilities', () => {
       });
     });
 
+    it('should reject passwords without numbers', () => {
+      const invalidPasswords = [
+        'Password', // No numbers
+        'ValidPassword', // No numbers
+        'TestingPassword' // No numbers
+      ];
+
+      invalidPasswords.forEach(password => {
+        const result = validatePassword(password);
+        expect(result.isValid).toBe(false);
+        expect(result.error).toBe(VALIDATION_MESSAGES.password.missingNumber);
+      });
+    });
+
     it('should reject passwords without uppercase and lowercase letters', () => {
       const invalidPasswords = [
         'alllowercase123',
         'ALLUPPERCASE123',
-        '123456789',
-        'lowercase',
-        'UPPERCASE'
+        '12345678',
+        'lowercase123',
+        'UPPERCASE123'
       ];
 
       invalidPasswords.forEach(password => {
@@ -141,7 +155,7 @@ describe('Authentication Validation Utilities', () => {
       const validPasswords = [
         'Password123',
         'MySecurePass1',
-        'ComplexP@ss',
+        'ComplexPass1',
         'ValidPassword1',
         'GoodPassword123'
       ];
@@ -294,7 +308,7 @@ describe('Authentication Validation Utilities', () => {
       expect(typeof text).toBe('string');
       expect(text.length).toBeGreaterThan(0);
       expect(text).toContain('Must be');
-      expect(text).toContain('6 characters');
+      expect(text).toContain('8 characters');
       expect(text).toContain('uppercase and lowercase');
     });
   });
@@ -320,7 +334,7 @@ describe('Authentication Validation Utilities', () => {
       const result = validateSignupForm(formData);
       
       expect(result.isValid).toBe(false);
-      expect(result.errors.password).toContain('6 characters');
+      expect(result.errors.password).toContain('8 characters');
       expect(result.errors.confirmPassword).toBe('Passwords do not match');
     });
 

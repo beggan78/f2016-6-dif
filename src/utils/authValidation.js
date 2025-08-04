@@ -15,11 +15,11 @@ export const EMAIL_REGEX = /\S+@\S+\.\S+/;
  * Password validation requirements
  */
 export const PASSWORD_REQUIREMENTS = {
-  minLength: 6,
+  minLength: 8,
   requireUppercase: true,
   requireLowercase: true,
-  requireNumber: false, // Not currently enforced in SignupForm
-  requireSpecialChar: false // Not currently enforced in SignupForm
+  requireNumber: true, // Required by Supabase
+  requireSpecialChar: false // Not required by Supabase
 };
 
 /**
@@ -112,6 +112,14 @@ export const validatePassword = (password, options = {}) => {
     };
   }
   
+  // Number requirement (check first to match Supabase order)
+  if (PASSWORD_REQUIREMENTS.requireNumber && !/(?=.*\d)/.test(password)) {
+    return {
+      isValid: false,
+      error: VALIDATION_MESSAGES.password.missingNumber
+    };
+  }
+  
   // Case requirements
   if (PASSWORD_REQUIREMENTS.requireUppercase && PASSWORD_REQUIREMENTS.requireLowercase) {
     if (!/(?=.*[a-z])(?=.*[A-Z])/.test(password)) {
@@ -120,14 +128,6 @@ export const validatePassword = (password, options = {}) => {
         error: VALIDATION_MESSAGES.password.missingUppercase
       };
     }
-  }
-  
-  // Number requirement (if enabled)
-  if (PASSWORD_REQUIREMENTS.requireNumber && !/(?=.*\d)/.test(password)) {
-    return {
-      isValid: false,
-      error: VALIDATION_MESSAGES.password.missingNumber
-    };
   }
   
   // Special character requirement (if enabled)
@@ -318,6 +318,10 @@ export const getPasswordRequirementsText = () => {
   
   if (requirements.length === 1) {
     return `Must be ${requirements[0]}`;
+  }
+  
+  if (requirements.length === 2) {
+    return `Must be ${requirements[0]} with ${requirements[1]}`;
   }
   
   const last = requirements.pop();

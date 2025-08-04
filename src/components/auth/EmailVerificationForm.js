@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateOtpCode } from '../../utils/authValidation';
@@ -21,6 +22,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
   const [code, setCode] = useState('');
   const [errors, setErrors] = useState({});
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [showHelpSection, setShowHelpSection] = useState(false);
   const { verifyEmailOtp, loading, authError, clearAuthError } = useAuth();
   const codeInputRef = useRef(null);
 
@@ -182,34 +184,105 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         </Button>
       </form>
 
-      {/* Resend and Alternative Options */}
-      <div className="space-y-3 text-center">
-        <div className="text-slate-400 text-sm">
-          Didn't receive the code?{' '}
-          <button
-            type="button"
-            onClick={handleResendCode}
-            disabled={resendCooldown > 0 || loading}
-            className="text-sky-400 hover:text-sky-300 font-medium transition-colors disabled:text-slate-500 disabled:cursor-not-allowed"
-          >
-            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
-          </button>
-        </div>
+      {/* Alternative Verification Method */}
+      <div className="bg-slate-700 rounded-lg p-4 text-center">
+        <p className="text-slate-300 text-sm mb-2">
+          <strong>Alternative:</strong> Check your email for a confirmation link
+        </p>
+        <p className="text-slate-400 text-xs">
+          You can also click the link in your email to verify your account instead of entering the code
+        </p>
+      </div>
 
-        <div className="bg-slate-700 rounded-lg p-4">
-          <p className="text-slate-300 text-sm mb-2">
-            <strong>Alternative:</strong> Check your email for a confirmation link
-          </p>
-          <p className="text-slate-400 text-xs">
-            You can also click the link in your email to verify your account
-          </p>
-        </div>
+      {/* Expandable Help Section */}
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={() => setShowHelpSection(!showHelpSection)}
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-300 text-sm font-medium transition-colors"
+          disabled={loading}
+        >
+          <span>Didn't receive an email?</span>
+          {showHelpSection ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </button>
+
+        {showHelpSection && (
+          <div className="mt-4 space-y-4 text-left bg-slate-700 rounded-lg p-4">
+            {/* Resend Option */}
+            <div className="text-center pb-3 border-b border-slate-600">
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={resendCooldown > 0 || loading}
+                className="text-sky-400 hover:text-sky-300 font-medium transition-colors disabled:text-slate-500 disabled:cursor-not-allowed"
+              >
+                {resendCooldown > 0 ? `Resend code again in ${resendCooldown}s` : 'Resend verification code'}
+              </button>
+            </div>
+
+            {/* Troubleshooting Tips */}
+            <div className="space-y-3">
+              <h4 className="text-slate-300 font-medium text-sm">Troubleshooting tips:</h4>
+              
+              <div className="space-y-2 text-xs text-slate-400">
+                <div className="flex items-start gap-2">
+                  <span className="text-slate-500 mt-0.5">•</span>
+                  <span>Check your spam/junk folder - automated emails sometimes end up there</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="text-slate-500 mt-0.5">•</span>
+                  <span>Wait a few minutes - email delivery can take 2-5 minutes</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="text-slate-500 mt-0.5">•</span>
+                  <span>Check that <span className="text-slate-300 font-medium">{email}</span> is correct</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="text-slate-500 mt-0.5">•</span>
+                  <span>Some email providers (especially corporate) may block automated emails</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Email Enumeration Protection Explanation */}
+            <div className="pt-3 border-t border-slate-600">
+              <h4 className="text-slate-300 font-medium text-sm mb-2">Account already exists?</h4>
+              <div className="space-y-2 text-xs text-slate-400">
+                <p>
+                  If an account with your email already exists, you won't receive a signup email. 
+                  This is intentional security behavior.
+                </p>
+                <p>
+                  <strong className="text-slate-300">Why?</strong> This protects your privacy by preventing 
+                  bad actors from discovering which email addresses are registered with us.
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={onSwitchToLogin}
+                    className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
+                    disabled={loading}
+                  >
+                    Try signing in instead →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer Links */}
       <div className="text-center space-y-2">
         <div className="text-slate-400 text-sm">
-          Already verified?{' '}
+          Already have an account?{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}

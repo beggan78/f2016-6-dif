@@ -154,7 +154,7 @@ describe('SignupForm', () => {
     it('should display password requirements hint', () => {
       renderSignupForm();
 
-      expect(screen.getByText('Must be at least 6 characters with uppercase and lowercase letters')).toBeInTheDocument();
+      expect(screen.getByText('Must be at least 8 characters with uppercase and lowercase letters and numbers')).toBeInTheDocument();
     });
 
     it('should not display error message initially', () => {
@@ -293,11 +293,11 @@ describe('SignupForm', () => {
       const submitButton = screen.getByTestId('submit-button');
 
       await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, '123');
-      await userEvent.type(confirmPasswordInput, '123');
+      await userEvent.type(passwordInput, '1234567');
+      await userEvent.type(confirmPasswordInput, '1234567');
       await userEvent.click(submitButton);
 
-      expect(screen.getByText('Password must be at least 6 characters')).toBeInTheDocument();
+      expect(screen.getByText('Password must be at least 8 characters')).toBeInTheDocument();
     });
 
     it('should show password strength error for weak password', async () => {
@@ -309,11 +309,11 @@ describe('SignupForm', () => {
       const submitButton = screen.getByTestId('submit-button');
 
       await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'password123'); // No uppercase
-      await userEvent.type(confirmPasswordInput, 'password123');
+      await userEvent.type(passwordInput, 'password'); // No uppercase or numbers
+      await userEvent.type(confirmPasswordInput, 'password');
       await userEvent.click(submitButton);
 
-      expect(screen.getByText('Password must contain both uppercase and lowercase letters')).toBeInTheDocument();
+      expect(screen.getByText('Password must contain at least one number')).toBeInTheDocument();
     });
 
     it('should show confirm password required error when confirm password is empty', async () => {
@@ -361,7 +361,7 @@ describe('SignupForm', () => {
 
       // Should not show validation errors
       expect(screen.queryByText('Please enter a valid email address')).not.toBeInTheDocument();
-      expect(screen.queryByText('Password must be at least 6 characters')).not.toBeInTheDocument();
+      expect(screen.queryByText('Password must be at least 8 characters')).not.toBeInTheDocument();
       expect(screen.queryByText('Passwords do not match')).not.toBeInTheDocument();
     });
 
