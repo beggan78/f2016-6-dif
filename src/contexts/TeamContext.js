@@ -47,10 +47,12 @@ export const TeamProvider = ({ children }) => {
             id,
             name,
             active,
+            created_at,
             club:club_id (
               id,
               name,
-              short_name
+              short_name,
+              long_name
             )
           )
         `)

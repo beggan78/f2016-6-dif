@@ -7,7 +7,7 @@ import { VIEWS } from '../../constants/viewConstants';
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile, signOut } = useAuth();
-  const { hasTeams, currentTeam, isTeamAdmin, canManageTeam, hasPendingRequests, pendingRequestsCount } = useTeam();
+  const { hasTeams, currentTeam, canManageTeam, hasPendingRequests, pendingRequestsCount } = useTeam();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -66,8 +66,8 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const handleTeamManagement = () => {
     setIsOpen(false);
-    if (currentTeam && onOpenTeamAdminModal) {
-      onOpenTeamAdminModal(currentTeam);
+    if (setView) {
+      setView(VIEWS.TEAM_MANAGEMENT);
     }
   };
 
@@ -172,20 +172,11 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                       className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span>
-                            {isTeamAdmin ? 'Admin Panel' : canManageTeam ? 'Manage Team' : 'Team Info'}
-                          </span>
-                          {isTeamAdmin && (
-                            <span className="text-xs bg-emerald-600 text-emerald-100 px-2 py-0.5 rounded-full">
-                              Admin
-                            </span>
-                          )}
-                          {canManageTeam && !isTeamAdmin && (
-                            <span className="text-xs bg-sky-600 text-sky-100 px-2 py-0.5 rounded-full">
-                              Coach
-                            </span>
-                          )}
+                        <div className="flex items-center space-x-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span>Team Management</span>
                           {hasPendingRequests && canManageTeam && (
                             <span className="text-xs bg-red-600 text-red-100 px-2 py-0.5 rounded-full font-medium">
                               {pendingRequestsCount} pending

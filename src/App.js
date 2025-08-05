@@ -17,6 +17,7 @@ import { StatsScreen } from './components/stats/StatsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
+import { TeamManagement } from './components/team/TeamManagement';
 import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -463,6 +464,12 @@ function AppContent() {
             onNavigateBack={handleNavigateFromTacticalBoard}
             pushModalState={pushModalState}
             removeModalFromStack={removeModalFromStack}
+          />
+        );
+      case VIEWS.TEAM_MANAGEMENT:
+        return (
+          <TeamManagement
+            setView={gameState.setView}
           />
         );
       default:

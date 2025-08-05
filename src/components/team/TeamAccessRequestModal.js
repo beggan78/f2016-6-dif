@@ -457,7 +457,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
   const tabs = [
     ...(canManageTeam ? [{ 
       id: 'manage', 
-      label: isTeamAdmin ? 'Admin Panel' : 'Manage Requests', 
+      label: isTeamAdmin ? 'Team Management' : 'Manage Requests', 
       count: pendingRequests.length 
     }] : []),
     // Only show request tab if not in standalone mode (meaning user is not already a team member)
