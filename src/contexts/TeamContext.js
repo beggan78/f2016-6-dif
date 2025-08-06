@@ -941,6 +941,199 @@ export const TeamProvider = ({ children }) => {
     }
   }, [clearError]);
 
+  // Get team roster (players)
+  const getTeamRoster = useCallback(async (teamId) => {
+    if (!teamId) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('player')
+        .select(`
+          id,
+          name,
+          jersey_number,
+          on_roster,
+          created_at,
+          updated_at
+        `)
+        .eq('team_id', teamId)
+        .order('jersey_number', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching team roster:', error);
+        throw new Error('Failed to load team roster');
+      }
+
+      return data || [];
+    } catch (err) {
+      console.error('Exception in getTeamRoster:', err);
+      throw err;
+    }
+  }, []);
+
+  // Add player to team roster
+  const addRosterPlayer = useCallback(async (teamId, playerData) => {
+    if (!teamId || !playerData?.name) return null;
+
+    try {
+      // Check if jersey number is already taken
+      if (playerData.jersey_number) {
+        const { data: existingPlayer } = await supabase
+          .from('player')
+          .select('id')
+          .eq('team_id', teamId)
+          .eq('jersey_number', playerData.jersey_number)
+          .single();
+
+        if (existingPlayer) {
+          throw new Error(`Jersey number ${playerData.jersey_number} is already taken`);
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('player')
+        .insert({
+          team_id: teamId,
+          name: playerData.name.trim(),
+          jersey_number: playerData.jersey_number || null,
+          on_roster: playerData.on_roster ?? true,
+          created_by: user.id,
+          last_updated_by: user.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding roster player:', error);
+        throw new Error('Failed to add player to roster');
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in addRosterPlayer:', err);
+      throw err;
+    }
+  }, [user]);
+
+  // Update roster player
+  const updateRosterPlayer = useCallback(async (playerId, updates) => {
+    if (!playerId) return null;
+
+    try {
+      // Check jersey number conflicts if updating jersey number
+      if (updates.jersey_number !== undefined) {
+        const { data: player } = await supabase
+          .from('player')
+          .select('team_id')
+          .eq('id', playerId)
+          .single();
+
+        if (player && updates.jersey_number) {
+          const { data: existingPlayer } = await supabase
+            .from('player')
+            .select('id')
+            .eq('team_id', player.team_id)
+            .eq('jersey_number', updates.jersey_number)
+            .neq('id', playerId)
+            .single();
+
+          if (existingPlayer) {
+            throw new Error(`Jersey number ${updates.jersey_number} is already taken`);
+          }
+        }
+      }
+
+      const updateData = {
+        ...updates,
+        last_updated_by: user.id,
+        updated_at: new Date().toISOString()
+      };
+
+      // Clean the data
+      if (updateData.name) {
+        updateData.name = updateData.name.trim();
+      }
+
+      const { data, error } = await supabase
+        .from('player')
+        .update(updateData)
+        .eq('id', playerId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating roster player:', error);
+        throw new Error('Failed to update player');
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in updateRosterPlayer:', err);
+      throw err;
+    }
+  }, [user]);
+
+  // Remove player from roster
+  const removeRosterPlayer = useCallback(async (playerId) => {
+    if (!playerId) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('player')
+        .delete()
+        .eq('id', playerId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error removing roster player:', error);
+        throw new Error('Failed to remove player from roster');
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in removeRosterPlayer:', err);
+      throw err;
+    }
+  }, []);
+
+  // Get available jersey numbers for a team
+  const getAvailableJerseyNumbers = useCallback(async (teamId, excludePlayerId = null) => {
+    if (!teamId) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('player')
+        .select('jersey_number')
+        .eq('team_id', teamId)
+        .not('jersey_number', 'is', null);
+
+      if (error) {
+        console.error('Error fetching jersey numbers:', error);
+        return [];
+      }
+
+      const usedNumbers = new Set(
+        data
+          .filter(p => p.jersey_number !== null && (!excludePlayerId || p.id !== excludePlayerId))
+          .map(p => p.jersey_number)
+      );
+
+      // Generate available numbers 1-99
+      const available = [];
+      for (let i = 1; i <= 99; i++) {
+        if (!usedNumbers.has(i)) {
+          available.push(i);
+        }
+      }
+
+      return available;
+    } catch (err) {
+      console.error('Exception in getAvailableJerseyNumbers:', err);
+      return [];
+    }
+  }, []);
+
   // Check if current user is the creator of a club
   const isClubCreator = useCallback((club) => {
     if (!user || !club) return false;
@@ -987,6 +1180,13 @@ export const TeamProvider = ({ children }) => {
     getTeamMembers,
     updateTeamMemberRole,
     removeTeamMember,
+    
+    // Roster management actions
+    getTeamRoster,
+    addRosterPlayer,
+    updateRosterPlayer,
+    removeRosterPlayer,
+    getAvailableJerseyNumbers,
     
     // Pending request management
     checkPendingRequests,

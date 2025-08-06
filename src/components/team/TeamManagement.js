@@ -8,12 +8,21 @@ import {
   Target,
   Trophy,
   CheckCircle,
-  UserCheck
+  UserCheck,
+  Edit3,
+  Trash2,
+  Search,
+  Hash,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Button, Select, Input } from '../shared/UI';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
+import { AddRosterPlayerModal } from './AddRosterPlayerModal';
+import { EditPlayerModal } from './EditPlayerModal';
+import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { VIEWS } from '../../constants/viewConstants';
@@ -247,7 +256,7 @@ export function TeamManagement({ setView }) {
                 {currentTeam.name}
               </h2>
               <p className="text-sky-200 opacity-90">
-                {currentTeam.club?.name || 'No club'}
+                {currentTeam.club?.long_name || 'No club'}
               </p>
             </div>
             <div className="text-right">
@@ -457,24 +466,321 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal }) {
 
 // Roster Management Component
 function RosterManagement({ team, onRefresh }) {
+  const { 
+    getTeamRoster, 
+    addRosterPlayer, 
+    updateRosterPlayer, 
+    removeRosterPlayer, 
+    getAvailableJerseyNumbers 
+  } = useTeam();
+  
+  const [roster, setRoster] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showInactive, setShowInactive] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState(null);
+  const [deletingPlayer, setDeletingPlayer] = useState(null);
+
+  // Load roster data
+  const loadRoster = useCallback(async () => {
+    if (!team?.id) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      const rosterData = await getTeamRoster(team.id);
+      setRoster(rosterData || []);
+    } catch (err) {
+      console.error('Error loading roster:', err);
+      setError(err.message || 'Failed to load team roster');
+    } finally {
+      setLoading(false);
+    }
+  }, [team?.id, getTeamRoster]);
+
+  // Load roster on component mount and team change
+  useEffect(() => {
+    loadRoster();
+  }, [loadRoster]);
+
+  // Filter roster based on search and visibility settings
+  const filteredRoster = roster.filter(player => {
+    const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (player.jersey_number && player.jersey_number.toString().includes(searchTerm));
+    const matchesVisibility = showInactive || player.on_roster;
+    return matchesSearch && matchesVisibility;
+  });
+
+  // Handle add player
+  const handleAddPlayer = () => {
+    setShowAddModal(true);
+  };
+
+  // Handle player added
+  const handlePlayerAdded = async (playerData) => {
+    try {
+      await addRosterPlayer(team.id, playerData);
+      setShowAddModal(false);
+      await loadRoster();
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      // Error is handled by the modal component through the addRosterPlayer throw
+      console.error('Error in handlePlayerAdded:', error);
+    }
+  };
+
+  // Handle edit player
+  const handleEditPlayer = (player) => {
+    setEditingPlayer(player);
+  };
+
+  // Handle player updated
+  const handlePlayerUpdated = async (playerId, updates) => {
+    try {
+      await updateRosterPlayer(playerId, updates);
+      setEditingPlayer(null);
+      await loadRoster();
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      // Error is handled by the modal component through the updateRosterPlayer throw
+      console.error('Error in handlePlayerUpdated:', error);
+    }
+  };
+
+  // Handle delete player
+  const handleDeletePlayer = (player) => {
+    setDeletingPlayer(player);
+  };
+
+  // Handle player deleted
+  const handlePlayerDeleted = async () => {
+    if (!deletingPlayer) return;
+    
+    try {
+      await removeRosterPlayer(deletingPlayer.id);
+      setDeletingPlayer(null);
+      await loadRoster();
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      // Error is handled by the component through the removeRosterPlayer throw
+      console.error('Error in handlePlayerDeleted:', error);
+      setError(error.message || 'Failed to remove player');
+    }
+  };
+
+  // Handle roster status toggle
+  const handleToggleRosterStatus = async (player) => {
+    await handlePlayerUpdated(player.id, { on_roster: !player.on_roster });
+  };
+
+  if (loading && roster.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-200">Roster Management</h3>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin h-6 w-6 border-2 border-sky-400 border-t-transparent rounded-full"></div>
+          <span className="ml-3 text-slate-300">Loading roster...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-slate-200">Roster Management</h3>
-        <Button variant="primary" size="sm">
+        <Button onClick={handleAddPlayer} variant="primary" size="sm">
+          <UserPlus className="w-4 h-4 mr-2" />
           Add Player
         </Button>
       </div>
 
-      <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
-        <div className="text-center py-8 text-slate-400">
-          <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p className="text-lg font-medium mb-2">Roster Management</p>
-          <p className="text-sm">
-            Player roster management features coming soon!
-          </p>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
+          <p className="text-rose-200 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search players..."
+              className="pl-10"
+            />
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowInactive(!showInactive)}
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
+          >
+            {showInactive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <span>{showInactive ? 'Hide' : 'Show'} Inactive</span>
+          </button>
         </div>
       </div>
+
+      {/* Roster Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-slate-800 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-sky-400">{roster.filter(p => p.on_roster).length}</p>
+          <p className="text-sm text-slate-300">Active Players</p>
+        </div>
+        <div className="bg-slate-800 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-slate-400">{roster.filter(p => !p.on_roster).length}</p>
+          <p className="text-sm text-slate-300">Inactive Players</p>
+        </div>
+        <div className="bg-slate-800 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-amber-400">{roster.filter(p => p.jersey_number).length}</p>
+          <p className="text-sm text-slate-300">With Jersey #</p>
+        </div>
+        <div className="bg-slate-800 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-emerald-400">{roster.length}</p>
+          <p className="text-sm text-slate-300">Total Players</p>
+        </div>
+      </div>
+
+      {/* Roster Table */}
+      <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+        {filteredRoster.length === 0 ? (
+          <div className="text-center py-8 text-slate-400">
+            {roster.length === 0 ? (
+              <>
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium mb-2">No Players Yet</p>
+                <p className="text-sm mb-4">Start building your team roster by adding players.</p>
+                <Button onClick={handleAddPlayer} variant="primary" size="sm">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add First Player
+                </Button>
+              </>
+            ) : (
+              <>
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No players match your search criteria.</p>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Player
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Jersey #
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-600">
+                {filteredRoster.map((player) => (
+                  <tr key={player.id} className="hover:bg-slate-700 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-sky-600 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-white text-sm font-medium">
+                            {player.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-slate-100 font-medium">{player.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {player.jersey_number ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-600 text-amber-100">
+                          <Hash className="w-3 h-3 mr-1" />
+                          {player.jersey_number}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-sm">Not assigned</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleToggleRosterStatus(player)}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                          player.on_roster
+                            ? 'bg-emerald-600 text-emerald-100 hover:bg-emerald-700'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                      >
+                        {player.on_roster ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => handleEditPlayer(player)}
+                          className="p-1 text-slate-400 hover:text-sky-400 transition-colors"
+                          title="Edit player"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePlayer(player)}
+                          className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                          title="Remove player"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Add Player Modal */}
+      {showAddModal && (
+        <AddRosterPlayerModal
+          team={team}
+          onClose={() => setShowAddModal(false)}
+          onPlayerAdded={handlePlayerAdded}
+          getAvailableJerseyNumbers={getAvailableJerseyNumbers}
+        />
+      )}
+
+      {/* Edit Player Modal */}
+      {editingPlayer && (
+        <EditPlayerModal
+          player={editingPlayer}
+          team={team}
+          onClose={() => setEditingPlayer(null)}
+          onPlayerUpdated={handlePlayerUpdated}
+          getAvailableJerseyNumbers={getAvailableJerseyNumbers}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingPlayer && (
+        <DeletePlayerConfirmModal
+          player={deletingPlayer}
+          onClose={() => setDeletingPlayer(null)}
+          onConfirm={handlePlayerDeleted}
+        />
+      )}
     </div>
   );
 }
