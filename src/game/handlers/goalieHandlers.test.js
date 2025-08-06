@@ -7,7 +7,7 @@ import {
   createMockGameState,
   createMockDependencies
 } from '../testUtils';
-import { TEAM_MODES } from '../../constants/playerConstants';
+import { TEAM_CONFIGS } from '../testUtils';
 
 jest.mock('../animation/animationSupport');
 jest.mock('../logic/gameStateLogic');
@@ -23,8 +23,8 @@ describe('createGoalieHandlers', () => {
     jest.clearAllMocks();
     
     mockDependencies = createMockDependencies();
-    mockPlayers = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
-    mockGameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+    mockPlayers = createMockPlayers(7, TEAM_CONFIGS.INDIVIDUAL_7);
+    mockGameState = createMockGameState(TEAM_CONFIGS.INDIVIDUAL_7);
     mockGameStateFactory = jest.fn(() => mockGameState);
 
     // Mock utility functions

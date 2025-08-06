@@ -1,6 +1,5 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
 import { supportsInactiveUsers, supportsNextNextIndicators, getModeDefinition } from '../../constants/gameModes';
-import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
 
 export const createFieldPositionHandlers = (
   teamConfig,
@@ -12,27 +11,15 @@ export const createFieldPositionHandlers = (
 ) => {
   const { openFieldPlayerModal, openSubstituteModal } = modalHandlers;
   
-  // Helper to get mode definition - handles both legacy strings and team config objects
-  // NOW FORMATION-AWARE!
-  const getDefinition = (teamModeOrConfig) => {
+  // Helper to get mode definition - handles team config objects
+  // FORMATION-AWARE!
+  const getDefinition = (teamConfig) => {
     // Handle null/undefined
-    if (!teamModeOrConfig) {
+    if (!teamConfig || typeof teamConfig !== 'object') {
       return null;
     }
     
-    if (typeof teamModeOrConfig === 'string') {
-      // Use centralized formation-aware team config creation
-      const teamConfig = createFormationAwareTeamConfig(teamModeOrConfig, selectedFormation);
-      if (!teamConfig) {
-        console.warn(`Failed to create team config for: ${teamModeOrConfig}`);
-        return null;
-      }
-      
-      const modeDefinition = getModeDefinition(teamConfig);
-      
-      return modeDefinition;
-    }
-    return getModeDefinition(teamModeOrConfig);
+    return getModeDefinition(teamConfig);
   };
   
   const isPairsMode = teamConfig?.substitutionType === 'pairs';

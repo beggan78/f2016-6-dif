@@ -14,13 +14,11 @@ import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents } from '../utils/gameEventLogger';
 import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
-import { migrateFromLegacyTeamMode as migrateFromLegacy } from '../utils/formationConfigUtils';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
 
-// Use centralized migration utilities
-const migrateFromLegacyTeamMode = migrateFromLegacy;
+// Migration utilities no longer needed - working exclusively with teamConfig objects
 
 /**
  * Unified utility function for handling nextNext player logic
@@ -45,11 +43,6 @@ export function useGameState() {
   // Ensure allPlayers is initialized if not present
   if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
     initialState.allPlayers = initializePlayers(initialRoster);
-  }
-  
-  // Migration: Convert legacy teamMode to teamConfig if needed
-  if (initialState.teamMode && typeof initialState.teamMode === 'string' && !initialState.teamConfig) {
-    initialState.teamConfig = migrateFromLegacyTeamMode(initialState.teamMode);
   }
   
   // Ensure teamConfig exists

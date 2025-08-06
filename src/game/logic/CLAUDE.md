@@ -11,7 +11,7 @@ Contains pure functions for all game state transitions and calculations. Handles
 - `calculatePositionSwitch()`: Handles swapping two players' positions
 - `calculateGoalieSwitch()`: Manages goalie changes and role transitions
 - `calculateUndo()`: Reverses the most recent substitution with time adjustments
-- `calculatePlayerToggleInactive()`: Activates/deactivates players (7-player mode only)
+- `calculatePlayerToggleInactive()`: Activates/deactivates players (7-player individual configuration only)
 - `calculateSubstituteSwap()`: Swaps substitute_1 and substitute_2 positions
 - `calculateNextSubstitutionTarget()`: Updates next player/pair to substitute
 
@@ -34,18 +34,18 @@ Contains pure functions for all game state transitions and calculations. Handles
 - Uses rotation queue for player ordering
 - Updates player stats and role tracking
 - Manages formation structure changes
-- Handles inactive player edge cases (7-player mode)
+- Handles inactive player edge cases (7-player individual configuration)
 - **Handler Requirements**: All game state changes must be applied via state updaters (setFormation, setAllPlayers, setRotationQueue, etc.)
 
 ### `positionUtils.js` - Position and Formation Utilities
 **Core Functions**:
 - `getPositionRole(position)`: Maps position strings to player roles
-- `getOutfieldPositions(teamMode)`: Gets outfield position lists by team mode
-- `getFieldPositions(teamMode)`: Gets field positions (excludes substitutes)
-- `getSubstitutePositions(teamMode)`: Gets substitute position lists
-- `isFieldPosition(position, teamMode)`: Checks if position is field position
-- `isSubstitutePosition(position, teamMode)`: Checks if position is substitute
-- `getExpectedOutfieldPlayerCount(teamMode)`: Gets expected player counts
+- `getOutfieldPositions(teamConfig)`: Gets outfield position lists by team configuration
+- `getFieldPositions(teamConfig)`: Gets field positions (excludes substitutes)
+- `getSubstitutePositions(teamConfig)`: Gets substitute position lists
+- `isFieldPosition(position, teamConfig)`: Checks if position is field position
+- `isSubstitutePosition(position, teamConfig)`: Checks if position is substitute
+- `getExpectedOutfieldPlayerCount(teamConfig)`: Gets expected player counts
 
 ## Pure Function Architecture Pattern
 All state transitions follow this pattern:
@@ -97,11 +97,11 @@ export const calculateOperation = (gameState, ...params) => {
    );
    ```
 
-### Extending Team Modes
-- Add new formation constants to `constants/playerConstants.js`
-- Update position utilities in `positionUtils.js` 
+### Extending Team Configurations
+- Update position utilities in `positionUtils.js` for new configurations
 - Add formation-specific logic to substitution manager
 - Extend animation position mappings in `animationSupport.js`
+- Test new configurations thoroughly
 
 ## Error Handling Strategy
 - Validate inputs and return unchanged state for invalid operations
@@ -138,7 +138,7 @@ All logic functions can be tested in isolation:
 const testState = {
   formation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
-  teamMode: 'INDIVIDUAL_6'
+  teamConfig: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' }
 };
 
 const result = calculateSubstitution(testState);
@@ -161,10 +161,10 @@ expect(result.formation).toBe(/* expected formation */);
 **Test Coverage**:
 - Unit tests: Handler state updater integration
 - Logic tests: Pure function queue calculations  
-- Integration tests: End-to-end workflow verification across all team modes
+- Integration tests: End-to-end workflow verification across all team configurations
 - State update tests: Verification that queue changes are actually applied
 
-**Impact**: Ensures fair rotation for all players during goalie switches across all team modes.
+**Impact**: Ensures fair rotation for all players during goalie switches across all team configurations.
 
 ### Previous Fixes
 - **Time Field Initialization**: Added defensive initialization for former goalies' time fields
@@ -174,5 +174,5 @@ expect(result.formation).toBe(/* expected formation */);
 - Changing substitution rules for specific formations
 - Adding time calculation logic
 - Modifying rotation queue integration
-- Adding support for new team modes
+- Adding support for new team configurations
 - Adding new player statuses or roles

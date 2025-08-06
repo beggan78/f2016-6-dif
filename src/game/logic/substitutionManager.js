@@ -5,7 +5,6 @@ import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
 import { getCarouselMapping } from './carouselPatterns';
-import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
 import { handleError, createError, ERROR_SEVERITY } from '../../utils/errorHandler';
 
 /**
@@ -56,21 +55,9 @@ export class SubstitutionManager {
   }
 
   /**
-   * Gets mode definition for this team mode, handling both legacy strings and team config objects
+   * Gets mode definition for this team configuration object
    */
   getModeConfig() {
-
-    if (typeof this.teamConfig === 'string') {
-      // Use centralized formation-aware config creation
-      const formationAwareConfig = createFormationAwareTeamConfig(this.teamConfig, this.selectedFormation);
-      
-      
-      const modeDefinition = getModeDefinition(formationAwareConfig);
-      
-      
-      return modeDefinition;
-    }
-    
     const modeDefinition = getModeDefinition(this.teamConfig);
     return modeDefinition;
   }

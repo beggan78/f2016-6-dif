@@ -14,7 +14,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { FormationRenderer } from '../FormationRenderer';
-import { TEAM_MODES } from '../../../../constants/playerConstants';
+import { TEAM_CONFIGS } from '../../../../game/testUtils';
 import { createTeamConfig } from '../../../../constants/teamConfiguration';
 import {
   createMockGameScreenProps,
@@ -22,21 +22,6 @@ import {
   createMockFormation
 } from '../../../__tests__/componentTestUtils';
 
-// Helper function to convert legacy team mode to modern team config
-const teamModeToConfig = (teamMode) => {
-  switch (teamMode) {
-    case TEAM_MODES.PAIRS_7:
-      return createTeamConfig('5v5', 7, '2-2', 'pairs');
-    case TEAM_MODES.INDIVIDUAL_6:
-      return createTeamConfig('5v5', 6, '2-2', 'individual');
-    case TEAM_MODES.INDIVIDUAL_7:
-      return createTeamConfig('5v5', 7, '2-2', 'individual');
-    case TEAM_MODES.INDIVIDUAL_8:
-      return createTeamConfig('5v5', 8, '2-2', 'individual');
-    default:
-      return null;
-  }
-};
 
 // Mock the formation components  
 jest.mock('../PairsFormation', () => ({
@@ -64,9 +49,9 @@ describe('FormationRenderer', () => {
 
   beforeEach(() => {
     defaultProps = {
-      teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
+      teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
       selectedFormation: '2-2',
-      formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
+      formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_7),
       allPlayers: createMockPlayers(),
       animationState: { type: 'none', phase: 'idle', data: {} },
       recentlySubstitutedPlayers: new Set(),
@@ -87,8 +72,8 @@ describe('FormationRenderer', () => {
     it('should render PairsFormation for pairs substitution type', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
-        formation: createMockFormation(TEAM_MODES.PAIRS_7)
+        teamConfig: TEAM_CONFIGS.PAIRS_7,
+        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7)
       };
       
       render(<FormationRenderer {...props} />);
@@ -102,8 +87,8 @@ describe('FormationRenderer', () => {
     it('should render IndividualFormation for individual substitution type (6 players)', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_6),
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_6,
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6)
       };
       
       render(<FormationRenderer {...props} />);
@@ -117,8 +102,8 @@ describe('FormationRenderer', () => {
     it('should render IndividualFormation for individual substitution type (7 players)', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7)
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_7)
       };
       
       render(<FormationRenderer {...props} />);
@@ -132,8 +117,8 @@ describe('FormationRenderer', () => {
     it('should render IndividualFormation for individual substitution type (8 players)', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_8),
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_8)
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_8,
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_8)
       };
       
       render(<FormationRenderer {...props} />);
@@ -184,8 +169,8 @@ describe('FormationRenderer', () => {
     it('should pass all props correctly to PairsFormation', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
-        formation: createMockFormation(TEAM_MODES.PAIRS_7),
+        teamConfig: TEAM_CONFIGS.PAIRS_7,
+        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7),
         allPlayers: createMockPlayers(7)
       };
       
@@ -199,8 +184,8 @@ describe('FormationRenderer', () => {
     it('should handle empty players array for PairsFormation', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
-        formation: createMockFormation(TEAM_MODES.PAIRS_7),
+        teamConfig: TEAM_CONFIGS.PAIRS_7,
+        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7),
         allPlayers: []
       };
       
@@ -212,7 +197,7 @@ describe('FormationRenderer', () => {
     it('should handle missing formation for PairsFormation', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
+        teamConfig: TEAM_CONFIGS.PAIRS_7,
         formation: null
       };
       
@@ -226,8 +211,8 @@ describe('FormationRenderer', () => {
     it('should pass all props correctly to IndividualFormation for 6-player individual', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_6),
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6),
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_6,
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6),
         allPlayers: createMockPlayers(6)
       };
       
@@ -241,8 +226,8 @@ describe('FormationRenderer', () => {
     it('should pass all props correctly to IndividualFormation for 7-player individual', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_7),
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_7),
         allPlayers: createMockPlayers(7)
       };
       
@@ -256,8 +241,8 @@ describe('FormationRenderer', () => {
     it('should pass all props correctly to IndividualFormation for 8-player individual', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_8),
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_8),
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_8,
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_8),
         allPlayers: createMockPlayers(8)
       };
       
@@ -271,7 +256,7 @@ describe('FormationRenderer', () => {
     it('should handle empty players array for IndividualFormation', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
         allPlayers: []
       };
       
@@ -283,7 +268,7 @@ describe('FormationRenderer', () => {
     it('should handle missing formation for IndividualFormation', () => {
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
         formation: null
       };
       
@@ -303,7 +288,7 @@ describe('FormationRenderer', () => {
       
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.PAIRS_7),
+        teamConfig: TEAM_CONFIGS.PAIRS_7,
         longPressHandlers: mockHandlers
       };
       
@@ -319,7 +304,7 @@ describe('FormationRenderer', () => {
       
       const props = {
         ...defaultProps,
-        teamConfig: teamModeToConfig(TEAM_MODES.INDIVIDUAL_7),
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
         getPlayerNameById: mockGetPlayerName,
         getPlayerTimeStats: mockGetPlayerStats
       };
@@ -333,7 +318,7 @@ describe('FormationRenderer', () => {
 
   describe('Error Handling and Edge Cases', () => {
     it('should not crash with null props', () => {
-      expect(() => render(<FormationRenderer teamConfig={teamModeToConfig(TEAM_MODES.INDIVIDUAL_7)} />)).not.toThrow();
+      expect(() => render(<FormationRenderer teamConfig={TEAM_CONFIGS.INDIVIDUAL_7} />)).not.toThrow();
     });
 
     it('should not crash with undefined longPressHandlers', () => {

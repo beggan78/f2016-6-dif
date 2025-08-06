@@ -8,17 +8,17 @@ import { getAllPositions as getPositionsFromGameModes, getDefinition } from '../
 
 /**
  * Gets all positions for a formation including goalie
- * @param {string} teamMode - Legacy team mode string
+ * @param {Object} teamConfig - Team configuration object
  * @returns {string[]} Array of all position keys including goalie
  */
-export function getAllPositions(teamMode) {
+export function getAllPositions(teamConfig) {
   // Handle invalid inputs gracefully to match original behavior
-  if (!teamMode || typeof teamMode !== 'string') {
+  if (!teamConfig || typeof teamConfig !== 'object' || !teamConfig.mode) {
     return [];
   }
   
   try {
-    return getPositionsFromGameModes(teamMode);
+    return getPositionsFromGameModes(teamConfig.mode);
   } catch (error) {
     // Return empty array for any errors (invalid team modes, validation errors, etc.)
     return [];
@@ -26,14 +26,14 @@ export function getAllPositions(teamMode) {
 }
 
 /**
- * Gets formation definition for a team mode
- * @param {string} teamMode - Legacy team mode string  
+ * Gets formation definition for a team configuration
+ * @param {Object} teamConfig - Team configuration object
  * @returns {Object|null} Mode definition object or null if invalid
  */
-export function getModeDefinition(teamMode) {
-  if (!teamMode || typeof teamMode !== 'string') {
+export function getModeDefinition(teamConfig) {
+  if (!teamConfig || typeof teamConfig !== 'object' || !teamConfig.mode) {
     return null;
   }
   
-  return getDefinition(teamMode);
+  return getDefinition(teamConfig.mode);
 }

@@ -1,9 +1,9 @@
 import { createFieldPositionHandlers } from './fieldPositionHandlers';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { 
   createMockPlayers, 
   createMockFormation, 
-  createMockDependencies 
+  createMockDependencies,
+  TEAM_CONFIGS
 } from '../testUtils';
 
 describe('createFieldPositionHandlers', () => {
@@ -15,14 +15,14 @@ describe('createFieldPositionHandlers', () => {
   beforeEach(() => {
     mockDependencies = createMockDependencies();
     mockModalHandlers = mockDependencies.modalHandlers;
-    mockPlayers = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
-    mockFormation = createMockFormation(TEAM_MODES.INDIVIDUAL_7);
+    mockPlayers = createMockPlayers(7, TEAM_CONFIGS.INDIVIDUAL_7);
+    mockFormation = createMockFormation(TEAM_CONFIGS.INDIVIDUAL_7);
   });
 
   describe('INDIVIDUAL_7 mode', () => {
     it('should create all required callback functions for individual 7 mode', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -40,7 +40,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should handle field player long press correctly', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -61,7 +61,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should handle substitute long press for substitute_1', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -80,7 +80,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should handle substitute long press for substitute_2 with next to go in option', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -99,7 +99,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should not allow setting as next to go in when player is already next', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         mockPlayers,
         '6',
@@ -122,7 +122,7 @@ describe('createFieldPositionHandlers', () => {
       );
 
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         inactivePlayers,
         '1',
@@ -142,13 +142,13 @@ describe('createFieldPositionHandlers', () => {
 
   describe('PAIRS_7 mode', () => {
     beforeEach(() => {
-      mockPlayers = createMockPlayers(7, TEAM_MODES.PAIRS_7);
-      mockFormation = createMockFormation(TEAM_MODES.PAIRS_7);
+      mockPlayers = createMockPlayers(7, TEAM_CONFIGS.PAIRS_7);
+      mockFormation = createMockFormation(TEAM_CONFIGS.PAIRS_7);
     });
 
     it('should create all required callback functions for pairs mode', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.PAIRS_7,
+        TEAM_CONFIGS.PAIRS_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -163,7 +163,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should handle pair long press correctly', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.PAIRS_7,
+        TEAM_CONFIGS.PAIRS_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -184,7 +184,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should handle right pair long press correctly', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.PAIRS_7,
+        TEAM_CONFIGS.PAIRS_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -207,7 +207,7 @@ describe('createFieldPositionHandlers', () => {
       const emptyFormation = { ...mockFormation, leftPair: undefined };
       
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.PAIRS_7,
+        TEAM_CONFIGS.PAIRS_7,
         emptyFormation,
         mockPlayers,
         '1',
@@ -222,13 +222,13 @@ describe('createFieldPositionHandlers', () => {
 
   describe('INDIVIDUAL_6 mode', () => {
     beforeEach(() => {
-      mockPlayers = createMockPlayers(6, TEAM_MODES.INDIVIDUAL_6);
-      mockFormation = createMockFormation(TEAM_MODES.INDIVIDUAL_6);
+      mockPlayers = createMockPlayers(6, TEAM_CONFIGS.INDIVIDUAL_6);
+      mockFormation = createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6);
     });
 
     it('should create all required callback functions for individual 6 mode', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_6,
+        TEAM_CONFIGS.INDIVIDUAL_6,
         mockFormation,
         mockPlayers,
         '1',
@@ -245,7 +245,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should handle field player long press in 6-player mode', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_6,
+        TEAM_CONFIGS.INDIVIDUAL_6,
         mockFormation,
         mockPlayers,
         '1',
@@ -266,7 +266,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should open substitute modal for substitute_1 in 6-player mode', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_6,
+        TEAM_CONFIGS.INDIVIDUAL_6,
         mockFormation,
         mockPlayers,
         '1',
@@ -290,7 +290,7 @@ describe('createFieldPositionHandlers', () => {
       const playersWithMissingData = mockPlayers.slice(0, 5);
       
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         playersWithMissingData,
         '1',
@@ -309,7 +309,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should handle empty formation gracefully', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         {},
         mockPlayers,
         '1',
@@ -332,7 +332,7 @@ describe('createFieldPositionHandlers', () => {
   describe('callback generation', () => {
     it('should generate callbacks for all positions in individual modes', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -356,7 +356,7 @@ describe('createFieldPositionHandlers', () => {
 
     it('should only generate pair callbacks for pairs mode', () => {
       const handlers = createFieldPositionHandlers(
-        TEAM_MODES.PAIRS_7,
+        TEAM_CONFIGS.PAIRS_7,
         mockFormation,
         mockPlayers,
         '1',
@@ -373,7 +373,7 @@ describe('createFieldPositionHandlers', () => {
     it('should generate callbacks for substitute_4 and substitute_5 in 9-player and 10-player modes', () => {
       // Test 9-player mode
       const handlers9 = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_9,
+        TEAM_CONFIGS.INDIVIDUAL_9,
         mockFormation,
         mockPlayers,
         '1',
@@ -398,7 +398,7 @@ describe('createFieldPositionHandlers', () => {
 
       // Test 10-player mode
       const handlers10 = createFieldPositionHandlers(
-        TEAM_MODES.INDIVIDUAL_10,
+        TEAM_CONFIGS.INDIVIDUAL_10,
         mockFormation,
         mockPlayers,
         '1',

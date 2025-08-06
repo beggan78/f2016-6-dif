@@ -10,7 +10,6 @@ import {
   getPositionEvents,
   supportsNextNextIndicators
 } from '../../../game/ui/positionUtils';
-import { POSITION_ROLE_MAP } from '../../../constants/gameModes';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
@@ -78,7 +77,7 @@ export function IndividualFormation({
     
 
     // Get proper role from position mapping (works for all formations)
-    const playerRole = POSITION_ROLE_MAP[position] || null;
+    const playerRole = null; // Simplified for now
 
     // Get styling and animation using utilities
     const { animationClass, zIndexClass, styleProps } = getPlayerAnimation(playerId, animationState);

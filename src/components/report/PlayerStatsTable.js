@@ -10,14 +10,12 @@ import { EVENT_TYPES } from '../../utils/gameEventLogger';
  * 
  * @param {Object} props - Component props
  * @param {Array} props.players - Array of player objects with stats
- * @param {string} props.teamMode - Team mode for context (PAIRS_7, INDIVIDUAL_6, etc.)
  * @param {Object} props.formation - Formation data for starting role determination
  * @param {Array} props.matchEvents - Array of match events for goal counting
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
  */
 export function PlayerStatsTable({
   players = [],
-  teamMode,
   formation = {},
   matchEvents = [],
   goalScorers = {}

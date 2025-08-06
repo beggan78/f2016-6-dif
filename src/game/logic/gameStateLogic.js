@@ -13,27 +13,21 @@ import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookup } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
-import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, isIndividualMode, getModeDefinition } from '../../constants/gameModes';
+import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { getFormationDefinition } from '../../utils/formationConfigUtils';
 import { handleError, ERROR_CATEGORIES } from '../../utils/errorHandler';
 
 /**
- * Helper to get mode definition from either legacy string or team config object
- * Uses centralized formation configuration utilities with proper legacy handling
+ * Helper to get mode definition from team config object
+ * Uses centralized formation configuration utilities
  */
-const getDefinitionForGameLogic = (teamModeOrConfig, selectedFormation = null) => {
-  // For legacy team mode strings, first convert to team config object
-  if (typeof teamModeOrConfig === 'string') {
-    const { createFormationAwareTeamConfig } = require('../../utils/formationConfigUtils');
-    const teamConfig = createFormationAwareTeamConfig(teamModeOrConfig, selectedFormation);
-    if (!teamConfig) {
-      return null;
-    }
-    return getModeDefinition(teamConfig);
+const getDefinitionForGameLogic = (teamConfig, selectedFormation = null) => {
+  if (!teamConfig || typeof teamConfig !== 'object') {
+    return null;
   }
   
-  // For team config objects, use directly
-  return getFormationDefinition(teamModeOrConfig, selectedFormation);
+  // For team config objects, use formation definition utility
+  return getFormationDefinition(teamConfig, selectedFormation);
 };
 
 /**

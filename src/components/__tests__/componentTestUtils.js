@@ -6,7 +6,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { TEAM_CONFIGS } from '../../game/testUtils';
 
 /**
  * Create mock props for GameScreen component
@@ -18,8 +19,8 @@ export const createMockGameScreenProps = (overrides = {}) => {
     formation: '2-2',
     substitutionType: 'individual'
   };
-  const formation = overrides.formation || createMockFormation(TEAM_MODES.INDIVIDUAL_7);
-  const allPlayers = overrides.allPlayers || createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
+  const formation = overrides.formation || createMockFormation(teamConfig);
+  const allPlayers = overrides.allPlayers || createMockPlayers(teamConfig.squadSize || 7, teamConfig);
   
   return {
     currentPeriodNumber: 1,
@@ -69,16 +70,16 @@ export const createMockGameScreenProps = (overrides = {}) => {
 /**
  * Create mock players for component testing
  * @param {number} count - Number of players to create
- * @param {string} teamMode - Team mode to use for player structure (defaults to INDIVIDUAL_7)
+ * @param {Object} teamConfig - Team config object to use for player structure
  */
-export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7) => {
+export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
   const players = [];
   
   for (let i = 1; i <= count; i++) {
     let status, role, pairKey;
     
-    if (teamMode === TEAM_MODES.PAIRS_7) {
-      // PAIRS_7 mode structure
+    if (teamConfig.substitutionType === 'pairs') {
+      // PAIRS mode structure
       if (i <= 4) {
         status = PLAYER_STATUS.ON_FIELD;
         role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
@@ -93,12 +94,28 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
         pairKey = 'goalie';
       }
     } else {
-      // Individual modes structure (INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
+      // Individual modes structure
       if (i <= 4) {
         status = PLAYER_STATUS.ON_FIELD;
-        role = i <= 2 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        pairKey = i <= 2 ? (i === 1 ? 'leftDefender' : 'rightDefender') :
-                          (i === 3 ? 'leftAttacker' : 'rightAttacker');
+        
+        // Role assignment based on formation
+        if (teamConfig.formation === '1-2-1') {
+          if (i === 1) {
+            role = PLAYER_ROLES.DEFENDER;
+            pairKey = 'defender';
+          } else if (i <= 3) {
+            role = PLAYER_ROLES.MIDFIELDER;
+            pairKey = i === 2 ? 'leftMidfielder' : 'rightMidfielder';
+          } else {
+            role = PLAYER_ROLES.ATTACKER;
+            pairKey = 'attacker';
+          }
+        } else {
+          // 2-2 formation
+          role = i <= 2 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
+          pairKey = i <= 2 ? (i === 1 ? 'leftDefender' : 'rightDefender') :
+                            (i === 3 ? 'leftAttacker' : 'rightAttacker');
+        }
       } else if (i < count) {
         status = PLAYER_STATUS.SUBSTITUTE;
         role = PLAYER_ROLES.SUBSTITUTE;
@@ -121,6 +138,7 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
         lastStintStartTimeEpoch: Date.now() - (i * 30000),
         timeOnFieldSeconds: i * 30,
         timeAsAttackerSeconds: role === PLAYER_ROLES.ATTACKER ? i * 15 : 0,
+        timeAsMidfielderSeconds: role === PLAYER_ROLES.MIDFIELDER ? i * 15 : 0,
         timeAsDefenderSeconds: role === PLAYER_ROLES.DEFENDER ? i * 15 : 0,
         timeAsSubSeconds: status === PLAYER_STATUS.SUBSTITUTE ? i * 10 : 0,
         timeAsGoalieSeconds: status === PLAYER_STATUS.GOALIE ? i * 30 : 0,
@@ -128,7 +146,8 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
                        status === PLAYER_STATUS.GOALIE ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
         periodsAsGoalie: status === PLAYER_STATUS.GOALIE ? 1 : 0,
         periodsAsDefender: role === PLAYER_ROLES.DEFENDER ? 1 : 0,
-        periodsAsAttacker: role === PLAYER_ROLES.ATTACKER ? 1 : 0
+        periodsAsAttacker: role === PLAYER_ROLES.ATTACKER ? 1 : 0,
+        periodsAsMidfielder: role === PLAYER_ROLES.MIDFIELDER ? 1 : 0
       }
     });
   }
@@ -137,62 +156,54 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
 };
 
 /**
- * Create mock formation for different team modes
+ * Create mock formation for different team configs
  */
-export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-  switch (teamMode) {
-    case TEAM_MODES.PAIRS_7:
-      return {
-        goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
-      };
-      
-    case TEAM_MODES.INDIVIDUAL_6:
-      return {
-        goalie: '6',
-        leftDefender: '1',
-        rightDefender: '2',
-        leftAttacker: '3',
-        rightAttacker: '4',
-        substitute_1: '5'
-      };
-      
-    case TEAM_MODES.INDIVIDUAL_7:
-      return {
-        goalie: '7',
-        leftDefender: '1',
-        rightDefender: '2',
-        leftAttacker: '3',
-        rightAttacker: '4',
-        substitute_1: '5',
-        substitute_2: '6'
-      };
-      
-    case TEAM_MODES.INDIVIDUAL_8:
-      return {
-        goalie: '8',
-        leftDefender: '1',
-        rightDefender: '2',
-        leftAttacker: '3',
-        rightAttacker: '4',
-        substitute_1: '5',
-        substitute_2: '6',
-        substitute_3: '7'
-      };
-      
-    default:
-      return {
-        goalie: '7',
-        leftDefender: '1',
-        rightDefender: '2',
-        leftAttacker: '3',
-        rightAttacker: '4',
-        substitute_1: '5',
-        substitute_2: '6'
-      };
+export const createMockFormation = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
+  const squadSize = teamConfig.squadSize || 7;
+  const goalieId = squadSize.toString();
+  
+  if (teamConfig.substitutionType === 'pairs') {
+    return {
+      goalie: goalieId,
+      leftPair: { defender: '1', attacker: '2' },
+      rightPair: { defender: '3', attacker: '4' },
+      subPair: { defender: '5', attacker: '6' }
+    };
   }
+  
+  // Individual modes - formation-aware
+  if (teamConfig.formation === '1-2-1') {
+    const formation = {
+      goalie: goalieId,
+      defender: '1',
+      leftMidfielder: '2',
+      rightMidfielder: '3',
+      attacker: '4'
+    };
+    
+    // Add substitutes based on squad size
+    for (let i = 5; i < squadSize; i++) {
+      formation[`substitute_${i - 4}`] = i.toString();
+    }
+    
+    return formation;
+  }
+  
+  // Default to 2-2 formation
+  const formation = {
+    goalie: goalieId,
+    leftDefender: '1',
+    rightDefender: '2',
+    leftAttacker: '3',
+    rightAttacker: '4'
+  };
+  
+  // Add substitutes based on squad size
+  for (let i = 5; i < squadSize; i++) {
+    formation[`substitute_${i - 4}`] = i.toString();
+  }
+  
+  return formation;
 };
 
 /**
@@ -463,16 +474,12 @@ export const componentAssertions = {
     expect(element).toHaveTextContent(expectedText);
   },
   
-  expectFormationToBeRendered: (teamMode) => {
-    // Formation-specific assertions based on team mode
-    switch (teamMode) {
-      case TEAM_MODES.PAIRS_7:
-        expect(screen.getByText(/pair/i)).toBeInTheDocument();
-        break;
-      case TEAM_MODES.INDIVIDUAL_6:
-      case TEAM_MODES.INDIVIDUAL_7:
-        expect(screen.getByText(/defender|attacker/i)).toBeInTheDocument();
-        break;
+  expectFormationToBeRendered: (teamConfig) => {
+    // Formation-specific assertions based on team config
+    if (teamConfig.substitutionType === 'pairs') {
+      expect(screen.getByText(/pair/i)).toBeInTheDocument();
+    } else {
+      expect(screen.getByText(/defender|attacker|midfielder/i)).toBeInTheDocument();
     }
   }
 };

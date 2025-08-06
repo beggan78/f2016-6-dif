@@ -8,7 +8,7 @@ This document outlines a comprehensive implementation plan for adding 1-2-1 form
 
 ### Existing Formation System
 - **Current formations**: Only 2-2 (2 defenders + 2 attackers) supported
-- **Team modes**: PAIRS_7, INDIVIDUAL_5 through INDIVIDUAL_10
+- **Team configurations**: Pairs and individual configurations with various squad sizes
 - **Position system**: Table-driven mapping via `POSITION_ROLE_MAP`
 - **Architecture**: Pure functions, separation of concerns, animation-logic separation
 
@@ -52,17 +52,17 @@ const teamConfig = {
 4. **Clean Breaking Change**: No backward compatibility needed - app not in production, data can be wiped
 5. **Clear Separation of Concerns**: Each concept has dedicated logic
 
-### Current vs New Architecture
+### Current vs Legacy Architecture
 
-**Current (Problematic)**:
-- `PAIRS_7`, `INDIVIDUAL_5`, `INDIVIDUAL_6`, `INDIVIDUAL_7`, `INDIVIDUAL_8`, `INDIVIDUAL_9`, `INDIVIDUAL_10`
-- Adding 1-2-1 would create: `INDIVIDUAL_6_1_2_1`, `INDIVIDUAL_7_1_2_1`, etc.
-- Adding 7v7 + formations = massive explosion
+**Legacy (Problematic)**:
+- String-based team configuration identifiers
+- Hard-coded configuration combinations
+- Formation expansion would create configuration explosion
 
-**New (Scalable)**:
-- Base team modes: `INDIVIDUAL`, `PAIRS`
+**Current (Scalable)**:
+- Object-based team configuration system
 - Configuration object drives behavior
-- Formation definitions become composable
+- Formation definitions are composable
 
 ## Implementation Requirements
 
@@ -432,7 +432,7 @@ Add midfielder column to table headers and data:
 
 Add new function following existing patterns:
 ```javascript
-export const generate121FormationRecommendation = (allPlayers, goalieId, periodNumber, teamMode) => {
+export const generate121FormationRecommendation = (allPlayers, goalieId, periodNumber, teamConfig) => {
   // Follow individual mode pattern with 4 field positions
   // Apply time-based rotation queue logic
   // Implement role-specific balancing for defender/midfielder/attacker
@@ -466,14 +466,14 @@ export const generate121FormationRecommendation = (allPlayers, goalieId, periodN
 Update `generateIndividualFormationRecommendation()` to route to 1-2-1 algorithm when appropriate:
 
 ```javascript
-export const generateIndividualFormationRecommendation = (allPlayers, goalieId, periodNumber, teamMode) => {
-  // Check if this is a 1-2-1 formation mode
-  if (teamMode.includes('1_2_1')) {
-    return generate121FormationRecommendation(allPlayers, goalieId, periodNumber, teamMode);
+export const generateIndividualFormationRecommendation = (allPlayers, goalieId, periodNumber, teamConfig) => {
+  // Check if this is a 1-2-1 formation
+  if (teamConfig.formation === '1-2-1') {
+    return generate121FormationRecommendation(allPlayers, goalieId, periodNumber, teamConfig);
   }
   
   // Existing 2-2 formation logic
-  return generate22FormationRecommendation(allPlayers, goalieId, periodNumber, teamMode);
+  return generate22FormationRecommendation(allPlayers, goalieId, periodNumber, teamConfig);
 };
 ```
 
@@ -560,7 +560,7 @@ const [teamConfig, setTeamConfig] = useState({
 #### 7.2 Update Game State Initialization
 **File**: `/src/hooks/useGameState.js`
 
-**Breaking Change**: Complete replacement of team mode system:
+**Modern Architecture**: Using existing teamConfig system:
 ```javascript
 const initializeGameState = (teamConfig, selectedPlayers, /* other params */) => {
   // Validate team configuration
@@ -569,19 +569,18 @@ const initializeGameState = (teamConfig, selectedPlayers, /* other params */) =>
   // Generate mode definition from team configuration
   const modeDefinition = getModeDefinition(teamConfig);
   
-  // Initialize game state with composite configuration (BREAKING CHANGE)
+  // Initialize game state with composite configuration (CURRENT ARCHITECTURE)
   const gameState = {
     // ... existing state fields that remain valid
-    teamConfig,                    // Store full configuration (replaces teamMode)
-    modeDefinition,               // Dynamic mode definition (replaces static lookups)
-    // REMOVED: teamMode, formation (now part of teamConfig)
+    teamConfig,                    // Store full configuration
+    modeDefinition,               // Dynamic mode definition
     // ... rest of initialization
   };
   
   return gameState;
 };
 
-// Update all game logic to use modeDefinition instead of static MODE_DEFINITIONS
+// Game logic already uses modeDefinition from dynamic generation
 const getFieldPositions = (gameState) => {
   return gameState.modeDefinition.fieldPositions;
 };
@@ -590,8 +589,8 @@ const getPositionRole = (position, gameState) => {
   return gameState.modeDefinition.positions[position];
 };
 
-// BREAKING: Remove all references to static MODE_DEFINITIONS[teamMode]
-// Replace with: gameState.modeDefinition or getModeDefinition(gameState.teamConfig)
+// Modern approach: Use dynamic mode definitions
+// Already implemented: gameState.modeDefinition or getModeDefinition(gameState.teamConfig)
 ```
 
 #### 7.3 Update Formation-Dependent Components
@@ -666,13 +665,13 @@ const IndividualFormation = ({ teamConfig, /* other props */ }) => {
 
 **Total Estimated Time**: 37-44 hours
 
-### Breaking Change Strategy Benefits
+### Modern Architecture Benefits
 
-**Clean Slate Approach**:
-- **No backward compatibility burden**: App not in production, existing data can be wiped
-- **Cleaner implementation**: No legacy team mode mapping or compatibility layers needed
-- **Simpler architecture**: Direct implementation of composite configuration without transition logic
-- **Faster development**: No need to maintain two systems during migration
+**Clean Implementation**:
+- **Modern foundation**: Already using composite teamConfig object architecture
+- **Clean implementation**: No legacy compatibility layers needed
+- **Simpler architecture**: Direct implementation with existing composite configuration
+- **Efficient development**: Building on established patterns
 
 **Future Scalability**:
 - Adding 7v7 format requires only new FORMATION_LAYOUTS entries
@@ -680,17 +679,17 @@ const IndividualFormation = ({ teamConfig, /* other props */ }) => {
 - New substitution patterns extend naturally
 - UI automatically adapts to new formation options
 
-**Implementation Simplifications**:
-- Remove all legacy team mode constants and mappings
-- Direct replacement of `MODE_DEFINITIONS` with `getModeDefinition(teamConfig)`
-- Clean component props (no legacy `teamMode` prop alongside `teamConfig`)
-- Simplified testing (no compatibility scenarios to test)
+**Implementation Advantages**:
+- Modern teamConfig architecture already in place
+- Dynamic `getModeDefinition(teamConfig)` system established
+- Clean component props using teamConfig objects
+- Simplified testing with consistent patterns
 
 ## Risk Assessment & Mitigation
 
 ### High Risk Areas
-1. **Breaking Change Scope**: Complete replacement of team mode system affects many files
-   - *Mitigation*: Systematic approach, thorough testing, can wipe existing data if needed
+1. **Implementation Scope**: New formation types affect various system components
+   - *Mitigation*: Systematic approach, thorough testing, leverage existing architecture
    
 2. **Recommendation Algorithm Complexity**: 1-2-1 role balancing logic  
    - *Mitigation*: Start with simplified algorithm, iterate based on testing
@@ -750,10 +749,10 @@ This revised implementation plan provides a comprehensive roadmap for adding 1-2
 - Formations become composable building blocks
 - Future-proofs the system for 7v7 and beyond
 
-**Breaking Change Approach**:
-- Clean replacement of existing team mode system
-- **No backward compatibility needed** - app not in production, data can be wiped
-- Simplified implementation without legacy support burden
+**Modern Architecture Approach**:
+- Building on existing teamConfig system
+- **Consistent patterns** with established codebase architecture
+- Simplified implementation using proven patterns
 
 ### Future Scalability Examples
 

@@ -27,23 +27,23 @@ The animation system works by:
 3. Computing visual differences and animation requirements
 4. Orchestrating timing and applying state changes
 
-## Team Modes
+## Team Configurations
 
-### PAIRS_7 (Pairs Mode)
+### Pairs Configuration (7 Players)
 - Field positions: `leftPair`, `rightPair` (each with defender/attacker roles)
 - Substitute position: `subPair` (defender/attacker pair)
 - Goalie: `goalie` (single position)
 - Substitutions swap entire pairs
 - Queue contains individual player IDs, not pair objects
 
-### INDIVIDUAL_6 (6-Player Mode)
+### Individual 6-Player Configuration
 - Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
 - Substitute position: `substitute` (single player)
 - Goalie: `goalie` (single position)
 - Individual player substitutions
 - Simple rotation: substituted player moves to end
 
-### INDIVIDUAL_7 (7-Player Mode)
+### Individual 7-Player Configuration
 - Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
 - Substitute positions: `substitute_1`, `substitute_2` (two separate substitutes)
 - Goalie: `goalie` (single position)
@@ -55,7 +55,7 @@ The central `gameState` object contains:
 - `formation`: Current player positions and formation structure
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
-- `teamMode`: PAIRS_7, INDIVIDUAL_6, or INDIVIDUAL_7
+- `teamConfig`: Team configuration object with format, squadSize, formation, and substitutionType
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
 - `playersToHighlight`: Players to show glow effects
 - Various timing and metadata fields

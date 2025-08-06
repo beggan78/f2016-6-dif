@@ -273,7 +273,7 @@ export function useTimers(periodDurationMinutes) {
     }
   }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides, lastSubstitutionTime, periodStartTime, periodDurationMinutes]);
 
-  const startTimers = useCallback((periodNumber = 1, teamMode = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
+  const startTimers = useCallback((periodNumber = 1, teamConfig = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
     const now = Date.now();
     setPeriodStartTime(now);
     setLastSubstitutionTime(now);
@@ -288,7 +288,7 @@ export function useTimers(periodDurationMinutes) {
         logEvent(EVENT_TYPES.MATCH_START, {
           timestamp: now,
           periodDurationMinutes,
-          teamMode,
+          teamConfig,
           homeTeamName: homeTeamName || 'Djurgården',
           awayTeamName: awayTeamName || 'Opponent',
           numPeriods: numPeriods || 2, // Total number of periods planned for the match
@@ -308,7 +308,7 @@ export function useTimers(periodDurationMinutes) {
           timestamp: now,
           periodDurationMinutes,
           startingFormation: startingFormation ? JSON.parse(JSON.stringify(startingFormation)) : null,
-          teamMode,
+          teamConfig,
           periodMetadata: {
             startTime: now,
             plannedDurationMinutes: periodDurationMinutes,
@@ -333,7 +333,7 @@ export function useTimers(periodDurationMinutes) {
           matchTime: calculateMatchTime(now),
           timestamp: now,
           periodNumber: periodNumber,
-          teamMode: teamMode,
+          teamConfig: teamConfig,
           description: goalieName ? `${goalieName} is goalie` : `Goalie assigned for period ${periodNumber}`
         });
       }
@@ -367,7 +367,7 @@ export function useTimers(periodDurationMinutes) {
     });
   }, [saveTimerStateWithOverrides, periodDurationMinutes]);
 
-  const stopTimers = useCallback((periodNumber = null, isMatchEnd = false, finalFormation = null, teamMode = null) => {
+  const stopTimers = useCallback((periodNumber = null, isMatchEnd = false, finalFormation = null, teamConfig = null) => {
     const now = Date.now();
     setIsPeriodActive(false);
     if (updateIntervalRef.current) {
@@ -382,7 +382,7 @@ export function useTimers(periodDurationMinutes) {
           timestamp: now,
           finalPeriodNumber: periodNumber,
           matchDurationMs: periodStartTime ? now - periodStartTime : 0,
-          teamMode,
+          teamConfig,
           matchMetadata: {
             endTime: now,
             endReason: 'normal_completion',
@@ -403,7 +403,7 @@ export function useTimers(periodDurationMinutes) {
             periodDurationSeconds: Math.floor(periodDuration / 1000),
             plannedDurationMinutes: periodDurationMinutes,
             endingFormation: finalFormation ? JSON.parse(JSON.stringify(finalFormation)) : null,
-            teamMode,
+            teamConfig,
             periodMetadata: {
               endTime: now,
               startTime: periodStartTime,

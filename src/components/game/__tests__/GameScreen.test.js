@@ -29,7 +29,8 @@ import {
   componentAssertions,
   waitForComponent
 } from '../../__tests__/componentTestUtils';
-import { TEAM_MODES, PLAYER_ROLES } from '../../../constants/playerConstants';
+import { PLAYER_ROLES } from '../../../constants/playerConstants';
+import { TEAM_CONFIGS } from '../../../game/testUtils';
 
 // Mock all external dependencies
 jest.mock('../../../hooks/useGameModals');
@@ -269,7 +270,7 @@ describe('GameScreen', () => {
           formation: '2-2',
           substitutionType: 'pairs'
         },
-        formation: createMockFormation(TEAM_MODES.PAIRS_7)
+        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7)
       };
       
       render(<GameScreen {...props} />);
@@ -287,7 +288,7 @@ describe('GameScreen', () => {
           formation: '2-2',
           substitutionType: 'individual'
         },
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6)
       };
       
       render(<GameScreen {...props} />);

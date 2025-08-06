@@ -93,7 +93,7 @@ export const createGoalieHandlers = (
               matchTime: calculateMatchTime(currentTime),
               timestamp: currentTime,
               periodNumber: gameState.currentPeriodNumber || 1,
-              teamMode: gameState.teamMode,
+              teamConfig: gameState.teamConfig,
               description: `${newGoaliePlayer.name} is goalie`
             });
           }

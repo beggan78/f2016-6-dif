@@ -11,7 +11,6 @@ import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../
 import { formatPlayerName } from '../../utils/formatUtils';
 import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
-import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
 
 export const createSubstitutionHandlers = (
   gameStateFactory,
@@ -20,24 +19,14 @@ export const createSubstitutionHandlers = (
   modalHandlers,
   teamConfig
 ) => {
-  // Helper to get mode definition - handles both legacy strings and team config objects
-  const getDefinition = (teamModeOrConfig, selectedFormation = null) => {
+  // Helper to get mode definition - handles team config objects
+  const getDefinition = (teamConfig, selectedFormation = null) => {
     // Handle null/undefined
-    if (!teamModeOrConfig) {
+    if (!teamConfig || typeof teamConfig !== 'object') {
       return null;
     }
 
-    if (typeof teamModeOrConfig === 'string') {
-      // Use centralized formation-aware team config creation
-      const teamConfig = createFormationAwareTeamConfig(teamModeOrConfig, selectedFormation);
-      if (!teamConfig) {
-        console.warn(`Unknown legacy team mode: ${teamModeOrConfig}`);
-        return null;
-      }
-
-      return getModeDefinition(teamConfig);
-    }
-    return getModeDefinition(teamModeOrConfig);
+    return getModeDefinition(teamConfig);
   };
   const {
     setFormation,

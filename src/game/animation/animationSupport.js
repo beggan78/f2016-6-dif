@@ -156,7 +156,6 @@
 // No longer using findPlayerById in this file
 import { POSITION_KEYS } from '../../constants/positionConstants';
 import { getFormationPositionsWithGoalie, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
-import { createFormationAwareTeamConfig } from '../../utils/formationConfigUtils';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -210,15 +209,7 @@ const getBoxHeight = (mode) => {
  */
 const getPositionIndex = (position, teamConfig, selectedFormation = null) => {
   try {
-    // For formation-aware positioning, we need to use the formation-aware team config
-    let teamConfigToUse = teamConfig;
-    
-    if (typeof teamConfig === 'string' && selectedFormation && isIndividualMode(teamConfig)) {
-      // Use centralized formation-aware team config creation
-      teamConfigToUse = createFormationAwareTeamConfig(teamConfig, selectedFormation);
-    }
-    
-    const positions = getFormationPositionsWithGoalie(teamConfigToUse);
+    const positions = getFormationPositionsWithGoalie(teamConfig);
     const index = positions.indexOf(position);
     
     return index;
@@ -320,16 +311,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamConfig, sel
     });
   } else if (isIndividualMode(teamConfig)) {
     // Unified individual mode handling using dynamic definitions
-    let modeDefinition;
-    if (typeof teamConfig === 'string') {
-      // Use centralized formation-aware team config creation
-      const formationAwareConfig = createFormationAwareTeamConfig(teamConfig, selectedFormation);
-      if (formationAwareConfig) {
-        modeDefinition = getModeDefinition(formationAwareConfig);
-      }
-    } else {
-      modeDefinition = getModeDefinition(teamConfig);
-    }
+    const modeDefinition = getModeDefinition(teamConfig);
     
     if (modeDefinition) {
       const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];

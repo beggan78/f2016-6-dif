@@ -1,8 +1,7 @@
 import React from 'react';
-import { Shield, Sword, RotateCcw, Hand, ArrowDownUp } from 'lucide-react';
+import { Shield, Sword, RotateCcw, Hand } from 'lucide-react';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
-import { supportsInactiveUsers, supportsNextNextIndicators, POSITION_ROLE_MAP } from '../../constants/gameModes';
-import { PLAYER_ROLES } from '../../constants/playerConstants';
+import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
 
 /**
  * Game-screen UI utilities for position rendering
@@ -23,32 +22,21 @@ export function getPositionIcon(position, substitutePositions) {
     return <RotateCcw className={ICON_STYLES.small} />;
   }
   
-  // Use role mapping for field positions
-  const role = POSITION_ROLE_MAP[position];
-  
-  switch (role) {
-    case PLAYER_ROLES.DEFENDER:
-      return <Shield className={ICON_STYLES.small} />;
-    case PLAYER_ROLES.MIDFIELDER:
-      return <ArrowDownUp className={ICON_STYLES.small} />;
-    case PLAYER_ROLES.ATTACKER:
-      return <Sword className={ICON_STYLES.small} />;
-    case PLAYER_ROLES.GOALIE:
-      return <Hand className={ICON_STYLES.small} />;
-    case PLAYER_ROLES.SUBSTITUTE:
-      return <RotateCcw className={ICON_STYLES.small} />;
-    default:
-      // Fallback for unknown positions
-      return <Sword className={ICON_STYLES.small} />;
+  // Use position names for field positions
+  if (position.includes('Defender') || position.includes('defender')) {
+    return <Shield className={ICON_STYLES.small} />;
   }
+  
+  // Default to sword for other field positions
+  return <Sword className={ICON_STYLES.small} />;
 }
 
 /**
  * Get the display name for a position, accounting for inactive status
  */
-export function getPositionDisplayName(position, player, teamMode, substitutePositions) {
+export function getPositionDisplayName(position, player, teamConfig, substitutePositions) {
   // Check if this formation supports inactive players
-  const supportsInactive = supportsInactiveUsers(teamMode);
+  const supportsInactive = supportsInactiveUsers(teamConfig);
   
   // For substitute positions with inactive support, check player status
   if (supportsInactive && substitutePositions.includes(position)) {
@@ -63,10 +51,10 @@ export function getPositionDisplayName(position, player, teamMode, substitutePos
 /**
  * Get indicator properties for next/nextNext logic
  */
-export function getIndicatorProps(player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) {
+export function getIndicatorProps(player, position, teamConfig, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) {
   const playerId = player?.id;
   const isSubstitutePosition = substitutePositions.includes(position);
-  const supportsNextNext = supportsNextNextIndicators(teamMode);
+  const supportsNextNext = supportsNextNextIndicators(teamConfig);
   
   const indicators = {
     isNextOff: playerId === nextPlayerIdToSubOut,

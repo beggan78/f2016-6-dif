@@ -1,12 +1,58 @@
 /**
  * Shared test utilities for game module tests
- * Provides consistent mock data and helper functions
+ * Provides consistent mock data and helper functions using modern teamConfig architecture
  */
 
-import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { POSITION_KEYS } from '../constants/positionConstants';
 import { getModeDefinition } from '../constants/gameModes';
 import { getFormationDefinition } from '../utils/formationConfigUtils';
+
+// Modern teamConfig objects for testing (replaces legacy TEAM_MODES)
+export const TEAM_CONFIGS = {
+  PAIRS_7: {
+    format: '5v5',
+    squadSize: 7,
+    formation: '2-2',
+    substitutionType: 'pairs'
+  },
+  INDIVIDUAL_6: {
+    format: '5v5',
+    squadSize: 6,
+    formation: '2-2',
+    substitutionType: 'individual'
+  },
+  INDIVIDUAL_7: {
+    format: '5v5',
+    squadSize: 7,
+    formation: '2-2',
+    substitutionType: 'individual'
+  },
+  INDIVIDUAL_8: {
+    format: '5v5',
+    squadSize: 8,
+    formation: '2-2',
+    substitutionType: 'individual'
+  },
+  INDIVIDUAL_9: {
+    format: '5v5',
+    squadSize: 9,
+    formation: '2-2',
+    substitutionType: 'individual'
+  },
+  INDIVIDUAL_10: {
+    format: '5v5',
+    squadSize: 10,
+    formation: '2-2',
+    substitutionType: 'individual'
+  },
+  INDIVIDUAL_7_1_2_1: {
+    format: '5v5',
+    squadSize: 7,
+    formation: '1-2-1',
+    substitutionType: 'individual'
+  }
+};
 
 /**
  * Creates a mock player with standard structure
@@ -32,39 +78,32 @@ export const createMockPlayer = (id, overrides = {}) => ({
 });
 
 /**
- * Helper to get mode definition from either legacy string or team config object
- * Uses centralized formation configuration utilities with proper legacy handling
+ * Helper to get mode definition from teamConfig object
+ * Uses centralized formation configuration utilities
  */
-const getDefinitionForTests = (teamModeOrConfig, selectedFormation = null) => {
-  // For legacy team mode strings, first convert to team config object
-  if (typeof teamModeOrConfig === 'string') {
-    const { createFormationAwareTeamConfig } = require('../utils/formationConfigUtils');
-    const teamConfig = createFormationAwareTeamConfig(teamModeOrConfig, selectedFormation);
-    if (!teamConfig) {
-      return null;
-    }
-    return getModeDefinition(teamConfig);
+const getDefinitionForTests = (teamConfig, selectedFormation = null) => {
+  if (!teamConfig || typeof teamConfig !== 'object') {
+    throw new Error('teamConfig must be a valid team configuration object');
   }
   
-  // For team config objects, use directly
-  return getFormationDefinition(teamModeOrConfig, selectedFormation);
+  return getFormationDefinition(teamConfig, selectedFormation || teamConfig.formation);
 };
 
 /**
- * Creates an array of mock players with varied statuses using configuration-driven approach
+ * Creates an array of mock players with varied statuses using modern teamConfig approach
  */
-export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7) => {
+export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
   const players = [];
-  const definition = getDefinitionForTests(teamMode);
+  const definition = getDefinitionForTests(teamConfig);
   
   if (!definition) {
-    throw new Error(`Unknown team mode: ${teamMode}`);
+    throw new Error(`Unable to get definition for teamConfig: ${JSON.stringify(teamConfig)}`);
   }
   
   for (let i = 1; i <= count; i++) {
     let status, role, position;
     
-    if (teamMode === TEAM_MODES.PAIRS_7) {
+    if (teamConfig.substitutionType === 'pairs') {
       // Special handling for pairs mode
       if (i <= 4) {
         status = PLAYER_STATUS.ON_FIELD;
@@ -118,16 +157,16 @@ export const createMockPlayers = (count = 7, teamMode = TEAM_MODES.INDIVIDUAL_7)
 };
 
 /**
- * Creates a mock formation for the specified team mode using configuration-driven approach
+ * Creates a mock formation for the specified teamConfig using configuration-driven approach
  */
-export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-  const definition = getDefinitionForTests(teamMode);
+export const createMockFormation = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
+  const definition = getDefinitionForTests(teamConfig);
   
   if (!definition) {
-    throw new Error(`Unknown team mode: ${teamMode}`);
+    throw new Error(`Unable to get definition for teamConfig: ${JSON.stringify(teamConfig)}`);
   }
   
-  if (teamMode === TEAM_MODES.PAIRS_7) {
+  if (teamConfig.substitutionType === 'pairs') {
     // Special handling for pairs mode
     return {
       leftPair: { defender: '1', attacker: '2' },
@@ -160,18 +199,19 @@ export const createMockFormation = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
 };
 
 /**
- * Creates a complete mock game state
+ * Creates a complete mock game state using modern teamConfig architecture
  */
-export const createMockGameState = (teamMode = TEAM_MODES.INDIVIDUAL_7, overrides = {}) => {
-  const allPlayers = createMockPlayers(7, teamMode);
-  const formation = createMockFormation(teamMode);
+export const createMockGameState = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7, overrides = {}) => {
+  const allPlayers = createMockPlayers(teamConfig.squadSize || 7, teamConfig);
+  const formation = createMockFormation(teamConfig);
   
   return {
     formation,
     allPlayers,
-    teamMode,
+    teamConfig,
+    selectedFormation: teamConfig.formation,
     rotationQueue: ['1', '2', '3', '4', '5'],
-    nextPhysicalPairToSubOut: 'leftPair',
+    nextPhysicalPairToSubOut: teamConfig.substitutionType === 'pairs' ? 'leftPair' : 'leftDefender',
     nextPlayerToSubOut: 'leftDefender',
     nextPlayerIdToSubOut: '1',
     nextNextPlayerIdToSubOut: '2',
@@ -185,18 +225,18 @@ export const createMockGameState = (teamMode = TEAM_MODES.INDIVIDUAL_7, override
 };
 
 /**
- * Creates a mock rotation queue
+ * Creates a mock rotation queue based on teamConfig
  */
-export const createMockRotationQueue = (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-  switch (teamMode) {
-    case TEAM_MODES.PAIRS_7:
-      return ['1', '2', '3', '4', '5', '6'];
-    case TEAM_MODES.INDIVIDUAL_6:
-      return ['1', '2', '3', '4', '5'];
-    case TEAM_MODES.INDIVIDUAL_7:
-    default:
-      return ['1', '2', '3', '4', '5', '6'];
+export const createMockRotationQueue = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
+  const squadSize = teamConfig.squadSize || 7;
+  
+  if (teamConfig.substitutionType === 'pairs') {
+    return ['1', '2', '3', '4', '5', '6'];
   }
+  
+  // For individual modes, queue size is squadSize - 1 (excluding goalie)
+  const queueSize = Math.max(squadSize - 1, 5);
+  return Array.from({ length: queueSize }, (_, i) => (i + 1).toString());
 };
 
 /**
@@ -264,8 +304,8 @@ export const expectPlayerStatsToMatch = (actual, expected) => {
   expect(actual.currentPairKey).toBe(expected.currentPairKey);
 };
 
-export const expectFormationToMatch = (actual, expected, teamMode) => {
-  if (teamMode === TEAM_MODES.PAIRS_7) {
+export const expectFormationToMatch = (actual, expected, teamConfig) => {
+  if (teamConfig.substitutionType === 'pairs') {
     expect(actual.leftPair).toEqual(expected.leftPair);
     expect(actual.rightPair).toEqual(expected.rightPair);
     expect(actual.subPair).toEqual(expected.subPair);
@@ -287,13 +327,13 @@ export const expectFormationToMatch = (actual, expected, teamMode) => {
  */
 export const getIndividualModeTestCases = () => [
   { 
-    mode: TEAM_MODES.INDIVIDUAL_6,
+    teamConfig: TEAM_CONFIGS.INDIVIDUAL_6,
     expectedPlayerCount: 6,
     expectedOutfieldCount: 5,
     expectedSubstituteCount: 1
   },
   { 
-    mode: TEAM_MODES.INDIVIDUAL_7,
+    teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
     expectedPlayerCount: 7,
     expectedOutfieldCount: 6,
     expectedSubstituteCount: 2
@@ -306,7 +346,7 @@ export const getIndividualModeTestCases = () => [
 export const getAllModeTestCases = () => [
   ...getIndividualModeTestCases(),
   { 
-    mode: TEAM_MODES.PAIRS_7,
+    teamConfig: TEAM_CONFIGS.PAIRS_7,
     expectedPlayerCount: 7,
     expectedOutfieldCount: 6,
     expectedSubstituteCount: 2
@@ -316,11 +356,11 @@ export const getAllModeTestCases = () => [
 /**
  * Create configuration-driven formation assertions
  */
-export const expectFormationConsistency = (formation, teamMode) => {
-  const definition = getDefinitionForTests(teamMode);
+export const expectFormationConsistency = (formation, teamConfig) => {
+  const definition = getDefinitionForTests(teamConfig);
   
   if (!definition) {
-    throw new Error(`Unknown team mode: ${teamMode}`);
+    throw new Error(`Unable to get definition for teamConfig: ${JSON.stringify(teamConfig)}`);
   }
   
   // Check that all required positions exist
@@ -334,7 +374,7 @@ export const expectFormationConsistency = (formation, teamMode) => {
   expect(formation).toHaveProperty('goalie');
   
   // For individual modes, check position structure
-  if (teamMode !== TEAM_MODES.PAIRS_7) {
+  if (teamConfig.substitutionType !== 'pairs') {
     [...definition.fieldPositions, ...definition.substitutePositions].forEach(position => {
       expect(typeof formation[position]).toBe('string');
     });
@@ -345,11 +385,12 @@ export const expectFormationConsistency = (formation, teamMode) => {
  * Assert that individual modes behave consistently
  */
 export const expectIndividualModesConsistent = (testFn) => {
-  const individualModes = [TEAM_MODES.INDIVIDUAL_6, TEAM_MODES.INDIVIDUAL_7];
+  const individualConfigs = [TEAM_CONFIGS.INDIVIDUAL_6, TEAM_CONFIGS.INDIVIDUAL_7];
   
-  individualModes.forEach(mode => {
-    const result = testFn(mode);
+  individualConfigs.forEach(teamConfig => {
+    const result = testFn(teamConfig);
     // You can add assertions here that should be true for both modes
     expect(result).toBeDefined();
   });
 };
+

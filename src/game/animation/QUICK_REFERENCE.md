@@ -130,17 +130,17 @@ GLOW_DURATION = 900;        // 0.9 second glow effect
 
 ## 🎯 Position Indices
 
-### Individual 6-Player Mode
+### Individual 6-Player Configuration
 ```
 goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute(5)
 ```
 
-### Individual 7-Player Mode  
+### Individual 7-Player Configuration  
 ```
 goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute_1(5) → substitute_2(6)
 ```
 
-### Pairs Mode
+### Pairs Configuration
 ```
 goalie(0) → leftPair(1) → rightPair(2) → subPair(3)
 ```
@@ -206,10 +206,10 @@ const handleGoalieSwitch = (newGoalieId) => {
 ### Check Animation Calculation
 ```javascript
 // Add temporarily to your logic function
-const beforePositions = captureAllPlayerPositions(gameState.formation, gameState.allPlayers, gameState.teamMode);
+const beforePositions = captureAllPlayerPositions(gameState.formation, gameState.allPlayers, gameState.teamConfig);
 const newState = calculateYourOperation(gameState);
-const afterPositions = captureAllPlayerPositions(newState.formation, newState.allPlayers, newState.teamMode);
-const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, gameState.teamMode);
+const afterPositions = captureAllPlayerPositions(newState.formation, newState.allPlayers, newState.teamConfig);
+const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, gameState.teamConfig);
 
 console.log('Debug animation:', {
   beforePositions,
