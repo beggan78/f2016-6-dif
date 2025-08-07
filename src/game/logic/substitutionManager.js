@@ -1,7 +1,7 @@
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
-import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
+import { findPlayerById, createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
 import { getCarouselMapping } from './carouselPatterns';
@@ -244,7 +244,7 @@ export class SubstitutionManager {
     const playerComingOnId = formation[firstSubstitutePosition];
 
     // Create rotation queue helper
-    const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     queueManager.initialize(); // Separate active and inactive players
 
     // Safety check for inactive substitute (7-player mode only)
@@ -450,7 +450,7 @@ export class SubstitutionManager {
     });
 
     // For individual modes, just rotate the current queue (no rebuilding during gameplay)
-    const rotationQueueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    const rotationQueueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     rotationQueueManager.initialize(); // Separate active and inactive players
     
     

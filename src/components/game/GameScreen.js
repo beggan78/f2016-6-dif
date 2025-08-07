@@ -6,6 +6,7 @@ import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
+import { getCurrentTimestamp } from '../../utils/timeUtils';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -241,7 +242,7 @@ export function GameScreen({
     // Calculate current stint time using time module
     let currentStintTime = 0;
     if (stats.currentStatus === 'on_field') {
-      currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, Date.now());
+      currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, getCurrentTimestamp());
     }
     
     // Total outfield time includes completed time plus current stint if on field

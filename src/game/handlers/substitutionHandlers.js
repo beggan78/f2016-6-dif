@@ -8,6 +8,7 @@ import {
   calculateSubstituteReorder
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
+import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
@@ -62,7 +63,7 @@ export const createSubstitutionHandlers = (
    * Generate unique event ID for substitution tracking
    */
   const generateEventId = () => {
-    const timestamp = Date.now();
+    const timestamp = getCurrentTimestamp();
     const random = Math.random().toString(36).substr(2, 9);
     return `sub_${timestamp}_${random}`;
   };
@@ -203,7 +204,7 @@ export const createSubstitutionHandlers = (
                           !gameState.allPlayers.find(p => p.id === playerId)?.stats?.isInactive;
       
       if (canSetAsNext) {
-        const currentTime = Date.now();
+        const currentTime = getCurrentTimestamp();
         
         // Use the new substitute reorder function
         animateStateChange(
@@ -251,7 +252,7 @@ export const createSubstitutionHandlers = (
 
   const handleInactivatePlayer = (substituteModal, allPlayers, formation) => {
     if (substituteModal.playerId && supportsInactive) {
-      const currentTime = Date.now();
+      const currentTime = getCurrentTimestamp();
       const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
       const bottomSubPosition = getBottomSubstitutePosition(teamConfig);
@@ -340,7 +341,7 @@ export const createSubstitutionHandlers = (
 
   const handleActivatePlayer = (substituteModal) => {
     if (substituteModal.playerId && supportsInactive) {
-      const currentTime = Date.now();
+      const currentTime = getCurrentTimestamp();
       const gameState = gameStateFactory();
       const playerBeingActivated = findPlayerById(gameState.allPlayers, substituteModal.playerId);
       
@@ -410,7 +411,7 @@ export const createSubstitutionHandlers = (
     
 
     // Capture before-state for undo functionality
-    const substitutionTimestamp = Date.now();
+    const substitutionTimestamp = getCurrentTimestamp();
     const beforeFormation = { ...gameState.formation };
     const beforeNextPair = gameState.nextPhysicalPairToSubOut;
     const beforeNextPlayer = gameState.nextPlayerToSubOut;
@@ -556,7 +557,7 @@ export const createSubstitutionHandlers = (
       // Handle pair position swapping (for pairs mode)
       if (fieldPlayerModal.target && fieldPlayerModal.type === 'pair') {
         
-        const currentTime = Date.now();
+        const currentTime = getCurrentTimestamp();
         
         animateStateChange(
           gameStateFactory(),
@@ -608,7 +609,7 @@ export const createSubstitutionHandlers = (
     } else if (typeof action === 'string' && fieldPlayerModal.sourcePlayerId) {
       // action is a player ID - perform the animated position switch
       const targetPlayerId = action;
-      const currentTime = Date.now();
+      const currentTime = getCurrentTimestamp();
       
       animateStateChange(
         gameState,
@@ -658,7 +659,7 @@ export const createSubstitutionHandlers = (
       return;
     }
 
-    const currentTime = Date.now();
+    const currentTime = getCurrentTimestamp();
 
     // Use the animation system for undo
     animateStateChange(

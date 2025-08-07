@@ -6,12 +6,13 @@
 
 import { createSubstitutionManager } from './substitutionManager';
 import { findPlayerById } from '../../utils/playerUtils';
+import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
 import { handleRoleChange } from './substitutionManager';
 import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
-import { createPlayerLookup } from '../../utils/playerUtils';
+import { createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
 import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { getFormationDefinition } from '../../utils/formationConfigUtils';
@@ -46,7 +47,7 @@ export const calculateSubstitution = (gameState) => {
   } = gameState;
 
 
-  const currentTimeEpoch = Date.now();
+  const currentTimeEpoch = getCurrentTimestamp();
   const substitutionManager = createSubstitutionManager(teamConfig, selectedFormation);
   
   
@@ -173,7 +174,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
   }
 
   // Update player stats with new positions and roles
-  const currentTimeEpoch = Date.now();
+  const currentTimeEpoch = getCurrentTimestamp();
   const newAllPlayers = allPlayers.map(p => {
     if (p.id === player1Id) {
       // Determine the new role for player1 based on their new position
@@ -258,7 +259,7 @@ export const calculatePairPositionSwap = (gameState, pairKey) => {
   };
   
   // Update player roles and stats with proper time tracking
-  const currentTimeEpoch = Date.now();
+  const currentTimeEpoch = getCurrentTimestamp();
   const newAllPlayers = allPlayers.map(player => {
     if (player.id === pair.defender || player.id === pair.attacker) {
       // Determine new role based on new position
@@ -362,7 +363,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   }
 
   // Update player stats and handle role changes
-  const currentTimeEpoch = Date.now();
+  const currentTimeEpoch = getCurrentTimestamp();
   const newAllPlayers = allPlayers.map(p => {
     if (p.id === formation.goalie) {
       // Current goalie becomes a field player
@@ -441,7 +442,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
   });
 
   // Update rotation queue - remove new goalie from queue and add old goalie
-  const queueManager = createRotationQueue(gameState.rotationQueue, createPlayerLookup(allPlayers));
+  const queueManager = createRotationQueue(gameState.rotationQueue, createPlayerLookupFunction(allPlayers));
   queueManager.initialize();
   
   // Get new goalie's position BEFORE removing them
@@ -500,7 +501,7 @@ export const calculateUndo = (gameState, lastSubstitution) => {
     return gameState;
   }
 
-  const currentTime = Date.now();
+  const currentTime = getCurrentTimestamp();
   const timeSinceSubstitution = Math.round((currentTime - lastSubstitution.timestamp) / 1000); // seconds
 
   // Restore formation and next player tracking
@@ -702,7 +703,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     // DEBUG: Log initial state before reactivation
     
     // Player is being reactivated - they become substitute_1 and all others cascade down
-    const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     queueManager.initialize();
     queueManager.reactivatePlayer(playerId);
     newRotationQueue = queueManager.toArray();
@@ -753,7 +754,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     }
   } else {
     // Player is being inactivated - move to bottom substitute position if possible
-    const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     queueManager.initialize();
     queueManager.deactivatePlayer(playerId);
     newRotationQueue = queueManager.toArray();

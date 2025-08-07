@@ -54,6 +54,66 @@ export const findPlayerById = (allPlayers, playerId) => {
 };
 
 /**
+ * Finds a player by ID with validation and error handling
+ * Common pattern: findPlayerById + null check + optional error handling
+ * @param {Array} allPlayers - Array of all players
+ * @param {string} playerId - Player ID to find
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.required - Whether player must exist (default: false)
+ * @param {string} options.context - Context for error messages (default: 'operation')
+ * @returns {Object|null} Player object or null if not found
+ * @throws {Error} If required is true and player not found
+ */
+export const findPlayerByIdWithValidation = (allPlayers, playerId, options = {}) => {
+  const { required = false, context = 'operation' } = options;
+  
+  if (!allPlayers || !Array.isArray(allPlayers)) {
+    if (required) {
+      throw new Error(`Invalid players array provided for ${context}`);
+    }
+    return null;
+  }
+  
+  if (!playerId) {
+    if (required) {
+      throw new Error(`No player ID provided for ${context}`);
+    }
+    return null;
+  }
+  
+  const player = findPlayerById(allPlayers, playerId);
+  
+  if (!player && required) {
+    throw new Error(`Player with ID ${playerId} not found for ${context}`);
+  }
+  
+  return player || null;
+};
+
+/**
+ * Creates a player lookup function for use with rotation queues and other operations
+ * Replaces repeated createPlayerLookup patterns throughout the codebase
+ * @param {Array} allPlayers - Array of all players
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.validateStats - Whether to validate player stats exist
+ * @returns {Function} Function that takes player ID and returns player object
+ */
+export const createPlayerLookupFunction = (allPlayers, options = {}) => {
+  const { validateStats = false } = options;
+  
+  return (playerId) => {
+    const player = findPlayerById(allPlayers, playerId);
+    
+    if (validateStats && player && !player.stats) {
+      console.warn(`Player ${playerId} found but missing stats object`);
+      return null;
+    }
+    
+    return player;
+  };
+};
+
+/**
  * Gets a player's name by ID, with fallback, including captain designation
  * @param {Array} allPlayers - Array of all players
  * @param {string} playerId - Player ID to get name for
