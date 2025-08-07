@@ -156,19 +156,19 @@ export function useGameState() {
       const updated = prev.map(player => {
         if (!selectedSquadIds.includes(player.id)) return player;
         
-        const { role, status, pairKey } = initializePlayerRoleAndStatus(player.id, formation, formationAwareTeamConfig);
+        const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(player.id, formation, formationAwareTeamConfig);
         
         // Only update if the role/status actually changed to avoid unnecessary re-renders
-        if (player.stats.currentRole !== role || 
-            player.stats.currentStatus !== status || 
-            player.stats.currentPairKey !== pairKey) {
+        if (player.stats.currentRole !== currentRole || 
+            player.stats.currentStatus !== currentStatus || 
+            player.stats.currentPairKey !== currentPairKey) {
           return {
             ...player,
         stats: {
               ...player.stats,
-              currentRole: role,
-              currentStatus: status,
-              currentPairKey: pairKey
+              currentRole: currentRole,
+              currentStatus: currentStatus,
+              currentPairKey: currentPairKey
             }
           };
         }
@@ -516,23 +516,23 @@ export function useGameState() {
     // Initialize player statuses and roles for the period
     setAllPlayers(prevPlayers => prevPlayers.map(p => {
       // Use unified role initialization function
-      const { role, status, pairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
+      const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
 
       if (selectedSquadIds.includes(p.id)) {
         const initialStats = { ...p.stats };
         if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
-          if (status === 'goalie') initialStats.startedMatchAs = PLAYER_ROLES.GOALIE;
-          else if (status === 'on_field') initialStats.startedMatchAs = PLAYER_ROLES.ON_FIELD;
-          else if (status === 'substitute') initialStats.startedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+          if (currentStatus === 'goalie') initialStats.startedMatchAs = PLAYER_ROLES.GOALIE;
+          else if (currentStatus === 'on_field') initialStats.startedMatchAs = PLAYER_ROLES.ON_FIELD;
+          else if (currentStatus === 'substitute') initialStats.startedMatchAs = PLAYER_ROLES.SUBSTITUTE;
         }
         return {
           ...p,
           stats: {
             ...initialStats,
-            currentRole: role,
-            currentStatus: status,
+            currentRole: currentRole,
+            currentStatus: currentStatus,
             lastStintStartTimeEpoch: currentTimeEpoch,
-            currentPairKey: pairKey,
+            currentPairKey: currentPairKey,
           }
         };
       }

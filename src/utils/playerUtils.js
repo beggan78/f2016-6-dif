@@ -177,8 +177,8 @@ export const hasActiveSubstitutes = (allPlayers, teamConfig) => {
   // Import inside function to avoid circular dependency issues
   const gameModes = require('../constants/gameModes');
   
-  // Use the modern getDefinition helper that handles both legacy strings and config objects
-  const modeDefinition = gameModes.getDefinition ? gameModes.getDefinition(teamConfig) : null;
+  // Use the modern getModeDefinition helper that handles both legacy strings and config objects
+  const modeDefinition = gameModes.getModeDefinition ? gameModes.getModeDefinition(teamConfig) : null;
   if (!modeDefinition) {
     return false;
   }
@@ -189,17 +189,14 @@ export const hasActiveSubstitutes = (allPlayers, teamConfig) => {
     return false;
   }
   
-  // DEBUG: Show ALL player states for pairs mode
-  if (teamConfig?.substitutionType === 'pairs') {
-  }
-  
   // Find players in substitute positions
   const substitutePlayers = allPlayers.filter(player => 
     substitutePositions.includes(player.stats?.currentPairKey)
   );
 
+
   // Check if at least one substitute is not inactive
   const hasActive = substitutePlayers.some(player => !player.stats?.isInactive);
-
+  
   return hasActive;
 };

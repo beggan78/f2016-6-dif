@@ -15,16 +15,20 @@ export function getPositionRole(position) {
   if (!position) return null;
   
   if (position.includes('Defender') || position.includes('defender')) {
-    return 'defender';
+    return 'DEFENDER';
   }
   if (position.includes('Attacker') || position.includes('attacker')) {
-    return 'attacker';
+    return 'ATTACKER';
+  }
+  // Handle midfielder positions (1-2-1 formation)
+  if (position === 'left' || position === 'right') {
+    return 'MIDFIELDER';
   }
   if (position.includes('substitute') || position.includes('Substitute')) {
-    return 'substitute';
+    return 'SUBSTITUTE';
   }
   if (position === 'goalie') {
-    return 'goalie';
+    return 'GOALIE';
   }
   
   return null;

@@ -267,7 +267,7 @@ export function getFormationPositions(teamConfig) {
  */
 export function getFormationPositionsWithGoalie(teamConfig) {
   const definition = getModeDefinition(teamConfig);
-  return definition ? ['goalie', ...definition.fieldPositions] : [];
+  return definition ? ['goalie', ...definition.fieldPositions, ...definition.substitutePositions] : [];
 }
 
 /**
@@ -437,22 +437,69 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
     return { currentRole: PLAYER_ROLES.SUBSTITUTE, currentStatus: PLAYER_ROLES.SUBSTITUTE };
   }
 
-  // Find player position in formation
-  for (const [position, assignedPlayerId] of Object.entries(formation)) {
-    if (assignedPlayerId === playerId) {
-      const positionInfo = definition.positions[position];
-      if (positionInfo) {
-        const role = positionInfo.role;
-        return { 
-          currentRole: role, 
-          currentStatus: role,
+  const isPairs = teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS;
+
+  if (isPairs) {
+    // Handle pairs mode specially - search within pair objects
+    for (const [position, pairData] of Object.entries(formation)) {
+      if (position === 'goalie' && pairData === playerId) {
+        // Goalie in pairs mode
+        return {
+          currentRole: PLAYER_ROLES.GOALIE,
+          currentStatus: PLAYER_ROLES.GOALIE,
           currentPairKey: position
         };
+      } else if (pairData && typeof pairData === 'object' && (pairData.defender || pairData.attacker)) {
+        // Check if player is defender in this pair
+        if (pairData.defender === playerId) {
+          const currentStatus = position === 'subPair' ? 'substitute' : 'on_field';
+          const currentRole = position === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.DEFENDER;
+          return {
+            currentRole: currentRole,
+            currentStatus: currentStatus,
+            currentPairKey: position
+          };
+        }
+        // Check if player is attacker in this pair
+        if (pairData.attacker === playerId) {
+          const currentStatus = position === 'subPair' ? 'substitute' : 'on_field';
+          const currentRole = position === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.ATTACKER;
+          return {
+            currentRole: currentRole,
+            currentStatus: currentStatus,
+            currentPairKey: position
+          };
+        }
+      }
+    }
+  } else {
+    // Handle individual mode - find player position in formation
+    for (const [position, assignedPlayerId] of Object.entries(formation)) {
+      if (assignedPlayerId === playerId) {
+        const positionInfo = definition.positions[position];
+        if (positionInfo) {
+          const role = positionInfo.role;
+          // Map position types to proper status values for timer calculations
+          let currentStatus;
+          if (position === 'goalie') {
+            currentStatus = 'goalie';
+          } else if (definition.fieldPositions.includes(position)) {
+            currentStatus = 'on_field';
+          } else if (definition.substitutePositions.includes(position)) {
+            currentStatus = 'substitute';
+          } else {
+            currentStatus = role; // fallback to role for unknown positions
+          }
+          
+          return { 
+            currentRole: role, 
+            currentStatus: currentStatus,
+            currentPairKey: position
+          };
+        }
       }
     }
   }
-
-  const isPairs = teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS;
   
   // Default to substitute if not found in formation
   return {

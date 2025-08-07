@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { findPlayerById } from '../../../utils/playerUtils';
-import { getFieldPositions, getSubstitutePositions } from '../../../game/logic/positionUtils';
+import { getFieldPositions, getSubstitutePositions, getPositionRole } from '../../../game/logic/positionUtils';
 import { getAllPositions, supportsInactiveUsers } from '../../../constants/gameModes';
 import { 
   getPositionIcon, 
@@ -77,7 +77,7 @@ export function IndividualFormation({
     
 
     // Get proper role from position mapping (works for all formations)
-    const playerRole = null; // Simplified for now
+    const playerRole = getPositionRole(position);
 
     // Get styling and animation using utilities
     const { animationClass, zIndexClass, styleProps } = getPlayerAnimation(playerId, animationState);

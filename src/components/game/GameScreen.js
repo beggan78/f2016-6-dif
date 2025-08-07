@@ -230,7 +230,6 @@ export function GameScreen({
     
     const stats = player.stats;
     
-    
     // When timer is paused, only use the stored stats without calculating current stint
     if (isSubTimerPaused) {
       const totalOutfieldTime = stats.timeOnFieldSeconds || 0;
