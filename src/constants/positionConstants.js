@@ -1,6 +1,16 @@
 /**
- * Basic position key constants - Raw string values only
- * Formation-specific logic moved to constants/gameModes.js
+ * Position Constants for Modern Formation System
+ * 
+ * This module defines all position keys used across the modern composite
+ * team configuration system. Position keys are formation-agnostic string
+ * constants that get mapped to roles dynamically based on formation.
+ * 
+ * Architecture:
+ * - Raw position string constants only (no logic)
+ * - Formation-specific role mapping in constants/gameModes.js
+ * - Supports both 2-2 and 1-2-1 formations
+ * - Dynamic substitute position generation for various squad sizes
+ * - Pair and individual substitution type support
  */
 export const POSITION_KEYS = {
   // Pairs formation

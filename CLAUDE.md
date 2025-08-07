@@ -33,15 +33,30 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 3. **Time Management**: Stint-based time tracking in `/src/game/time/`
 4. **Queue Management**: Player rotation queues in `/src/game/queue/`
 
-## Team Modes
-- **PAIRS_7**: 7-player pairs mode (3 pairs: left, right, substitute + goalie)
-- **INDIVIDUAL_6**: 6-player individual (4 field + 1 substitute + goalie)
-- **INDIVIDUAL_7**: 7-player individual (4 field + 2 substitutes + goalie)
+## Team Configuration System
+Modern composite team configuration system using four components:
+
+### Team Configuration Components
+- **Format**: Field format (`5v5`, future: `7v7`)
+- **Squad Size**: Total players (5-15 players supported)
+- **Formation**: Tactical formation (`2-2`, `1-2-1`, and future formations)
+- **Substitution Type**: Substitution style (`individual`, `pairs`)
+
+### Common Configurations
+- **7-player pairs**: `{format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs'}`
+- **6-player individual**: `{format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual'}`
+- **7-player individual**: `{format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual'}`
+
+### Supported Formations
+- **2-2 Formation**: 2 defenders, 2 attackers (fully implemented)
+- **1-2-1 Formation**: 1 defender, 2 midfielders, 1 attacker (fully implemented with middleware role support)
 
 ## Time Tracking System
 - **Stint-based**: Players accumulate time in "stints" for each role/status
 - **Current stint**: Tracked via `lastStintStartTimeEpoch` for real-time calculations
-- **Key fields**: `timeOnFieldSeconds`, `timeAsAttackerSeconds`, `timeAsDefenderSeconds`, `timeAsGoalieSeconds`
+- **Key fields**: `timeOnFieldSeconds`, `timeAsAttackerSeconds`, `timeAsDefenderSeconds`, `timeAsGoalieSeconds`, `timeAsMiddlefieldSeconds` (1-2-1 formation)
+- **Role tracking**: Supports Defender, Attacker, Midfielder, and Goalie roles
+- **Formation-aware**: Time tracking adapts to active formation (2-2 vs 1-2-1)
 - **Role changes**: Use `handleRoleChange()` and `startNewStint()` utilities
 
 ## Important Utilities

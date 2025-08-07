@@ -27,28 +27,41 @@ The animation system works by:
 3. Computing visual differences and animation requirements
 4. Orchestrating timing and applying state changes
 
-## Team Configurations
+## Team Configuration System
 
-### Pairs Configuration (7 Players)
-- Field positions: `leftPair`, `rightPair` (each with defender/attacker roles)
-- Substitute position: `subPair` (defender/attacker pair)
-- Goalie: `goalie` (single position)
-- Substitutions swap entire pairs
-- Queue contains individual player IDs, not pair objects
+### Configuration Architecture
+Modern composite system with four components:
+- **Format**: Field format (`5v5`, future: `7v7`)
+- **Squad Size**: Total players (5-15 supported)  
+- **Formation**: Tactical formation (`2-2`, `1-2-1`, future formations)
+- **Substitution Type**: Substitution style (`individual`, `pairs`)
 
-### Individual 6-Player Configuration
-- Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
-- Substitute position: `substitute` (single player)
-- Goalie: `goalie` (single position)
-- Individual player substitutions
-- Simple rotation: substituted player moves to end
+### Formation Support
 
-### Individual 7-Player Configuration
-- Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
-- Substitute positions: `substitute_1`, `substitute_2` (two separate substitutes)
-- Goalie: `goalie` (single position)
-- Inactive player support (players can be temporarily removed from rotation)
-- Complex rotation with next/next-next tracking
+#### 2-2 Formation (Fully Implemented)
+- **Positions**: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`, `goalie`
+- **Roles**: Defender (left/right), Attacker (left/right), Goalie
+- **Supports**: All squad sizes and both substitution types
+
+#### 1-2-1 Formation (Fully Implemented) 
+- **Positions**: `defender`, `left`, `right`, `attacker`, `goalie`
+- **Roles**: Defender, Midfielder (left/right), Attacker, Goalie
+- **Time Tracking**: Includes `timeAsMiddlefieldSeconds` support
+- **Supports**: All squad sizes and both substitution types
+
+### Substitution Type Support
+
+#### Individual Mode (`substitutionType: 'individual'`)
+- Used with 6+ player squads
+- Individual field positions based on active formation
+- Substitute positions: `substitute` or `substitute_1`/`substitute_2`
+- Simple rotation with inactive player support for 7+ squads
+
+#### Pairs Mode (`substitutionType: 'pairs'`)
+- Typically used with 7-player squads
+- Field pairs: `leftPair`, `rightPair` (formation-aware positioning)
+- Substitute pair: `subPair`
+- Substitutions swap entire pairs while maintaining formation roles
 
 ## Game State Structure
 The central `gameState` object contains:

@@ -2,6 +2,24 @@ import { PLAYER_ROLES } from './playerConstants.js';
 import { SUBSTITUTION_TYPES, GAME_CONSTANTS } from './teamConfiguration.js';
 
 /**
+ * Game Modes and Formation System
+ * 
+ * This module implements the modern composite team configuration architecture,
+ * replacing legacy string-based team modes with a flexible system based on:
+ * - Format (5v5, future: 7v7)
+ * - Squad Size (5-15 players)
+ * - Formation (2-2, 1-2-1, future formations) 
+ * - Substitution Type (individual, pairs)
+ * 
+ * Key Features:
+ * - Dynamic position generation based on squad size
+ * - Formation-specific role mappings and position layouts
+ * - Flexible substitution type support (individual vs pairs)
+ * - Middleware role support for 1-2-1 formation
+ * - Validation and recommendation algorithms
+ */
+
+/**
  * Formation-specific position layouts
  * Defines the tactical arrangement and role mappings for each formation
  */

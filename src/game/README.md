@@ -526,11 +526,20 @@ The central `gameState` object contains:
 - `playersToHighlight`: Players to show glow effects
 - Various timing and metadata fields
 
-## Team Configurations
-Three supported team configurations:
-- **Pairs Mode**: 7-player pairs management (2 field pairs + 1 substitute pair + goalie)
-- **Individual 6-Player**: 6-player individual management (4 field players + 1 substitute + goalie)  
-- **Individual 7-Player**: 7-player individual management (4 field players + 2 substitutes + goalie)
+## Team Configuration System
+Modern composite team configuration architecture with four components:
+
+### Configuration Components
+- **Format**: Field format (`5v5`, future: `7v7`)
+- **Squad Size**: Total players (5-15 players supported)
+- **Formation**: Tactical formation (`2-2`, `1-2-1`, and future formations)
+- **Substitution Type**: Substitution style (`individual`, `pairs`)
+
+### Supported Configurations
+- **Pairs Mode**: 7-player pairs management using `substitutionType: 'pairs'`
+- **Individual Modes**: 6+ player individual management using `substitutionType: 'individual'`
+- **Formation Support**: Both 2-2 and 1-2-1 formations fully implemented
+- **Role Tracking**: Defender, Attacker, Midfielder (1-2-1), and Goalie roles
 
 ## Animation Orchestration
 The unified animation system:
@@ -699,35 +708,38 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 
 ---
 
-# Formation Support Details
+# Formation and Configuration Support Details
 
-## PAIRS_7 (Pairs Mode)
-- Field positions: `leftPair`, `rightPair` (each with defender/attacker roles)
-- Substitute position: `subPair` (defender/attacker pair)
-- Goalie: `goalie` (single position)
+## Formations
+
+### 2-2 Formation (Fully Implemented)
+- **Field positions**: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
+- **Role mapping**: Defenders (left/right), Attackers (left/right)
+- **Supports**: All squad sizes (6, 7+ players) and both substitution types (individual, pairs)
+
+### 1-2-1 Formation (Fully Implemented)
+- **Field positions**: `defender`, `left`, `right`, `attacker`
+- **Role mapping**: Defender (1), Midfielders (left/right), Attacker (1)
+- **Middleware support**: Full time tracking for `timeAsMiddlefieldSeconds`
+- **Supports**: All squad sizes and both substitution types
+
+## Substitution Types
+
+### Pairs Mode (`substitutionType: 'pairs'`)
+- Typically used with 7-player squads
+- Field pairs: `leftPair`, `rightPair` (each with two players)
+- Substitute pair: `subPair` (two players)
 - Substitutions swap entire pairs
 - Role swapping within pairs supported
 - Queue contains individual player IDs, not pair objects
-- Next pair determined by which pair contains queue[0]
 
-## INDIVIDUAL_6 (6-Player Mode)
-- Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
-- Substitute position: `substitute` (single player)
-- Goalie: `goalie` (single position)
-- Individual player substitutions
-- Position-based role assignment
-- Simple rotation: substituted player moves to end
-- Next player is always queue[0]
-
-## INDIVIDUAL_7 (7-Player Mode)
-- Field positions: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
-- Substitute positions: `substitute_1`, `substitute_2` (two separate substitutes)
-- Goalie: `goalie` (single position)
-- Individual player substitutions with rotation
-- Inactive player support (players can be temporarily removed from rotation)
-- Complex rotation with inactive player support
+### Individual Mode (`substitutionType: 'individual'`)
+- Used with 6+ player squads
+- Individual field positions based on formation
+- Substitute positions: `substitute` (6-player) or `substitute_1`, `substitute_2` (7+ player)
+- Individual player substitutions and role tracking
+- Inactive player support for 7+ player squads
 - Next/next-next tracking for substitute management
-- Reactivation puts player at end of queue (lowest priority)
 
 ---
 

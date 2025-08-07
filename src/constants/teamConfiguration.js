@@ -1,9 +1,21 @@
 /**
  * Team Configuration Constants and Utilities
  * 
- * This module defines the composite team configuration system that separates
- * concerns between field format, squad size, formation, and substitution type.
- * This replaces the previous team mode system with a more scalable architecture.
+ * This module defines the modern composite team configuration system that replaces
+ * legacy string-based team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7) with a
+ * flexible architecture based on four independent components:
+ * 
+ * 1. **Format** - Field format (5v5, future: 7v7)
+ * 2. **Squad Size** - Total players (5-15 supported)
+ * 3. **Formation** - Tactical formation (2-2, 1-2-1, future formations)
+ * 4. **Substitution Type** - Substitution style (individual, pairs)
+ * 
+ * Benefits:
+ * - Scalable to any squad size within limits
+ * - Formation-independent substitution logic
+ * - Clear separation of concerns
+ * - Easy addition of new formations and substitution types
+ * - Dynamic position and role generation
  */
 
 // Field formats supported by the application
