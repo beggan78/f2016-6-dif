@@ -50,6 +50,9 @@ export const hasInactivePlayersInSquad = (allPlayers, selectedSquadIds) => {
  * @returns {Object|undefined} Player object or undefined if not found
  */
 export const findPlayerById = (allPlayers, playerId) => {
+  if (!allPlayers || !Array.isArray(allPlayers)) {
+    return undefined;
+  }
   return allPlayers.find(p => p.id === playerId);
 };
 
@@ -122,7 +125,7 @@ export const createPlayerLookupFunction = (allPlayers, options = {}) => {
  */
 export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
   const player = findPlayerById(allPlayers, playerId);
-  if (!player) {
+  if (!player || !player.name) {
     return fallback;
   }
   
