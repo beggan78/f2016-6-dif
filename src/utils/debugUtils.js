@@ -54,28 +54,21 @@ export const randomizeGoalieAssignments = (selectedPlayers, numPeriods) => {
 };
 
 /**
- * Randomize formation positions for different team modes and formations
+ * Randomize formation positions for different team configurations and formations
  * @param {Array} availablePlayers - Players available for positioning (excluding goalie)
- * @param {string|Object} teamModeOrConfig - Team mode string (legacy) or team config object with formation info
+ * @param {Object} teamConfig - Team configuration object with formation info
  * @returns {Object} Formation object with randomized player assignments
  */
-export const randomizeFormationPositions = (availablePlayers, teamModeOrConfig) => {
+export const randomizeFormationPositions = (availablePlayers, teamConfig) => {
   const shuffled = shuffleArray(availablePlayers);
   const formation = {};
   
-  // Determine team mode and formation from input
-  let teamMode, selectedFormation;
-  if (typeof teamModeOrConfig === 'string') {
-    // Legacy string input - default to 2-2 formation
-    teamMode = teamModeOrConfig;
-    selectedFormation = '2-2';
-  } else {
-    // Team config object with formation info
-    teamMode = getTeamModeFromConfig(teamModeOrConfig);
-    selectedFormation = teamModeOrConfig.formation || '2-2';
-  }
+  // Extract formation and substitution type from team config
+  const selectedFormation = teamConfig?.formation || '2-2';
+  const substitutionType = teamConfig?.substitutionType || 'individual';
+  const squadSize = teamConfig?.squadSize || 7;
   
-  if (teamMode === 'pairs_7') {
+  if (substitutionType === 'pairs') {
     // Pairs mode: 3 pairs (left, right, sub) with defender/attacker roles
     formation.leftPair = {
       defender: shuffled[0]?.id || null,
@@ -89,9 +82,8 @@ export const randomizeFormationPositions = (availablePlayers, teamModeOrConfig) 
       defender: shuffled[4]?.id || null,
       attacker: shuffled[5]?.id || null
     };
-  } else if (teamMode.startsWith('individual_')) {
+  } else {
     // Individual modes: Handle both 2-2 and 1-2-1 formations
-    const squadSize = parseInt(teamMode.split('_')[1]);
     const substituteCount = squadSize - 5; // 4 field players + 1 goalie = 5, rest are substitutes
     
     if (selectedFormation === '1-2-1') {
@@ -122,20 +114,6 @@ export const randomizeFormationPositions = (availablePlayers, teamModeOrConfig) 
   return formation;
 };
 
-/**
- * Helper function to extract team mode from team config object
- * @param {Object} teamConfig - Team configuration object
- * @returns {string} Equivalent legacy team mode string
- */
-const getTeamModeFromConfig = (teamConfig) => {
-  if (teamConfig.substitutionType === 'pairs') {
-    return 'pairs_7';
-  }
-  
-  // Individual modes based on squad size
-  const squadSize = teamConfig.squadSize;
-  return `individual_${squadSize}`;
-};
 
 /**
  * Check if debug mode is enabled

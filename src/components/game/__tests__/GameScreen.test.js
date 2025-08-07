@@ -29,7 +29,8 @@ import {
   componentAssertions,
   waitForComponent
 } from '../../__tests__/componentTestUtils';
-import { TEAM_MODES, PLAYER_ROLES } from '../../../constants/playerConstants';
+import { PLAYER_ROLES } from '../../../constants/playerConstants';
+import { TEAM_CONFIGS } from '../../../game/testUtils';
 
 // Mock all external dependencies
 jest.mock('../../../hooks/useGameModals');
@@ -49,7 +50,8 @@ jest.mock('../../../utils/playerUtils', () => ({
 jest.mock('../formations/FormationRenderer', () => ({
   FormationRenderer: ({ 
     children, 
-    teamMode, 
+    teamConfig, 
+    selectedFormation,
     formation,
     allPlayers, 
     longPressHandlers,
@@ -63,7 +65,7 @@ jest.mock('../formations/FormationRenderer', () => ({
     getPlayerTimeStats,
     ...otherProps 
   }) => (
-    <div data-testid="formation-renderer" data-team-mode={teamMode}>
+    <div data-testid="formation-renderer" data-team-config={JSON.stringify(teamConfig)}>
       {children || 'Mock Formation'}
     </div>
   )
@@ -259,11 +261,16 @@ describe('GameScreen', () => {
       expect(screen.getByText('3 - 1')).toBeInTheDocument();
     });
 
-    it('should render with PAIRS_7 team mode', () => {
+    it('should render with pairs team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
-        formation: createMockFormation(TEAM_MODES.PAIRS_7)
+        teamConfig: {
+          format: '5v5',
+          squadSize: 7,
+          formation: '2-2',
+          substitutionType: 'pairs'
+        },
+        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7)
       };
       
       render(<GameScreen {...props} />);
@@ -272,11 +279,16 @@ describe('GameScreen', () => {
       expect(formationRenderer).toBeInTheDocument();
     });
 
-    it('should render with INDIVIDUAL_6 team mode', () => {
+    it('should render with individual team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_6,
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
+        teamConfig: {
+          format: '5v5',
+          squadSize: 6,
+          formation: '2-2',
+          substitutionType: 'individual'
+        },
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6)
       };
       
       render(<GameScreen {...props} />);
@@ -633,10 +645,10 @@ describe('GameScreen', () => {
       expect(() => render(<GameScreen {...props} />)).not.toThrow();
     });
 
-    it('should handle invalid team mode', () => {
+    it('should handle invalid team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: 'INVALID_MODE'
+        teamConfig: null
       };
       
       expect(() => render(<GameScreen {...props} />)).not.toThrow();

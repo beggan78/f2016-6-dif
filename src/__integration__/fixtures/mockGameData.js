@@ -5,7 +5,7 @@
  * Includes realistic game states, player statistics, error scenarios, and edge cases.
  */
 
-import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { initializePlayers } from '../../utils/playerUtils';
 import { initialRoster } from '../../constants/defaultData';
 
@@ -15,35 +15,6 @@ import { initialRoster } from '../../constants/defaultData';
 export const createTestSquad = () => {
   const allPlayers = initializePlayers(initialRoster);
   return allPlayers.slice(0, 7);
-};
-
-/**
- * Complete game configuration scenarios
- */
-export const gameConfigScenarios = {
-  standardPairs: {
-    numPeriods: 3,
-    periodDurationMinutes: 15,
-    alertMinutes: 5,
-    teamMode: TEAM_MODES.PAIRS_7,
-    opponentTeamName: 'Test Opponent FC'
-  },
-  
-  individual6: {
-    numPeriods: 2,
-    periodDurationMinutes: 20,
-    alertMinutes: 3,
-    teamMode: TEAM_MODES.INDIVIDUAL_6,
-    opponentTeamName: 'Rival Team'
-  },
-  
-  individual7: {
-    numPeriods: 4,
-    periodDurationMinutes: 12,
-    alertMinutes: 2,
-    teamMode: TEAM_MODES.INDIVIDUAL_7,
-    opponentTeamName: 'Championship Opponents'
-  }
 };
 
 /**
@@ -173,7 +144,6 @@ export const persistenceScenarios = {
     view: 'game',
     currentPeriodNumber: 2,
     selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7'],
-    teamMode: TEAM_MODES.PAIRS_7,
     formation: {
       goalie: 'player-1',
       leftPair: { defender: 'player-2', attacker: 'player-3' },
@@ -193,7 +163,6 @@ export const persistenceScenarios = {
   configurationState: {
     view: 'config',
     selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6'],
-    teamMode: TEAM_MODES.INDIVIDUAL_6,
     numPeriods: 2,
     periodDurationMinutes: 20,
     opponentTeamName: 'Saved Opponent'
@@ -353,262 +322,10 @@ export const playerDataScenarios = {
   }
 };
 
-/**
- * Complete game state scenarios for different phases
- */
-export const gameStateScenarios = {
-  /**
-   * Fresh game - just started
-   */
-  freshGame: (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-    // Ensure we have enough players for the team mode
-    const playerCounts = {
-      [TEAM_MODES.PAIRS_7]: 7,
-      [TEAM_MODES.INDIVIDUAL_6]: 6,
-      [TEAM_MODES.INDIVIDUAL_7]: 7,
-      [TEAM_MODES.INDIVIDUAL_8]: 8
-    };
-    const players = playerDataScenarios.balanced(playerCounts[teamMode] || 7);
-    
-    const formations = {
-      [TEAM_MODES.PAIRS_7]: formationScenarios.pairs7Standard(players.map(p => p.id)),
-      [TEAM_MODES.INDIVIDUAL_6]: formationScenarios.individual6Standard(players.slice(0, 6).map(p => p.id)),
-      [TEAM_MODES.INDIVIDUAL_7]: formationScenarios.individual7Standard(players.map(p => p.id)),
-      [TEAM_MODES.INDIVIDUAL_8]: formationScenarios.individual8Standard(players.slice(0, 8).map(p => p.id))
-    };
-    
-    return {
-      view: 'game',
-      currentPeriodNumber: 1,
-      selectedSquadIds: players.map(p => p.id),
-      teamMode: teamMode,
-      formation: formations[teamMode],
-      allPlayers: players.map(player => ({
-        ...player,
-        stats: {
-          ...player.stats,
-          timeOnFieldSeconds: 0,
-          timeAsAttackerSeconds: 0,
-          timeAsDefenderSeconds: 0,
-          timeAsGoalieSeconds: 0,
-          timeAsSubSeconds: 0,
-          lastStintStartTimeEpoch: Date.now()
-        }
-      })),
-      rotationQueue: players.slice(1).map(p => p.id), // Exclude goalie
-      gameConfig: gameConfigScenarios.standardPairs,
-      matchTimerSeconds: 900, // 15 minutes
-      subTimerSeconds: 0,
-      isSubTimerPaused: false,
-      nextPlayerIdToSubOut: players[1].id,
-      nextNextPlayerIdToSubOut: players[2].id,
-      homeScore: 0,
-      awayScore: 0,
-      playersToHighlight: [],
-      gameHistory: {
-        substitutions: [],
-        periods: []
-      }
-    };
-  },
-  
-  /**
-   * Mid-game state with some history
-   */
-  midGame: (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-    const players = playerDataScenarios.unbalanced();
-    const gameState = gameStateScenarios.freshGame(teamMode);
-    
-    return {
-      ...gameState,
-      allPlayers: players,
-      matchTimerSeconds: 450, // 7.5 minutes remaining
-      subTimerSeconds: 120,   // 2 minutes since last sub
-      homeScore: 2,
-      awayScore: 1,
-      gameHistory: {
-        substitutions: [
-          {
-            timestamp: Date.now() - 300000,
-            playerOut: players[1].id,
-            playerIn: players[5].id,
-            position: 'leftDefender'
-          },
-          {
-            timestamp: Date.now() - 180000,
-            playerOut: players[3].id,
-            playerIn: players[6].id,
-            position: 'leftAttacker'
-          }
-        ],
-        periods: [
-          {
-            number: 1,
-            startTime: Date.now() - 450000,
-            endTime: null,
-            substitutions: 2
-          }
-        ]
-      }
-    };
-  },
-  
-  /**
-   * End-game state ready for stats
-   */
-  endGame: (teamMode = TEAM_MODES.INDIVIDUAL_7) => {
-    const players = playerDataScenarios.endGame();
-    const gameState = gameStateScenarios.freshGame(teamMode);
-    
-    return {
-      ...gameState,
-      currentPeriodNumber: 3,
-      allPlayers: players,
-      matchTimerSeconds: 0,
-      subTimerSeconds: 0,
-      isSubTimerPaused: true,
-      homeScore: 4,
-      awayScore: 2,
-      gameHistory: {
-        substitutions: [
-          // Period 1 substitutions
-          { timestamp: Date.now() - 2400000, playerOut: players[1].id, playerIn: players[5].id, position: 'leftDefender' },
-          { timestamp: Date.now() - 2100000, playerOut: players[2].id, playerIn: players[6].id, position: 'rightDefender' },
-          
-          // Period 2 substitutions
-          { timestamp: Date.now() - 1500000, playerOut: players[3].id, playerIn: players[1].id, position: 'leftAttacker' },
-          { timestamp: Date.now() - 1200000, playerOut: players[4].id, playerIn: players[2].id, position: 'rightAttacker' },
-          
-          // Period 3 substitutions
-          { timestamp: Date.now() - 600000, playerOut: players[5].id, playerIn: players[3].id, position: 'leftDefender' },
-          { timestamp: Date.now() - 300000, playerOut: players[6].id, playerIn: players[4].id, position: 'rightDefender' }
-        ],
-        periods: [
-          { number: 1, startTime: Date.now() - 2700000, endTime: Date.now() - 1800000, substitutions: 2 },
-          { number: 2, startTime: Date.now() - 1800000, endTime: Date.now() - 900000, substitutions: 2 },
-          { number: 3, startTime: Date.now() - 900000, endTime: Date.now(), substitutions: 2 }
-        ]
-      }
-    };
-  },
-  
-  /**
-   * Game state with inactive players (Individual 7 mode)
-   */
-  withInactivePlayers: () => {
-    const players = playerDataScenarios.withInactivePlayers();
-    const gameState = gameStateScenarios.freshGame(TEAM_MODES.INDIVIDUAL_7);
-    
-    return {
-      ...gameState,
-      allPlayers: players,
-      rotationQueue: players.filter(p => !p.stats.isInactive).slice(1).map(p => p.id) // Exclude inactive and goalie
-    };
-  }
-};
 
 // ===================================================================
 // EDGE CASE AND ERROR SCENARIOS
 // ===================================================================
-
-/**
- * Edge case scenarios for robust testing
- */
-export const edgeCaseScenarios = {
-  /**
-   * Minimum viable game state
-   */
-  minimumData: {
-    view: 'game',
-    selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6'],
-    teamMode: TEAM_MODES.INDIVIDUAL_6,
-    formation: {
-      goalie: 'player-1',
-      leftDefender: 'player-2',
-      rightDefender: 'player-3',
-      leftAttacker: 'player-4',
-      rightAttacker: 'player-5',
-      substitute_1: 'player-6'
-    },
-    allPlayers: playerDataScenarios.balanced(6)
-  },
-  
-  /**
-   * Maximum complexity scenario
-   */
-  maximumComplexity: {
-    view: 'game',
-    currentPeriodNumber: 3,
-    selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7'],
-    teamMode: TEAM_MODES.INDIVIDUAL_7,
-    formation: formationScenarios.individual7Standard(['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7']),
-    allPlayers: playerDataScenarios.withInactivePlayers(),
-    rotationQueue: ['player-2', 'player-3', 'player-4', 'player-5', 'player-6'],
-    gameConfig: {
-      numPeriods: 4,
-      periodDurationMinutes: 30,
-      alertMinutes: 1,
-      teamMode: TEAM_MODES.INDIVIDUAL_7,
-      opponentTeamName: 'Complex Test Opponent FC United Academy'
-    },
-    matchTimerSeconds: 1800, // 30 minutes
-    subTimerSeconds: 59,
-    homeScore: 15,
-    awayScore: 12,
-    nextPlayerIdToSubOut: 'player-2',
-    nextNextPlayerIdToSubOut: 'player-3',
-    playersToHighlight: ['player-2', 'player-5'],
-    gameHistory: {
-      substitutions: new Array(20).fill(null).map((_, i) => ({
-        timestamp: Date.now() - (20 - i) * 60000,
-        playerOut: `player-${(i % 6) + 1}`,
-        playerIn: `player-${((i + 3) % 6) + 1}`,
-        position: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'][i % 4]
-      })),
-      periods: [
-        { number: 1, startTime: Date.now() - 5400000, endTime: Date.now() - 3600000, substitutions: 6 },
-        { number: 2, startTime: Date.now() - 3600000, endTime: Date.now() - 1800000, substitutions: 7 },
-        { number: 3, startTime: Date.now() - 1800000, endTime: null, substitutions: 7 }
-      ]
-    }
-  },
-  
-  /**
-   * Data consistency edge cases
-   */
-  dataInconsistencies: {
-    missingPlayer: {
-      formation: {
-        goalie: 'missing-player-id',
-        leftDefender: 'player-1',
-        rightDefender: 'player-2',
-        leftAttacker: 'player-3',
-        rightAttacker: 'player-4',
-        substitute_1: 'player-5',
-        substitute_2: 'player-6'
-      },
-      allPlayers: playerDataScenarios.balanced(6) // Missing the goalie player
-    },
-    
-    duplicateAssignments: {
-      formation: {
-        goalie: 'player-1',
-        leftDefender: 'player-2',
-        rightDefender: 'player-2', // Duplicate!
-        leftAttacker: 'player-3',
-        rightAttacker: 'player-4',
-        substitute_1: 'player-5',
-        substitute_2: 'player-6'
-      },
-      allPlayers: playerDataScenarios.balanced(7)
-    },
-    
-    invalidRotationQueue: {
-      rotationQueue: ['missing-player', 'player-1', 'duplicate-id', 'duplicate-id'],
-      allPlayers: playerDataScenarios.balanced(7)
-    }
-  }
-};
 
 // ===================================================================
 // PERFORMANCE TEST DATA

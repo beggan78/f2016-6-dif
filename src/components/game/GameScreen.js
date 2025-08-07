@@ -2,11 +2,11 @@ import React, { useMemo } from 'react';
 import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
-import { TEAM_MODES, PLAYER_ROLES } from '../../constants/playerConstants';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
-import { isIndividualMode } from '../../constants/gameModes';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
+import { getCurrentTimestamp } from '../../utils/timeUtils';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -48,7 +48,7 @@ export function GameScreen({
   setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
-  teamMode,
+  teamConfig,
   selectedFormation,
   alertMinutes,
   pushModalState,
@@ -83,27 +83,15 @@ export function GameScreen({
   }, [selectedSquadPlayers]);
   
   // Determine which formation mode we're using
-  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
+  const isPairsMode = teamConfig?.substitutionType === 'pairs';
 
-  // Debug: Track state changes
-  React.useEffect(() => {
-    console.log('🔷 [GameScreen] nextPlayerIdToSubOut changed:', nextPlayerIdToSubOut, 'at', new Date().toISOString());
-  }, [nextPlayerIdToSubOut]);
-
-  React.useEffect(() => {
-    console.log('🔷 [GameScreen] rotationQueue changed:', rotationQueue?.slice(), 'at', new Date().toISOString());
-  }, [rotationQueue]);
-
-  React.useEffect(() => {
-    console.log('🔷 [GameScreen] nextPlayerToSubOut changed:', nextPlayerToSubOut, 'at', new Date().toISOString());
-  }, [nextPlayerToSubOut]);
 
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => {
     const gameState = {
       formation,
       allPlayers,
-      teamMode,
+      teamConfig,
       selectedFormation,
       nextPhysicalPairToSubOut,
       nextPlayerToSubOut,
@@ -121,18 +109,10 @@ export function GameScreen({
       awayScore
     };
     
-    console.log('🔵 [GameScreen] createGameState called, current values:', {
-      nextPlayerIdToSubOut,
-      nextPlayerToSubOut,
-      rotationQueue: rotationQueue?.slice(),
-      teamMode,
-      selectedFormation,
-      timestamp: new Date().toISOString()
-    });
     
     return gameState;
   }, [
-    formation, allPlayers, teamMode, selectedFormation, nextPhysicalPairToSubOut,
+    formation, allPlayers, teamConfig, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, homeScore, awayScore
@@ -185,22 +165,22 @@ export function GameScreen({
       stateUpdaters,
       animationHooks,
       modalHandlers,
-      teamMode
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamMode]
+      teamConfig
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>
     createFieldPositionHandlers(
-      teamMode,
+      teamConfig,
       formation,
       allPlayers,
       nextPlayerIdToSubOut,
       modalHandlers,
       selectedFormation  // NEW: Pass selectedFormation for formation-aware position callbacks
-    ), [teamMode, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
+    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
   );
 
-  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamMode);
+  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
 
   const timerHandlers = React.useMemo(() =>
     createTimerHandlers(
@@ -239,19 +219,17 @@ export function GameScreen({
 
   // Check if SUB NOW button should be enabled (at least one active substitute)
   const canSubstitute = React.useMemo(() => {
-    return hasActiveSubstitutes(allPlayers, teamMode);
-  }, [allPlayers, teamMode]);
+    return hasActiveSubstitutes(allPlayers, teamConfig);
+  }, [allPlayers, teamConfig]);
 
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
     if (!player) {
-      console.log('🔍 [DEBUG] getPlayerTimeStats - Player not found:', playerId);
       return { totalOutfieldTime: 0, attackDefenderDiff: 0 };
     }
     
     const stats = player.stats;
-    
     
     // When timer is paused, only use the stored stats without calculating current stint
     if (isSubTimerPaused) {
@@ -264,7 +242,7 @@ export function GameScreen({
     // Calculate current stint time using time module
     let currentStintTime = 0;
     if (stats.currentStatus === 'on_field') {
-      currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, Date.now());
+      currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, getCurrentTimestamp());
     }
     
     // Total outfield time includes completed time plus current stint if on field
@@ -365,13 +343,13 @@ export function GameScreen({
 
       {/* Field & Subs Visualization */}
       <FormationRenderer
-          teamMode={teamMode}
+          teamConfig={teamConfig}
           selectedFormation={selectedFormation}
           formation={formation}
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
-          hideNextOffIndicator={uiState.hideNextOffIndicator || (isIndividualMode(teamMode) && !canSubstitute)}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
@@ -430,7 +408,7 @@ export function GameScreen({
           modalHandlers.modals.fieldPlayer.type === 'player' || 
           (modalHandlers.modals.fieldPlayer.type === 'pair' && modalHandlers.modals.fieldPlayer.target !== 'subPair')
         }
-        canSubstitute={isIndividualMode(teamMode) ? canSubstitute : true}
+        canSubstitute={teamConfig?.substitutionType === 'individual' ? canSubstitute : true}
       />
 
       {/* Substitute Player Modal */}
@@ -492,3 +470,58 @@ export function GameScreen({
     </div>
   );
 }
+
+// Custom comparison function for React.memo
+const arePropsEqual = (prevProps, nextProps) => {
+  // Compare primitive props
+  const primitiveProps = [
+    'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
+    'teamConfig', 'selectedFormation', 'nextPhysicalPairToSubOut', 'nextPlayerToSubOut',
+    'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'homeScore', 'awayScore'
+  ];
+  
+  for (const prop of primitiveProps) {
+    if (prevProps[prop] !== nextProps[prop]) {
+      return false;
+    }
+  }
+  
+  // Compare complex objects with shallow comparison
+  // Formation object comparison
+  if (JSON.stringify(prevProps.formation) !== JSON.stringify(nextProps.formation)) {
+    return false;
+  }
+  
+  // Players array comparison (shallow)
+  if (prevProps.allPlayers?.length !== nextProps.allPlayers?.length) {
+    return false;
+  }
+  
+  // Compare players by reference (assuming immutable updates)
+  if (prevProps.allPlayers && nextProps.allPlayers) {
+    for (let i = 0; i < prevProps.allPlayers.length; i++) {
+      if (prevProps.allPlayers[i] !== nextProps.allPlayers[i]) {
+        return false;
+      }
+    }
+  }
+  
+  // Rotation queue comparison
+  if (prevProps.rotationQueue?.length !== nextProps.rotationQueue?.length) {
+    return false;
+  }
+  
+  if (prevProps.rotationQueue && nextProps.rotationQueue) {
+    for (let i = 0; i < prevProps.rotationQueue.length; i++) {
+      if (prevProps.rotationQueue[i] !== nextProps.rotationQueue[i]) {
+        return false;
+      }
+    }
+  }
+  
+  // All props are equal
+  return true;
+};
+
+// Export memoized component
+export default React.memo(GameScreen, arePropsEqual);

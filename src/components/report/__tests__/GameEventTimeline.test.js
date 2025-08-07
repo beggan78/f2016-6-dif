@@ -589,7 +589,6 @@ describe('GameEventTimeline', () => {
         data: {
           playersOff: ['player1', 'player2'], // Alice (D), Bob (A)
           playersOn: ['player3', 'player4'], // Charlie (D), David (A)
-          teamMode: 'PAIRS_7',
           beforeFormation: { leftPair: { defender: 'player1', attacker: 'player2' } },
           afterFormation: { leftPair: { defender: 'player3', attacker: 'player4' } }
         },
@@ -631,7 +630,6 @@ describe('GameEventTimeline', () => {
         data: {
           playersOff: ['player1'], // Alice
           playersOn: ['player2'], // Bob
-          teamMode: 'INDIVIDUAL_6'
         },
         undone: false
       }
@@ -752,7 +750,6 @@ describe('GameEventTimeline', () => {
         data: { 
           playersOff: ['player1'], 
           playersOn: ['player2'],
-          teamMode: 'INDIVIDUAL_6'
         },
         undone: false
       }
@@ -828,7 +825,6 @@ describe('GameEventTimeline', () => {
         data: { 
           playersOff: ['player2'], 
           playersOn: ['player3'],
-          teamMode: 'INDIVIDUAL_6'
         },
         undone: false
       }

@@ -4,7 +4,7 @@ import {
   createMockPlayers, 
   createMockDependencies
 } from '../testUtils';
-import { TEAM_MODES } from '../../constants/playerConstants';
+import { TEAM_CONFIGS } from '../testUtils';
 
 jest.mock('../time/stintManager');
 
@@ -20,7 +20,7 @@ describe('createTimerHandlers', () => {
     jest.clearAllMocks();
     
     mockDependencies = createMockDependencies();
-    mockPlayers = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
+    mockPlayers = createMockPlayers(7, TEAM_CONFIGS.INDIVIDUAL_7);
     mockSelectedSquadPlayers = mockPlayers.slice(0, 6); // 6 selected players
 
     mockStateUpdaters = {

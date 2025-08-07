@@ -1,4 +1,5 @@
 import { generateRecommendedFormation, generateBalancedFormationForPeriod3, generateIndividualFormationRecommendation } from './formationGenerator';
+import { TEAM_CONFIGS } from '../game/testUtils';
 
 describe('Formation Generator - Pair Mode', () => {
   // Mock player data
@@ -439,8 +440,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1',
         squad,
         squad,
-        'individual_7',
-        '1-2-1' // Pass 1-2-1 formation
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1 // Use proper teamConfig with 1-2-1 formation
       );
 
       expect(result.formation.goalie).toBe('g1');
@@ -457,8 +457,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1',
         squad,
         squad,
-        'individual_7'
-        // No selectedFormation parameter - should default to 2-2
+        TEAM_CONFIGS.INDIVIDUAL_7 // Use proper teamConfig - should default to 2-2
       );
 
       expect(result.formation.goalie).toBe('g1');
@@ -483,8 +482,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1',
         squad,
         squad,
-        'individual_7',
-        '1-2-1'
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1
       );
 
       // Field players should be p1, p2, p3, p4 (lowest total times)
@@ -521,8 +519,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1',
         squad,
         squad,
-        'individual_7',
-        '1-2-1'
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1
       );
 
       // Should place inactive players in substitute positions
@@ -538,8 +535,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1',
         squad,
         squad,
-        'individual_7',
-        '1-2-1'
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1
       );
 
       expect(result.rotationQueue).toHaveLength(6); // 6 outfield players
@@ -560,8 +556,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1',
         squad,
         squad,
-        'individual_5',
-        '1-2-1'
+        { format: '5v5', squadSize: 5, formation: '1-2-1', substitutionType: 'individual' }
       );
 
       // Should assign the 4 field positions
@@ -596,7 +591,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       expect(result.formation.substitute_4).toBe('p5');
@@ -615,7 +610,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       const inactivePositions = [result.formation.substitute_3, result.formation.substitute_4];
@@ -637,7 +632,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       const inactivePositions = [
@@ -663,7 +658,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       const allSubstitutePositions = [
@@ -700,7 +695,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_10'
+        TEAM_CONFIGS.INDIVIDUAL_10
       );
 
       expect(result.formation.substitute_5).toBe('p9');
@@ -720,7 +715,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_10'
+        TEAM_CONFIGS.INDIVIDUAL_10
       );
 
       const inactivePositions = [
@@ -749,7 +744,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_10'
+        TEAM_CONFIGS.INDIVIDUAL_10
       );
 
       const allSubstitutePositions = [
@@ -783,7 +778,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad7,
         squad7,
-        'individual_7'
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       // Should place inactive player in substitute_2 (last position for 7-player mode)
@@ -807,7 +802,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad8,
         squad8,
-        'individual_8'
+        TEAM_CONFIGS.INDIVIDUAL_8
       );
 
       // Should place inactive player in substitute_3 (last position for 8-player mode)

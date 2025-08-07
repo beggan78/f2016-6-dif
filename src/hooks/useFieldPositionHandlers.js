@@ -1,8 +1,7 @@
 import { useLongPressWithScrollDetection } from './useLongPressWithScrollDetection';
-import { TEAM_MODES } from '../constants/playerConstants';
 
-export const useFieldPositionHandlers = (fieldPositionCallbacks, teamMode) => {
-  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
+export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => {
+  const isPairsMode = teamConfig?.substitutionType === 'pairs';
 
   // Create all the long press handlers using the hook
   // Note: These hooks must be called consistently on every render

@@ -31,7 +31,7 @@ describe('playerStyling', () => {
     test('should handle inactive player styling when supported', () => {
       const result = getPlayerStyling({
         isInactive: true,
-        supportsInactivePlayers: true
+        supportsInactiveUsers: true
       });
       
       expect(result.bgColor).toBe(FORMATION_STYLES.bgColors.inactive);
@@ -41,7 +41,7 @@ describe('playerStyling', () => {
     test('should ignore inactive styling when not supported', () => {
       const result = getPlayerStyling({
         isInactive: true,
-        supportsInactivePlayers: false
+        supportsInactiveUsers: false
       });
       
       // Should use default substitute styling since inactive is not supported
@@ -111,7 +111,7 @@ describe('playerStyling', () => {
       const result = getPlayerStyling({
         isFieldPosition: true,
         isInactive: true,
-        supportsInactivePlayers: true
+        supportsInactiveUsers: true
       });
       
       // Inactive styling should override field styling
@@ -125,7 +125,7 @@ describe('playerStyling', () => {
         isInactive: true,
         isNextOff: true,
         isRecentlySubstituted: true,
-        supportsInactivePlayers: true
+        supportsInactiveUsers: true
       });
       
       // Recently substituted should take precedence for border/glow
@@ -169,7 +169,7 @@ describe('playerStyling', () => {
         isNextOn: undefined,
         isRecentlySubstituted: null,
         hideNextOffIndicator: undefined,
-        supportsInactivePlayers: null
+        supportsInactiveUsers: null
       });
       
       // Should treat null/undefined as false and return default styling
@@ -213,7 +213,7 @@ describe('playerStyling', () => {
       // Inactive substitute (7-player mode)
       const inactive = getPlayerStyling({ 
         isInactive: true, 
-        supportsInactivePlayers: true 
+        supportsInactiveUsers: true 
       });
       expect(inactive.bgColor).toBe(FORMATION_STYLES.bgColors.inactive);
     });

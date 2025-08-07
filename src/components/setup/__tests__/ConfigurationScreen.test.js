@@ -19,7 +19,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
-import { TEAM_MODES } from '../../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../../constants/gameConfig';
 import { FORMATIONS } from '../../../constants/teamConfiguration';
 import {
@@ -106,7 +105,7 @@ describe('ConfigurationScreen', () => {
       setNumPeriods: jest.fn(),
       setPeriodDurationMinutes: jest.fn(),
       setPeriodGoalieIds: jest.fn(),
-      setTeamMode: jest.fn(),
+      updateTeamConfig: jest.fn(),
       setAlertMinutes: jest.fn(),
       handleStartPeriodSetup: jest.fn(),
       setOpponentTeamName: jest.fn(),
@@ -121,8 +120,12 @@ describe('ConfigurationScreen', () => {
       numPeriods: 2,
       periodDurationMinutes: 15,
       periodGoalieIds: {},
-      teamMode: TEAM_MODES.INDIVIDUAL_6,
-      teamConfig: null,
+      teamConfig: {
+        format: '5v5',
+        squadSize: 6,
+        formation: '2-2',
+        substitutionType: 'individual'
+      },
       selectedFormation: FORMATIONS.FORMATION_2_2,
       alertMinutes: 2,
       selectedSquadPlayers: [],
@@ -272,31 +275,6 @@ describe('ConfigurationScreen', () => {
       }
     });
 
-    it('should auto-select PAIRS_7 when 7 players are selected from INDIVIDUAL_6 mode', () => {
-      const props = {
-        ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_6,
-        selectedSquadIds: ['1', '2', '3', '4', '5', '6'] // 6 players currently
-      };
-      
-      render(<ConfigurationScreen {...props} />);
-      
-      // The logic should be called when adding the 7th player
-      expect(mockSetters.setSelectedSquadIds).toBeDefined();
-    });
-
-    it('should not change team mode when going from 7 to 6 players', () => {
-      const props = {
-        ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
-        selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7']
-      };
-      
-      render(<ConfigurationScreen {...props} />);
-      
-      // Team mode should remain as set by user
-      expect(props.teamMode).toBe(TEAM_MODES.PAIRS_7);
-    });
 
     it('should auto-select INDIVIDUAL_8 when 8 players are selected', () => {
       const props = {
@@ -367,12 +345,17 @@ describe('ConfigurationScreen', () => {
       expect(screen.queryByText('Substitution Mode')).not.toBeInTheDocument();
     });
 
-    it('should handle pairs mode selection', () => {
+    it('should handle substitution mode selection', () => {
       const props = { 
         ...defaultProps, 
         ...sevenPlayerProps,
         selectedFormation: FORMATIONS.FORMATION_2_2,
-        teamMode: TEAM_MODES.INDIVIDUAL_7
+        teamConfig: {
+          format: '5v5',
+          squadSize: 7,
+          formation: '2-2',
+          substitutionType: 'individual'
+        }
       };
       
       render(<ConfigurationScreen {...props} />);
@@ -380,23 +363,7 @@ describe('ConfigurationScreen', () => {
       const pairsRadio = screen.getByRole('radio', { name: /pairs/i });
       fireEvent.click(pairsRadio);
       
-      expect(mockSetters.setTeamMode).toHaveBeenCalledWith(TEAM_MODES.PAIRS_7);
-    });
-
-    it('should handle individual mode selection', () => {
-      const props = { 
-        ...defaultProps, 
-        ...sevenPlayerProps,
-        selectedFormation: FORMATIONS.FORMATION_2_2,
-        teamMode: TEAM_MODES.PAIRS_7
-      };
-      
-      render(<ConfigurationScreen {...props} />);
-      
-      const individualRadio = screen.getByRole('radio', { name: /individual/i });
-      fireEvent.click(individualRadio);
-      
-      expect(mockSetters.setTeamMode).toHaveBeenCalledWith(TEAM_MODES.INDIVIDUAL_7);
+      expect(mockSetters.updateTeamConfig).toHaveBeenCalled();
     });
 
     it('should show correct team mode descriptions', () => {
@@ -622,7 +589,12 @@ describe('ConfigurationScreen', () => {
         selectedSquadIds: ['1', '2', '3', '4', '5', '6', '7', '8'],
         selectedSquadPlayers: createMockPlayers(8),
         periodGoalieIds: { 1: '1', 2: '2' },
-        teamMode: TEAM_MODES.INDIVIDUAL_8
+        teamConfig: {
+          format: '5v5',
+          squadSize: 8,
+          formation: '2-2',
+          substitutionType: 'individual'
+        }
       };
       
       render(<ConfigurationScreen {...props} />);
@@ -842,7 +814,7 @@ describe('ConfigurationScreen', () => {
       const props = {
         ...defaultProps,
         setSelectedSquadIds: undefined,
-        setTeamMode: undefined
+        updateTeamConfig: undefined
       };
       
       expect(() => render(<ConfigurationScreen {...props} />)).not.toThrow();

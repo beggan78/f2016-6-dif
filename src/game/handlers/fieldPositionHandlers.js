@@ -1,9 +1,8 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { supportsInactiveUsers, supportsNextNextIndicators, getModeDefinition } from '../../constants/gameModes';
 
 export const createFieldPositionHandlers = (
-  teamMode,
+  teamConfig,
   formation,
   allPlayers,
   nextPlayerIdToSubOut,
@@ -12,50 +11,20 @@ export const createFieldPositionHandlers = (
 ) => {
   const { openFieldPlayerModal, openSubstituteModal } = modalHandlers;
   
-  // Helper to get mode definition - handles both legacy strings and team config objects
-  // NOW FORMATION-AWARE!
-  const getDefinition = (teamModeOrConfig) => {
+  // Helper to get mode definition - handles team config objects
+  // FORMATION-AWARE!
+  const getDefinition = (teamConfig) => {
     // Handle null/undefined
-    if (!teamModeOrConfig) {
+    if (!teamConfig || typeof teamConfig !== 'object') {
       return null;
     }
     
-    if (typeof teamModeOrConfig === 'string') {
-      // Formation-aware legacy mappings - use selectedFormation instead of hardcoded '2-2'
-      const formationToUse = selectedFormation || '2-2'; // Default to 2-2 if no formation specified
-      console.log('📱 [FieldPositionHandlers] Using formation-aware mapping:', { teamMode, selectedFormation, formationToUse });
-      
-      const legacyMappings = {
-        [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'pairs' },
-        [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: formationToUse, substitutionType: 'individual' },
-        [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: formationToUse, substitutionType: 'individual' }
-      };
-      
-      const teamConfig = legacyMappings[teamModeOrConfig];
-      if (!teamConfig) {
-        console.warn(`Unknown legacy team mode: ${teamModeOrConfig}`);
-        return null;
-      }
-      
-      const modeDefinition = getModeDefinition(teamConfig);
-      console.log('📱 [FieldPositionHandlers] Mode definition loaded:', {
-        fieldPositions: modeDefinition.fieldPositions,
-        substitutePositions: modeDefinition.substitutePositions,
-        formation: modeDefinition.formation
-      });
-      
-      return modeDefinition;
-    }
-    return getModeDefinition(teamModeOrConfig);
+    return getModeDefinition(teamConfig);
   };
   
-  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
-  const supportsInactive = supportsInactiveUsers(teamMode);
-  const supportsNextNext = supportsNextNextIndicators(teamMode);
+  const isPairsMode = teamConfig?.substitutionType === 'pairs';
+  const supportsInactive = supportsInactiveUsers(teamConfig);
+  const supportsNextNext = supportsNextNextIndicators(teamConfig);
   
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
@@ -98,7 +67,7 @@ export const createFieldPositionHandlers = (
     // Only for individual modes that support inactive players
     if (!supportsInactive) return;
     
-    const definition = getDefinition(teamMode);
+    const definition = getDefinition(teamConfig);
     if (!definition?.substitutePositions.includes(position)) return;
     
     const playerId = formation[position];
@@ -126,7 +95,7 @@ export const createFieldPositionHandlers = (
   const createPositionCallback = (position) => {
     return () => {
       // Use substitute modal for substitute positions in modes that support inactive players
-      const definition = getDefinition(teamMode);
+      const definition = getDefinition(teamConfig);
       if (supportsInactive && definition?.substitutePositions.includes(position)) {
         handleSubstituteLongPress(position);
       } else {
@@ -144,7 +113,7 @@ export const createFieldPositionHandlers = (
     positionCallbacks.subPairCallback = createPositionCallback('subPair');
   } else {
     // Individual modes - dynamically get all positions from team mode definition
-    const definition = getDefinition(teamMode);
+    const definition = getDefinition(teamConfig);
     if (definition) {
       const allPositions = [...definition.fieldPositions, ...definition.substitutePositions];
       

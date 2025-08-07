@@ -110,23 +110,29 @@ queueManager.reorderByPositions(timeBasedOrder);
 - The 4 players with least accumulated time are selected for field positions
 - Remaining players become substitutes, ordered by playing time
 
-## Formation-Specific Behavior
+## Team Configuration-Specific Behavior
 
-### PAIRS_7 Mode
+### Pairs Substitution Type (`substitutionType: 'pairs'`)
+- Typically used with 7-player squads
 - Queue contains individual player IDs, not pair objects
 - Next pair determined by which pair contains queue[0]
 - Pair substitutions affect both players but queue tracks individuals
+- Works with both 2-2 and 1-2-1 formations
 
-### INDIVIDUAL_6 Mode
+### Individual Substitution Type (`substitutionType: 'individual'`)
+
+#### 6-Player Squads
 - Simple rotation: substituted player moves to end
 - Next player is always queue[0]
 - Single substitute position
+- Compatible with all formations
 
-### INDIVIDUAL_7 Mode
-- Complex rotation with next/next-next tracking
+#### 7+ Player Squads  
+- Complex rotation with next/next-next tracking for multiple substitutes
 - Inactive player support (players can be temporarily removed from rotation)
-- Two substitute positions with priority ordering
+- Multiple substitute positions (`substitute_1`, `substitute_2`, etc.)
 - Reactivation puts player at end of queue (lowest priority)
+- Formation-independent behavior
 
 ## Example Rotation Flow (6-Player Mode)
 

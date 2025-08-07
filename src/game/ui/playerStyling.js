@@ -11,7 +11,7 @@ export function getPlayerStyling({
   isNextOn = false,
   isRecentlySubstituted = false,
   hideNextOffIndicator = false,
-  supportsInactivePlayers = false,
+  supportsInactiveUsers = false,
   role = null, // Add role prop
   isGoalie = false // Add isGoalie prop
 }) {
@@ -21,15 +21,19 @@ export function getPlayerStyling({
   if (isGoalie) {
     bgColor = FORMATION_STYLES.bgColors.goalie;
   } else if (isFieldPosition) {
-    if (role === 'Defender') {
+    if (role === 'DEFENDER') {
       bgColor = FORMATION_STYLES.bgColors.defenderField;
-    } else {
+    } else if (role === 'MIDFIELDER') {
+      bgColor = FORMATION_STYLES.bgColors.midfielderField;
+    } else if (role === 'ATTACKER') {
       bgColor = FORMATION_STYLES.bgColors.field;
+    } else {
+      bgColor = FORMATION_STYLES.bgColors.field; // Default fallback
     }
   }
   
   // Inactive players get dimmed appearance (only for formations that support it)
-  if (supportsInactivePlayers && isInactive) {
+  if (supportsInactiveUsers && isInactive) {
     bgColor = FORMATION_STYLES.bgColors.inactive;
   }
   
@@ -41,7 +45,7 @@ export function getPlayerStyling({
   }
   
   // Inactive players get dimmed text (only for formations that support it)
-  if (supportsInactivePlayers && isInactive) {
+  if (supportsInactiveUsers && isInactive) {
     textColor = FORMATION_STYLES.textColors.inactive;
   }
   

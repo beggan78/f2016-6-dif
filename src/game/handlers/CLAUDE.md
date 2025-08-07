@@ -19,7 +19,7 @@ Coordinates UI event handling with game logic and animation systems. Provides cl
 
 ### `substitutionHandlers.js` - Player Substitutions
 **Responsibilities**:
-- Regular player substitutions across all team modes
+- Regular player substitutions across all team configurations
 - Timer integration and pause/resume logic (preserves pause state during substitutions)
 - Animation coordination
 - Queue rotation management
@@ -91,8 +91,8 @@ Every handler must include these core updaters:
 ### Conditional State Updaters
 Include based on handler functionality:
 - `setNextPlayerIdToSubOut`: For substitution tracking
-- `setNextNextPlayerIdToSubOut`: For 7-player mode rotation
-- `setNextPhysicalPairToSubOut`: For pairs mode substitution
+- `setNextNextPlayerIdToSubOut`: For 7-player individual configuration rotation
+- `setNextPhysicalPairToSubOut`: For pairs configuration substitution
 - `resetSubTimer`: For timer-related operations
 - `setScore`: For score-related handlers
 
@@ -109,7 +109,7 @@ Required for all animated operations:
 const gameStateFactory = () => ({
   formation,
   allPlayers,
-  teamMode,
+  teamConfig,
   rotationQueue,
   // ... all current state
 });

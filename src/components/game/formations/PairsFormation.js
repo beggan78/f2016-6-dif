@@ -57,7 +57,7 @@ export function PairsFormation({
       isNextOn,
       isRecentlySubstituted: hasRecentlySubstitutedPlayer,
       hideNextOffIndicator,
-      supportsInactivePlayers: false,
+      supportsInactiveUsers: false,
       role: null, // No specific role for pairs
       isGoalie: false
     });
@@ -111,7 +111,7 @@ export function PairsFormation({
       isNextOn: false,
       isRecentlySubstituted,
       hideNextOffIndicator,
-      supportsInactivePlayers: false,
+      supportsInactiveUsers: false,
       isGoalie: true
     });
 
@@ -143,3 +143,6 @@ export function PairsFormation({
     </div>
   );
 }
+
+// Memoize PairsFormation to prevent unnecessary re-renders
+export default React.memo(PairsFormation);

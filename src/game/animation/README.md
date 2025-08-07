@@ -49,7 +49,7 @@ User Action → Position Capture → Logic Calculation → CSS Animation → Sta
 const beforePositions = captureAllPlayerPositions(
   gameState.formation, 
   gameState.allPlayers, 
-  gameState.teamMode
+  gameState.teamConfig
 );
 ```
 
@@ -59,13 +59,13 @@ const newGameState = pureLogicFunction(gameState);
 const afterPositions = captureAllPlayerPositions(
   newGameState.formation, 
   newGameState.allPlayers, 
-  newGameState.teamMode
+  newGameState.teamConfig
 );
 ```
 
 #### **Phase 3: Animation Start (0ms)**
 ```javascript
-const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, teamMode);
+const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, teamConfig);
 setAnimationState({ type: 'generic', phase: 'switching', data: { animations } });
 ```
 
@@ -90,11 +90,11 @@ setTimeout(() => {
 
 The system maps player positions to visual indices for distance calculations:
 
-| Team Mode | Position Order |
-|-----------|----------------|
-| **Individual 6** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute(5) |
-| **Individual 7** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute_1(5) → substitute_2(6) |
-| **Pairs** | goalie(0) → leftPair(1) → rightPair(2) → subPair(3) |
+| Team Configuration | Position Order |
+|---------------------|----------------|
+| **Individual 6-Player** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute(5) |
+| **Individual 7-Player** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute_1(5) → substitute_2(6) |
+| **Pairs Configuration** | goalie(0) → leftPair(1) → rightPair(2) → subPair(3) |
 
 **Distance Calculation:**
 ```javascript
@@ -314,7 +314,7 @@ These values are user-tested for optimal feel and can be adjusted if needed.
 - ✅ Ensure proper z-index classes are applied
 
 **❌ Wrong Animation Direction**
-- ✅ Verify position index calculations for your team mode
+- ✅ Verify position index calculations for your team configuration
 - ✅ Check that formation position order matches visual layout
 - ✅ Ensure before/after positions are captured correctly
 
@@ -346,7 +346,7 @@ console.log('Animation data:', {
 **Animation Calculation Tests:**
 ```javascript
 test('calculates correct animation distances', () => {
-  const animations = calculateAllPlayerAnimations(before, after, teamMode);
+  const animations = calculateAllPlayerAnimations(before, after, teamConfig);
   expect(animations[playerId]).toBeDefined();
   expect(animations[playerId].direction).toBe('down');
   expect(animations[playerId].distance).toBeGreaterThan(0);
@@ -386,7 +386,7 @@ test('triggers animation on user action', () => {
 The system automatically handles complex scenarios:
 
 - **Chain Substitutions**: Multiple players moving simultaneously
-- **Formation Changes**: Team mode switches with position reorganization  
+- **Formation Changes**: Team configuration switches with position reorganization  
 - **Rotation Updates**: Queue-based player ordering with visual transitions
 
 ### Animation State Machine
@@ -466,13 +466,13 @@ Main orchestration function for all animations.
 - `setHideNextOffIndicator: Function` - UI indicator control
 - `setRecentlySubstitutedPlayers: Function` - Glow effect control
 
-#### `captureAllPlayerPositions(formation, players, teamMode)`
+#### `captureAllPlayerPositions(formation, players, teamConfig)`
 
 Captures current player positions for animation calculation.
 
 **Returns:** `{ [playerId]: PositionData }`
 
-#### `calculateAllPlayerAnimations(before, after, teamMode)`
+#### `calculateAllPlayerAnimations(before, after, teamConfig)`
 
 Calculates required animations by comparing position snapshots.
 
@@ -521,7 +521,7 @@ export const GLOW_DURATION = 900;       // Glow effect duration
 
 The animation system provides a powerful, unified abstraction for player movements that:
 
-- ✅ **Works for all team modes** (pairs, individual 6, individual 7)
+- ✅ **Works for all team configurations** (pairs, individual 6-player, individual 7-player)
 - ✅ **Handles all movement types** (substitutions, swaps, goalie changes)
 - ✅ **Provides consistent visual feedback** with glow effects
 - ✅ **Performs efficiently** with hardware-accelerated CSS

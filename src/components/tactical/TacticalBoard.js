@@ -147,3 +147,6 @@ export function TacticalBoard({
     </div>
   );
 }
+
+// Memoize TacticalBoard to prevent unnecessary re-renders
+export default React.memo(TacticalBoard);

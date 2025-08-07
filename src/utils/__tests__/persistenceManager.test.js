@@ -553,7 +553,7 @@ describe('GamePersistenceManager', () => {
         allPlayers: [],
         view: 'config',
         selectedSquadIds: [],
-        teamMode: 'PAIRS_7',
+        teamConfig: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
         formation: expect.any(Object)
       });
     });

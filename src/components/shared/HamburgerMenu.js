@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { hasInactivePlayersInSquad } from '../../utils/playerUtils';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -35,7 +35,10 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const isConfigScreen = currentView === 'config';
   const isGameScreen = currentView === 'game';
-  const showFormationOptions = isGameScreen && (teamMode === 'pairs_7' || teamMode === 'individual_7');
+  const showFormationOptions = isGameScreen && (
+    (teamConfig?.substitutionType === 'pairs' && teamConfig?.squadSize === 7) || 
+    (teamConfig?.substitutionType === 'individual' && teamConfig?.squadSize === 7)
+  );
   
   // Check for inactive players in the selected squad
   const hasInactivePlayers = hasInactivePlayersInSquad(allPlayers, selectedSquadIds);
@@ -91,7 +94,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
               >
                 Add Player
               </button>
-              {showFormationOptions && teamMode === 'pairs_7' && (
+              {showFormationOptions && teamConfig?.substitutionType === 'pairs' && (
                 <button
                   onClick={handleSplitPairs}
                   className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
@@ -99,7 +102,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                   Split Pairs
                 </button>
               )}
-              {showFormationOptions && teamMode === 'individual_7' && (
+              {showFormationOptions && teamConfig?.substitutionType === 'individual' && (
                 <button
                   onClick={handleFormPairs}
                   disabled={!canFormPairs}

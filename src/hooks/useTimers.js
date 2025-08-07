@@ -1,25 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logEvent, EVENT_TYPES, calculateMatchTime } from '../utils/gameEventLogger';
+import { ErrorRecovery } from '../utils/errorHandler';
 
 // localStorage utilities for timers - NOTE: Essential for preventing timer loss on page refresh
 const TIMER_STORAGE_KEY = 'dif-coach-timer-state';
 
 const loadTimerState = () => {
-  try {
-    const saved = localStorage.getItem(TIMER_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
-  } catch (error) {
-    console.warn('Failed to load timer state from localStorage:', error);
-    return null;
-  }
+  return ErrorRecovery.safeLocalStorage.get(TIMER_STORAGE_KEY, null);
 };
 
 const saveTimerState = (state) => {
-  try {
-    localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.warn('Failed to save timer state to localStorage:', error);
-  }
+  return ErrorRecovery.safeLocalStorage.set(TIMER_STORAGE_KEY, state);
 };
 
 // Timer calculation utilities
@@ -48,17 +39,14 @@ export function useTimers(periodDurationMinutes) {
   const initializeTimerState = () => {
     const saved = loadTimerState();
     if (saved) {
-      // Handle backward compatibility with old timer state
-      if (saved.periodStartTime !== undefined) {
-        return {
-          isPeriodActive: saved.isPeriodActive ?? false,
-          periodStartTime: saved.periodStartTime ?? null,
-          lastSubstitutionTime: saved.lastSubstitutionTime ?? saved.lastSubTime ?? null,
-          secondLastSubstitutionTime: saved.secondLastSubstitutionTime ?? null,
-          pauseStartTime: saved.pauseStartTime ?? saved.subPauseStartTime ?? null,
-          totalPausedDuration: saved.totalPausedDuration ?? (saved.pausedSubTime ? saved.pausedSubTime * 1000 : 0),
-        };
-      }
+      return {
+        isPeriodActive: saved.isPeriodActive ?? false,
+        periodStartTime: saved.periodStartTime ?? null,
+        lastSubstitutionTime: saved.lastSubstitutionTime ?? null,
+        secondLastSubstitutionTime: saved.secondLastSubstitutionTime ?? null,
+        pauseStartTime: saved.pauseStartTime ?? null,
+        totalPausedDuration: saved.totalPausedDuration ?? 0,
+      };
     }
     return {
       isPeriodActive: false,
@@ -85,18 +73,18 @@ export function useTimers(periodDurationMinutes) {
   const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
   const updateIntervalRef = useRef(null);
   
-  // For backward compatibility with tests - computed from lastSubstitutionTime
-  const lastSubTime = lastSubstitutionTime;
 
   // Calculate current timer values on-demand
+  // forceUpdateCounter is intentionally included to trigger recalculation via setInterval for real-time timer updates
   const matchTimerSeconds = useMemo(() => {
     return calculateMatchTimer(periodStartTime, periodDurationMinutes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- forceUpdateCounter intentionally triggers timer recalculation
   }, [periodStartTime, periodDurationMinutes, forceUpdateCounter]);
   
+  // forceUpdateCounter is intentionally included to trigger recalculation via setInterval for real-time timer updates
   const subTimerSeconds = useMemo(() => {
     return calculateSubTimer(lastSubstitutionTime, totalPausedDuration, pauseStartTime);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- forceUpdateCounter intentionally triggers timer recalculation
   }, [lastSubstitutionTime, totalPausedDuration, pauseStartTime, forceUpdateCounter]);
   
   // Derived state
@@ -285,7 +273,7 @@ export function useTimers(periodDurationMinutes) {
     }
   }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides, lastSubstitutionTime, periodStartTime, periodDurationMinutes]);
 
-  const startTimers = useCallback((periodNumber = 1, teamMode = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
+  const startTimers = useCallback((periodNumber = 1, teamConfig = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
     const now = Date.now();
     setPeriodStartTime(now);
     setLastSubstitutionTime(now);
@@ -300,7 +288,7 @@ export function useTimers(periodDurationMinutes) {
         logEvent(EVENT_TYPES.MATCH_START, {
           timestamp: now,
           periodDurationMinutes,
-          teamMode,
+          teamConfig,
           homeTeamName: homeTeamName || 'Djurgården',
           awayTeamName: awayTeamName || 'Opponent',
           numPeriods: numPeriods || 2, // Total number of periods planned for the match
@@ -320,7 +308,7 @@ export function useTimers(periodDurationMinutes) {
           timestamp: now,
           periodDurationMinutes,
           startingFormation: startingFormation ? JSON.parse(JSON.stringify(startingFormation)) : null,
-          teamMode,
+          teamConfig,
           periodMetadata: {
             startTime: now,
             plannedDurationMinutes: periodDurationMinutes,
@@ -345,7 +333,7 @@ export function useTimers(periodDurationMinutes) {
           matchTime: calculateMatchTime(now),
           timestamp: now,
           periodNumber: periodNumber,
-          teamMode: teamMode,
+          teamConfig: teamConfig,
           description: goalieName ? `${goalieName} is goalie` : `Goalie assigned for period ${periodNumber}`
         });
       }
@@ -379,7 +367,7 @@ export function useTimers(periodDurationMinutes) {
     });
   }, [saveTimerStateWithOverrides, periodDurationMinutes]);
 
-  const stopTimers = useCallback((periodNumber = null, isMatchEnd = false, finalFormation = null, teamMode = null) => {
+  const stopTimers = useCallback((periodNumber = null, isMatchEnd = false, finalFormation = null, teamConfig = null) => {
     const now = Date.now();
     setIsPeriodActive(false);
     if (updateIntervalRef.current) {
@@ -394,7 +382,7 @@ export function useTimers(periodDurationMinutes) {
           timestamp: now,
           finalPeriodNumber: periodNumber,
           matchDurationMs: periodStartTime ? now - periodStartTime : 0,
-          teamMode,
+          teamConfig,
           matchMetadata: {
             endTime: now,
             endReason: 'normal_completion',
@@ -415,7 +403,7 @@ export function useTimers(periodDurationMinutes) {
             periodDurationSeconds: Math.floor(periodDuration / 1000),
             plannedDurationMinutes: periodDurationMinutes,
             endingFormation: finalFormation ? JSON.parse(JSON.stringify(finalFormation)) : null,
-            teamMode,
+            teamConfig,
             periodMetadata: {
               endTime: now,
               startTime: periodStartTime,
@@ -488,7 +476,6 @@ export function useTimers(periodDurationMinutes) {
     isPeriodActive,
     isSubTimerPaused,
     periodStartTime,
-    lastSubTime, // For backward compatibility
     lastSubstitutionTime,
     secondLastSubstitutionTime,
     
@@ -501,10 +488,6 @@ export function useTimers(periodDurationMinutes) {
     stopTimers,
     clearTimerState,
     resetAllTimers,
-    
-    // Deprecated setters (for backward compatibility - these now do nothing)
-    setMatchTimerSeconds: () => console.warn('setMatchTimerSeconds is deprecated - timer values are now calculated'),
-    setSubTimerSeconds: () => console.warn('setSubTimerSeconds is deprecated - timer values are now calculated'),
-    setIsPeriodActive: setIsPeriodActive,
+    setIsPeriodActive,
   };
 }

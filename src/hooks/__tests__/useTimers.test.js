@@ -109,7 +109,7 @@ describe('useTimers', () => {
       expect(result.current.isPeriodActive).toBe(false);
       expect(result.current.isSubTimerPaused).toBe(false);
       expect(result.current.periodStartTime).toBe(null);
-      expect(result.current.lastSubTime).toBe(null);
+      expect(result.current.lastSubstitutionTime).toBe(null);
     });
 
 
@@ -194,7 +194,7 @@ describe('useTimers', () => {
       expect(result.current.isPeriodActive).toBe(true);
       expect(result.current.isSubTimerPaused).toBe(false);
       expect(result.current.periodStartTime).toBe(1000000);
-      expect(result.current.lastSubTime).toBe(1000000);
+      expect(result.current.lastSubstitutionTime).toBe(1000000);
     });
 
     it('should stop timers correctly', () => {
@@ -334,7 +334,7 @@ describe('useTimers', () => {
       });
 
       expect(result.current.subTimerSeconds).toBe(0);
-      expect(result.current.lastSubTime).toBe(1010000);
+      expect(result.current.lastSubstitutionTime).toBe(1010000);
       expect(result.current.isSubTimerPaused).toBe(false);
     });
 
@@ -350,7 +350,7 @@ describe('useTimers', () => {
       });
 
       expect(result.current.subTimerSeconds).toBe(180);
-      expect(result.current.lastSubTime).toBe(820000); // 1000000 - (180 * 1000)
+      expect(result.current.lastSubstitutionTime).toBe(820000); // 1000000 - (180 * 1000)
       expect(result.current.isSubTimerPaused).toBe(false);
     });
 
@@ -397,7 +397,7 @@ describe('useTimers', () => {
       });
 
       expect(result.current.isSubTimerPaused).toBe(false);
-      expect(result.current.lastSubTime).toBe(1000000); // Should remain the original substitution time
+      expect(result.current.lastSubstitutionTime).toBe(1000000); // Should remain the original substitution time
       expect(mockUpdatePlayerStats).toHaveBeenCalledWith(1008000, false);
     });
 

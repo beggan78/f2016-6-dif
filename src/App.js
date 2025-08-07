@@ -90,7 +90,7 @@ function App() {
     gameState.handleStartGame();
     timers.startTimers(
       gameState.currentPeriodNumber,
-      gameState.teamMode,
+      gameState.teamConfig,
       'Djurgården', // Home team name
       gameState.opponentTeamName,
       gameState.formation,
@@ -134,7 +134,7 @@ function App() {
       gameState.currentPeriodNumber,
       isMatchEnd,
       gameState.formation,
-      gameState.teamMode
+      gameState.teamConfig
     );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
@@ -147,7 +147,7 @@ function App() {
       gameState.currentPeriodNumber,
       isMatchEnd,
       gameState.formation,
-      gameState.teamMode
+      gameState.teamConfig
     );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
@@ -248,9 +248,8 @@ function App() {
             setPeriodDurationMinutes={gameState.setPeriodDurationMinutes}
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
-            teamMode={gameState.teamMode}
-            setTeamMode={gameState.setTeamMode}
             teamConfig={gameState.teamConfig}
+            updateTeamConfig={gameState.updateTeamConfig}
             selectedFormation={gameState.selectedFormation}
             updateFormationSelection={gameState.updateFormationSelection}
             createTeamConfigFromSquadSize={gameState.createTeamConfigFromSquadSize}
@@ -280,7 +279,7 @@ function App() {
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             numPeriods={gameState.numPeriods}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
             setView={gameState.setView}
             homeScore={gameState.homeScore}
@@ -318,7 +317,7 @@ function App() {
             setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
@@ -370,7 +369,7 @@ function App() {
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             periodDurationMinutes={gameState.periodDurationMinutes}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
             homeTeamName={selectedSquadPlayers ? 'Djurgården' : 'Home'}
             awayTeamName={gameState.opponentTeamName || 'Opponent'}
             onNavigateToStats={() => gameState.setView(VIEWS.STATS)}
@@ -408,7 +407,7 @@ function App() {
             onAddPlayer={handleAddPlayer}
             onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
             onSplitPairs={gameState.splitPairs}
             onFormPairs={gameState.formPairs}
             allPlayers={gameState.allPlayers}

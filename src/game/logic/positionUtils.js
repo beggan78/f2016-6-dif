@@ -1,4 +1,4 @@
-import { POSITION_ROLE_MAP } from '../../constants/gameModes';
+import { getModeDefinition } from '../../constants/gameModes';
 
 /**
  * Core position utilities for game logic
@@ -6,76 +6,102 @@ import { POSITION_ROLE_MAP } from '../../constants/gameModes';
  * Used throughout game logic for position validation and role determination
  */
 
-// Use the centralized mode definition system that handles both legacy strings and team config objects
-import { getDefinition } from '../../constants/gameModes';
-
 /**
  * Maps position keys to player roles using table-driven lookup
  * Replaces string matching with fast table lookup
  */
 export function getPositionRole(position) {
-  return POSITION_ROLE_MAP[position] || null;
+  // Simple position to role mapping
+  if (!position) return null;
+  
+  if (position.includes('Defender') || position.includes('defender')) {
+    return 'DEFENDER';
+  }
+  if (position.includes('Attacker') || position.includes('attacker')) {
+    return 'ATTACKER';
+  }
+  // Handle midfielder positions (1-2-1 formation)
+  if (position === 'left' || position === 'right') {
+    return 'MIDFIELDER';
+  }
+  if (position.includes('substitute') || position.includes('Substitute')) {
+    return 'SUBSTITUTE';
+  }
+  if (position === 'goalie') {
+    return 'GOALIE';
+  }
+  
+  return null;
 }
 
 /**
- * Gets the list of outfield positions for a given team mode
- * Replaces FORMATION_POSITIONS from positionConstants
+ * Gets the list of outfield positions for a given team configuration
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {string[]} Array of outfield position keys
  */
-export function getOutfieldPositions(teamMode) {
-  const definition = getDefinition(teamMode);
+export function getOutfieldPositions(teamConfig) {
+  const definition = getModeDefinition(teamConfig);
   return definition ? definition.positionOrder.filter(pos => pos !== 'goalie') : [];
 }
 
 /**
- * Gets the list of field positions (excludes substitutes) for a given team mode
+ * Gets the list of field positions (excludes substitutes) for a given team configuration
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {string[]} Array of field position keys
  */
-export function getFieldPositions(teamMode) {
-  const definition = getDefinition(teamMode);
-  const result = definition ? definition.fieldPositions : [];
-  
-  return result;
+export function getFieldPositions(teamConfig) {
+  const definition = getModeDefinition(teamConfig);
+  return definition ? definition.fieldPositions : [];
 }
 
 /**
- * Gets the list of substitute positions for a given team mode
+ * Gets the list of substitute positions for a given team configuration
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {string[]} Array of substitute position keys
  */
-export function getSubstitutePositions(teamMode) {
-  const definition = getDefinition(teamMode);
-  const result = definition ? definition.substitutePositions : [];
-  
-  return result;
+export function getSubstitutePositions(teamConfig) {
+  const definition = getModeDefinition(teamConfig);
+  return definition ? definition.substitutePositions : [];
 }
 
 /**
  * Checks if a position is a field position (not substitute or goalie)
+ * @param {string} position - Position key to check
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {boolean} True if position is a field position
  */
-export function isFieldPosition(position, teamMode) {
-  const fieldPositions = getFieldPositions(teamMode);
+export function isFieldPosition(position, teamConfig) {
+  const fieldPositions = getFieldPositions(teamConfig);
   return fieldPositions.includes(position);
 }
 
 /**
  * Checks if a position is a substitute position
+ * @param {string} position - Position key to check
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {boolean} True if position is a substitute position
  */
-export function isSubstitutePosition(position, teamMode) {
-  const substitutePositions = getSubstitutePositions(teamMode);
+export function isSubstitutePosition(position, teamConfig) {
+  const substitutePositions = getSubstitutePositions(teamConfig);
   return substitutePositions.includes(position);
 }
 
 /**
- * Gets the expected counts for a team mode
- * Replaces EXPECTED_PLAYER_COUNTS from playerConstants
+ * Gets the expected counts for a team configuration
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {Object} Expected counts object with outfield and onField properties
  */
-export function getExpectedCounts(teamMode) {
-  const definition = getDefinition(teamMode);
+export function getExpectedCounts(teamConfig) {
+  const definition = getModeDefinition(teamConfig);
   return definition ? definition.expectedCounts : { outfield: 0, onField: 0 };
 }
 
 /**
- * Gets the expected number of outfield players for a team mode
- * Maintains backward compatibility
+ * Gets the expected number of outfield players for a team configuration
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {number} Expected outfield player count
  */
-export function getExpectedOutfieldPlayerCount(teamMode) {
-  const counts = getExpectedCounts(teamMode);
+export function getExpectedOutfieldPlayerCount(teamConfig) {
+  const counts = getExpectedCounts(teamConfig);
   return counts.outfield;
 }

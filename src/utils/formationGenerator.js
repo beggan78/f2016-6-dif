@@ -1,40 +1,9 @@
-import { getModeDefinition } from '../constants/gameModes';
-import { TEAM_MODES } from '../constants/playerConstants';
 import { FORMATIONS } from '../constants/teamConfiguration';
+import { getFormationDefinition } from './formationConfigUtils';
 
-// Helper to get mode definition - handles both legacy strings and team config objects
-const getDefinition = (teamModeOrConfig, selectedFormation = null) => {
-  // Handle null/undefined
-  if (!teamModeOrConfig) {
-    return null;
-  }
-  
-  if (typeof teamModeOrConfig === 'string') {
-    // Map legacy team modes to team configurations with formation override
-    const legacyMappings = {
-      [TEAM_MODES.PAIRS_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
-      [TEAM_MODES.INDIVIDUAL_5]: { format: '5v5', squadSize: 5, formation: '2-2', substitutionType: 'individual' },
-      [TEAM_MODES.INDIVIDUAL_6]: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' },
-      [TEAM_MODES.INDIVIDUAL_7]: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
-      [TEAM_MODES.INDIVIDUAL_8]: { format: '5v5', squadSize: 8, formation: '2-2', substitutionType: 'individual' },
-      [TEAM_MODES.INDIVIDUAL_9]: { format: '5v5', squadSize: 9, formation: '2-2', substitutionType: 'individual' },
-      [TEAM_MODES.INDIVIDUAL_10]: { format: '5v5', squadSize: 10, formation: '2-2', substitutionType: 'individual' }
-    };
-    
-    const teamConfig = legacyMappings[teamModeOrConfig];
-    if (!teamConfig) {
-      console.warn(`Unknown legacy team mode: ${teamModeOrConfig}`);
-      return null;
-    }
-    
-    // Override formation if selectedFormation is provided
-    const formationAwareConfig = selectedFormation 
-      ? { ...teamConfig, formation: selectedFormation }
-      : teamConfig;
-    
-    return getModeDefinition(formationAwareConfig);
-  }
-  return getModeDefinition(teamModeOrConfig);
+// Helper to get mode definition - uses centralized formation utilities
+const getDefinition = (teamConfig, selectedFormation = null) => {
+  return getFormationDefinition(teamConfig, selectedFormation);
 };
 
 /**
@@ -293,29 +262,29 @@ function determineSubstituteRecommendations(finalPairs, outfieldersWithStats) {
  * @param {string} currentGoalieId - ID of the current goalie
  * @param {Array} playerStats - Array of player stats
  * @param {Array} squad - Array of squad players
- * @param {string|Object} teamMode - Team mode string or team config object
+ * @param {Object} teamConfig - Team configuration object
  * @param {string} selectedFormation - Formation type (2-2, 1-2-1, etc.)
  * @returns {Object} Formation recommendation with formation, rotationQueue, and nextToRotateOff
  */
-const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, teamMode, selectedFormation = null) => {
+const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, teamConfig, selectedFormation = null) => {
   // Extract formation from team config or direct parameter
   const formation = selectedFormation || 
-    (typeof teamMode === 'object' ? teamMode.formation : null) ||
+    (teamConfig && teamConfig.formation) ||
     FORMATIONS.FORMATION_2_2; // Default to 2-2 formation
   
   // Route to appropriate algorithm based on formation type
   if (formation === FORMATIONS.FORMATION_1_2_1) {
-    return generate121FormationRecommendation(currentGoalieId, playerStats, squad, teamMode);
+    return generate121FormationRecommendation(currentGoalieId, playerStats, squad, teamConfig);
   }
   
   // Default to existing 2-2 algorithm
-  return generate22FormationRecommendation(currentGoalieId, playerStats, squad, teamMode);
+  return generate22FormationRecommendation(currentGoalieId, playerStats, squad, teamConfig);
 };
 
 /**
  * Generate formation recommendations for both 2-2 and 1-2-1 formations (consolidated logic)
  */
-const generateFormationRecommendation = (currentGoalieId, playerStats, squad, teamMode, formation) => {
+const generateFormationRecommendation = (currentGoalieId, playerStats, squad, teamConfig, formation) => {
   const outfielders = squad.filter(p => p.id !== currentGoalieId);
   
   // Get stats for all outfielders - include midfielder time for 1-2-1 formations
@@ -359,17 +328,13 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
 
   // Handle the case where there are no active substitutes (≤4 active players)
   if (activePlayers.length <= 4) {
-    return handleLimitedPlayersFormation(currentGoalieId, activePlayers, inactivePlayers, teamMode, formation);
+    return handleLimitedPlayersFormation(currentGoalieId, activePlayers, inactivePlayers, teamConfig, formation);
   }
 
   // Create rotation queue for active players - Fixed: Ensure field players come first
-  console.log('🔧 [FormationGenerator] Building rotation queue for', activePlayers.length, 'active players');
   
-  // Get field positions for current formation type
-  const modeConfig = getDefinition(teamMode, formation);
-  const fieldPositions = modeConfig?.fieldPositions || [];
-  
-  console.log('🔧 [FormationGenerator] Field positions for', formation, ':', fieldPositions);
+  // Get mode configuration to determine positions
+  const modeConfig = getDefinition(teamConfig, formation);
   
   // For formation recommendation, we don't have existing formation data
   // So we'll determine field vs substitute based on time (least time = field players)
@@ -377,8 +342,6 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   const currentFieldPlayers = sortedByTime.slice(0, 4); // 4 field players
   const currentSubstitutes = sortedByTime.slice(4); // Remaining are substitutes
   
-  console.log('🔧 [FormationGenerator] Current field players:', currentFieldPlayers.map(p => p.id));
-  console.log('🔧 [FormationGenerator] Current substitutes:', currentSubstitutes.map(p => p.id));
   
   // Sort field players by most time first (ready to rotate off)
   const fieldPlayersOrdered = currentFieldPlayers.sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
@@ -389,7 +352,6 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   // Build rotation queue: field players first (can rotate off), then substitutes
   const rotationQueue = [...fieldPlayersOrdered, ...substitutesOrdered];
   
-  console.log('🔧 [FormationGenerator] Final rotation queue:', rotationQueue.map(p => `${p.id}(${p.totalOutfieldTime}s)`));
 
   // Create formation based on type - Fixed: Use players with least time for field positions
   // We want the 4 players with the least total time to be on the field (for fairness)
@@ -397,7 +359,6 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
     .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime)
     .slice(0, 4);
   
-  console.log('🔧 [FormationGenerator] Players selected for field positions:', playersForField.map(p => `${p.id}(${p.totalOutfieldTime}s)`));
   
   let formationResult;
 
@@ -434,10 +395,6 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
 
   // Ensure nextToRotateOff is always a field player (never a substitute)
   const nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
-  
-  console.log('🔧 [FormationGenerator] Next to rotate off:', nextToRotateOff);
-  console.log('🔧 [FormationGenerator] Validation - is field player?', 
-    nextToRotateOff ? fieldPositions.some(pos => formationResult[pos] === nextToRotateOff) : 'null');
 
   return {
     formation: formationResult,
@@ -449,13 +406,13 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
 /**
  * Handle formation when there are ≤4 active players (consolidated for both formations)
  */
-const handleLimitedPlayersFormation = (currentGoalieId, activePlayers, inactivePlayers, teamMode, formation) => {
+const handleLimitedPlayersFormation = (currentGoalieId, activePlayers, inactivePlayers, teamConfig, formation) => {
   const availableActivePlayers = activePlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
   
   let formationResult = { goalie: currentGoalieId };
   
   // Get mode configuration to determine positions
-  const modeConfig = getDefinition(teamMode, formation);
+  const modeConfig = getDefinition(teamConfig, formation);
   const fieldPositions = modeConfig?.fieldPositions || [];
   const substitutePositions = modeConfig?.substitutePositions || [];
   
@@ -540,15 +497,15 @@ const assignInactivePlayersToSubstitutes = (formation, substitutePositions, inac
 /**
  * Generate formation recommendations for 2-2 formation (wrapper)
  */
-const generate22FormationRecommendation = (currentGoalieId, playerStats, squad, teamMode) => {
-  return generateFormationRecommendation(currentGoalieId, playerStats, squad, teamMode, FORMATIONS.FORMATION_2_2);
+const generate22FormationRecommendation = (currentGoalieId, playerStats, squad, teamConfig) => {
+  return generateFormationRecommendation(currentGoalieId, playerStats, squad, teamConfig, FORMATIONS.FORMATION_2_2);
 };
 
 /**
  * Generate formation recommendations for 1-2-1 formation (wrapper)
  */
-const generate121FormationRecommendation = (currentGoalieId, playerStats, squad, teamMode) => {
-  return generateFormationRecommendation(currentGoalieId, playerStats, squad, teamMode, FORMATIONS.FORMATION_1_2_1);
+const generate121FormationRecommendation = (currentGoalieId, playerStats, squad, teamConfig) => {
+  return generateFormationRecommendation(currentGoalieId, playerStats, squad, teamConfig, FORMATIONS.FORMATION_1_2_1);
 };
 
 /**

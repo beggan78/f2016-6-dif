@@ -4,6 +4,7 @@
  */
 
 import { shouldSkipTimeCalculation, calculateCurrentStintDuration } from './timeCalculator';
+import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 
 /**
@@ -99,7 +100,7 @@ const applyStintTimeToCounters = (stats, stintDurationSeconds) => {
 export const startNewStint = (player, currentTimeEpoch) => {
   // Validation
   if (!currentTimeEpoch || currentTimeEpoch <= 0) {
-    currentTimeEpoch = Date.now(); // Fallback to current time
+    currentTimeEpoch = getCurrentTimestamp(); // Fallback to current time
   }
   
   // Ensure time fields are properly initialized before starting new stint
@@ -146,7 +147,7 @@ export const completeCurrentStint = (player, currentTimeEpoch, isSubTimerPaused 
 export const resetPlayerStintTimer = (player, currentTimeEpoch) => {
   // Validation
   if (!currentTimeEpoch || currentTimeEpoch <= 0) {
-    currentTimeEpoch = Date.now(); // Fallback to current time
+    currentTimeEpoch = getCurrentTimestamp(); // Fallback to current time
   }
 
   return {

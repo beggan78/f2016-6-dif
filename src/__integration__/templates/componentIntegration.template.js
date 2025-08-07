@@ -15,7 +15,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TEAM_MODES } from '../../constants/playerConstants';
 
 // Import the component under test and related components
 // import { COMPONENT_NAME } from '../../components/path/to/COMPONENT_NAME';
@@ -210,7 +209,6 @@ describe('COMPONENT_NAME Integration Tests', () => {
       expect(relatedComponent).toBeInTheDocument();
       
       // Verify data flows correctly to child components
-      expect(relatedComponent).toHaveAttribute('data-team-mode', gameState.teamMode);
       expect(relatedComponent).toHaveAttribute('data-player-count', String(gameState.allPlayers.length));
     });
   });
@@ -472,38 +470,6 @@ describe('COMPONENT_NAME Integration Tests', () => {
   // ===================================================================
 
   describe('Performance Integration', () => {
-    it('should maintain performance standards during component integration', async () => {
-      // Arrange
-      const largeGameState = createRealisticGameState({
-        teamMode: TEAM_MODES.INDIVIDUAL_7,
-        withStatistics: true,
-        withGameHistory: true
-      });
-      
-      // Act & Measure
-      const { measurement } = await performanceMeasurement.measureAsyncOperation(
-        () => render(
-          <COMPONENT_NAME 
-            {...testConfig.defaultProps}
-            formation={largeGameState.formation}
-            allPlayers={largeGameState.allPlayers}
-            gameHistory={largeGameState.gameHistory}
-          />
-        ),
-        'large_state_render'
-      );
-      
-      // Assert
-      assertPerformanceThreshold(measurement, {
-        maxDuration: testConfig.performanceThresholds.renderTime * 2, // Allow more time for large state
-        operationName: 'large_state_render'
-      });
-      
-      // Verify functionality is not impacted
-      expect(screen.getByTestId('component-name')).toBeInTheDocument();
-      expect(screen.getByTestId('related-component')).toBeInTheDocument();
-    });
-    
     it('should handle frequent state updates efficiently', async () => {
       // Arrange
       const mockHookSet = createScenarioMockHooks('midGame');
