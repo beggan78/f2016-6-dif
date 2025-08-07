@@ -328,15 +328,25 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-3 mb-4">
+            <p className="text-xs text-slate-400">
+              📧 Email addresses are shown to help identify requesters and are only visible to team administrators.
+            </p>
+          </div>
           {pendingRequests.map((request) => (
             <div key={request.id} className="p-4">
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <h4 className="font-medium text-slate-100">
-                      {request.user.name}
+                      {request.user.name || 'Unnamed User'}
                     </h4>
-                    <p className="text-sm text-slate-400">
+                    {request.user_email && (
+                      <p className="text-sm text-slate-400 mt-0.5">
+                        {request.user_email}
+                      </p>
+                    )}
+                    <p className="text-sm text-slate-400 mt-1">
                       Requested role: <strong>{request.requested_role}</strong>
                     </p>
                     <p className="text-xs text-slate-500 mt-1">

@@ -605,10 +605,6 @@ function RosterManagement({ team, onRefresh }) {
     }
   };
 
-  // Handle roster status toggle
-  const handleToggleRosterStatus = async (player) => {
-    await handlePlayerUpdated(player.id, { on_roster: !player.on_roster });
-  };
 
   if (loading && roster.length === 0) {
     return (
@@ -712,9 +708,6 @@ function RosterManagement({ team, onRefresh }) {
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
                     Jersey #
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
-                    Status
-                  </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-slate-300 uppercase tracking-wider">
                     Actions
                   </th>
@@ -722,15 +715,24 @@ function RosterManagement({ team, onRefresh }) {
               </thead>
               <tbody className="divide-y divide-slate-600">
                 {filteredRoster.map((player) => (
-                  <tr key={player.id} className="hover:bg-slate-700 transition-colors">
+                  <tr key={player.id} className={`hover:bg-slate-700 transition-colors ${
+                    !player.on_roster ? 'opacity-60' : ''
+                  }`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center">
-                        <div className="w-8 h-8 bg-sky-600 rounded-full flex items-center justify-center mr-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                          player.on_roster ? 'bg-sky-600' : 'bg-slate-500'
+                        }`}>
                           <span className="text-white text-sm font-medium">
                             {player.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <span className="text-slate-100 font-medium">{player.name}</span>
+                        <span className={`font-medium ${
+                          player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
+                        }`}>
+                          {player.name}
+                          {!player.on_roster && <span className="text-slate-400 ml-2">(Former)</span>}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -742,18 +744,6 @@ function RosterManagement({ team, onRefresh }) {
                       ) : (
                         <span className="text-slate-400 text-sm">Not assigned</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleToggleRosterStatus(player)}
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                          player.on_roster
-                            ? 'bg-emerald-600 text-emerald-100 hover:bg-emerald-700'
-                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                        }`}
-                      >
-                        {player.on_roster ? 'Active' : 'Inactive'}
-                      </button>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end space-x-2">

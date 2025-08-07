@@ -400,13 +400,13 @@ export const TeamProvider = ({ children }) => {
       const { data, error } = await supabase
         .from('team_access_request')
         .select(`
-          id, created_at, requested_role, message, status,
+          id, created_at, requested_role, message, status, user_id,
           user:user_id (id, name)
         `)
         .eq('team_id', teamId)
         .eq('status', 'pending')
         .order('created_at', { ascending: true });
-
+      
       if (error) {
         console.error('Error fetching team access requests:', error);
         return [];
@@ -414,12 +414,37 @@ export const TeamProvider = ({ children }) => {
 
       const requests = data || [];
       
+      // Fetch user emails using the secure function
+      const requestsWithEmails = await Promise.all(
+        requests.map(async (request) => {
+          try {
+            const { data: emailData, error: emailError } = await supabase
+              .rpc('get_user_email_for_team_request', {
+                request_user_id: request.user_id,
+                team_id: teamId
+              });
+            
+            if (emailError) {
+              console.error('Error fetching user email:', emailError);
+            }
+            
+            return {
+              ...request,
+              user_email: emailData || null
+            };
+          } catch (emailErr) {
+            console.error('Exception fetching user email:', emailErr);
+            return request;
+          }
+        })
+      );
+      
       // Update local state if this is for the current team
       if (currentTeam && currentTeam.id === teamId) {
-        setPendingRequests(requests);
+        setPendingRequests(requestsWithEmails);
       }
 
-      return requests;
+      return requestsWithEmails;
     } catch (err) {
       console.error('Exception in getTeamAccessRequests:', err);
       return [];

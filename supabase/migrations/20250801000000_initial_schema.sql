@@ -960,4 +960,39 @@ COMMENT ON TABLE public.player IS 'Players assigned to teams';
 COMMENT ON TABLE public.user_profile IS 'Extended user profile information';
 
 COMMENT ON FUNCTION public.create_club_with_admin IS 'Atomically creates a club and assigns creator as admin';
+
+-- Add function to get user email for team managers viewing access requests
+-- This function can only be called by team managers and returns email for users who have requested access to their teams
+
+CREATE OR REPLACE FUNCTION public.get_user_email_for_team_request(
+  request_user_id uuid,
+  team_id uuid
+)
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT au.email
+  FROM auth.users au
+  WHERE au.id = request_user_id
+    AND (
+      -- User can see their own email
+      auth.uid() = request_user_id
+      OR
+      -- Team managers can see email of users who have requested access to their team
+      EXISTS (
+        SELECT 1 
+        FROM team_access_request tar
+        WHERE tar.user_id = request_user_id 
+          AND tar.team_id = get_user_email_for_team_request.team_id
+          AND public.is_team_manager(get_user_email_for_team_request.team_id, auth.uid())
+      )
+    );
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.get_user_email_for_team_request(uuid, uuid) TO authenticated;
+
+COMMENT ON FUNCTION public.get_user_email_for_team_request IS 'Get user email for team access requests - only accessible by team managers or the user themselves';
 COMMENT ON FUNCTION public.create_team_with_admin IS 'Atomically creates a team and assigns creator as admin';
