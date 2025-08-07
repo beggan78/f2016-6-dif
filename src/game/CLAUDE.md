@@ -46,7 +46,7 @@ Modern composite system with four components:
 #### 1-2-1 Formation (Fully Implemented) 
 - **Positions**: `defender`, `left`, `right`, `attacker`, `goalie`
 - **Roles**: Defender, Midfielder (left/right), Attacker, Goalie
-- **Time Tracking**: Includes `timeAsMiddlefieldSeconds` support
+- **Time Tracking**: Includes `timeAsMidfielderSeconds` support
 - **Supports**: All squad sizes and both substitution types
 
 ### Substitution Type Support

@@ -49,12 +49,12 @@ Modern composite team configuration system using four components:
 
 ### Supported Formations
 - **2-2 Formation**: 2 defenders, 2 attackers (fully implemented)
-- **1-2-1 Formation**: 1 defender, 2 midfielders, 1 attacker (fully implemented with middleware role support)
+- **1-2-1 Formation**: 1 defender, 2 midfielders, 1 attacker (fully implemented with midfielder role support)
 
 ## Time Tracking System
 - **Stint-based**: Players accumulate time in "stints" for each role/status
 - **Current stint**: Tracked via `lastStintStartTimeEpoch` for real-time calculations
-- **Key fields**: `timeOnFieldSeconds`, `timeAsAttackerSeconds`, `timeAsDefenderSeconds`, `timeAsGoalieSeconds`, `timeAsMiddlefieldSeconds` (1-2-1 formation)
+- **Key fields**: `timeOnFieldSeconds`, `timeAsAttackerSeconds`, `timeAsDefenderSeconds`, `timeAsGoalieSeconds`, `timeAsMidfielderSeconds` (1-2-1 formation)
 - **Role tracking**: Supports Defender, Attacker, Midfielder, and Goalie roles
 - **Formation-aware**: Time tracking adapts to active formation (2-2 vs 1-2-1)
 - **Role changes**: Use `handleRoleChange()` and `startNewStint()` utilities

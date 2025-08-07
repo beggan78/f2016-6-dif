@@ -720,7 +720,7 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 ### 1-2-1 Formation (Fully Implemented)
 - **Field positions**: `defender`, `left`, `right`, `attacker`
 - **Role mapping**: Defender (1), Midfielders (left/right), Attacker (1)
-- **Middleware support**: Full time tracking for `timeAsMiddlefieldSeconds`
+- **Midfielder support**: Full time tracking for `timeAsMidfielderSeconds`
 - **Supports**: All squad sizes and both substitution types
 
 ## Substitution Types
