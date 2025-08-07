@@ -1,8 +1,8 @@
 {
-  "name": "f2016-6-dif",
+  "name": "Sport Wizard",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://beggan78.github.io/f2016-6-dif",
+  "homepage": "https://sportwizard.se",
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.31",
     "@supabase/supabase-js": "^2.51.0",
