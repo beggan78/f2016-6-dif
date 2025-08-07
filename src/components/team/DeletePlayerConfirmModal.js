@@ -2,8 +2,10 @@ import React from 'react';
 import { Button } from '../shared/UI';
 import { Trash2, AlertTriangle, X } from 'lucide-react';
 
-export function DeletePlayerConfirmModal({ player, onClose, onConfirm }) {
+export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onConfirm }) {
   if (!player) return null;
+
+  const willBeDeleted = !hasGameHistory;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -16,7 +18,9 @@ export function DeletePlayerConfirmModal({ player, onClose, onConfirm }) {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-100">Remove Player</h2>
-              <p className="text-sm text-slate-400">This action cannot be undone</p>
+              <p className="text-sm text-slate-400">
+                {willBeDeleted ? 'This player will be permanently deleted' : 'This player will be deactivated'}
+              </p>
             </div>
           </div>
           <button
@@ -62,12 +66,20 @@ export function DeletePlayerConfirmModal({ player, onClose, onConfirm }) {
                 <p className="text-rose-200 font-medium">
                   Are you sure you want to remove this player?
                 </p>
-                <ul className="text-rose-300 text-sm space-y-1">
-                  <li>• Player will be permanently removed from the roster</li>
-                  <li>• Jersey number will become available for other players</li>
-                  <li>• All match statistics and history will be preserved</li>
-                  <li>• This action cannot be undone</li>
-                </ul>
+                {willBeDeleted ? (
+                  <ul className="text-rose-300 text-sm space-y-1">
+                    <li>• Player has no game history and will be <strong>permanently deleted</strong></li>
+                    <li>• Jersey number will become available for other players</li>
+                    <li>• This action cannot be undone</li>
+                  </ul>
+                ) : (
+                  <ul className="text-rose-300 text-sm space-y-1">
+                    <li>• Player has game history and will be <strong>deactivated</strong> (set as inactive)</li>
+                    <li>• All match statistics and history will be preserved</li>
+                    <li>• Jersey number will become available for other players</li>
+                    <li>• Player can be reactivated later if needed</li>
+                  </ul>
+                )}
               </div>
             </div>
           </div>
@@ -78,9 +90,9 @@ export function DeletePlayerConfirmModal({ player, onClose, onConfirm }) {
               onClick={onConfirm}
               variant="danger"
               className="flex-1 bg-rose-600 hover:bg-rose-700 text-white"
+              Icon={Trash2}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Remove Player
+              {willBeDeleted ? 'Delete Player' : 'Deactivate Player'}
             </Button>
             <Button
               onClick={onClose}

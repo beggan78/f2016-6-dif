@@ -361,7 +361,11 @@ function TeamOverview({ team, members }) {
       <div>
         <h3 className="text-lg font-semibold text-slate-200 mb-4">Team Users</h3>
         <div className="space-y-2">
-          {members.map((member) => (
+          {members.sort((a, b) => {
+            const nameA = a.user?.name || a.user?.email?.split('@')[0] || 'Unknown User';
+            const nameB = b.user?.name || b.user?.email?.split('@')[0] || 'Unknown User';
+            return nameA.localeCompare(nameB);
+          }).map((member) => (
             <div key={member.id} className="flex items-center justify-between py-2 px-3 bg-slate-800 rounded-lg">
               <div>
                 <span className="text-slate-100 font-medium">
@@ -471,17 +475,20 @@ function RosterManagement({ team, onRefresh }) {
     addRosterPlayer, 
     updateRosterPlayer, 
     removeRosterPlayer, 
+    checkPlayerGameHistory,
     getAvailableJerseyNumbers 
   } = useTeam();
   
   const [roster, setRoster] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showInactive, setShowInactive] = useState(true);
+  const [showInactive, setShowInactive] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [deletingPlayer, setDeletingPlayer] = useState(null);
+  const [deletingPlayerHasGameHistory, setDeletingPlayerHasGameHistory] = useState(false);
 
   // Load roster data
   const loadRoster = useCallback(async () => {
@@ -505,13 +512,24 @@ function RosterManagement({ team, onRefresh }) {
     loadRoster();
   }, [loadRoster]);
 
-  // Filter roster based on search and visibility settings
+  // Auto-clear success message after timeout
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000); // Clear after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Filter roster based on search and visibility settings, then sort by name
   const filteredRoster = roster.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (player.jersey_number && player.jersey_number.toString().includes(searchTerm));
-    const matchesVisibility = showInactive || player.on_roster;
+    // Show active players by default, include former players when toggle is enabled
+    const matchesVisibility = player.on_roster || showInactive;
     return matchesSearch && matchesVisibility;
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   // Handle add player
   const handleAddPlayer = () => {
@@ -550,8 +568,16 @@ function RosterManagement({ team, onRefresh }) {
   };
 
   // Handle delete player
-  const handleDeletePlayer = (player) => {
+  const handleDeletePlayer = async (player) => {
     setDeletingPlayer(player);
+    // Check if player has game history to show appropriate confirmation message
+    try {
+      const hasGameHistory = await checkPlayerGameHistory(player.id);
+      setDeletingPlayerHasGameHistory(hasGameHistory);
+    } catch (error) {
+      console.error('Error checking player game history:', error);
+      setDeletingPlayerHasGameHistory(false);
+    }
   };
 
   // Handle player deleted
@@ -559,8 +585,17 @@ function RosterManagement({ team, onRefresh }) {
     if (!deletingPlayer) return;
     
     try {
-      await removeRosterPlayer(deletingPlayer.id);
+      const result = await removeRosterPlayer(deletingPlayer.id);
       setDeletingPlayer(null);
+      setDeletingPlayerHasGameHistory(false);
+      
+      // Show appropriate success message based on operation type
+      if (result.operation === 'deactivated') {
+        setSuccessMessage(`${deletingPlayer.name} has been deactivated but kept in records due to game history.`);
+      } else {
+        setSuccessMessage(`${deletingPlayer.name} has been removed from the roster.`);
+      }
+      
       await loadRoster();
       if (onRefresh) onRefresh();
     } catch (error) {
@@ -593,9 +628,13 @@ function RosterManagement({ team, onRefresh }) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-200">Roster Management</h3>
-        <Button onClick={handleAddPlayer} variant="primary" size="sm">
-          <UserPlus className="w-4 h-4 mr-2" />
+        <div className="flex items-center space-x-3">
+          <h3 className="text-lg font-semibold text-slate-200">Roster Management</h3>
+          <span className="text-sm text-slate-400">
+            • {roster.filter(p => p.on_roster).length} players
+          </span>
+        </div>
+        <Button onClick={handleAddPlayer} variant="primary" size="sm" Icon={UserPlus}>
           Add Player
         </Button>
       </div>
@@ -604,6 +643,13 @@ function RosterManagement({ team, onRefresh }) {
       {error && (
         <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
           <p className="text-rose-200 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
+          <p className="text-emerald-200 text-sm">{successMessage}</p>
         </div>
       )}
 
@@ -620,36 +666,20 @@ function RosterManagement({ team, onRefresh }) {
             />
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowInactive(!showInactive)}
-            className="flex items-center space-x-2 px-3 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
-          >
-            {showInactive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            <span>{showInactive ? 'Hide' : 'Show'} Inactive</span>
-          </button>
-        </div>
+        {/* Show toggle only if there are former players */}
+        {roster.filter(p => !p.on_roster).length > 0 && (
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowInactive(!showInactive)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
+            >
+              {showInactive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              <span>{showInactive ? 'Hide' : 'Show'} Former Players</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Roster Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-slate-800 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-sky-400">{roster.filter(p => p.on_roster).length}</p>
-          <p className="text-sm text-slate-300">Active Players</p>
-        </div>
-        <div className="bg-slate-800 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-slate-400">{roster.filter(p => !p.on_roster).length}</p>
-          <p className="text-sm text-slate-300">Inactive Players</p>
-        </div>
-        <div className="bg-slate-800 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-amber-400">{roster.filter(p => p.jersey_number).length}</p>
-          <p className="text-sm text-slate-300">With Jersey #</p>
-        </div>
-        <div className="bg-slate-800 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-emerald-400">{roster.length}</p>
-          <p className="text-sm text-slate-300">Total Players</p>
-        </div>
-      </div>
 
       {/* Roster Table */}
       <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
@@ -660,8 +690,7 @@ function RosterManagement({ team, onRefresh }) {
                 <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p className="text-lg font-medium mb-2">No Players Yet</p>
                 <p className="text-sm mb-4">Start building your team roster by adding players.</p>
-                <Button onClick={handleAddPlayer} variant="primary" size="sm">
-                  <UserPlus className="w-4 h-4 mr-2" />
+                <Button onClick={handleAddPlayer} variant="primary" size="sm" Icon={UserPlus}>
                   Add First Player
                 </Button>
               </>
@@ -777,6 +806,7 @@ function RosterManagement({ team, onRefresh }) {
       {deletingPlayer && (
         <DeletePlayerConfirmModal
           player={deletingPlayer}
+          hasGameHistory={deletingPlayerHasGameHistory}
           onClose={() => setDeletingPlayer(null)}
           onConfirm={handlePlayerDeleted}
         />

@@ -29,7 +29,7 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
       <select
         id={id}
         value={value}
-        onChange={onChange}
+        onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className="w-full appearance-none bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
       >

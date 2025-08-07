@@ -35,7 +35,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
 
     if (playerData.jersey_number && (
       playerData.jersey_number < 1 || 
-      playerData.jersey_number > 99 ||
+      playerData.jersey_number > 100 ||
       !availableNumbers.includes(parseInt(playerData.jersey_number))
     )) {
       newErrors.jersey_number = 'Please select a valid jersey number';
@@ -148,42 +148,11 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
             )}
             {availableNumbers.length === 0 && (
               <p className="mt-1 text-sm text-amber-400">
-                All jersey numbers (1-99) are taken
+                All jersey numbers (1-100) are taken
               </p>
             )}
           </div>
 
-          {/* Roster Status */}
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              id="on_roster"
-              checked={playerData.on_roster}
-              onChange={(e) => handleInputChange('on_roster', e.target.checked)}
-              disabled={loading}
-              className="sr-only"
-            />
-            <div 
-              onClick={() => !loading && handleInputChange('on_roster', !playerData.on_roster)}
-              className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                playerData.on_roster 
-                  ? 'bg-emerald-600 border-emerald-600' 
-                  : 'border-slate-400 hover:border-slate-300'
-              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {playerData.on_roster && (
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              )}
-            </div>
-            <label 
-              htmlFor="on_roster" 
-              className={`text-sm text-slate-300 cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              Add to active roster
-            </label>
-          </div>
 
           {/* Actions */}
           <div className="flex space-x-3 pt-4">

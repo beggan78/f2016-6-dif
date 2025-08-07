@@ -1078,22 +1078,81 @@ export const TeamProvider = ({ children }) => {
     if (!playerId) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('player')
-        .delete()
-        .eq('id', playerId)
-        .select()
-        .single();
+      // Check if player has played any games
+      const { data: statsCheck, error: statsError } = await supabase
+        .from('player_match_stats')
+        .select('id')
+        .eq('player_id', playerId)
+        .limit(1);
 
-      if (error) {
-        console.error('Error removing roster player:', error);
-        throw new Error('Failed to remove player from roster');
+      if (statsError) {
+        console.error('Error checking player game history:', statsError);
+        throw new Error('Failed to check player game history');
       }
 
-      return data;
+      const hasPlayedGames = statsCheck && statsCheck.length > 0;
+
+      if (hasPlayedGames) {
+        // Player has game history - soft delete by setting on_roster = false
+        const { data, error } = await supabase
+          .from('player')
+          .update({ 
+            on_roster: false,
+            last_updated_by: user.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', playerId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error deactivating player:', error);
+          throw new Error('Failed to deactivate player');
+        }
+
+        return { ...data, operation: 'deactivated' };
+      } else {
+        // Player has no game history - hard delete
+        const { data, error } = await supabase
+          .from('player')
+          .delete()
+          .eq('id', playerId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error removing player:', error);
+          throw new Error('Failed to remove player from roster');
+        }
+
+        return { ...data, operation: 'deleted' };
+      }
     } catch (err) {
       console.error('Exception in removeRosterPlayer:', err);
       throw err;
+    }
+  }, [user]);
+
+  // Check if player has played any games
+  const checkPlayerGameHistory = useCallback(async (playerId) => {
+    if (!playerId) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('player_match_stats')
+        .select('id')
+        .eq('player_id', playerId)
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking player game history:', error);
+        return false;
+      }
+
+      return data && data.length > 0;
+    } catch (err) {
+      console.error('Exception in checkPlayerGameHistory:', err);
+      return false;
     }
   }, []);
 
@@ -1119,9 +1178,9 @@ export const TeamProvider = ({ children }) => {
           .map(p => p.jersey_number)
       );
 
-      // Generate available numbers 1-99
+      // Generate available numbers 1-100
       const available = [];
-      for (let i = 1; i <= 99; i++) {
+      for (let i = 1; i <= 100; i++) {
         if (!usedNumbers.has(i)) {
           available.push(i);
         }
@@ -1186,6 +1245,7 @@ export const TeamProvider = ({ children }) => {
     addRosterPlayer,
     updateRosterPlayer,
     removeRosterPlayer,
+    checkPlayerGameHistory,
     getAvailableJerseyNumbers,
     
     // Pending request management
