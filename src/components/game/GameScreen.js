@@ -16,7 +16,7 @@ import { FormationRenderer } from './formations';
 import { createSubstitutionHandlers } from '../../game/handlers/substitutionHandlers';
 import { createFieldPositionHandlers } from '../../game/handlers/fieldPositionHandlers';
 import { useFieldPositionHandlers } from '../../hooks/useFieldPositionHandlers';
-import { useLongPressWithScrollDetection } from '../../hooks/useLongPressWithScrollDetection';
+import { useQuickTapWithScrollDetection } from '../../hooks/useQuickTapWithScrollDetection';
 import { createTimerHandlers } from '../../game/handlers/timerHandlers';
 import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
@@ -209,8 +209,8 @@ export function GameScreen({
     ), [createGameState, stateUpdaters, animationHooks, modalHandlers, allPlayers, selectedSquadPlayers]
   );
 
-  const goalieEvents = useLongPressWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
-  const scoreEvents = useLongPressWithScrollDetection(scoreHandlers.scoreCallback);
+  const goalieEvents = useQuickTapWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
+  const scoreEvents = useQuickTapWithScrollDetection(scoreHandlers.scoreCallback);
   
   const goalieHandlers = React.useMemo(() => ({
     ...goalieHandlerCallbacks,

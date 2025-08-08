@@ -1,4 +1,4 @@
-import { useLongPressWithScrollDetection } from './useLongPressWithScrollDetection';
+import { useQuickTapWithScrollDetection } from './useQuickTapWithScrollDetection';
 
 export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => {
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
@@ -7,59 +7,59 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => 
   // Note: These hooks must be called consistently on every render
 
   // Pairs mode handlers
-  const leftPairEvents = useLongPressWithScrollDetection(
+  const leftPairEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.leftPairCallback || (() => {})
   );
-  const rightPairEvents = useLongPressWithScrollDetection(
+  const rightPairEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.rightPairCallback || (() => {})
   );
-  const subPairEvents = useLongPressWithScrollDetection(
+  const subPairEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.subPairCallback || (() => {})
   );
 
   // Individual mode handlers - all possible positions
   // 2-2 Formation positions
-  const leftDefenderEvents = useLongPressWithScrollDetection(
+  const leftDefenderEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.leftDefenderCallback || (() => {})
   );
-  const rightDefenderEvents = useLongPressWithScrollDetection(
+  const rightDefenderEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.rightDefenderCallback || (() => {})
   );
-  const leftAttackerEvents = useLongPressWithScrollDetection(
+  const leftAttackerEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.leftAttackerCallback || (() => {})
   );
-  const rightAttackerEvents = useLongPressWithScrollDetection(
+  const rightAttackerEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.rightAttackerCallback || (() => {})
   );
   
   // 1-2-1 Formation positions (MISSING - this was the bug!)
-  const defenderEvents = useLongPressWithScrollDetection(
+  const defenderEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.defenderCallback || (() => {})
   );
-  const leftEvents = useLongPressWithScrollDetection(
+  const leftEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.leftCallback || (() => {})
   );
-  const rightEvents = useLongPressWithScrollDetection(
+  const rightEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.rightCallback || (() => {})
   );
-  const attackerEvents = useLongPressWithScrollDetection(
+  const attackerEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.attackerCallback || (() => {})
   );
   
   // Substitute positions (used by both formations)
-  const substitute_1Events = useLongPressWithScrollDetection(
+  const substitute_1Events = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.substitute_1Callback || (() => {})
   );
-  const substitute_2Events = useLongPressWithScrollDetection(
+  const substitute_2Events = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.substitute_2Callback || (() => {})
   );
-  const substitute_3Events = useLongPressWithScrollDetection(
+  const substitute_3Events = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.substitute_3Callback || (() => {})
   );
-  const substitute_4Events = useLongPressWithScrollDetection(
+  const substitute_4Events = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.substitute_4Callback || (() => {})
   );
-  const substitute_5Events = useLongPressWithScrollDetection(
+  const substitute_5Events = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.substitute_5Callback || (() => {})
   );
 

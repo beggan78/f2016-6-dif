@@ -28,11 +28,11 @@ This directory contains custom React hooks that encapsulate reusable stateful lo
 
 - **`useBrowserBackIntercept.js`**: Intercepts the browser's back button functionality to close modals gracefully instead of navigating away. It maintains a stack of open modals.
 
-- **`useFieldPositionHandlers.js`**: A helper hook that simplifies the integration of `useLongPressWithScrollDetection` for various field positions, adapting to different team modes.
+- **`useFieldPositionHandlers.js`**: A helper hook that simplifies the integration of `useShortTapWithScrollDetection` for various field positions, adapting to different team modes.
 
 - **`useGameModals.js`**: Manages the state and actions for various modals used throughout the game UI (e.g., player selection, substitute options, goalie switch). It integrates with `useBrowserBackIntercept`.
 
-- **`useLongPressWithScrollDetection.js`**: Provides long-press detection for touch and mouse events, with a crucial feature to cancel the long press if the user scrolls, preventing accidental actions during scrolling.
+- **`useShortTapWithScrollDetection.js`**: Provides responsive short tap detection (150ms) for touch and mouse events, with scroll cancellation to prevent accidental actions during scrolling. Much more responsive than traditional long press while still preventing accidental activation.
 
 - **`useTeamNameAbbreviation.js`**: Handles the dynamic abbreviation of team names in the score display based on available screen width, ensuring the UI remains responsive.
 

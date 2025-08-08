@@ -293,10 +293,30 @@ export const createMockHooks = () => ({
     handleFieldPlayerLongPress: jest.fn()
   })),
   
+  useQuickTapWithScrollDetection: jest.fn(() => ({
+    onTouchStart: jest.fn(),
+    onTouchEnd: jest.fn(),
+    onMouseDown: jest.fn(),
+    onMouseUp: jest.fn(),
+    onMouseLeave: jest.fn()
+  })),
+  
+  // Keep legacy mock for backward compatibility
+  useShortTapWithScrollDetection: jest.fn(() => ({
+    onTouchStart: jest.fn(),
+    onTouchEnd: jest.fn(),
+    onMouseDown: jest.fn(),
+    onMouseUp: jest.fn(),
+    onMouseLeave: jest.fn()
+  })),
+  
+  // Keep legacy mock for backward compatibility
   useLongPressWithScrollDetection: jest.fn(() => ({
-    handleTouchStart: jest.fn(),
-    handleTouchEnd: jest.fn(),
-    handleTouchMove: jest.fn()
+    onTouchStart: jest.fn(),
+    onTouchEnd: jest.fn(),
+    onMouseDown: jest.fn(),
+    onMouseUp: jest.fn(),
+    onMouseLeave: jest.fn()
   }))
 });
 
@@ -362,6 +382,15 @@ export const setupComponentTestEnvironment = () => {
     useFieldPositionHandlers: mockHooks.useFieldPositionHandlers
   }));
   
+  jest.mock('../../hooks/useQuickTapWithScrollDetection', () => ({
+    useQuickTapWithScrollDetection: mockHooks.useQuickTapWithScrollDetection
+  }));
+  
+  jest.mock('../../hooks/useShortTapWithScrollDetection', () => ({
+    useShortTapWithScrollDetection: mockHooks.useShortTapWithScrollDetection
+  }));
+  
+  // Legacy mock for backward compatibility
   jest.mock('../../hooks/useLongPressWithScrollDetection', () => ({
     useLongPressWithScrollDetection: mockHooks.useLongPressWithScrollDetection
   }));
@@ -425,7 +454,14 @@ export const userInteractions = {
     await userEvent.click(element);
   },
   
-  longPressElement: async (element, duration = 500) => {
+  shortTapElement: async (element, duration = 150) => {
+    fireEvent.touchStart(element);
+    await waitFor(() => new Promise(resolve => setTimeout(resolve, duration)));
+    fireEvent.touchEnd(element);
+  },
+  
+  // Keep legacy method for backward compatibility in tests
+  longPressElement: async (element, duration = 150) => {
     fireEvent.touchStart(element);
     await waitFor(() => new Promise(resolve => setTimeout(resolve, duration)));
     fireEvent.touchEnd(element);

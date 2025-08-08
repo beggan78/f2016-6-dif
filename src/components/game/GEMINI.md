@@ -18,7 +18,7 @@ This directory contains the React components responsible for rendering the main 
 This directory is strictly for UI rendering and user interaction. It consumes data and functions from `src/hooks/useGameState` and `src/hooks/useGameUIState` but does not contain core game simulation logic. This separation ensures that the game logic remains pure and testable independently of the UI.
 
 ### b. Event-Driven Interactions
-User interactions (taps, long presses) on player cards trigger callbacks that are ultimately handled by functions provided by `useGameState` or `useGameUIState`. This pattern ensures that UI events are translated into state changes in a controlled manner.
+User interactions (taps, short taps) on player cards trigger callbacks that are ultimately handled by functions provided by `useGameState` or `useGameUIState`. This pattern ensures that UI events are translated into state changes in a controlled manner.
 
 ### c. Visual Feedback & Animation
 - **`useGameUIState`**: Manages animation states (`animationState`) and tracks `recentlySubstitutedPlayers` to provide visual cues (e.g., glow effects, player movement animations) during substitutions and other game events.
@@ -35,8 +35,8 @@ Complex user interactions (e.g., selecting a player for substitution, changing a
 
 1.  **Game State to UI**: `useGameState` provides the `formation`, `allPlayers`, `matchTimerSeconds`, `subTimerSeconds`, etc., as props to `GameScreen`. These props are then passed down to `FormationRenderer` and other sub-components for display.
 
-2.  **User Interaction to Logic**: When a user taps or long-presses a player card:
-    - `useLongPressWithScrollDetection` detects the interaction.
+2.  **User Interaction to Logic**: When a user taps or short taps a player card:
+    - `useShortTapWithScrollDetection` detects the interaction.
     - `useFieldPositionHandlers` maps the interaction to a specific callback (e.g., `leftDefenderCallback`).
     - This callback (defined in `createFieldPositionHandlers` within `src/game/handlers/`) opens a modal via `useGameModals`.
     - Once the user confirms an action in the modal (e.g., "SUB NOW"), a function from `useGameState` (e.g., `handleSubstitution`) is called, triggering a state update.

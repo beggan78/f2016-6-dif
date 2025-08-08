@@ -406,14 +406,14 @@ export const createMockUseGameUIState = (initialUIState = {}) => {
 };
 
 // ===================================================================
-// MOCK LONG PRESS HOOK
+// MOCK SHORT TAP HOOK
 // ===================================================================
 
 /**
- * Creates a mock implementation of useLongPressWithScrollDetection hook
+ * Creates a mock implementation of useQuickTapWithScrollDetection hook
  */
-export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), delay = 500) => {
-  const mockLongPressState = {
+export const createMockUseQuickTapWithScrollDetection = (callback = jest.fn(), delay = 150) => {
+  const mockShortTapState = {
     isPressed: false,
     isScrolling: false,
     startTime: null,
@@ -421,31 +421,31 @@ export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), 
     delay
   };
   
-  const longPressHandlers = {
+  const shortTapHandlers = {
     onMouseDown: jest.fn((event) => {
-      mockLongPressState.isPressed = true;
-      mockLongPressState.startTime = Date.now();
-      mockLongPressState.isScrolling = false;
+      mockShortTapState.isPressed = true;
+      mockShortTapState.startTime = Date.now();
+      mockShortTapState.isScrolling = false;
     }),
     onMouseUp: jest.fn((event) => {
-      if (mockLongPressState.isPressed && !mockLongPressState.isScrolling) {
-        const duration = Date.now() - mockLongPressState.startTime;
-        if (duration >= mockLongPressState.delay) {
-          mockLongPressState.callback();
+      if (mockShortTapState.isPressed && !mockShortTapState.isScrolling) {
+        const duration = Date.now() - mockShortTapState.startTime;
+        if (duration >= mockShortTapState.delay) {
+          mockShortTapState.callback();
         }
       }
-      mockLongPressState.isPressed = false;
-      mockLongPressState.startTime = null;
+      mockShortTapState.isPressed = false;
+      mockShortTapState.startTime = null;
     }),
     onTouchStart: jest.fn((event) => {
-      longPressHandlers.onMouseDown(event);
+      shortTapHandlers.onMouseDown(event);
     }),
     onTouchEnd: jest.fn((event) => {
-      longPressHandlers.onMouseUp(event);
+      shortTapHandlers.onMouseUp(event);
     }),
     onMouseLeave: jest.fn(() => {
-      mockLongPressState.isPressed = false;
-      mockLongPressState.startTime = null;
+      mockShortTapState.isPressed = false;
+      mockShortTapState.startTime = null;
     }),
     onContextMenu: jest.fn((event) => {
       event.preventDefault();
@@ -453,24 +453,38 @@ export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), 
   };
   
   return {
-    // Long press handlers
-    ...longPressHandlers,
+    // Short tap handlers
+    ...shortTapHandlers,
     
     // Test utilities
-    _getMockLongPressState: () => ({ ...mockLongPressState }),
-    _simulateLongPress: () => {
-      longPressHandlers.onMouseDown({});
+    _getMockShortTapState: () => ({ ...mockShortTapState }),
+    _simulateShortTap: () => {
+      shortTapHandlers.onMouseDown({});
       setTimeout(() => {
-        longPressHandlers.onMouseUp({});
-      }, mockLongPressState.delay + 100);
+        shortTapHandlers.onMouseUp({});
+      }, mockShortTapState.delay + 10);
     },
     _simulateScroll: () => {
-      mockLongPressState.isScrolling = true;
+      mockShortTapState.isScrolling = true;
     },
     _setCallback: (newCallback) => {
-      mockLongPressState.callback = newCallback;
+      mockShortTapState.callback = newCallback;
     }
   };
+};
+
+/**
+ * Creates a mock implementation of useShortTapWithScrollDetection hook (legacy compatibility)
+ */
+export const createMockUseShortTapWithScrollDetection = (callback = jest.fn(), delay = 150) => {
+  return createMockUseQuickTapWithScrollDetection(callback, delay);
+};
+
+/**
+ * Creates a mock implementation of useLongPressWithScrollDetection hook (legacy, now uses short tap timing)
+ */
+export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), delay = 150) => {
+  return createMockUseQuickTapWithScrollDetection(callback, delay);
 };
 
 // ===================================================================
@@ -495,7 +509,9 @@ export const createMockHookSet = (config = {}) => {
     useGameModals: createMockUseGameModals(modalConfig),
     useGameUIState: createMockUseGameUIState(uiStateConfig),
     useBrowserBackIntercept: createMockUseBrowserBackIntercept(interceptConfig),
-    useLongPressWithScrollDetection: createMockUseLongPressWithScrollDetection()
+    useQuickTapWithScrollDetection: createMockUseQuickTapWithScrollDetection(),
+    useLongPressWithScrollDetection: createMockUseLongPressWithScrollDetection(),
+    useShortTapWithScrollDetection: createMockUseShortTapWithScrollDetection()
   };
 };
 
@@ -643,6 +659,8 @@ export default {
   createMockUseGameModals,
   createMockUseBrowserBackIntercept,
   createMockUseGameUIState,
+  createMockUseQuickTapWithScrollDetection,
+  createMockUseShortTapWithScrollDetection,
   createMockUseLongPressWithScrollDetection,
   createMockHookSet,
   createScenarioMockHooks,
