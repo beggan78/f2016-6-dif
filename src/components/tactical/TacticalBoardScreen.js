@@ -85,17 +85,32 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
     updateAndPersistChips(prev => prev.filter(chip => chip.id !== chipId));
   }, [updateAndPersistChips]);
 
+  const handleClearBoard = useCallback(() => {
+    setPlacedChips([]); // Clear chips from the view
+
+    // Determine which set of chips to clear in storage
+    const currentChipsKey = pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
+    
+    // Update localStorage
+    persistenceManager.saveState({
+      ...persistenceManager.loadState(),
+      [currentChipsKey]: [],
+    });
+  }, [pitchMode, persistenceManager]);
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
       {/* Navigation and Pitch Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
+        {/* Back Button */}
         <button 
           onClick={handleBackPress}
-          className="bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-200 shadow-md flex-shrink-0"
+          className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
         >
           Back
         </button>
         
+        {/* Pitch Mode Toggle */}
         <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
           <button
             onClick={() => handlePitchModeToggle('full')}
@@ -119,7 +134,13 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
           </button>
         </div>
         
-        <div className="w-16"></div> {/* Spacer for visual balance */}
+        {/* Clear Button */}
+        <button
+          onClick={handleClearBoard}
+          className="bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
+        >
+          Clear
+        </button>
       </div>
 
       {/* Tactical Board */}
