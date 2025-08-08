@@ -34,6 +34,7 @@ function App() {
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const [fromView, setFromView] = useState(null);
   
   // Create a ref to store the pushModalState function to avoid circular dependency
   const pushModalStateRef = useRef(null);
@@ -222,14 +223,14 @@ function App() {
   };
 
   const handleNavigateToTacticalBoard = () => {
+    setFromView(gameState.view);
     gameState.setView(VIEWS.TACTICAL_BOARD);
   };
 
-  const handleNavigateFromTacticalBoard = () => {
+  const handleNavigateFromTacticalBoard = (fallbackView) => {
     // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
     if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      const targetView = gameState.currentPeriodNumber > 0 ? VIEWS.GAME : VIEWS.CONFIG;
-      gameState.setView(targetView);
+      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
     }
   };
 
@@ -391,6 +392,7 @@ function App() {
             onNavigateBack={handleNavigateFromTacticalBoard}
             pushModalState={pushModalState}
             removeModalFromStack={removeModalFromStack}
+            fromView={fromView}
           />
         );
       default:

@@ -2,12 +2,13 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 
-export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack }) {
+export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack, fromView }) {
   // Memoize the persistence manager to prevent re-creation on every render
   const persistenceManager = useMemo(() => createPersistenceManager('sport-wizard-tactical-preferences', {
     pitchMode: 'full',
     fullModeChips: [],
     halfModeChips: [],
+    fromView: null, // Add fromView for persistent back navigation
   }), []); // Empty dependency array ensures it's created only once
 
   const [pitchMode, setPitchMode] = useState('full');
@@ -19,11 +20,18 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
     setPitchMode(savedState.pitchMode);
     const chipsToLoad = savedState.pitchMode === 'full' ? savedState.fullModeChips : savedState.halfModeChips;
     setPlacedChips(chipsToLoad || []);
-  }, [persistenceManager]);
+
+    // If fromView is provided, it means we have just navigated here.
+    // Save it for persistence in case of a page reload.
+    if (fromView) {
+      persistenceManager.saveState({ ...savedState, fromView });
+    }
+  }, [persistenceManager, fromView]);
 
   const handleBackPress = useCallback(() => {
-    onNavigateBack();
-  }, [onNavigateBack]);
+    const savedState = persistenceManager.loadState();
+    onNavigateBack(savedState.fromView);
+  }, [onNavigateBack, persistenceManager]);
 
   // This function now handles saving the current chips and loading the new set
   const handlePitchModeToggle = useCallback((mode) => {
