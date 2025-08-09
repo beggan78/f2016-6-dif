@@ -64,8 +64,8 @@ export function FormationPreview({ formation, className = '' }) {
       
       {/* Field visualization */}
       <div 
-        className="relative rounded-md border border-green-700 h-48 mb-3 bg-cover bg-center"
-        style={{ backgroundImage: `url(${fieldImage})` }}
+        className="relative rounded-md border border-sky-700 bg-center bg-no-repeat aspect-[15/6] sm:aspect-[15/6] md:aspect-[15/6]"
+        style={{ backgroundImage: `url(${fieldImage})`, backgroundSize: '100% auto' }}
       >
         {/* Position markers */}
         {layout.positions.map((position, index) => {
