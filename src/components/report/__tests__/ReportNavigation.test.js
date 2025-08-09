@@ -30,8 +30,7 @@ describe('ReportNavigation', () => {
   beforeEach(() => {
     // Mock handlers
     mockHandlers = {
-      onNavigateToStats: jest.fn(),
-      onBackToGame: jest.fn()
+      onNavigateToStats: jest.fn()
     };
 
     jest.clearAllMocks();
@@ -47,21 +46,19 @@ describe('ReportNavigation', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('returns null when both callbacks are null', () => {
+    it('returns null when onNavigateToStats is null', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={null}
-          onBackToGame={null}
         />
       );
       expect(container.firstChild).toBeNull();
     });
 
-    it('returns null when both callbacks are undefined', () => {
+    it('returns null when onNavigateToStats is undefined', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={undefined}
-          onBackToGame={undefined}
         />
       );
       expect(container.firstChild).toBeNull();
@@ -172,22 +169,20 @@ describe('ReportNavigation', () => {
   });
 
   describe('Props Validation Tests', () => {
-    it('handles undefined callbacks gracefully', () => {
+    it('handles undefined callback gracefully', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={undefined}
-          onBackToGame={undefined}
         />
       );
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('handles null callbacks gracefully', () => {
+    it('handles null callback gracefully', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={null}
-          onBackToGame={null}
         />
       );
 

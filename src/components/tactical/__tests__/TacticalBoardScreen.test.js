@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { TacticalBoardScreen } from '../TacticalBoardScreen';
+import { BackHandlerContext } from '../../../hooks/BackHandlerContext';
 
 // Mock the TacticalBoard component
 jest.mock('../TacticalBoard', () => ({
@@ -44,6 +45,30 @@ jest.mock('../../../utils/persistenceManager', () => ({
   }))
 }));
 
+// Mock the useBrowserBackIntercept hook
+jest.mock('../../../hooks/useBrowserBackIntercept', () => ({
+  useBrowserBackIntercept: jest.fn(() => ({
+    pushBackHandler: jest.fn(),
+    popBackHandler: jest.fn(),
+    removeModalFromStack: jest.fn()
+  }))
+}));
+
+// Test wrapper that provides the BackHandlerContext
+const TestWrapper = ({ children }) => {
+  const mockBackHandler = {
+    pushBackHandler: jest.fn(),
+    popBackHandler: jest.fn(),
+    removeModalFromStack: jest.fn()
+  };
+  
+  return (
+    <BackHandlerContext.Provider value={mockBackHandler}>
+      {children}
+    </BackHandlerContext.Provider>
+  );
+};
+
 describe('TacticalBoardScreen', () => {
   let defaultProps;
   let mockHandlers;
@@ -76,7 +101,7 @@ describe('TacticalBoardScreen', () => {
 
   describe('Component Rendering', () => {
     it('should render tactical board screen with essential elements', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       expect(screen.getByText('Back')).toBeInTheDocument();
       expect(screen.getByText('Full')).toBeInTheDocument();
@@ -85,7 +110,7 @@ describe('TacticalBoardScreen', () => {
     });
 
     it('should render pitch mode toggle buttons', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       expect(screen.getByText('Full')).toBeInTheDocument();
       expect(screen.getByText('Half')).toBeInTheDocument();
@@ -94,7 +119,7 @@ describe('TacticalBoardScreen', () => {
     
 
     it('should start with no placed chips', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('0');
     });
@@ -102,7 +127,7 @@ describe('TacticalBoardScreen', () => {
 
   describe('User Interactions', () => {
     it('should handle back button click', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       fireEvent.click(screen.getByText('Back'));
       
@@ -110,7 +135,7 @@ describe('TacticalBoardScreen', () => {
     });
 
     it('should switch to half pitch mode when clicked', async () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       fireEvent.click(screen.getByText('Half'));
       
@@ -122,7 +147,7 @@ describe('TacticalBoardScreen', () => {
     });
 
     it('should switch to full pitch mode when clicked', async () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       // Default is full, switch to half
       fireEvent.click(screen.getByText('Half'));
@@ -144,7 +169,7 @@ describe('TacticalBoardScreen', () => {
 
   describe('Chip Management', () => {
     it('should handle chip placement', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       fireEvent.click(screen.getByTestId('mock-place-chip'));
       
@@ -152,7 +177,7 @@ describe('TacticalBoardScreen', () => {
     });
 
     it('should handle chip movement', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       // Place a chip first
       fireEvent.click(screen.getByTestId('mock-place-chip'));
@@ -164,7 +189,7 @@ describe('TacticalBoardScreen', () => {
     });
 
     it('should handle chip deletion', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       // Place a chip first
       fireEvent.click(screen.getByTestId('mock-place-chip'));
@@ -178,7 +203,7 @@ describe('TacticalBoardScreen', () => {
 
   describe('Props and State', () => {
     it('should pass correct props to TacticalBoard', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       const tacticalBoard = screen.getByTestId('tactical-board');
       expect(tacticalBoard).toBeInTheDocument();
@@ -189,7 +214,7 @@ describe('TacticalBoardScreen', () => {
     });
 
     it('should handle multiple chip operations', () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       // Place multiple chips
       fireEvent.click(screen.getByTestId('mock-place-chip'));
@@ -209,12 +234,12 @@ describe('TacticalBoardScreen', () => {
       };
       
       expect(() => {
-        render(<TacticalBoardScreen {...propsWithoutHandlers} />);
+        render(<TacticalBoardScreen {...propsWithoutHandlers} />, { wrapper: TestWrapper });
       }).not.toThrow();
     });
 
     it('should handle rapid pitch mode switching', async () => {
-      render(<TacticalBoardScreen {...defaultProps} />);
+      render(<TacticalBoardScreen {...defaultProps} />, { wrapper: TestWrapper });
       
       // Rapidly switch modes (starting from default full)
       fireEvent.click(screen.getByText('Half'));

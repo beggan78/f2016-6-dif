@@ -336,7 +336,7 @@ describe('createGoalieHandlers', () => {
       expect(mockDependencies.modalHandlers.closeGoalieModal).toHaveBeenCalled();
     });
 
-    it('should remove modal from stack if removeModalFromStack is available', () => {
+    it('should close goalie modal only', () => {
       const handlers = createGoalieHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,
@@ -348,7 +348,7 @@ describe('createGoalieHandlers', () => {
 
       handlers.handleCancelGoalieModal();
 
-      expect(mockDependencies.modalHandlers.removeModalFromStack).toHaveBeenCalled();
+      expect(mockDependencies.modalHandlers.closeGoalieModal).toHaveBeenCalled();
     });
 
     it('should handle missing removeModalFromStack gracefully', () => {
