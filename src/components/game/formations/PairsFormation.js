@@ -4,7 +4,7 @@ import { getPositionEvents } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
-import { FORMATION_STYLES, ICON_STYLES, HELP_MESSAGES } from './constants';
+import { FORMATION_STYLES, ICON_STYLES } from './constants';
 
 export function PairsFormation({ 
   formation,
@@ -88,9 +88,6 @@ export function PairsFormation({
             <PlayerStatsDisplay playerId={pairData.attacker} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
           </div>
         </div>
-        {canBeSelected && (
-          <p className={FORMATION_STYLES.helpText}>{HELP_MESSAGES.fieldPlayerOptions}</p>
-        )}
       </div>
     );
   };
@@ -129,7 +126,6 @@ export function PairsFormation({
           <div><Hand className={ICON_STYLES.small} /> {getPlayerNameById ? getPlayerNameById(goalieId) : goalieId}</div>
           <PlayerStatsDisplay playerId={goalieId} getPlayerTimeStats={getPlayerTimeStats} />
         </div>
-        <p className={FORMATION_STYLES.helpText}>Hold to replace goalie</p>
       </div>
     );
   };
