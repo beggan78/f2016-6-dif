@@ -109,11 +109,13 @@ function App() {
   };
 
   const handleEndPeriod = () => {
+    console.log('[App] handleEndPeriod called.');
     // Check if period is ending more than 1 minute early
     const remainingMinutes = Math.floor(timers.matchTimerSeconds / 60);
     const remainingSeconds = timers.matchTimerSeconds % 60;
     
     if (timers.matchTimerSeconds > 60) { // More than 1 minute remaining
+      console.log('[App] Showing "End Period Early?" modal.');
       const timeString = remainingMinutes > 0 
         ? `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
         : `${remainingSeconds} seconds`;
@@ -121,12 +123,15 @@ function App() {
       setConfirmModalData({ timeString });
       setShowConfirmModal(true);
       // Add modal to browser back button handling
+      console.log('[App] Pushing back handler for modal.');
       backHandler.pushBackHandler(() => {
+        console.log('[BackIntercept] Executing handler for "End Period Early?" modal: closing modal.');
         setShowConfirmModal(false);
       });
       return;
     }
     
+    console.log('[App] Ending period without confirmation.');
     // Proceed with ending the period
     const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
     timers.stopTimers(
@@ -139,6 +144,7 @@ function App() {
   };
 
   const handleConfirmEndPeriod = () => {
+    console.log('[App] handleConfirmEndPeriod called.');
     setShowConfirmModal(false);
     backHandler.popBackHandler();
     const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
@@ -152,6 +158,7 @@ function App() {
   };
 
   const handleCancelEndPeriod = () => {
+    console.log('[App] handleCancelEndPeriod called.');
     setShowConfirmModal(false);
     backHandler.popBackHandler();
   };
@@ -204,6 +211,10 @@ function App() {
   const handleAddPlayerCancel = () => {
     setShowAddPlayerModal(false);
     backHandler.popBackHandler();
+  };
+
+  const handleLeaveApp = () => {
+    window.history.back();
   };
 
   // Handle new game confirmation modal
@@ -438,10 +449,12 @@ function App() {
           isOpen={showNewGameModal}
           onConfirm={handleConfirmNewGame}
           onCancel={handleCancelNewGame}
+          onThirdAction={handleLeaveApp}
           title="Start a new game?"
           message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
           confirmText="Yes, start new game"
           cancelText="Cancel"
+          thirdActionText="Leave Sport Wizard"
         />
       </div>
     </BackHandlerContext.Provider>
