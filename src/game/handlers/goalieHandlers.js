@@ -33,7 +33,7 @@ export const createGoalieHandlers = (
 
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
-  const handleGoalieLongPress = (formation) => {
+  const handleGoalieQuickTap = (formation) => {
     const currentGoalieName = getPlayerNameById(formation.goalie);
     
     // Get available players for goalie replacement (outfield squad players)
@@ -110,14 +110,14 @@ export const createGoalieHandlers = (
     closeGoalieModal();
   };
 
-  // Create goalie long press callback
+  // Create goalie quick tap callback
   const goalieCallback = () => {
     const gameState = gameStateFactory();
-    handleGoalieLongPress(gameState.formation);
+    handleGoalieQuickTap(gameState.formation);
   };
 
   return {
-    handleGoalieLongPress,
+    handleGoalieQuickTap,
     handleSelectNewGoalie,
     handleCancelGoalieModal,
     goalieCallback

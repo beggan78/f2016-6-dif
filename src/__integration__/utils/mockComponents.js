@@ -73,7 +73,7 @@ export const createInteractiveMockComponent = (componentName, eventHandlers = {}
 /**
  * Mock IndividualFormation component
  */
-export const MockIndividualFormation = ({ formation, allPlayers, longPressHandlers, ...props }) => {
+export const MockIndividualFormation = ({ formation, allPlayers, quickTapHandlers, ...props }) => {
   return (
     <div 
       data-testid="mock-individual-formation"
@@ -88,7 +88,7 @@ export const MockIndividualFormation = ({ formation, allPlayers, longPressHandle
               key={position}
               data-testid={`field-position-${position}`}
               data-player-id={playerId}
-              {...(longPressHandlers?.[position] || {})}
+              {...(quickTapHandlers?.[position] || {})}
             >
               {player?.name || 'Empty'}
             </div>
@@ -104,7 +104,7 @@ export const MockIndividualFormation = ({ formation, allPlayers, longPressHandle
               key={position}
               data-testid={`substitute-position-${position}`}
               data-player-id={playerId}
-              {...(longPressHandlers?.[position] || {})}
+              {...(quickTapHandlers?.[position] || {})}
             >
               {player?.name || 'Empty'}
             </div>
@@ -118,7 +118,7 @@ export const MockIndividualFormation = ({ formation, allPlayers, longPressHandle
 /**
  * Mock PairsFormation component
  */
-export const MockPairsFormation = ({ formation, allPlayers, longPressHandlers, ...props }) => {
+export const MockPairsFormation = ({ formation, allPlayers, quickTapHandlers, ...props }) => {
   const pairs = ['leftPair', 'rightPair', 'subPair'];
   
   return (
@@ -139,7 +139,7 @@ export const MockPairsFormation = ({ formation, allPlayers, longPressHandlers, .
             data-testid={`pair-${pairKey}`}
             data-defender-id={pair.defender}
             data-attacker-id={pair.attacker}
-            {...(longPressHandlers?.[pairKey] || {})}
+            {...(quickTapHandlers?.[pairKey] || {})}
           >
             <div data-role="defender">{defender?.name || 'Empty'}</div>
             <div data-role="attacker">{attacker?.name || 'Empty'}</div>

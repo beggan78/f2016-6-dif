@@ -59,9 +59,9 @@ describe('FormationRenderer', () => {
       nextPhysicalPairToSubOut: 'leftPair',
       nextPlayerIdToSubOut: '1',
       nextNextPlayerIdToSubOut: '2',
-      longPressHandlers: {
+      quickTapHandlers: {
         handleFieldPlayerClick: jest.fn(),
-        handleFieldPlayerLongPress: jest.fn()
+        handleFieldPlayerQuickTap: jest.fn()
       },
       getPlayerNameById: jest.fn((id) => `Player ${id}`),
       getPlayerTimeStats: jest.fn(() => ({ totalOutfieldTime: 300, attackDefenderDiff: 0 }))
@@ -279,17 +279,17 @@ describe('FormationRenderer', () => {
   });
 
   describe('Handler Integration', () => {
-    it('should pass longPressHandlers to formation components', () => {
+    it('should pass quickTapHandlers to formation components', () => {
       const mockHandlers = {
         handleFieldPlayerClick: jest.fn(),
-        handleFieldPlayerLongPress: jest.fn(),
+        handleFieldPlayerQuickTap: jest.fn(),
         handleSubstituteClick: jest.fn()
       };
       
       const props = {
         ...defaultProps,
         teamConfig: TEAM_CONFIGS.PAIRS_7,
-        longPressHandlers: mockHandlers
+        quickTapHandlers: mockHandlers
       };
       
       render(<FormationRenderer {...props} />);
@@ -321,10 +321,10 @@ describe('FormationRenderer', () => {
       expect(() => render(<FormationRenderer teamConfig={TEAM_CONFIGS.INDIVIDUAL_7} />)).not.toThrow();
     });
 
-    it('should not crash with undefined longPressHandlers', () => {
+    it('should not crash with undefined quickTapHandlers', () => {
       const props = {
         ...defaultProps,
-        longPressHandlers: undefined
+        quickTapHandlers: undefined
       };
       
       expect(() => render(<FormationRenderer {...props} />)).not.toThrow();

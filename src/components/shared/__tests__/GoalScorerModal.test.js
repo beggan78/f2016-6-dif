@@ -116,7 +116,7 @@ describe('GoalScorerModal', () => {
       
       // "No specific scorer" should be selected by default
       const noScorerButton = screen.getByText('No specific scorer').closest('button');
-      expect(noScorerButton).toHaveClass('bg-gray-50');
+      expect(noScorerButton).toHaveClass('bg-slate-500');
     });
 
     it('should allow selecting a player', () => {
@@ -125,7 +125,7 @@ describe('GoalScorerModal', () => {
       const player1Button = screen.getByText('Player 1').closest('button');
       fireEvent.click(player1Button);
       
-      expect(player1Button).toHaveClass('bg-blue-50');
+      expect(player1Button).toHaveClass('bg-sky-500');
     });
 
     it('should allow selecting "No specific scorer"', () => {
@@ -139,7 +139,7 @@ describe('GoalScorerModal', () => {
       const noScorerButton = screen.getByText('No specific scorer').closest('button');
       fireEvent.click(noScorerButton);
       
-      expect(noScorerButton).toHaveClass('bg-gray-50');
+      expect(noScorerButton).toHaveClass('bg-slate-500');
     });
 
     it('should persist selection when eligiblePlayers prop changes', () => {
@@ -155,7 +155,7 @@ describe('GoalScorerModal', () => {
       
       // Selection should persist
       const updatedPlayer1Button = screen.getByText('Player 1').closest('button');
-      expect(updatedPlayer1Button).toHaveClass('bg-blue-50');
+      expect(updatedPlayer1Button).toHaveClass('bg-sky-500');
     });
   });
 
@@ -232,7 +232,7 @@ describe('GoalScorerModal', () => {
       // Find the player selection button (not the one in the current scorer display)
       const player2Buttons = screen.getAllByText('Player 2');
       const player2Button = player2Buttons.find(el => el.closest('button[class*="transition-colors"]'));
-      expect(player2Button.closest('button')).toHaveClass('bg-blue-50');
+      expect(player2Button.closest('button')).toHaveClass('bg-sky-500');
     });
   });
 
@@ -245,7 +245,7 @@ describe('GoalScorerModal', () => {
       
       // Should start with no selection for new mode
       const noScorerButton = screen.getByText('No specific scorer').closest('button');
-      expect(noScorerButton).toHaveClass('bg-gray-50');
+      expect(noScorerButton).toHaveClass('bg-slate-500');
     });
 
     it('should not reset selection when only eligiblePlayers changes', () => {
@@ -255,7 +255,7 @@ describe('GoalScorerModal', () => {
       const player1Button = screen.getByText('Player 1').closest('button');
       fireEvent.click(player1Button);
       
-      expect(player1Button).toHaveClass('bg-blue-50');
+      expect(player1Button).toHaveClass('bg-sky-500');
       
       // Change only eligiblePlayers
       const newPlayers = [...mockPlayers];
@@ -263,7 +263,7 @@ describe('GoalScorerModal', () => {
       
       // Selection should persist
       const updatedPlayer1Button = screen.getByText('Player 1').closest('button');
-      expect(updatedPlayer1Button).toHaveClass('bg-blue-50');
+      expect(updatedPlayer1Button).toHaveClass('bg-sky-500');
     });
   });
 
@@ -290,7 +290,7 @@ describe('GoalScorerModal', () => {
         btn.textContent.includes('Player')
       );
       allPlayerButtons.forEach(button => {
-        expect(button).not.toHaveClass('bg-blue-50');
+        expect(button).not.toHaveClass('bg-sky-500');
       });
     });
   });
