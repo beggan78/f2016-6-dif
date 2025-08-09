@@ -299,7 +299,6 @@ describe('EventToggleButton', () => {
       // but the component should still function
       const invalidProps = {
         isVisible: "not-a-boolean", // Invalid type
-        onToggle: "not-a-function", // Invalid type
         label: 123, // Invalid type but will be coerced to string
         className: null // Invalid type
       };

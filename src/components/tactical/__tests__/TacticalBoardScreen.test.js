@@ -31,6 +31,19 @@ jest.mock('../TacticalBoard', () => ({
   )
 }));
 
+// Mock the persistenceManager to ensure clean state for each test
+jest.mock('../../../utils/persistenceManager', () => ({
+  createPersistenceManager: jest.fn(() => ({
+    loadState: jest.fn(() => ({
+      pitchMode: 'full',
+      fullModeChips: [],
+      halfModeChips: [],
+      fromView: null
+    })),
+    saveState: jest.fn()
+  }))
+}));
+
 describe('TacticalBoardScreen', () => {
   let defaultProps;
   let mockHandlers;
@@ -47,6 +60,18 @@ describe('TacticalBoardScreen', () => {
     };
 
     jest.clearAllMocks();
+    
+    // Reset the persistence manager mock for each test
+    const { createPersistenceManager } = require('../../../utils/persistenceManager');
+    createPersistenceManager.mockReturnValue({
+      loadState: jest.fn(() => ({
+        pitchMode: 'full',
+        fullModeChips: [],
+        halfModeChips: [],
+        fromView: null
+      })),
+      saveState: jest.fn()
+    });
   });
 
   describe('Component Rendering', () => {

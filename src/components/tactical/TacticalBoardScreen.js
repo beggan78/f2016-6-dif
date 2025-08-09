@@ -1,61 +1,124 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 
-export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack }) {
-  // Create persistence manager for tactical board preferences
-  const persistenceManager = createPersistenceManager('sport-wizard-tactical-preferences', { pitchMode: 'full' });
-  
-  const [pitchMode, setPitchMode] = useState('full'); // 'full' or 'half' - default to full
+export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack, fromView }) {
+  // Memoize the persistence manager to prevent re-creation on every render
+  const persistenceManager = useMemo(() => createPersistenceManager('sport-wizard-tactical-preferences', {
+    pitchMode: 'full',
+    fullModeChips: [],
+    halfModeChips: [],
+    fromView: null, // Add fromView for persistent back navigation
+  }), []); // Empty dependency array ensures it's created only once
+
+  const [pitchMode, setPitchMode] = useState('full');
   const [placedChips, setPlacedChips] = useState([]);
 
-  // Load saved pitch mode preference on component mount
+  // Load saved state on component mount
   useEffect(() => {
-    const savedPreferences = persistenceManager.loadState();
-    setPitchMode(savedPreferences.pitchMode);
-  }, [persistenceManager]);
+    const savedState = persistenceManager.loadState();
+    setPitchMode(savedState.pitchMode);
+    const chipsToLoad = savedState.pitchMode === 'full' ? savedState.fullModeChips : savedState.halfModeChips;
+    setPlacedChips(chipsToLoad || []);
+
+    // If fromView is provided, it means we have just navigated here.
+    // Save it for persistence in case of a page reload.
+    if (fromView) {
+      persistenceManager.saveState({ ...savedState, fromView });
+    }
+  }, [persistenceManager, fromView]);
 
   const handleBackPress = useCallback(() => {
-    onNavigateBack();
-  }, [onNavigateBack]);
+    const savedState = persistenceManager.loadState();
+    onNavigateBack(savedState.fromView);
+  }, [onNavigateBack, persistenceManager]);
 
+  // This function now handles saving the current chips and loading the new set
   const handlePitchModeToggle = useCallback((mode) => {
+    if (mode === pitchMode) return;
+
+    // Get the current state from storage
+    const savedState = persistenceManager.loadState();
+
+    // Determine keys for saving current chips and loading new ones
+    const currentChipsKey = pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
+    const newChipsKey = mode === 'full' ? 'fullModeChips' : 'halfModeChips';
+
+    // Create the new state object to save
+    const newState = {
+      ...savedState,
+      pitchMode: mode,
+      [currentChipsKey]: placedChips,
+    };
+
+    // Save the new state
+    persistenceManager.saveState(newState);
+
+    // Update React state to reflect the change
     setPitchMode(mode);
-    // Save the preference to localStorage
-    persistenceManager.saveState({ pitchMode: mode });
-    // Clear placed chips when switching modes since positions won't be valid
-    setPlacedChips([]);
-  }, [persistenceManager]);
+    setPlacedChips(newState[newChipsKey] || []);
+  }, [pitchMode, placedChips, persistenceManager]);
+
+  // A helper to update chips and persist them
+  const updateAndPersistChips = useCallback((getNewChips) => {
+    setPlacedChips(prevChips => {
+      const newChips = getNewChips(prevChips);
+      const currentChipsKey = pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
+      
+      persistenceManager.saveState({
+        ...persistenceManager.loadState(),
+        pitchMode, // ensure current pitchMode is saved
+        [currentChipsKey]: newChips,
+      });
+      
+      return newChips;
+    });
+  }, [pitchMode, persistenceManager]);
 
   const handleChipPlace = useCallback((chip) => {
-    setPlacedChips(prev => [...prev, chip]);
-  }, []);
+    updateAndPersistChips(prev => [...prev, chip]);
+  }, [updateAndPersistChips]);
 
   const handleChipMove = useCallback((chipId, newPosition) => {
-    setPlacedChips(prev => 
-      prev.map(chip => 
-        chip.id === chipId 
+    updateAndPersistChips(prev =>
+      prev.map(chip =>
+        chip.id === chipId
           ? { ...chip, x: newPosition.x, y: newPosition.y }
           : chip
       )
     );
-  }, []);
+  }, [updateAndPersistChips]);
 
   const handleChipDelete = useCallback((chipId) => {
-    setPlacedChips(prev => prev.filter(chip => chip.id !== chipId));
-  }, []);
+    updateAndPersistChips(prev => prev.filter(chip => chip.id !== chipId));
+  }, [updateAndPersistChips]);
+
+  const handleClearBoard = useCallback(() => {
+    setPlacedChips([]); // Clear chips from the view
+
+    // Determine which set of chips to clear in storage
+    const currentChipsKey = pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
+    
+    // Update localStorage
+    persistenceManager.saveState({
+      ...persistenceManager.loadState(),
+      [currentChipsKey]: [],
+    });
+  }, [pitchMode, persistenceManager]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
       {/* Navigation and Pitch Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
+        {/* Back Button */}
         <button 
           onClick={handleBackPress}
-          className="bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-200 shadow-md flex-shrink-0"
+          className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
         >
           Back
         </button>
         
+        {/* Pitch Mode Toggle */}
         <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
           <button
             onClick={() => handlePitchModeToggle('full')}
@@ -79,7 +142,13 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
           </button>
         </div>
         
-        <div className="w-16"></div> {/* Spacer for visual balance */}
+        {/* Clear Button */}
+        <button
+          onClick={handleClearBoard}
+          className="bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
+        >
+          Clear
+        </button>
       </div>
 
       {/* Tactical Board */}

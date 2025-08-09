@@ -364,23 +364,30 @@ describe('positionConstants', () => {
   });
 
   describe('performance tests', () => {
-    it('should perform position checks efficiently', () => {
+    it('should perform position checks efficiently', async () => {
       const positions = Object.values(POSITION_KEYS);
       const iterations = 1000;
 
-      const start = Date.now();
-      for (let i = 0; i < iterations; i++) {
-        positions.forEach(position => {
-          isPairPosition(position);
-          isFieldPosition(position);
-          isSubstitutePosition(position);
-          isGoaliePosition(position);
-        });
-      }
-      const duration = Date.now() - start;
+      const performanceOperation = () => {
+        for (let i = 0; i < iterations; i++) {
+          positions.forEach(position => {
+            isPairPosition(position);
+            isFieldPosition(position);
+            isSubstitutePosition(position);
+            isGoaliePosition(position);
+          });
+        }
+      };
 
-      // Should complete quickly (less than 100ms for 1000 iterations)
-      expect(duration).toBeLessThan(100);
+      // Use environment-aware performance testing
+      const { testConfig } = await import('../../utils/testEnvironment');
+      const threshold = testConfig.performanceThresholds.fastOperation;
+      
+      const start = performance.now();
+      performanceOperation();
+      const duration = performance.now() - start;
+      
+      expect(duration).toBeLessThanOrEqual(threshold);
     });
   });
 });
