@@ -1,7 +1,7 @@
 import React from 'react';
 import { Shield, Sword, Hand, ArrowDownUp } from 'lucide-react';
 import { FORMATIONS } from '../../constants/teamConfiguration';
-import fieldImage from '../../assets/images/full-field-perspective-small.png';
+import fieldImage from '../../assets/images/full-field-perspective.png';
 
 /**
  * FormationPreview - Visual preview component for tactical formations
