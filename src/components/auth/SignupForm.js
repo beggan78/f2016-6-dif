@@ -12,7 +12,6 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
   const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const { signUp, loading, authError, clearAuthError } = useAuth();
@@ -55,9 +54,8 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
       if (error) {
         setErrors({ general: error.message });
       } else if (message) {
-        // Email confirmation required - show OTP verification
+        // Email confirmation required - go directly to EmailVerificationForm
         setUserEmail(formData.email);
-        setSuccessMessage(message);
         setShowOtpVerification(true);
         setFormData({ email: '', password: '', confirmPassword: '' });
       } else if (user) {
@@ -94,61 +92,6 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
     );
   }
 
-  // If success message is shown, display that instead of the form
-  if (successMessage) {
-    return (
-      <div className="space-y-6 text-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-emerald-400">Check Your Email</h2>
-          <p className="text-slate-400 mt-2">{successMessage}</p>
-        </div>
-        
-        <div className="space-y-4">
-          <Button
-            onClick={() => setShowOtpVerification(true)}
-            variant="primary"
-            size="lg"
-            className="w-full"
-          >
-            Enter 6-Digit Code
-          </Button>
-          
-          <div className="bg-slate-700 rounded-lg p-4">
-            <p className="text-slate-300 text-sm mb-2">
-              <strong>Alternative:</strong> Check your email for a confirmation link
-            </p>
-            <p className="text-slate-400 text-xs">
-              You can also click the link in your email to verify your account
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <Button
-            onClick={onSwitchToLogin}
-            variant="secondary"
-            size="md"
-            className="w-full"
-          >
-            Back to Sign In
-          </Button>
-          
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 text-sm transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

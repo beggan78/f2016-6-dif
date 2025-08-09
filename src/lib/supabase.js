@@ -31,6 +31,7 @@ export const supabase = createClient(
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce', // Use PKCE flow for enhanced security
+    debug: false, // Disable Supabase auth debug logging
   },
   // Configure database settings
   db: {

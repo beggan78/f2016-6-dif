@@ -178,7 +178,7 @@ export const AUTH_A11Y = {
     HIDE_PASSWORD: 'Hide password'
   },
   DESCRIPTIONS: {
-    PASSWORD_REQUIREMENTS: 'Password must be at least 8 characters with uppercase and lowercase letters and numbers',
+    PASSWORD_REQUIREMENTS: 'Password must be at least 8 characters with letters and numbers',
     EMAIL_FORMAT: 'Enter a valid email address in the format user@example.com',
     REQUIRED_FIELD: 'This field is required',
     OPTIONAL_FIELD: 'This field is optional'

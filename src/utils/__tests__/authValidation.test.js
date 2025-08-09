@@ -135,19 +135,20 @@ describe('Authentication Validation Utilities', () => {
       });
     });
 
-    it('should reject passwords without uppercase and lowercase letters', () => {
-      const invalidPasswords = [
+    it('should accept passwords with letters and numbers (no case requirement)', () => {
+      const validPasswords = [
         'alllowercase123',
         'ALLUPPERCASE123',
-        '12345678',
         'lowercase123',
-        'UPPERCASE123'
+        'UPPERCASE123',
+        'MixedCase123',
+        'letters1234'
       ];
 
-      invalidPasswords.forEach(password => {
+      validPasswords.forEach(password => {
         const result = validatePassword(password);
-        expect(result.isValid).toBe(false);
-        expect(result.error).toBe(VALIDATION_MESSAGES.password.missingUppercase);
+        expect(result.isValid).toBe(true);
+        expect(result.error).toBeNull();
       });
     });
 
@@ -309,7 +310,8 @@ describe('Authentication Validation Utilities', () => {
       expect(text.length).toBeGreaterThan(0);
       expect(text).toContain('Must be');
       expect(text).toContain('8 characters');
-      expect(text).toContain('uppercase and lowercase');
+      expect(text).toContain('letters');
+      expect(text).toContain('at least one number');
     });
   });
 

@@ -23,7 +23,9 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
   const [errors, setErrors] = useState({});
   const [resendCooldown, setResendCooldown] = useState(0);
   const [showHelpSection, setShowHelpSection] = useState(false);
-  const { verifyEmailOtp, loading, authError, clearAuthError } = useAuth();
+  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
+  const [isExpired, setIsExpired] = useState(false);
+  const { verifyOtp, loading, authError, clearAuthError } = useAuth();
   const codeInputRef = useRef(null);
 
   // Auto-focus the code input when component mounts
@@ -48,6 +50,31 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
     }
     return () => clearTimeout(timer);
   }, [resendCooldown]);
+
+  // Handle OTP expiry countdown
+  useEffect(() => {
+    let timer;
+    if (timeRemaining > 0 && !isExpired) {
+      timer = setTimeout(() => {
+        setTimeRemaining(timeRemaining - 1);
+      }, 1000);
+    } else if (timeRemaining === 0 && !isExpired) {
+      setIsExpired(true);
+    }
+    return () => clearTimeout(timer);
+  }, [timeRemaining, isExpired]);
+
+  // Format time remaining as MM:SS
+  const formatTimeRemaining = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Check if resend should be available (after 3 minutes or if expired)
+  const isResendAvailable = () => {
+    return isExpired || timeRemaining <= 120; // Show resend after 3 minutes (300-180=120 remaining)
+  };
 
   const handleCodeChange = (e) => {
     let value = e.target.value;
@@ -83,12 +110,18 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Check if code is expired
+    if (isExpired) {
+      setErrors({ general: 'Verification code has expired. Please request a new code.' });
+      return;
+    }
+    
     if (!validateForm()) {
       return;
     }
 
     try {
-      const { user, error } = await verifyEmailOtp(email, code);
+      const { user, error } = await verifyOtp(email, code);
       
       if (error) {
         setErrors({ general: error.message });
@@ -108,6 +141,8 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
       // TODO: Implement resend functionality in AuthContext
       // await resendEmailOtp(email);
       setResendCooldown(60); // 60 second cooldown
+      setTimeRemaining(300); // Reset to 5 minutes
+      setIsExpired(false); // Reset expired state
       setErrors({}); // Clear any errors
     } catch (error) {
       setErrors({ general: 'Failed to resend code. Please try again.' });
@@ -135,6 +170,22 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         <p className="text-slate-400 mt-2">
           We sent a 6-digit code to <span className="text-slate-300 font-medium">{email}</span>
         </p>
+        
+        {/* Countdown Timer */}
+        <div className="mt-3">
+          {isExpired ? (
+            <p className="text-rose-400 text-sm font-medium" aria-live="assertive">
+              Code expired
+            </p>
+          ) : (
+            <p className="text-slate-300 text-sm" aria-live="polite" aria-describedby="timer-description">
+              Code expires in <span className="font-mono font-medium">{formatTimeRemaining(timeRemaining)}</span>
+            </p>
+          )}
+          <span id="timer-description" className="sr-only">
+            Verification code countdown timer
+          </span>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -154,19 +205,23 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
             ref={codeInputRef}
             id="verification-code"
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={code}
             onChange={handleCodeChange}
             onKeyDown={handleKeyDown}
             placeholder="Enter 6-digit code"
-            disabled={loading}
+            disabled={loading || isExpired}
             className={`text-center text-lg tracking-widest ${getErrorDisplayClasses(!!errors.code, 'field').container}`}
             maxLength={6}
             autoComplete="one-time-code"
+            aria-label="Enter 6-digit verification code"
+            aria-describedby="code-help-text"
           />
           {errors.code && (
             <p className={getErrorDisplayClasses(!!errors.code, 'field').text}>{errors.code}</p>
           )}
-          <p className="text-slate-500 text-xs mt-1">
+          <p id="code-help-text" className="text-slate-500 text-xs mt-1">
             Enter the 6-digit code from your email
           </p>
         </div>
@@ -177,12 +232,30 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
           onClick={handleSubmit}
           variant="primary"
           size="lg"
-          disabled={loading || code.length !== 6}
+          disabled={loading || isExpired || code.length !== 6}
           className="w-full"
         >
           {loading ? 'Verifying...' : 'Verify Email'}
         </Button>
       </form>
+
+      {/* Smart Resend Button */}
+      {isResendAvailable() && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={handleResendCode}
+            disabled={resendCooldown > 0 || loading}
+            className="text-sky-400 hover:text-sky-300 font-medium transition-colors disabled:text-slate-500 disabled:cursor-not-allowed"
+            aria-live="polite"
+          >
+            {resendCooldown > 0 
+              ? `Resend code again in ${resendCooldown}s` 
+              : 'Resend verification code'
+            }
+          </button>
+        </div>
+      )}
 
       {/* Alternative Verification Method */}
       <div className="bg-slate-700 rounded-lg p-4 text-center">
@@ -201,6 +274,9 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
           onClick={() => setShowHelpSection(!showHelpSection)}
           className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-300 text-sm font-medium transition-colors"
           disabled={loading}
+          aria-expanded={showHelpSection}
+          aria-controls="help-section"
+          aria-label={showHelpSection ? "Hide troubleshooting help" : "Show troubleshooting help"}
         >
           <span>Didn't receive an email?</span>
           {showHelpSection ? (
@@ -211,7 +287,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         </button>
 
         {showHelpSection && (
-          <div className="mt-4 space-y-4 text-left bg-slate-700 rounded-lg p-4">
+          <div id="help-section" className="mt-4 space-y-4 text-left bg-slate-700 rounded-lg p-4" role="region" aria-labelledby="help-title">
             {/* Resend Option */}
             <div className="text-center pb-3 border-b border-slate-600">
               <button
@@ -219,6 +295,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
                 onClick={handleResendCode}
                 disabled={resendCooldown > 0 || loading}
                 className="text-sky-400 hover:text-sky-300 font-medium transition-colors disabled:text-slate-500 disabled:cursor-not-allowed"
+                aria-label={resendCooldown > 0 ? `Resend code available in ${resendCooldown} seconds` : "Resend verification code"}
               >
                 {resendCooldown > 0 ? `Resend code again in ${resendCooldown}s` : 'Resend verification code'}
               </button>
@@ -226,7 +303,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
 
             {/* Troubleshooting Tips */}
             <div className="space-y-3">
-              <h4 className="text-slate-300 font-medium text-sm">Troubleshooting tips:</h4>
+              <h4 id="help-title" className="text-slate-300 font-medium text-sm">Troubleshooting tips:</h4>
               
               <div className="space-y-2 text-xs text-slate-400">
                 <div className="flex items-start gap-2">
@@ -260,7 +337,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
                   This is intentional security behavior.
                 </p>
                 <p>
-                  <strong className="text-slate-300">Why?</strong> This protects your privacy by preventing 
+                  <strong className="text-slate-300">Why not just say the email is in use?</strong> This protects your privacy by preventing
                   bad actors from discovering which email addresses are registered with us.
                 </p>
                 <div className="pt-2">
@@ -269,6 +346,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
                     onClick={onSwitchToLogin}
                     className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
                     disabled={loading}
+                    aria-label="Switch to sign in form if account already exists"
                   >
                     Try signing in instead →
                   </button>
@@ -288,6 +366,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
             onClick={onSwitchToLogin}
             className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
             disabled={loading}
+            aria-label="Switch to sign in form"
           >
             Sign in
           </button>
@@ -298,6 +377,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
           onClick={onClose}
           className="text-slate-400 hover:text-slate-300 text-sm transition-colors"
           disabled={loading}
+          aria-label="Close email verification form"
         >
           Close
         </button>

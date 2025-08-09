@@ -57,6 +57,14 @@ function AppContent() {
   // Debug mode detection
   const debugMode = isDebugMode();
   
+  // Custom sign out handler that resets view to ConfigurationScreen
+  const handleSignOut = useCallback(async () => {
+    // Reset view to ConfigurationScreen first
+    gameState.setView(VIEWS.CONFIG);
+    // Then perform the actual sign out
+    return await signOut();
+  }, [gameState, signOut]);
+  
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
@@ -494,6 +502,7 @@ function AppContent() {
             setView={gameState.setView}
             authModal={authModal}
             onOpenTeamAdminModal={handleOpenTeamAdminModal}
+            onSignOut={handleSignOut}
           />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
@@ -544,7 +553,7 @@ function AppContent() {
           isOpen={showSessionWarning}
           onExtend={extendSession}
           onDismiss={dismissSessionWarning}
-          onSignOut={signOut}
+          onSignOut={handleSignOut}
           sessionExpiry={sessionExpiry}
           loading={authLoading}
         />

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { getCachedTeamData, cacheTeamData } from '../utils/cacheUtils';
 
 const TeamContext = createContext({});
 
@@ -72,6 +73,10 @@ export const TeamProvider = ({ children }) => {
       })) || [];
 
       setUserTeams(teams);
+      
+      // Cache the results
+      cacheTeamData({ userTeams: teams });
+      
       return teams;
     } catch (err) {
       console.error('Exception in getUserTeams:', err);
@@ -304,6 +309,12 @@ export const TeamProvider = ({ children }) => {
     const players = await getTeamPlayers(teamId);
     setTeamPlayers(players);
 
+    // Cache the current team and players
+    cacheTeamData({ 
+      currentTeam: team,
+      teamPlayers: players 
+    });
+
     // Store in localStorage for persistence
     localStorage.setItem('currentTeamId', teamId);
   }, [userTeams, getTeamPlayers]);
@@ -326,7 +337,12 @@ export const TeamProvider = ({ children }) => {
         return [];
       }
 
-      return data || [];
+      const clubs = data || [];
+      
+      // Cache the results
+      cacheTeamData({ userClubs: clubs });
+      
+      return clubs;
     } catch (err) {
       console.error('Exception in getClubMemberships:', err);
       return [];
@@ -338,19 +354,66 @@ export const TeamProvider = ({ children }) => {
     if (user && userProfile && !initializationDone.current) {
       initializationDone.current = true;
       
-      // Load both teams and clubs in parallel
-      Promise.all([
-        getUserTeams(),
-        getClubMemberships()
-      ]).then(([teams, clubs]) => {
-        console.log('Teams loaded:', teams.length);
-        console.log('Clubs loaded:', clubs.length);
-        setUserClubs(clubs);
-        // Team switching logic will be handled by separate useEffect
-      }).catch((error) => {
-        console.error('Error initializing user data:', error);
-        setError('Failed to initialize user data');
-      });
+      // Check cache first if this is a page refresh AND valid cache exists
+      const cachedData = getCachedTeamData();
+      const hasValidCache = cachedData.userTeams || cachedData.userClubs || cachedData.currentTeam;
+      const isPageRefresh = performance.navigation.type === 1;
+      
+      if (isPageRefresh && hasValidCache) {
+        console.log('🔄 Page refresh detected with valid cache, loading team data from cache...');
+        
+        if (cachedData.userTeams) {
+          setUserTeams(cachedData.userTeams);
+          console.log('✅ Cached teams loaded:', cachedData.userTeams.length);
+        }
+        
+        if (cachedData.userClubs) {
+          setUserClubs(cachedData.userClubs);
+          console.log('✅ Cached clubs loaded:', cachedData.userClubs.length);
+        }
+        
+        if (cachedData.currentTeam) {
+          setCurrentTeam(cachedData.currentTeam);
+          console.log('✅ Cached current team loaded:', cachedData.currentTeam.name);
+        }
+        
+        if (cachedData.teamPlayers) {
+          setTeamPlayers(cachedData.teamPlayers);
+          console.log('✅ Cached team players loaded:', cachedData.teamPlayers.length);
+        }
+        
+        if (cachedData.pendingRequests) {
+          setPendingRequests(cachedData.pendingRequests);
+          console.log('✅ Cached pending requests loaded:', cachedData.pendingRequests.length);
+        }
+        
+        // Background refresh to update cache
+        Promise.all([
+          getUserTeams(),
+          getClubMemberships()
+        ]).then(([teams, clubs]) => {
+          console.log('🔄 Background refresh completed - Teams:', teams.length, 'Clubs:', clubs.length);
+        }).catch((error) => {
+          console.error('Background refresh failed:', error);
+        });
+      } else {
+        // Normal loading (fresh sign-in or no valid cache)
+        if (isPageRefresh) {
+          console.log('⚠️ Page refresh detected but no valid cache found - proceeding with normal data loading');
+        }
+        
+        Promise.all([
+          getUserTeams(),
+          getClubMemberships()
+        ]).then(([teams, clubs]) => {
+          console.log('Teams loaded:', teams.length);
+          console.log('Clubs loaded:', clubs.length);
+          setUserClubs(clubs);
+        }).catch((error) => {
+          console.error('Error initializing user data:', error);
+          setError('Failed to initialize user data');
+        });
+      }
     } else if (!user) {
       // Clear all user state when user is not authenticated
       initializationDone.current = false;
@@ -358,6 +421,7 @@ export const TeamProvider = ({ children }) => {
       setUserTeams([]);
       setUserClubs([]);
       setTeamPlayers([]);
+      setPendingRequests([]);
       localStorage.removeItem('currentTeamId');
     }
   }, [user, userProfile, getUserTeams, getClubMemberships]);

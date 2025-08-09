@@ -154,7 +154,7 @@ describe('SignupForm', () => {
     it('should display password requirements hint', () => {
       renderSignupForm();
 
-      expect(screen.getByText('Must be at least 8 characters with uppercase and lowercase letters and numbers')).toBeInTheDocument();
+      expect(screen.getByText('Must be at least 8 characters, letters and at least one number')).toBeInTheDocument();
     });
 
     it('should not display error message initially', () => {
@@ -410,7 +410,7 @@ describe('SignupForm', () => {
       expect(signUpMock).toHaveBeenCalledWith('test@example.com', 'TestPassword123');
     });
 
-    it('should display success message for email confirmation required', async () => {
+    it('should show email verification form for email confirmation required', async () => {
       const signUpMock = jest.fn().mockResolvedValue({ 
         user: null, 
         error: null, 
@@ -430,7 +430,9 @@ describe('SignupForm', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Check Your Email')).toBeInTheDocument();
-        expect(screen.getByText('Please check your email for confirmation link')).toBeInTheDocument();
+        expect(screen.getByText('We sent a 6-digit code to')).toBeInTheDocument();
+        expect(screen.getByText('test@example.com')).toBeInTheDocument();
+        expect(screen.getByTestId('input-verification-code')).toBeInTheDocument();
       });
     });
 
@@ -491,7 +493,7 @@ describe('SignupForm', () => {
     });
   });
 
-  describe('Success State - Email Confirmation', () => {
+  describe('Email Verification Form State', () => {
     beforeEach(async () => {
       const signUpMock = jest.fn().mockResolvedValue({ 
         user: null, 
@@ -500,7 +502,7 @@ describe('SignupForm', () => {
       });
       renderSignupForm({}, { signUp: signUpMock });
 
-      // Fill and submit form to reach success state
+      // Fill and submit form to reach EmailVerificationForm
       const emailInput = screen.getByTestId('input-email');
       const passwordInput = screen.getByTestId('input-password');
       const confirmPasswordInput = screen.getByTestId('input-confirmPassword');
@@ -516,39 +518,53 @@ describe('SignupForm', () => {
       });
     });
 
-    it('should display success message and instructions', () => {
+    it('should display EmailVerificationForm with proper elements', () => {
       expect(screen.getByText('Check Your Email')).toBeInTheDocument();
-      expect(screen.getByText('Please check your email for confirmation link')).toBeInTheDocument();
-      expect(screen.getByText('Please check your email and click the confirmation link to complete your registration.')).toBeInTheDocument();
+      expect(screen.getByText('We sent a 6-digit code to')).toBeInTheDocument();
+      expect(screen.getByText('test@example.com')).toBeInTheDocument();
+      expect(screen.getByTestId('input-verification-code')).toBeInTheDocument();
+      expect(screen.getByText('Verification Code')).toBeInTheDocument();
     });
 
-    it('should display success icon', () => {
-      // Check for checkmark SVG path element
+    it('should display email icon instead of checkmark', () => {
+      // Check for email SVG path element (not checkmark)
+      const emailPath = document.querySelector('path[d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"]');
+      expect(emailPath).toBeInTheDocument();
+      
+      // Ensure checkmark is NOT present
       const checkmarkPath = document.querySelector('path[d="M5 13l4 4L19 7"]');
-      expect(checkmarkPath).toBeInTheDocument();
+      expect(checkmarkPath).not.toBeInTheDocument();
     });
 
-    it('should display Back to Sign In button', () => {
-      expect(screen.getByText('Back to Sign In')).toBeInTheDocument();
+    it('should display verification form elements', () => {
+      expect(screen.getByText('Verify Email')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter 6-digit code')).toBeInTheDocument();
+      expect(screen.getByText('Enter the 6-digit code from your email')).toBeInTheDocument();
+    });
+
+    it('should display alternative instructions', () => {
+      expect(screen.getByText('Check your email for a confirmation link')).toBeInTheDocument();
+    });
+
+    it('should display Sign in button', () => {
+      expect(screen.getByText('Sign in')).toBeInTheDocument();
     });
 
     it('should display Close button', () => {
       expect(screen.getByText('Close')).toBeInTheDocument();
     });
 
-    it('should call onSwitchToLogin when Back to Sign In is clicked', async () => {
-      // Test from existing success state using the beforeEach setup
-      const backButton = screen.getByText('Back to Sign In');
-      await userEvent.click(backButton);
+    it('should call onSwitchToLogin when Sign in is clicked', async () => {
+      const signInButton = screen.getByText('Sign in');
+      await userEvent.click(signInButton);
 
-      // Since this is using the beforeEach setup, we need to check if the mock was called
-      // The mock from defaultProps should be called
       expect(defaultProps.onSwitchToLogin).toHaveBeenCalled();
     });
 
-    it('should not display the signup form in success state', () => {
+    it('should not display the signup form in EmailVerificationForm state', () => {
       expect(screen.queryByText('Create Account')).not.toBeInTheDocument();
       expect(screen.queryByTestId('input-email')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('input-password')).not.toBeInTheDocument();
     });
   });
 
@@ -576,7 +592,7 @@ describe('SignupForm', () => {
       const authError = 'User already registered';
       renderSignupForm({}, { authError });
 
-      expect(screen.getByText(authError)).toBeInTheDocument();
+      expect(screen.getByText('An account with this email already exists. Please sign in instead.')).toBeInTheDocument();
     });
 
     it('should show both field errors and auth errors when present', async () => {
@@ -588,7 +604,7 @@ describe('SignupForm', () => {
 
       // Should show both validation errors and auth error
       expect(screen.getByText('Email is required')).toBeInTheDocument();
-      expect(screen.getByText(authError)).toBeInTheDocument();
+      expect(screen.getByText('An account with this email already exists. Please sign in instead.')).toBeInTheDocument();
     });
 
     it('should call clearAuthError on component mount with auth error', () => {
@@ -622,7 +638,7 @@ describe('SignupForm', () => {
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('User already registered')).toBeInTheDocument();
+        expect(screen.getByText('An account with this email already exists. Please sign in instead.')).toBeInTheDocument();
       });
     });
 
@@ -648,7 +664,7 @@ describe('SignupForm', () => {
     it('should display error with proper styling', async () => {
       renderSignupForm({}, { authError: 'Test error' });
 
-      const errorDiv = screen.getByText('Test error').parentElement;
+      const errorDiv = screen.getByText('An unexpected error occurred. Please try again.').parentElement;
       expect(errorDiv).toHaveClass('bg-rose-900/50', 'border', 'border-rose-600');
     });
 
@@ -671,7 +687,7 @@ describe('SignupForm', () => {
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Signup failed')).toBeInTheDocument();
+        expect(screen.getByText('An unexpected error occurred. Please try again.')).toBeInTheDocument();
         expect(screen.queryByText('Auth context error')).not.toBeInTheDocument();
       });
     });

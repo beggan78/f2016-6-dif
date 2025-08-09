@@ -16,8 +16,8 @@ export const EMAIL_REGEX = /\S+@\S+\.\S+/;
  */
 export const PASSWORD_REQUIREMENTS = {
   minLength: 8,
-  requireUppercase: true,
-  requireLowercase: true,
+  requireUppercase: false,
+  requireLowercase: false,
   requireNumber: true, // Required by Supabase
   requireSpecialChar: false // Not required by Supabase
 };
@@ -33,8 +33,6 @@ export const VALIDATION_MESSAGES = {
   password: {
     required: 'Password is required',
     tooShort: `Password must be at least ${PASSWORD_REQUIREMENTS.minLength} characters`,
-    missingUppercase: 'Password must contain both uppercase and lowercase letters',
-    missingLowercase: 'Password must contain both uppercase and lowercase letters',
     missingNumber: 'Password must contain at least one number',
     missingSpecialChar: 'Password must contain at least one special character'
   },
@@ -302,6 +300,12 @@ export const getPasswordRequirementsText = () => {
   
   if (PASSWORD_REQUIREMENTS.requireUppercase && PASSWORD_REQUIREMENTS.requireLowercase) {
     requirements.push('uppercase and lowercase letters');
+  } else if (PASSWORD_REQUIREMENTS.requireUppercase || PASSWORD_REQUIREMENTS.requireLowercase) {
+    // If only one case is required
+    requirements.push(PASSWORD_REQUIREMENTS.requireUppercase ? 'uppercase letters' : 'lowercase letters');
+  } else {
+    // No case requirements - just mention letters
+    requirements.push('letters');
   }
   
   if (PASSWORD_REQUIREMENTS.requireNumber) {

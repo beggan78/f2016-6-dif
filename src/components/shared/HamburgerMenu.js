@@ -4,9 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamMode, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onSignOut }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, user, userProfile, signOut } = useAuth();
+  const { isAuthenticated, user, userProfile } = useAuth();
   const { hasTeams, currentTeam, canManageTeam, hasPendingRequests, pendingRequestsCount } = useTeam();
 
   const toggleMenu = () => {
@@ -51,7 +51,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
   const handleLogout = async () => {
     setIsOpen(false);
     try {
-      await signOut();
+      await onSignOut();
     } catch (error) {
       console.error('Error signing out:', error);
     }
