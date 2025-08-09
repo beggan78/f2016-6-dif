@@ -122,7 +122,6 @@ function App() {
       setShowConfirmModal(true);
       // Add modal to browser back button handling
       backHandler.pushBackHandler(() => {
-        console.log('[BackIntercept] Executing handler for "End Period Early?" modal: closing modal.');
         setShowConfirmModal(false);
       });
       return;
