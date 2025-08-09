@@ -93,7 +93,13 @@ export const createFieldPositionHandlers = (
 
   // Create position-specific callback functions for quick tap events
   const createPositionCallback = (position) => {
-    return () => {
+    return (event) => {
+      // Prevent event propagation to avoid accidental modal button clicks
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      
       // Use substitute modal for substitute positions in modes that support inactive players
       const definition = getDefinition(teamConfig);
       if (supportsInactive && definition?.substitutePositions.includes(position)) {

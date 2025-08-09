@@ -7,6 +7,7 @@ export const useQuickTapWithScrollDetection = (callback, ms = 150) => {
   const hasScrolled = useRef(false);
   const pressStartTime = useRef(null);
   const timerId = useRef(null);
+  const eventRef = useRef(null);
 
   // Update callback ref when callback changes
   useEffect(() => {
@@ -31,12 +32,14 @@ export const useQuickTapWithScrollDetection = (callback, ms = 150) => {
       const pressDuration = Date.now() - pressStartTime.current;
       // Only trigger callback if the press was quick enough (less than threshold)
       if (pressDuration < ms) {
-        callbackRef.current();
+        // Pass the original event to the callback for event prevention
+        callbackRef.current(eventRef.current);
       }
     }
     
     setStartTap(false);
     pressStartTime.current = null;
+    eventRef.current = null;
     if (timerId.current) {
       clearTimeout(timerId.current);
       timerId.current = null;
@@ -89,18 +92,22 @@ export const useQuickTapWithScrollDetection = (callback, ms = 150) => {
 
   return {
     onTouchStart: (e) => {
+      eventRef.current = e;
       const touch = e.touches[0];
       startPress(touch.clientX, touch.clientY);
     },
     onTouchEnd: (e) => {
+      eventRef.current = e;
       endPress();
     },
     onMouseDown: (e) => {
       e.preventDefault();
+      eventRef.current = e;
       startPress(e.clientX, e.clientY);
     },
     onMouseUp: (e) => {
       e.preventDefault();
+      eventRef.current = e;
       endPress();
     },
     onMouseLeave: endPress

@@ -115,7 +115,13 @@ export const createGoalieHandlers = (
   };
 
   // Create goalie quick tap callback
-  const goalieCallback = () => {
+  const goalieCallback = (event) => {
+    // Prevent event propagation to avoid accidental modal button clicks
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     const gameState = gameStateFactory();
     handleGoalieQuickTap(gameState.formation);
   };
