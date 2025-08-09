@@ -3,7 +3,7 @@ import { useQuickTapWithScrollDetection } from './useQuickTapWithScrollDetection
 export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => {
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
 
-  // Create all the long press handlers using the hook
+  // Create all the quick tap handlers using the hook
   // Note: These hooks must be called consistently on every render
 
   // Pairs mode handlers

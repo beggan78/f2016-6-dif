@@ -290,19 +290,10 @@ export const createMockHooks = () => ({
   
   useFieldPositionHandlers: jest.fn(() => ({
     handleFieldPlayerClick: jest.fn(),
-    handleFieldPlayerLongPress: jest.fn()
+    handleFieldPlayerQuickTap: jest.fn()
   })),
   
   useQuickTapWithScrollDetection: jest.fn(() => ({
-    onTouchStart: jest.fn(),
-    onTouchEnd: jest.fn(),
-    onMouseDown: jest.fn(),
-    onMouseUp: jest.fn(),
-    onMouseLeave: jest.fn()
-  })),
-  
-  // Keep legacy mock for backward compatibility
-  useShortTapWithScrollDetection: jest.fn(() => ({
     onTouchStart: jest.fn(),
     onTouchEnd: jest.fn(),
     onMouseDown: jest.fn(),
@@ -331,7 +322,7 @@ export const createMockHandlers = () => ({
   
   createFieldPositionHandlers: jest.fn(() => ({
     handleFieldPlayerClick: jest.fn(),
-    handleFieldPlayerLongPress: jest.fn(),
+    handleFieldPlayerQuickTap: jest.fn(),
     handleSubstituteClick: jest.fn(),
     handleGoalieClick: jest.fn()
   })),
@@ -384,10 +375,6 @@ export const setupComponentTestEnvironment = () => {
   
   jest.mock('../../hooks/useQuickTapWithScrollDetection', () => ({
     useQuickTapWithScrollDetection: mockHooks.useQuickTapWithScrollDetection
-  }));
-  
-  jest.mock('../../hooks/useShortTapWithScrollDetection', () => ({
-    useShortTapWithScrollDetection: mockHooks.useShortTapWithScrollDetection
   }));
   
   // Legacy mock for backward compatibility

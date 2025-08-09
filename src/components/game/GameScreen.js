@@ -180,7 +180,7 @@ export function GameScreen({
     ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
   );
 
-  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
+  const quickTapHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
 
   const timerHandlers = React.useMemo(() =>
     createTimerHandlers(
@@ -353,7 +353,7 @@ export function GameScreen({
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
-          longPressHandlers={longPressHandlers}
+          quickTapHandlers={quickTapHandlers}
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
           getPlayerTimeStats={getPlayerTimeStats}

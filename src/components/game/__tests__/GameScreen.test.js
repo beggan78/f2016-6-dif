@@ -54,7 +54,7 @@ jest.mock('../formations/FormationRenderer', () => ({
     selectedFormation,
     formation,
     allPlayers, 
-    longPressHandlers,
+    quickTapHandlers,
     animationState,
     recentlySubstitutedPlayers,
     hideNextOffIndicator,
@@ -171,7 +171,7 @@ describe('GameScreen', () => {
     
     require('../../../hooks/useFieldPositionHandlers').useFieldPositionHandlers.mockReturnValue({
       handleFieldPlayerClick: jest.fn(),
-      handleFieldPlayerLongPress: jest.fn()
+      handleFieldPlayerQuickTap: jest.fn()
     });
     
     require('../../../hooks/useQuickTapWithScrollDetection').useQuickTapWithScrollDetection.mockReturnValue({
@@ -205,7 +205,7 @@ describe('GameScreen', () => {
 
     require('../../../game/handlers/fieldPositionHandlers').createFieldPositionHandlers.mockReturnValue({
       handleFieldPlayerClick: jest.fn(),
-      handleFieldPlayerLongPress: jest.fn(),
+      handleFieldPlayerQuickTap: jest.fn(),
       handleSubstituteClick: jest.fn(),
       handleGoalieClick: jest.fn()
     });
@@ -521,10 +521,10 @@ describe('GameScreen', () => {
       
       // Verify handlers are available
       expect(mockHandlers.handleFieldPlayerClick).toBeDefined();
-      expect(mockHandlers.handleFieldPlayerLongPress).toBeDefined();
+      expect(mockHandlers.handleFieldPlayerQuickTap).toBeDefined();
     });
 
-    it('should handle player long press for position switching', async () => {
+    it('should handle player quick tap for position switching', async () => {
       const mockShortTap = require('../../../hooks/useQuickTapWithScrollDetection').useQuickTapWithScrollDetection();
       
       render(<GameScreen {...defaultProps} />);

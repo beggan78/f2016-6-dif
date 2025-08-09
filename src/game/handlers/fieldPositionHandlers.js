@@ -28,7 +28,7 @@ export const createFieldPositionHandlers = (
   
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
-  const handleFieldPlayerLongPress = (position) => {
+  const handleFieldPlayerQuickTap = (position) => {
     if (isPairsMode) {
       // Pairs mode - handle pair interactions
       const pairKey = position;
@@ -63,7 +63,7 @@ export const createFieldPositionHandlers = (
     }
   };
 
-  const handleSubstituteLongPress = (position) => {
+  const handleSubstituteQuickTap = (position) => {
     // Only for individual modes that support inactive players
     if (!supportsInactive) return;
     
@@ -91,15 +91,15 @@ export const createFieldPositionHandlers = (
     });
   };
 
-  // Create position-specific callback functions for long press events
+  // Create position-specific callback functions for quick tap events
   const createPositionCallback = (position) => {
     return () => {
       // Use substitute modal for substitute positions in modes that support inactive players
       const definition = getDefinition(teamConfig);
       if (supportsInactive && definition?.substitutePositions.includes(position)) {
-        handleSubstituteLongPress(position);
+        handleSubstituteQuickTap(position);
       } else {
-        handleFieldPlayerLongPress(position);
+        handleFieldPlayerQuickTap(position);
       }
     };
   };

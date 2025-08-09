@@ -13,7 +13,7 @@ export function PairsFormation({
   recentlySubstitutedPlayers,
   hideNextOffIndicator,
   nextPhysicalPairToSubOut,
-  longPressHandlers,
+  quickTapHandlers,
   goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
@@ -62,7 +62,7 @@ export function PairsFormation({
       isGoalie: false
     });
 
-    const longPressEvents = getPositionEvents(longPressHandlers, pairKey);
+    const longPressEvents = getPositionEvents(quickTapHandlers, pairKey);
 
     return (
       <div 

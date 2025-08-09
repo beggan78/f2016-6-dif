@@ -35,8 +35,8 @@ Complex user interactions (e.g., selecting a player for substitution, changing a
 
 1.  **Game State to UI**: `useGameState` provides the `formation`, `allPlayers`, `matchTimerSeconds`, `subTimerSeconds`, etc., as props to `GameScreen`. These props are then passed down to `FormationRenderer` and other sub-components for display.
 
-2.  **User Interaction to Logic**: When a user taps or short taps a player card:
-    - `useShortTapWithScrollDetection` detects the interaction.
+2.  **User Interaction to Logic**: When a user taps (quick tap <150ms) a player card:
+    - `useQuickTapWithScrollDetection` detects the interaction.
     - `useFieldPositionHandlers` maps the interaction to a specific callback (e.g., `leftDefenderCallback`).
     - This callback (defined in `createFieldPositionHandlers` within `src/game/handlers/`) opens a modal via `useGameModals`.
     - Once the user confirms an action in the modal (e.g., "SUB NOW"), a function from `useGameState` (e.g., `handleSubstitution`) is called, triggering a state update.

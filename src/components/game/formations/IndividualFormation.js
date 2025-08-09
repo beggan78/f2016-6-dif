@@ -23,7 +23,7 @@ export function IndividualFormation({
   animationState,
   recentlySubstitutedPlayers,
   hideNextOffIndicator,
-  longPressHandlers,
+  quickTapHandlers,
   goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
@@ -94,7 +94,7 @@ export function IndividualFormation({
     });
 
     // Get utilities
-    const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(longPressHandlers, position);
+    const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(quickTapHandlers, position);
     const positionDisplayName = isGoaliePosition ? 'Goalie' : getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
 

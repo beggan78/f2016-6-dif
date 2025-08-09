@@ -7,7 +7,7 @@ Coordinates UI event handling with game logic and animation systems. Provides cl
 
 ### `goalieHandlers.js` - Goalie Management
 **Main Functions**:
-- `handleGoalieLongPress()`: Opens goalie replacement modal with available players
+- `handleGoalieQuickTap()`: Opens goalie replacement modal with available players
 - `handleSelectNewGoalie()`: Executes goalie switch with animation and state updates
 - `handleCancelGoalieModal()`: Closes modal and cleans up state
 

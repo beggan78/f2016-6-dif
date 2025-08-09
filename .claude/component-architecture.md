@@ -233,7 +233,7 @@ export function ModernComponent({ teamConfig, formation, ...props }) {
 export function FormationComponent({
   allPlayers,           // Complete player roster
   formation,      // Current period formation
-  longPressHandlers,    // Interaction handlers
+  quickTapHandlers,    // Interaction handlers
   onPlayerMove,         // Movement callback
   teamConfig             // Team configuration object
 }) {

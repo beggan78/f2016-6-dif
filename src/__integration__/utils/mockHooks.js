@@ -473,12 +473,6 @@ export const createMockUseQuickTapWithScrollDetection = (callback = jest.fn(), d
   };
 };
 
-/**
- * Creates a mock implementation of useShortTapWithScrollDetection hook (legacy compatibility)
- */
-export const createMockUseShortTapWithScrollDetection = (callback = jest.fn(), delay = 150) => {
-  return createMockUseQuickTapWithScrollDetection(callback, delay);
-};
 
 /**
  * Creates a mock implementation of useLongPressWithScrollDetection hook (legacy, now uses short tap timing)
@@ -510,8 +504,7 @@ export const createMockHookSet = (config = {}) => {
     useGameUIState: createMockUseGameUIState(uiStateConfig),
     useBrowserBackIntercept: createMockUseBrowserBackIntercept(interceptConfig),
     useQuickTapWithScrollDetection: createMockUseQuickTapWithScrollDetection(),
-    useLongPressWithScrollDetection: createMockUseLongPressWithScrollDetection(),
-    useShortTapWithScrollDetection: createMockUseShortTapWithScrollDetection()
+    useLongPressWithScrollDetection: createMockUseLongPressWithScrollDetection()
   };
 };
 
@@ -660,7 +653,6 @@ export default {
   createMockUseBrowserBackIntercept,
   createMockUseGameUIState,
   createMockUseQuickTapWithScrollDetection,
-  createMockUseShortTapWithScrollDetection,
   createMockUseLongPressWithScrollDetection,
   createMockHookSet,
   createScenarioMockHooks,
