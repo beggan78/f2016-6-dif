@@ -266,6 +266,12 @@ function AppContent() {
   };
 
   const handleNavigateFromTacticalBoard = (fallbackView) => {
+    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
+    if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
+    }
+  };
+
   // Team admin modal handlers
   const handleOpenTeamAdminModal = useCallback((team) => {
     setSelectedTeamForAdmin(team);
@@ -292,13 +298,6 @@ function AppContent() {
     }, 3000);
     // Keep modal open for continued management
   }, []);
-
-  const handleNavigateFromTacticalBoard = () => {
-    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
-    if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
-    }
-  };
 
   // Automatic pending request modal for team admins
   useEffect(() => {
