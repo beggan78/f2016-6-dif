@@ -51,8 +51,6 @@ export function GameScreen({
   teamConfig,
   selectedFormation,
   alertMinutes,
-  pushModalState,
-  removeModalFromStack,
   homeScore,
   awayScore,
   opponentTeamName,
@@ -63,7 +61,7 @@ export function GameScreen({
   setRotationQueue
 }) {
   // Use new modular hooks
-  const modalHandlers = useGameModals(pushModalState, removeModalFromStack);
+  const modalHandlers = useGameModals();
   const uiState = useGameUIState();
   
   // Team name management

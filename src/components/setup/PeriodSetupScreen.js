@@ -4,6 +4,7 @@ import { Select, Button, ConfirmationModal } from '../shared/UI';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
+import { useBackHandlerContext } from '../../hooks/BackHandlerContext';
 
 
 // Position configuration map for individual modes
@@ -88,6 +89,7 @@ export function PeriodSetupScreen({
 }) {
   // Determine formation mode
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
+  const { pushBackHandler, popBackHandler } = useBackHandlerContext();
   
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
@@ -356,6 +358,16 @@ export function PeriodSetupScreen({
       swapDetails: null 
     });
   };
+
+  useEffect(() => {
+    if (confirmationModal.isOpen) {
+      const handler = () => cancelInactivePlayerAssignment();
+      pushBackHandler(handler);
+      return () => {
+        popBackHandler();
+      };
+    }
+  }, [confirmationModal.isOpen, pushBackHandler, popBackHandler, cancelInactivePlayerAssignment]);
 
   // Store original handlers for use in confirmation flow
   const originalHandlePlayerAssignment = (pairKey, role, playerId) => {

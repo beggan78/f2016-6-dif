@@ -53,7 +53,6 @@ export const createSubstitutionHandlers = (
   const {
     closeFieldPlayerModal,
     closeSubstituteModal,
-    removeModalFromStack,
     openFieldPlayerModal
   } = modalHandlers;
 
@@ -178,9 +177,6 @@ export const createSubstitutionHandlers = (
 
   const handleCancelFieldPlayerModal = () => {
     closeFieldPlayerModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
-    }
   };
 
   const handleSetAsNextToGoIn = (substituteModal, formation) => {
@@ -245,9 +241,6 @@ export const createSubstitutionHandlers = (
       }
     }
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
-    }
   };
 
   const handleInactivatePlayer = (substituteModal, allPlayers, formation) => {
@@ -334,9 +327,6 @@ export const createSubstitutionHandlers = (
       // Mode doesn't support inactive players, no action taken
     }
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
-    }
   };
 
   const handleActivatePlayer = (substituteModal) => {
@@ -388,16 +378,10 @@ export const createSubstitutionHandlers = (
       // Mode doesn't support inactive players, no action taken
     }
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
-    }
   };
 
   const handleCancelSubstituteModal = () => {
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
-    }
   };
 
   const handleSubstitutionWithHighlight = () => {

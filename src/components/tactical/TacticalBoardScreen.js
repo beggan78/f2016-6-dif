@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
+import { useBackHandler } from '../../hooks/useBackHandler';
 
-export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack, fromView }) {
+export function TacticalBoardScreen({ onNavigateBack, fromView }) {
   // Memoize the persistence manager to prevent re-creation on every render
   const persistenceManager = useMemo(() => createPersistenceManager('sport-wizard-tactical-preferences', {
     pitchMode: 'full',
@@ -32,6 +33,9 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
     const savedState = persistenceManager.loadState();
     onNavigateBack(savedState.fromView);
   }, [onNavigateBack, persistenceManager]);
+
+  // Intercept the browser's back button
+  useBackHandler(handleBackPress);
 
   // This function now handles saving the current chips and loading the new set
   const handlePitchModeToggle = useCallback((mode) => {
@@ -158,8 +162,6 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
         onChipPlace={handleChipPlace}
         onChipMove={handleChipMove}
         onChipDelete={handleChipDelete}
-        pushModalState={pushModalState}
-        removeModalFromStack={removeModalFromStack}
       />
     </div>
   );

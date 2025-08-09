@@ -1,53 +1,43 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Custom hook to intercept browser back button and close modals instead of navigating away
+ * Custom hook to intercept browser back button and execute custom handlers.
  * 
- * Usage:
- * const { pushModalState, popModalState } = useBrowserBackIntercept();
- * 
- * // When opening a modal:
- * pushModalState(() => setModalOpen(false));
- * 
- * // When closing a modal normally:
- * popModalState();
- * setModalOpen(false);
+ * This hook manages a stack of back button handlers. When the browser's back
+ * button is pressed, the topmost handler is executed instead of navigating.
  */
 export function useBrowserBackIntercept(globalNavigationHandler) {
-  const modalStack = useRef([]);
+  const backHandlerStack = useRef([]);
   const hasInitialized = useRef(false);
 
   useEffect(() => {
     // Initialize with a base state on mount
     if (!hasInitialized.current) {
-      window.history.replaceState({ modalLevel: 0 }, '', window.location.href);
+      window.history.replaceState({ handlerLevel: 0 }, '', window.location.href);
       hasInitialized.current = true;
     }
 
     const handlePopState = (event) => {
-      // If we have modals open, close the topmost modal instead of navigating
-      if (modalStack.current.length > 0) {
+      // If we have handlers on the stack, execute the topmost one
+      if (backHandlerStack.current.length > 0) {
         event.preventDefault();
-        const topModal = modalStack.current.pop();
+        const topHandler = backHandlerStack.current.pop();
         
-        // Call the close function for the topmost modal
-        if (topModal && typeof topModal.closeModal === 'function') {
-          topModal.closeModal();
+        if (topHandler && typeof topHandler.handler === 'function') {
+          topHandler.handler();
         }
         
-        // If there are still modals open, push a new state
-        if (modalStack.current.length > 0) {
+        if (backHandlerStack.current.length > 0) {
           window.history.pushState(
-            { modalLevel: modalStack.current.length }, 
+            { handlerLevel: backHandlerStack.current.length }, 
             '', 
             window.location.href
           );
         }
       } else if (globalNavigationHandler && typeof globalNavigationHandler === 'function') {
-        // No modals open, call the global navigation handler
+        // No handlers, call the global navigation handler
         globalNavigationHandler();
       }
-      // If no modals are open and no global handler, let the browser handle the back navigation normally
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -57,54 +47,39 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
     };
   }, [globalNavigationHandler]);
 
-  const pushModalState = (closeModalCallback) => {
-    if (typeof closeModalCallback !== 'function') {
-      console.warn('pushModalState requires a function to close the modal');
+  const pushBackHandler = (handler) => {
+    if (typeof handler !== 'function') {
+      console.warn('pushBackHandler requires a function');
       return;
     }
 
-    // Add the modal to our stack
-    modalStack.current.push({ closeModal: closeModalCallback });
+    backHandlerStack.current.push({ handler });
     
-    // Push a new browser history state
     window.history.pushState(
-      { modalLevel: modalStack.current.length }, 
+      { handlerLevel: backHandlerStack.current.length }, 
       '', 
       window.location.href
     );
   };
 
-  const popModalState = () => {
-    if (modalStack.current.length > 0) {
-      modalStack.current.pop();
-      
-      // Only go back if we're not already at the base level
-      if (window.history.state?.modalLevel > 0) {
-        window.history.back();
-      }
+  const popBackHandler = () => {
+    // Remove handler from stack without triggering browser navigation
+    if (backHandlerStack.current.length > 0) {
+      backHandlerStack.current.pop();
     }
   };
 
-  const removeModalFromStack = () => {
-    // Remove modal from stack without triggering browser navigation
-    if (modalStack.current.length > 0) {
-      modalStack.current.pop();
-    }
-  };
-
-  const clearModalStack = () => {
-    modalStack.current = [];
-    // Go back to base state if we're in a modal state
-    if (window.history.state?.modalLevel > 0) {
-      window.history.go(-window.history.state.modalLevel);
+  const clearBackHandlerStack = () => {
+    backHandlerStack.current = [];
+    if (window.history.state?.handlerLevel > 0) {
+      window.history.go(-window.history.state.handlerLevel);
     }
   };
 
   return {
-    pushModalState,
-    popModalState,
-    removeModalFromStack,
-    clearModalStack,
-    hasOpenModals: () => modalStack.current.length > 0
+    pushBackHandler,
+    popBackHandler,
+    clearBackHandlerStack,
+    hasOpenHandlers: () => backHandlerStack.current.length > 0
   };
 }

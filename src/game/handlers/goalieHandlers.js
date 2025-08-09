@@ -28,8 +28,7 @@ export const createGoalieHandlers = (
 
   const {
     openGoalieModal,
-    closeGoalieModal,
-    removeModalFromStack
+    closeGoalieModal
   } = modalHandlers;
 
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
@@ -109,9 +108,6 @@ export const createGoalieHandlers = (
 
   const handleCancelGoalieModal = () => {
     closeGoalieModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
-    }
   };
 
   // Create goalie long press callback

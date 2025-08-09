@@ -20,6 +20,7 @@ import { ConfirmationModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
+import { BackHandlerContext } from './hooks/BackHandlerContext';
 import { isDebugMode } from './utils/debugUtils';
 
 // Main App Component
@@ -36,9 +37,8 @@ function App() {
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [fromView, setFromView] = useState(null);
   
-  // Create a ref to store the pushModalState function to avoid circular dependency
-  const pushModalStateRef = useRef(null);
-  
+  const backHandlerRef = useRef(null);
+
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
     // Check current view and handle accordingly
@@ -48,21 +48,19 @@ function App() {
     } else {
       // Default: Show "Start a new game?" confirmation modal
       setShowNewGameModal(true);
-      // Register this modal with the browser back intercept system
-      if (pushModalStateRef.current) {
-        pushModalStateRef.current(() => {
+      if (backHandlerRef.current) {
+        backHandlerRef.current.pushBackHandler(() => {
           setShowNewGameModal(false);
         });
       }
     }
   }, [gameState]);
   
-  const { pushModalState, removeModalFromStack } = useBrowserBackIntercept(handleGlobalNavigation);
-  
-  // Store the pushModalState function in the ref
+  const backHandler = useBrowserBackIntercept(handleGlobalNavigation);
+
   useEffect(() => {
-    pushModalStateRef.current = pushModalState;
-  }, [pushModalState]);
+    backHandlerRef.current = backHandler;
+  }, [backHandler]);
 
   const selectedSquadPlayers = useMemo(() => {
     return getSelectedSquadPlayers(gameState.allPlayers, gameState.selectedSquadIds);
@@ -123,7 +121,7 @@ function App() {
       setConfirmModalData({ timeString });
       setShowConfirmModal(true);
       // Add modal to browser back button handling
-      pushModalState(() => {
+      backHandler.pushBackHandler(() => {
         setShowConfirmModal(false);
       });
       return;
@@ -142,7 +140,7 @@ function App() {
 
   const handleConfirmEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    backHandler.popBackHandler();
     const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
     timers.stopTimers(
       gameState.currentPeriodNumber,
@@ -155,7 +153,7 @@ function App() {
 
   const handleCancelEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    backHandler.popBackHandler();
   };
 
   const handleRestartMatch = () => {
@@ -192,26 +190,26 @@ function App() {
   const handleAddPlayer = () => {
     setShowAddPlayerModal(true);
     // Add modal to browser back button handling
-    pushModalState(() => {
+    backHandler.pushBackHandler(() => {
       setShowAddPlayerModal(false);
     });
   };
 
   const handleAddPlayerConfirm = (playerName) => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    backHandler.popBackHandler();
     gameState.addTemporaryPlayer(playerName);
   };
 
   const handleAddPlayerCancel = () => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    backHandler.popBackHandler();
   };
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = () => {
     setShowNewGameModal(false);
-    removeModalFromStack();
+    backHandler.popBackHandler();
     handleRestartMatch();
   };
 
@@ -219,7 +217,7 @@ function App() {
     // When user clicks Cancel button, just close the modal without triggering browser back
     setShowNewGameModal(false);
     // Remove the modal from the browser back intercept stack without triggering navigation
-    removeModalFromStack();
+    backHandler.popBackHandler();
   };
 
   const handleNavigateToTacticalBoard = () => {
@@ -328,8 +326,6 @@ function App() {
             switchGoalie={gameState.switchGoalie}
             setLastSubstitutionTimestamp={gameState.setLastSubstitutionTimestamp}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             opponentTeamName={gameState.opponentTeamName}
@@ -390,8 +386,6 @@ function App() {
         return (
           <TacticalBoardScreen 
             onNavigateBack={handleNavigateFromTacticalBoard}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
             fromView={fromView}
           />
         );
@@ -401,54 +395,56 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
-      <header className="w-full max-w-2xl relative text-center mb-4">
-        <div className="absolute top-0 right-0">
-          <HamburgerMenu 
-            onRestartMatch={handleRestartMatch} 
-            onAddPlayer={handleAddPlayer}
-            onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
-            currentView={gameState.view}
-            teamConfig={gameState.teamConfig}
-            onSplitPairs={gameState.splitPairs}
-            onFormPairs={gameState.formPairs}
-            allPlayers={gameState.allPlayers}
-            selectedSquadIds={gameState.selectedSquadIds}
-          />
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
-      </header>
-      <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
-        {renderView()}
-      </main>
-      <footer className="mt-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
-      </footer>
-      
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onConfirm={handleConfirmEndPeriod}
-        onCancel={handleCancelEndPeriod}
-        title="End Period Early?"
-        message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
-      />
-      
-      <AddPlayerModal
-        isOpen={showAddPlayerModal}
-        onClose={handleAddPlayerCancel}
-        onAddPlayer={handleAddPlayerConfirm}
-      />
-      
-      <ConfirmationModal
-        isOpen={showNewGameModal}
-        onConfirm={handleConfirmNewGame}
-        onCancel={handleCancelNewGame}
-        title="Start a new game?"
-        message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
-        confirmText="Yes, start new game"
-        cancelText="Cancel"
-      />
-    </div>
+    <BackHandlerContext.Provider value={backHandler}>
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
+        <header className="w-full max-w-2xl relative text-center mb-4">
+          <div className="absolute top-0 right-0">
+            <HamburgerMenu 
+              onRestartMatch={handleRestartMatch} 
+              onAddPlayer={handleAddPlayer}
+              onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
+              currentView={gameState.view}
+              teamConfig={gameState.teamConfig}
+              onSplitPairs={gameState.splitPairs}
+              onFormPairs={gameState.formPairs}
+              allPlayers={gameState.allPlayers}
+              selectedSquadIds={gameState.selectedSquadIds}
+            />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
+        </header>
+        <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
+          {renderView()}
+        </main>
+        <footer className="mt-8 text-center text-sm text-slate-500">
+          <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
+        </footer>
+        
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onConfirm={handleConfirmEndPeriod}
+          onCancel={handleCancelEndPeriod}
+          title="End Period Early?"
+          message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
+        />
+        
+        <AddPlayerModal
+          isOpen={showAddPlayerModal}
+          onClose={handleAddPlayerCancel}
+          onAddPlayer={handleAddPlayerConfirm}
+        />
+        
+        <ConfirmationModal
+          isOpen={showNewGameModal}
+          onConfirm={handleConfirmNewGame}
+          onCancel={handleCancelNewGame}
+          title="Start a new game?"
+          message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
+          confirmText="Yes, start new game"
+          cancelText="Cancel"
+        />
+      </div>
+    </BackHandlerContext.Provider>
   );
 }
 

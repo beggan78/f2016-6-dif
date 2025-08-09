@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
+import { useBackHandler } from './useBackHandler';
 
-export function useGameModals(pushModalState, removeModalFromStack) {
+export function useGameModals() {
   // Pending goal state management
   const [pendingGoal, setPendingGoal] = useState(null);
+  const [activeModal, setActiveModal] = useState(null);
   
   const [modals, setModals] = useState({
     fieldPlayer: {
@@ -51,6 +53,7 @@ export function useGameModals(pushModalState, removeModalFromStack) {
         isOpen: false
       }
     }));
+    setActiveModal(null);
   }, []);
 
   const openModal = useCallback((modalType, modalData = {}) => {
@@ -62,21 +65,20 @@ export function useGameModals(pushModalState, removeModalFromStack) {
         ...modalData
       }
     }));
+    setActiveModal(modalType);
+  }, []);
 
-    // Browser back navigation integration
-    if (pushModalState) {
-      pushModalState(() => {
-        closeModal(modalType);
-      });
+  const backHandler = useCallback(() => {
+    if (activeModal) {
+      closeModal(activeModal);
     }
-  }, [pushModalState, closeModal]);
+  }, [activeModal, closeModal]);
+
+  useBackHandler(backHandler);
 
   const closeModalWithNavigation = useCallback((modalType) => {
     closeModal(modalType);
-    if (removeModalFromStack) {
-      removeModalFromStack();
-    }
-  }, [closeModal, removeModalFromStack]);
+  }, [closeModal]);
 
   const closeAllModals = useCallback(() => {
     setModals(prev => {
@@ -86,6 +88,7 @@ export function useGameModals(pushModalState, removeModalFromStack) {
       });
       return newModals;
     });
+    setActiveModal(null);
   }, []);
 
   // Specific modal operations for convenience
