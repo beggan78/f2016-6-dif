@@ -28,6 +28,8 @@ const AuthContext = createContext({
   signIn: async () => {},
   signOut: async () => {},
   verifyOtp: async () => {},
+  resetPassword: async () => {},
+  updatePassword: async () => {},
   updateProfile: async () => {},
 });
 
@@ -384,6 +386,54 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const resetPassword = async (email) => {
+    try {
+      setLoading(true);
+      setAuthError(null);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) throw error;
+
+      return { 
+        error: null, 
+        message: 'Password reset link sent to your email. Please check your inbox and follow the instructions.' 
+      };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to send password reset email';
+      setAuthError(errorMessage);
+      return { error: { message: errorMessage }, message: null };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePassword = async (newPassword) => {
+    try {
+      setLoading(true);
+      setAuthError(null);
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      return { 
+        error: null, 
+        message: 'Password updated successfully. You can now sign in with your new password.' 
+      };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to update password';
+      setAuthError(errorMessage);
+      return { error: { message: errorMessage }, message: null };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateProfile = async (profileData) => {
     try {
       if (!user) throw new Error('No authenticated user');
@@ -445,6 +495,8 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     verifyOtp,
+    resetPassword,
+    updatePassword,
     updateProfile,
   };
 
