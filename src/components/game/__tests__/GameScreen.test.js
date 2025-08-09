@@ -37,7 +37,7 @@ jest.mock('../../../hooks/useGameModals');
 jest.mock('../../../hooks/useGameUIState');
 jest.mock('../../../hooks/useTeamNameAbbreviation');
 jest.mock('../../../hooks/useFieldPositionHandlers');
-jest.mock('../../../hooks/useLongPressWithScrollDetection');
+jest.mock('../../../hooks/useQuickTapWithScrollDetection');
 jest.mock('../../../game/handlers/substitutionHandlers');
 jest.mock('../../../game/handlers/fieldPositionHandlers');
 jest.mock('../../../game/handlers/timerHandlers');
@@ -54,7 +54,7 @@ jest.mock('../formations/FormationRenderer', () => ({
     selectedFormation,
     formation,
     allPlayers, 
-    longPressHandlers,
+    quickTapHandlers,
     animationState,
     recentlySubstitutedPlayers,
     hideNextOffIndicator,
@@ -171,13 +171,15 @@ describe('GameScreen', () => {
     
     require('../../../hooks/useFieldPositionHandlers').useFieldPositionHandlers.mockReturnValue({
       handleFieldPlayerClick: jest.fn(),
-      handleFieldPlayerLongPress: jest.fn()
+      handleFieldPlayerQuickTap: jest.fn()
     });
     
-    require('../../../hooks/useLongPressWithScrollDetection').useLongPressWithScrollDetection.mockReturnValue({
-      handleTouchStart: jest.fn(),
-      handleTouchEnd: jest.fn(),
-      handleTouchMove: jest.fn()
+    require('../../../hooks/useQuickTapWithScrollDetection').useQuickTapWithScrollDetection.mockReturnValue({
+      onTouchStart: jest.fn(),
+      onTouchEnd: jest.fn(),
+      onMouseDown: jest.fn(),
+      onMouseUp: jest.fn(),
+      onMouseLeave: jest.fn()
     });
 
     // Create a persistent mock handlers object that will be returned by all calls
@@ -203,7 +205,7 @@ describe('GameScreen', () => {
 
     require('../../../game/handlers/fieldPositionHandlers').createFieldPositionHandlers.mockReturnValue({
       handleFieldPlayerClick: jest.fn(),
-      handleFieldPlayerLongPress: jest.fn(),
+      handleFieldPlayerQuickTap: jest.fn(),
       handleSubstituteClick: jest.fn(),
       handleGoalieClick: jest.fn()
     });
@@ -519,18 +521,18 @@ describe('GameScreen', () => {
       
       // Verify handlers are available
       expect(mockHandlers.handleFieldPlayerClick).toBeDefined();
-      expect(mockHandlers.handleFieldPlayerLongPress).toBeDefined();
+      expect(mockHandlers.handleFieldPlayerQuickTap).toBeDefined();
     });
 
-    it('should handle player long press for position switching', async () => {
-      const mockLongPress = require('../../../hooks/useLongPressWithScrollDetection').useLongPressWithScrollDetection();
+    it('should handle player quick tap for position switching', async () => {
+      const mockShortTap = require('../../../hooks/useQuickTapWithScrollDetection').useQuickTapWithScrollDetection();
       
       render(<GameScreen {...defaultProps} />);
       
-      // Verify long press handlers are set up
-      expect(mockLongPress.handleTouchStart).toBeDefined();
-      expect(mockLongPress.handleTouchEnd).toBeDefined();
-      expect(mockLongPress.handleTouchMove).toBeDefined();
+      // Verify short tap handlers are set up
+      expect(mockShortTap.onTouchStart).toBeDefined();
+      expect(mockShortTap.onTouchEnd).toBeDefined();
+      expect(mockShortTap.onMouseDown).toBeDefined();
     });
 
     // Animation state tests removed - complex UI state testing better covered in dedicated animation tests
@@ -584,14 +586,14 @@ describe('GameScreen', () => {
 
   describe('Responsive and Mobile Behavior', () => {
     it('should handle touch interactions', async () => {
-      const mockLongPress = require('../../../hooks/useLongPressWithScrollDetection').useLongPressWithScrollDetection();
+      const mockShortTap = require('../../../hooks/useQuickTapWithScrollDetection').useQuickTapWithScrollDetection();
       
       render(<GameScreen {...defaultProps} />);
       
       // Touch handlers should be available for mobile interactions
-      expect(mockLongPress.handleTouchStart).toBeDefined();
-      expect(mockLongPress.handleTouchEnd).toBeDefined();
-      expect(mockLongPress.handleTouchMove).toBeDefined();
+      expect(mockShortTap.onTouchStart).toBeDefined();
+      expect(mockShortTap.onTouchEnd).toBeDefined();
+      expect(mockShortTap.onMouseDown).toBeDefined();
     });
 
     // Team name abbreviation test removed - edge case better covered in hook-specific tests

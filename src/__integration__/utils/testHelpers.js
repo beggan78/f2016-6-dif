@@ -103,10 +103,23 @@ export const simulateUserInteraction = {
   },
   
   /**
-   * Simulates a long press interaction
+   * Simulates a short tap interaction
+   */
+  shortTap: async (element, options = {}) => {
+    const { duration = 150 } = options;
+    
+    await act(async () => {
+      fireEvent.mouseDown(element);
+      await new Promise(resolve => setTimeout(resolve, duration));
+      fireEvent.mouseUp(element);
+    });
+  },
+  
+  /**
+   * Legacy long press method for backward compatibility - now uses short tap timing
    */
   longPress: async (element, options = {}) => {
-    const { duration = 500 } = options;
+    const { duration = 150 } = options;
     
     await act(async () => {
       fireEvent.mouseDown(element);

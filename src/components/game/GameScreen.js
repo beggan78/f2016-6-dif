@@ -16,7 +16,7 @@ import { FormationRenderer } from './formations';
 import { createSubstitutionHandlers } from '../../game/handlers/substitutionHandlers';
 import { createFieldPositionHandlers } from '../../game/handlers/fieldPositionHandlers';
 import { useFieldPositionHandlers } from '../../hooks/useFieldPositionHandlers';
-import { useLongPressWithScrollDetection } from '../../hooks/useLongPressWithScrollDetection';
+import { useQuickTapWithScrollDetection } from '../../hooks/useQuickTapWithScrollDetection';
 import { createTimerHandlers } from '../../game/handlers/timerHandlers';
 import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
@@ -180,7 +180,7 @@ export function GameScreen({
     ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
   );
 
-  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
+  const quickTapHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
 
   const timerHandlers = React.useMemo(() =>
     createTimerHandlers(
@@ -209,8 +209,8 @@ export function GameScreen({
     ), [createGameState, stateUpdaters, animationHooks, modalHandlers, allPlayers, selectedSquadPlayers]
   );
 
-  const goalieEvents = useLongPressWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
-  const scoreEvents = useLongPressWithScrollDetection(scoreHandlers.scoreCallback);
+  const goalieEvents = useQuickTapWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
+  const scoreEvents = useQuickTapWithScrollDetection(scoreHandlers.scoreCallback);
   
   const goalieHandlers = React.useMemo(() => ({
     ...goalieHandlerCallbacks,
@@ -353,7 +353,7 @@ export function GameScreen({
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
-          longPressHandlers={longPressHandlers}
+          quickTapHandlers={quickTapHandlers}
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
           getPlayerTimeStats={getPlayerTimeStats}

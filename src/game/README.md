@@ -14,7 +14,7 @@ src/
 │   ├── rolePointUtils.js      # calculateRolePoints() for stats calculations
 │   └── playerUtils.js         # Player operations, now includes initializePlayers()
 ├── hooks/                      # React hooks for UI integration
-│   ├── useLongPressWithScrollDetection.js # Universal long press with scroll detection
+│   ├── useQuickTapWithScrollDetection.js # Universal quick tap with scroll detection
 │   └── useFieldPositionHandlers.js        # Hook for field position event handlers
 └── game/                       # Game screen specific logic and systems
     ├── README.md               # This file - game screen architecture documentation
@@ -35,7 +35,7 @@ src/
     │   ├── index.js           # Queue module barrel exports
     │   └── rotationQueue.js   # Player rotation and activation state management
     ├── handlers/               # Event handler factories with domain-based organization
-    │   ├── fieldPositionHandlers.js # Field position long press logic
+    │   ├── fieldPositionHandlers.js # Field position quick tap logic
     │   ├── goalieHandlers.js       # Goalie replacement logic
     │   ├── substitutionHandlers.js # Player substitution operations
     │   ├── scoreHandlers.js        # Score tracking and editing
@@ -81,8 +81,8 @@ This separation allows logic changes without breaking animations and vice versa.
 - **Single responsibility** principle applied to each module
 
 ### 5. Universal Interaction Patterns
-- **Scroll detection** integrated into all long press interactions to prevent accidental triggers
-- **Consistent event handling** through universal `useLongPressWithScrollDetection` hook
+- **Scroll detection** integrated into all quick tap interactions to prevent accidental triggers
+- **Consistent event handling** through universal `useQuickTapWithScrollDetection` hook
 - **React hooks compliance** with proper separation of callback creation and hook usage
 - **DRY principle** applied to eliminate duplicated interaction logic
 
@@ -321,16 +321,16 @@ const MEASUREMENTS = {
 The handlers module contains domain-organized event handler factories that integrate game logic with UI interactions. Each handler file focuses on a specific domain and follows consistent patterns for state management and animation integration.
 
 ### `handlers/fieldPositionHandlers.js`
-**Purpose**: Field position interaction logic (formerly longPressHandlers.js)  
+**Purpose**: Field position interaction logic (formerly longPressHandlers.js, now quickTapHandlers)  
 **Responsibilities**:
 - `createFieldPositionHandlers()`: Creates callbacks for field position long press interactions
-- `handleFieldPlayerLongPress()`: Opens field player modal for pairs/individual modes
-- `handleSubstituteLongPress()`: Opens substitute modal for 7-player individual mode
+- `handleFieldPlayerQuickTap()`: Opens field player modal for pairs/individual modes
+- `handleSubstituteQuickTap()`: Opens substitute modal for 7-player individual mode
 - `createPositionCallback()`: Creates position-specific callback functions
 
 **Key characteristics**:
 - Domain-based naming (field positions, not technical implementation)
-- Returns callback functions for integration with `useLongPressWithScrollDetection` hook
+- Returns callback functions for integration with `useQuickTapWithScrollDetection` hook
 - Formation-aware logic for pairs vs individual modes
 - Modal integration through modalHandlers dependency
 
@@ -343,7 +343,7 @@ The handlers module contains domain-organized event handler factories that integ
 **Purpose**: Goalie replacement and interaction logic  
 **Responsibilities**:
 - `createGoalieHandlers()`: Creates goalie interaction handlers
-- `handleGoalieLongPress()`: Opens goalie replacement modal
+- `handleGoalieQuickTap()`: Opens goalie replacement modal
 - `handleSelectNewGoalie()`: Performs animated goalie switch using game logic
 - `handleCancelGoalieModal()`: Modal cancellation with browser back integration
 - `goalieCallback`: Long press callback for integration with scroll detection
@@ -643,14 +643,14 @@ Player time tracking follows this approach:
 
 2. **Extend `useFieldPositionHandlers` hook** to include new callback:
    ```javascript
-   const newPositionEvents = useLongPressWithScrollDetection(
+   const newPositionEvents = useQuickTapWithScrollDetection(
      fieldPositionCallbacks.newPositionCallback || (() => {}), 500
    );
    ```
 
 3. **Use in formation renderer**:
    ```javascript
-   <div {...longPressHandlers.newPositionEvents}>
+   <div {...quickTapHandlers.newPositionEvents}>
      {/* Position content */}
    </div>
    ```
@@ -763,13 +763,13 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 ## Hooks
 - `hooks/useGameState.js`: React state management for game data
 - `hooks/useTimers.js`: Time tracking integration
-- `hooks/useLongPressWithScrollDetection.js`: Universal long press with scroll detection
+- `hooks/useQuickTapWithScrollDetection.js`: Universal quick tap with scroll detection
 - `hooks/useFieldPositionHandlers.js`: Field position event handler integration with React hooks
 
 ## Game Modules Integration Flow
 1. **GameScreen** creates handler factories (`handlers/`) with dependency injection
 2. **Handler factories** return callbacks and action handlers
-3. **React hooks** integrate callbacks with `useLongPressWithScrollDetection` for event handling
+3. **React hooks** integrate callbacks with `useQuickTapWithScrollDetection` for event handling
 4. **Formation renderers** use UI utilities (`ui/`) for consistent styling and behavior
 5. **Game logic** (`logic/`) provides pure functions for state transitions
 6. **Animation system** (`animation/`) orchestrates visual transitions

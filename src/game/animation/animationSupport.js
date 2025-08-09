@@ -168,7 +168,7 @@ const MEASUREMENTS = {
   gap: 8,      // space-y-2 = 8px between elements
   contentHeight: {
     pairs: 84,      // Content height for pair components
-    individual: 76  // Content height for individual components
+    individual: 56  // Content height for individual components
   }
 };
 

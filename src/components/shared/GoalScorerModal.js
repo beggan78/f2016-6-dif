@@ -82,21 +82,21 @@ const GoalScorerModal = ({
           title: 'Correct Goal Scorer',
           subtitle: `Goal at ${matchTime}`,
           primaryAction: 'Update Scorer',
-          primaryColor: 'bg-amber-600 hover:bg-amber-700'
+          primaryColor: 'bg-amber-600 hover:bg-amber-500 focus:ring-amber-500'
         };
       case 'view':
         return {
           title: 'Goal Information',
           subtitle: `Goal at ${matchTime}`,
           primaryAction: 'Close',
-          primaryColor: 'bg-gray-600 hover:bg-gray-700'
+          primaryColor: 'bg-slate-600 hover:bg-slate-500 focus:ring-slate-500'
         };
       default: // 'new'
         return {
           title: 'Who Scored?',
           subtitle: `${team === 'home' ? 'Home' : 'Away'} goal at ${matchTime}`,
           primaryAction: 'Confirm Scorer',
-          primaryColor: 'bg-emerald-600 hover:bg-emerald-700'
+          primaryColor: 'bg-sky-600 hover:bg-sky-500 focus:ring-sky-500'
         };
     }
   }, [mode, matchTime, team]);
@@ -127,20 +127,20 @@ const GoalScorerModal = ({
   // Main modal
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-slate-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden shadow-xl border border-slate-600">
         {/* Header */}
-        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-slate-600">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+              <h2 className="text-lg font-semibold text-sky-300 flex items-center space-x-2">
                 <Trophy className="w-5 h-5 text-yellow-500" />
                 <span>{modalConfig.title}</span>
               </h2>
-              <p className="text-sm text-gray-600 mt-1">{modalConfig.subtitle}</p>
+              <p className="text-sm text-slate-400 mt-1">{modalConfig.subtitle}</p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
             >
               <X className="w-6 h-6" />
             </button>
@@ -151,12 +151,12 @@ const GoalScorerModal = ({
         <div className="p-6">
           {/* Current scorer display for correct/view modes */}
           {(mode === 'correct' || mode === 'view') && existingGoalData && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="mb-6 p-4 bg-slate-700 rounded-lg border border-slate-600">
               <div className="flex items-center space-x-2 mb-2">
-                <Users className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">Current Scorer</span>
+                <Users className="w-4 h-4 text-sky-400" />
+                <span className="text-sm font-medium text-sky-300">Current Scorer</span>
               </div>
-              <p className="text-blue-800">
+              <p className="text-slate-100">
                 {existingGoalData.scorerId 
                   ? getPlayerName(eligiblePlayers, existingGoalData.scorerId)
                   : 'No scorer recorded'
@@ -168,7 +168,7 @@ const GoalScorerModal = ({
           {/* Player selection */}
           {mode !== 'view' && (
             <>
-              <h3 className="text-sm font-medium text-gray-900 mb-3">
+              <h3 className="text-sm font-medium text-slate-100 mb-3">
                 Select {mode === 'correct' ? 'New ' : ''}Scorer:
               </h3>
               
@@ -181,15 +181,15 @@ const GoalScorerModal = ({
                     <button
                       key={player.id}
                       onClick={() => handlePlayerSelect(player.id)}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      className={`w-full text-left p-3 rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 ${
                         selectedPlayerId === player.id
-                          ? 'bg-blue-50 border-blue-300 text-blue-900'
-                          : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                          ? 'bg-sky-500 bg-opacity-20 border-sky-400 text-slate-100'
+                          : 'bg-slate-700 border-slate-600 text-slate-100 hover:bg-slate-600 hover:border-slate-500'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
                         <div className={`w-3 h-3 rounded-full ${
-                          selectedPlayerId === player.id ? 'bg-blue-500' : 'bg-gray-300'
+                          selectedPlayerId === player.id ? 'bg-sky-400' : 'bg-slate-500'
                         }`} />
                         <PositionIcon className={`w-4 h-4 ${positionColorClass}`} />
                         <span className="font-medium">{getPlayerName([player], player.id)}</span>
@@ -203,15 +203,15 @@ const GoalScorerModal = ({
               {mode === 'new' && (
                 <button
                   onClick={() => handlePlayerSelect(null)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors mt-2 ${
+                  className={`w-full text-left p-3 rounded-lg border transition-colors mt-2 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 ${
                     selectedPlayerId === null
-                      ? 'bg-gray-50 border-gray-300 text-gray-900'
-                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                      ? 'bg-slate-500 bg-opacity-30 border-slate-500 text-slate-100'
+                      : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 hover:border-slate-500'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
-                      selectedPlayerId === null ? 'bg-gray-500' : 'bg-gray-300'
+                      selectedPlayerId === null ? 'bg-slate-400' : 'bg-slate-500'
                     }`} />
                     <span className="italic">No specific scorer</span>
                   </div>
@@ -224,12 +224,12 @@ const GoalScorerModal = ({
           {mode === 'view' && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-2">Goal Details:</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>Team: <span className="font-medium">{team === 'home' ? 'Home' : 'Away'}</span></div>
-                  <div>Time: <span className="font-medium">{matchTime}</span></div>
-                  <div>Period: <span className="font-medium">{existingGoalData?.period || 'Unknown'}</span></div>
-                  <div>Scorer: <span className="font-medium">
+                <h3 className="text-sm font-medium text-slate-100 mb-2">Goal Details:</h3>
+                <div className="space-y-2 text-sm text-slate-300">
+                  <div>Team: <span className="font-medium text-slate-100">{team === 'home' ? 'Home' : 'Away'}</span></div>
+                  <div>Time: <span className="font-medium text-slate-100">{matchTime}</span></div>
+                  <div>Period: <span className="font-medium text-slate-100">{existingGoalData?.period || 'Unknown'}</span></div>
+                  <div>Scorer: <span className="font-medium text-slate-100">
                     {existingGoalData?.scorerId 
                       ? getPlayerName(eligiblePlayers, existingGoalData.scorerId)
                       : 'No scorer recorded'
@@ -238,8 +238,8 @@ const GoalScorerModal = ({
                 </div>
               </div>
               
-              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <p className="text-sm text-blue-800">
+              <div className="bg-slate-700 rounded-lg p-3 border border-slate-600">
+                <p className="text-sm text-sky-300">
                   This goal information is read-only. Use the correction mode to make changes.
                 </p>
               </div>
@@ -248,11 +248,11 @@ const GoalScorerModal = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+        <div className="px-6 py-4 border-t border-slate-600">
           <div className="flex justify-end space-x-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 text-slate-300 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
             >
               Cancel
             </button>
@@ -260,7 +260,7 @@ const GoalScorerModal = ({
             {mode !== 'view' && (
               <button
                 onClick={handlePrimaryAction}
-                className={`px-4 py-2 text-white rounded-lg transition-colors ${modalConfig.primaryColor}`}
+                className={`px-4 py-2 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 ${modalConfig.primaryColor}`}
               >
                 {modalConfig.primaryAction}
               </button>

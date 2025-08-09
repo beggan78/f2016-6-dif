@@ -70,8 +70,8 @@ export function getIndicatorProps(player, position, teamConfig, nextPlayerIdToSu
 /**
  * Extract long press event handlers for a position
  */
-export function getPositionEvents(longPressHandlers, position) {
-  return longPressHandlers[`${position}Events`] || {};
+export function getPositionEvents(quickTapHandlers, position) {
+  return quickTapHandlers[`${position}Events`] || {};
 }
 
 

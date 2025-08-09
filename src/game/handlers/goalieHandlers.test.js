@@ -65,7 +65,7 @@ describe('createGoalieHandlers', () => {
         mockPlayers
       );
 
-      expect(handlers.handleGoalieLongPress).toBeDefined();
+      expect(handlers.handleGoalieQuickTap).toBeDefined();
       expect(handlers.handleSelectNewGoalie).toBeDefined();
       expect(handlers.handleCancelGoalieModal).toBeDefined();
       expect(handlers.goalieCallback).toBeDefined();
@@ -73,7 +73,7 @@ describe('createGoalieHandlers', () => {
     });
   });
 
-  describe('handleGoalieLongPress', () => {
+  describe('handleGoalieQuickTap', () => {
     it('should open goalie modal with current goalie and available players', () => {
       const handlers = createGoalieHandlers(
         mockGameStateFactory,
@@ -85,7 +85,7 @@ describe('createGoalieHandlers', () => {
       );
 
       const mockFormation = { goalie: '7' };
-      handlers.handleGoalieLongPress(mockFormation);
+      handlers.handleGoalieQuickTap(mockFormation);
 
       expect(getPlayerName).toHaveBeenCalledWith(mockPlayers, '7');
       expect(getOutfieldPlayers).toHaveBeenCalledWith(mockPlayers, expect.any(Array), '7');
@@ -108,7 +108,7 @@ describe('createGoalieHandlers', () => {
       );
 
       const mockFormation = { goalie: undefined };
-      handlers.handleGoalieLongPress(mockFormation);
+      handlers.handleGoalieQuickTap(mockFormation);
 
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player undefined',
@@ -133,7 +133,7 @@ describe('createGoalieHandlers', () => {
       );
 
       const mockFormation = { goalie: '7' };
-      handlers.handleGoalieLongPress(mockFormation);
+      handlers.handleGoalieQuickTap(mockFormation);
 
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
@@ -166,7 +166,7 @@ describe('createGoalieHandlers', () => {
       );
 
       const mockFormation = { goalie: '7' };
-      handlers.handleGoalieLongPress(mockFormation);
+      handlers.handleGoalieQuickTap(mockFormation);
 
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
@@ -204,7 +204,7 @@ describe('createGoalieHandlers', () => {
       );
 
       const mockFormation = { goalie: '7' };
-      handlers.handleGoalieLongPress(mockFormation);
+      handlers.handleGoalieQuickTap(mockFormation);
 
       // Get the actual call arguments to verify order
       const callArgs = mockDependencies.modalHandlers.openGoalieModal.mock.calls[0][0];
@@ -372,7 +372,7 @@ describe('createGoalieHandlers', () => {
   });
 
   describe('goalieCallback', () => {
-    it('should get game state and call handleGoalieLongPress', () => {
+    it('should get game state and call handleGoalieQuickTap', () => {
       const handlers = createGoalieHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,
@@ -404,7 +404,7 @@ describe('createGoalieHandlers', () => {
       );
 
       const mockFormation = { goalie: '7' };
-      handlers.handleGoalieLongPress(mockFormation);
+      handlers.handleGoalieQuickTap(mockFormation);
 
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: undefined,

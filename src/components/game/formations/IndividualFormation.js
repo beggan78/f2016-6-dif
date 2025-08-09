@@ -13,7 +13,7 @@ import {
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
-import { FORMATION_STYLES, ICON_STYLES, HELP_MESSAGES } from './constants';
+import { FORMATION_STYLES, ICON_STYLES } from './constants';
 
 export function IndividualFormation({ 
   teamConfig,
@@ -23,7 +23,7 @@ export function IndividualFormation({
   animationState,
   recentlySubstitutedPlayers,
   hideNextOffIndicator,
-  longPressHandlers,
+  quickTapHandlers,
   goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
@@ -94,7 +94,7 @@ export function IndividualFormation({
     });
 
     // Get utilities
-    const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(longPressHandlers, position);
+    const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(quickTapHandlers, position);
     const positionDisplayName = isGoaliePosition ? 'Goalie' : getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
 
@@ -121,15 +121,6 @@ export function IndividualFormation({
           <div>{icon} {getPlayerNameById ? getPlayerNameById(playerId) : playerId}</div>
           <PlayerStatsDisplay playerId={playerId} getPlayerTimeStats={getPlayerTimeStats} />
         </div>
-        {canBeSelected && (
-          <p className={FORMATION_STYLES.helpText}>{HELP_MESSAGES.fieldPlayerOptions}</p>
-        )}
-        {isSubstitutePosition && modeSupportsInactive && (
-          <p className={FORMATION_STYLES.helpText}>{HELP_MESSAGES.substituteToggle(isInactive)}</p>
-        )}
-        {isGoaliePosition && (
-          <p className={FORMATION_STYLES.helpText}>Hold to replace goalie</p>
-        )}
       </div>
     );
   };
