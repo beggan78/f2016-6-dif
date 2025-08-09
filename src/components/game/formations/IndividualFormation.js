@@ -1,14 +1,13 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { findPlayerById } from '../../../utils/playerUtils';
-import { getFieldPositions, getSubstitutePositions } from '../../../game/logic/positionUtils';
-import { getAllPositions } from '../../../utils/formationUtils';
+import { getFieldPositions, getSubstitutePositions, getPositionRole } from '../../../game/logic/positionUtils';
+import { getAllPositions, supportsInactiveUsers } from '../../../constants/gameModes';
 import { 
   getPositionIcon, 
   getPositionDisplayName, 
   getIndicatorProps, 
   getPositionEvents,
-  supportsInactivePlayers,
   supportsNextNextIndicators
 } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
@@ -17,18 +16,20 @@ import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES, HELP_MESSAGES } from './constants';
 
 export function IndividualFormation({ 
-  teamMode,
+  teamConfig,
+  selectedFormation,
   formation,
   allPlayers, 
   animationState,
   recentlySubstitutedPlayers,
   hideNextOffIndicator,
-  nextPlayerIdToSubOut,
-  nextNextPlayerIdToSubOut,
   longPressHandlers,
   goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
+  nextPhysicalPairToSubOut, // Filter out React-specific props
+  nextPlayerIdToSubOut,
+  nextNextPlayerIdToSubOut,
   ...domProps
 }) {
   // Handle null/undefined formation
@@ -36,14 +37,20 @@ export function IndividualFormation({
     return <div className="space-y-2" {...domProps}></div>;
   }
 
+  // Create formation-aware team config for position utilities
+  const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
+    ...teamConfig,
+    formation: selectedFormation
+  } : teamConfig;
+
   // Get formation-specific position lists from formation definitions
-  const fieldPositions = getFieldPositions(teamMode);
-  const substitutePositions = getSubstitutePositions(teamMode);
-  const allPositions = getAllPositions(teamMode); // Include goalie in formation rendering
+  const fieldPositions = getFieldPositions(formationAwareTeamConfig);
+  const substitutePositions = getSubstitutePositions(formationAwareTeamConfig);
+  const allPositions = getAllPositions(formationAwareTeamConfig); // Include goalie in formation rendering
 
   // Mode capabilities
-  const modeSupportsInactive = supportsInactivePlayers(teamMode);
-  const modeSupportsNextNext = supportsNextNextIndicators(teamMode);
+  const modeSupportsInactive = supportsInactiveUsers(formationAwareTeamConfig);
+  const modeSupportsNextNext = supportsNextNextIndicators(formationAwareTeamConfig);
 
   const renderIndividualPosition = (position, renderIndex) => {
     const playerId = formation[position];
@@ -65,9 +72,12 @@ export function IndividualFormation({
 
     // Get indicator props using utility
     const { isNextOff, isNextOn, isNextNextOff, isNextNextOn } = getIndicatorProps(
-      player, position, teamMode, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions
+      player, position, formationAwareTeamConfig, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions
     );
     
+
+    // Get proper role from position mapping (works for all formations)
+    const playerRole = getPositionRole(position);
 
     // Get styling and animation using utilities
     const { animationClass, zIndexClass, styleProps } = getPlayerAnimation(playerId, animationState);
@@ -78,12 +88,14 @@ export function IndividualFormation({
       isNextOn,
       isRecentlySubstituted,
       hideNextOffIndicator,
-      supportsInactivePlayers: modeSupportsInactive
+      supportsInactiveUsers: modeSupportsInactive,
+      role: playerRole,
+      isGoalie: isGoaliePosition
     });
 
     // Get utilities
     const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(longPressHandlers, position);
-    const positionDisplayName = isGoaliePosition ? 'Goalie' : getPositionDisplayName(position, player, teamMode, substitutePositions);
+    const positionDisplayName = isGoaliePosition ? 'Goalie' : getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
 
     return (
@@ -130,3 +142,6 @@ export function IndividualFormation({
     </div>
   );
 }
+
+// Memoize IndividualFormation to prevent unnecessary re-renders
+export default React.memo(IndividualFormation);

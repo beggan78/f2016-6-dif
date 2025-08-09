@@ -4,16 +4,16 @@ import {
   calculateSubstitution, 
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
-  calculateSubstituteSwap,
+  calculateGeneralSubstituteSwap,
   calculateUndo,
   calculateSubstituteReorder
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { 
   createMockPlayers, 
   createMockGameState,
-  createMockDependencies 
+  createMockDependencies,
+  TEAM_CONFIGS
 } from '../testUtils';
 
 jest.mock('../animation/animationSupport');
@@ -31,7 +31,7 @@ describe('createSubstitutionHandlers', () => {
     jest.clearAllMocks();
     
     mockDependencies = createMockDependencies();
-    mockPlayers = createMockPlayers(7, TEAM_MODES.INDIVIDUAL_7);
+    mockPlayers = createMockPlayers(7, TEAM_CONFIGS.INDIVIDUAL_7);
     // Ensure all mock players are explicitly active (not inactive)
     mockPlayers = mockPlayers.map(p => ({
       ...p,
@@ -40,7 +40,7 @@ describe('createSubstitutionHandlers', () => {
         isInactive: false
       }
     }));
-    mockGameState = createMockGameState(TEAM_MODES.INDIVIDUAL_7);
+    mockGameState = createMockGameState(TEAM_CONFIGS.INDIVIDUAL_7);
     // Update mock game state to use the updated players
     mockGameState.allPlayers = mockPlayers;
     mockGameStateFactory = jest.fn(() => mockGameState);
@@ -54,7 +54,7 @@ describe('createSubstitutionHandlers', () => {
       playersComingOnOriginalStats: [],
       playersComingOnIds: ['5'],
       playersGoingOffIds: ['1'],
-      teamMode: TEAM_MODES.INDIVIDUAL_7,
+      teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
       subTimerSecondsAtSubstitution: 120
     };
 
@@ -78,14 +78,15 @@ describe('createSubstitutionHandlers', () => {
       players.filter(p => p.id !== goalieId)
     );
 
-    hasActiveSubstitutes.mockImplementation((allPlayers, teamMode) => {
+    hasActiveSubstitutes.mockImplementation((allPlayers, teamConfig) => {
       // For test purposes, return true if there are any substitute players that are not inactive
-      const { MODE_DEFINITIONS } = require('../../constants/gameModes');
-      const definition = MODE_DEFINITIONS[teamMode];
-      if (!definition?.substitutePositions?.length) return false;
+      const { getFormationDefinition } = require('../../utils/formationConfigUtils');
+      const definition = getFormationDefinition(teamConfig);
+      const substitutePositions = definition?.substitutePositions || [];
+      if (!substitutePositions.length) return false;
       
       const substitutePlayers = allPlayers.filter(player => 
-        definition.substitutePositions.includes(player.stats?.currentPairKey)
+        substitutePositions.includes(player.stats?.currentPairKey)
       );
       
       return substitutePlayers.some(player => !player.stats?.isInactive);
@@ -105,7 +106,7 @@ describe('createSubstitutionHandlers', () => {
 
     calculatePositionSwitch.mockImplementation((gameState) => gameState);
     calculatePlayerToggleInactive.mockImplementation((gameState) => gameState);
-    calculateSubstituteSwap.mockImplementation((gameState) => gameState);
+    calculateGeneralSubstituteSwap.mockImplementation((gameState) => gameState);
     calculateSubstituteReorder.mockImplementation((gameState) => gameState);
     calculateUndo.mockImplementation((gameState) => gameState);
   });
@@ -117,7 +118,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       expect(handlers.handleSetNextSubstitution).toBeDefined();
@@ -140,7 +141,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.PAIRS_7
+        TEAM_CONFIGS.PAIRS_7
       );
 
       const fieldPlayerModal = { type: 'pair', target: 'leftPair' };
@@ -156,7 +157,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       const fieldPlayerModal = { type: 'player', target: 'leftDefender' };
@@ -174,7 +175,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       const fieldPlayerModal = { type: 'player', target: 'leftDefender' };
@@ -193,7 +194,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       const substituteModal = { playerId: '6' };
@@ -212,7 +213,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       const substituteModal = { playerId: '5' };
@@ -230,7 +231,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_6
+        TEAM_CONFIGS.INDIVIDUAL_6
       );
 
       const substituteModal = { playerId: '5' };
@@ -256,7 +257,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       const substituteModal = { playerId: '6' };
@@ -280,7 +281,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       const substituteModal = { playerId: '5' };
@@ -303,7 +304,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_6
+        TEAM_CONFIGS.INDIVIDUAL_6
       );
 
       const substituteModal = { playerId: '5' };
@@ -322,7 +323,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       const substituteModal = { playerId: '5' };
@@ -340,7 +341,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_6
+        TEAM_CONFIGS.INDIVIDUAL_6
       );
 
       const substituteModal = { playerId: '5' };
@@ -376,7 +377,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleSubstitutionWithHighlight();
@@ -387,7 +388,7 @@ describe('createSubstitutionHandlers', () => {
         expect.objectContaining({
           timestamp: expect.any(Number),
           beforeFormation: mockGameStateWithTimer.formation,
-          teamMode: TEAM_MODES.INDIVIDUAL_7,
+          teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
           subTimerSecondsAtSubstitution: 120
         })
       );
@@ -437,7 +438,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleChangePosition('show-options');
@@ -453,7 +454,7 @@ describe('createSubstitutionHandlers', () => {
     it('should show alert for pairs mode position change', () => {
       const mockGameStateWithModal = {
         ...mockGameState,
-        teamMode: TEAM_MODES.PAIRS_7,
+        teamConfig: TEAM_CONFIGS.PAIRS_7,
         fieldPlayerModal: {
           type: 'pair',
           target: 'leftPair'
@@ -468,7 +469,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.PAIRS_7
+        TEAM_CONFIGS.PAIRS_7
       );
 
       handlers.handleChangePosition('show-options');
@@ -495,7 +496,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleChangePosition('3');
@@ -522,7 +523,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleChangePosition(null);
@@ -542,7 +543,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleUndo(mockLastSubstitution);
@@ -560,7 +561,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleUndo(null);
@@ -579,7 +580,7 @@ describe('createSubstitutionHandlers', () => {
         stateUpdatersWithoutUndo,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       expect(() => handlers.handleUndo(mockLastSubstitution)).not.toThrow();
@@ -593,7 +594,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleCancelFieldPlayerModal();
@@ -608,7 +609,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       handlers.handleCancelSubstituteModal();
@@ -625,7 +626,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       // This will throw because the handler expects a valid game state
@@ -644,7 +645,7 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_MODES.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       // This will throw because the handler expects a field player modal

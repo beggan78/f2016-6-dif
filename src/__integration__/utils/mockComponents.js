@@ -71,41 +71,6 @@ export const createInteractiveMockComponent = (componentName, eventHandlers = {}
 // ===================================================================
 
 /**
- * Mock FormationRenderer component
- */
-export const MockFormationRenderer = ({ teamMode, formation, allPlayers, children, ...props }) => {
-  const mockPlayerPositions = Object.entries(formation || {}).map(([position, playerId]) => {
-    const player = allPlayers?.find(p => p.id === playerId);
-    return {
-      position,
-      playerId,
-      playerName: player?.name || `Player ${playerId}`
-    };
-  });
-  
-  return (
-    <div 
-      data-testid="mock-formation-renderer"
-      data-team-mode={teamMode}
-      data-position-count={mockPlayerPositions.length}
-    >
-      <div data-testid="formation-header">Team Mode: {teamMode}</div>
-      {mockPlayerPositions.map(({ position, playerId, playerName }) => (
-        <div 
-          key={position}
-          data-testid={`position-${position}`}
-          data-player-id={playerId}
-          data-player-name={playerName}
-        >
-          {position}: {playerName}
-        </div>
-      ))}
-      {children}
-    </div>
-  );
-};
-
-/**
  * Mock IndividualFormation component
  */
 export const MockIndividualFormation = ({ formation, allPlayers, longPressHandlers, ...props }) => {
@@ -262,67 +227,6 @@ export const MockConfigurationScreen = ({
         disabled={selectedSquadIds.length < 6}
       >
         Proceed to Setup
-      </button>
-    </div>
-  );
-};
-
-/**
- * Mock PeriodSetupScreen component
- */
-export const MockPeriodSetupScreen = ({ 
-  onFormationChange,
-  onStartGame,
-  formation = {},
-  allPlayers = [],
-  teamMode,
-  ...props 
-}) => {
-  return (
-    <div data-testid="mock-period-setup-screen">
-      <div data-testid="formation-setup">
-        <h2>Period Setup - {teamMode}</h2>
-        
-        <div data-testid="goalie-selection">
-          <select 
-            data-testid="goalie-select"
-            value={formation.goalie || ''}
-            onChange={(e) => onFormationChange?.({ ...formation, goalie: e.target.value })}
-          >
-            <option value="">Select Goalie</option>
-            {allPlayers.map(player => (
-              <option key={player.id} value={player.id}>{player.name}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div data-testid="formation-positions">
-          {teamMode === 'INDIVIDUAL_7' && (
-            <>
-              {['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 'substitute_1', 'substitute_2'].map(position => (
-                <select 
-                  key={position}
-                  data-testid={`position-select-${position}`}
-                  value={formation[position] || ''}
-                  onChange={(e) => onFormationChange?.({ ...formation, [position]: e.target.value })}
-                >
-                  <option value="">Select Player</option>
-                  {allPlayers.map(player => (
-                    <option key={player.id} value={player.id}>{player.name}</option>
-                  ))}
-                </select>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
-      
-      <button 
-        data-testid="start-game-button"
-        onClick={onStartGame}
-        disabled={!formation.goalie}
-      >
-        Start Game
       </button>
     </div>
   );

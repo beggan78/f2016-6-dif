@@ -7,12 +7,12 @@ This directory contains the React components responsible for the initial game co
 - **`ConfigurationScreen.js`**: This is the initial screen where users configure a new game. It allows:
   - **Squad Selection**: Choosing 6 or 7 players from the full roster.
   - **Game Settings**: Setting the number of periods, period duration, and substitution alert times.
-  - **Team Mode**: Selecting between Pairs or Individual team modes for 7-player squads.
+  - **Team Configuration**: Selecting between Pairs or Individual configurations for 7-player squads.
   - **Goalie Assignment**: Assigning a goalie for each period.
   - **Opponent Team Name**: Input for the opponent's team name.
 
 - **`PeriodSetupScreen.js`**: This screen is displayed before each period (or after the initial configuration). It allows the user to:
-  - **Assign Players to Positions**: Manually assign players to specific field positions (defender, attacker) and substitute roles based on the chosen team mode.
+  - **Assign Players to Positions**: Manually assign players to specific field positions (defender, attacker) and substitute roles based on the chosen team configuration.
   - **Review Current Score**: Displays the current score before starting a new period.
   - **Goalie Confirmation**: Confirms or allows changing the goalie for the current period.
   - **Formation Validation**: Ensures that all required positions are filled before starting the period.
@@ -29,8 +29,8 @@ All input fields and selection dropdowns are controlled components, meaning thei
 ### b. Progressive Disclosure
 The UI adapts based on user selections. For example, goalie assignment options only appear once a squad size is selected, and team mode selection is only available for 7-player squads.
 
-### c. Formation-Specific UI
-The `PeriodSetupScreen` dynamically renders different player assignment interfaces (`PairSelectionCard` vs. `IndividualPositionCard`) based on the `teamMode` selected in `ConfigurationScreen`. This ensures the UI is always relevant to the chosen game mode.
+### c. Configuration-Specific UI
+The `PeriodSetupScreen` dynamically renders different player assignment interfaces (`PairSelectionCard` vs. `IndividualPositionCard`) based on the team configuration selected in `ConfigurationScreen`. This ensures the UI is always relevant to the chosen configuration.
 
 ### d. Input Validation & Feedback
 Basic input validation (e.g., squad size, goalie assignments) is performed before proceeding to the next step, providing immediate feedback to the user.
@@ -40,7 +40,7 @@ These components heavily rely on the `useGameState` hook to read and update the 
 
 ## 3. Key Data Flows
 
-1.  **Configuration to Game State**: User selections in `ConfigurationScreen` (squad, periods, duration, team mode, goalies) directly update the corresponding state variables in `useGameState`.
+1.  **Configuration to Game State**: User selections in `ConfigurationScreen` (squad, periods, duration, team configuration, goalies) directly update the corresponding state variables in `useGameState`.
 
 2.  **Period Setup to Game State**: Player assignments in `PeriodSetupScreen` update the `formation` state in `useGameState`. When `handleStartGame` is called, `useGameState` finalizes the formation and transitions the view to the game screen.
 

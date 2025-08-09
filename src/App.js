@@ -43,7 +43,7 @@ function AppContent() {
     loading: authLoading,
     needsProfileCompletion
   } = useAuth();
-  
+
   const {
     currentTeam,
     hasPendingRequests,
@@ -64,15 +64,16 @@ function AppContent() {
     // Then perform the actual sign out
     return await signOut();
   }, [gameState, signOut]);
-  
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const [fromView, setFromView] = useState(null);
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  
+
   // Create a ref to store the pushModalState function to avoid circular dependency
   const pushModalStateRef = useRef(null);
   
@@ -128,7 +129,7 @@ function AppContent() {
     gameState.handleStartGame();
     timers.startTimers(
       gameState.currentPeriodNumber,
-      gameState.teamMode,
+      gameState.teamConfig,
       'Djurgården', // Home team name
       gameState.opponentTeamName,
       gameState.formation,
@@ -172,7 +173,7 @@ function AppContent() {
       gameState.currentPeriodNumber,
       isMatchEnd,
       gameState.formation,
-      gameState.teamMode
+      gameState.teamConfig
     );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
@@ -185,7 +186,7 @@ function AppContent() {
       gameState.currentPeriodNumber,
       isMatchEnd,
       gameState.formation,
-      gameState.teamMode
+      gameState.teamConfig
     );
     gameState.handleEndPeriod(timers.isSubTimerPaused);
   };
@@ -260,9 +261,11 @@ function AppContent() {
   };
 
   const handleNavigateToTacticalBoard = () => {
+    setFromView(gameState.view);
     gameState.setView(VIEWS.TACTICAL_BOARD);
   };
 
+  const handleNavigateFromTacticalBoard = (fallbackView) => {
   // Team admin modal handlers
   const handleOpenTeamAdminModal = useCallback((team) => {
     setSelectedTeamForAdmin(team);
@@ -293,8 +296,7 @@ function AppContent() {
   const handleNavigateFromTacticalBoard = () => {
     // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
     if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      const targetView = gameState.currentPeriodNumber > 0 ? VIEWS.GAME : VIEWS.CONFIG;
-      gameState.setView(targetView);
+      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
     }
   };
 
@@ -326,8 +328,11 @@ function AppContent() {
             setPeriodDurationMinutes={gameState.setPeriodDurationMinutes}
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
-            teamMode={gameState.teamMode}
-            setTeamMode={gameState.setTeamMode}
+            teamConfig={gameState.teamConfig}
+            updateTeamConfig={gameState.updateTeamConfig}
+            selectedFormation={gameState.selectedFormation}
+            updateFormationSelection={gameState.updateFormationSelection}
+            createTeamConfigFromSquadSize={gameState.createTeamConfigFromSquadSize}
             alertMinutes={gameState.alertMinutes}
             setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
@@ -355,7 +360,8 @@ function AppContent() {
             periodGoalieIds={gameState.periodGoalieIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
             numPeriods={gameState.numPeriods}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
+            selectedFormation={gameState.selectedFormation}
             setView={gameState.setView}
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
@@ -392,7 +398,8 @@ function AppContent() {
             setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
+            selectedFormation={gameState.selectedFormation}
             alertMinutes={gameState.alertMinutes}
             togglePlayerInactive={gameState.togglePlayerInactive}
             switchPlayerPositions={gameState.switchPlayerPositions}
@@ -444,7 +451,7 @@ function AppContent() {
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             periodDurationMinutes={gameState.periodDurationMinutes}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
             homeTeamName={selectedSquadPlayers ? 'Djurgården' : 'Home'}
             awayTeamName={gameState.opponentTeamName || 'Opponent'}
             onNavigateToStats={() => gameState.setView(VIEWS.STATS)}
@@ -472,6 +479,7 @@ function AppContent() {
             onNavigateBack={handleNavigateFromTacticalBoard}
             pushModalState={pushModalState}
             removeModalFromStack={removeModalFromStack}
+            fromView={fromView}
           />
         );
       case VIEWS.TEAM_MANAGEMENT:
@@ -494,7 +502,7 @@ function AppContent() {
             onAddPlayer={handleAddPlayer}
             onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
-            teamMode={gameState.teamMode}
+            teamConfig={gameState.teamConfig}
             onSplitPairs={gameState.splitPairs}
             onFormPairs={gameState.formPairs}
             allPlayers={gameState.allPlayers}
@@ -507,7 +515,7 @@ function AppContent() {
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
       </header>
-      
+
       {/* Success Message Banner */}
       {successMessage && (
         <div className="w-full max-w-2xl mb-4">
@@ -516,7 +524,7 @@ function AppContent() {
           </div>
         </div>
       )}
-      
+
       <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
         {renderView()}
       </main>

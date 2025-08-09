@@ -3,8 +3,7 @@
  * Provides relevance-based sorting for goal scorer attribution
  */
 
-import { TEAM_MODES } from '../constants/playerConstants';
-import { isIndividualMode } from '../constants/gameModes';
+// import { isIndividualMode } from '../constants/gameModes';
 
 /**
  * Position priority for goal scoring relevance
@@ -12,9 +11,10 @@ import { isIndividualMode } from '../constants/gameModes';
  */
 const GOAL_SCORING_PRIORITY = {
   ATTACKER: 1,
-  DEFENDER: 2, 
-  GOALIE: 3,
-  SUBSTITUTE: 4
+  MIDFIELDER: 2,
+  DEFENDER: 3,
+  GOALIE: 4,
+  SUBSTITUTE: 5
 };
 
 /**
@@ -23,18 +23,27 @@ const GOAL_SCORING_PRIORITY = {
  * @returns {string} Role: 'ATTACKER', 'DEFENDER', 'GOALIE', or 'SUBSTITUTE'
  */
 export const getPlayerCurrentRole = (player) => {
-  if (!player?.stats?.currentRole) {
+  if (!player?.stats) {
     return 'SUBSTITUTE';
   }
 
-  // Map stored role values to the expected format
-  const role = player.stats.currentRole;
-  
-  // Handle different possible role formats
-  if (role === 'Goalie' || role === 'GOALIE') return 'GOALIE';
-  if (role === 'Attacker' || role === 'ATTACKER') return 'ATTACKER';
-  if (role === 'Defender' || role === 'DEFENDER') return 'DEFENDER';
-  if (role === 'Substitute' || role === 'SUBSTITUTE') return 'SUBSTITUTE';
+  const { currentRole, currentStatus } = player.stats;
+
+  // Prioritize currentRole if available and not 'On Field'
+  if (currentRole && currentRole !== 'On Field') {
+    const role = currentRole.toUpperCase();
+    if (role === 'GOALIE' || role === 'ATTACKER' || role === 'DEFENDER' || role === 'MIDFIELDER' || role === 'SUBSTITUTE') {
+      return role;
+    }
+  }
+
+  // Fallback for on-field players where role is in currentStatus
+  if (currentStatus) {
+    const status = currentStatus.toUpperCase();
+    if (status === 'GOALIE' || status === 'ATTACKER' || status === 'DEFENDER' || status === 'MIDFIELDER') {
+      return status;
+    }
+  }
   
   // Default fallback
   return 'SUBSTITUTE';
@@ -43,18 +52,19 @@ export const getPlayerCurrentRole = (player) => {
 /**
  * Get all players currently in attacker positions
  * @param {Object} formation - Current formation object
- * @param {string} teamMode - Current team mode
+ * @param {Object} teamConfig - Team configuration object
  * @returns {Array} Array of player IDs in attacker positions
  */
-export const getCurrentAttackers = (formation, teamMode) => {
+export const getCurrentAttackers = (formation, teamConfig) => {
   if (!formation) return [];
 
   const attackers = [];
 
-  if (isIndividualMode(teamMode)) {
+  if (teamConfig?.substitutionType === 'individual') {
     if (formation.leftAttacker) attackers.push(formation.leftAttacker);
     if (formation.rightAttacker) attackers.push(formation.rightAttacker);
-  } else if (teamMode === TEAM_MODES.PAIRS_7) {
+    if (formation.attacker) attackers.push(formation.attacker); // For 1-2-1 formation
+  } else if (teamConfig?.substitutionType === 'pairs') {
     if (formation.leftPair?.attacker) attackers.push(formation.leftPair.attacker);
     if (formation.rightPair?.attacker) attackers.push(formation.rightPair.attacker);
   }
@@ -65,18 +75,19 @@ export const getCurrentAttackers = (formation, teamMode) => {
 /**
  * Get all players currently in defender positions
  * @param {Object} formation - Current formation object
- * @param {string} teamMode - Current team mode
+ * @param {Object} teamConfig - Team configuration object
  * @returns {Array} Array of player IDs in defender positions
  */
-export const getCurrentDefenders = (formation, teamMode) => {
+export const getCurrentDefenders = (formation, teamConfig) => {
   if (!formation) return [];
 
   const defenders = [];
 
-  if (isIndividualMode(teamMode)) {
+  if (teamConfig?.substitutionType === 'individual') {
     if (formation.leftDefender) defenders.push(formation.leftDefender);
     if (formation.rightDefender) defenders.push(formation.rightDefender);
-  } else if (teamMode === TEAM_MODES.PAIRS_7) {
+    if (formation.defender) defenders.push(formation.defender); // For 1-2-1 formation
+  } else if (teamConfig?.substitutionType === 'pairs') {
     if (formation.leftPair?.defender) defenders.push(formation.leftPair.defender);
     if (formation.rightPair?.defender) defenders.push(formation.rightPair.defender);
   }

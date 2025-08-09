@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Shield, Sword } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Shield, Sword, Hand } from 'lucide-react';
 import { getPositionEvents } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAnimation';
@@ -34,6 +34,7 @@ export function PairsFormation({
     const pairData = formation[pairKey];
     if (!pairData) return null;
 
+
     const isNextOff = pairKey === nextPhysicalPairToSubOut;
     const isNextOn = pairKey === 'subPair';
     const canBeSelected = pairKey !== 'subPair';
@@ -56,7 +57,9 @@ export function PairsFormation({
       isNextOn,
       isRecentlySubstituted: hasRecentlySubstitutedPlayer,
       hideNextOffIndicator,
-      supportsInactivePlayers: false
+      supportsInactiveUsers: false,
+      role: null, // No specific role for pairs
+      isGoalie: false
     });
 
     const longPressEvents = getPositionEvents(longPressHandlers, pairKey);
@@ -108,7 +111,8 @@ export function PairsFormation({
       isNextOn: false,
       isRecentlySubstituted,
       hideNextOffIndicator,
-      supportsInactivePlayers: false
+      supportsInactiveUsers: false,
+      isGoalie: true
     });
 
     const longPressEvents = goalieHandlers ? goalieHandlers.goalieEvents : {};
@@ -122,7 +126,7 @@ export function PairsFormation({
       >
         <h3 className="text-sm font-semibold mb-1">Goalie</h3>
         <div className="flex items-center justify-between">
-          <div>{getPlayerNameById ? getPlayerNameById(goalieId) : goalieId}</div>
+          <div><Hand className={ICON_STYLES.small} /> {getPlayerNameById ? getPlayerNameById(goalieId) : goalieId}</div>
           <PlayerStatsDisplay playerId={goalieId} getPlayerTimeStats={getPlayerTimeStats} />
         </div>
         <p className={FORMATION_STYLES.helpText}>Hold to replace goalie</p>
@@ -139,3 +143,6 @@ export function PairsFormation({
     </div>
   );
 }
+
+// Memoize PairsFormation to prevent unnecessary re-renders
+export default React.memo(PairsFormation);

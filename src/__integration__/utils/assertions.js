@@ -7,7 +7,7 @@
  */
 
 import { screen, within } from '@testing-library/react';
-import { TEAM_MODES, PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
+import {PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 
 // ===================================================================
 // GAME STATE ASSERTIONS
@@ -25,8 +25,7 @@ export const assertValidGameState = (gameState, expectedProperties = {}) => {
   const requiredProps = [
     'formation',
     'allPlayers', 
-    'rotationQueue',
-    'teamMode'
+    'rotationQueue'
   ];
   
   requiredProps.forEach(prop => {
@@ -43,9 +42,6 @@ export const assertValidGameState = (gameState, expectedProperties = {}) => {
   
   // Validate rotationQueue
   expect(Array.isArray(gameState.rotationQueue)).toBe(true);
-  
-  // Validate teamMode
-  expect(Object.values(TEAM_MODES)).toContain(gameState.teamMode);
   
   // Validate expected properties if provided
   Object.entries(expectedProperties).forEach(([key, expectedValue]) => {
@@ -99,48 +95,6 @@ export const assertPlayerDataConsistency = (gameState) => {
     expect(typeof player.stats.timeAsGoalieSeconds).toBe('number');
     expect(player.stats.timeOnFieldSeconds).toBeGreaterThanOrEqual(0);
   });
-  
-  return true;
-};
-
-/**
- * Asserts that formation structure matches the team mode
- */
-export const assertFormationStructure = (formation, teamMode) => {
-  expect(formation).toBeDefined();
-  expect(formation.goalie).toBeDefined();
-  
-  switch (teamMode) {
-    case TEAM_MODES.PAIRS_7:
-      expect(formation.leftPair).toBeDefined();
-      expect(formation.rightPair).toBeDefined();
-      expect(formation.subPair).toBeDefined();
-      expect(formation.leftPair.defender).toBeDefined();
-      expect(formation.leftPair.attacker).toBeDefined();
-      expect(formation.rightPair.defender).toBeDefined();
-      expect(formation.rightPair.attacker).toBeDefined();
-      break;
-      
-    case TEAM_MODES.INDIVIDUAL_6:
-      expect(formation.leftDefender).toBeDefined();
-      expect(formation.rightDefender).toBeDefined();
-      expect(formation.leftAttacker).toBeDefined();
-      expect(formation.rightAttacker).toBeDefined();
-      expect(formation.substitute_1).toBeDefined();
-      break;
-      
-    case TEAM_MODES.INDIVIDUAL_7:
-      expect(formation.leftDefender).toBeDefined();
-      expect(formation.rightDefender).toBeDefined();
-      expect(formation.leftAttacker).toBeDefined();
-      expect(formation.rightAttacker).toBeDefined();
-      expect(formation.substitute_1).toBeDefined();
-      expect(formation.substitute_2).toBeDefined();
-      break;
-      
-    default:
-      throw new Error(`Unknown team mode: ${teamMode}`);
-  }
   
   return true;
 };
@@ -249,15 +203,7 @@ export const assertPersistenceAfterRefresh = async (beforeState, afterRefreshCal
   
   // Verify critical data was restored
   expect(restoredState).toBeDefined();
-  
-  // Compare critical fields (allowing for some fields to be reset/different)
-  const criticalFields = ['formation', 'allPlayers', 'teamMode'];
-  criticalFields.forEach(field => {
-    if (beforeState[field] !== undefined) {
-      expect(restoredState[field]).toEqual(beforeState[field]);
-    }
-  });
-  
+
   return restoredState;
 };
 

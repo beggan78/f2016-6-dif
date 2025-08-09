@@ -154,9 +154,8 @@
  * @see QUICK_REFERENCE.md for common usage patterns
  */
 // No longer using findPlayerById in this file
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { getFormationPositionsWithGoalie, MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
+import { getFormationPositionsWithGoalie, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -197,19 +196,27 @@ const getBoxHeight = (mode) => {
  * Maps logical position keys to their visual rendering order. This determines
  * animation distances by calculating index differences.
  * 
- * @param {string} position - Position key (e.g., 'leftDefender', 'goalie', 'leftPair')
- * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
+ * @param {string} position - Position key (e.g., 'leftDefender', 'defender', 'goalie', 'leftPair')
+ * @param {Object} teamConfig - Team configuration object
+ * @param {string} selectedFormation - Formation type ('2-2', '1-2-1', etc.) for formation-aware positioning
  * @returns {number} Zero-based index representing visual order (-1 if not found)
  * 
  * @example
- * // Individual 6-player mode position order:
- * // goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute(5)
- * getPositionIndex('leftDefender', TEAM_MODES.INDIVIDUAL_6); // Returns 1
- * getPositionIndex('substitute', TEAM_MODES.INDIVIDUAL_6);   // Returns 5
+ * // Individual 6-player mode position order in 1-2-1 formation:
+ * // goalie(0) → defender(1) → left(2) → right(3) → attacker(4) → substitute(5)
+ * getPositionIndex('defender', teamConfig, '1-2-1'); // Returns 1
+ * getPositionIndex('substitute', teamConfig, '1-2-1');   // Returns 5
  */
-const getPositionIndex = (position, teamMode) => {
-  const positions = getFormationPositionsWithGoalie(teamMode);
-  return positions.indexOf(position);
+const getPositionIndex = (position, teamConfig, selectedFormation = null) => {
+  try {
+    const positions = getFormationPositionsWithGoalie(teamConfig);
+    const index = positions.indexOf(position);
+    
+    return index;
+  } catch (error) {
+    console.warn(`Error getting position index for ${position} in ${teamConfig}:`, error);
+    return -1;
+  }
 };
 
 /**
@@ -221,22 +228,22 @@ const getPositionIndex = (position, teamMode) => {
  * 
  * @param {number} fromIndex - Starting position index
  * @param {number} toIndex - Ending position index  
- * @param {string} teamMode - Team mode for height calculations
+ * @param {Object} teamConfig - Team configuration object for height calculations
  * @returns {number} Signed pixel distance (+ = down, - = up, 0 = no movement)
  * 
  * @example
  * // Player moving from leftDefender(1) to substitute(5) in Individual 6-player
- * calculateDistance(1, 5, TEAM_MODES.INDIVIDUAL_6); // Returns +416px (4 positions down)
+ * calculateDistance(1, 5, teamConfig); // Returns +416px (4 positions down)
  * 
  * // Player moving from substitute(5) to leftDefender(1) 
- * calculateDistance(5, 1, TEAM_MODES.INDIVIDUAL_6); // Returns -416px (4 positions up)
+ * calculateDistance(5, 1, teamConfig); // Returns -416px (4 positions up)
  */
-const calculateDistance = (fromIndex, toIndex, teamMode) => {
+const calculateDistance = (fromIndex, toIndex, teamConfig) => {
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return 0;
   
-  const mode = teamMode === TEAM_MODES.PAIRS_7 ? 'pairs' : 'individual';
+  const mode = teamConfig?.substitutionType === 'pairs' ? 'pairs' : 'individual';
   const boxHeight = getBoxHeight(mode);
-  const distance = Math.abs(toIndex - fromIndex) * boxHeight;
+  const distance = Math.abs(toIndex - fromIndex) * boxHeight * 0.9025;
   return toIndex > fromIndex ? distance : -distance;
 };
 
@@ -248,24 +255,25 @@ const calculateDistance = (fromIndex, toIndex, teamMode) => {
  * 
  * @param {Object} formation - Current formation with player assignments
  * @param {Array} allPlayers - Complete player data array
- * @param {string} teamMode - Team mode constant (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
+ * @param {Object} teamConfig - Team configuration object
+ * @param {string} selectedFormation - Formation type ('2-2', '1-2-1', etc.) - REQUIRED for formation-aware animations
  * @returns {Object} Position snapshot: { [playerId]: PositionData }
  * 
  * PositionData structure:
  * - playerId: string - Player's unique identifier
- * - position: string - Position key (e.g., 'leftDefender', 'goalie')  
+ * - position: string - Position key (e.g., 'leftDefender', 'defender', 'goalie')  
  * - positionIndex: number - Visual order index for animation calculations
  * - role?: string - Player role for pairs mode ('defender' or 'attacker')
  * 
  * @example
- * const positions = captureAllPlayerPositions(formation, players, TEAM_MODES.INDIVIDUAL_6);
+ * const positions = captureAllPlayerPositions(formation, players, teamConfig, '1-2-1');
  * // Returns: {
  * //   "player1": { playerId: "player1", position: "goalie", positionIndex: 0 },
- * //   "player2": { playerId: "player2", position: "leftDefender", positionIndex: 1 },
+ * //   "player2": { playerId: "player2", position: "defender", positionIndex: 1 },  // 1-2-1 formation
  * //   ...
  * // }
  */
-export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
+export const captureAllPlayerPositions = (formation, allPlayers, teamConfig, selectedFormation = null) => {
   const positions = {};
   
   // Add goalie
@@ -273,12 +281,12 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
     positions[formation.goalie] = {
       playerId: formation.goalie,
       position: POSITION_KEYS.GOALIE,
-      positionIndex: getPositionIndex(POSITION_KEYS.GOALIE, teamMode)
+      positionIndex: getPositionIndex(POSITION_KEYS.GOALIE, teamConfig, selectedFormation)
     };
   }
   
   // Add field and substitute players based on team mode
-  if (teamMode === TEAM_MODES.PAIRS_7) {
+  if (teamConfig?.substitutionType === 'pairs') {
     // Pairs mode
     [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR, POSITION_KEYS.SUB_PAIR].forEach(pairKey => {
       const pair = formation[pairKey];
@@ -287,7 +295,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
           positions[pair.defender] = {
             playerId: pair.defender,
             position: pairKey,
-            positionIndex: getPositionIndex(pairKey, teamMode),
+            positionIndex: getPositionIndex(pairKey, teamConfig, selectedFormation),
             role: 'defender'
           };
         }
@@ -295,27 +303,31 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
           positions[pair.attacker] = {
             playerId: pair.attacker,
             position: pairKey,
-            positionIndex: getPositionIndex(pairKey, teamMode),
+            positionIndex: getPositionIndex(pairKey, teamConfig, selectedFormation),
             role: 'attacker'
           };
         }
       }
     });
-  } else if (isIndividualMode(teamMode)) {
-    // Unified individual mode handling using MODE_DEFINITIONS
-    const modeDefinition = MODE_DEFINITIONS[teamMode];
+  } else if (isIndividualMode(teamConfig)) {
+    // Unified individual mode handling using dynamic definitions
+    const modeDefinition = getModeDefinition(teamConfig);
+    
     if (modeDefinition) {
       const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
+
       allPositions.forEach(pos => {
         const playerId = formation[pos];
         if (playerId) {
+          const positionIndex = getPositionIndex(pos, teamConfig, selectedFormation);
           positions[playerId] = {
             playerId: playerId,
             position: pos,
-            positionIndex: getPositionIndex(pos, teamMode)
+            positionIndex: positionIndex
           };
         }
       });
+      
     }
   }
   
@@ -330,7 +342,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
  * 
  * @param {Object} beforePositions - Position snapshot before state change
  * @param {Object} afterPositions - Position snapshot after state change  
- * @param {string} teamMode - Team mode for distance calculations
+ * @param {Object} teamConfig - Team configuration object for distance calculations
  * @returns {Object} Animation data: { [playerId]: AnimationData }
  * 
  * AnimationData structure:
@@ -341,7 +353,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
  * - toPosition: string - Ending position key
  * 
  * @example
- * const animations = calculateAllPlayerAnimations(before, after, teamMode);
+ * const animations = calculateAllPlayerAnimations(before, after, teamConfig);
  * // Returns: {
  * //   "player1": {
  * //     playerId: "player1",
@@ -352,7 +364,7 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamMode) => {
  * //   }
  * // }
  */
-export const calculateAllPlayerAnimations = (beforePositions, afterPositions, teamMode) => {
+export const calculateAllPlayerAnimations = (beforePositions, afterPositions, teamConfig) => {
   const animations = {};
   
   // Handle null/undefined position data gracefully
@@ -375,7 +387,7 @@ export const calculateAllPlayerAnimations = (beforePositions, afterPositions, te
       return;
     }
     
-    const distance = calculateDistance(before.positionIndex, after.positionIndex, teamMode);
+    const distance = calculateDistance(before.positionIndex, after.positionIndex, teamConfig);
     
     if (distance !== 0) {
       animations[playerId] = {
@@ -472,26 +484,29 @@ export const animateStateChange = (
   setHideNextOffIndicator,
   setRecentlySubstitutedPlayers
 ) => {
-  // 1. Capture current positions
+
+  // 1. Capture current positions - NOW FORMATION-AWARE
   const beforePositions = captureAllPlayerPositions(
     gameState.formation,
     gameState.allPlayers, 
-    gameState.teamMode
+    gameState.teamConfig,
+    gameState.selectedFormation // Pass selected formation for correct position mapping
   );
   
   // 2. Calculate what the new state would be
   const newGameState = pureLogicFunction(gameState);
   
-  // 3. Capture after positions
+  // 3. Capture after positions - NOW FORMATION-AWARE
   const afterPositions = captureAllPlayerPositions(
     newGameState.formation,
     newGameState.allPlayers, 
-    newGameState.teamMode
+    newGameState.teamConfig,
+    newGameState.selectedFormation || gameState.selectedFormation // Use new or fallback to current
   );
   
   // 4. Calculate animations needed
-  const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, gameState.teamMode);
-  
+  const animations = calculateAllPlayerAnimations(beforePositions, afterPositions, gameState.teamConfig);
+
   // 5. Start animations if there are any
   if (Object.keys(animations).length > 0) {
     setAnimationState({

@@ -1,10 +1,11 @@
-import { PLAYER_ROLES, TEAM_MODES } from '../../constants/playerConstants';
-import { MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
+import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
-import { createPlayerLookup, findPlayerById } from '../../utils/playerUtils';
-import { getPositionRole, getFieldPositions } from './positionUtils';
+import { findPlayerById, createPlayerLookupFunction } from '../../utils/playerUtils';
+import { getPositionRole } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
 import { getCarouselMapping } from './carouselPatterns';
+import { handleError, createError, ERROR_SEVERITY } from '../../utils/errorHandler';
 
 /**
  * Creates a cascade mapping for active substitutes when inactive players are present
@@ -48,8 +49,17 @@ const applyActiveCascade = (formation, cascade) => {
  * Manages substitution logic for different team modes
  */
 export class SubstitutionManager {
-  constructor(teamMode) {
-    this.teamMode = teamMode;
+  constructor(teamConfig, selectedFormation = null) {
+    this.teamConfig = teamConfig;
+    this.selectedFormation = selectedFormation;
+  }
+
+  /**
+   * Gets mode definition for this team configuration object
+   */
+  getModeConfig() {
+    const modeDefinition = getModeDefinition(this.teamConfig);
+    return modeDefinition;
   }
 
 
@@ -175,15 +185,66 @@ export class SubstitutionManager {
       isSubTimerPaused
     } = context;
 
-    const modeConfig = MODE_DEFINITIONS[this.teamMode];
+    // Validate rotation queue integrity
+    if (!rotationQueue || rotationQueue.length === 0) {
+      const error = createError.gameLogic('Rotation queue cannot be empty during substitution', {
+        operation: 'handleIndividualModeSubstitution',
+        rotationQueue,
+        nextPlayerIdToSubOut,
+        teamConfig: this.teamConfig,
+        selectedFormation: this.selectedFormation,
+        severity: ERROR_SEVERITY.CRITICAL
+      });
+      handleError(error);
+      throw error;
+    }
+    
+    if (!nextPlayerIdToSubOut) {
+      const error = createError.gameLogic('nextPlayerIdToSubOut cannot be null during substitution', {
+        operation: 'handleIndividualModeSubstitution',
+        nextPlayerIdToSubOut,
+        rotationQueue: rotationQueue?.slice(),
+        severity: ERROR_SEVERITY.CRITICAL
+      });
+      handleError(error);
+      throw error;
+    }
+
+    const modeConfig = this.getModeConfig();
     const { substitutePositions, supportsInactiveUsers, substituteRotationPattern } = modeConfig;
+    
+    // Validate that nextPlayerIdToSubOut is actually in a field position
+    const fieldPositions = modeConfig.fieldPositions;
+    const nextPlayerPosition = fieldPositions.find(pos => formation[pos] === nextPlayerIdToSubOut);
+    
+    if (!nextPlayerPosition) {
+      const error = createError.gameLogic('Player to substitute out must be in a field position, not a substitute position', {
+        operation: 'handleIndividualModeSubstitution',
+        nextPlayerIdToSubOut,
+        fieldPositions,
+        currentFormation: Object.keys(formation).reduce((acc, key) => {
+          if (fieldPositions.includes(key)) {
+            acc[key] = formation[key];
+          }
+          return acc;
+        }, {}),
+        substitutePositions: substitutePositions.reduce((acc, key) => {
+          acc[key] = formation[key];
+          return acc;
+        }, {}),
+        severity: ERROR_SEVERITY.CRITICAL
+      });
+      handleError(error);
+      throw error;
+    }
+    
 
     const playerGoingOffId = nextPlayerIdToSubOut;
     const firstSubstitutePosition = substitutePositions[0]; // Get first substitute position dynamically
     const playerComingOnId = formation[firstSubstitutePosition];
 
     // Create rotation queue helper
-    const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     queueManager.initialize(); // Separate active and inactive players
 
     // Safety check for inactive substitute (7-player mode only)
@@ -389,18 +450,21 @@ export class SubstitutionManager {
     });
 
     // For individual modes, just rotate the current queue (no rebuilding during gameplay)
-    const rotationQueueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
+    const rotationQueueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     rotationQueueManager.initialize(); // Separate active and inactive players
+    
     
     // Move the substituted player to the end of the queue
     rotationQueueManager.rotatePlayer(playerGoingOffId);
     const newRotationQueue = rotationQueueManager.toArray();
     const nextPlayerToSubOutId = newRotationQueue[0];
-
-    const fieldPositions = getFieldPositions(this.teamMode);
-    const nextPlayerPosition = fieldPositions.find(pos => 
+    
+    
+    // Use formation-aware field positions (already declared in validation section above)
+    const nextPlayerPositionInNewFormation = fieldPositions.find(pos => 
       newFormation[pos] === nextPlayerToSubOutId
     );
+
 
     // Build return object with mode-specific fields
     const result = {
@@ -408,7 +472,7 @@ export class SubstitutionManager {
       updatedPlayers,
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
-      newNextPlayerToSubOut: nextPlayerPosition || 'leftDefender',
+      newNextPlayerToSubOut: nextPlayerPositionInNewFormation || 'leftDefender',
       playersComingOnIds: [playerComingOnId],
       playersGoingOffIds: [playerGoingOffId]
     };
@@ -418,6 +482,7 @@ export class SubstitutionManager {
       result.newNextNextPlayerIdToSubOut = newRotationQueue[1] || null;
     }
 
+
     return result;
   }
 
@@ -425,12 +490,12 @@ export class SubstitutionManager {
    * Main substitution handler - delegates to appropriate method based on team mode
    */
   executeSubstitution(context) {
-    if (this.teamMode === TEAM_MODES.PAIRS_7) {
+    if (this.teamConfig?.substitutionType === 'pairs') {
       return this.handlePairsSubstitution(context);
-    } else if (isIndividualMode(this.teamMode)) {
+    } else if (isIndividualMode(this.teamConfig)) {
       return this.handleIndividualModeSubstitution(context);
     } else {
-      throw new Error(`Unknown team mode: ${this.teamMode}`);
+      throw new Error(`Unknown team mode: ${this.teamConfig}`);
     }
   }
 }
@@ -474,6 +539,6 @@ export function handleRoleChange(player, newRole, currentTimeEpoch, isSubTimerPa
 /**
  * Factory function to create substitution manager
  */
-export function createSubstitutionManager(teamMode) {
-  return new SubstitutionManager(teamMode);
+export function createSubstitutionManager(teamConfig, selectedFormation = null) {
+  return new SubstitutionManager(teamConfig, selectedFormation);
 }

@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Users, Play, ArrowLeft, Shuffle } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
-import { getOutfieldPositions, MODE_DEFINITIONS, isIndividualMode } from '../../constants/gameModes';
+import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
+
 
 // Position configuration map for individual modes
 const POSITION_CONFIG = {
+  // 2-2 Formation positions
   leftDefender: { title: 'Left Defender', position: 'leftDefender' },
   rightDefender: { title: 'Right Defender', position: 'rightDefender' },
   leftAttacker: { title: 'Left Attacker', position: 'leftAttacker' },
   rightAttacker: { title: 'Right Attacker', position: 'rightAttacker' },
+  
+  // 1-2-1 Formation positions
+  defender: { title: 'Defender', position: 'defender' },
+  left: { title: 'Left Mid', position: 'left' },
+  right: { title: 'Right Mid', position: 'right' },
+  attacker: { title: 'Attacker', position: 'attacker' },
+  
+  // Substitute positions
   substitute_1: { title: 'Substitute', position: 'substitute_1' },
   substitute_2: { title: 'Substitute', position: 'substitute_2' },
   substitute_3: { title: 'Substitute', position: 'substitute_3' },
@@ -20,8 +29,8 @@ const POSITION_CONFIG = {
 };
 
 // Dynamic component for rendering individual position cards
-function IndividualPositionCards({ teamMode, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
-  const modeDefinition = MODE_DEFINITIONS[teamMode];
+function IndividualPositionCards({ teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
+  const modeDefinition = getModeDefinition(teamConfig);
   if (!modeDefinition) {
     return null;
   }
@@ -66,7 +75,8 @@ export function PeriodSetupScreen({
   periodGoalieIds, 
   setPeriodGoalieIds, 
   numPeriods,
-  teamMode,
+  teamConfig,
+  selectedFormation,
   setView,
   homeScore,
   awayScore,
@@ -77,7 +87,7 @@ export function PeriodSetupScreen({
   debugMode = false
 }) {
   // Determine formation mode
-  const isPairsMode = teamMode === TEAM_MODES.PAIRS_7;
+  const isPairsMode = teamConfig?.substitutionType === 'pairs';
   
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
@@ -133,8 +143,10 @@ export function PeriodSetupScreen({
     if (isPairsMode) {
       return position === 'leftPair' || position === 'rightPair';
     } else {
+      // Handle both 2-2 and 1-2-1 formation field positions
       return position === 'leftDefender' || position === 'rightDefender' || 
-             position === 'leftAttacker' || position === 'rightAttacker';
+             position === 'leftAttacker' || position === 'rightAttacker' ||
+             position === 'defender' || position === 'left' || position === 'right' || position === 'attacker';
     }
   };
 
@@ -152,7 +164,7 @@ export function PeriodSetupScreen({
         }
       }
     } else {
-      const positions = getOutfieldPositions(teamMode);
+      const positions = getOutfieldPositions(teamConfig);
       for (const position of positions) {
         if (formation[position] === playerId) {
           return { position };
@@ -444,7 +456,7 @@ export function PeriodSetupScreen({
     if (isFormationComplete() && playerId) {
       // Find where the selected player is currently assigned
       let currentPlayerPosition = null;
-      getOutfieldPositions(teamMode).forEach(pos => {
+      getOutfieldPositions(teamConfig).forEach(pos => {
         if (formation[pos] === playerId) {
           currentPlayerPosition = pos;
         }
@@ -466,7 +478,7 @@ export function PeriodSetupScreen({
 
     // Original logic for incomplete formation
     const otherAssignments = [];
-    getOutfieldPositions(teamMode).forEach(pos => {
+    getOutfieldPositions(teamConfig).forEach(pos => {
       if (pos !== position && formation[pos]) {
         otherAssignments.push(formation[pos]);
       }
@@ -606,7 +618,7 @@ export function PeriodSetupScreen({
       });
     } else {
       // Search individual mode positions
-      getOutfieldPositions(teamMode).forEach(position => {
+      getOutfieldPositions(teamConfig).forEach(position => {
         if (formation[position] === newGoalieId) {
           newGoalieCurrentPosition = { position };
         }
@@ -644,7 +656,7 @@ export function PeriodSetupScreen({
     setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: newGoalieId }));
     
     // Update rotation queue for individual modes
-    if (rotationQueue && rotationQueue.length > 0 && teamMode !== TEAM_MODES.PAIRS_7) {
+    if (rotationQueue && rotationQueue.length > 0 && teamConfig?.substitutionType !== 'pairs') {
       const newGoalieIndex = rotationQueue.findIndex(id => id === newGoalieId);
       
       if (newGoalieIndex !== -1) {
@@ -675,7 +687,7 @@ export function PeriodSetupScreen({
 
     // Original logic for incomplete formation - works for both 6 and 7 player modes
     const assignedElsewhereIds = new Set();
-    getOutfieldPositions(teamMode).forEach(pos => {
+    getOutfieldPositions(teamConfig).forEach(pos => {
       if (pos !== currentPosition && formation[pos]) {
         assignedElsewhereIds.add(formation[pos]);
       }
@@ -693,7 +705,7 @@ export function PeriodSetupScreen({
       return formation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
     } else {
       // Individual modes (6 or 7 players) - use configuration-driven validation
-      const outfieldPositions = getOutfieldPositions(teamMode);
+      const outfieldPositions = getOutfieldPositions(teamConfig);
       const outfielders = outfieldPositions.map(pos => formation[pos]).filter(Boolean);
       const expectedCount = outfieldPositions.length;
       return formation.goalie && outfielders.length === expectedCount && new Set(outfielders).size === expectedCount;
@@ -714,8 +726,8 @@ export function PeriodSetupScreen({
       return;
     }
 
-    // Generate random formation based on team mode
-    const randomFormation = randomizeFormationPositions(availablePlayers, teamMode);
+    // Generate random formation based on team config (includes formation info)
+    const randomFormation = randomizeFormationPositions(availablePlayers, teamConfig);
     
     // Validate that we got a valid formation
     const formationKeys = Object.keys(randomFormation);
@@ -813,9 +825,9 @@ export function PeriodSetupScreen({
         </>
       )}
 
-      {formation.goalie && isIndividualMode(teamMode) && (
+      {formation.goalie && teamConfig?.substitutionType === 'individual' && (
         <IndividualPositionCards
-          teamMode={teamMode}
+          teamConfig={teamConfig}
           formation={formation}
           onPlayerAssign={handleIndividualPlayerAssignment}
           getAvailableOptions={getAvailableForIndividualSelect}
@@ -872,7 +884,7 @@ export function PeriodSetupScreen({
           confirmationModal.type === 'recommendation-rerun' ? 'No, Keep Current Formation' :
           'Cancel'
         }
-        variant="primary"
+        variant="accent"
       />
     </div>
   );

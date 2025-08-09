@@ -1,8 +1,8 @@
     import React, { useState, useEffect } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload } from 'lucide-react';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
-import { TEAM_MODES } from '../../constants/playerConstants';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
+import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES } from '../../constants/teamConfiguration';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
@@ -11,6 +11,8 @@ import { useTeam } from '../../contexts/TeamContext';
 import { TeamManagement } from '../team/TeamManagement';
 import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
+import { FormationPreview } from './FormationPreview';
+import FeatureVoteModal from '../shared/FeatureVoteModal';
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -22,8 +24,11 @@ export function ConfigurationScreen({
   setPeriodDurationMinutes, 
   periodGoalieIds, 
   setPeriodGoalieIds, 
-  teamMode,
-  setTeamMode,
+  teamConfig,
+  updateTeamConfig,
+  selectedFormation,
+  updateFormationSelection,
+  createTeamConfigFromSquadSize,
   alertMinutes,
   setAlertMinutes,
   handleStartPeriodSetup, 
@@ -35,6 +40,48 @@ export function ConfigurationScreen({
   debugMode = false,
   authModal
 }) {
+  const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
+  const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
+
+  // Handle substitution mode changes
+  const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
+    if (!teamConfig) return;
+
+    const newTeamConfig = createTeamConfig(
+      teamConfig.format || '5v5',
+      teamConfig.squadSize || selectedSquadIds.length,
+      teamConfig.formation || selectedFormation,
+      newSubstitutionType
+    );
+
+    updateTeamConfig(newTeamConfig);
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
+
+  // Auto-select "Pairs" substitution mode when 7 players + 2-2 formation is selected
+  React.useEffect(() => {
+    if (selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2) {
+      // If no substitution type is set or if we need to default to pairs
+      if (!teamConfig?.substitutionType) {
+        handleSubstitutionModeChange(SUBSTITUTION_TYPES.PAIRS);
+      }
+    }
+  }, [selectedSquadIds.length, selectedFormation, teamConfig?.substitutionType, handleSubstitutionModeChange]);
+
+  const handleFormationChange = (newFormation) => {
+    const definition = FORMATION_DEFINITIONS[newFormation];
+    if (definition && definition.status === 'coming-soon') {
+      setFormationToVoteFor(newFormation);
+      setIsVoteModalOpen(true);
+    } else {
+      updateFormationSelection(newFormation);
+    }
+  };
+
+  const handleVoteConfirm = () => {
+    console.log(`Voted for ${formationToVoteFor}`);
+    // Here you would typically send the vote to a server
+    setIsVoteModalOpen(false);
+  };
   const { isAuthenticated, user } = useAuth();
   const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
@@ -44,7 +91,7 @@ export function ConfigurationScreen({
   useEffect(() => {
     if (user?.id) {
       dataSyncManager.setUserId(user.id);
-      
+
       // Check if user has local data that could be migrated
       const localMatches = dataSyncManager.getLocalMatches();
       setShowMigration(localMatches.length > 0);
@@ -55,11 +102,11 @@ export function ConfigurationScreen({
   }, [user]);
 
   // Determine which players to show
-  const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0 
-    ? teamPlayers.map(player => ({ 
-        id: player.id, 
-        name: player.name, 
-        jerseyNumber: player.jersey_number 
+  const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0
+    ? teamPlayers.map(player => ({
+        id: player.id,
+        name: player.name,
+        jerseyNumber: player.jersey_number
       }))
     : allPlayers;
 
@@ -67,19 +114,11 @@ export function ConfigurationScreen({
     setSelectedSquadIds(prev => {
       const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
       
-      // Auto-set team mode based on squad size
-      if (newIds.length === 5) {
-        setTeamMode(TEAM_MODES.INDIVIDUAL_5);
-      } else if (newIds.length === 6) {
-        setTeamMode(TEAM_MODES.INDIVIDUAL_6);
-      } else if (newIds.length === 7 && teamMode === TEAM_MODES.INDIVIDUAL_6) {
-        setTeamMode(TEAM_MODES.PAIRS_7); // Default to pairs for 7-player
-      } else if (newIds.length === 8) {
-        setTeamMode(TEAM_MODES.INDIVIDUAL_8); // Auto-set 8-player individual mode
-      } else if (newIds.length === 9) {
-        setTeamMode(TEAM_MODES.INDIVIDUAL_9); // Auto-set 9-player individual mode
-      } else if (newIds.length === 10) {
-        setTeamMode(TEAM_MODES.INDIVIDUAL_10); // Auto-set 10-player individual mode
+      // Auto-create team configuration based on squad size
+      if (newIds.length >= 5 && newIds.length <= 10) {
+        // Default to pairs for 7-player mode, individual for others
+        const defaultSubstitutionType = (newIds.length === 7) ? 'pairs' : 'individual';
+        createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType);
       }
       
       // Clear captain if the captain is being deselected
@@ -123,8 +162,12 @@ export function ConfigurationScreen({
     const randomPlayerIds = randomPlayers.map(p => p.id);
     setSelectedSquadIds(randomPlayerIds);
     
-    // Set team mode to PAIRS_7 (default for 7 players)
-    setTeamMode(TEAM_MODES.PAIRS_7);
+    // Randomly select formation (50/50 chance between 2-2 and 1-2-1)
+    const randomFormation = Math.random() < 0.5 ? FORMATIONS.FORMATION_2_2 : FORMATIONS.FORMATION_1_2_1;
+    updateFormationSelection(randomFormation);
+
+    // Create team config for 7 players with pairs substitution
+    createTeamConfigFromSquadSize(7, 'pairs');
     
     // Randomize goalie assignments (use current numPeriods setting)
     const goalieAssignments = randomizeGoalieAssignments(randomPlayers, numPeriods);
@@ -138,10 +181,10 @@ export function ConfigurationScreen({
 
   const handleMigrateData = async () => {
     setSyncStatus({ loading: true, message: 'Migrating local data to cloud...', error: null });
-    
+
     try {
       const result = await dataSyncManager.migrateLocalDataToCloud();
-      
+
       if (result.success) {
         setSyncStatus({
           loading: false,
@@ -149,7 +192,7 @@ export function ConfigurationScreen({
           error: null
         });
         setShowMigration(false);
-        
+
         // Clear success message after 5 seconds
         setTimeout(() => {
           setSyncStatus({ loading: false, message: '', error: null });
@@ -238,7 +281,7 @@ export function ConfigurationScreen({
               <p className="text-emerald-200 text-sm">✓ {syncStatus.message}</p>
             </div>
           )}
-          
+
           {syncStatus.error && (
             <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
               <p className="text-rose-200 text-sm">❌ {syncStatus.error}</p>
@@ -264,7 +307,7 @@ export function ConfigurationScreen({
           </div>
         </FeatureGate>
       )}
-      
+
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
         <Settings className="mr-2 h-6 w-6" />Game & Squad Configuration
       </h2>
@@ -317,46 +360,76 @@ export function ConfigurationScreen({
         </div>
       </div>
 
-      {/* Team Mode Selection */}
-      {selectedSquadIds.length === 7 && (
+      {/* Formation Selection */}
+      {selectedSquadIds.length >= 5 && selectedSquadIds.length <= 10 && (
         <div className="p-3 bg-slate-700 rounded-md">
-          <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
-          <div className="space-y-2">
-            {selectedSquadIds.length === 7 && (
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="teamMode"
-                  value={TEAM_MODES.PAIRS_7}
-                  checked={teamMode === TEAM_MODES.PAIRS_7}
-                  onChange={e => setTeamMode(e.target.value)}
-                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
-                />
-                <div>
-                  <span className="text-sky-100 font-medium">Pairs</span>
-                  <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
-                </div>
+          <h3 className="text-base font-medium text-sky-200 mb-2 flex items-center">
+            <Layers className="mr-2 h-4 w-4" />
+            Formation Selection
+          </h3>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
+                Tactical Formation
               </label>
-            )}
-            {selectedSquadIds.length === 7 && (
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="teamMode"
-                  value={TEAM_MODES.INDIVIDUAL_7}
-                  checked={teamMode === TEAM_MODES.INDIVIDUAL_7}
-                  onChange={e => setTeamMode(e.target.value)}
-                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
-                />
-                <div>
-                  <span className="text-sky-100 font-medium">Individual (7-player)</span>
-                  <p className="text-xs text-slate-400">Individual positions with 2 substitutes. Dual next/next-next visual indicators.</p>
-                </div>
-              </label>
-            )}
+              <Select
+                id="formation"
+                value={selectedFormation}
+                onChange={e => handleFormationChange(e.target.value)}
+                options={getValidFormations('5v5', selectedSquadIds.length).map(formation => ({
+                  value: formation,
+                  label: FORMATION_DEFINITIONS[formation].label
+                }))}
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                {selectedFormation === FORMATIONS.FORMATION_2_2 && 'Classic formation with left/right defenders and attackers'}
+                {selectedFormation === FORMATIONS.FORMATION_1_2_1 && 'Modern formation with center back, wing midfielders, and striker'}
+              </p>
+            </div>
+
+            {/* Formation Preview */}
+            <FormationPreview formation={selectedFormation} className="mt-3" />
           </div>
         </div>
       )}
+
+      {/* Team Mode Selection - Only show for 7 players with 2-2 formation */}
+      {selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2 && (
+        <div className="p-3 bg-slate-700 rounded-md">
+          <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="substitutionMode"
+                value={SUBSTITUTION_TYPES.PAIRS}
+                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS}
+                onChange={e => handleSubstitutionModeChange(e.target.value)}
+                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+              />
+              <div>
+                <span className="text-sky-100 font-medium">Pairs</span>
+                <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
+              </div>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="substitutionMode"
+                value={SUBSTITUTION_TYPES.INDIVIDUAL}
+                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL}
+                onChange={e => handleSubstitutionModeChange(e.target.value)}
+                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+              />
+              <div>
+                <span className="text-sky-100 font-medium">Individual (7-player)</span>
+                <p className="text-xs text-slate-400">Individual positions with 2 substitutes. Dual next/next-next visual indicators.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      )}
+
 
       {/* Goalie Assignment */}
       {(selectedSquadIds.length >= 5 && selectedSquadIds.length <= 10) && (
@@ -418,6 +491,15 @@ export function ConfigurationScreen({
           🎲 Randomize Configuration (Debug)
         </Button>
       )}
+
+      <FeatureVoteModal
+        isOpen={isVoteModalOpen}
+        onClose={() => setIsVoteModalOpen(false)}
+        onConfirm={handleVoteConfirm}
+        featureName={formationToVoteFor}
+      >
+        <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
+      </FeatureVoteModal>
     </div>
   );
 }

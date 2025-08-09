@@ -89,7 +89,8 @@ export function GameEventTimeline({
     // Filter by selected player if one is selected
     if (selectedPlayerId) {
       filtered = filtered.filter(event => {
-        const { type, data = {} } = event;
+        const { type, data } = event;
+        const eventData = data || {};
         
         // Always show match/period events
         if (type === EVENT_TYPES.MATCH_START || type === EVENT_TYPES.MATCH_END || 
@@ -100,30 +101,30 @@ export function GameEventTimeline({
         
         // Show goal events if the selected player is the scorer
         if (type === EVENT_TYPES.GOAL_HOME || type === EVENT_TYPES.GOAL_AWAY) {
-          const scorerId = goalScorers[event.id] || data.scorerId;
+          const scorerId = goalScorers[event.id] || eventData.scorerId;
           return scorerId === selectedPlayerId;
         }
         
         // Show substitution events if the selected player is involved
         if (type === EVENT_TYPES.SUBSTITUTION) {
-          const playersOff = data.playersOff || (data.outPlayerId ? [data.outPlayerId] : []);
-          const playersOn = data.playersOn || (data.inPlayerId ? [data.inPlayerId] : []);
+          const playersOff = eventData.playersOff || (eventData.outPlayerId ? [eventData.outPlayerId] : []);
+          const playersOn = eventData.playersOn || (eventData.inPlayerId ? [eventData.inPlayerId] : []);
           return playersOff.includes(selectedPlayerId) || playersOn.includes(selectedPlayerId);
         }
         
         // Show goalie switch events if the selected player is involved
         if (type === EVENT_TYPES.GOALIE_SWITCH) {
-          return data.oldGoalieId === selectedPlayerId || data.newGoalieId === selectedPlayerId;
+          return eventData.oldGoalieId === selectedPlayerId || eventData.newGoalieId === selectedPlayerId;
         }
         
         // Show goalie assignment events if the selected player is involved
         if (type === EVENT_TYPES.GOALIE_ASSIGNMENT) {
-          return data.goalieId === selectedPlayerId;
+          return eventData.goalieId === selectedPlayerId;
         }
         
         // Show position change events if the selected player is involved
         if (type === EVENT_TYPES.POSITION_CHANGE) {
-          return data.sourcePlayerId === selectedPlayerId || data.targetPlayerId === selectedPlayerId;
+          return eventData.player1Id === selectedPlayerId || eventData.player2Id === selectedPlayerId;
         }
         
         // Hide other events for specific player filter
@@ -301,7 +302,8 @@ export function GameEventTimeline({
 
   // Format event description
   const formatEventDescription = (event) => {
-    const { type, data = {} } = event;
+    const { type, data } = event;
+    const eventData = data || {};
     
     switch (type) {
       case EVENT_TYPES.MATCH_START:
@@ -309,16 +311,16 @@ export function GameEventTimeline({
       case EVENT_TYPES.MATCH_END:
         return `Match ended`;
       case EVENT_TYPES.PERIOD_START:
-        return `Period ${data.periodNumber || 'Unknown'} started`;
+        return `Period ${eventData.periodNumber || 'Unknown'} started`;
       case EVENT_TYPES.PERIOD_END:
-        return `Period ${data.periodNumber || 'Unknown'} ended`;
+        return `Period ${eventData.periodNumber || 'Unknown'} ended`;
       case EVENT_TYPES.GOAL_HOME:
         // Extract score data for new format: "3-2 - Djurgården Scored - PlayerName"
-        const homeScore = data.homeScore;
-        const awayScore = data.awayScore;
+        const homeScore = eventData.homeScore;
+        const awayScore = eventData.awayScore;
         const homeScorer = goalScorers[event.id] 
           ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || null) : null)
-          : (data.scorerId ? (getPlayerName ? (getPlayerName(data.scorerId) || null) : null) : null);
+          : (eventData.scorerId ? (getPlayerName ? (getPlayerName(eventData.scorerId) || null) : null) : null);
         
         // Format with score and team, optionally include scorer
         if (homeScore !== undefined && awayScore !== undefined) {
@@ -332,8 +334,8 @@ export function GameEventTimeline({
         
       case EVENT_TYPES.GOAL_AWAY:
         // Extract score data for new format: "4-2 - Eagles United Scored" (no scorer)
-        const awayHomeScore = data.homeScore;
-        const awayAwayScore = data.awayScore;
+        const awayHomeScore = eventData.homeScore;
+        const awayAwayScore = eventData.awayScore;
         
         // Format with score and team only (no scorer for away team)
         if (awayHomeScore !== undefined && awayAwayScore !== undefined) {
@@ -344,8 +346,8 @@ export function GameEventTimeline({
         }
       case EVENT_TYPES.SUBSTITUTION:
         // Handle multiple players for pairs mode substitutions
-        const playersOffArray = data.playersOff || (data.outPlayerId ? [data.outPlayerId] : []);
-        const playersOnArray = data.playersOn || (data.inPlayerId ? [data.inPlayerId] : []);
+        const playersOffArray = eventData.playersOff || (eventData.outPlayerId ? [eventData.outPlayerId] : []);
+        const playersOnArray = eventData.playersOn || (eventData.inPlayerId ? [eventData.inPlayerId] : []);
         
         // Get player names for all players going off
         const playersOffNames = playersOffArray.map(playerId => 
@@ -363,16 +365,16 @@ export function GameEventTimeline({
         
         return `Substitution: ${offPlayersDisplay} → ${onPlayersDisplay}`;
       case EVENT_TYPES.GOALIE_SWITCH:
-        const oldGoalie = data.oldGoalieId ? (getPlayerName ? (getPlayerName(data.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const newGoalie = data.newGoalieId ? (getPlayerName ? (getPlayerName(data.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const oldGoalie = eventData.oldGoalieId ? (getPlayerName ? (getPlayerName(eventData.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const newGoalie = eventData.newGoalieId ? (getPlayerName ? (getPlayerName(eventData.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
         return `Goalie change: ${oldGoalie} → ${newGoalie}`;
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
-        const assignedGoalie = data.goalieId ? (getPlayerName ? (getPlayerName(data.goalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const assignedGoalieName = data.goalieName || assignedGoalie;
-        return data.description || `${assignedGoalieName} is goalie`;
+        const assignedGoalie = eventData.goalieId ? (getPlayerName ? (getPlayerName(eventData.goalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const assignedGoalieName = eventData.goalieName || assignedGoalie;
+        return eventData.description || `${assignedGoalieName} is goalie`;
       case EVENT_TYPES.POSITION_CHANGE:
-        const player1 = data.sourcePlayerId ? (getPlayerName ? (getPlayerName(data.sourcePlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const player2 = data.targetPlayerId ? (getPlayerName ? (getPlayerName(data.targetPlayerId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
+        const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
         return `Position switch: ${player1} ↔ ${player2}`;
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;
@@ -535,15 +537,16 @@ export function GameEventTimeline({
 
   // Render event details
   const renderEventDetails = (event) => {
-    const { data = {} } = event;
+    const { data } = event;
+    const eventData = data || {};
     const details = [];
 
     if (event.periodNumber) {
       details.push(`Period: ${event.periodNumber}`);
     }
 
-    if (data.homeScore !== undefined && data.awayScore !== undefined) {
-      details.push(`Score: ${data.homeScore} - ${data.awayScore}`);
+    if (eventData.homeScore !== undefined && eventData.awayScore !== undefined) {
+      details.push(`Score: ${eventData.homeScore} - ${eventData.awayScore}`);
     }
 
     if (event.undone) {

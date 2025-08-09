@@ -670,7 +670,6 @@ export const localStoragePersistenceHelpers = {
       currentPeriodNumber: 2,
       homeScore: 3,
       awayScore: 1,
-      teamMode: 'INDIVIDUAL_7'
     };
     
     const testTimerState = {

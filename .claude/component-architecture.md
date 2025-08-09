@@ -26,12 +26,12 @@ App
 
 ### MODE_DEFINITIONS System
 **Location**: `/src/constants/gameModes.js`
-**Purpose**: Single source of truth for all formation logic and team mode configurations
+**Purpose**: Single source of truth for all formation logic and team configuration definitions
 
-The application uses a sophisticated configuration-driven approach where all team mode behavior is defined in `MODE_DEFINITIONS`. This eliminates scattered constants and hardcoded logic throughout the codebase.
+The application uses a sophisticated configuration-driven approach where all team configuration behavior is defined through dynamic mode generation. This eliminates scattered constants and hardcoded logic throughout the codebase.
 
 #### Configuration Structure
-Each team mode definition includes:
+Each team configuration definition includes:
 - **positions**: Object mapping position keys to their properties (role, type)
 - **expectedCounts**: Player count requirements (`outfield`, `onField`)
 - **positionOrder**: Array defining rendering order of positions
@@ -51,16 +51,16 @@ Each team mode definition includes:
 - **Formation Helpers**: `getInitialFormationTemplate()`, `getValidationMessage()`
 - **Role Mapping**: Table-driven lookups via `POSITION_ROLE_MAP`
 
-### Team Mode Configurations
+### Team Configurations
 
-#### PAIRS_7 (7-Player Pairs Mode)
+#### PAIRS_7 (7-Player Pairs Configuration)
 - **Players**: 7 total (6 outfield + 1 goalie)
 - **Structure**: 3 pairs (leftPair, rightPair, subPair) + goalie
 - **Field Players**: 4 (2 pairs of defender/attacker)
 - **Substitution**: Entire pairs swap in/out
 - **Rotation**: Simple pair-based rotation
 
-#### INDIVIDUAL_6 (6-Player Individual Mode)
+#### INDIVIDUAL_6 (6-Player Individual Configuration)
 - **Players**: 6 total (5 outfield + 1 goalie)
 - **Positions**: leftDefender, rightDefender, leftAttacker, rightAttacker, substitute_1, goalie
 - **Field Players**: 4 individual positions
@@ -68,7 +68,7 @@ Each team mode definition includes:
 - **Rotation Pattern**: `simple` (direct field ↔ substitute swap)
 - **Capabilities**: Supports inactive users, no next-next indicators
 
-#### INDIVIDUAL_7 (7-Player Individual Mode)
+#### INDIVIDUAL_7 (7-Player Individual Configuration)
 - **Players**: 7 total (6 outfield + 1 goalie)
 - **Positions**: Same as INDIVIDUAL_6 plus substitute_2
 - **Field Players**: 4 individual positions
@@ -76,7 +76,7 @@ Each team mode definition includes:
 - **Rotation Pattern**: `carousel` (3-position rotation: field → substitute_2 → substitute_1 → field)
 - **Capabilities**: Supports inactive users and next-next indicators
 
-#### INDIVIDUAL_8 (8-Player Individual Mode)
+#### INDIVIDUAL_8 (8-Player Individual Configuration)
 - **Players**: 8 total (7 outfield + 1 goalie)
 - **Positions**: Same as INDIVIDUAL_7 plus substitute_3
 - **Field Players**: 4 individual positions
@@ -102,7 +102,7 @@ Each team mode definition includes:
 - **Purpose**: Formation assignment for game periods
 - **Key Features**: Player-to-position assignment, drag-and-drop, validation
 - **State Management**: Complex formation state with position tracking
-- **Testing**: Tests covering all team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
+- **Testing**: Tests covering all team configurations (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
 
 #### GameScreen
 - **File**: `src/components/game/GameScreen.js`
@@ -124,7 +124,7 @@ Each team mode definition includes:
 
 #### FormationRenderer
 - **File**: `src/components/game/formations/FormationRenderer.js`
-- **Purpose**: Route to appropriate formation component based on team mode
+- **Purpose**: Route to appropriate formation component based on team configuration
 - **Pattern**: Component factory/router pattern
 - **Testing**: Tests covering component routing, props passing, and error scenarios
 
@@ -204,22 +204,22 @@ import {
   supportsInactiveUsers 
 } from '../constants/gameModes';
 
-export function ModernComponent({ teamMode, formation, ...props }) {
+export function ModernComponent({ teamConfig, formation, ...props }) {
   // Use utility functions for conditional logic
-  const positions = getOutfieldPositions(teamMode);
-  const supportsInactive = supportsInactiveUsers(teamMode);
+  const positions = getOutfieldPositions(teamConfig);
+  const supportsInactive = supportsInactiveUsers(teamConfig);
   
-  // Event handlers work across all modes via configuration
+  // Event handlers work across all configurations via dynamic mode generation
   const handlePlayerAssignment = (position, playerId) => {
-    // Logic uses getOutfieldPositions(teamMode) dynamically
-    // Works for all individual modes (6, 7, 8) automatically
+    // Logic uses getOutfieldPositions(teamConfig) dynamically
+    // Works for all individual configurations (6, 7, 8) automatically
   };
   
   return (
     <div>
-      {/* Conditional rendering based on mode capabilities */}
-      {isIndividualMode(teamMode) && (
-        <IndividualModeUI positions={positions} />
+      {/* Conditional rendering based on configuration capabilities */}
+      {isIndividualMode(teamConfig) && (
+        <IndividualConfigUI positions={positions} />
       )}
       {supportsInactive && <InactivePlayerControls />}
     </div>
@@ -235,7 +235,7 @@ export function FormationComponent({
   formation,      // Current period formation
   longPressHandlers,    // Interaction handlers
   onPlayerMove,         // Movement callback
-  teamMode             // Team mode
+  teamConfig             // Team configuration object
 }) {
   // Render formation-specific layout
   // Handle user interactions
@@ -289,7 +289,7 @@ const simplePattern = {
   substitute_1: 'fieldPosition'  // substitute_1 takes field position
 };
 ```
-**Used by**: INDIVIDUAL_6 mode
+**Used by**: INDIVIDUAL_6 configuration
 **Behavior**: Direct swap between field player and single substitute
 
 #### Carousel Pattern (7-Player Mode)  
@@ -301,7 +301,7 @@ const carouselPattern = {
   substitute_1: 'fieldPosition'  // substitute_1 takes field position
 };
 ```
-**Used by**: INDIVIDUAL_7 mode
+**Used by**: INDIVIDUAL_7 configuration
 **Behavior**: Ensures fair rotation through all substitute positions
 
 #### Advanced Carousel Pattern (8-Player Mode)
@@ -314,22 +314,39 @@ const advancedCarouselPattern = {
   substitute_1: 'fieldPosition'  // substitute_1 takes field position
 };
 ```
-**Used by**: INDIVIDUAL_8 mode
+**Used by**: INDIVIDUAL_8 configuration
 **Behavior**: Maintains ordered rotation through three substitute positions
 
-### Integration with MODE_DEFINITIONS
-Each individual mode's configuration includes a `substituteRotationPattern` property that links to the appropriate carousel pattern:
+### Integration with Dynamic Mode Generation
+Each individual configuration includes a `substituteRotationPattern` property that links to the appropriate carousel pattern:
 
 ```javascript
-[TEAM_MODES.INDIVIDUAL_6]: {
+// For 6-player individual configuration:
+{
+  format: '5v5',
+  squadSize: 6, 
+  formation: '2-2',
+  substitutionType: 'individual',
   substituteRotationPattern: 'simple',
   // ... other configuration
-},
-[TEAM_MODES.INDIVIDUAL_7]: {
+}
+
+// For 7-player individual configuration:
+{
+  format: '5v5',
+  squadSize: 7,
+  formation: '2-2', 
+  substitutionType: 'individual',
   substituteRotationPattern: 'carousel',
   // ... other configuration
-},
-[TEAM_MODES.INDIVIDUAL_8]: {
+}
+
+// For 8-player individual configuration:
+{
+  format: '5v5',
+  squadSize: 8,
+  formation: '2-2',
+  substitutionType: 'individual', 
   substituteRotationPattern: 'advanced_carousel',
   // ... other configuration
 }
@@ -378,9 +395,9 @@ const [isValid, setIsValid] = useState(false);
 
 ### 1. Configuration-Driven Data Flow
 ```
-MODE_DEFINITIONS → Utility Functions → Component Props → Component Behavior
+Team Config Objects → Utility Functions → Component Props → Component Behavior
 ```
-Configuration drives component behavior through utility functions rather than hardcoded logic.
+Team configuration objects drive component behavior through utility functions rather than hardcoded logic.
 
 ### 2. Top-Down Data Flow
 ```

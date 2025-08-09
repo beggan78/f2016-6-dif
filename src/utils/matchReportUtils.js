@@ -4,10 +4,9 @@
  */
 
 import { EVENT_TYPES } from './gameEventLogger';
-import { PLAYER_ROLES, PLAYER_STATUS, TEAM_MODES } from '../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { getSelectedSquadPlayers, findPlayerById } from './playerUtils';
 import { formatTime, formatPlayerName } from './formatUtils';
-import { MODE_DEFINITIONS } from '../constants/gameModes';
 
 /**
  * Generate comprehensive match summary from match events and game log

@@ -22,6 +22,18 @@ jest.mock('../../../utils/playerSortingUtils', () => ({
   },
   isPlayerOnField: (player) => {
     return player.status === 'on_field';
+  },
+  getPlayerCurrentRole: (player) => {
+    // Mock implementation that returns a role based on position
+    if (player.position && player.position.includes('Attacker')) {
+      return 'attacker';
+    } else if (player.position && player.position.includes('Defender')) {
+      return 'defender';
+    } else if (player.position && player.position.includes('Goalie')) {
+      return 'goalie';
+    } else {
+      return 'substitute';
+    }
   }
 }));
 
@@ -33,7 +45,9 @@ jest.mock('lucide-react', () => ({
   Sword: ({ className }) => <div data-testid="sword-icon" className={className} />,
   Shield: ({ className }) => <div data-testid="shield-icon" className={className} />,
   Goal: ({ className }) => <div data-testid="goal-icon" className={className} />,
-  RotateCcw: ({ className }) => <div data-testid="rotate-ccw-icon" className={className} />
+  RotateCcw: ({ className }) => <div data-testid="rotate-ccw-icon" className={className} />,
+  ArrowDownUp: ({ className }) => <div data-testid="arrow-down-up-icon" className={className} />,
+  Hand: ({ className }) => <div data-testid="hand-icon" className={className} />
 }));
 
 describe('GoalScorerModal', () => {

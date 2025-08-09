@@ -29,7 +29,8 @@ import {
   componentAssertions,
   waitForComponent
 } from '../../__tests__/componentTestUtils';
-import { TEAM_MODES, PLAYER_ROLES } from '../../../constants/playerConstants';
+import { PLAYER_ROLES } from '../../../constants/playerConstants';
+import { TEAM_CONFIGS } from '../../../game/testUtils';
 
 // Mock all external dependencies
 jest.mock('../../../hooks/useGameModals');
@@ -42,10 +43,15 @@ jest.mock('../../../game/handlers/fieldPositionHandlers');
 jest.mock('../../../game/handlers/timerHandlers');
 jest.mock('../../../game/handlers/scoreHandlers');
 jest.mock('../../../game/handlers/goalieHandlers');
+jest.mock('../../../utils/playerUtils', () => ({
+  ...jest.requireActual('../../../utils/playerUtils'),
+  hasActiveSubstitutes: jest.fn()
+}));
 jest.mock('../formations/FormationRenderer', () => ({
   FormationRenderer: ({ 
     children, 
-    teamMode, 
+    teamConfig, 
+    selectedFormation,
     formation,
     allPlayers, 
     longPressHandlers,
@@ -59,7 +65,7 @@ jest.mock('../formations/FormationRenderer', () => ({
     getPlayerTimeStats,
     ...otherProps 
   }) => (
-    <div data-testid="formation-renderer" data-team-mode={teamMode}>
+    <div data-testid="formation-renderer" data-team-config={JSON.stringify(teamConfig)}>
       {children || 'Mock Formation'}
     </div>
   )
@@ -174,8 +180,8 @@ describe('GameScreen', () => {
       handleTouchMove: jest.fn()
     });
 
-    // Setup handler creator mocks to return properly structured objects
-    require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers.mockReturnValue({
+    // Create a persistent mock handlers object that will be returned by all calls
+    const persistentMockHandlers = {
       handleSubstitution: jest.fn(),
       handleSubstitutionWithHighlight: jest.fn(),
       handleUndo: jest.fn(),
@@ -187,7 +193,13 @@ describe('GameScreen', () => {
       handleActivatePlayer: jest.fn(),
       handleCancelSubstituteModal: jest.fn(),
       handleSetAsNextToGoIn: jest.fn()
-    });
+    };
+
+    // Store the handlers in a way that tests can access them
+    global.mockSubstitutionHandlers = persistentMockHandlers;
+
+    // Setup handler creator mocks to return the same object every time
+    require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers.mockReturnValue(persistentMockHandlers);
 
     require('../../../game/handlers/fieldPositionHandlers').createFieldPositionHandlers.mockReturnValue({
       handleFieldPlayerClick: jest.fn(),
@@ -217,11 +229,15 @@ describe('GameScreen', () => {
       handleCancelGoalieModal: jest.fn(),
       handleSelectNewGoalie: jest.fn()
     });
+
+    // Mock hasActiveSubstitutes to return true by default (button enabled)
+    require('../../../utils/playerUtils').hasActiveSubstitutes.mockReturnValue(true);
   });
 
   afterEach(() => {
     mockEnvironment.cleanup();
     jest.restoreAllMocks();
+    delete global.mockSubstitutionHandlers;
   });
 
   describe('Rendering & Props', () => {
@@ -245,11 +261,16 @@ describe('GameScreen', () => {
       expect(screen.getByText('3 - 1')).toBeInTheDocument();
     });
 
-    it('should render with PAIRS_7 team mode', () => {
+    it('should render with pairs team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.PAIRS_7,
-        formation: createMockFormation(TEAM_MODES.PAIRS_7)
+        teamConfig: {
+          format: '5v5',
+          squadSize: 7,
+          formation: '2-2',
+          substitutionType: 'pairs'
+        },
+        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7)
       };
       
       render(<GameScreen {...props} />);
@@ -258,11 +279,16 @@ describe('GameScreen', () => {
       expect(formationRenderer).toBeInTheDocument();
     });
 
-    it('should render with INDIVIDUAL_6 team mode', () => {
+    it('should render with individual team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: TEAM_MODES.INDIVIDUAL_6,
-        formation: createMockFormation(TEAM_MODES.INDIVIDUAL_6)
+        teamConfig: {
+          format: '5v5',
+          squadSize: 6,
+          formation: '2-2',
+          substitutionType: 'individual'
+        },
+        formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6)
       };
       
       render(<GameScreen {...props} />);
@@ -393,14 +419,12 @@ describe('GameScreen', () => {
     });
 
     it('should handle substitution button click', async () => {
-      const mockHandlers = require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers();
-      
       render(<GameScreen {...defaultProps} />);
       
       const subButton = screen.getByText(/SUB NOW/i);
       await userInteractions.clickElement(subButton);
       
-      expect(mockHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
+      expect(global.mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
     });
 
     it('should display next player to substitute information', () => {
@@ -442,8 +466,7 @@ describe('GameScreen', () => {
       });
 
       // Mock the substitution handler to simulate the state change and highlight
-      const mockSubstitutionHandlers = require('../../../game/handlers/substitutionHandlers').createSubstitutionHandlers();
-      mockSubstitutionHandlers.handleSubstitutionWithHighlight.mockImplementation(() => {
+      global.mockSubstitutionHandlers.handleSubstitutionWithHighlight.mockImplementation(() => {
         // Simulate the state update that animateStateChange would trigger
         // This is a simplified mock, in a real scenario, animateStateChange would handle this
         // For this test, we directly call the setRecentlySubstitutedPlayers as if animation completed
@@ -470,7 +493,7 @@ describe('GameScreen', () => {
       await userEvent.click(subButton);
 
       // Expect handleSubstitutionWithHighlight to be called
-      expect(mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
+      expect(global.mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
 
       // Wait for the animation and glow to be applied
       await waitFor(() => {
@@ -622,10 +645,10 @@ describe('GameScreen', () => {
       expect(() => render(<GameScreen {...props} />)).not.toThrow();
     });
 
-    it('should handle invalid team mode', () => {
+    it('should handle invalid team config', () => {
       const props = {
         ...defaultProps,
-        teamMode: 'INVALID_MODE'
+        teamConfig: null
       };
       
       expect(() => render(<GameScreen {...props} />)).not.toThrow();

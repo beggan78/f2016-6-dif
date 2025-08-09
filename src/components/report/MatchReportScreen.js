@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { FileText, Clock, Users, Trophy, Settings } from 'lucide-react';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
-import { TEAM_MODES } from '../../constants/playerConstants';
 
 // Placeholder imports - these components will be created next
 import { MatchSummaryHeader } from './MatchSummaryHeader';
@@ -23,7 +22,6 @@ import { ReportNavigation } from './ReportNavigation';
  * @param {number} props.homeScore - Final home team score
  * @param {number} props.awayScore - Final away team score
  * @param {number} props.periodDurationMinutes - Duration of each period
- * @param {string} props.teamMode - Team mode (PAIRS_7, INDIVIDUAL_6, etc.)
  * @param {string} props.homeTeamName - Home team name (defaults to "Djurgården")
  * @param {string} props.awayTeamName - Away team name
  * @param {Function} props.onNavigateToStats - Navigation callback to stats screen
@@ -42,7 +40,6 @@ export function MatchReportScreen({
   homeScore = 0,
   awayScore = 0,
   periodDurationMinutes = 12,
-  teamMode = TEAM_MODES.PAIRS_7,
   homeTeamName = TEAM_CONFIG.HOME_TEAM_NAME || "Djurgården",
   awayTeamName = "Opponent",
   goalScorers = {},
@@ -169,7 +166,6 @@ export function MatchReportScreen({
               matchDuration={matchDuration}
               totalPeriods={totalPeriods}
               periodDurationMinutes={periodDurationMinutes}
-              teamMode={teamMode}
               matchStartTime={matchStartTime}
             />
           </ReportSection>
@@ -178,7 +174,6 @@ export function MatchReportScreen({
           <ReportSection icon={Users} title="Player Statistics">
             <PlayerStatsTable
               players={squadPlayers}
-              teamMode={teamMode}
               formation={formation}
               matchEvents={matchEvents}
               goalScorers={goalScorers}
@@ -224,7 +219,6 @@ export function MatchReportScreen({
               awayTeamName={awayTeamName}
               matchStartTime={matchStartTime}
               periodDurationMinutes={periodDurationMinutes}
-              teamMode={teamMode}
               onNavigateToStats={onNavigateToStats}
             />
           </ReportSection>

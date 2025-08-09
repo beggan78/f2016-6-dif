@@ -589,7 +589,6 @@ describe('GameEventTimeline', () => {
         data: {
           playersOff: ['player1', 'player2'], // Alice (D), Bob (A)
           playersOn: ['player3', 'player4'], // Charlie (D), David (A)
-          teamMode: 'PAIRS_7',
           beforeFormation: { leftPair: { defender: 'player1', attacker: 'player2' } },
           afterFormation: { leftPair: { defender: 'player3', attacker: 'player4' } }
         },
@@ -631,7 +630,6 @@ describe('GameEventTimeline', () => {
         data: {
           playersOff: ['player1'], // Alice
           playersOn: ['player2'], // Bob
-          teamMode: 'INDIVIDUAL_6'
         },
         undone: false
       }
@@ -752,7 +750,6 @@ describe('GameEventTimeline', () => {
         data: { 
           playersOff: ['player1'], 
           playersOn: ['player2'],
-          teamMode: 'INDIVIDUAL_6'
         },
         undone: false
       }
@@ -828,7 +825,6 @@ describe('GameEventTimeline', () => {
         data: { 
           playersOff: ['player2'], 
           playersOn: ['player3'],
-          teamMode: 'INDIVIDUAL_6'
         },
         undone: false
       }
@@ -1162,7 +1158,7 @@ describe('GameEventTimeline', () => {
           timestamp: 1000000060000,
           matchTime: '01:00',
           sequence: 1,
-          data: { sourcePlayerId: 'player1', targetPlayerId: 'player2' },
+          data: { player1Id: 'player1', player2Id: 'player2' },
           undone: false
         },
         {
@@ -1171,7 +1167,7 @@ describe('GameEventTimeline', () => {
           timestamp: 1000000120000,
           matchTime: '02:00',
           sequence: 2,
-          data: { sourcePlayerId: 'player3', targetPlayerId: 'player4' },
+          data: { player1Id: 'player3', player2Id: 'player4' },
           undone: false
         }
       ];
@@ -1282,20 +1278,20 @@ describe('GameEventTimeline', () => {
       expect(screen.getByText(/Goal for Djurgården/)).toBeInTheDocument();
     });
 
-    it('should document null data handling issue', () => {
-      // This test documents a potential bug: null data causes component to crash
-      // The component should handle null data gracefully by defaulting to empty object
+    it('should handle null data gracefully', () => {
+      // This test verifies that the component handles null data gracefully
+      // by defaulting to empty object when event.data is null
       const eventWithNullData = {
         id: 'null-data-event',
         type: EVENT_TYPES.GOAL_HOME,
         timestamp: 1000000120000,
         matchTime: '02:00',
         sequence: 1,
-        data: null, // This currently causes a crash
+        data: null, // Component should handle this gracefully
         undone: false
       };
 
-      // Currently this throws due to renderEventDetails trying to access data.homeScore on null
+      // Should not throw when data is null
       expect(() => {
         render(
           <GameEventTimeline
@@ -1305,10 +1301,10 @@ describe('GameEventTimeline', () => {
             homeTeamName="Djurgården"
           />
         );
-      }).toThrow('Cannot read properties of null');
+      }).not.toThrow();
       
-      // To fix this, the component should use: const { data = {} } = event;
-      // instead of just destructuring data
+      // Should render the event with fallback text for missing data
+      expect(screen.getByText(/Goal for Djurgården/)).toBeInTheDocument();
     });
 
     it('should handle events with missing or null player IDs', () => {

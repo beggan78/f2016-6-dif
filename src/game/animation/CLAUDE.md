@@ -11,8 +11,8 @@ Complete animation calculation and orchestration system that provides smooth vis
 **Core Functions**:
 
 #### Position Management
-- `captureAllPlayerPositions(formation, allPlayers, teamMode)`: Captures current positions of all players including goalie
-- `calculateAllPlayerAnimations(beforePositions, afterPositions, teamMode)`: Compares before/after position snapshots and calculates movements
+- `captureAllPlayerPositions(formation, allPlayers, teamConfig)`: Captures current positions of all players including goalie
+- `calculateAllPlayerAnimations(beforePositions, afterPositions, teamConfig)`: Compares before/after position snapshots and calculates movements
 
 #### Animation Orchestration
 - `animateStateChange(gameState, pureLogicFunction, applyStateFunction, ...)`: Main orchestration function
@@ -62,10 +62,10 @@ const MEASUREMENTS = {
 ```
 
 ### Position Mapping
-Each team mode has specific position mappings:
-- **PAIRS_7**: leftPair (index 0), rightPair (index 1), subPair (index 2), goalie (index 3)
-- **INDIVIDUAL_6**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute (4), goalie (5)
-- **INDIVIDUAL_7**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute_1 (4), substitute_2 (5), goalie (6)
+Each team configuration has specific position mappings:
+- **Pairs**: leftPair (index 0), rightPair (index 1), subPair (index 2), goalie (index 3)
+- **Individual 6-Player**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute (4), goalie (5)
+- **Individual 7-Player**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute_1 (4), substitute_2 (5), goalie (6)
 
 ## Usage Patterns
 
@@ -157,13 +157,13 @@ Components use `getPlayerAnimationProps()` to apply:
 ### Animation Issues
 ```javascript
 // Enable debug logging
-const animations = calculateAllPlayerAnimations(before, after, teamMode);
+const animations = calculateAllPlayerAnimations(before, after, teamConfig);
 console.log('Animation data:', animations);
 ```
 
 ### Common Problems
 - **No animation**: Check if positions actually changed between before/after
-- **Wrong direction**: Verify position index calculations for team mode
+- **Wrong direction**: Verify position index calculations for team configuration
 - **Timing issues**: Ensure CSS animation duration matches JavaScript timing
 - **Z-index conflicts**: Check moving direction and z-index classes
 - **State inconsistency**: Verify pure functions return consistent position mappings
@@ -175,7 +175,7 @@ console.log('Animation data:', animations);
 
 ## When to Modify
 
-### Adding New Team Modes
+### Adding New Team Configurations
 - Update position mappings in `captureAllPlayerPositions()`
 - Add new position index calculations
 - Update measurement constants if UI layout changes
@@ -183,7 +183,7 @@ console.log('Animation data:', animations);
 ### Changing UI Layout
 - Update measurement constants (`MEASUREMENTS` object)
 - Recalculate position index mappings
-- Test distance calculations for all team modes
+- Test distance calculations for all team configurations
 
 ### Adding New Animation Types
 - Extend animation calculation logic

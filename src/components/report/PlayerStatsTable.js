@@ -10,14 +10,12 @@ import { EVENT_TYPES } from '../../utils/gameEventLogger';
  * 
  * @param {Object} props - Component props
  * @param {Array} props.players - Array of player objects with stats
- * @param {string} props.teamMode - Team mode for context (PAIRS_7, INDIVIDUAL_6, etc.)
  * @param {Object} props.formation - Formation data for starting role determination
  * @param {Array} props.matchEvents - Array of match events for goal counting
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
  */
 export function PlayerStatsTable({
   players = [],
-  teamMode,
   formation = {},
   matchEvents = [],
   goalScorers = {}
@@ -59,10 +57,11 @@ export function PlayerStatsTable({
       render: (player) => {
         // First check current role based on formation
         const currentRole = getPlayerCurrentRole(player);
-        if (currentRole === 'GOALIE') return 'Goalie';
-        if (currentRole === 'ATTACKER') return 'Attacker';
-        if (currentRole === 'DEFENDER') return 'Defender';
-        if (currentRole === 'SUBSTITUTE') return 'Sub';
+        if (currentRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+        if (currentRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
+        if (currentRole === PLAYER_ROLES.DEFENDER) return 'Defender';
+        if (currentRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
+        if (currentRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
         
         // Fallback to starting role if we can't determine current role
         const role = player.stats?.startedMatchAs;
@@ -99,6 +98,16 @@ export function PlayerStatsTable({
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
         const time = player.stats?.timeAsDefenderSeconds || 0;
+        return time > 0 ? formatTime(time) : '--';
+      }
+    },
+    {
+      key: 'timeAsMidfielder',
+      label: 'Time as Midfielder',
+      sortable: true,
+      className: 'text-center text-slate-300 font-mono',
+      render: (player) => {
+        const time = player.stats?.timeAsMidfielderSeconds || 0;
         return time > 0 ? formatTime(time) : '--';
       }
     },
@@ -157,6 +166,10 @@ export function PlayerStatsTable({
         case 'timeAsDefender':
           aValue = a.stats?.timeAsDefenderSeconds || 0;
           bValue = b.stats?.timeAsDefenderSeconds || 0;
+          break;
+        case 'timeAsMidfielder':
+          aValue = a.stats?.timeAsMidfielderSeconds || 0;
+          bValue = b.stats?.timeAsMidfielderSeconds || 0;
           break;
         case 'timeAsGoalie':
           aValue = a.stats?.timeAsGoalieSeconds || 0;
@@ -260,3 +273,6 @@ export function PlayerStatsTable({
     </div>
   );
 }
+
+// Memoize PlayerStatsTable to prevent unnecessary re-renders when props haven't changed
+export default React.memo(PlayerStatsTable);

@@ -54,16 +54,21 @@ export const randomizeGoalieAssignments = (selectedPlayers, numPeriods) => {
 };
 
 /**
- * Randomize formation positions for different team modes
+ * Randomize formation positions for different team configurations and formations
  * @param {Array} availablePlayers - Players available for positioning (excluding goalie)
- * @param {string} teamMode - Team mode (PAIRS_7, INDIVIDUAL_5, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8, INDIVIDUAL_9, INDIVIDUAL_10)
+ * @param {Object} teamConfig - Team configuration object with formation info
  * @returns {Object} Formation object with randomized player assignments
  */
-export const randomizeFormationPositions = (availablePlayers, teamMode) => {
+export const randomizeFormationPositions = (availablePlayers, teamConfig) => {
   const shuffled = shuffleArray(availablePlayers);
   const formation = {};
   
-  if (teamMode === 'pairs_7') {
+  // Extract formation and substitution type from team config
+  const selectedFormation = teamConfig?.formation || '2-2';
+  const substitutionType = teamConfig?.substitutionType || 'individual';
+  const squadSize = teamConfig?.squadSize || 7;
+  
+  if (substitutionType === 'pairs') {
     // Pairs mode: 3 pairs (left, right, sub) with defender/attacker roles
     formation.leftPair = {
       defender: shuffled[0]?.id || null,
@@ -77,61 +82,38 @@ export const randomizeFormationPositions = (availablePlayers, teamMode) => {
       defender: shuffled[4]?.id || null,
       attacker: shuffled[5]?.id || null
     };
-  } else if (teamMode === 'individual_5') {
-    // Individual 5-player mode: 4 field positions + 0 substitutes
-    formation.leftDefender = shuffled[0]?.id || null;
-    formation.rightDefender = shuffled[1]?.id || null;
-    formation.leftAttacker = shuffled[2]?.id || null;
-    formation.rightAttacker = shuffled[3]?.id || null;
-  } else if (teamMode === 'individual_6') {
-    // Individual 6-player mode: 4 field positions + 1 substitute
-    formation.leftDefender = shuffled[0]?.id || null;
-    formation.rightDefender = shuffled[1]?.id || null;
-    formation.leftAttacker = shuffled[2]?.id || null;
-    formation.rightAttacker = shuffled[3]?.id || null;
-    formation.substitute_1 = shuffled[4]?.id || null;
-  } else if (teamMode === 'individual_7') {
-    // Individual 7-player mode: 4 field positions + 2 substitutes
-    formation.leftDefender = shuffled[0]?.id || null;
-    formation.rightDefender = shuffled[1]?.id || null;
-    formation.leftAttacker = shuffled[2]?.id || null;
-    formation.rightAttacker = shuffled[3]?.id || null;
-    formation.substitute_1 = shuffled[4]?.id || null;
-    formation.substitute_2 = shuffled[5]?.id || null;
-  } else if (teamMode === 'individual_8') {
-    // Individual 8-player mode: 4 field positions + 3 substitutes
-    formation.leftDefender = shuffled[0]?.id || null;
-    formation.rightDefender = shuffled[1]?.id || null;
-    formation.leftAttacker = shuffled[2]?.id || null;
-    formation.rightAttacker = shuffled[3]?.id || null;
-    formation.substitute_1 = shuffled[4]?.id || null;
-    formation.substitute_2 = shuffled[5]?.id || null;
-    formation.substitute_3 = shuffled[6]?.id || null;
-  } else if (teamMode === 'individual_9') {
-    // Individual 9-player mode: 4 field positions + 4 substitutes
-    formation.leftDefender = shuffled[0]?.id || null;
-    formation.rightDefender = shuffled[1]?.id || null;
-    formation.leftAttacker = shuffled[2]?.id || null;
-    formation.rightAttacker = shuffled[3]?.id || null;
-    formation.substitute_1 = shuffled[4]?.id || null;
-    formation.substitute_2 = shuffled[5]?.id || null;
-    formation.substitute_3 = shuffled[6]?.id || null;
-    formation.substitute_4 = shuffled[7]?.id || null;
-  } else if (teamMode === 'individual_10') {
-    // Individual 10-player mode: 4 field positions + 5 substitutes
-    formation.leftDefender = shuffled[0]?.id || null;
-    formation.rightDefender = shuffled[1]?.id || null;
-    formation.leftAttacker = shuffled[2]?.id || null;
-    formation.rightAttacker = shuffled[3]?.id || null;
-    formation.substitute_1 = shuffled[4]?.id || null;
-    formation.substitute_2 = shuffled[5]?.id || null;
-    formation.substitute_3 = shuffled[6]?.id || null;
-    formation.substitute_4 = shuffled[7]?.id || null;
-    formation.substitute_5 = shuffled[8]?.id || null;
+  } else {
+    // Individual modes: Handle both 2-2 and 1-2-1 formations
+    const substituteCount = squadSize - 5; // 4 field players + 1 goalie = 5, rest are substitutes
+    
+    if (selectedFormation === '1-2-1') {
+      // 1-2-1 Formation: defender, left mid, right mid, attacker + substitutes
+      formation.defender = shuffled[0]?.id || null;
+      formation.left = shuffled[1]?.id || null;
+      formation.right = shuffled[2]?.id || null;
+      formation.attacker = shuffled[3]?.id || null;
+      
+      // Add substitutes
+      for (let i = 0; i < substituteCount; i++) {
+        formation[`substitute_${i + 1}`] = shuffled[4 + i]?.id || null;
+      }
+    } else {
+      // 2-2 Formation (default): left/right defenders and attackers + substitutes
+      formation.leftDefender = shuffled[0]?.id || null;
+      formation.rightDefender = shuffled[1]?.id || null;
+      formation.leftAttacker = shuffled[2]?.id || null;
+      formation.rightAttacker = shuffled[3]?.id || null;
+      
+      // Add substitutes
+      for (let i = 0; i < substituteCount; i++) {
+        formation[`substitute_${i + 1}`] = shuffled[4 + i]?.id || null;
+      }
+    }
   }
   
   return formation;
 };
+
 
 /**
  * Check if debug mode is enabled

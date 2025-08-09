@@ -1,4 +1,5 @@
 import { generateRecommendedFormation, generateBalancedFormationForPeriod3, generateIndividualFormationRecommendation } from './formationGenerator';
+import { TEAM_CONFIGS } from '../game/testUtils';
 
 describe('Formation Generator - Pair Mode', () => {
   // Mock player data
@@ -407,6 +408,169 @@ describe('Formation Generator - Individual Mode', () => {
     }
   });
 
+  // Mock player data for 1-2-1 formation with midfielder time
+  const create121Player = (id, name, timeOnField = 0, defenderTime = 0, midfielderTime = 0, attackerTime = 0, isInactive = false) => ({
+    id,
+    name,
+    stats: {
+      timeOnFieldSeconds: timeOnField,
+      timeAsDefenderSeconds: defenderTime,
+      timeAsMidfielderSeconds: midfielderTime,
+      timeAsAttackerSeconds: attackerTime,
+      timeAsGoalieSeconds: 0,
+      isInactive
+    }
+  });
+
+  describe('1-2-1 Formation Tests', () => {
+    const create121Squad = () => [
+      create121Player('p1', 'Player 1', 900, 300, 300, 300), // Balanced
+      create121Player('p2', 'Player 2', 900, 100, 400, 400), // Needs defender role
+      create121Player('p3', 'Player 3', 900, 400, 100, 400), // Needs midfielder role
+      create121Player('p4', 'Player 4', 900, 400, 400, 100), // Needs attacker role
+      create121Player('p5', 'Player 5', 800, 200, 300, 300), // Less time, balanced
+      create121Player('p6', 'Player 6', 700, 100, 200, 400), // Less time, various roles
+      create121Player('g1', 'Goalie 1', 0, 0, 0, 0),
+    ];
+
+    test('should correctly route to 1-2-1 algorithm when formation is 1-2-1', () => {
+      const squad = create121Squad();
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1',
+        squad,
+        squad,
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1 // Use proper teamConfig with 1-2-1 formation
+      );
+
+      expect(result.formation.goalie).toBe('g1');
+      expect(result.formation.defender).toBeDefined();
+      expect(result.formation.left).toBeDefined();
+      expect(result.formation.right).toBeDefined();
+      expect(result.formation.attacker).toBeDefined();
+    });
+
+    test('should default to 2-2 algorithm when no formation specified', () => {
+      const squad = create121Squad();
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1',
+        squad,
+        squad,
+        TEAM_CONFIGS.INDIVIDUAL_7 // Use proper teamConfig - should default to 2-2
+      );
+
+      expect(result.formation.goalie).toBe('g1');
+      expect(result.formation.leftDefender).toBeDefined();
+      expect(result.formation.rightDefender).toBeDefined();
+      expect(result.formation.leftAttacker).toBeDefined();
+      expect(result.formation.rightAttacker).toBeDefined();
+    });
+
+    test('should assign positions based on role deficits in 1-2-1', () => {
+      const squad = [
+        create121Player('p1', 'Player 1', 400, 100, 200, 100), // Low total time, high defender deficit
+        create121Player('p2', 'Player 2', 500, 200, 100, 200), // Low total time, high midfielder deficit  
+        create121Player('p3', 'Player 3', 600, 200, 200, 200), // Low total time, balanced
+        create121Player('p4', 'Player 4', 700, 100, 200, 400), // Low total time, high attacker deficit
+        create121Player('p5', 'Player 5', 800, 200, 300, 300), // Higher time
+        create121Player('p6', 'Player 6', 900, 100, 200, 400), // Highest time
+        create121Player('g1', 'Goalie 1', 0, 0, 0, 0),
+      ];
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1',
+        squad,
+        squad,
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1
+      );
+
+      // Field players should be p1, p2, p3, p4 (lowest total times)
+      const fieldPlayers = [
+        result.formation.defender,
+        result.formation.left,
+        result.formation.right,
+        result.formation.attacker
+      ];
+      
+      expect(fieldPlayers).toContain('p1');
+      expect(fieldPlayers).toContain('p2');
+      expect(fieldPlayers).toContain('p3');
+      expect(fieldPlayers).toContain('p4');
+      
+      // p5 and p6 should be substitutes (higher total times)
+      const substitutes = [result.formation.substitute_1, result.formation.substitute_2];
+      expect(substitutes).toContain('p5');
+      expect(substitutes).toContain('p6');
+    });
+
+    test('should handle inactive players correctly in 1-2-1', () => {
+      const squad = [
+        create121Player('p1', 'Player 1', 900, 300, 300, 300),
+        create121Player('p2', 'Player 2', 800, 300, 300, 200),
+        create121Player('p3', 'Player 3', 700, 200, 300, 200),
+        create121Player('p4', 'Player 4', 600, 200, 200, 200),
+        create121Player('p5', 'Player 5', 500, 100, 200, 200, true), // inactive
+        create121Player('p6', 'Player 6', 400, 100, 100, 200, true), // inactive
+        create121Player('g1', 'Goalie 1', 0, 0, 0, 0),
+      ];
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1',
+        squad,
+        squad,
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1
+      );
+
+      // Should place inactive players in substitute positions
+      const substitutePositions = [result.formation.substitute_1, result.formation.substitute_2];
+      expect(substitutePositions).toContain('p5');
+      expect(substitutePositions).toContain('p6');
+    });
+
+    test('should create proper rotation queue for 1-2-1', () => {
+      const squad = create121Squad();
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1',
+        squad,
+        squad,
+        TEAM_CONFIGS.INDIVIDUAL_7_1_2_1
+      );
+
+      expect(result.rotationQueue).toHaveLength(6); // 6 outfield players
+      expect(result.nextToRotateOff).toBeDefined();
+      expect(result.rotationQueue).toContain(result.nextToRotateOff);
+    });
+
+    test('should handle limited players scenario in 1-2-1', () => {
+      const squad = [
+        create121Player('p1', 'Player 1', 900, 300, 300, 300),
+        create121Player('p2', 'Player 2', 800, 300, 300, 200),
+        create121Player('p3', 'Player 3', 700, 200, 300, 200),
+        create121Player('p4', 'Player 4', 600, 200, 200, 200),
+        create121Player('g1', 'Goalie 1', 0, 0, 0, 0),
+      ];
+      
+      const result = generateIndividualFormationRecommendation(
+        'g1',
+        squad,
+        squad,
+        { format: '5v5', squadSize: 5, formation: '1-2-1', substitutionType: 'individual' }
+      );
+
+      // Should assign the 4 field positions
+      expect(result.formation.defender).toBeDefined();
+      expect(result.formation.left).toBeDefined();
+      expect(result.formation.right).toBeDefined();
+      expect(result.formation.attacker).toBeDefined();
+      
+      // No rotation possible with limited players
+      expect(result.rotationQueue).toHaveLength(0);
+      expect(result.nextToRotateOff).toBeNull();
+    });
+  });
+
   describe('9-Player Mode Inactive Player Handling', () => {
     const squad9 = [
       createIndividualPlayer('p1', 'Player 1', 300),
@@ -427,7 +591,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       expect(result.formation.substitute_4).toBe('p5');
@@ -446,7 +610,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       const inactivePositions = [result.formation.substitute_3, result.formation.substitute_4];
@@ -468,7 +632,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       const inactivePositions = [
@@ -494,7 +658,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_9'
+        TEAM_CONFIGS.INDIVIDUAL_9
       );
 
       const allSubstitutePositions = [
@@ -531,7 +695,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_10'
+        TEAM_CONFIGS.INDIVIDUAL_10
       );
 
       expect(result.formation.substitute_5).toBe('p9');
@@ -551,7 +715,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_10'
+        TEAM_CONFIGS.INDIVIDUAL_10
       );
 
       const inactivePositions = [
@@ -580,7 +744,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad,
         squad,
-        'individual_10'
+        TEAM_CONFIGS.INDIVIDUAL_10
       );
 
       const allSubstitutePositions = [
@@ -614,7 +778,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad7,
         squad7,
-        'individual_7'
+        TEAM_CONFIGS.INDIVIDUAL_7
       );
 
       // Should place inactive player in substitute_2 (last position for 7-player mode)
@@ -638,7 +802,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1', // current goalie
         squad8,
         squad8,
-        'individual_8'
+        TEAM_CONFIGS.INDIVIDUAL_8
       );
 
       // Should place inactive player in substitute_3 (last position for 8-player mode)

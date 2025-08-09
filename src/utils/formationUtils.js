@@ -1,4 +1,4 @@
-import { MODE_DEFINITIONS } from '../constants/gameModes';
+import { getAllPositions as getPositionsFromGameModes, getDefinition } from '../constants/gameModes';
 
 /**
  * Cross-screen formation utilities
@@ -8,15 +8,32 @@ import { MODE_DEFINITIONS } from '../constants/gameModes';
 
 /**
  * Gets all positions for a formation including goalie
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {string[]} Array of all position keys including goalie
  */
-export function getAllPositions(teamMode) {
-  const definition = MODE_DEFINITIONS[teamMode];
-  return definition ? definition.positionOrder : [];
+export function getAllPositions(teamConfig) {
+  // Handle invalid inputs gracefully to match original behavior
+  if (!teamConfig || typeof teamConfig !== 'object' || !teamConfig.mode) {
+    return [];
+  }
+  
+  try {
+    return getPositionsFromGameModes(teamConfig.mode);
+  } catch (error) {
+    // Return empty array for any errors (invalid team modes, validation errors, etc.)
+    return [];
+  }
 }
 
 /**
- * Gets formation definition for a team mode
+ * Gets formation definition for a team configuration
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {Object|null} Mode definition object or null if invalid
  */
-export function getModeDefinition(teamMode) {
-  return MODE_DEFINITIONS[teamMode] || null;
+export function getModeDefinition(teamConfig) {
+  if (!teamConfig || typeof teamConfig !== 'object' || !teamConfig.mode) {
+    return null;
+  }
+  
+  return getDefinition(teamConfig.mode);
 }

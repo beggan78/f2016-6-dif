@@ -95,7 +95,9 @@ describe('useTimers', () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
     jest.useRealTimers();
     jest.restoreAllMocks();
   });
@@ -109,7 +111,7 @@ describe('useTimers', () => {
       expect(result.current.isPeriodActive).toBe(false);
       expect(result.current.isSubTimerPaused).toBe(false);
       expect(result.current.periodStartTime).toBe(null);
-      expect(result.current.lastSubTime).toBe(null);
+      expect(result.current.lastSubstitutionTime).toBe(null);
     });
 
 
@@ -194,7 +196,7 @@ describe('useTimers', () => {
       expect(result.current.isPeriodActive).toBe(true);
       expect(result.current.isSubTimerPaused).toBe(false);
       expect(result.current.periodStartTime).toBe(1000000);
-      expect(result.current.lastSubTime).toBe(1000000);
+      expect(result.current.lastSubstitutionTime).toBe(1000000);
     });
 
     it('should stop timers correctly', () => {
@@ -322,19 +324,19 @@ describe('useTimers', () => {
         result.current.startTimers();
       });
 
-      Date.now.mockReturnValue(1005000);
       act(() => {
+        Date.now.mockReturnValue(1005000);
         jest.advanceTimersByTime(1000);
       });
 
       // Reset sub timer
-      Date.now.mockReturnValue(1010000);
       act(() => {
+        Date.now.mockReturnValue(1010000);
         result.current.resetSubTimer();
       });
 
       expect(result.current.subTimerSeconds).toBe(0);
-      expect(result.current.lastSubTime).toBe(1010000);
+      expect(result.current.lastSubstitutionTime).toBe(1010000);
       expect(result.current.isSubTimerPaused).toBe(false);
     });
 
@@ -350,7 +352,7 @@ describe('useTimers', () => {
       });
 
       expect(result.current.subTimerSeconds).toBe(180);
-      expect(result.current.lastSubTime).toBe(820000); // 1000000 - (180 * 1000)
+      expect(result.current.lastSubstitutionTime).toBe(820000); // 1000000 - (180 * 1000)
       expect(result.current.isSubTimerPaused).toBe(false);
     });
 
@@ -362,14 +364,14 @@ describe('useTimers', () => {
       });
 
       // Advance time to 5 seconds
-      Date.now.mockReturnValue(1005000);
       act(() => {
+        Date.now.mockReturnValue(1005000);
         jest.advanceTimersByTime(1000);
       });
 
       // Pause the timer
-      Date.now.mockReturnValue(1005000);
       act(() => {
+        Date.now.mockReturnValue(1005000);
         result.current.pauseSubTimer(mockUpdatePlayerStats);
       });
 
@@ -386,18 +388,18 @@ describe('useTimers', () => {
       });
 
       // Pause and then resume
-      Date.now.mockReturnValue(1005000);
       act(() => {
+        Date.now.mockReturnValue(1005000);
         result.current.pauseSubTimer(mockUpdatePlayerStats);
       });
 
-      Date.now.mockReturnValue(1008000);
       act(() => {
+        Date.now.mockReturnValue(1008000);
         result.current.resumeSubTimer(mockUpdatePlayerStats);
       });
 
       expect(result.current.isSubTimerPaused).toBe(false);
-      expect(result.current.lastSubTime).toBe(1000000); // Should remain the original substitution time
+      expect(result.current.lastSubstitutionTime).toBe(1000000); // Should remain the original substitution time
       expect(mockUpdatePlayerStats).toHaveBeenCalledWith(1008000, false);
     });
 
@@ -443,8 +445,8 @@ describe('useTimers', () => {
       });
 
       // Run for 3 seconds
-      Date.now.mockReturnValue(1003000);
       act(() => {
+        Date.now.mockReturnValue(1003000);
         jest.advanceTimersByTime(1000);
       });
 
@@ -460,8 +462,8 @@ describe('useTimers', () => {
         result.current.resumeSubTimer();
       });
 
-      Date.now.mockReturnValue(1007000);
       act(() => {
+        Date.now.mockReturnValue(1007000);
         jest.advanceTimersByTime(1000);
       });
 
@@ -513,8 +515,8 @@ describe('useTimers', () => {
         result.current.startTimers();
       });
 
-      Date.now.mockReturnValue(1001000);
       act(() => {
+        Date.now.mockReturnValue(1001000);
         jest.advanceTimersByTime(1000);
       });
 
@@ -571,8 +573,8 @@ describe('useTimers', () => {
       const { result } = renderHook(() => useTimers(15));
 
       // Timer should not update when period is not active
-      Date.now.mockReturnValue(1005000);
       act(() => {
+        Date.now.mockReturnValue(1005000);
         jest.advanceTimersByTime(1000);
       });
 
@@ -592,8 +594,8 @@ describe('useTimers', () => {
 
       // Simulate multiple timer ticks
       for (let i = 1; i <= 5; i++) {
-        Date.now.mockReturnValue(1000000 + (i * 1000));
         act(() => {
+          Date.now.mockReturnValue(1000000 + (i * 1000));
           jest.advanceTimersByTime(1000);
         });
       }
@@ -610,8 +612,8 @@ describe('useTimers', () => {
       });
 
       // Simulate a large time jump (e.g., 1 hour)
-      Date.now.mockReturnValue(1000000 + 3600000);
       act(() => {
+        Date.now.mockReturnValue(1000000 + 3600000);
         jest.advanceTimersByTime(1000);
       });
 
@@ -627,12 +629,11 @@ describe('useTimers', () => {
       });
 
       // Simulate tab being hidden and time passing
-      Date.now.mockReturnValue(1030000); // 30 seconds later
-
       const visibilityChangeHandler = document.addEventListener.mock.calls
         .find(call => call[0] === 'visibilitychange')[1];
 
       act(() => {
+        Date.now.mockReturnValue(1030000); // 30 seconds later
         visibilityChangeHandler();
       });
 
@@ -651,8 +652,8 @@ describe('useTimers', () => {
         });
 
         // Run for 3 seconds
-        Date.now.mockReturnValue(1003000);
         act(() => {
+          Date.now.mockReturnValue(1003000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -664,8 +665,8 @@ describe('useTimers', () => {
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1005000); // 2 seconds while paused
         act(() => {
+          Date.now.mockReturnValue(1005000); // 2 seconds while paused
           jest.advanceTimersByTime(1000);
         });
 
@@ -678,8 +679,8 @@ describe('useTimers', () => {
           result.current.resumeSubTimer();
         });
 
-        Date.now.mockReturnValue(1007000);
         act(() => {
+          Date.now.mockReturnValue(1007000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -701,8 +702,8 @@ describe('useTimers', () => {
         });
 
         // Advance time by 30 seconds while paused
-        Date.now.mockReturnValue(1030000);
         act(() => {
+          Date.now.mockReturnValue(1030000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -719,8 +720,8 @@ describe('useTimers', () => {
         });
 
         // First cycle: run 10s, pause 5s, resume
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           jest.advanceTimersByTime(1000);
         });
         
@@ -728,8 +729,8 @@ describe('useTimers', () => {
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1015000);
         act(() => {
+          Date.now.mockReturnValue(1015000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -738,8 +739,8 @@ describe('useTimers', () => {
         });
 
         // Second cycle: run 10s, pause 5s, resume
-        Date.now.mockReturnValue(1025000);
         act(() => {
+          Date.now.mockReturnValue(1025000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -747,8 +748,8 @@ describe('useTimers', () => {
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1030000);
         act(() => {
+          Date.now.mockReturnValue(1030000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -757,8 +758,8 @@ describe('useTimers', () => {
         });
 
         // Final run
-        Date.now.mockReturnValue(1040000);
         act(() => {
+          Date.now.mockReturnValue(1040000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -782,8 +783,8 @@ describe('useTimers', () => {
         setItemSpy.mockClear();
 
         // Reset sub timer (this was the bug - timestamp wasn't persisting)
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           result.current.resetSubTimer();
         });
 
@@ -807,8 +808,8 @@ describe('useTimers', () => {
         setItemSpy.mockClear();
 
         // Test that immediate persistence works during state transitions
-        Date.now.mockReturnValue(1020000);
         act(() => {
+          Date.now.mockReturnValue(1020000);
           result.current.resetSubTimer();
         });
 
@@ -834,8 +835,8 @@ describe('useTimers', () => {
         setItemSpy.mockClear();
 
         // Pause should save immediately
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           result.current.pauseSubTimer();
         });
 
@@ -847,8 +848,8 @@ describe('useTimers', () => {
         setItemSpy.mockClear();
 
         // Resume should save immediately  
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           result.current.resumeSubTimer();
         });
 
@@ -874,8 +875,8 @@ describe('useTimers', () => {
 
         // Simulate timer running for 10 seconds
         for (let i = 1; i <= 10; i++) {
-          Date.now.mockReturnValue(1000000 + (i * 1000));
           act(() => {
+            Date.now.mockReturnValue(1000000 + (i * 1000));
             jest.advanceTimersByTime(1000);
           });
         }
@@ -953,8 +954,8 @@ describe('useTimers', () => {
         });
 
         // Test specific timestamp calculations
-        Date.now.mockReturnValue(1015000); // 15 seconds later
         act(() => {
+          Date.now.mockReturnValue(1015000); // 15 seconds later
           jest.advanceTimersByTime(1000);
         });
 
@@ -972,8 +973,8 @@ describe('useTimers', () => {
         });
 
         // Restore to specific value (simulates undo operation)
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           result.current.restoreSubTimer(120); // 2 minutes
         });
 
@@ -981,8 +982,8 @@ describe('useTimers', () => {
         expect(result.current.subTimerSeconds).toBe(120);
         
         // Advance time by 10 seconds
-        Date.now.mockReturnValue(1015000);
         act(() => {
+          Date.now.mockReturnValue(1015000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -993,7 +994,9 @@ describe('useTimers', () => {
       it('should maintain accuracy with large timestamp values', () => {
         // Test with large timestamp values (year 2030)
         const futureTimestamp = 1893456000000;
-        Date.now.mockReturnValue(futureTimestamp);
+        act(() => {
+          Date.now.mockReturnValue(futureTimestamp);
+        });
         
         const { result } = renderHook(() => useTimers(5));
 
@@ -1002,8 +1005,8 @@ describe('useTimers', () => {
         });
 
         // Advance by 30 seconds
-        Date.now.mockReturnValue(futureTimestamp + 30000);
         act(() => {
+          Date.now.mockReturnValue(futureTimestamp + 30000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1021,8 +1024,8 @@ describe('useTimers', () => {
         });
 
         // Simulate system clock jumping forward by 1 hour
-        Date.now.mockReturnValue(1000000 + 3600000);
         act(() => {
+          Date.now.mockReturnValue(1000000 + 3600000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1039,16 +1042,16 @@ describe('useTimers', () => {
         });
 
         // Advance normally first
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           jest.advanceTimersByTime(1000);
         });
 
         expect(result.current.subTimerSeconds).toBe(10);
 
         // Simulate clock going backward (daylight saving, etc.)
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1066,8 +1069,8 @@ describe('useTimers', () => {
         });
 
         // First pause cycle: run 5s, pause 3s, resume
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1075,14 +1078,14 @@ describe('useTimers', () => {
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1008000); // 3s pause
         act(() => {
+          Date.now.mockReturnValue(1008000); // 3s pause
           result.current.resumeSubTimer();
         });
 
         // Second pause cycle: run 4s, pause 2s, resume  
-        Date.now.mockReturnValue(1012000);
         act(() => {
+          Date.now.mockReturnValue(1012000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1090,14 +1093,14 @@ describe('useTimers', () => {
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1014000); // 2s pause
         act(() => {
+          Date.now.mockReturnValue(1014000); // 2s pause
           result.current.resumeSubTimer();
         });
 
         // Final run: 3s
-        Date.now.mockReturnValue(1017000);
         act(() => {
+          Date.now.mockReturnValue(1017000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1115,25 +1118,25 @@ describe('useTimers', () => {
         });
 
         // Build up some pause time
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           result.current.resumeSubTimer();
         });
 
         // Now reset - should clear all pause accumulation
-        Date.now.mockReturnValue(1015000);
         act(() => {
+          Date.now.mockReturnValue(1015000);
           result.current.resetSubTimer();
         });
 
         // Advance time after reset
-        Date.now.mockReturnValue(1020000);
         act(() => {
+          Date.now.mockReturnValue(1020000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1163,8 +1166,8 @@ describe('useTimers', () => {
         });
 
         // Advance by 1.7 seconds
-        Date.now.mockReturnValue(1001700);
         act(() => {
+          Date.now.mockReturnValue(1001700);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1192,8 +1195,8 @@ describe('useTimers', () => {
         });
 
         // Run for 5 seconds
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(5);
@@ -1205,8 +1208,8 @@ describe('useTimers', () => {
         expect(result.current.isSubTimerPaused).toBe(true);
 
         // Wait 5 seconds while paused (timer should stay at 5)
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(5); // Should stay frozen
@@ -1219,8 +1222,8 @@ describe('useTimers', () => {
         expect(result.current.isSubTimerPaused).toBe(true); // Still paused
 
         // Wait 3 more seconds while paused (timer should stay at 0)
-        Date.now.mockReturnValue(1013000);
         act(() => {
+          Date.now.mockReturnValue(1013000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(0); // Should stay at 0
@@ -1232,8 +1235,8 @@ describe('useTimers', () => {
         expect(result.current.isSubTimerPaused).toBe(false);
 
         // Run for 7 more seconds
-        Date.now.mockReturnValue(1020000);
         act(() => {
+          Date.now.mockReturnValue(1020000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(7); // Should count from 0 after resume
@@ -1248,8 +1251,8 @@ describe('useTimers', () => {
         });
 
         // Run for 8 seconds
-        Date.now.mockReturnValue(1008000);
         act(() => {
+          Date.now.mockReturnValue(1008000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(8);
@@ -1273,15 +1276,15 @@ describe('useTimers', () => {
         });
 
         // Now undo - restore to 8 seconds 
-        Date.now.mockReturnValue(1015000);
         act(() => {
+          Date.now.mockReturnValue(1015000);
           result.current.restoreSubTimer(8);
         });
         expect(result.current.subTimerSeconds).toBe(8); // Shows 8 seconds
 
         // Run for 4 more seconds
-        Date.now.mockReturnValue(1019000);
         act(() => {
+          Date.now.mockReturnValue(1019000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(12); // 8 + 4
@@ -1296,8 +1299,8 @@ describe('useTimers', () => {
         });
 
         // First cycle: run 3s, pause 2s, resume 2s
-        Date.now.mockReturnValue(1003000);
         act(() => {
+          Date.now.mockReturnValue(1003000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(3);
@@ -1306,13 +1309,13 @@ describe('useTimers', () => {
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           result.current.resumeSubTimer();
         });
 
-        Date.now.mockReturnValue(1007000);
         act(() => {
+          Date.now.mockReturnValue(1007000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(5); // 3 + 2 (ignoring 2s pause)
@@ -1323,8 +1326,8 @@ describe('useTimers', () => {
         });
 
         // Substitute during pause
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           result.current.resetSubTimer();
         });
         expect(result.current.subTimerSeconds).toBe(0);
@@ -1336,8 +1339,8 @@ describe('useTimers', () => {
         });
 
         // Run for 6 more seconds
-        Date.now.mockReturnValue(1016000);
         act(() => {
+          Date.now.mockReturnValue(1016000);
           jest.advanceTimersByTime(1000);
         });
         expect(result.current.subTimerSeconds).toBe(6); // Fresh start from substitution
@@ -1352,19 +1355,19 @@ describe('useTimers', () => {
         });
 
         // Build up some pause duration
-        Date.now.mockReturnValue(1005000);
         act(() => {
+          Date.now.mockReturnValue(1005000);
           result.current.pauseSubTimer();
         });
 
-        Date.now.mockReturnValue(1010000);
         act(() => {
+          Date.now.mockReturnValue(1010000);
           result.current.resumeSubTimer();
         });
 
         // Pause again and substitute
-        Date.now.mockReturnValue(1012000);
         act(() => {
+          Date.now.mockReturnValue(1012000);
           result.current.pauseSubTimer();
         });
 
@@ -1374,13 +1377,13 @@ describe('useTimers', () => {
         });
 
         // Resume and verify clean slate
-        Date.now.mockReturnValue(1015000);
         act(() => {
+          Date.now.mockReturnValue(1015000);
           result.current.resumeSubTimer();
         });
 
-        Date.now.mockReturnValue(1020000);
         act(() => {
+          Date.now.mockReturnValue(1020000);
           jest.advanceTimersByTime(1000);
         });
 
@@ -1390,3 +1393,4 @@ describe('useTimers', () => {
     });
   });
 });
+''

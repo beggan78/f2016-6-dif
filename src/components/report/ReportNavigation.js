@@ -28,11 +28,12 @@ export function ReportNavigation({
           variant="secondary" 
           Icon={BarChart3}
           size="sm"
+          data-testid="button-quick-stats"
         >
           Quick Stats
         </Button>
       )}
-      
+
     </div>
   );
 }

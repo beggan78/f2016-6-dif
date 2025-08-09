@@ -17,6 +17,7 @@ export const initializePlayers = (roster) => roster.map((name, index) => ({
     // Role-specific time tracking for new points system
     timeAsDefenderSeconds: 0, // Total time spent as defender
     timeAsAttackerSeconds: 0, // Total time spent as attacker
+    timeAsMidfielderSeconds: 0, // Total time spent as midfielder (1-2-1 formation)
     // Temporary per-period tracking
     currentRole: null, // 'Goalie', 'Defender', 'Attacker'
     currentStatus: null, // 'on_field', 'substitute', 'goalie'
@@ -49,7 +50,70 @@ export const hasInactivePlayersInSquad = (allPlayers, selectedSquadIds) => {
  * @returns {Object|undefined} Player object or undefined if not found
  */
 export const findPlayerById = (allPlayers, playerId) => {
+  if (!allPlayers || !Array.isArray(allPlayers)) {
+    return undefined;
+  }
   return allPlayers.find(p => p.id === playerId);
+};
+
+/**
+ * Finds a player by ID with validation and error handling
+ * Common pattern: findPlayerById + null check + optional error handling
+ * @param {Array} allPlayers - Array of all players
+ * @param {string} playerId - Player ID to find
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.required - Whether player must exist (default: false)
+ * @param {string} options.context - Context for error messages (default: 'operation')
+ * @returns {Object|null} Player object or null if not found
+ * @throws {Error} If required is true and player not found
+ */
+export const findPlayerByIdWithValidation = (allPlayers, playerId, options = {}) => {
+  const { required = false, context = 'operation' } = options;
+  
+  if (!allPlayers || !Array.isArray(allPlayers)) {
+    if (required) {
+      throw new Error(`Invalid players array provided for ${context}`);
+    }
+    return null;
+  }
+  
+  if (!playerId) {
+    if (required) {
+      throw new Error(`No player ID provided for ${context}`);
+    }
+    return null;
+  }
+  
+  const player = findPlayerById(allPlayers, playerId);
+  
+  if (!player && required) {
+    throw new Error(`Player with ID ${playerId} not found for ${context}`);
+  }
+  
+  return player || null;
+};
+
+/**
+ * Creates a player lookup function for use with rotation queues and other operations
+ * Replaces repeated createPlayerLookup patterns throughout the codebase
+ * @param {Array} allPlayers - Array of all players
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.validateStats - Whether to validate player stats exist
+ * @returns {Function} Function that takes player ID and returns player object
+ */
+export const createPlayerLookupFunction = (allPlayers, options = {}) => {
+  const { validateStats = false } = options;
+  
+  return (playerId) => {
+    const player = findPlayerById(allPlayers, playerId);
+    
+    if (validateStats && player && !player.stats) {
+      console.warn(`Player ${playerId} found but missing stats object`);
+      return null;
+    }
+    
+    return player;
+  };
 };
 
 /**
@@ -61,7 +125,7 @@ export const findPlayerById = (allPlayers, playerId) => {
  */
 export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
   const player = findPlayerById(allPlayers, playerId);
-  if (!player) {
+  if (!player || !player.name) {
     return fallback;
   }
   
@@ -162,12 +226,12 @@ export const setCaptain = (allPlayers, newCaptainId) => {
 };
 
 /**
- * Check if there are any active substitutes for a team mode
+ * Check if there are any active substitutes for a team config
  * @param {Array} allPlayers - Array of all players
- * @param {string} teamMode - Current team mode
+ * @param {Object} teamConfig - Current team configuration object
  * @returns {boolean} True if at least one substitute is active (not inactive)
  */
-export const hasActiveSubstitutes = (allPlayers, teamMode) => {
+export const hasActiveSubstitutes = (allPlayers, teamConfig) => {
   // Guard against undefined/null allPlayers
   if (!allPlayers || !Array.isArray(allPlayers)) {
     return false;
@@ -175,18 +239,27 @@ export const hasActiveSubstitutes = (allPlayers, teamMode) => {
 
   // Import inside function to avoid circular dependency issues
   const gameModes = require('../constants/gameModes');
-  const MODE_DEFINITIONS = gameModes.MODE_DEFINITIONS;
   
-  const definition = MODE_DEFINITIONS[teamMode];
-  if (!definition?.substitutePositions?.length) {
+  // Use the modern getModeDefinition helper that handles both legacy strings and config objects
+  const modeDefinition = gameModes.getModeDefinition ? gameModes.getModeDefinition(teamConfig) : null;
+  if (!modeDefinition) {
+    return false;
+  }
+  
+  const substitutePositions = modeDefinition.substitutePositions || [];
+
+  if (!substitutePositions.length) {
     return false;
   }
   
   // Find players in substitute positions
   const substitutePlayers = allPlayers.filter(player => 
-    definition.substitutePositions.includes(player.stats?.currentPairKey)
+    substitutePositions.includes(player.stats?.currentPairKey)
   );
-  
+
+
   // Check if at least one substitute is not inactive
-  return substitutePlayers.some(player => !player.stats?.isInactive);
+  const hasActive = substitutePlayers.some(player => !player.stats?.isInactive);
+  
+  return hasActive;
 };
