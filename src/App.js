@@ -16,7 +16,7 @@ import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
-import { ConfirmationModal } from './components/shared/UI';
+import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
@@ -232,6 +232,30 @@ function App() {
     removeFromNavigationStack();
   };
 
+  const handleLeaveSportWizard = () => {
+    // Close the modal first
+    setShowNewGameModal(false);
+    removeFromNavigationStack();
+    
+    // Navigate back to where the user was before entering the Sport Wizard app
+    // Go back to the state before we initialized the app
+    const currentLevel = window.history.state?.navigationLevel || window.history.state?.modalLevel || 0;
+    if (currentLevel > 0) {
+      // Go back to before any navigation states were pushed
+      window.history.go(-(currentLevel + 1));
+    } else {
+      // If no navigation states, try to go back one step
+      // This handles the case where user came directly to the app
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // If this is the only page in history, try to close the window
+        // This will only work if the app was opened by script, otherwise it's ignored
+        window.close();
+      }
+    }
+  };
+
   const handleNavigateToTacticalBoard = () => {
     setFromView(gameState.view);
     gameState.setView(VIEWS.TACTICAL_BOARD);
@@ -442,14 +466,19 @@ function App() {
         onAddPlayer={handleAddPlayerConfirm}
       />
       
-      <ConfirmationModal
+      <ThreeOptionModal
         isOpen={showNewGameModal}
-        onConfirm={handleConfirmNewGame}
-        onCancel={handleCancelNewGame}
+        onPrimary={handleCancelNewGame}
+        onSecondary={handleConfirmNewGame}
+        onTertiary={handleLeaveSportWizard}
         title="Start a new game?"
         message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
-        confirmText="Yes, start new game"
-        cancelText="Cancel"
+        primaryText="Stay on page"
+        secondaryText="Yes, start new game"
+        tertiaryText="Leave Sport Wizard"
+        primaryVariant="accent"
+        secondaryVariant="primary"
+        tertiaryVariant="danger"
       />
     </div>
   );
