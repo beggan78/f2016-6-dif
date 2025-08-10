@@ -1,53 +1,60 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Custom hook to intercept browser back button and close modals instead of navigating away
+ * Custom hook to intercept browser back button for navigation handling
  * 
- * Usage:
- * const { pushModalState, popModalState } = useBrowserBackIntercept();
+ * Supports both modal management and view navigation interception.
+ * When back button is pressed, executes registered navigation handlers
+ * instead of allowing browser navigation.
  * 
- * // When opening a modal:
- * pushModalState(() => setModalOpen(false));
+ * Usage Examples:
  * 
- * // When closing a modal normally:
- * popModalState();
- * setModalOpen(false);
+ * // For modals:
+ * const { pushNavigationState } = useBrowserBackIntercept();
+ * pushNavigationState(() => setModalOpen(false));
+ * 
+ * // For view navigation:
+ * const { pushNavigationState } = useBrowserBackIntercept();
+ * pushNavigationState(() => navigateToParentView());
+ * 
+ * // Global navigation handling:
+ * const { pushNavigationState } = useBrowserBackIntercept(globalHandler);
  */
 export function useBrowserBackIntercept(globalNavigationHandler) {
-  const modalStack = useRef([]);
+  const navigationStack = useRef([]);
   const hasInitialized = useRef(false);
 
   useEffect(() => {
     // Initialize with a base state on mount
     if (!hasInitialized.current) {
-      window.history.replaceState({ modalLevel: 0 }, '', window.location.href);
+      window.history.replaceState({ navigationLevel: 0 }, '', window.location.href);
       hasInitialized.current = true;
     }
 
     const handlePopState = (event) => {
-      // If we have modals open, close the topmost modal instead of navigating
-      if (modalStack.current.length > 0) {
+      // If we have navigation handlers registered, execute the topmost handler instead of navigating
+      if (navigationStack.current.length > 0) {
         event.preventDefault();
-        const topModal = modalStack.current.pop();
+        const topHandler = navigationStack.current.pop();
         
-        // Call the close function for the topmost modal
-        if (topModal && typeof topModal.closeModal === 'function') {
-          topModal.closeModal();
+        // Call the navigation function for the topmost handler
+        if (topHandler && typeof topHandler.navigationHandler === 'function') {
+          topHandler.navigationHandler();
         }
         
-        // If there are still modals open, push a new state
-        if (modalStack.current.length > 0) {
+        // If there are still handlers registered, push a new state
+        if (navigationStack.current.length > 0) {
           window.history.pushState(
-            { modalLevel: modalStack.current.length }, 
+            { navigationLevel: navigationStack.current.length }, 
             '', 
             window.location.href
           );
         }
       } else if (globalNavigationHandler && typeof globalNavigationHandler === 'function') {
-        // No modals open, call the global navigation handler
+        // No navigation handlers registered, call the global navigation handler
         globalNavigationHandler();
       }
-      // If no modals are open and no global handler, let the browser handle the back navigation normally
+      // If no navigation handlers are registered and no global handler, let the browser handle the back navigation normally
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -57,54 +64,61 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
     };
   }, [globalNavigationHandler]);
 
-  const pushModalState = (closeModalCallback) => {
-    if (typeof closeModalCallback !== 'function') {
-      console.warn('pushModalState requires a function to close the modal');
+  const pushNavigationState = (navigationCallback) => {
+    if (typeof navigationCallback !== 'function') {
+      console.warn('pushNavigationState requires a function to handle navigation');
       return;
     }
 
-    // Add the modal to our stack
-    modalStack.current.push({ closeModal: closeModalCallback });
+    // Add the navigation handler to our stack
+    navigationStack.current.push({ navigationHandler: navigationCallback });
     
     // Push a new browser history state
     window.history.pushState(
-      { modalLevel: modalStack.current.length }, 
+      { navigationLevel: navigationStack.current.length }, 
       '', 
       window.location.href
     );
   };
 
-  const popModalState = () => {
-    if (modalStack.current.length > 0) {
-      modalStack.current.pop();
+  const popNavigationState = () => {
+    if (navigationStack.current.length > 0) {
+      navigationStack.current.pop();
       
       // Only go back if we're not already at the base level
-      if (window.history.state?.modalLevel > 0) {
+      // Support both new navigationLevel and old modalLevel for compatibility
+      const currentLevel = window.history.state?.navigationLevel || window.history.state?.modalLevel || 0;
+      if (currentLevel > 0) {
         window.history.back();
       }
     }
   };
 
-  const removeModalFromStack = () => {
-    // Remove modal from stack without triggering browser navigation
-    if (modalStack.current.length > 0) {
-      modalStack.current.pop();
+  const removeFromNavigationStack = () => {
+    // Remove navigation handler from stack without triggering browser navigation
+    if (navigationStack.current.length > 0) {
+      navigationStack.current.pop();
     }
   };
 
-  const clearModalStack = () => {
-    modalStack.current = [];
-    // Go back to base state if we're in a modal state
-    if (window.history.state?.modalLevel > 0) {
-      window.history.go(-window.history.state.modalLevel);
+  const clearNavigationStack = () => {
+    navigationStack.current = [];
+    // Go back to base state if we're in a navigation state
+    // Support both new navigationLevel and old modalLevel for compatibility
+    const currentLevel = window.history.state?.navigationLevel || window.history.state?.modalLevel || 0;
+    if (currentLevel > 0) {
+      window.history.go(-currentLevel);
     }
   };
+
+  const hasActiveNavigationHandlers = () => navigationStack.current.length > 0;
 
   return {
-    pushModalState,
-    popModalState,
-    removeModalFromStack,
-    clearModalStack,
-    hasOpenModals: () => modalStack.current.length > 0
+    // Navigation-generic methods
+    pushNavigationState,
+    popNavigationState,
+    removeFromNavigationStack,
+    clearNavigationStack,
+    hasActiveNavigationHandlers
   };
 }

@@ -295,13 +295,13 @@ describe('COMPONENT_NAME Integration Tests', () => {
         });
         
         // Simulate modal interaction
-        mockHookSet.useGameModals.pushModalState('substitutionModal', { playerId: 'player-1' });
+        mockHookSet.useGameModals.pushNavigationState('substitutionModal', { playerId: 'player-1' });
       });
       
       // Assert
       expect(mockHookSet.useTimers.pauseSubTimer).toHaveBeenCalled();
       expect(mockHookSet.useGameUIState.setAnimationState).toHaveBeenCalled();
-      expect(mockHookSet.useGameModals.pushModalState).toHaveBeenCalledWith('substitutionModal', { playerId: 'player-1' });
+      expect(mockHookSet.useGameModals.pushNavigationState).toHaveBeenCalledWith('substitutionModal', { playerId: 'player-1' });
       
       // Verify component responds to coordinated hook changes
       await waitFor(() => {

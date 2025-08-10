@@ -16,7 +16,7 @@ import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
-import { ConfirmationModal } from './components/shared/UI';
+import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
@@ -36,8 +36,15 @@ function App() {
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [fromView, setFromView] = useState(null);
   
-  // Create a ref to store the pushModalState function to avoid circular dependency
-  const pushModalStateRef = useRef(null);
+  // Create a ref to store the pushNavigationState function to avoid circular dependency
+  const pushNavigationStateRef = useRef(null);
+
+  const handleNavigateFromTacticalBoard = useCallback((fallbackView) => {
+    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
+    if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
+    }
+  }, [gameState, fromView]);
   
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
@@ -45,24 +52,27 @@ function App() {
     if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1) {
       // Exception: PeriodSetupScreen -> ConfigurationScreen
       gameState.setView(VIEWS.CONFIG);
+    } else if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      // Navigate back from Tactical Board - same as clicking Back button
+      handleNavigateFromTacticalBoard();
     } else {
       // Default: Show "Start a new game?" confirmation modal
       setShowNewGameModal(true);
       // Register this modal with the browser back intercept system
-      if (pushModalStateRef.current) {
-        pushModalStateRef.current(() => {
+      if (pushNavigationStateRef.current) {
+        pushNavigationStateRef.current(() => {
           setShowNewGameModal(false);
         });
       }
     }
-  }, [gameState]);
+  }, [gameState, handleNavigateFromTacticalBoard]);
   
-  const { pushModalState, removeModalFromStack } = useBrowserBackIntercept(handleGlobalNavigation);
+  const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
   
-  // Store the pushModalState function in the ref
+  // Store the pushNavigationState function in the ref
   useEffect(() => {
-    pushModalStateRef.current = pushModalState;
-  }, [pushModalState]);
+    pushNavigationStateRef.current = pushNavigationState;
+  }, [pushNavigationState]);
 
   const selectedSquadPlayers = useMemo(() => {
     return getSelectedSquadPlayers(gameState.allPlayers, gameState.selectedSquadIds);
@@ -123,7 +133,7 @@ function App() {
       setConfirmModalData({ timeString });
       setShowConfirmModal(true);
       // Add modal to browser back button handling
-      pushModalState(() => {
+      pushNavigationState(() => {
         setShowConfirmModal(false);
       });
       return;
@@ -142,7 +152,7 @@ function App() {
 
   const handleConfirmEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
     timers.stopTimers(
       gameState.currentPeriodNumber,
@@ -155,7 +165,7 @@ function App() {
 
   const handleCancelEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
   };
 
   const handleRestartMatch = () => {
@@ -192,26 +202,26 @@ function App() {
   const handleAddPlayer = () => {
     setShowAddPlayerModal(true);
     // Add modal to browser back button handling
-    pushModalState(() => {
+    pushNavigationState(() => {
       setShowAddPlayerModal(false);
     });
   };
 
   const handleAddPlayerConfirm = (playerName) => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     gameState.addTemporaryPlayer(playerName);
   };
 
   const handleAddPlayerCancel = () => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
   };
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = () => {
     setShowNewGameModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     handleRestartMatch();
   };
 
@@ -219,19 +229,36 @@ function App() {
     // When user clicks Cancel button, just close the modal without triggering browser back
     setShowNewGameModal(false);
     // Remove the modal from the browser back intercept stack without triggering navigation
-    removeModalFromStack();
+    removeFromNavigationStack();
+  };
+
+  const handleLeaveSportWizard = () => {
+    // Close the modal first
+    setShowNewGameModal(false);
+    removeFromNavigationStack();
+    
+    // Navigate back to where the user was before entering the Sport Wizard app
+    // Go back to the state before we initialized the app
+    const currentLevel = window.history.state?.navigationLevel || window.history.state?.modalLevel || 0;
+    if (currentLevel > 0) {
+      // Go back to before any navigation states were pushed
+      window.history.go(-(currentLevel + 1));
+    } else {
+      // If no navigation states, try to go back one step
+      // This handles the case where user came directly to the app
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // If this is the only page in history, try to close the window
+        // This will only work if the app was opened by script, otherwise it's ignored
+        window.close();
+      }
+    }
   };
 
   const handleNavigateToTacticalBoard = () => {
     setFromView(gameState.view);
     gameState.setView(VIEWS.TACTICAL_BOARD);
-  };
-
-  const handleNavigateFromTacticalBoard = (fallbackView) => {
-    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
-    if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
-    }
   };
 
   // Render logic
@@ -328,8 +355,8 @@ function App() {
             switchGoalie={gameState.switchGoalie}
             setLastSubstitutionTimestamp={gameState.setLastSubstitutionTimestamp}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             opponentTeamName={gameState.opponentTeamName}
@@ -390,8 +417,8 @@ function App() {
         return (
           <TacticalBoardScreen 
             onNavigateBack={handleNavigateFromTacticalBoard}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             fromView={fromView}
           />
         );
@@ -439,14 +466,19 @@ function App() {
         onAddPlayer={handleAddPlayerConfirm}
       />
       
-      <ConfirmationModal
+      <ThreeOptionModal
         isOpen={showNewGameModal}
-        onConfirm={handleConfirmNewGame}
-        onCancel={handleCancelNewGame}
+        onPrimary={handleCancelNewGame}
+        onSecondary={handleConfirmNewGame}
+        onTertiary={handleLeaveSportWizard}
         title="Start a new game?"
         message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
-        confirmText="Yes, start new game"
-        cancelText="Cancel"
+        primaryText="Stay on page"
+        secondaryText="Yes, start new game"
+        tertiaryText="Leave Sport Wizard"
+        primaryVariant="accent"
+        secondaryVariant="primary"
+        tertiaryVariant="danger"
       />
     </div>
   );

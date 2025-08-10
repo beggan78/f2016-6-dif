@@ -74,7 +74,7 @@ describe('useBrowserBackIntercept', () => {
       renderHook(() => useBrowserBackIntercept());
 
       expect(mockReplaceState).toHaveBeenCalledWith(
-        { modalLevel: 0 },
+        { navigationLevel: 0 },
         '',
         window.location.href
       );
@@ -126,81 +126,81 @@ describe('useBrowserBackIntercept', () => {
     });
   });
 
-  describe('Modal State Management', () => {
-    it('should return initial state with no open modals', () => {
+  describe('Navigation State Management', () => {
+    it('should return initial state with no active navigation handlers', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
 
-      expect(result.current.hasOpenModals()).toBe(false);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(false);
     });
 
-    it('should add modal to stack when pushModalState is called', () => {
+    it('should add navigation handler to stack when pushNavigationState is called', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
       const mockCloseModal = jest.fn();
 
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
       expect(mockPushState).toHaveBeenCalledWith(
-        { modalLevel: 1 },
+        { navigationLevel: 1 },
         '',
         window.location.href
       );
     });
 
-    it('should handle multiple modals in stack', () => {
+    it('should handle multiple navigation handlers in stack', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
       const mockCloseModal1 = jest.fn();
       const mockCloseModal2 = jest.fn();
 
       act(() => {
-        result.current.pushModalState(mockCloseModal1);
-        result.current.pushModalState(mockCloseModal2);
+        result.current.pushNavigationState(mockCloseModal1);
+        result.current.pushNavigationState(mockCloseModal2);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
       expect(mockPushState).toHaveBeenCalledTimes(2);
       expect(mockPushState).toHaveBeenLastCalledWith(
-        { modalLevel: 2 },
+        { navigationLevel: 2 },
         '',
         window.location.href
       );
     });
 
-    it('should warn when pushModalState is called without function', () => {
+    it('should warn when pushNavigationState is called without function', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
       const { result } = renderHook(() => useBrowserBackIntercept());
 
       act(() => {
-        result.current.pushModalState('not a function');
+        result.current.pushNavigationState('not a function');
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        'pushModalState requires a function to close the modal'
+        'pushNavigationState requires a function to handle navigation'
       );
-      expect(result.current.hasOpenModals()).toBe(false);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(false);
 
       consoleSpy.mockRestore();
     });
 
-    it('should remove modal from stack when popModalState is called', () => {
+    it('should remove navigation handler from stack when popNavigationState is called', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
       const mockCloseModal = jest.fn();
 
       // Add modal first
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
       // Set up mock state to simulate modal level
-      window.history.state = { modalLevel: 1 };
+      window.history.state = { navigationLevel: 1 };
 
       act(() => {
-        result.current.popModalState();
+        result.current.popNavigationState();
       });
 
-      expect(result.current.hasOpenModals()).toBe(false);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(false);
       expect(mockBack).toHaveBeenCalled();
     });
 
@@ -210,14 +210,14 @@ describe('useBrowserBackIntercept', () => {
 
       // Add modal first
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
       // Set state to base level
       window.history.state = { modalLevel: 0 };
 
       act(() => {
-        result.current.popModalState();
+        result.current.popNavigationState();
       });
 
       expect(mockBack).not.toHaveBeenCalled();
@@ -231,7 +231,7 @@ describe('useBrowserBackIntercept', () => {
 
       // Add modal to stack
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
       // Simulate popstate event (back button press)
@@ -247,7 +247,7 @@ describe('useBrowserBackIntercept', () => {
 
       expect(mockEvent.preventDefault).toHaveBeenCalled();
       expect(mockCloseModal).toHaveBeenCalled();
-      expect(result.current.hasOpenModals()).toBe(false);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(false);
     });
 
     it('should handle multiple modals correctly when back button is pressed', () => {
@@ -257,8 +257,8 @@ describe('useBrowserBackIntercept', () => {
 
       // Add two modals
       act(() => {
-        result.current.pushModalState(mockCloseModal1);
-        result.current.pushModalState(mockCloseModal2);
+        result.current.pushNavigationState(mockCloseModal1);
+        result.current.pushNavigationState(mockCloseModal2);
       });
 
       // Get popstate handler
@@ -276,9 +276,9 @@ describe('useBrowserBackIntercept', () => {
       // Should close the topmost modal (modal2) and push new state for remaining modal
       expect(mockCloseModal2).toHaveBeenCalled();
       expect(mockCloseModal1).not.toHaveBeenCalled();
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
       expect(mockPushState).toHaveBeenCalledWith(
-        { modalLevel: 1 },
+        { navigationLevel: 1 },
         '',
         window.location.href
       );
@@ -321,28 +321,28 @@ describe('useBrowserBackIntercept', () => {
     });
   });
 
-  describe('Modal Stack Utilities', () => {
-    it('should remove modal from stack without navigation when removeModalFromStack is called', () => {
+  describe('Navigation Stack Utilities', () => {
+    it('should remove modal from stack without navigation when removeFromNavigationStack is called', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
       const mockCloseModal = jest.fn();
 
       // Add modal
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
 
       // Remove without navigation
       act(() => {
-        result.current.removeModalFromStack();
+        result.current.removeFromNavigationStack();
       });
 
-      expect(result.current.hasOpenModals()).toBe(false);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(false);
       expect(mockBack).not.toHaveBeenCalled();
     });
 
-    it('should clear all modals when clearModalStack is called', () => {
+    it('should clear all modals when clearNavigationStack is called', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
       const mockCloseModal1 = jest.fn();
       const mockCloseModal2 = jest.fn();
@@ -350,21 +350,21 @@ describe('useBrowserBackIntercept', () => {
 
       // Add multiple modals
       act(() => {
-        result.current.pushModalState(mockCloseModal1);
-        result.current.pushModalState(mockCloseModal2);
-        result.current.pushModalState(mockCloseModal3);
+        result.current.pushNavigationState(mockCloseModal1);
+        result.current.pushNavigationState(mockCloseModal2);
+        result.current.pushNavigationState(mockCloseModal3);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
 
       // Set up mock state
       window.history.state = { modalLevel: 3 };
 
       act(() => {
-        result.current.clearModalStack();
+        result.current.clearNavigationStack();
       });
 
-      expect(result.current.hasOpenModals()).toBe(false);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(false);
       expect(mockGo).toHaveBeenCalledWith(-3);
     });
 
@@ -374,13 +374,13 @@ describe('useBrowserBackIntercept', () => {
 
       // Add modal but set state to base level
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
       window.history.state = { modalLevel: 0 };
 
       act(() => {
-        result.current.clearModalStack();
+        result.current.clearNavigationStack();
       });
 
       expect(mockGo).not.toHaveBeenCalled();
@@ -393,7 +393,7 @@ describe('useBrowserBackIntercept', () => {
 
       // Manually add a non-function to the stack (edge case)
       act(() => {
-        result.current.pushModalState(jest.fn());
+        result.current.pushNavigationState(jest.fn());
       });
 
       // Manually corrupt the stack
@@ -415,7 +415,7 @@ describe('useBrowserBackIntercept', () => {
       const mockCloseModal = jest.fn();
 
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
       // Remove state property
@@ -423,67 +423,67 @@ describe('useBrowserBackIntercept', () => {
 
       expect(() => {
         act(() => {
-          result.current.popModalState();
+          result.current.popNavigationState();
         });
       }).not.toThrow();
 
       expect(mockBack).not.toHaveBeenCalled();
     });
 
-    it('should handle clearModalStack with null state', () => {
+    it('should handle clearNavigationStack with null state', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
       const mockCloseModal = jest.fn();
 
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
       window.history.state = null;
 
       expect(() => {
         act(() => {
-          result.current.clearModalStack();
+          result.current.clearNavigationStack();
         });
       }).not.toThrow();
 
       expect(mockGo).not.toHaveBeenCalled();
     });
 
-    it('should handle popModalState when stack is empty', () => {
+    it('should handle popNavigationState when stack is empty', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
 
       expect(() => {
         act(() => {
-          result.current.popModalState();
+          result.current.popNavigationState();
         });
       }).not.toThrow();
 
       expect(mockBack).not.toHaveBeenCalled();
     });
 
-    it('should handle removeModalFromStack when stack is empty', () => {
+    it('should handle removeFromNavigationStack when stack is empty', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
 
       expect(() => {
         act(() => {
-          result.current.removeModalFromStack();
+          result.current.removeFromNavigationStack();
         });
       }).not.toThrow();
     });
 
-    it('should handle rapid pushModalState calls', () => {
+    it('should handle rapid pushNavigationState calls', () => {
       const { result } = renderHook(() => useBrowserBackIntercept());
       const mockCloseModal1 = jest.fn();
       const mockCloseModal2 = jest.fn();
       const mockCloseModal3 = jest.fn();
 
       act(() => {
-        result.current.pushModalState(mockCloseModal1);
-        result.current.pushModalState(mockCloseModal2);
-        result.current.pushModalState(mockCloseModal3);
+        result.current.pushNavigationState(mockCloseModal1);
+        result.current.pushNavigationState(mockCloseModal2);
+        result.current.pushNavigationState(mockCloseModal3);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
       expect(mockPushState).toHaveBeenCalledTimes(3);
     });
   });
@@ -495,23 +495,23 @@ describe('useBrowserBackIntercept', () => {
 
       // Open modal
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
       expect(mockPushState).toHaveBeenCalledWith(
-        { modalLevel: 1 },
+        { navigationLevel: 1 },
         '',
         window.location.href
       );
 
       // Close modal normally
-      window.history.state = { modalLevel: 1 };
+      window.history.state = { navigationLevel: 1 };
       act(() => {
-        result.current.popModalState();
+        result.current.popNavigationState();
       });
 
-      expect(result.current.hasOpenModals()).toBe(false);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(false);
       expect(mockBack).toHaveBeenCalled();
     });
 
@@ -548,19 +548,19 @@ describe('useBrowserBackIntercept', () => {
 
       // Build stack
       act(() => {
-        result.current.pushModalState(closeModal1);
-        result.current.pushModalState(closeModal2);
-        result.current.pushModalState(closeModal3);
+        result.current.pushNavigationState(closeModal1);
+        result.current.pushNavigationState(closeModal2);
+        result.current.pushNavigationState(closeModal3);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
 
       // Remove middle modal manually
       act(() => {
-        result.current.removeModalFromStack();
+        result.current.removeFromNavigationStack();
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
 
       // Close via back button
       const popstateHandler = mockAddEventListener.mock.calls.find(
@@ -574,7 +574,7 @@ describe('useBrowserBackIntercept', () => {
       });
 
       // Should close the remaining top modal
-      expect(result.current.hasOpenModals()).toBe(true); // Still one modal left
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true); // Still one modal left
     });
 
     it('should properly clean up on unmount during active modal session', () => {
@@ -583,10 +583,10 @@ describe('useBrowserBackIntercept', () => {
 
       // Add modal
       act(() => {
-        result.current.pushModalState(mockCloseModal);
+        result.current.pushNavigationState(mockCloseModal);
       });
 
-      expect(result.current.hasOpenModals()).toBe(true);
+      expect(result.current.hasActiveNavigationHandlers()).toBe(true);
 
       // Unmount component
       unmount();
