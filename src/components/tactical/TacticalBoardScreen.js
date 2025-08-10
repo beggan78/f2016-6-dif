@@ -14,6 +14,11 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   const [pitchMode, setPitchMode] = useState('full');
   const [placedChips, setPlacedChips] = useState([]);
 
+  const handleBackPress = useCallback(() => {
+    const savedState = persistenceManager.loadState();
+    onNavigateBack(savedState.fromView);
+  }, [onNavigateBack, persistenceManager]);
+
   // Load saved state on component mount
   useEffect(() => {
     const savedState = persistenceManager.loadState();
@@ -28,10 +33,22 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
     }
   }, [persistenceManager, fromView]);
 
-  const handleBackPress = useCallback(() => {
-    const savedState = persistenceManager.loadState();
-    onNavigateBack(savedState.fromView);
-  }, [onNavigateBack, persistenceManager]);
+  // Register browser back handler for navigation
+  useEffect(() => {
+    // Register browser back handler when component mounts
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        handleBackPress();
+      });
+    }
+
+    // Cleanup when component unmounts
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, handleBackPress]);
 
   // This function now handles saving the current chips and loading the new set
   const handlePitchModeToggle = useCallback((mode) => {

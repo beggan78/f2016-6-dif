@@ -26,7 +26,7 @@ This directory contains custom React hooks that encapsulate reusable stateful lo
 
 ## 2. Utility Hooks
 
-- **`useBrowserBackIntercept.js`**: Intercepts the browser's back button functionality to close modals gracefully instead of navigating away. It maintains a stack of open modals.
+- **`useBrowserBackIntercept.js`**: Intercepts the browser's back button functionality for both modal management and view navigation. Maintains a navigation stack and supports global navigation handlers for application-wide back button behavior.
 
 - **`useFieldPositionHandlers.js`**: A helper hook that simplifies the integration of `useQuickTapWithScrollDetection` for various field positions, adapting to different team modes.
 

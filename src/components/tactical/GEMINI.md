@@ -65,6 +65,17 @@ The tactical board is composed of several key components that work together:
 
 To use the tactical board, you can embed the `TacticalBoardScreen` component in your application. It requires the following props:
 
-- `onNavigateBack`: A function to be called when the user clicks the "Back" button.
-- `pushNavigationState`: A function to push a modal onto the navigation stack.
-- `removeFromNavigationStack`: A function to remove a modal from the navigation stack.
+- `onNavigateBack`: A function to be called when the user clicks the "Back" button or when browser back is pressed.
+- `pushNavigationState`: A function to push a navigation handler onto the navigation stack (from `useBrowserBackIntercept`).
+- `removeFromNavigationStack`: A function to remove a navigation handler from the navigation stack.
+
+## 6. Browser Back Integration
+
+The Tactical Board automatically registers for browser back button interception when the component mounts. When the browser back button is pressed:
+
+1. The global navigation handler in `App.js` detects the TACTICAL_BOARD view
+2. It calls the same `handleBackPress` function used by the on-screen "Back" button
+3. The component properly navigates back to the previous view (typically CONFIG)
+4. The navigation handler is cleaned up when the component unmounts
+
+This ensures that the browser back button behaves identically to the on-screen "Back" button, providing a seamless user experience across all navigation methods.

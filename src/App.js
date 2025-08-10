@@ -38,6 +38,13 @@ function App() {
   
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
+
+  const handleNavigateFromTacticalBoard = useCallback((fallbackView) => {
+    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
+    if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
+    }
+  }, [gameState, fromView]);
   
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
@@ -45,6 +52,9 @@ function App() {
     if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1) {
       // Exception: PeriodSetupScreen -> ConfigurationScreen
       gameState.setView(VIEWS.CONFIG);
+    } else if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      // Navigate back from Tactical Board - same as clicking Back button
+      handleNavigateFromTacticalBoard();
     } else {
       // Default: Show "Start a new game?" confirmation modal
       setShowNewGameModal(true);
@@ -55,7 +65,7 @@ function App() {
         });
       }
     }
-  }, [gameState]);
+  }, [gameState, handleNavigateFromTacticalBoard]);
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
   
@@ -225,13 +235,6 @@ function App() {
   const handleNavigateToTacticalBoard = () => {
     setFromView(gameState.view);
     gameState.setView(VIEWS.TACTICAL_BOARD);
-  };
-
-  const handleNavigateFromTacticalBoard = (fallbackView) => {
-    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
-    if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
-    }
   };
 
   // Render logic
