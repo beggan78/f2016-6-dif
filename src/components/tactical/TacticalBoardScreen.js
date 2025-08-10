@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 
-export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack, fromView }) {
+export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, removeFromNavigationStack, fromView }) {
   // Memoize the persistence manager to prevent re-creation on every render
   const persistenceManager = useMemo(() => createPersistenceManager('sport-wizard-tactical-preferences', {
     pitchMode: 'full',
@@ -158,8 +158,8 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
         onChipPlace={handleChipPlace}
         onChipMove={handleChipMove}
         onChipDelete={handleChipDelete}
-        pushModalState={pushModalState}
-        removeModalFromStack={removeModalFromStack}
+        pushNavigationState={pushNavigationState}
+        removeFromNavigationStack={removeFromNavigationStack}
       />
     </div>
   );

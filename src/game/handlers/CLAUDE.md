@@ -125,9 +125,9 @@ All state changes use `animateStateChange()`:
 ### Modal Management
 ```javascript
 const modalHandlers = {
-  openModal: (data) => pushModalState(modalType, data),
-  closeModal: () => removeModalFromStack(),
-  removeModalFromStack
+  openModal: (data) => pushNavigationState(modalType, data),
+  closeModal: () => removeFromNavigationStack(),
+  removeFromNavigationStack
 };
 ```
 
@@ -183,8 +183,8 @@ const handleModalAction = (selectionData) => {
   closeModal();
   
   // Clean up modal stack if needed
-  if (removeModalFromStack) {
-    removeModalFromStack();
+  if (removeFromNavigationStack) {
+    removeFromNavigationStack();
   }
 };
 ```

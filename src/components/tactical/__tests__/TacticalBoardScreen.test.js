@@ -51,8 +51,8 @@ describe('TacticalBoardScreen', () => {
   beforeEach(() => {
     mockHandlers = {
       onNavigateBack: jest.fn(),
-      pushModalState: jest.fn(),
-      removeModalFromStack: jest.fn()
+      pushNavigationState: jest.fn(),
+      removeFromNavigationStack: jest.fn()
     };
 
     defaultProps = {
@@ -204,8 +204,8 @@ describe('TacticalBoardScreen', () => {
     it('should handle missing navigation props gracefully', () => {
       const propsWithoutHandlers = {
         onNavigateBack: undefined,
-        pushModalState: mockHandlers.pushModalState,
-        removeModalFromStack: mockHandlers.removeModalFromStack
+        pushNavigationState: mockHandlers.pushNavigationState,
+        removeFromNavigationStack: mockHandlers.removeFromNavigationStack
       };
       
       expect(() => {

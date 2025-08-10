@@ -66,5 +66,5 @@ The tactical board is composed of several key components that work together:
 To use the tactical board, you can embed the `TacticalBoardScreen` component in your application. It requires the following props:
 
 - `onNavigateBack`: A function to be called when the user clicks the "Back" button.
-- `pushModalState`: A function to push a modal onto the navigation stack.
-- `removeModalFromStack`: A function to remove a modal from the navigation stack.
+- `pushNavigationState`: A function to push a modal onto the navigation stack.
+- `removeFromNavigationStack`: A function to remove a modal from the navigation stack.

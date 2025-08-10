@@ -153,6 +153,7 @@ export const createMockUseTimers = (initialTimerState = {}) => {
 
 /**
  * Creates a mock implementation of useGameModals hook
+ * Note: useGameModals now uses pushNavigationState and removeFromNavigationStack parameters
  */
 export const createMockUseGameModals = (initialModalState = {}) => {
   const defaultModalState = {
@@ -295,6 +296,41 @@ export const createMockUseBrowserBackIntercept = (initialConfig = {}) => {
   const mockInterceptState = { ...defaultConfig };
   
   const interceptActions = {
+    // New navigation-generic methods
+    pushNavigationState: jest.fn(() => {
+      mockInterceptState.isIntercepting = true;
+    }),
+    popNavigationState: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    removeFromNavigationStack: jest.fn(() => {
+      // Mock removing navigation handler
+    }),
+    clearNavigationStack: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    hasActiveNavigationHandlers: jest.fn(() => {
+      return mockInterceptState.isIntercepting;
+    }),
+    
+    // Backward compatibility aliases (deprecated but maintained for transition)
+    pushModalState: jest.fn(() => {
+      mockInterceptState.isIntercepting = true;
+    }),
+    popModalState: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    removeModalFromStack: jest.fn(() => {
+      // Mock removing modal from stack
+    }),
+    clearModalStack: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    hasOpenModals: jest.fn(() => {
+      return mockInterceptState.isIntercepting;
+    }),
+    
+    // Legacy methods
     enableIntercept: jest.fn(() => {
       mockInterceptState.isIntercepting = true;
     }),

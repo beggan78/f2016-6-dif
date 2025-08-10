@@ -36,8 +36,8 @@ function App() {
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [fromView, setFromView] = useState(null);
   
-  // Create a ref to store the pushModalState function to avoid circular dependency
-  const pushModalStateRef = useRef(null);
+  // Create a ref to store the pushNavigationState function to avoid circular dependency
+  const pushNavigationStateRef = useRef(null);
   
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
@@ -49,20 +49,20 @@ function App() {
       // Default: Show "Start a new game?" confirmation modal
       setShowNewGameModal(true);
       // Register this modal with the browser back intercept system
-      if (pushModalStateRef.current) {
-        pushModalStateRef.current(() => {
+      if (pushNavigationStateRef.current) {
+        pushNavigationStateRef.current(() => {
           setShowNewGameModal(false);
         });
       }
     }
   }, [gameState]);
   
-  const { pushModalState, removeModalFromStack } = useBrowserBackIntercept(handleGlobalNavigation);
+  const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
   
-  // Store the pushModalState function in the ref
+  // Store the pushNavigationState function in the ref
   useEffect(() => {
-    pushModalStateRef.current = pushModalState;
-  }, [pushModalState]);
+    pushNavigationStateRef.current = pushNavigationState;
+  }, [pushNavigationState]);
 
   const selectedSquadPlayers = useMemo(() => {
     return getSelectedSquadPlayers(gameState.allPlayers, gameState.selectedSquadIds);
@@ -123,7 +123,7 @@ function App() {
       setConfirmModalData({ timeString });
       setShowConfirmModal(true);
       // Add modal to browser back button handling
-      pushModalState(() => {
+      pushNavigationState(() => {
         setShowConfirmModal(false);
       });
       return;
@@ -142,7 +142,7 @@ function App() {
 
   const handleConfirmEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
     timers.stopTimers(
       gameState.currentPeriodNumber,
@@ -155,7 +155,7 @@ function App() {
 
   const handleCancelEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
   };
 
   const handleRestartMatch = () => {
@@ -192,26 +192,26 @@ function App() {
   const handleAddPlayer = () => {
     setShowAddPlayerModal(true);
     // Add modal to browser back button handling
-    pushModalState(() => {
+    pushNavigationState(() => {
       setShowAddPlayerModal(false);
     });
   };
 
   const handleAddPlayerConfirm = (playerName) => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     gameState.addTemporaryPlayer(playerName);
   };
 
   const handleAddPlayerCancel = () => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
   };
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = () => {
     setShowNewGameModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     handleRestartMatch();
   };
 
@@ -219,7 +219,7 @@ function App() {
     // When user clicks Cancel button, just close the modal without triggering browser back
     setShowNewGameModal(false);
     // Remove the modal from the browser back intercept stack without triggering navigation
-    removeModalFromStack();
+    removeFromNavigationStack();
   };
 
   const handleNavigateToTacticalBoard = () => {
@@ -328,8 +328,8 @@ function App() {
             switchGoalie={gameState.switchGoalie}
             setLastSubstitutionTimestamp={gameState.setLastSubstitutionTimestamp}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             opponentTeamName={gameState.opponentTeamName}
@@ -390,8 +390,8 @@ function App() {
         return (
           <TacticalBoardScreen 
             onNavigateBack={handleNavigateFromTacticalBoard}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             fromView={fromView}
           />
         );
