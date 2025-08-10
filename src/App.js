@@ -29,6 +29,7 @@ import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
 import { TeamAccessRequestModal } from './components/team/TeamAccessRequestModal';
+import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
@@ -41,7 +42,8 @@ function AppContent() {
     dismissSessionWarning,
     signOut,
     loading: authLoading,
-    needsProfileCompletion
+    needsProfileCompletion,
+    user
   } = useAuth();
 
   const {
@@ -53,6 +55,23 @@ function AppContent() {
 
   // Authentication modal
   const authModal = useAuthModal();
+
+  // Check for password reset tokens or codes in URL on app load
+  useEffect(() => {
+    const { hasTokens } = detectResetTokens();
+    
+    // If we have password reset tokens or magic link codes, open the auth modal in reset mode
+    if (hasTokens) {
+      authModal.openReset();
+    }
+  }, [authModal]);
+
+  // Check if user becomes authenticated via magic link and should show password reset
+  useEffect(() => {
+    if (shouldShowPasswordResetModal(user)) {
+      authModal.openReset();
+    }
+  }, [user, authModal]);
 
   // Debug mode detection
   const debugMode = isDebugMode();

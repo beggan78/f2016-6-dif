@@ -122,7 +122,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
       <div className="space-y-3 text-center">
         <button
           type="button"
-          onClick={onSwitchToReset}
+          onClick={() => onSwitchToReset(email)}
           className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
           disabled={loading}
         >

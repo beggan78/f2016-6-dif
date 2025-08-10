@@ -12,6 +12,7 @@ export const AUTH_MODES = {
 
 export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN }) {
   const [currentMode, setCurrentMode] = useState(initialMode);
+  const [emailContext, setEmailContext] = useState(''); // Email to carry between modes
 
   // Reset to initial mode when modal opens
   useEffect(() => {
@@ -19,6 +20,13 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN }) {
       setCurrentMode(initialMode);
     }
   }, [isOpen, initialMode]);
+
+  // Clear email context when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setEmailContext('');
+    }
+  }, [isOpen]);
 
   // Handle ESC key press
   useEffect(() => {
@@ -48,28 +56,44 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN }) {
     }
   };
 
+  const handleSwitchToReset = (email = '') => {
+    setEmailContext(email);
+    setCurrentMode(AUTH_MODES.RESET);
+  };
+
+  const handleSwitchToLogin = () => {
+    setEmailContext(''); // Clear email when going back to login
+    setCurrentMode(AUTH_MODES.LOGIN);
+  };
+
+  const handleSwitchToSignup = () => {
+    setEmailContext(''); // Clear email when switching to signup
+    setCurrentMode(AUTH_MODES.SIGNUP);
+  };
+
   const renderForm = () => {
     switch (currentMode) {
       case AUTH_MODES.LOGIN:
         return (
           <LoginForm
-            onSwitchToSignup={() => setCurrentMode(AUTH_MODES.SIGNUP)}
-            onSwitchToReset={() => setCurrentMode(AUTH_MODES.RESET)}
+            onSwitchToSignup={handleSwitchToSignup}
+            onSwitchToReset={handleSwitchToReset}
             onClose={onClose}
           />
         );
       case AUTH_MODES.SIGNUP:
         return (
           <SignupForm
-            onSwitchToLogin={() => setCurrentMode(AUTH_MODES.LOGIN)}
+            onSwitchToLogin={handleSwitchToLogin}
             onClose={onClose}
           />
         );
       case AUTH_MODES.RESET:
         return (
           <PasswordReset
-            onSwitchToLogin={() => setCurrentMode(AUTH_MODES.LOGIN)}
+            onSwitchToLogin={handleSwitchToLogin}
             onClose={onClose}
+            initialEmail={emailContext}
           />
         );
       default:

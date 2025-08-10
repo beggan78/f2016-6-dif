@@ -30,6 +30,7 @@ const AuthContext = createContext({
   verifyOtp: async () => {},
   resetPassword: async () => {},
   updatePassword: async () => {},
+  changePassword: async () => {},
   updateProfile: async () => {},
 });
 
@@ -392,7 +393,7 @@ export function AuthProvider({ children }) {
       setAuthError(null);
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: `${window.location.origin}/`
       });
 
       if (error) throw error;
@@ -427,6 +428,47 @@ export function AuthProvider({ children }) {
       };
     } catch (error) {
       const errorMessage = error.message || 'Failed to update password';
+      setAuthError(errorMessage);
+      return { error: { message: errorMessage }, message: null };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      if (!user) throw new Error('No authenticated user');
+      
+      setLoading(true);
+      setAuthError(null);
+
+      // First, verify the current password by attempting to sign in
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+
+      if (verifyError) {
+        const errorMessage = verifyError.message === 'Invalid login credentials' 
+          ? 'Current password is incorrect'
+          : 'Failed to verify current password';
+        setAuthError(errorMessage);
+        return { error: { message: errorMessage }, message: null };
+      }
+
+      // If verification succeeds, update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      return { 
+        error: null, 
+        message: 'Password updated successfully. Your account security has been improved.' 
+      };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to change password';
       setAuthError(errorMessage);
       return { error: { message: errorMessage }, message: null };
     } finally {
@@ -497,6 +539,7 @@ export function AuthProvider({ children }) {
     verifyOtp,
     resetPassword,
     updatePassword,
+    changePassword,
     updateProfile,
   };
 
