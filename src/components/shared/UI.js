@@ -428,3 +428,269 @@ export function ScoreEditModal({
     </div>
   );
 }
+
+export function ScoreManagerModal({ 
+  isOpen, 
+  onCancel, 
+  onSave, 
+  homeScore, 
+  awayScore, 
+  homeTeamName = "Djurgården",
+  awayTeamName = "Opponent",
+  matchEvents = [],
+  goalScorers = {},
+  allPlayers = [],
+  onAddHomeGoal,
+  onAddAwayGoal,
+  onEditGoalScorer,
+  onDeleteGoal,
+  calculateMatchTime,
+  formatTime,
+  getPlayerName
+}) {
+  const [editHomeScore, setEditHomeScore] = React.useState(homeScore);
+  const [editAwayScore, setEditAwayScore] = React.useState(awayScore);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setEditHomeScore(homeScore);
+      setEditAwayScore(awayScore);
+    }
+  }, [isOpen, homeScore, awayScore]);
+
+  // Filter and process goal events (using same pattern as MatchReportScreen)
+  const goalEvents = React.useMemo(() => {
+    const goals = matchEvents
+      .filter(event => ['goal_home', 'goal_away'].includes(event.type))
+      .filter(event => !event.undone)
+      .map(event => {
+        // Use event.matchTime first, then calculate if missing (same as MatchReportScreen)
+        const matchTime = event.matchTime || (calculateMatchTime ? calculateMatchTime(event.timestamp) : '0:00');
+        
+        // Use same scorer resolution pattern as GameEventTimeline (with fallback to eventData.scorerId)
+        const scorerId = goalScorers[event.id] || event.data?.scorerId;
+        const scorerName = scorerId && getPlayerName ? getPlayerName(scorerId) : null;
+        
+        return {
+          ...event,
+          matchTime,
+          scorerName,
+          isHomeGoal: event.type === 'goal_home'
+        };
+      })
+      .sort((a, b) => a.timestamp - b.timestamp);
+    
+    return goals;
+  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime]);
+
+  const handleSave = () => {
+    onSave(editHomeScore, editAwayScore);
+  };
+
+  const handleCancel = () => {
+    setEditHomeScore(homeScore);
+    setEditAwayScore(awayScore);
+    onCancel();
+  };
+
+  const handleEditScorer = (eventId) => {
+    if (onEditGoalScorer) {
+      onEditGoalScorer(eventId);
+    }
+  };
+
+  const handleDeleteGoalEvent = (eventId) => {
+    if (onDeleteGoal) {
+      onDeleteGoal(eventId);
+    }
+  };
+
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-lg w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">Manage Score</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          {/* Current Score Display */}
+          <div className="flex items-center justify-between space-x-4 bg-slate-700 p-3 rounded-lg">
+            <div className="text-center">
+              <div className="text-sm text-slate-300">{homeTeamName}</div>
+              <div className="text-2xl font-bold text-sky-400">{homeScore}</div>
+            </div>
+            <div className="text-2xl font-mono font-bold text-slate-400">-</div>
+            <div className="text-center">
+              <div className="text-sm text-slate-300">{awayTeamName}</div>
+              <div className="text-2xl font-bold text-sky-400">{awayScore}</div>
+            </div>
+          </div>
+
+          {/* Goal History */}
+          <div>
+            <h4 className="text-sm font-medium text-slate-300 mb-2">Goals Scored</h4>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {goalEvents.length === 0 ? (
+                <div className="text-slate-400 text-sm italic text-center py-4">
+                  No goals recorded yet
+                </div>
+              ) : (
+                goalEvents.map((goal) => {
+                  const eventId = goal.id; // Use event.id consistently (same as MatchReportScreen)
+                  return (
+                  <div 
+                    key={eventId} 
+                    className={`p-3 rounded-lg border ${
+                      goal.isHomeGoal 
+                        ? 'bg-sky-900/30 border-sky-600/50' 
+                        : 'bg-slate-700/50 border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-mono text-slate-300">
+                            {goal.matchTime}
+                          </span>
+                          <span className="text-sm text-slate-400">|</span>
+                          <span className="text-sm font-semibold text-slate-200">
+                            {goal.data?.homeScore || 0}-{goal.data?.awayScore || 0}
+                          </span>
+                          {goal.isHomeGoal && (
+                            <>
+                              <span className="text-sm text-slate-400">|</span>
+                              <span className="text-sm text-sky-300">
+                                {goal.scorerName || 'Unknown scorer'}
+                              </span>
+                            </>
+                          )}
+                          {!goal.isHomeGoal && (
+                            <>
+                              <span className="text-sm text-slate-400">|</span>
+                              <span className="text-sm text-slate-300">Opponent</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {goal.isHomeGoal && (
+                          <Button
+                            onClick={() => handleEditScorer(eventId)}
+                            variant="secondary"
+                            size="sm"
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() => handleDeleteGoalEvent(eventId)}
+                          variant="danger"
+                          size="sm"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Add Goals */}
+          <div className="border-t border-slate-600 pt-4">
+            <h4 className="text-sm font-medium text-slate-300 mb-2">Add Goal</h4>
+            <div className="flex gap-2">
+              <Button 
+                onClick={onAddHomeGoal}
+                variant="primary"
+                className="flex-1"
+              >
+                + {homeTeamName}
+              </Button>
+              <Button 
+                onClick={onAddAwayGoal}
+                variant="secondary"
+                className="flex-1"
+              >
+                + {awayTeamName}
+              </Button>
+            </div>
+          </div>
+
+          {/* Manual Score Edit (Fallback) */}
+          <div className="border-t border-slate-600 pt-4">
+            <h4 className="text-sm font-medium text-slate-300 mb-2">Manual Score Override</h4>
+            <div className="flex items-center justify-between space-x-4">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    onClick={() => setEditHomeScore(Math.max(0, editHomeScore - 1))}
+                    variant="secondary"
+                    size="sm"
+                    disabled={editHomeScore <= 0}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={editHomeScore}
+                    onChange={(e) => setEditHomeScore(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="text-center w-16"
+                  />
+                  <Button 
+                    onClick={() => setEditHomeScore(editHomeScore + 1)}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="text-lg font-mono font-bold text-slate-400">-</div>
+              
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    onClick={() => setEditAwayScore(Math.max(0, editAwayScore - 1))}
+                    variant="secondary"
+                    size="sm"
+                    disabled={editAwayScore <= 0}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={editAwayScore}
+                    onChange={(e) => setEditAwayScore(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="text-center w-16"
+                  />
+                  <Button 
+                    onClick={() => setEditAwayScore(editAwayScore + 1)}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 justify-end pt-4">
+            <Button onClick={handleCancel} variant="secondary">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} variant="primary">
+              Apply Changes
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

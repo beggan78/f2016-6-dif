@@ -363,6 +363,13 @@ function App() {
             addHomeGoal={gameState.addHomeGoal}
             addAwayGoal={gameState.addAwayGoal}
             setScore={gameState.setScore}
+            matchEvents={gameState.matchEvents || []}
+            goalScorers={gameState.goalScorers || {}}
+            matchStartTime={gameState.matchStartTime}
+            getPlayerName={(playerId) => {
+              const player = gameState.allPlayers.find(p => p.id === playerId);
+              return player ? formatPlayerName(player) : 'Unknown Player';
+            }}
           />
         );
       case VIEWS.STATS:

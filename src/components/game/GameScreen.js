@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
-import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
+import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
-import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
+import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
+import { calculateMatchTime } from '../../utils/gameEventLogger';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -60,7 +61,11 @@ export function GameScreen({
   addAwayGoal,
   setScore,
   rotationQueue,
-  setRotationQueue
+  setRotationQueue,
+  matchEvents,
+  goalScorers,
+  matchStartTime,
+  getPlayerName
 }) {
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
@@ -73,8 +78,8 @@ export function GameScreen({
     homeTeamName, awayTeamName, homeScore, awayScore
   );
 
-  // Helper functions
-  const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
+  // Helper functions  
+  const getPlayerNameById = React.useCallback((id) => getPlayerName(id), [getPlayerName]);
   
   // Memoize eligible players to prevent unnecessary re-renders and state resets
   const eligiblePlayers = useMemo(() => {
@@ -432,8 +437,8 @@ export function GameScreen({
         availablePlayers={modalHandlers.modals.goalie.availablePlayers}
       />
 
-      {/* Score Edit Modal */}
-      <ScoreEditModal
+      {/* Score Manager Modal */}
+      <ScoreManagerModal
         isOpen={modalHandlers.modals.scoreEdit.isOpen}
         onCancel={modalHandlers.closeScoreEditModal}
         onSave={(newHomeScore, newAwayScore) => scoreHandlers.handleScoreEdit(newHomeScore, newAwayScore)}
@@ -441,6 +446,16 @@ export function GameScreen({
         awayScore={awayScore}
         homeTeamName={homeTeamName}
         awayTeamName={awayTeamName}
+        matchEvents={matchEvents}
+        goalScorers={goalScorers}
+        allPlayers={allPlayers}
+        onAddHomeGoal={() => scoreHandlers.handleAddHomeGoal(createGameState())}
+        onAddAwayGoal={() => scoreHandlers.handleAddAwayGoal(createGameState())}
+        onEditGoalScorer={scoreHandlers.handleEditGoalScorer}
+        onDeleteGoal={scoreHandlers.handleDeleteGoal}
+        calculateMatchTime={(timestamp) => calculateMatchTime(timestamp, matchStartTime)}
+        formatTime={formatTime}
+        getPlayerName={getPlayerName}
       />
 
       {/* Undo Confirmation Modal */}
