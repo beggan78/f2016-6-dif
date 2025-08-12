@@ -724,6 +724,184 @@ export const TeamProvider = ({ children }) => {
   }, [clearError]);
 
   // ============================================================================
+  // TEAM INVITATION FUNCTIONS  
+  // ============================================================================
+
+  // Invite a user to join a team via email
+  const inviteUserToTeam = useCallback(async ({ teamId, email, role, message = '' }) => {
+    try {
+      if (!user) {
+        setError('Must be authenticated to send invitations');
+        return { success: false, error: 'Authentication required' };
+      }
+
+      setLoading(true);
+      clearError();
+
+      // Validate that the user has permission to invite (admin or coach)
+      const currentUserTeam = userTeams.find(t => t.id === teamId);
+      if (!currentUserTeam || (currentUserTeam.userRole !== 'admin' && currentUserTeam.userRole !== 'coach')) {
+        setError('You do not have permission to invite users to this team');
+        return { success: false, error: 'Insufficient permissions' };
+      }
+
+      // Validate role restrictions (coaches can't invite admins)
+      if (currentUserTeam.userRole === 'coach' && role === 'admin') {
+        setError('Coaches cannot invite users as administrators');
+        return { success: false, error: 'Role restriction' };
+      }
+
+      // Call Supabase Edge Function to handle invitation (database validation + email sending)
+      const { data, error } = await supabase.functions.invoke('invite-user-to-team', {
+        body: {
+          p_team_id: teamId,
+          p_email: email.toLowerCase(),
+          p_role: role,
+          p_message: message,
+          p_redirect_url: `${window.location.origin}/?invitation=true&team=${teamId}&role=${role}`
+        }
+      });
+
+      if (error) {
+        console.error('Error calling Edge Function:', error);
+        setError(error.message || 'Failed to send invitation');
+        return { success: false, error: error.message };
+      }
+
+      if (!data?.success) {
+        console.error('Edge Function returned error:', data?.error);
+        setError(data?.error || 'Failed to send invitation');
+        return { success: false, error: data?.error };
+      }
+
+      console.log('Edge Function response:', data);
+      
+      // Handle both success and warning cases (warning means database worked but email failed)
+      if (data.warning) {
+        console.warn('Invitation created with warning:', data.warning);
+      }
+
+      return {
+        success: true,
+        data: data.data || data,
+        message: data.message || `Invitation sent successfully to ${email}`,
+        warning: data.warning
+      };
+
+    } catch (err) {
+      console.error('Exception in inviteUserToTeam:', err);
+      const errorMessage = err.message || 'Failed to send invitation';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [user, userTeams, clearError]);
+
+  // Get team invitations (for team admins/coaches)
+  const getTeamInvitations = useCallback(async (teamId) => {
+    try {
+      const { data, error } = await supabase
+        .from('team_invitation')
+        .select(`
+          id, email, role, message, status, created_at,
+          invited_by:invited_by_user_id (id, name),
+          invited_user:invited_user_id (id, name)
+        `)
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching team invitations:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (err) {
+      console.error('Exception in getTeamInvitations:', err);
+      return [];
+    }
+  }, []);
+
+  // Cancel a team invitation
+  const cancelTeamInvitation = useCallback(async (invitationId) => {
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase
+        .from('team_invitation')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invitationId)
+        .eq('invited_by_user_id', user.id) // Ensure user can only cancel their own invitations
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error cancelling invitation:', error);
+        setError('Failed to cancel invitation');
+        return null;
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in cancelTeamInvitation:', err);
+      setError('Failed to cancel invitation');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError]);
+
+  // Accept a team invitation
+  const acceptTeamInvitation = useCallback(async (invitationId) => {
+    try {
+      if (!user) {
+        setError('Must be authenticated to accept invitations');
+        return { success: false, error: 'Authentication required' };
+      }
+
+      setLoading(true);
+      clearError();
+
+      // Call RPC function to handle invitation acceptance
+      const { data, error } = await supabase.rpc('accept_team_invitation', {
+        p_invitation_id: invitationId,
+        p_user_email: user.email
+      });
+
+      if (error) {
+        console.error('Error accepting invitation:', error);
+        const errorMessage = error.message || 'Failed to accept invitation';
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+
+      console.log('Invitation accepted successfully:', data);
+
+      // Refresh user teams to include the new team
+      await getUserTeams();
+
+      return { 
+        success: true, 
+        data,
+        message: 'Welcome to the team! You have been successfully added.' 
+      };
+
+    } catch (err) {
+      console.error('Exception in acceptTeamInvitation:', err);
+      const errorMessage = err.message || 'Failed to accept invitation';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError, getUserTeams]);
+
+  // ============================================================================
   // TEAM ACCESS REQUEST FUNCTIONS
   // ============================================================================
 
@@ -1315,6 +1493,12 @@ export const TeamProvider = ({ children }) => {
     getPendingClubRequests,
     approveClubMembership,
     rejectClubMembership,
+    
+    // Team invitation actions
+    inviteUserToTeam,
+    getTeamInvitations,
+    cancelTeamInvitation,
+    acceptTeamInvitation,
     
     // Team access request actions
     requestTeamAccess,

@@ -1,0 +1,93 @@
+name: Deploy to Supabase Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/deploy-supabase.yml'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verify environment variables
+        run: |
+          if [[ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]]; then
+            echo "❌ SUPABASE_ACCESS_TOKEN is not set"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.SUPABASE_PROJECT_ID }}" ]]; then
+            echo "❌ SUPABASE_PROJECT_ID is not set"
+            exit 1
+          fi
+          echo "✅ Environment variables verified"
+
+      - name: Link Supabase project
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          echo "✅ Linked to Supabase project: ${{ secrets.SUPABASE_PROJECT_ID }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Check for database changes
+        id: db_changes
+        run: |
+          if git diff HEAD~1 --name-only | grep -q "supabase/migrations/"; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "📄 Database migration changes detected"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "📄 No database migration changes"
+          fi
+
+      - name: Deploy database migrations
+        if: steps.db_changes.outputs.has_changes == 'true'
+        run: |
+          echo "🚀 Deploying database migrations..."
+          supabase db push
+          echo "✅ Database migrations deployed successfully"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Check for function changes
+        id: function_changes
+        run: |
+          if git diff HEAD~1 --name-only | grep -q "supabase/functions/"; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "⚡ Edge Function changes detected"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "⚡ No Edge Function changes"
+          fi
+
+      - name: Deploy Edge Functions
+        if: steps.function_changes.outputs.has_changes == 'true'
+        run: |
+          echo "🚀 Deploying Edge Functions..."
+          supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          echo "✅ Edge Functions deployed successfully"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deployment summary
+        run: |
+          echo "## 🎉 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project**: ${{ secrets.SUPABASE_PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database Changes**: ${{ steps.db_changes.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Function Changes**: ${{ steps.function_changes.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY

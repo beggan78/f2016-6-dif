@@ -22,6 +22,7 @@ const AuthContext = createContext({
   extendSession: async () => {},
   dismissSessionWarning: () => {},
   clearAuthError: () => {},
+  markProfileCompleted: () => {},
   
   // Auth functions
   signUp: async () => {},
@@ -51,6 +52,7 @@ export function AuthProvider({ children }) {
   const [sessionExpiry, setSessionExpiry] = useState(null);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
+  const [skipProfileFetch, setSkipProfileFetch] = useState(false);
 
   // Clear any auth errors when user changes
   useEffect(() => {
@@ -101,9 +103,9 @@ export function AuthProvider({ children }) {
         .eq('id', userId)
         .single();
       
-      // Add 10 second timeout to prevent hanging
+      // Add 12 second timeout to accommodate Supabase delays during invitation flow
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 12000)
       );
       
       debugLog('Starting profile query with timeout...');
@@ -172,6 +174,11 @@ export function AuthProvider({ children }) {
 
   const clearAuthError = useCallback(() => {
     setAuthError(null);
+  }, []);
+
+  // Mark profile as completed
+  const markProfileCompleted = useCallback(() => {
+    setNeedsProfileCompletion(false);
   }, []);
 
   // Session expiry monitoring
@@ -254,16 +261,23 @@ export function AuthProvider({ children }) {
             debugLog('Cancelling previous profile fetch for different user');
           }
           
-          // Fetch profile with proper tracking
-          const fetchPromise = fetchUserProfile(userId, session);
-          currentFetchRef.current = fetchPromise;
-          
-          try {
-            await fetchPromise;
-          } finally {
-            currentFetchRef.current = null;
+          // Skip profile fetch during invitation password setup to prevent delays
+          if (skipProfileFetch) {
+            debugLog('Skipping profile fetch during invitation setup');
             initializedRef.current = true;
             setLoading(false);
+          } else {
+            // Fetch profile with proper tracking
+            const fetchPromise = fetchUserProfile(userId, session);
+            currentFetchRef.current = fetchPromise;
+            
+            try {
+              await fetchPromise;
+            } finally {
+              currentFetchRef.current = null;
+              initializedRef.current = true;
+              setLoading(false);
+            }
           }
         }
       }
@@ -273,7 +287,7 @@ export function AuthProvider({ children }) {
       debugLog('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile, setupSessionMonitoring]); // Include required dependencies
+  }, [fetchUserProfile, setupSessionMonitoring, skipProfileFetch]); // Include required dependencies
 
   // Auth functions
   const signUp = async (email, password, name) => {
@@ -511,6 +525,17 @@ export function AuthProvider({ children }) {
   const hasValidProfile = !!userProfile && !!userProfile.id && userProfile.id === user?.id;
   const profileName = userProfile?.name || 'Not set';
 
+  // Profile fetch control functions
+  const enableProfileFetchSkip = useCallback(() => {
+    debugLog('Enabling profile fetch skip');
+    setSkipProfileFetch(true);
+  }, []);
+
+  const disableProfileFetchSkip = useCallback(() => {
+    debugLog('Disabling profile fetch skip');
+    setSkipProfileFetch(false);
+  }, []);
+
   const value = {
     // Core state
     user,
@@ -531,6 +556,11 @@ export function AuthProvider({ children }) {
     extendSession,
     dismissSessionWarning,
     clearAuthError,
+    markProfileCompleted,
+    
+    // Profile fetch control
+    enableProfileFetchSkip,
+    disableProfileFetchSkip,
     
     // Auth functions
     signUp,

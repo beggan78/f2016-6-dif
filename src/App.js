@@ -28,8 +28,11 @@ import { TeamProvider, useTeam } from './contexts/TeamContext';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
+import { InvitationWelcome } from './components/auth/InvitationWelcome';
 import { TeamAccessRequestModal } from './components/team/TeamAccessRequestModal';
 import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
+import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
+import { supabase } from './lib/supabase';
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
@@ -50,7 +53,8 @@ function AppContent() {
     currentTeam,
     hasPendingRequests,
     pendingRequestsCount,
-    canManageTeam
+    canManageTeam,
+    acceptTeamInvitation
   } = useTeam();
 
   // Authentication modal
@@ -73,6 +77,8 @@ function AppContent() {
     }
   }, [user, authModal]);
 
+
+
   // Debug mode detection
   const debugMode = isDebugMode();
   
@@ -92,9 +98,149 @@ function AppContent() {
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Invitation state
+  const [invitationParams, setInvitationParams] = useState(null);
+  const [isProcessingInvitation, setIsProcessingInvitation] = useState(false);
+
+  // Handle invitation acceptance
+  const handleInvitationAcceptance = useCallback(async (params) => {
+    if (!params.invitationId) {
+      console.error('No invitation ID provided');
+      return;
+    }
+
+    if (isProcessingInvitation) {
+      console.log('Invitation already being processed, skipping');
+      return;
+    }
+
+    try {
+      setIsProcessingInvitation(true);
+      console.log('Processing invitation:', params.invitationId);
+      
+      const result = await acceptTeamInvitation(params.invitationId);
+      
+      if (result.success) {
+        // Clear URL parameters
+        clearInvitationParamsFromUrl();
+        setInvitationParams(null);
+        
+        // Show welcome message
+        setSuccessMessage(result.message || 'Welcome to the team!');
+        
+        // Navigate to team management view
+        gameState.setView(VIEWS.TEAM_MANAGEMENT);
+      } else {
+        console.error('Failed to accept invitation:', result.error);
+        // Could show error modal here
+      }
+    } catch (error) {
+      console.error('Error processing invitation:', error);
+    } finally {
+      setIsProcessingInvitation(false);
+    }
+  }, [acceptTeamInvitation, gameState, isProcessingInvitation]);
+
+  // Handle invitation processed callback from InvitationWelcome
+  const handleInvitationProcessed = useCallback((result) => {
+    if (result?.success) {
+      // Clear URL parameters
+      clearInvitationParamsFromUrl();
+      setInvitationParams(null);
+      
+      // Show welcome message
+      setSuccessMessage(result.message || 'Welcome to the team!');
+      
+      // Navigate to team management view
+      gameState.setView(VIEWS.TEAM_MANAGEMENT);
+    }
+  }, [gameState]);
+
+  // Handle request to show sign-in modal after password setup
+  const handleRequestSignIn = useCallback(() => {
+    console.log('Handling sign-in request after password setup');
+    
+    // Clear invitation parameters to close InvitationWelcome modal
+    clearInvitationParamsFromUrl();
+    setInvitationParams(null);
+    
+    // Open the AuthModal in sign-in mode
+    authModal.openLogin();
+  }, [authModal]);
 
   // Create a ref to store the pushModalState function to avoid circular dependency
   const pushModalStateRef = useRef(null);
+  
+  // Check for invitation parameters in URL on app load (only run once)
+  useEffect(() => {
+    const handleInvitationAndSession = async () => {
+      const params = detectInvitationParams();
+      
+      if (params.hasInvitation) {
+        console.log('Invitation detected:', params);
+        setInvitationParams(params);
+        
+        // If we have Supabase tokens in the URL hash, set the session
+        if (params.isSupabaseInvitation && params.accessToken && params.refreshToken) {
+          try {
+            console.log('Setting Supabase session with invitation tokens...');
+            const { data, error } = await supabase.auth.setSession({
+              access_token: params.accessToken,
+              refresh_token: params.refreshToken
+            });
+            
+            if (error) {
+              console.error('Error setting session:', error);
+            } else {
+              console.log('Session set successfully:', data);
+            }
+          } catch (error) {
+            console.error('Exception setting session:', error);
+          }
+        }
+      }
+    };
+    
+    handleInvitationAndSession();
+  }, []); // Run only once on mount
+
+  // Process invitation when user becomes authenticated (but only if they don't need password setup)
+  useEffect(() => {
+    if (user && invitationParams && shouldProcessInvitation(user, invitationParams)) {
+      // Check if user still needs to complete account setup (password)
+      if (needsAccountCompletion(invitationParams, user)) {
+        console.log('User needs to complete account setup before processing invitation');
+        return; // Don't process invitation yet, user needs to set password first
+      }
+      
+      console.log('User is ready to process invitation');
+      handleInvitationAcceptance(invitationParams);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, invitationParams]); // Remove handleInvitationAcceptance from dependencies
+
+  // Check for pending invitation after user signs in (for users who completed password setup)
+  useEffect(() => {
+    if (user && !invitationParams && hasPendingInvitation()) {
+      console.log('User signed in, checking for pending invitation...');
+      const pendingInvitation = retrievePendingInvitation();
+      
+      if (pendingInvitation && pendingInvitation.invitationId) {
+        console.log('Processing pending invitation:', pendingInvitation);
+        
+        // Process the stored invitation
+        handleInvitationAcceptance({ invitationId: pendingInvitation.invitationId });
+        
+        // Show success message with team context
+        const teamContext = pendingInvitation.teamName ? 
+          ` Welcome to ${pendingInvitation.teamName}!` : 
+          ' Welcome to the team!';
+        setSuccessMessage(`Successfully joined as ${pendingInvitation.role || 'member'}.${teamContext}`);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only run when user changes
   
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
@@ -607,6 +753,19 @@ function AppContent() {
             setView={gameState.setView}
           />
         )}
+
+        {/* Invitation Welcome Modal */}
+        {invitationParams && invitationParams.hasInvitation && (() => {
+          const invitationStatus = getInvitationStatus(user, invitationParams);
+          // Show invitation welcome modal for account setup or sign-in required states
+          return invitationStatus.type === 'account_setup' || invitationStatus.type === 'sign_in_required' ? (
+            <InvitationWelcome
+              invitationParams={invitationParams}
+              onInvitationProcessed={handleInvitationProcessed}
+              onRequestSignIn={handleRequestSignIn}
+            />
+          ) : null;
+        })()}
       </div>
   );
 }

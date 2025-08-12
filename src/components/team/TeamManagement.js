@@ -20,6 +20,7 @@ import { Button, Select, Input } from '../shared/UI';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
+import { TeamInviteModal } from './TeamInviteModal';
 import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
@@ -51,6 +52,7 @@ export function TeamManagement({ setView }) {
   const [activeTab, setActiveTab] = useState(TAB_VIEWS.OVERVIEW);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
@@ -213,6 +215,7 @@ export function TeamManagement({ setView }) {
           pendingRequests={pendingRequests}
           onRefresh={loadTeamData}
           onShowModal={() => setShowAccessModal(true)}
+          onShowInviteModal={() => setShowInviteModal(true)}
         />;
       case TAB_VIEWS.ROSTER:
         return <RosterManagement team={currentTeam} onRefresh={loadTeamData} />;
@@ -313,6 +316,15 @@ export function TeamManagement({ setView }) {
           isStandaloneMode={true}
         />
       )}
+
+      {/* Team Invite Modal */}
+      {showInviteModal && (
+        <TeamInviteModal
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          team={currentTeam}
+        />
+      )}
     </div>
   );
 }
@@ -404,7 +416,7 @@ function TeamOverview({ team, members }) {
 }
 
 // Access Management Component
-function AccessManagement({ team, pendingRequests, onRefresh, onShowModal }) {
+function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onShowInviteModal }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -446,7 +458,12 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal }) {
           <p className="text-slate-400 text-sm mb-3">
             Send invitations to new team members
           </p>
-          <Button variant="secondary" size="sm" className="w-full">
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="w-full"
+            onClick={onShowInviteModal}
+          >
             Send Invitations
           </Button>
         </div>
