@@ -153,3 +153,6 @@ Modern composite team configuration system using four components:
 - **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
 - **New components**: Write tests first, following established patterns in `__tests__` directories
 - **State Updates**: Ensure all calculated state changes are properly applied via handler state updaters
+
+## General Principles
+- Assume that application is already running. If it needs to be started, the user will start it
