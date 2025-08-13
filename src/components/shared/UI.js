@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
 
 export function Input({ value, onChange, placeholder, id, disabled, type = 'text', className = '' }) {
@@ -432,7 +432,6 @@ export function ScoreEditModal({
 export function ScoreManagerModal({ 
   isOpen, 
   onCancel, 
-  onSave, 
   homeScore, 
   awayScore, 
   homeTeamName = "Djurgården",
@@ -448,16 +447,6 @@ export function ScoreManagerModal({
   formatTime,
   getPlayerName
 }) {
-  const [editHomeScore, setEditHomeScore] = React.useState(homeScore);
-  const [editAwayScore, setEditAwayScore] = React.useState(awayScore);
-
-  React.useEffect(() => {
-    if (isOpen) {
-      setEditHomeScore(homeScore);
-      setEditAwayScore(awayScore);
-    }
-  }, [isOpen, homeScore, awayScore]);
-
   // Filter and process goal events (using same pattern as MatchReportScreen)
   const goalEvents = React.useMemo(() => {
     const goals = matchEvents
@@ -483,13 +472,7 @@ export function ScoreManagerModal({
     return goals;
   }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime]);
 
-  const handleSave = () => {
-    onSave(editHomeScore, editAwayScore);
-  };
-
-  const handleCancel = () => {
-    setEditHomeScore(homeScore);
-    setEditAwayScore(awayScore);
+  const handleClose = () => {
     onCancel();
   };
 
@@ -512,7 +495,17 @@ export function ScoreManagerModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-lg w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">Manage Score</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-sky-300">Manage Score</h3>
+            </div>
+            <button
+              onClick={handleClose}
+              className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
         <div className="p-4 space-y-4">
           {/* Current Score Display */}
@@ -621,72 +614,10 @@ export function ScoreManagerModal({
             </div>
           </div>
 
-          {/* Manual Score Edit (Fallback) */}
-          <div className="border-t border-slate-600 pt-4">
-            <h4 className="text-sm font-medium text-slate-300 mb-2">Manual Score Override</h4>
-            <div className="flex items-center justify-between space-x-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    onClick={() => setEditHomeScore(Math.max(0, editHomeScore - 1))}
-                    variant="secondary"
-                    size="sm"
-                    disabled={editHomeScore <= 0}
-                  >
-                    -
-                  </Button>
-                  <Input
-                    type="number"
-                    value={editHomeScore}
-                    onChange={(e) => setEditHomeScore(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="text-center w-16"
-                  />
-                  <Button 
-                    onClick={() => setEditHomeScore(editHomeScore + 1)}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="text-lg font-mono font-bold text-slate-400">-</div>
-              
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    onClick={() => setEditAwayScore(Math.max(0, editAwayScore - 1))}
-                    variant="secondary"
-                    size="sm"
-                    disabled={editAwayScore <= 0}
-                  >
-                    -
-                  </Button>
-                  <Input
-                    type="number"
-                    value={editAwayScore}
-                    onChange={(e) => setEditAwayScore(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="text-center w-16"
-                  />
-                  <Button 
-                    onClick={() => setEditAwayScore(editAwayScore + 1)}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
           
-          <div className="flex gap-3 justify-end pt-4">
-            <Button onClick={handleCancel} variant="secondary">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} variant="primary">
-              Apply Changes
+          <div className="flex justify-center pt-4">
+            <Button onClick={handleClose} variant="primary">
+              Close
             </Button>
           </div>
         </div>

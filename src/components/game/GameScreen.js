@@ -441,7 +441,6 @@ export function GameScreen({
       <ScoreManagerModal
         isOpen={modalHandlers.modals.scoreEdit.isOpen}
         onCancel={modalHandlers.closeScoreEditModal}
-        onSave={(newHomeScore, newAwayScore) => scoreHandlers.handleScoreEdit(newHomeScore, newAwayScore)}
         homeScore={homeScore}
         awayScore={awayScore}
         homeTeamName={homeTeamName}
