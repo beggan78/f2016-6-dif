@@ -452,9 +452,15 @@ function App() {
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
       </header>
-      <main className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
-        {renderView()}
-      </main>
+      {gameState.view === VIEWS.TACTICAL_BOARD ? (
+        <div className="w-full">
+          {renderView()}
+        </div>
+      ) : (
+        <main className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
+          {renderView()}
+        </main>
+      )}
       <footer className="mt-8 text-center text-sm text-slate-500">
         <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
       </footer>
