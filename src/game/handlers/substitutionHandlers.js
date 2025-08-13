@@ -576,13 +576,27 @@ export const createSubstitutionHandlers = (
               
               logEvent(EVENT_TYPES.POSITION_CHANGE, {
                 timestamp: currentTime,
+                // Standard field naming
                 player1Id: pair.defender,
                 player1Name: defenderPlayer?.name || 'Unknown',
                 player2Id: pair.attacker,
                 player2Name: attackerPlayer?.name || 'Unknown',
+                // Role information for display
+                player1Role: 'DEFENDER',
+                player2Role: 'ATTACKER',
+                // Legacy field naming for backward compatibility
+                sourcePlayerId: pair.defender,
+                targetPlayerId: pair.attacker,
+                sourcePlayerName: defenderPlayer?.name || 'Unknown',
+                targetPlayerName: attackerPlayer?.name || 'Unknown',
+                sourceRole: 'DEFENDER',
+                targetRole: 'ATTACKER',
+                // Additional metadata
                 pairKey: pairKey,
                 description: `${defenderPlayer?.name || 'Unknown'} and ${attackerPlayer?.name || 'Unknown'} swapped positions within ${pairKey}`,
-                teamConfig: teamConfig
+                teamConfig: teamConfig,
+                matchTime: calculateMatchTime(currentTime),
+                periodNumber: newGameState.currentPeriodNumber || 1
               });
             }
           },
@@ -620,17 +634,31 @@ export const createSubstitutionHandlers = (
 
           // Log position change event
           try {
-            const sourcePlayer = gameState.allPlayers.find(p => p.id === fieldPlayerModal.sourcePlayerId);
-            const targetPlayer = gameState.allPlayers.find(p => p.id === targetPlayerId);
+            const sourcePlayer = newGameState.allPlayers.find(p => p.id === fieldPlayerModal.sourcePlayerId);
+            const targetPlayer = newGameState.allPlayers.find(p => p.id === targetPlayerId);
             
             if (sourcePlayer && targetPlayer) {
               logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                // Keep existing fields for backward compatibility
                 sourcePlayerId: fieldPlayerModal.sourcePlayerId,
                 targetPlayerId: targetPlayerId,
                 sourcePlayerName: sourcePlayer.name,
                 targetPlayerName: targetPlayer.name,
                 sourcePosition: sourcePlayer.stats.currentPairKey,
                 targetPosition: targetPlayer.stats.currentPairKey,
+                
+                // Add new fields with standard naming
+                player1Id: fieldPlayerModal.sourcePlayerId,
+                player2Id: targetPlayerId,
+                player1Name: sourcePlayer.name,
+                player2Name: targetPlayer.name,
+                
+                // Add role information
+                sourceRole: sourcePlayer.stats.currentRole,
+                targetRole: targetPlayer.stats.currentRole,
+                player1Role: sourcePlayer.stats.currentRole,
+                player2Role: targetPlayer.stats.currentRole,
+                
                 beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                 afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                 teamConfig,

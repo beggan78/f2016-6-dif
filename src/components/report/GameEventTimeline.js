@@ -300,6 +300,24 @@ export function GameEventTimeline({
     }
   };
 
+  // Helper function to abbreviate role names
+  const abbreviateRole = (role) => {
+    if (!role) return '';
+    const roleUpper = role.toUpperCase();
+    switch (roleUpper) {
+      case 'ATTACKER':
+        return 'A';
+      case 'DEFENDER':
+        return 'D';
+      case 'MIDFIELDER':
+        return 'M';
+      case 'GOALIE':
+        return 'G';
+      default:
+        return roleUpper.charAt(0); // Fallback to first letter
+    }
+  };
+
   // Format event description
   const formatEventDescription = (event) => {
     const { type, data } = event;
@@ -373,9 +391,38 @@ export function GameEventTimeline({
         const assignedGoalieName = eventData.goalieName || assignedGoalie;
         return eventData.description || `${assignedGoalieName} is goalie`;
       case EVENT_TYPES.POSITION_CHANGE:
-        const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        return `Position switch: ${player1} ↔ ${player2}`;
+        // Handle special subtypes for player inactivation/reactivation
+        if (eventData.type === 'player_inactivated') {
+          const playerName = eventData.playerName || (eventData.playerId ? (getPlayerName ? (getPlayerName(eventData.playerId) || 'Unknown') : 'Unknown') : 'Unknown');
+          return `Player inactivated: ${playerName}`;
+        }
+        
+        if (eventData.type === 'player_inactivated_with_swap') {
+          const playerName = eventData.playerName || (eventData.playerId ? (getPlayerName ? (getPlayerName(eventData.playerId) || 'Unknown') : 'Unknown') : 'Unknown');
+          return `Player inactivated: ${playerName} (with position swap)`;
+        }
+        
+        if (eventData.type === 'player_activated') {
+          const playerName = eventData.playerName || (eventData.playerId ? (getPlayerName ? (getPlayerName(eventData.playerId) || 'Unknown') : 'Unknown') : 'Unknown');
+          return `Player reactivated: ${playerName}`;
+        }
+        
+        // Handle regular position switches
+        // Handle both naming conventions for backward compatibility
+        const player1Id = eventData.player1Id || eventData.sourcePlayerId;
+        const player2Id = eventData.player2Id || eventData.targetPlayerId;
+        const player1 = player1Id ? (getPlayerName ? (getPlayerName(player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
+        const player2 = player2Id ? (getPlayerName ? (getPlayerName(player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
+        
+        // Add role information if available with abbreviated role names
+        const player1Role = eventData.player1Role || eventData.sourceRole;
+        const player2Role = eventData.player2Role || eventData.targetRole;
+        
+        if (player1Role && player2Role) {
+          return `Position switch: ${player1} (${abbreviateRole(player1Role)}) ↔ ${player2} (${abbreviateRole(player2Role)})`;
+        } else {
+          return `Position switch: ${player1} ↔ ${player2}`;
+        }
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;
       case EVENT_TYPES.TIMER_RESUMED:
