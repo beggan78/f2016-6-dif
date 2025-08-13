@@ -26,7 +26,7 @@ import {
   authUserInteractions,
   expectAuthMethodCalled,
   renderWithAuthContext
-} from './authTestUtils';
+} from '../utils/authTestUtils';
 
 // Mock the shared UI components for focused testing
 jest.mock('../../shared/UI', () => ({
@@ -381,7 +381,7 @@ describe('LoginForm', () => {
       const authError = 'Invalid credentials';
       renderLoginForm({}, { authError });
 
-      expect(screen.getByText(authError)).toBeInTheDocument();
+      expect(screen.getByText('An unexpected error occurred. Please try again.')).toBeInTheDocument();
     });
 
     it('should show both field errors and auth errors when present', async () => {
@@ -393,7 +393,7 @@ describe('LoginForm', () => {
 
       // Should show both validation errors and auth error
       expect(screen.getByText('Email is required')).toBeInTheDocument();
-      expect(screen.getByText(authError)).toBeInTheDocument();
+      expect(screen.getByText('An unexpected error occurred. Please try again.')).toBeInTheDocument();
     });
 
     it('should call clearAuthError on component mount with auth error', () => {
@@ -424,7 +424,7 @@ describe('LoginForm', () => {
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Invalid login credentials')).toBeInTheDocument();
+        expect(screen.getByText('Invalid email or password. Please check your credentials and try again.')).toBeInTheDocument();
       });
     });
 
@@ -446,9 +446,12 @@ describe('LoginForm', () => {
     });
 
     it('should display error with proper styling', async () => {
-      renderLoginForm({}, { authError: 'Test error' });
+      renderLoginForm({}, { 
+        authError: 'Invalid login credentials',
+        clearAuthError: jest.fn() // Prevent the error from being cleared immediately
+      });
 
-      const errorDiv = screen.getByText('Test error').parentElement;
+      const errorDiv = screen.getByText('Invalid email or password. Please check your credentials and try again.').parentElement;
       expect(errorDiv).toHaveClass('bg-rose-900/50', 'border', 'border-rose-600');
     });
   });

@@ -351,7 +351,8 @@ export const TeamProvider = ({ children }) => {
 
   // Initialize team and club data when user is authenticated
   useEffect(() => {
-    if (user && userProfile && !initializationDone.current) {
+    // Only require user to be available, not userProfile to avoid circular dependency delays
+    if (user && !initializationDone.current) {
       initializationDone.current = true;
       
       // Check cache first if this is a page refresh AND valid cache exists
@@ -424,7 +425,7 @@ export const TeamProvider = ({ children }) => {
       setPendingRequests([]);
       localStorage.removeItem('currentTeamId');
     }
-  }, [user, userProfile, getUserTeams, getClubMemberships]);
+  }, [user, getUserTeams, getClubMemberships]);
 
   // Handle team switching when userTeams changes
   useEffect(() => {

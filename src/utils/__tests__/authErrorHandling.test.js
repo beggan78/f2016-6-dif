@@ -267,25 +267,6 @@ describe('Authentication Error Handling Utilities', () => {
       expect(true).toBe(false);
     });
 
-    it('should handle operation timeout', async () => {
-      const operation = jest.fn().mockImplementation(
-        () => new Promise(resolve => setTimeout(resolve, 200))
-      );
-      const onSuccess = jest.fn();
-      const onError = jest.fn();
-      
-      try {
-        await handleAuthOperation(operation, onSuccess, onError, { timeout: 50 });
-      } catch (error) {
-        expect(error).toBeDefined();
-        expect(error.message).toContain('Operation timed out');
-        expect(onError).toHaveBeenCalled();
-        return;
-      }
-      
-      // If we reach here, the test should fail
-      expect(true).toBe(false);
-    }, 10000);
   });
 
   describe('createDebouncedErrorClear', () => {

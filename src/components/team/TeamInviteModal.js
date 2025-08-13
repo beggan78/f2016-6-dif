@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Input, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,19 +19,38 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     message: ''
   });
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessageOriginal] = useState('');
+  
+  // Simplified setSuccessMessage wrapper for basic logging
+  const setSuccessMessage = (value) => {
+    console.log('✅ [TeamInviteModal] Setting success message:', value);
+    setSuccessMessageOriginal(value);
+  };
+
+  // Track previous isOpen state to detect transitions - always start with false
+  const prevIsOpenRef = useRef(false);
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (isOpen) {
+    const wasOpen = prevIsOpenRef.current;
+    const isNowOpen = isOpen;
+    
+    // Handle different modal state transitions
+    if (!wasOpen && isNowOpen) {
+      // Reset form when modal opens
       setFormData({
         email: '',
         role: 'coach',
         message: ''
       });
       setErrors({});
+    } else if (wasOpen && !isNowOpen) {
+      // Clear success message when modal closes
       setSuccessMessage('');
     }
+    
+    // Update ref for next render
+    prevIsOpenRef.current = isOpen;
   }, [isOpen]);
 
   // Handle ESC key press
@@ -91,7 +110,9 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       });
 
       if (result.success) {
-        setSuccessMessage(`Invitation sent successfully to ${formData.email}! They will receive an email with instructions to join the team.`);
+        const successMsg = 'Invitation sent successfully!';
+        setSuccessMessage(successMsg);
+        
         // Reset form after success
         setFormData({
           email: '',
@@ -117,56 +138,20 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     return null;
   };
 
-  if (!isOpen) return null;
+  // Auto-fade success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000); // 5 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
-  // Success state
-  if (successMessage) {
-    return (
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        onClick={handleBackdropClick}
-      >
-        <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-          <div className="px-6 py-6">
-            <div className="space-y-6 text-center">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-sky-300">Invitation Sent!</h2>
-                <p className="text-slate-400 mt-2">{successMessage}</p>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={() => {
-                    setSuccessMessage('');
-                    // Keep modal open for sending more invitations
-                  }}
-                  variant="secondary"
-                  size="lg"
-                  className="w-full"
-                >
-                  Send Another Invitation
-                </Button>
-                
-                <Button
-                  onClick={onClose}
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                >
-                  Done
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  if (!isOpen) {
+    return null;
   }
-
-  // Form state
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
@@ -328,6 +313,18 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
           </div>
         </div>
       </div>
+
+      {/* Floating Success Toast */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-[60] max-w-sm animate-in slide-in-from-right duration-300">
+          <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg border border-emerald-500">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{successMessage}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

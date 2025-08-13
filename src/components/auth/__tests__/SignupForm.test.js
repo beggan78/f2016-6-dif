@@ -28,7 +28,7 @@ import {
   authUserInteractions,
   expectAuthMethodCalled,
   renderWithAuthContext
-} from './authTestUtils';
+} from '../utils/authTestUtils';
 
 // Mock the shared UI components for focused testing
 jest.mock('../../shared/UI', () => ({

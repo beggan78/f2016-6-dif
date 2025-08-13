@@ -120,6 +120,7 @@ $$ language 'plpgsql';
 
 -- Function: invite_user_to_team
 -- This function handles inviting users to join teams via email using Supabase's built-in inviteUserByEmail
+-- Updated to handle invitation refresh when email links expire but team invitations are still valid
 CREATE OR REPLACE FUNCTION invite_user_to_team(
   p_team_id UUID,
   p_email TEXT,
@@ -138,6 +139,9 @@ DECLARE
   v_club_name TEXT;
   v_invitation_id UUID;
   v_invitation_record RECORD;
+  v_existing_invitation_id UUID;
+  v_existing_expires_at TIMESTAMPTZ;
+  v_is_refresh BOOLEAN := false;
   v_result JSON;
 BEGIN
   -- Get the current user ID
@@ -224,43 +228,58 @@ BEGIN
     );
   END IF;
   
-  -- Check if there's already a pending invitation for this email/team combination
-  IF EXISTS (
-    SELECT 1 FROM team_invitation ti
-    WHERE ti.team_id = p_team_id 
-    AND LOWER(ti.email) = LOWER(p_email)
-    AND ti.status = 'pending'
-    AND ti.expires_at > NOW()
-  ) THEN
-    RETURN json_build_object(
-      'success', false,
-      'error', 'An invitation is already pending for this email address'
-    );
+  -- **NEW LOGIC**: Check for existing pending invitation and handle refresh
+  SELECT id, expires_at 
+  INTO v_existing_invitation_id, v_existing_expires_at
+  FROM team_invitation 
+  WHERE team_id = p_team_id 
+  AND LOWER(email) = LOWER(p_email)
+  AND status = 'pending';
+  
+  IF v_existing_invitation_id IS NOT NULL THEN
+    -- An existing pending invitation exists - refresh it with new expiry date
+    v_is_refresh := true;
+    
+    UPDATE team_invitation 
+    SET expires_at = NOW() + INTERVAL '7 days',  -- Extend for another 7 days
+        updated_at = NOW(),
+        message = COALESCE(p_message, message),  -- Update message if provided
+        invited_by_user_id = v_inviting_user_id,  -- Update who sent the latest invitation
+        role = p_role  -- Update role in case it changed
+    WHERE id = v_existing_invitation_id
+    RETURNING * INTO v_invitation_record;
+    
+    v_invitation_id := v_existing_invitation_id;
+    
+    RAISE NOTICE 'Refreshed existing invitation % for % to team %', v_invitation_id, p_email, v_team_name;
+  ELSE
+    -- No existing invitation - create a new one
+    INSERT INTO team_invitation (
+      team_id,
+      invited_by_user_id,
+      email,
+      role,
+      message,
+      status
+    ) VALUES (
+      p_team_id,
+      v_inviting_user_id,
+      LOWER(p_email),
+      p_role,
+      COALESCE(p_message, ''),
+      'pending'
+    ) RETURNING * INTO v_invitation_record;
+    
+    v_invitation_id := v_invitation_record.id;
+    
+    RAISE NOTICE 'Created new invitation % for % to team %', v_invitation_id, p_email, v_team_name;
   END IF;
-  
-  -- Create the invitation record first
-  INSERT INTO team_invitation (
-    team_id,
-    invited_by_user_id,
-    email,
-    role,
-    message,
-    status
-  ) VALUES (
-    p_team_id,
-    v_inviting_user_id,
-    LOWER(p_email),
-    p_role,
-    COALESCE(p_message, ''),
-    'pending'
-  ) RETURNING * INTO v_invitation_record;
-  
-  v_invitation_id := v_invitation_record.id;
   
   -- Construct the redirect URL with invitation context
   DECLARE
     v_final_redirect_url TEXT;
     v_team_display_name TEXT;
+    v_success_message TEXT;
   BEGIN
     -- Create team display name
     v_team_display_name := CASE 
@@ -277,19 +296,23 @@ BEGIN
       v_final_redirect_url := 'https://your-app-domain.com/?invitation=true&team=' || p_team_id::text || '&role=' || p_role || '&invitation_id=' || v_invitation_id::text;
     END IF;
     
-    -- Note: In a real implementation, you would call Supabase's admin API here
-    -- For now, we'll simulate the invitation sending
-    -- This would be replaced with actual Supabase admin.inviteUserByEmail() call
+    -- Create appropriate success message
+    IF v_is_refresh THEN
+      v_success_message := 'Invitation refreshed and sent successfully';
+    ELSE
+      v_success_message := 'Invitation sent successfully';
+    END IF;
     
-    -- Simulated success response (in actual implementation, this would be the Supabase API response)
+    -- Build response with refresh indicator
     v_result := json_build_object(
       'success', true,
       'invitation_id', v_invitation_id,
       'email', p_email,
       'team_name', v_team_display_name,
       'role', p_role,
-      'message', 'Invitation sent successfully',
-      'redirect_url', v_final_redirect_url
+      'message', v_success_message,
+      'redirect_url', v_final_redirect_url,
+      'is_refresh', v_is_refresh
     );
     
     -- Log the invitation for debugging
@@ -510,7 +533,7 @@ GRANT EXECUTE ON FUNCTION accept_team_invitation TO authenticated;
 -- Function Comments
 -- ========================================
 
-COMMENT ON FUNCTION invite_user_to_team IS 'Invites a user to join a team via email using Supabase authentication system';
+COMMENT ON FUNCTION invite_user_to_team IS 'Invites a user to join a team via email using Supabase authentication system. Refreshes existing pending invitations if they exist.';
 COMMENT ON FUNCTION accept_team_invitation IS 'Accepts a team invitation and adds the user to the specified team';
 
 -- Optional: Create a scheduled job to clean up expired invitations

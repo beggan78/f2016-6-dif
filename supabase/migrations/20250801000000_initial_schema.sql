@@ -735,26 +735,34 @@ CREATE POLICY "Team coaches can manage players" ON public.player
 CREATE POLICY "Team-aware profile access" ON public.user_profile
   FOR SELECT TO authenticated
   USING (
-    -- Users can always view their own profile
-    auth.uid() = id 
+    -- Users can always view their own profile (fast path)
+    auth.uid() = id
     OR
-    -- Team members can view profiles of other team members
-    id IN (
-      SELECT tu.user_id 
-      FROM public.team_user tu
-      WHERE tu.team_id IN (
-        SELECT team_id FROM public.team_user 
-        WHERE user_id = auth.uid()
-      )
+    -- Team members can view profiles of other team members (optimized)
+    EXISTS (
+      SELECT 1
+      FROM public.team_user tu1, public.team_user tu2
+      WHERE tu1.user_id = auth.uid()
+      AND tu2.user_id = user_profile.id
+      AND tu1.team_id = tu2.team_id
+      LIMIT 1
     )
     OR
     -- Team managers can view profiles of users requesting access to their teams
-    id IN (
-      SELECT tar.user_id 
-      FROM public.team_access_request tar
-      WHERE public.is_team_manager(tar.team_id, auth.uid())
+    EXISTS (
+      SELECT 1
+      FROM public.team_access_request tar, public.team_user tu
+      WHERE tar.user_id = user_profile.id
+      AND tu.user_id = auth.uid()
+      AND tu.team_id = tar.team_id
+      AND tu.role IN ('admin', 'coach')
+      LIMIT 1
     )
   );
+
+-- Add comment explaining the optimization
+COMMENT ON POLICY "Team-aware profile access" ON public.user_profile IS
+'Optimized RLS policy that prioritizes own profile access and uses EXISTS clauses with LIMIT 1 for better performance during page refresh scenarios';
 
 -- Allow profile creation during signup with more permissive INSERT policy
 CREATE POLICY "Users can insert own profile during signup" ON public.user_profile

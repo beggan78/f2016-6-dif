@@ -24,7 +24,7 @@ import {
   createMockAuthModal,
   createAuthTestScenarios,
   expectAuthMethodCalled
-} from './authTestUtils';
+} from '../utils/authTestUtils';
 
 // Mock the AnonymousAlert component
 jest.mock('../AnonymousAlert', () => ({

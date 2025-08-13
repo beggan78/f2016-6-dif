@@ -509,6 +509,10 @@ export function AuthProvider({ children }) {
       if (error) throw error;
 
       setUserProfile(data);
+      
+      // Cache the updated profile to localStorage to prevent loss on page refresh
+      cacheUserProfile(data);
+      
       return { profile: data, error: null };
     } catch (error) {
       const errorMessage = error.message || 'Failed to update profile';
