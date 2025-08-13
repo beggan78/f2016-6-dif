@@ -156,3 +156,4 @@ Modern composite team configuration system using four components:
 
 ## General Principles
 - Assume that application is already running. If it needs to be started, the user will start it
+- Always assume that the application is already running.

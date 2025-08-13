@@ -128,8 +128,8 @@ export function ConfigurationScreen({
     const randomPlayerIds = randomPlayers.map(p => p.id);
     setSelectedSquadIds(randomPlayerIds);
     
-    // Randomly select formation (50/50 chance between 2-2 and 1-2-1)
-    const randomFormation = Math.random() < 0.5 ? FORMATIONS.FORMATION_2_2 : FORMATIONS.FORMATION_1_2_1;
+    // Always select 2-2 formation to avoid debug mode bug with 1-2-1
+    const randomFormation = FORMATIONS.FORMATION_2_2;
     updateFormationSelection(randomFormation);
     
     // Create team config for 7 players with pairs substitution
