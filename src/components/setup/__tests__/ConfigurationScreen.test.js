@@ -174,7 +174,7 @@ describe('ConfigurationScreen', () => {
       
       expect(screen.getByText('Number of Periods')).toBeInTheDocument();
       expect(screen.getByText('Period Duration (minutes)')).toBeInTheDocument();
-      expect(screen.getByText('Alert - minutes after substitution')).toBeInTheDocument();
+      expect(screen.getByText('Substitution alert')).toBeInTheDocument();
     });
 
     it('should render opponent team name input', () => {
