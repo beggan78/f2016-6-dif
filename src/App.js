@@ -201,8 +201,6 @@ function AppContent() {
 
   // Handle invitation notification processed
   const handleInvitationNotificationProcessed = useCallback((processedInvitation, action) => {
-    console.log('[DEBUG] App: Invitation processed:', action, 'for team:', processedInvitation.team.name);
-    
     // Remove processed invitation from the list
     setPendingInvitations(prev => 
       prev.filter(inv => inv.id !== processedInvitation.id)
@@ -220,9 +218,7 @@ function AppContent() {
     if (action === 'accepted') {
       setSuccessMessage(`Successfully joined ${processedInvitation.team.name}!`);
       // Navigate to team management view after a longer delay to ensure context is fully updated
-      console.log('[DEBUG] App: Setting navigation timeout for Team Management view');
       setTimeout(() => {
-        console.log('[DEBUG] App: Navigating to Team Management view, currentTeam:', currentTeam?.name || 'null');
         gameState.setView(VIEWS.TEAM_MANAGEMENT);
       }, 1000);
     } else if (action === 'declined') {

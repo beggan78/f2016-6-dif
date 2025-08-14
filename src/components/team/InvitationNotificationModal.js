@@ -46,43 +46,31 @@ export function InvitationNotificationModal({
         
         // Refresh team data and set the newly joined team as current
         try {
-          console.log('[DEBUG] InvitationModal: Starting team data refresh after accepting invitation to team:', invitation.teamId);
           const refreshedTeams = await getUserTeams();
-          console.log('[DEBUG] InvitationModal: Team data refreshed, got', refreshedTeams?.length || 0, 'teams');
           
           // Find and set the newly joined team as current
           if (refreshedTeams && refreshedTeams.length > 0) {
             const newTeam = refreshedTeams.find(team => team.id === invitation.teamId);
-            console.log('[DEBUG] InvitationModal: Looking for team ID:', invitation.teamId, 'found:', !!newTeam);
             if (newTeam) {
-              console.log('[DEBUG] InvitationModal: Setting newly joined team as current:', newTeam.name);
               await switchCurrentTeam(newTeam.id);
               
               // Refresh club memberships to ensure hasClubs is updated
               try {
-                console.log('[DEBUG] InvitationModal: Refreshing club memberships after team join');
                 await getClubMemberships();
-                console.log('[DEBUG] InvitationModal: Club memberships refreshed successfully');
               } catch (clubError) {
-                console.error('[DEBUG] InvitationModal: Error refreshing club memberships:', clubError);
+                console.error('Error refreshing club memberships:', clubError);
               }
               
               // Load team players for the newly joined team
               try {
-                console.log('[DEBUG] InvitationModal: Loading team players for:', newTeam.name);
                 await getTeamPlayers(newTeam.id);
-                console.log('[DEBUG] InvitationModal: Team players loaded successfully');
               } catch (playersError) {
-                console.error('[DEBUG] InvitationModal: Error loading team players:', playersError);
+                console.error('Error loading team players:', playersError);
               }
-            } else {
-              console.log('[DEBUG] InvitationModal: New team not found in refreshed teams. Available teams:', refreshedTeams.map(t => ({id: t.id, name: t.name})));
             }
-          } else {
-            console.log('[DEBUG] InvitationModal: No teams found after refresh');
           }
         } catch (refreshError) {
-          console.error('[DEBUG] InvitationModal: Error refreshing team data:', refreshError);
+          console.error('Error refreshing team data:', refreshError);
         }
         
         onInvitationProcessed?.(invitation, 'accepted');

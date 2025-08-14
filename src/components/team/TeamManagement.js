@@ -130,15 +130,11 @@ export function TeamManagement({ setView }) {
 
   // If user is not authenticated, don't show team management
   if (!user) {
-    console.log('[DEBUG] TeamManagement: No user, returning null');
     return null;
   }
 
-  console.log('[DEBUG] TeamManagement: Render check - showCreateWizard:', showCreateWizard, ', hasClubs:', hasClubs, ', hasTeams:', hasTeams, ', currentTeam:', currentTeam?.name || 'null');
-
   // Show create team wizard if needed
   if (showCreateWizard || (!hasClubs || (hasClubs && !hasTeams))) {
-    console.log('[DEBUG] TeamManagement: Showing TeamCreationWizard');
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -162,7 +158,6 @@ export function TeamManagement({ setView }) {
 
   // Show team selector if no current team
   if (!currentTeam) {
-    console.log('[DEBUG] TeamManagement: No current team, showing TeamSelector');
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -182,7 +177,6 @@ export function TeamManagement({ setView }) {
   }
 
   // Main team management view
-  console.log('[DEBUG] TeamManagement: Showing main team management view for team:', currentTeam.name);
   const tabs = [
     { 
       id: TAB_VIEWS.OVERVIEW, 
