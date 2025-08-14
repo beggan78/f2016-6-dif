@@ -18,7 +18,6 @@ import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
-import { ConfirmationModal } from './components/shared/UI';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -241,8 +240,6 @@ function AppContent() {
     }, 3000);
   }, [gameState]);
 
-  // Create a ref to store the pushModalState function to avoid circular dependency
-  const pushModalStateRef = useRef(null);
 
   // Check for invitation parameters in URL on app load (only run once)
   useEffect(() => {
@@ -554,17 +551,17 @@ function AppContent() {
     setSelectedTeamForAdmin(team);
     setShowTeamAdminModal(true);
     // Add modal to browser back button handling
-    pushModalState(() => {
+    pushNavigationState(() => {
       setShowTeamAdminModal(false);
       setSelectedTeamForAdmin(null);
     });
-  }, [pushModalState]);
+  }, [pushNavigationState]);
 
   const handleCloseTeamAdminModal = useCallback(() => {
     setShowTeamAdminModal(false);
     setSelectedTeamForAdmin(null);
-    removeModalFromStack();
-  }, [removeModalFromStack]);
+    removeFromNavigationStack();
+  }, [removeFromNavigationStack]);
 
   const handleTeamAdminSuccess = useCallback((message) => {
     // Show success message banner
