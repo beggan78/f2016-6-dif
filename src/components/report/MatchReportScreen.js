@@ -116,7 +116,7 @@ export function MatchReportScreen({
   if (!allPlayers || allPlayers.length === 0) {
     return (
       <div className="min-h-screen bg-slate-900 text-slate-100">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="container mx-auto px-4 py-8 max-w-2xl md:max-w-4xl lg:max-w-5xl">
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <div className="flex items-center mb-4">
               <FileText className="h-6 w-6 text-sky-400 mr-2" />
@@ -139,7 +139,7 @@ export function MatchReportScreen({
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="container mx-auto px-4 py-8 max-w-2xl md:max-w-4xl lg:max-w-5xl">
         {/* Main Header */}
         <div className="mb-6">
           <div className="flex items-center mb-4">

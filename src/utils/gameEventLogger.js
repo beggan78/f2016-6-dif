@@ -3,6 +3,7 @@
  * Handles all match events with validation, integrity checking, and crash recovery
  */
 
+
 // Event types enumeration with comprehensive coverage
 export const EVENT_TYPES = {
   // Core match events
@@ -269,15 +270,18 @@ const loadFromBackup = () => {
 
 /**
  * Main event logging function
+ * @param {string} type - Event type from EVENT_TYPES
+ * @param {Object} data - Event data
+ * @param {number} [customTimestamp] - Optional custom timestamp for when event actually occurred
  */
-export const logEvent = (type, data = {}) => {
+export const logEvent = (type, data = {}, customTimestamp = null) => {
   try {
     // Validate event type
     if (!Object.values(EVENT_TYPES).includes(type)) {
       throw new Error(`Invalid event type: ${type}`);
     }
     
-    const timestamp = Date.now();
+    const timestamp = customTimestamp || Date.now();
     eventSequenceNumber++;
     
     const event = {
@@ -377,7 +381,6 @@ export const markEventAsUndone = (eventId, undoReason = 'user_action') => {
     const saveSuccess = saveEvents(newEvents);
     
     if (saveSuccess) {
-      console.log(`Event marked as undone: ${newEvents[eventIndex].type} (${eventId})`);
       return true;
     }
     
@@ -535,6 +538,40 @@ export const getMatchStartTime = () => {
  */
 export const getAllEvents = () => {
   return [...currentEvents];
+};
+
+/**
+ * Update event data in place (for score corrections)
+ */
+export const updateEventData = (eventId, newData) => {
+  try {
+    const eventIndex = currentEvents.findIndex(e => e.id === eventId);
+    
+    if (eventIndex === -1) {
+      console.warn(`Event not found for data update: ${eventId}`);
+      return false;
+    }
+    
+    const newEvents = [...currentEvents];
+    newEvents[eventIndex] = {
+      ...newEvents[eventIndex],
+      data: {
+        ...newEvents[eventIndex].data,
+        ...newData
+      }
+    };
+    
+    const saveSuccess = saveEvents(newEvents);
+    
+    if (saveSuccess) {
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Failed to update event data:', error);
+    return false;
+  }
 };
 
 /**

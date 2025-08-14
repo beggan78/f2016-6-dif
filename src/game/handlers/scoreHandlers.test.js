@@ -358,7 +358,7 @@ describe('createScoreHandlers', () => {
         awayScore: 0,
         scorerId: 'player_5',
         teamName: 'home'
-      });
+      }, mockPendingGoal.timestamp);
       // No GOAL_CORRECTED event should be logged for initial scorer attribution
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
@@ -393,7 +393,7 @@ describe('createScoreHandlers', () => {
         awayScore: 0,
         scorerId: null,
         teamName: 'home'
-      });
+      }, mockPendingGoal.timestamp);
       expect(logEvent).not.toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, expect.any(Object));
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
@@ -428,7 +428,7 @@ describe('createScoreHandlers', () => {
         awayScore: 0,
         scorerId: null,
         teamName: 'home'
-      });
+      }, mockPendingGoal.timestamp);
       expect(logEvent).not.toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, expect.any(Object));
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
@@ -633,7 +633,7 @@ describe('createScoreHandlers', () => {
       expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_HOME, expect.objectContaining({
         eventId: 'evt_123',
         scorerId: 'player_7'
-      }));
+      }), mockPendingGoal.timestamp);
       // No GOAL_CORRECTED event should be logged for initial scorer attribution
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);

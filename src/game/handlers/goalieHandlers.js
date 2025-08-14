@@ -29,12 +29,12 @@ export const createGoalieHandlers = (
   const {
     openGoalieModal,
     closeGoalieModal,
-    removeModalFromStack
+    removeFromNavigationStack
   } = modalHandlers;
 
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
-  const handleGoalieLongPress = (formation) => {
+  const handleGoalieQuickTap = (formation) => {
     const currentGoalieName = getPlayerNameById(formation.goalie);
     
     // Get available players for goalie replacement (outfield squad players)
@@ -109,19 +109,25 @@ export const createGoalieHandlers = (
 
   const handleCancelGoalieModal = () => {
     closeGoalieModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
     }
   };
 
-  // Create goalie long press callback
-  const goalieCallback = () => {
+  // Create goalie quick tap callback
+  const goalieCallback = (event) => {
+    // Prevent event propagation to avoid accidental modal button clicks
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     const gameState = gameStateFactory();
-    handleGoalieLongPress(gameState.formation);
+    handleGoalieQuickTap(gameState.formation);
   };
 
   return {
-    handleGoalieLongPress,
+    handleGoalieQuickTap,
     handleSelectNewGoalie,
     handleCancelGoalieModal,
     goalieCallback

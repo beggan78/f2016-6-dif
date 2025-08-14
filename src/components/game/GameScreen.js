@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
-import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreEditModal, ConfirmationModal } from '../shared/UI';
+import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
-import { getPlayerName, findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
+import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
+import { calculateMatchTime } from '../../utils/gameEventLogger';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -16,7 +17,7 @@ import { FormationRenderer } from './formations';
 import { createSubstitutionHandlers } from '../../game/handlers/substitutionHandlers';
 import { createFieldPositionHandlers } from '../../game/handlers/fieldPositionHandlers';
 import { useFieldPositionHandlers } from '../../hooks/useFieldPositionHandlers';
-import { useLongPressWithScrollDetection } from '../../hooks/useLongPressWithScrollDetection';
+import { useQuickTapWithScrollDetection } from '../../hooks/useQuickTapWithScrollDetection';
 import { createTimerHandlers } from '../../game/handlers/timerHandlers';
 import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
@@ -51,8 +52,8 @@ export function GameScreen({
   teamConfig,
   selectedFormation,
   alertMinutes,
-  pushModalState,
-  removeModalFromStack,
+  pushNavigationState,
+  removeFromNavigationStack,
   homeScore,
   awayScore,
   opponentTeamName,
@@ -60,10 +61,14 @@ export function GameScreen({
   addAwayGoal,
   setScore,
   rotationQueue,
-  setRotationQueue
+  setRotationQueue,
+  matchEvents,
+  goalScorers,
+  matchStartTime,
+  getPlayerName
 }) {
   // Use new modular hooks
-  const modalHandlers = useGameModals(pushModalState, removeModalFromStack);
+  const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
   const uiState = useGameUIState();
   
   // Team name management
@@ -73,8 +78,8 @@ export function GameScreen({
     homeTeamName, awayTeamName, homeScore, awayScore
   );
 
-  // Helper functions
-  const getPlayerNameById = React.useCallback((id) => getPlayerName(allPlayers, id), [allPlayers]);
+  // Helper functions  
+  const getPlayerNameById = React.useCallback((id) => getPlayerName(id), [getPlayerName]);
   
   // Memoize eligible players to prevent unnecessary re-renders and state resets
   const eligiblePlayers = useMemo(() => {
@@ -180,7 +185,7 @@ export function GameScreen({
     ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
   );
 
-  const longPressHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
+  const quickTapHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
 
   const timerHandlers = React.useMemo(() =>
     createTimerHandlers(
@@ -209,8 +214,8 @@ export function GameScreen({
     ), [createGameState, stateUpdaters, animationHooks, modalHandlers, allPlayers, selectedSquadPlayers]
   );
 
-  const goalieEvents = useLongPressWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
-  const scoreEvents = useLongPressWithScrollDetection(scoreHandlers.scoreCallback);
+  const goalieEvents = useQuickTapWithScrollDetection(goalieHandlerCallbacks.goalieCallback);
+  const scoreEvents = useQuickTapWithScrollDetection(scoreHandlers.scoreCallback);
   
   const goalieHandlers = React.useMemo(() => ({
     ...goalieHandlerCallbacks,
@@ -353,7 +358,7 @@ export function GameScreen({
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
-          longPressHandlers={longPressHandlers}
+          quickTapHandlers={quickTapHandlers}
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
           getPlayerTimeStats={getPlayerTimeStats}
@@ -432,15 +437,24 @@ export function GameScreen({
         availablePlayers={modalHandlers.modals.goalie.availablePlayers}
       />
 
-      {/* Score Edit Modal */}
-      <ScoreEditModal
+      {/* Score Manager Modal */}
+      <ScoreManagerModal
         isOpen={modalHandlers.modals.scoreEdit.isOpen}
         onCancel={modalHandlers.closeScoreEditModal}
-        onSave={(newHomeScore, newAwayScore) => scoreHandlers.handleScoreEdit(newHomeScore, newAwayScore)}
         homeScore={homeScore}
         awayScore={awayScore}
         homeTeamName={homeTeamName}
         awayTeamName={awayTeamName}
+        matchEvents={matchEvents}
+        goalScorers={goalScorers}
+        allPlayers={allPlayers}
+        onAddHomeGoal={() => scoreHandlers.handleAddHomeGoal(createGameState())}
+        onAddAwayGoal={() => scoreHandlers.handleAddAwayGoal(createGameState())}
+        onEditGoalScorer={scoreHandlers.handleEditGoalScorer}
+        onDeleteGoal={scoreHandlers.handleDeleteGoal}
+        calculateMatchTime={(timestamp) => calculateMatchTime(timestamp, matchStartTime)}
+        formatTime={formatTime}
+        getPlayerName={getPlayerName}
       />
 
       {/* Undo Confirmation Modal */}

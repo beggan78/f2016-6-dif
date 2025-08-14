@@ -8,6 +8,7 @@ import {
   logEvent,
   removeEvent,
   markEventAsUndone,
+  updateEventData,
   getMatchEvents,
   getEventById,
   getEffectivePlayingTime,
@@ -204,6 +205,110 @@ describe('gameEventLogger', () => {
     });
   });
 
+  describe('Event Data Updates (Score History Rewriting)', () => {
+    test('should update existing event data', () => {
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { 
+        homeScore: 1, 
+        awayScore: 0, 
+        scorerId: 'player1' 
+      });
+      
+      const updated = updateEventData(goalEvent.id, { 
+        homeScore: 2, 
+        awayScore: 0 
+      });
+      
+      expect(updated).toBe(true);
+      
+      const updatedEvent = getEventById(goalEvent.id);
+      expect(updatedEvent.data.homeScore).toBe(2);
+      expect(updatedEvent.data.awayScore).toBe(0);
+      expect(updatedEvent.data.scorerId).toBe('player1'); // Should preserve existing data
+    });
+
+    test('should merge new data with existing data', () => {
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_AWAY, { 
+        homeScore: 1, 
+        awayScore: 1, 
+        scorerId: 'player2',
+        extraData: 'preserve' 
+      });
+      
+      updateEventData(goalEvent.id, { 
+        awayScore: 2 // Only update awayScore
+      });
+      
+      const updatedEvent = getEventById(goalEvent.id);
+      expect(updatedEvent.data.homeScore).toBe(1); // Preserved
+      expect(updatedEvent.data.awayScore).toBe(2); // Updated
+      expect(updatedEvent.data.scorerId).toBe('player2'); // Preserved
+      expect(updatedEvent.data.extraData).toBe('preserve'); // Preserved
+    });
+
+    test('should handle update of non-existent event', () => {
+      const updated = updateEventData('non_existent_id', { homeScore: 5 });
+      expect(updated).toBe(false);
+    });
+
+    test('should preserve event metadata during data update', () => {
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
+      const originalType = goalEvent.type;
+      const originalTimestamp = goalEvent.timestamp;
+      const originalSequence = goalEvent.sequence;
+      
+      updateEventData(goalEvent.id, { homeScore: 3 });
+      
+      const updatedEvent = getEventById(goalEvent.id);
+      expect(updatedEvent.type).toBe(originalType);
+      expect(updatedEvent.timestamp).toBe(originalTimestamp);
+      expect(updatedEvent.sequence).toBe(originalSequence);
+      expect(updatedEvent.undone).toBe(false);
+    });
+
+    test('should trigger event listeners on data update', () => {
+      const mockCallback = jest.fn();
+      const removeListener = addEventListener(mockCallback);
+      
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
+      mockCallback.mockClear(); // Clear the logEvent call
+      
+      updateEventData(goalEvent.id, { homeScore: 2 });
+      
+      expect(mockCallback).toHaveBeenCalledWith('events_saved', expect.objectContaining({
+        events: expect.any(Array)
+      }));
+      
+      removeListener();
+    });
+
+    test('should support goal deletion history rewrite workflow', () => {
+      // Create sequence of goals with incrementing scores
+      const goal1 = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
+      const goal2 = logEvent(EVENT_TYPES.GOAL_AWAY, { homeScore: 1, awayScore: 1 });
+      const goal3 = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 2, awayScore: 1 });
+      const goal4 = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 3, awayScore: 1 });
+      
+      // Mark middle goal as deleted (goal2)
+      markEventAsUndone(goal2.id, 'manual_deletion');
+      
+      // Rewrite history for subsequent goals (decrement away score)
+      updateEventData(goal3.id, { homeScore: 2, awayScore: 0 }); // Was 2-1, now 2-0
+      updateEventData(goal4.id, { homeScore: 3, awayScore: 0 }); // Was 3-1, now 3-0
+      
+      // Verify final state
+      const events = getMatchEvents({ includeUndone: true });
+      const deletedGoal = events.find(e => e.id === goal2.id);
+      const correctedGoal3 = events.find(e => e.id === goal3.id);
+      const correctedGoal4 = events.find(e => e.id === goal4.id);
+      
+      expect(deletedGoal.undone).toBe(true);
+      expect(correctedGoal3.data.homeScore).toBe(2);
+      expect(correctedGoal3.data.awayScore).toBe(0);
+      expect(correctedGoal4.data.homeScore).toBe(3);
+      expect(correctedGoal4.data.awayScore).toBe(0);
+    });
+  });
+
   describe('Time Calculations', () => {
     test('should calculate effective playing time with pauses', () => {
       const startTime = 1640995200000;
@@ -301,7 +406,7 @@ describe('gameEventLogger', () => {
     });
   });
 
-  describe('Event Listeners', () => {
+  describe('Event Listeners (Real-time Sync System)', () => {
     test('should add and remove event listeners', () => {
       const mockCallback = jest.fn();
       
@@ -322,17 +427,147 @@ describe('gameEventLogger', () => {
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    test('should handle listener errors gracefully', () => {
+    test('should notify listeners on all event operations', () => {
+      const mockCallback = jest.fn();
+      const removeListener = addEventListener(mockCallback);
+      
+      // Test logEvent
+      logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p1' });
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      
+      const events = getMatchEvents();
+      const goalEvent = events[0];
+      
+      // Test markEventAsUndone
+      markEventAsUndone(goalEvent.id);
+      expect(mockCallback).toHaveBeenCalledTimes(2);
+      
+      // Test updateEventData
+      updateEventData(goalEvent.id, { homeScore: 5 });
+      expect(mockCallback).toHaveBeenCalledTimes(3);
+      
+      // Verify all calls were 'events_saved' events
+      mockCallback.mock.calls.forEach(call => {
+        expect(call[0]).toBe('events_saved');
+        expect(call[1]).toHaveProperty('events');
+        expect(call[1]).toHaveProperty('metadata');
+      });
+      
+      removeListener();
+    });
+
+    test('should support multiple simultaneous listeners', () => {
+      const callback1 = jest.fn();
+      const callback2 = jest.fn();
+      const callback3 = jest.fn();
+      
+      const remove1 = addEventListener(callback1);
+      const remove2 = addEventListener(callback2);
+      const remove3 = addEventListener(callback3);
+      
+      logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p1' });
+      
+      expect(callback1).toHaveBeenCalledTimes(1);
+      expect(callback2).toHaveBeenCalledTimes(1);
+      expect(callback3).toHaveBeenCalledTimes(1);
+      
+      // Remove middle listener
+      remove2();
+      
+      logEvent(EVENT_TYPES.GOAL_AWAY, { scorerId: 'p2' });
+      
+      expect(callback1).toHaveBeenCalledTimes(2);
+      expect(callback2).toHaveBeenCalledTimes(1); // Should not increase
+      expect(callback3).toHaveBeenCalledTimes(2);
+      
+      remove1();
+      remove3();
+    });
+
+    test('should handle listener errors gracefully without affecting other listeners', () => {
       const errorCallback = jest.fn(() => {
         throw new Error('Listener error');
       });
+      const goodCallback = jest.fn();
+      
+      // Mock console.error to avoid test noise
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       
       addEventListener(errorCallback);
+      const removeGoodListener = addEventListener(goodCallback);
       
       // Should not throw despite listener error
       expect(() => {
         logEvent(EVENT_TYPES.SUBSTITUTION, {});
       }).not.toThrow();
+      
+      // Good callback should still have been called
+      expect(goodCallback).toHaveBeenCalled();
+      expect(errorCallback).toHaveBeenCalled();
+      
+      removeGoodListener();
+      consoleSpy.mockRestore();
+    });
+
+    test('should provide correct event data to listeners for goal deletion workflow', () => {
+      const mockCallback = jest.fn();
+      const removeListener = addEventListener(mockCallback);
+      
+      // Create a goal
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { 
+        homeScore: 1, 
+        awayScore: 0, 
+        scorerId: 'player1' 
+      });
+      
+      mockCallback.mockClear();
+      
+      // Simulate goal deletion workflow
+      markEventAsUndone(goalEvent.id, 'manual_deletion');
+      
+      // Verify listener received correct data
+      expect(mockCallback).toHaveBeenCalledWith('events_saved', expect.objectContaining({
+        events: expect.arrayContaining([
+          expect.objectContaining({
+            id: goalEvent.id,
+            undone: true,
+            undoReason: 'manual_deletion'
+          })
+        ])
+      }));
+      
+      removeListener();
+    });
+
+    test('should enable real-time sync pattern used in useGameState', () => {
+      // This test simulates the pattern used in useGameState hook
+      let syncTriggered = false;
+      
+      const realTimeSyncCallback = (eventType, data) => {
+        if (eventType === 'events_saved') {
+          syncTriggered = true;
+          
+          // Verify we have access to the updated events
+          expect(data.events).toBeDefined();
+          expect(Array.isArray(data.events)).toBe(true);
+        }
+      };
+      
+      const removeListener = addEventListener(realTimeSyncCallback);
+      
+      // Simulate operations that should trigger real-time sync
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
+      expect(syncTriggered).toBe(true);
+      
+      syncTriggered = false;
+      markEventAsUndone(goalEvent.id);
+      expect(syncTriggered).toBe(true);
+      
+      syncTriggered = false;
+      updateEventData(goalEvent.id, { homeScore: 2 });
+      expect(syncTriggered).toBe(true);
+      
+      removeListener();
     });
   });
 

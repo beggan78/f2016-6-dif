@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
 
 export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
@@ -93,6 +93,47 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message,
             </Button>
             <Button onClick={onConfirm} variant={variant} className="sm:order-2">
               {confirmText}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ThreeOptionModal({ 
+  isOpen, 
+  onPrimary, 
+  onSecondary, 
+  onTertiary, 
+  title, 
+  message, 
+  primaryText = "Confirm", 
+  secondaryText = "Cancel", 
+  tertiaryText = "Option 3",
+  primaryVariant = "danger",
+  secondaryVariant = "secondary",
+  tertiaryVariant = "secondary"
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">{title}</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-slate-200 mb-6">{message}</p>
+          <div className="flex flex-col gap-3">
+            <Button onClick={onPrimary} variant={primaryVariant}>
+              {primaryText}
+            </Button>
+            <Button onClick={onSecondary} variant={secondaryVariant}>
+              {secondaryText}
+            </Button>
+            <Button onClick={onTertiary} variant={tertiaryVariant}>
+              {tertiaryText}
             </Button>
           </div>
         </div>
@@ -387,6 +428,203 @@ export function ScoreEditModal({
             </Button>
             <Button onClick={handleSave} variant="primary">
               Save Score
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ScoreManagerModal({ 
+  isOpen, 
+  onCancel, 
+  homeScore, 
+  awayScore, 
+  homeTeamName = "Djurgården",
+  awayTeamName = "Opponent",
+  matchEvents = [],
+  goalScorers = {},
+  allPlayers = [],
+  onAddHomeGoal,
+  onAddAwayGoal,
+  onEditGoalScorer,
+  onDeleteGoal,
+  calculateMatchTime,
+  formatTime,
+  getPlayerName
+}) {
+  // Filter and process goal events (using same pattern as MatchReportScreen)
+  const goalEvents = React.useMemo(() => {
+    const goals = matchEvents
+      .filter(event => ['goal_home', 'goal_away'].includes(event.type))
+      .filter(event => !event.undone)
+      .map(event => {
+        // Use event.matchTime first, then calculate if missing (same as MatchReportScreen)
+        const matchTime = event.matchTime || (calculateMatchTime ? calculateMatchTime(event.timestamp) : '0:00');
+        
+        // Use same scorer resolution pattern as GameEventTimeline (with fallback to eventData.scorerId)
+        const scorerId = goalScorers[event.id] || event.data?.scorerId;
+        const scorerName = scorerId && getPlayerName ? getPlayerName(scorerId) : null;
+        
+        return {
+          ...event,
+          matchTime,
+          scorerName,
+          isHomeGoal: event.type === 'goal_home'
+        };
+      })
+      .sort((a, b) => a.timestamp - b.timestamp);
+    
+    return goals;
+  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime]);
+
+  const handleClose = () => {
+    onCancel();
+  };
+
+  const handleEditScorer = (eventId) => {
+    if (onEditGoalScorer) {
+      onEditGoalScorer(eventId);
+    }
+  };
+
+  const handleDeleteGoalEvent = (eventId) => {
+    if (onDeleteGoal) {
+      onDeleteGoal(eventId);
+    }
+  };
+
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-lg w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-sky-300">Manage Score</h3>
+            </div>
+            <button
+              onClick={handleClose}
+              className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          {/* Current Score Display */}
+          <div className="flex items-center justify-between space-x-4 bg-slate-700 p-3 rounded-lg">
+            <div className="text-center">
+              <div className="text-sm text-slate-300">{homeTeamName}</div>
+              <div className="text-2xl font-bold text-sky-400">{homeScore}</div>
+            </div>
+            <div className="text-2xl font-mono font-bold text-slate-400">-</div>
+            <div className="text-center">
+              <div className="text-sm text-slate-300">{awayTeamName}</div>
+              <div className="text-2xl font-bold text-sky-400">{awayScore}</div>
+            </div>
+          </div>
+
+          {/* Goal History */}
+          <div>
+            <h4 className="text-sm font-medium text-slate-300 mb-2">Goals Scored</h4>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {goalEvents.length === 0 ? (
+                <div className="text-slate-400 text-sm italic text-center py-4">
+                  No goals recorded yet
+                </div>
+              ) : (
+                goalEvents.map((goal) => {
+                  const eventId = goal.id; // Use event.id consistently (same as MatchReportScreen)
+                  return (
+                  <div 
+                    key={eventId} 
+                    className={`p-3 rounded-lg border ${
+                      goal.isHomeGoal 
+                        ? 'bg-sky-900/30 border-sky-600/50' 
+                        : 'bg-slate-700/50 border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-mono text-slate-300">
+                            {goal.matchTime}
+                          </span>
+                          <span className="text-sm text-slate-400">|</span>
+                          <span className="text-sm font-semibold text-slate-200">
+                            {goal.data?.homeScore || 0}-{goal.data?.awayScore || 0}
+                          </span>
+                          {goal.isHomeGoal && (
+                            <>
+                              <span className="text-sm text-slate-400">|</span>
+                              <span className="text-sm text-sky-300">
+                                {goal.scorerName || 'Unknown scorer'}
+                              </span>
+                            </>
+                          )}
+                          {!goal.isHomeGoal && (
+                            <>
+                              <span className="text-sm text-slate-400">|</span>
+                              <span className="text-sm text-slate-300">Opponent</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {goal.isHomeGoal && (
+                          <Button
+                            onClick={() => handleEditScorer(eventId)}
+                            variant="secondary"
+                            size="sm"
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() => handleDeleteGoalEvent(eventId)}
+                          variant="danger"
+                          size="sm"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Add Goals */}
+          <div className="border-t border-slate-600 pt-4">
+            <h4 className="text-sm font-medium text-slate-300 mb-2">Add Goal</h4>
+            <div className="flex gap-2">
+              <Button 
+                onClick={onAddHomeGoal}
+                variant="primary"
+                className="flex-1"
+              >
+                + {homeTeamName}
+              </Button>
+              <Button 
+                onClick={onAddAwayGoal}
+                variant="secondary"
+                className="flex-1"
+              >
+                + {awayTeamName}
+              </Button>
+            </div>
+          </div>
+
+          
+          <div className="flex justify-center pt-4">
+            <Button onClick={handleClose} variant="primary">
+              Close
             </Button>
           </div>
         </div>

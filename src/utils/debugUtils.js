@@ -3,7 +3,31 @@
  * 
  * Utility functions for randomizing configurations and formations during development/testing.
  * These functions help speed up testing by automatically populating selections.
+ * 
+ * Also includes debug timing and logging utilities for troubleshooting performance issues.
  */
+
+/**
+ * Format current time for human-readable debug logs
+ * @returns {string} Formatted time like "14:25:03.087"
+ */
+export const formatDebugTime = () => {
+  const now = new Date();
+  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+};
+
+/**
+ * Create a debug logger with consistent formatting
+ * @param {string} component - Component name for log prefix
+ * @returns {function} Logger function
+ */
+export const createDebugLogger = (component) => {
+  return (operation, details = '') => {
+    const timestamp = formatDebugTime();
+    const detailsStr = details ? ` ${details}` : '';
+    console.log(`[${timestamp}] [${component}] ${operation}${detailsStr}`);
+  };
+};
 
 /**
  * Fisher-Yates shuffle algorithm for randomizing arrays

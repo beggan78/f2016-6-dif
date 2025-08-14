@@ -85,8 +85,8 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const isConfigScreen = currentView === 'config';
   const isGameScreen = currentView === 'game';
-  const showFormationOptions = isGameScreen && (
-    (teamConfig?.substitutionType === 'pairs' && teamConfig?.squadSize === 7) ||
+  const showFormationOptions = isGameScreen && teamConfig?.formation === '2-2' && (
+    (teamConfig?.substitutionType === 'pairs' && teamConfig?.squadSize === 7) || 
     (teamConfig?.substitutionType === 'individual' && teamConfig?.squadSize === 7)
   );
   

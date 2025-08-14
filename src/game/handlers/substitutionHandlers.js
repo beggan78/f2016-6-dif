@@ -53,7 +53,7 @@ export const createSubstitutionHandlers = (
   const {
     closeFieldPlayerModal,
     closeSubstituteModal,
-    removeModalFromStack,
+    removeFromNavigationStack,
     openFieldPlayerModal
   } = modalHandlers;
 
@@ -178,8 +178,8 @@ export const createSubstitutionHandlers = (
 
   const handleCancelFieldPlayerModal = () => {
     closeFieldPlayerModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
     }
   };
 
@@ -245,8 +245,8 @@ export const createSubstitutionHandlers = (
       }
     }
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
     }
   };
 
@@ -334,8 +334,8 @@ export const createSubstitutionHandlers = (
       // Mode doesn't support inactive players, no action taken
     }
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
     }
   };
 
@@ -388,15 +388,15 @@ export const createSubstitutionHandlers = (
       // Mode doesn't support inactive players, no action taken
     }
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
     }
   };
 
   const handleCancelSubstituteModal = () => {
     closeSubstituteModal();
-    if (removeModalFromStack) {
-      removeModalFromStack();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
     }
   };
 

@@ -19,6 +19,7 @@ import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
 import { ConfirmationModal } from './components/shared/UI';
+import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
@@ -65,7 +66,7 @@ function AppContent() {
   // Check for password reset tokens or codes in URL on app load
   useEffect(() => {
     const { hasTokens } = detectResetTokens();
-    
+
     // If we have password reset tokens or magic link codes, open the auth modal in reset mode
     if (hasTokens) {
       authModal.openReset();
@@ -100,11 +101,20 @@ function AppContent() {
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  
+
+  // Create a ref to store the pushNavigationState function to avoid circular dependency
+  const pushNavigationStateRef = useRef(null);
+
+  const handleNavigateFromTacticalBoard = useCallback((fallbackView) => {
+    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
+    if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
+    }
+  }, [gameState, fromView]);
   // Invitation state
   const [invitationParams, setInvitationParams] = useState(null);
   const [isProcessingInvitation, setIsProcessingInvitation] = useState(false);
-  
+
   // Pending invitation notifications
   const [showInvitationNotifications, setShowInvitationNotifications] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState([]);
@@ -125,17 +135,17 @@ function AppContent() {
     try {
       setIsProcessingInvitation(true);
       console.log('Processing invitation:', params.invitationId);
-      
+
       const result = await acceptTeamInvitation(params.invitationId);
-      
+
       if (result.success) {
         // Clear URL parameters
         clearInvitationParamsFromUrl();
         setInvitationParams(null);
-        
+
         // Show welcome message
         setSuccessMessage(result.message || 'Welcome to the team!');
-        
+
         // Navigate to team management view
         gameState.setView(VIEWS.TEAM_MANAGEMENT);
       } else {
@@ -155,10 +165,10 @@ function AppContent() {
       // Clear URL parameters
       clearInvitationParamsFromUrl();
       setInvitationParams(null);
-      
+
       // Show welcome message
       setSuccessMessage(result.message || 'Welcome to the team!');
-      
+
       // Navigate to team management view
       gameState.setView(VIEWS.TEAM_MANAGEMENT);
     }
@@ -167,11 +177,11 @@ function AppContent() {
   // Handle request to show sign-in modal after password setup
   const handleRequestSignIn = useCallback(() => {
     console.log('Handling sign-in request after password setup');
-    
+
     // Clear invitation parameters to close InvitationWelcome modal
     clearInvitationParamsFromUrl();
     setInvitationParams(null);
-    
+
     // Open the AuthModal in sign-in mode
     authModal.openLogin();
   }, [authModal]);
@@ -179,11 +189,11 @@ function AppContent() {
   // Check for pending invitation notifications
   const checkPendingInvitationNotifications = useCallback(async () => {
     if (!user || hasCheckedInvitations) return;
-    
+
     try {
       console.log('Checking for pending invitation notifications...');
       const invitations = await getUserPendingInvitations();
-      
+
       if (invitations && invitations.length > 0) {
         console.log(`Found ${invitations.length} pending invitation(s)`);
         setPendingInvitations(invitations);
@@ -191,7 +201,7 @@ function AppContent() {
       } else {
         console.log('No pending invitations found');
       }
-      
+
       setHasCheckedInvitations(true);
     } catch (error) {
       console.error('Error checking pending invitations:', error);
@@ -202,10 +212,10 @@ function AppContent() {
   // Handle invitation notification processed
   const handleInvitationNotificationProcessed = useCallback((processedInvitation, action) => {
     // Remove processed invitation from the list
-    setPendingInvitations(prev => 
+    setPendingInvitations(prev =>
       prev.filter(inv => inv.id !== processedInvitation.id)
     );
-    
+
     // Close modal if no more invitations
     setPendingInvitations(prev => {
       if (prev.length <= 1) {
@@ -213,7 +223,7 @@ function AppContent() {
       }
       return prev.filter(inv => inv.id !== processedInvitation.id);
     });
-    
+
     // Show success message
     if (action === 'accepted') {
       setSuccessMessage(`Successfully joined ${processedInvitation.team.name}!`);
@@ -224,7 +234,7 @@ function AppContent() {
     } else if (action === 'declined') {
       setSuccessMessage('Invitation declined');
     }
-    
+
     // Clear success message after 3 seconds
     setTimeout(() => {
       setSuccessMessage('');
@@ -233,16 +243,16 @@ function AppContent() {
 
   // Create a ref to store the pushModalState function to avoid circular dependency
   const pushModalStateRef = useRef(null);
-  
+
   // Check for invitation parameters in URL on app load (only run once)
   useEffect(() => {
     const handleInvitationAndSession = async () => {
       const params = detectInvitationParams();
-      
+
       if (params.hasInvitation) {
         console.log('Invitation detected:', params);
         setInvitationParams(params);
-        
+
         // If we have Supabase tokens in the URL hash, set the session
         if (params.isSupabaseInvitation && params.accessToken && params.refreshToken) {
           try {
@@ -251,7 +261,7 @@ function AppContent() {
               access_token: params.accessToken,
               refresh_token: params.refreshToken
             });
-            
+
             if (error) {
               console.error('Error setting session:', error);
             } else {
@@ -263,7 +273,7 @@ function AppContent() {
         }
       }
     };
-    
+
     handleInvitationAndSession();
   }, []); // Run only once on mount
 
@@ -275,7 +285,7 @@ function AppContent() {
         console.log('User needs to complete account setup before processing invitation');
         return; // Don't process invitation yet, user needs to set password first
       }
-      
+
       console.log('User is ready to process invitation');
       handleInvitationAcceptance(invitationParams);
     }
@@ -287,16 +297,16 @@ function AppContent() {
     if (user && !invitationParams && hasPendingInvitation()) {
       console.log('User signed in, checking for pending invitation...');
       const pendingInvitation = retrievePendingInvitation();
-      
+
       if (pendingInvitation && pendingInvitation.invitationId) {
         console.log('Processing pending invitation:', pendingInvitation);
-        
+
         // Process the stored invitation
         handleInvitationAcceptance({ invitationId: pendingInvitation.invitationId });
-        
+
         // Show success message with team context
-        const teamContext = pendingInvitation.teamName ? 
-          ` Welcome to ${pendingInvitation.teamName}!` : 
+        const teamContext = pendingInvitation.teamName ?
+          ` Welcome to ${pendingInvitation.teamName}!` :
           ' Welcome to the team!';
         setSuccessMessage(`Successfully joined as ${pendingInvitation.role || 'member'}.${teamContext}`);
       }
@@ -311,10 +321,10 @@ function AppContent() {
       const timer = setTimeout(() => {
         checkPendingInvitationNotifications();
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     }
-    
+
     // Reset check flag when user changes
     if (!user) {
       setHasCheckedInvitations(false);
@@ -323,31 +333,34 @@ function AppContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, invitationParams, needsProfileCompletion]); // Check when user state changes
-  
+
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
     // Check current view and handle accordingly
     if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1) {
       // Exception: PeriodSetupScreen -> ConfigurationScreen
       gameState.setView(VIEWS.CONFIG);
+    } else if (gameState.view === VIEWS.TACTICAL_BOARD) {
+      // Navigate back from Tactical Board - same as clicking Back button
+      handleNavigateFromTacticalBoard();
     } else {
       // Default: Show "Start a new game?" confirmation modal
       setShowNewGameModal(true);
       // Register this modal with the browser back intercept system
-      if (pushModalStateRef.current) {
-        pushModalStateRef.current(() => {
+      if (pushNavigationStateRef.current) {
+        pushNavigationStateRef.current(() => {
           setShowNewGameModal(false);
         });
       }
     }
-  }, [gameState]);
+  }, [gameState, handleNavigateFromTacticalBoard]);
   
-  const { pushModalState, removeModalFromStack } = useBrowserBackIntercept(handleGlobalNavigation);
+  const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
   
-  // Store the pushModalState function in the ref
+  // Store the pushNavigationState function in the ref
   useEffect(() => {
-    pushModalStateRef.current = pushModalState;
-  }, [pushModalState]);
+    pushNavigationStateRef.current = pushNavigationState;
+  }, [pushNavigationState]);
 
   const selectedSquadPlayers = useMemo(() => {
     return getSelectedSquadPlayers(gameState.allPlayers, gameState.selectedSquadIds);
@@ -408,7 +421,7 @@ function AppContent() {
       setConfirmModalData({ timeString });
       setShowConfirmModal(true);
       // Add modal to browser back button handling
-      pushModalState(() => {
+      pushNavigationState(() => {
         setShowConfirmModal(false);
       });
       return;
@@ -427,7 +440,7 @@ function AppContent() {
 
   const handleConfirmEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     const isMatchEnd = gameState.currentPeriodNumber >= gameState.numPeriods;
     timers.stopTimers(
       gameState.currentPeriodNumber,
@@ -440,7 +453,7 @@ function AppContent() {
 
   const handleCancelEndPeriod = () => {
     setShowConfirmModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
   };
 
   const handleRestartMatch = () => {
@@ -477,26 +490,26 @@ function AppContent() {
   const handleAddPlayer = () => {
     setShowAddPlayerModal(true);
     // Add modal to browser back button handling
-    pushModalState(() => {
+    pushNavigationState(() => {
       setShowAddPlayerModal(false);
     });
   };
 
   const handleAddPlayerConfirm = (playerName) => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     gameState.addTemporaryPlayer(playerName);
   };
 
   const handleAddPlayerCancel = () => {
     setShowAddPlayerModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
   };
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = () => {
     setShowNewGameModal(false);
-    removeModalFromStack();
+    removeFromNavigationStack();
     handleRestartMatch();
   };
 
@@ -504,19 +517,36 @@ function AppContent() {
     // When user clicks Cancel button, just close the modal without triggering browser back
     setShowNewGameModal(false);
     // Remove the modal from the browser back intercept stack without triggering navigation
-    removeModalFromStack();
+    removeFromNavigationStack();
+  };
+
+  const handleLeaveSportWizard = () => {
+    // Close the modal first
+    setShowNewGameModal(false);
+    removeFromNavigationStack();
+
+    // Navigate back to where the user was before entering the Sport Wizard app
+    // Go back to the state before we initialized the app
+    const currentLevel = window.history.state?.navigationLevel || window.history.state?.modalLevel || 0;
+    if (currentLevel > 0) {
+      // Go back to before any navigation states were pushed
+      window.history.go(-(currentLevel + 1));
+    } else {
+      // If no navigation states, try to go back one step
+      // This handles the case where user came directly to the app
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // If this is the only page in history, try to close the window
+        // This will only work if the app was opened by script, otherwise it's ignored
+        window.close();
+      }
+    }
   };
 
   const handleNavigateToTacticalBoard = () => {
     setFromView(gameState.view);
     gameState.setView(VIEWS.TACTICAL_BOARD);
-  };
-
-  const handleNavigateFromTacticalBoard = (fallbackView) => {
-    // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
-    if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
-    }
   };
 
   // Team admin modal handlers
@@ -654,14 +684,21 @@ function AppContent() {
             switchGoalie={gameState.switchGoalie}
             setLastSubstitutionTimestamp={gameState.setLastSubstitutionTimestamp}
             getOutfieldPlayers={gameState.getOutfieldPlayers}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             homeScore={gameState.homeScore}
             awayScore={gameState.awayScore}
             opponentTeamName={gameState.opponentTeamName}
             addHomeGoal={gameState.addHomeGoal}
             addAwayGoal={gameState.addAwayGoal}
             setScore={gameState.setScore}
+            matchEvents={gameState.matchEvents || []}
+            goalScorers={gameState.goalScorers || {}}
+            matchStartTime={gameState.matchStartTime}
+            getPlayerName={(playerId) => {
+              const player = gameState.allPlayers.find(p => p.id === playerId);
+              return player ? formatPlayerName(player) : 'Unknown Player';
+            }}
           />
         );
       case VIEWS.STATS:
@@ -723,8 +760,8 @@ function AppContent() {
         return (
           <TacticalBoardScreen
             onNavigateBack={handleNavigateFromTacticalBoard}
-            pushModalState={pushModalState}
-            removeModalFromStack={removeModalFromStack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             fromView={fromView}
           />
         );
@@ -741,7 +778,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
-      <header className="w-full max-w-2xl relative text-center mb-4">
+      <header className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl relative text-center mb-4">
         <div className="absolute top-0 right-0">
           <HamburgerMenu 
             onRestartMatch={handleRestartMatch} 
@@ -771,9 +808,15 @@ function AppContent() {
         </div>
       )}
 
-      <main className="w-full max-w-2xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
-        {renderView()}
-      </main>
+      {gameState.view === VIEWS.TACTICAL_BOARD ? (
+        <div className="w-full">
+          {renderView()}
+        </div>
+      ) : (
+        <main className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-slate-800 p-3 sm:p-6 rounded-lg shadow-xl">
+          {renderView()}
+        </main>
+      )}
       <footer className="mt-8 text-center text-sm text-slate-500">
         <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
       </footer>
@@ -792,14 +835,19 @@ function AppContent() {
         onAddPlayer={handleAddPlayerConfirm}
       />
       
-      <ConfirmationModal
+      <ThreeOptionModal
         isOpen={showNewGameModal}
-        onConfirm={handleConfirmNewGame}
-        onCancel={handleCancelNewGame}
+        onPrimary={handleCancelNewGame}
+        onSecondary={handleConfirmNewGame}
+        onTertiary={handleLeaveSportWizard}
         title="Start a new game?"
         message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
-        confirmText="Yes, start new game"
-        cancelText="Cancel"
+        primaryText="Stay on page"
+        secondaryText="Yes, start new game"
+        tertiaryText="Leave Sport Wizard"
+        primaryVariant="accent"
+        secondaryVariant="primary"
+        tertiaryVariant="danger"
       />
 
         {/* Session Expiry Warning Modal */}

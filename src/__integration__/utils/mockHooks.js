@@ -153,6 +153,7 @@ export const createMockUseTimers = (initialTimerState = {}) => {
 
 /**
  * Creates a mock implementation of useGameModals hook
+ * Note: useGameModals now uses pushNavigationState and removeFromNavigationStack parameters
  */
 export const createMockUseGameModals = (initialModalState = {}) => {
   const defaultModalState = {
@@ -295,6 +296,41 @@ export const createMockUseBrowserBackIntercept = (initialConfig = {}) => {
   const mockInterceptState = { ...defaultConfig };
   
   const interceptActions = {
+    // New navigation-generic methods
+    pushNavigationState: jest.fn(() => {
+      mockInterceptState.isIntercepting = true;
+    }),
+    popNavigationState: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    removeFromNavigationStack: jest.fn(() => {
+      // Mock removing navigation handler
+    }),
+    clearNavigationStack: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    hasActiveNavigationHandlers: jest.fn(() => {
+      return mockInterceptState.isIntercepting;
+    }),
+    
+    // Backward compatibility aliases (deprecated but maintained for transition)
+    pushModalState: jest.fn(() => {
+      mockInterceptState.isIntercepting = true;
+    }),
+    popModalState: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    removeModalFromStack: jest.fn(() => {
+      // Mock removing modal from stack
+    }),
+    clearModalStack: jest.fn(() => {
+      mockInterceptState.isIntercepting = false;
+    }),
+    hasOpenModals: jest.fn(() => {
+      return mockInterceptState.isIntercepting;
+    }),
+    
+    // Legacy methods
     enableIntercept: jest.fn(() => {
       mockInterceptState.isIntercepting = true;
     }),
@@ -406,14 +442,14 @@ export const createMockUseGameUIState = (initialUIState = {}) => {
 };
 
 // ===================================================================
-// MOCK LONG PRESS HOOK
+// MOCK SHORT TAP HOOK
 // ===================================================================
 
 /**
- * Creates a mock implementation of useLongPressWithScrollDetection hook
+ * Creates a mock implementation of useQuickTapWithScrollDetection hook
  */
-export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), delay = 500) => {
-  const mockLongPressState = {
+export const createMockUseQuickTapWithScrollDetection = (callback = jest.fn(), delay = 150) => {
+  const mockShortTapState = {
     isPressed: false,
     isScrolling: false,
     startTime: null,
@@ -421,31 +457,31 @@ export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), 
     delay
   };
   
-  const longPressHandlers = {
+  const shortTapHandlers = {
     onMouseDown: jest.fn((event) => {
-      mockLongPressState.isPressed = true;
-      mockLongPressState.startTime = Date.now();
-      mockLongPressState.isScrolling = false;
+      mockShortTapState.isPressed = true;
+      mockShortTapState.startTime = Date.now();
+      mockShortTapState.isScrolling = false;
     }),
     onMouseUp: jest.fn((event) => {
-      if (mockLongPressState.isPressed && !mockLongPressState.isScrolling) {
-        const duration = Date.now() - mockLongPressState.startTime;
-        if (duration >= mockLongPressState.delay) {
-          mockLongPressState.callback();
+      if (mockShortTapState.isPressed && !mockShortTapState.isScrolling) {
+        const duration = Date.now() - mockShortTapState.startTime;
+        if (duration >= mockShortTapState.delay) {
+          mockShortTapState.callback();
         }
       }
-      mockLongPressState.isPressed = false;
-      mockLongPressState.startTime = null;
+      mockShortTapState.isPressed = false;
+      mockShortTapState.startTime = null;
     }),
     onTouchStart: jest.fn((event) => {
-      longPressHandlers.onMouseDown(event);
+      shortTapHandlers.onMouseDown(event);
     }),
     onTouchEnd: jest.fn((event) => {
-      longPressHandlers.onMouseUp(event);
+      shortTapHandlers.onMouseUp(event);
     }),
     onMouseLeave: jest.fn(() => {
-      mockLongPressState.isPressed = false;
-      mockLongPressState.startTime = null;
+      mockShortTapState.isPressed = false;
+      mockShortTapState.startTime = null;
     }),
     onContextMenu: jest.fn((event) => {
       event.preventDefault();
@@ -453,24 +489,32 @@ export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), 
   };
   
   return {
-    // Long press handlers
-    ...longPressHandlers,
+    // Short tap handlers
+    ...shortTapHandlers,
     
     // Test utilities
-    _getMockLongPressState: () => ({ ...mockLongPressState }),
-    _simulateLongPress: () => {
-      longPressHandlers.onMouseDown({});
+    _getMockShortTapState: () => ({ ...mockShortTapState }),
+    _simulateShortTap: () => {
+      shortTapHandlers.onMouseDown({});
       setTimeout(() => {
-        longPressHandlers.onMouseUp({});
-      }, mockLongPressState.delay + 100);
+        shortTapHandlers.onMouseUp({});
+      }, mockShortTapState.delay + 10);
     },
     _simulateScroll: () => {
-      mockLongPressState.isScrolling = true;
+      mockShortTapState.isScrolling = true;
     },
     _setCallback: (newCallback) => {
-      mockLongPressState.callback = newCallback;
+      mockShortTapState.callback = newCallback;
     }
   };
+};
+
+
+/**
+ * Creates a mock implementation of useLongPressWithScrollDetection hook (legacy, now uses short tap timing)
+ */
+export const createMockUseLongPressWithScrollDetection = (callback = jest.fn(), delay = 150) => {
+  return createMockUseQuickTapWithScrollDetection(callback, delay);
 };
 
 // ===================================================================
@@ -495,6 +539,7 @@ export const createMockHookSet = (config = {}) => {
     useGameModals: createMockUseGameModals(modalConfig),
     useGameUIState: createMockUseGameUIState(uiStateConfig),
     useBrowserBackIntercept: createMockUseBrowserBackIntercept(interceptConfig),
+    useQuickTapWithScrollDetection: createMockUseQuickTapWithScrollDetection(),
     useLongPressWithScrollDetection: createMockUseLongPressWithScrollDetection()
   };
 };
@@ -643,6 +688,7 @@ export default {
   createMockUseGameModals,
   createMockUseBrowserBackIntercept,
   createMockUseGameUIState,
+  createMockUseQuickTapWithScrollDetection,
   createMockUseLongPressWithScrollDetection,
   createMockHookSet,
   createScenarioMockHooks,

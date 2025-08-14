@@ -125,6 +125,13 @@ Modern composite team configuration system using four components:
 - **Test-First Approach**: Focus on making tests accurately reflect actual application behavior rather than changing production code to match test expectations
 
 ## Recent Achievements
+- **Browser Back Interception for Tactical Board**: Implemented seamless browser back button handling for the Tactical Board view
+  - **Integration**: Added TACTICAL_BOARD case to global navigation handler in `App.js`
+  - **Registration**: TacticalBoardScreen now automatically registers/unregisters for browser back interception on mount/unmount
+  - **Behavior**: Browser back button now has identical behavior to on-screen "Back" button
+  - **Testing**: Added comprehensive integration tests for navigation registration and cleanup
+  - **Architecture**: Used existing `useBrowserBackIntercept` infrastructure for consistent navigation handling
+
 - **Time Reset During Normal Substitution Bug Fix**: Fixed critical issue where players' accumulated time was reset to 0 during normal substitutions after a previous fix for pause scenarios
   - **Problem**: Commit 9bac94b correctly fixed pause-substitution scenarios but broke normal substitutions by unconditionally calling `resetPlayerStintTimer()` instead of `updatePlayerTimeStats()`
   - **Root Cause**: Substitution manager was not respecting timer pause state - always using reset function regardless of whether timer was paused
@@ -146,3 +153,7 @@ Modern composite team configuration system using four components:
 - **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
 - **New components**: Write tests first, following established patterns in `__tests__` directories
 - **State Updates**: Ensure all calculated state changes are properly applied via handler state updaters
+
+## General Principles
+- Assume that application is already running. If it needs to be started, the user will start it
+- Always assume that the application is already running.

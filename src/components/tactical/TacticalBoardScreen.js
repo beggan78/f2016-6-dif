@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 
-export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModalFromStack, fromView }) {
+export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, removeFromNavigationStack, fromView }) {
   // Memoize the persistence manager to prevent re-creation on every render
   const persistenceManager = useMemo(() => createPersistenceManager('sport-wizard-tactical-preferences', {
     pitchMode: 'full',
@@ -13,6 +13,11 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
 
   const [pitchMode, setPitchMode] = useState('full');
   const [placedChips, setPlacedChips] = useState([]);
+
+  const handleBackPress = useCallback(() => {
+    const savedState = persistenceManager.loadState();
+    onNavigateBack(savedState.fromView);
+  }, [onNavigateBack, persistenceManager]);
 
   // Load saved state on component mount
   useEffect(() => {
@@ -28,10 +33,22 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
     }
   }, [persistenceManager, fromView]);
 
-  const handleBackPress = useCallback(() => {
-    const savedState = persistenceManager.loadState();
-    onNavigateBack(savedState.fromView);
-  }, [onNavigateBack, persistenceManager]);
+  // Register browser back handler for navigation
+  useEffect(() => {
+    // Register browser back handler when component mounts
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        handleBackPress();
+      });
+    }
+
+    // Cleanup when component unmounts
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, handleBackPress]);
 
   // This function now handles saving the current chips and loading the new set
   const handlePitchModeToggle = useCallback((mode) => {
@@ -158,8 +175,8 @@ export function TacticalBoardScreen({ onNavigateBack, pushModalState, removeModa
         onChipPlace={handleChipPlace}
         onChipMove={handleChipMove}
         onChipDelete={handleChipDelete}
-        pushModalState={pushModalState}
-        removeModalFromStack={removeModalFromStack}
+        pushNavigationState={pushNavigationState}
+        removeFromNavigationStack={removeFromNavigationStack}
       />
     </div>
   );

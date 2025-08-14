@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-export function useGameModals(pushModalState, removeModalFromStack) {
+export function useGameModals(pushNavigationState, removeFromNavigationStack) {
   // Pending goal state management
   const [pendingGoal, setPendingGoal] = useState(null);
   
@@ -64,19 +64,19 @@ export function useGameModals(pushModalState, removeModalFromStack) {
     }));
 
     // Browser back navigation integration
-    if (pushModalState) {
-      pushModalState(() => {
+    if (pushNavigationState) {
+      pushNavigationState(() => {
         closeModal(modalType);
       });
     }
-  }, [pushModalState, closeModal]);
+  }, [pushNavigationState, closeModal]);
 
   const closeModalWithNavigation = useCallback((modalType) => {
     closeModal(modalType);
-    if (removeModalFromStack) {
-      removeModalFromStack();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
     }
-  }, [closeModal, removeModalFromStack]);
+  }, [closeModal, removeFromNavigationStack]);
 
   const closeAllModals = useCallback(() => {
     setModals(prev => {

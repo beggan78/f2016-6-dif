@@ -12,7 +12,7 @@ import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
-import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents } from '../utils/gameEventLogger';
+import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
 
 // PersistenceManager for handling localStorage operations
@@ -197,18 +197,52 @@ export function useGameState() {
       setMatchStartTime(loggerStartTime);
     }
     
-    if (loggerEvents.length !== matchEvents.length) {
+    // Check if events need to be synced - compare content, not just length
+    const lengthChanged = loggerEvents.length !== matchEvents.length;
+    
+    let contentChanged = false;
+    if (!lengthChanged) {
+      // Only do expensive JSON comparison if lengths are the same
+      contentChanged = JSON.stringify(loggerEvents) !== JSON.stringify(matchEvents);
+    }
+    
+    const eventsNeedSync = lengthChanged || contentChanged;
+    
+    if (eventsNeedSync) {
       setMatchEvents(loggerEvents);
     }
-  }, [matchStartTime, matchEvents]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchStartTime, setMatchEvents, setMatchStartTime, setGoalScorers]);
 
-  // Periodic sync to ensure data consistency
+  // Immediate sync when dependencies suggest there might be new data
+  useEffect(() => {
+    syncMatchDataFromEventLogger();
+  }, [syncMatchDataFromEventLogger]);
+
+  // Periodic sync to ensure data consistency (backup mechanism)
   useEffect(() => {
     const interval = setInterval(() => {
       syncMatchDataFromEventLogger();
     }, 5000); // Sync every 5 seconds
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [syncMatchDataFromEventLogger]);
+
+  // Event listener for immediate sync when gameEventLogger changes
+  useEffect(() => {
+    const handleEventLoggerChange = (eventType, data) => {
+      if (eventType === 'events_saved') {
+        syncMatchDataFromEventLogger();
+      }
+    };
+    
+    const unsubscribe = addEventListener(handleEventLoggerChange);
+    
+    return () => {
+      unsubscribe();
+    };
   }, [syncMatchDataFromEventLogger]);
 
   // Wake lock and alert management

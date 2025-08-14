@@ -51,8 +51,8 @@ describe('TacticalBoardScreen', () => {
   beforeEach(() => {
     mockHandlers = {
       onNavigateBack: jest.fn(),
-      pushModalState: jest.fn(),
-      removeModalFromStack: jest.fn()
+      pushNavigationState: jest.fn(),
+      removeFromNavigationStack: jest.fn()
     };
 
     defaultProps = {
@@ -200,12 +200,84 @@ describe('TacticalBoardScreen', () => {
     });
   });
 
+  describe('Browser Back Navigation Integration', () => {
+    it('should register navigation handler on mount and cleanup on unmount', () => {
+      const mockPushNavigation = jest.fn();
+      const mockRemoveNavigation = jest.fn();
+      
+      const props = {
+        ...defaultProps,
+        pushNavigationState: mockPushNavigation,
+        removeFromNavigationStack: mockRemoveNavigation
+      };
+      
+      const { unmount } = render(<TacticalBoardScreen {...props} />);
+      
+      // Verify navigation handler was registered on mount
+      expect(mockPushNavigation).toHaveBeenCalledTimes(1);
+      expect(mockPushNavigation).toHaveBeenCalledWith(expect.any(Function));
+      
+      // Verify cleanup happens on unmount
+      unmount();
+      
+      expect(mockRemoveNavigation).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call handleBackPress when registered navigation handler is invoked', () => {
+      const mockPushNavigation = jest.fn();
+      const mockOnNavigateBack = jest.fn();
+      
+      const props = {
+        ...defaultProps,
+        pushNavigationState: mockPushNavigation,
+        onNavigateBack: mockOnNavigateBack
+      };
+      
+      render(<TacticalBoardScreen {...props} />);
+      
+      // Get the registered navigation handler function
+      expect(mockPushNavigation).toHaveBeenCalledWith(expect.any(Function));
+      const registeredHandler = mockPushNavigation.mock.calls[0][0];
+      
+      // Invoke the registered handler (simulating browser back)
+      registeredHandler();
+      
+      // Verify it calls the same logic as the back button
+      expect(mockOnNavigateBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle missing pushNavigationState prop gracefully', () => {
+      const propsWithoutPushNavigation = {
+        ...defaultProps,
+        pushNavigationState: undefined,
+        removeFromNavigationStack: jest.fn()
+      };
+      
+      expect(() => {
+        render(<TacticalBoardScreen {...propsWithoutPushNavigation} />);
+      }).not.toThrow();
+    });
+
+    it('should handle missing removeFromNavigationStack prop gracefully', () => {
+      const propsWithoutRemoveNavigation = {
+        ...defaultProps,
+        pushNavigationState: jest.fn(),
+        removeFromNavigationStack: undefined
+      };
+      
+      expect(() => {
+        const { unmount } = render(<TacticalBoardScreen {...propsWithoutRemoveNavigation} />);
+        unmount(); // Should not throw during cleanup
+      }).not.toThrow();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle missing navigation props gracefully', () => {
       const propsWithoutHandlers = {
         onNavigateBack: undefined,
-        pushModalState: mockHandlers.pushModalState,
-        removeModalFromStack: mockHandlers.removeModalFromStack
+        pushNavigationState: mockHandlers.pushNavigationState,
+        removeFromNavigationStack: mockHandlers.removeFromNavigationStack
       };
       
       expect(() => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatTime, formatPlayerName } from '../../utils/formatUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -41,7 +41,10 @@ export function PlayerStatsTable({
     return goals;
   }, [matchEvents, goalScorers]);
   // Define column configuration
-  const columns = useMemo(() => [
+  const columns = useMemo(() => {
+    const showMidfielderColumn = players.some(p => p.stats?.timeAsMidfielderSeconds > 0);
+
+    const allColumns = [
     {
       key: 'name',
       label: 'Player',
@@ -141,7 +144,12 @@ export function PlayerStatsTable({
         return goals > 0 ? goals : '--';
       }
     }
-  ], [playerGoals]);
+  ];
+    if (showMidfielderColumn) {
+      return allColumns;
+    }
+    return allColumns.filter(c => c.key !== 'timeAsMidfielder');
+  }, [playerGoals, players]);
 
   // Sort players based on current sort settings
   const sortedPlayers = useMemo(() => {
@@ -199,6 +207,14 @@ export function PlayerStatsTable({
     
     return sorted;
   }, [players, sortBy, sortOrder, playerGoals]);
+
+  useEffect(() => {
+    const availableColumns = columns.map(c => c.key);
+    if (!availableColumns.includes(sortBy)) {
+      setSortBy('name');
+      setSortOrder('asc');
+    }
+  }, [columns, sortBy]);
 
   // Handle column header click for sorting
   const handleSort = (columnKey) => {

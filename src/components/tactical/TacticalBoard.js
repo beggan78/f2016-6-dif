@@ -39,7 +39,7 @@ export function TacticalBoard({
 
 
   return (
-    <div className="flex flex-col space-y-4 max-w-4xl mx-auto">
+    <div className="flex flex-col space-y-4 max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto">
       {/* Soccer Pitch */}
       <div className="relative w-full bg-slate-800 rounded-lg overflow-hidden shadow-2xl">
         <div 

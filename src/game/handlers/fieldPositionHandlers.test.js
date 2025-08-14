@@ -38,7 +38,7 @@ describe('createFieldPositionHandlers', () => {
       expect(typeof handlers.leftDefenderCallback).toBe('function');
     });
 
-    it('should handle field player long press correctly', () => {
+    it('should handle field player quick tap correctly', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
@@ -59,7 +59,7 @@ describe('createFieldPositionHandlers', () => {
       });
     });
 
-    it('should handle substitute long press for substitute_1', () => {
+    it('should handle substitute quick tap for substitute_1', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
@@ -78,7 +78,7 @@ describe('createFieldPositionHandlers', () => {
       });
     });
 
-    it('should handle substitute long press for substitute_2 with next to go in option', () => {
+    it('should handle substitute quick tap for substitute_2 with next to go in option', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_CONFIGS.INDIVIDUAL_7,
         mockFormation,
@@ -161,7 +161,7 @@ describe('createFieldPositionHandlers', () => {
       expect(typeof handlers.leftPairCallback).toBe('function');
     });
 
-    it('should handle pair long press correctly', () => {
+    it('should handle pair quick tap correctly', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_CONFIGS.PAIRS_7,
         mockFormation,
@@ -182,7 +182,7 @@ describe('createFieldPositionHandlers', () => {
       });
     });
 
-    it('should handle right pair long press correctly', () => {
+    it('should handle right pair quick tap correctly', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_CONFIGS.PAIRS_7,
         mockFormation,
@@ -243,7 +243,7 @@ describe('createFieldPositionHandlers', () => {
       expect(typeof handlers.leftDefenderCallback).toBe('function');
     });
 
-    it('should handle field player long press in 6-player mode', () => {
+    it('should handle field player quick tap in 6-player mode', () => {
       const handlers = createFieldPositionHandlers(
         TEAM_CONFIGS.INDIVIDUAL_6,
         mockFormation,

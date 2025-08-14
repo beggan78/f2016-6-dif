@@ -600,7 +600,7 @@ describe('createSubstitutionHandlers', () => {
       handlers.handleCancelFieldPlayerModal();
 
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
-      expect(mockDependencies.modalHandlers.removeModalFromStack).toHaveBeenCalled();
+      expect(mockDependencies.modalHandlers.removeFromNavigationStack).toHaveBeenCalled();
     });
 
     it('should handle substitute modal cancellation', () => {
@@ -615,7 +615,7 @@ describe('createSubstitutionHandlers', () => {
       handlers.handleCancelSubstituteModal();
 
       expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
-      expect(mockDependencies.modalHandlers.removeModalFromStack).toHaveBeenCalled();
+      expect(mockDependencies.modalHandlers.removeFromNavigationStack).toHaveBeenCalled();
     });
   });
 
