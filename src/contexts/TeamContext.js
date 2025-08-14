@@ -33,9 +33,13 @@ export const TeamProvider = ({ children }) => {
 
   // Get all teams the user has access to
   const getUserTeams = useCallback(async () => {
-    if (!user) return [];
+    if (!user) {
+      console.log('[DEBUG] getUserTeams: No user, returning empty array');
+      return [];
+    }
 
     try {
+      console.log('[DEBUG] getUserTeams: Starting team fetch for user:', user.id);
       setLoading(true);
       clearError();
 
@@ -61,7 +65,7 @@ export const TeamProvider = ({ children }) => {
         .eq('team.active', true);
 
       if (error) {
-        console.error('Error fetching user teams:', error);
+        console.error('[DEBUG] getUserTeams: Error fetching user teams:', error);
         setError('Failed to load teams');
         return [];
       }
@@ -72,6 +76,7 @@ export const TeamProvider = ({ children }) => {
         club: item.team.club
       })) || [];
 
+      console.log('[DEBUG] getUserTeams: Teams loaded:', teams.length, 'teams:', teams.map(t => ({id: t.id, name: t.name})));
       setUserTeams(teams);
       
       // Cache the results
@@ -79,7 +84,7 @@ export const TeamProvider = ({ children }) => {
       
       return teams;
     } catch (err) {
-      console.error('Exception in getUserTeams:', err);
+      console.error('[DEBUG] getUserTeams: Exception:', err);
       setError('Failed to load teams');
       return [];
     } finally {
@@ -297,12 +302,15 @@ export const TeamProvider = ({ children }) => {
 
   // Switch current team
   const switchCurrentTeam = useCallback(async (teamId) => {
+    console.log('[DEBUG] switchCurrentTeam: Switching to team ID:', teamId);
     const team = userTeams.find(t => t.id === teamId);
     if (!team) {
+      console.log('[DEBUG] switchCurrentTeam: Team not found in userTeams:', userTeams.map(t => ({id: t.id, name: t.name})));
       setError('Team not found');
       return;
     }
 
+    console.log('[DEBUG] switchCurrentTeam: Setting current team:', team.name);
     setCurrentTeam(team);
     
     // Load players for this team
@@ -317,11 +325,13 @@ export const TeamProvider = ({ children }) => {
 
     // Store in localStorage for persistence
     localStorage.setItem('currentTeamId', teamId);
+    console.log('[DEBUG] switchCurrentTeam: Team switch completed');
   }, [userTeams, getTeamPlayers]);
 
   // Get user's club memberships
   const getClubMemberships = useCallback(async () => {
     try {
+      console.log('[DEBUG] getClubMemberships: Starting club fetch for user:', user?.id);
       const { data, error } = await supabase
         .from('club_user')
         .select(`
@@ -333,18 +343,22 @@ export const TeamProvider = ({ children }) => {
         .order('joined_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching club memberships:', error);
+        console.error('[DEBUG] getClubMemberships: Error fetching club memberships:', error);
         return [];
       }
 
       const clubs = data || [];
+      console.log('[DEBUG] getClubMemberships: Clubs loaded:', clubs.length, 'clubs:', clubs.map(c => ({id: c.club?.id, name: c.club?.name})));
+      
+      // Update the userClubs state
+      setUserClubs(clubs);
       
       // Cache the results
       cacheTeamData({ userClubs: clubs });
       
       return clubs;
     } catch (err) {
-      console.error('Exception in getClubMemberships:', err);
+      console.error('[DEBUG] getClubMemberships: Exception:', err);
       return [];
     }
   }, [user]);
@@ -429,13 +443,18 @@ export const TeamProvider = ({ children }) => {
 
   // Handle team switching when userTeams changes
   useEffect(() => {
+    console.log('[DEBUG] Team auto-selection effect: userTeams.length =', userTeams.length, ', currentTeam =', currentTeam?.name || 'null');
+    
     if (userTeams.length > 0 && !currentTeam) {
       // Try to restore previously selected team
       const savedTeamId = localStorage.getItem('currentTeamId');
       const savedTeam = savedTeamId ? userTeams.find(t => t.id === savedTeamId) : null;
       
+      console.log('[DEBUG] Auto-selection: savedTeamId =', savedTeamId, ', savedTeam found =', !!savedTeam);
+      
       if (savedTeam) {
         // Restore saved team
+        console.log('[DEBUG] Auto-selection: Restoring saved team:', savedTeam.name);
         setCurrentTeam(savedTeam);
         getTeamPlayers(savedTeam.id).then(players => {
           setTeamPlayers(players);
@@ -444,15 +463,18 @@ export const TeamProvider = ({ children }) => {
       } else if (userTeams.length === 1) {
         // Auto-select if user has only one team
         const team = userTeams[0];
+        console.log('[DEBUG] Auto-selection: Auto-selecting single team:', team.name);
         setCurrentTeam(team);
         getTeamPlayers(team.id).then(players => {
           setTeamPlayers(players);
         });
         localStorage.setItem('currentTeamId', team.id);
+      } else {
+        console.log('[DEBUG] Auto-selection: Multiple teams available, no auto-selection');
       }
     } else if (userTeams.length === 0 && initializationDone.current) {
       // Explicitly handle no teams case - ensure loading is false
-      console.log('No teams found - user needs to create a team');
+      console.log('[DEBUG] Auto-selection: No teams found - user needs to create a team');
       // Make sure currentTeam is null and teamPlayers is empty
       setCurrentTeam(null);
       setTeamPlayers([]);
@@ -901,6 +923,122 @@ export const TeamProvider = ({ children }) => {
       setLoading(false);
     }
   }, [user, clearError, getUserTeams]);
+
+  // Get pending invitations for the current user
+  const getUserPendingInvitations = useCallback(async () => {
+    try {
+      if (!user) {
+        return [];
+      }
+
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase
+        .from('team_invitation')
+        .select(`
+          id,
+          team_id,
+          email,
+          role,
+          message,
+          created_at,
+          expires_at,
+          team:team_id (
+            id,
+            name,
+            club:club_id (
+              id,
+              name,
+              short_name,
+              long_name
+            )
+          )
+        `)
+        .eq('status', 'pending')
+        .gt('expires_at', 'now()')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching user pending invitations:', error);
+        setError('Failed to load pending invitations');
+        return [];
+      }
+
+      const invitations = data?.map(invitation => ({
+        id: invitation.id,
+        teamId: invitation.team_id,
+        email: invitation.email,
+        role: invitation.role,
+        message: invitation.message,
+        createdAt: invitation.created_at,
+        expiresAt: invitation.expires_at,
+        team: invitation.team ? {
+          id: invitation.team.id,
+          name: invitation.team.name,
+          club: invitation.team.club
+        } : {
+          id: invitation.team_id,
+          name: 'Team',
+          club: null
+        },
+        invitedBy: {
+          id: null,
+          name: 'Team Admin'
+        }
+      })) || [];
+
+      console.log('Pending invitations loaded:', invitations.length);
+      return invitations;
+    } catch (err) {
+      console.error('Exception in getUserPendingInvitations:', err);
+      setError('Failed to load pending invitations');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError]);
+
+  // Decline a team invitation
+  const declineTeamInvitation = useCallback(async (invitationId) => {
+    try {
+      if (!user) {
+        setError('Must be authenticated to decline invitations');
+        return { success: false, error: 'Authentication required' };
+      }
+
+      setLoading(true);
+      clearError();
+
+      // Call RPC function to handle invitation decline
+      const { data, error } = await supabase.rpc('decline_team_invitation', {
+        p_invitation_id: invitationId,
+        p_user_email: user.email
+      });
+
+      if (error) {
+        console.error('Error declining invitation:', error);
+        const errorMessage = error.message || 'Failed to decline invitation';
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+
+      console.log('Invitation declined successfully:', data);
+
+      return { 
+        success: true, 
+        data,
+        message: data?.message || 'Invitation declined successfully'
+      };
+    } catch (err) {
+      console.error('Exception in declineTeamInvitation:', err);
+      const errorMessage = 'Failed to decline invitation';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError]);
 
   // ============================================================================
   // TEAM ACCESS REQUEST FUNCTIONS
@@ -1500,6 +1638,8 @@ export const TeamProvider = ({ children }) => {
     getTeamInvitations,
     cancelTeamInvitation,
     acceptTeamInvitation,
+    getUserPendingInvitations,
+    declineTeamInvitation,
     
     // Team access request actions
     requestTeamAccess,

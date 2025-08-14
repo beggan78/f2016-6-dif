@@ -66,6 +66,43 @@ CREATE POLICY "Team managers can view team invitations" ON team_invitation
     )
   );
 
+-- Policy: Users can view invitations sent to them
+CREATE POLICY "Users can view invitations sent to them" ON team_invitation
+  FOR SELECT USING (
+    LOWER(email) = LOWER((auth.jwt() ->> 'email')::text)
+    AND status = 'pending'
+    AND expires_at > NOW()
+  );
+
+-- Policy: Users can view basic team info for teams they are invited to
+-- This allows the team join in invitation queries to work
+CREATE POLICY "Users can view teams they are invited to" ON public.team
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.team_invitation ti
+      WHERE ti.team_id = team.id
+      AND LOWER(ti.email) = LOWER((auth.jwt() ->> 'email')::text)
+      AND ti.status = 'pending'
+      AND ti.expires_at > NOW()
+    )
+  );
+
+-- Policy: Users can view basic club info for clubs of teams they are invited to
+-- This allows the club join in invitation queries to work
+CREATE POLICY "Users can view clubs of teams they are invited to" ON public.club
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.team_invitation ti
+      JOIN public.team t ON ti.team_id = t.id
+      WHERE t.club_id = club.id
+      AND LOWER(ti.email) = LOWER((auth.jwt() ->> 'email')::text)
+      AND ti.status = 'pending'
+      AND ti.expires_at > NOW()
+    )
+  );
+
 -- Policy: Only team admins/coaches can insert invitations
 CREATE POLICY "Team managers can send invitations" ON team_invitation
   FOR INSERT WITH CHECK (
@@ -521,6 +558,121 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
+-- Function: decline_team_invitation
+-- This function handles declining team invitations
+CREATE OR REPLACE FUNCTION decline_team_invitation(
+  p_invitation_id UUID,
+  p_user_email TEXT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_invitation_record RECORD;
+  v_team_name TEXT;
+  v_club_name TEXT;
+  v_result JSON;
+BEGIN
+  -- Get the current user ID
+  v_user_id := auth.uid();
+  
+  -- Validate that user is authenticated
+  IF v_user_id IS NULL THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Authentication required'
+    );
+  END IF;
+  
+  -- Validate input parameters
+  IF p_invitation_id IS NULL OR p_user_email IS NULL THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Invitation ID and email are required'
+    );
+  END IF;
+  
+  -- Get the invitation details
+  SELECT * INTO v_invitation_record
+  FROM team_invitation
+  WHERE id = p_invitation_id;
+  
+  -- Check if invitation exists
+  IF v_invitation_record.id IS NULL THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Invitation not found'
+    );
+  END IF;
+  
+  -- Validate that the email matches the invitation
+  IF LOWER(v_invitation_record.email) != LOWER(p_user_email) THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Email address does not match invitation'
+    );
+  END IF;
+  
+  -- Check if invitation is still valid
+  IF v_invitation_record.status != 'pending' THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Invitation is no longer valid (status: ' || v_invitation_record.status || ')'
+    );
+  END IF;
+  
+  -- Check if invitation has expired
+  IF v_invitation_record.expires_at < NOW() THEN
+    -- Mark as expired
+    UPDATE team_invitation
+    SET status = 'expired', updated_at = NOW()
+    WHERE id = p_invitation_id;
+    
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Invitation has expired'
+    );
+  END IF;
+  
+  -- Get team and club names for response
+  SELECT t.name, c.long_name
+  INTO v_team_name, v_club_name
+  FROM team t
+  LEFT JOIN club c ON t.club_id = c.id
+  WHERE t.id = v_invitation_record.team_id;
+  
+  -- Mark invitation as cancelled (declined by user)
+  UPDATE team_invitation
+  SET status = 'cancelled',
+      updated_at = NOW()
+  WHERE id = p_invitation_id;
+  
+  -- Build success response
+  v_result := json_build_object(
+    'success', true,
+    'message', 'Invitation declined',
+    'team_id', v_invitation_record.team_id,
+    'team_name', v_team_name,
+    'club_name', v_club_name,
+    'role', v_invitation_record.role,
+    'user_id', v_user_id
+  );
+  
+  -- Log the declined invitation
+  RAISE NOTICE 'User % declined invitation % for team %', v_user_id, p_invitation_id, v_invitation_record.team_id;
+  
+  RETURN v_result;
+  
+EXCEPTION WHEN OTHERS THEN
+  RETURN json_build_object(
+    'success', false,
+    'error', 'Unexpected error: ' || SQLERRM
+  );
+END;
+$$;
+
 -- ========================================
 -- Function Permissions
 -- ========================================
@@ -528,6 +680,7 @@ $$;
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION invite_user_to_team TO authenticated;
 GRANT EXECUTE ON FUNCTION accept_team_invitation TO authenticated;
+GRANT EXECUTE ON FUNCTION decline_team_invitation TO authenticated;
 
 -- ========================================
 -- Function Comments
@@ -535,6 +688,7 @@ GRANT EXECUTE ON FUNCTION accept_team_invitation TO authenticated;
 
 COMMENT ON FUNCTION invite_user_to_team IS 'Invites a user to join a team via email using Supabase authentication system. Refreshes existing pending invitations if they exist.';
 COMMENT ON FUNCTION accept_team_invitation IS 'Accepts a team invitation and adds the user to the specified team';
+COMMENT ON FUNCTION decline_team_invitation IS 'Declines a team invitation and marks it as cancelled';
 
 -- Optional: Create a scheduled job to clean up expired invitations
 -- This would run daily to mark expired invitations
