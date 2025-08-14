@@ -616,6 +616,7 @@ function AppContent() {
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}
             authModal={authModal}
+            setView={gameState.setView}
           />
         );
       case VIEWS.PERIOD_SETUP:

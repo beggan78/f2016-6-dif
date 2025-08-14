@@ -20,7 +20,6 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
     rejectTeamAccess,
     cancelTeamAccess,
     getTeamMembers,
-    updateTeamMemberRole,
     removeTeamMember,
     loading,
     error,
@@ -126,13 +125,6 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
     }
   };
 
-  const handleUpdateMemberRole = async (teamUserId, newRole) => {
-    const result = await updateTeamMemberRole(teamUserId, newRole);
-    if (result) {
-      await loadTeamMembers();
-      onSuccess?.(`Member role updated to ${newRole}`);
-    }
-  };
 
   const handleRemoveMember = async (teamUserId) => {
     if (!window.confirm('Are you sure you want to remove this member from the team?')) {
@@ -185,7 +177,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
             </label>
             <Select
               value={requestForm.role}
-              onChange={(e) => setRequestForm(prev => ({ ...prev, role: e.target.value }))}
+              onChange={(value) => setRequestForm(prev => ({ ...prev, role: value }))}
               options={[
                 { value: 'coach', label: 'Coach' },
                 { value: 'parent', label: 'Parent' },
@@ -427,19 +419,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      {member.role !== 'admin' && (
-                        <Select
-                          value={member.role}
-                          onChange={(e) => handleUpdateMemberRole(member.id, e.target.value)}
-                          options={[
-                            { value: 'parent', label: 'Parent' },
-                            { value: 'coach', label: 'Coach' },
-                            { value: 'admin', label: 'Admin' }
-                          ]}
-                        />
-                      )}
-                      
+                    <div className="flex items-center">
                       <Button
                         size="sm"
                         variant="danger"

@@ -38,7 +38,8 @@ export function ConfigurationScreen({
   captainId,
   setCaptain,
   debugMode = false,
-  authModal
+  authModal,
+  setView
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -223,7 +224,7 @@ export function ConfigurationScreen({
   if (isAuthenticated && (!hasClubs || (hasClubs && !hasTeams) || !currentTeam)) {
     return (
       <div className="space-y-4">
-        <TeamManagement />
+        <TeamManagement setView={setView} />
       </div>
     );
   }
@@ -348,15 +349,15 @@ export function ConfigurationScreen({
       <div className="p-3 bg-slate-700 rounded-md grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label htmlFor="numPeriods" className="block text-sm font-medium text-sky-200 mb-1">Number of Periods</label>
-          <Select value={numPeriods} onChange={e => setNumPeriods(Number(e.target.value))} options={PERIOD_OPTIONS} id="numPeriods" />
+          <Select value={numPeriods} onChange={value => setNumPeriods(Number(value))} options={PERIOD_OPTIONS} id="numPeriods" />
         </div>
         <div>
           <label htmlFor="periodDuration" className="block text-sm font-medium text-sky-200 mb-1">Period Duration (minutes)</label>
-          <Select value={periodDurationMinutes} onChange={e => setPeriodDurationMinutes(Number(e.target.value))} options={DURATION_OPTIONS} id="periodDuration" />
+          <Select value={periodDurationMinutes} onChange={value => setPeriodDurationMinutes(Number(value))} options={DURATION_OPTIONS} id="periodDuration" />
         </div>
         <div>
           <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">Substitution Alert</label>
-          <Select value={alertMinutes} onChange={e => setAlertMinutes(Number(e.target.value))} options={ALERT_OPTIONS} id="alertMinutes" />
+          <Select value={alertMinutes} onChange={value => setAlertMinutes(Number(value))} options={ALERT_OPTIONS} id="alertMinutes" />
         </div>
       </div>
 
@@ -375,7 +376,7 @@ export function ConfigurationScreen({
               <Select
                 id="formation"
                 value={selectedFormation}
-                onChange={e => handleFormationChange(e.target.value)}
+                onChange={value => handleFormationChange(value)}
                 options={getValidFormations('5v5', selectedSquadIds.length).map(formation => ({
                   value: formation,
                   label: FORMATION_DEFINITIONS[formation].label
@@ -442,7 +443,7 @@ export function ConfigurationScreen({
                 <Select
                   id={`goalie_p${period}`}
                   value={periodGoalieIds[period] || ""}
-                  onChange={e => handleGoalieChange(period, e.target.value)}
+                  onChange={value => handleGoalieChange(period, value)}
                   options={selectedSquadPlayers.map(p => ({ value: p.id, label: formatPlayerName(p) }))}
                   placeholder="Select Goalie"
                 />
@@ -461,7 +462,7 @@ export function ConfigurationScreen({
             <Select
               id="captain"
               value={captainId || ""}
-              onChange={e => handleCaptainChange(e.target.value)}
+              onChange={value => handleCaptainChange(value)}
               options={[
                 { value: "", label: "No Captain" },
                 ...selectedSquadPlayers.map(p => ({ value: p.id, label: formatPlayerName(p) }))

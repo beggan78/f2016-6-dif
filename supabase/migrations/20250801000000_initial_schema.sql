@@ -705,17 +705,33 @@ CREATE POLICY "Users can request team access" ON public.team_access_request
   FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "Team managers can manage access requests" ON public.team_access_request
+CREATE POLICY "Manage team access requests" ON public.team_access_request
   FOR UPDATE TO authenticated
   USING (
-    public.is_team_manager(team_id, auth.uid())
-  );
-
-CREATE POLICY "Users can cancel their own requests" ON public.team_access_request
-  FOR UPDATE TO authenticated
-  USING (
-    user_id = auth.uid() AND 
-    status = 'pending'::public.request_status
+    -- Team managers can manage requests (approve/reject) but not their own requests
+    (
+      public.is_team_manager(team_id, auth.uid()) 
+      AND user_id <> auth.uid()  -- Prevent self-approval
+    )
+    OR
+    -- Users can cancel their own pending requests only
+    (
+      user_id = auth.uid() 
+      AND status = 'pending'::public.request_status
+    )
+  )
+  WITH CHECK (
+    -- Team managers can manage requests (approve/reject) but not their own requests
+    (
+      public.is_team_manager(team_id, auth.uid()) 
+      AND user_id <> auth.uid()  -- Prevent self-approval
+    )
+    OR
+    -- Users can cancel their own pending requests only (after update, status can be cancelled)
+    (
+      user_id = auth.uid() 
+      AND status IN ('pending'::public.request_status, 'cancelled'::public.request_status)
+    )
   );
 
 -- Player policies  
