@@ -13,7 +13,8 @@ import {
   Trash2,
   Hash,
   Eye,
-  EyeOff
+  EyeOff,
+  Rows4
 } from 'lucide-react';
 import { Button, Select, Input } from '../shared/UI';
 import { TeamSelector } from './TeamSelector';
@@ -215,7 +216,7 @@ export function TeamManagement({ setView }) {
     ...(canManageTeam ? [{ 
       id: TAB_VIEWS.ROSTER, 
       label: 'Roster', 
-      icon: UserPlus,
+      icon: Rows4,
       description: 'Manage team players'
     }] : []),
     ...(canManageTeam ? [{ 
@@ -466,7 +467,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
 
       {/* Pending Requests Summary */}
       <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 mb-3">
           <Shield className="w-5 h-5 text-sky-400" />
           <div>
             <p className="text-slate-200 font-medium">
@@ -480,13 +481,23 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
             </p>
           </div>
         </div>
+        {pendingRequests.length > 0 && (
+          <Button
+            onClick={onShowModal}
+            variant="primary"
+            size="sm"
+            Icon={Shield}
+          >
+            Review Requests
+          </Button>
+        )}
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
           <div className="flex items-center space-x-3 mb-3">
-            <UserPlus className="w-5 h-5 text-green-400" />
+            <UserPlus className="w-5 h-5 text-sky-400" />
             <h4 className="text-slate-200 font-medium">Invite Users</h4>
           </div>
           <p className="text-slate-400 text-sm mb-3">
@@ -504,7 +515,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
 
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
           <div className="flex items-center space-x-3 mb-3">
-            <UserCheck className="w-5 h-5 text-blue-400" />
+            <UserCheck className="w-5 h-5 text-sky-400" />
             <h4 className="text-slate-200 font-medium">Member Roles</h4>
           </div>
           <p className="text-slate-400 text-sm mb-3">

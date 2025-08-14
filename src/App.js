@@ -35,6 +35,47 @@ import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTo
 import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
 
+// Dismissed modals localStorage utilities
+const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
+
+const getDismissedModals = () => {
+  try {
+    const stored = localStorage.getItem(DISMISSED_MODALS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.warn('Failed to load dismissed modals:', error);
+    return {};
+  }
+};
+
+const markModalDismissed = (modalType, teamId) => {
+  try {
+    const dismissed = getDismissedModals();
+    const key = `${modalType}_${teamId}`;
+    dismissed[key] = {
+      dismissedAt: Date.now(),
+      teamId: teamId
+    };
+    localStorage.setItem(DISMISSED_MODALS_KEY, JSON.stringify(dismissed));
+  } catch (error) {
+    console.warn('Failed to mark modal as dismissed:', error);
+  }
+};
+
+const isModalDismissed = (modalType, teamId) => {
+  const dismissed = getDismissedModals();
+  const key = `${modalType}_${teamId}`;
+  return dismissed[key] !== undefined;
+};
+
+const clearDismissedModals = () => {
+  try {
+    localStorage.removeItem(DISMISSED_MODALS_KEY);
+  } catch (error) {
+    console.warn('Failed to clear dismissed modals:', error);
+  }
+};
+
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
   const gameState = useGameState();
@@ -86,6 +127,8 @@ function AppContent() {
   
   // Custom sign out handler that resets view to ConfigurationScreen
   const handleSignOut = useCallback(async () => {
+    // Clear dismissed modals state for new session
+    clearDismissedModals();
     // Reset view to ConfigurationScreen first
     gameState.setView(VIEWS.CONFIG);
     // Then perform the actual sign out
@@ -331,6 +374,14 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, invitationParams, needsProfileCompletion]); // Check when user state changes
 
+  // Clear dismissed modals when user authentication state changes
+  useEffect(() => {
+    // Clear dismissed modals on user change (login/logout)
+    // This ensures fresh modal behavior for each session
+    clearDismissedModals();
+    console.log('Dismissed modals cleared due to user state change');
+  }, [user?.id]); // Only trigger when user ID changes (not on every user object change)
+
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
     // Check current view and handle accordingly
@@ -558,10 +609,16 @@ function AppContent() {
   }, [pushNavigationState]);
 
   const handleCloseTeamAdminModal = useCallback(() => {
+    // Mark this team's access modal as dismissed for this session
+    if (selectedTeamForAdmin) {
+      markModalDismissed('team_access', selectedTeamForAdmin.id);
+      console.log(`Team access modal dismissed for team: ${selectedTeamForAdmin.name}`);
+    }
+    
     setShowTeamAdminModal(false);
     setSelectedTeamForAdmin(null);
     removeFromNavigationStack();
-  }, [removeFromNavigationStack]);
+  }, [selectedTeamForAdmin, removeFromNavigationStack]);
 
   const handleTeamAdminSuccess = useCallback((message) => {
     // Show success message banner
@@ -580,9 +637,15 @@ function AppContent() {
     // 2. There are pending requests
     // 3. No modal is currently open
     // 4. User is not completing their profile
+    // 5. Modal has not been dismissed by user in this session
     if (canManageTeam && hasPendingRequests && currentTeam && !showTeamAdminModal && !needsProfileCompletion) {
-      console.log(`Auto-opening admin modal for ${pendingRequestsCount} pending request(s) on team:`, currentTeam.name);
-      handleOpenTeamAdminModal(currentTeam);
+      // Check if user has dismissed this team's access modal
+      if (!isModalDismissed('team_access', currentTeam.id)) {
+        console.log(`Auto-opening admin modal for ${pendingRequestsCount} pending request(s) on team:`, currentTeam.name);
+        handleOpenTeamAdminModal(currentTeam);
+      } else {
+        console.log(`Team access modal dismissed by user for team: ${currentTeam.name}`);
+      }
     }
   }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal]);
 
