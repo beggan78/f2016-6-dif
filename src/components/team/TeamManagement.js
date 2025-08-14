@@ -20,11 +20,13 @@ import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
 import { TeamInviteModal } from './TeamInviteModal';
+import { TeamRoleManagementModal } from './TeamRoleManagementModal';
 import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { VIEWS } from '../../constants/viewConstants';
 
 const TAB_VIEWS = {
@@ -48,10 +50,13 @@ export function TeamManagement({ setView }) {
     getTeamMembers
   } = useTeam();
   
+  const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept();
+  
   const [activeTab, setActiveTab] = useState(TAB_VIEWS.OVERVIEW);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
@@ -101,6 +106,23 @@ export function TeamManagement({ setView }) {
     setShowAccessModal(false);
     setSuccessMessage('Access request processed successfully!');
     loadTeamData();
+  };
+
+  const handleShowRoleModal = () => {
+    setShowRoleModal(true);
+    // Add modal to browser back button handling
+    pushNavigationState(() => {
+      setShowRoleModal(false);
+    });
+  };
+
+  const handleRoleModalClose = () => {
+    setShowRoleModal(false);
+    removeFromNavigationStack();
+  };
+
+  const handleRoleModalRefresh = async () => {
+    await loadTeamData();
   };
 
   // Show loading state
@@ -215,6 +237,7 @@ export function TeamManagement({ setView }) {
           onRefresh={loadTeamData}
           onShowModal={() => setShowAccessModal(true)}
           onShowInviteModal={() => setShowInviteModal(true)}
+          onShowRoleModal={handleShowRoleModal}
         />;
       case TAB_VIEWS.ROSTER:
         return <RosterManagement team={currentTeam} onRefresh={loadTeamData} />;
@@ -324,6 +347,18 @@ export function TeamManagement({ setView }) {
           team={currentTeam}
         />
       )}
+
+      {/* Team Role Management Modal */}
+      {showRoleModal && (
+        <TeamRoleManagementModal
+          isOpen={showRoleModal}
+          onClose={handleRoleModalClose}
+          team={currentTeam}
+          members={teamMembers}
+          onRefresh={handleRoleModalRefresh}
+          currentUserRole={currentTeam?.userRole || 'member'}
+        />
+      )}
     </div>
   );
 }
@@ -415,7 +450,7 @@ function TeamOverview({ team, members }) {
 }
 
 // Access Management Component
-function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onShowInviteModal }) {
+function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onShowInviteModal, onShowRoleModal }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -458,10 +493,10 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
             Send invitations to new team members
           </p>
           <Button 
-            variant="secondary" 
-            size="sm" 
-            className="w-full"
+            variant="primary" 
+            size="sm"
             onClick={onShowInviteModal}
+            Icon={UserPlus}
           >
             Send Invitations
           </Button>
@@ -475,7 +510,12 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
           <p className="text-slate-400 text-sm mb-3">
             Manage team member permissions
           </p>
-          <Button variant="secondary" size="sm" className="w-full">
+          <Button 
+            variant="primary" 
+            size="sm"
+            onClick={onShowRoleModal}
+            Icon={UserCheck}
+          >
             Manage Roles
           </Button>
         </div>
