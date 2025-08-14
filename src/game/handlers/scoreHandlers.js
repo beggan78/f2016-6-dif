@@ -100,7 +100,7 @@ export const createScoreHandlers = (
         addAwayGoal();
       }
       
-      // Log the goal event
+      // Log the goal event with original timestamp from when goal was clicked
       logEvent(pendingGoal.type, {
         eventId: pendingGoal.eventId,
         periodNumber: pendingGoal.periodNumber,
@@ -108,7 +108,7 @@ export const createScoreHandlers = (
         awayScore: pendingGoal.awayScore,
         scorerId: scorerId || null,
         teamName: pendingGoal.teamName
-      });
+      }, pendingGoal.timestamp);
       
       // Clear pending goal
       clearPendingGoal();

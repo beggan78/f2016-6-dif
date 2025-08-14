@@ -270,15 +270,18 @@ const loadFromBackup = () => {
 
 /**
  * Main event logging function
+ * @param {string} type - Event type from EVENT_TYPES
+ * @param {Object} data - Event data
+ * @param {number} [customTimestamp] - Optional custom timestamp for when event actually occurred
  */
-export const logEvent = (type, data = {}) => {
+export const logEvent = (type, data = {}, customTimestamp = null) => {
   try {
     // Validate event type
     if (!Object.values(EVENT_TYPES).includes(type)) {
       throw new Error(`Invalid event type: ${type}`);
     }
     
-    const timestamp = Date.now();
+    const timestamp = customTimestamp || Date.now();
     eventSequenceNumber++;
     
     const event = {
