@@ -11,6 +11,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
   const [availableNumbers, setAvailableNumbers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Load available jersey numbers
   useEffect(() => {
@@ -58,6 +59,31 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
         jersey_number: playerData.jersey_number ? parseInt(playerData.jersey_number) : null,
         on_roster: playerData.on_roster
       });
+      
+      // Reset form for next player
+      setPlayerData({
+        name: '',
+        jersey_number: '',
+        on_roster: true
+      });
+      setErrors({});
+      
+      // Show success message briefly
+      setSuccessMessage(`${playerData.name.trim()} added successfully!`);
+      setTimeout(() => setSuccessMessage(''), 2000);
+      
+      // Refresh available jersey numbers
+      if (team?.id && getAvailableJerseyNumbers) {
+        const numbers = await getAvailableJerseyNumbers(team.id);
+        setAvailableNumbers(numbers);
+      }
+      
+      // Focus back to name input
+      setTimeout(() => {
+        const nameInput = document.querySelector('input[placeholder="Enter player name"]');
+        if (nameInput) nameInput.focus();
+      }, 100);
+      
     } catch (error) {
       console.error('Error adding player:', error);
       setErrors({ general: error.message || 'Failed to add player' });
@@ -108,6 +134,13 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
+              <p className="text-emerald-200 text-sm">{successMessage}</p>
+            </div>
+          )}
+          
           {/* General Error */}
           {errors.general && (
             <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">

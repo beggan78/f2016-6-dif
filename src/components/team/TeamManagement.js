@@ -11,7 +11,6 @@ import {
   UserCheck,
   Edit3,
   Trash2,
-  Search,
   Hash,
   Eye,
   EyeOff
@@ -500,7 +499,6 @@ function RosterManagement({ team, onRefresh }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
@@ -539,13 +537,10 @@ function RosterManagement({ team, onRefresh }) {
     }
   }, [successMessage]);
 
-  // Filter roster based on search and visibility settings, then sort by name
+  // Filter roster based on visibility settings, then sort by name
   const filteredRoster = roster.filter(player => {
-    const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (player.jersey_number && player.jersey_number.toString().includes(searchTerm));
     // Show active players by default, include former players when toggle is enabled
-    const matchesVisibility = player.on_roster || showInactive;
-    return matchesSearch && matchesVisibility;
+    return player.on_roster || showInactive;
   }).sort((a, b) => a.name.localeCompare(b.name));
 
   // Handle add player
@@ -557,7 +552,6 @@ function RosterManagement({ team, onRefresh }) {
   const handlePlayerAdded = async (playerData) => {
     try {
       await addRosterPlayer(team.id, playerData);
-      setShowAddModal(false);
       await loadRoster();
       if (onRefresh) onRefresh();
     } catch (error) {
@@ -666,32 +660,18 @@ function RosterManagement({ team, onRefresh }) {
         </div>
       )}
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search players..."
-              className="pl-10"
-            />
-          </div>
+      {/* Filters */}
+      {roster.filter(p => !p.on_roster).length > 0 && (
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => setShowInactive(!showInactive)}
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
+          >
+            {showInactive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <span>{showInactive ? 'Hide' : 'Show'} Former Players</span>
+          </button>
         </div>
-        {/* Show toggle only if there are former players */}
-        {roster.filter(p => !p.on_roster).length > 0 && (
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowInactive(!showInactive)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
-            >
-              {showInactive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span>{showInactive ? 'Hide' : 'Show'} Former Players</span>
-            </button>
-          </div>
-        )}
-      </div>
+      )}
 
 
       {/* Roster Table */}
@@ -711,8 +691,8 @@ function RosterManagement({ team, onRefresh }) {
               </>
             ) : (
               <>
-                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No players match your search criteria.</p>
+                <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No active players found.</p>
               </>
             )}
           </div>
