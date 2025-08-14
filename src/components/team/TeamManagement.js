@@ -703,9 +703,11 @@ function RosterManagement({ team, onRefresh }) {
                 <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p className="text-lg font-medium mb-2">No Players Yet</p>
                 <p className="text-sm mb-4">Start building your team roster by adding players.</p>
-                <Button onClick={handleAddPlayer} variant="primary" size="sm" Icon={UserPlus}>
-                  Add First Player
-                </Button>
+                <div className="flex justify-center">
+                  <Button onClick={handleAddPlayer} variant="primary" size="sm" Icon={UserPlus}>
+                    Add First Player
+                  </Button>
+                </div>
               </>
             ) : (
               <>
