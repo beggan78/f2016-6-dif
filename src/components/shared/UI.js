@@ -2,19 +2,26 @@ import React from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
 
-export function Input({ value, onChange, placeholder, id, disabled, type = 'text', className = '' }) {
+export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
     <input
+      ref={ref}
       type={type}
       id={id}
       value={value}
       onChange={onChange}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
       disabled={disabled}
       placeholder={placeholder}
       className={`w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-500 transition-colors ${className}`}
+      {...props}
     />
   );
-}
+});
+
+Input.displayName = 'Input';
 
 export function Select({ value, onChange, options, placeholder, id, disabled }) {
   return (
@@ -22,7 +29,7 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
       <select
         id={id}
         value={value}
-        onChange={onChange}
+        onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className="w-full appearance-none bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
       >
@@ -40,7 +47,7 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
   );
 }
 
-export function Button({ onClick, children, Icon, variant = 'primary', size = 'md', disabled = false, className = '' }) {
+export function Button({ onClick, children, Icon, variant = 'primary', size = 'md', disabled = false, className = '', type = 'button' }) {
   const baseStyle = "font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-150 ease-in-out flex items-center justify-center space-x-2";
 
   const sizeStyles = {
@@ -58,7 +65,7 @@ export function Button({ onClick, children, Icon, variant = 'primary', size = 'm
 
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={`${baseStyle} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}

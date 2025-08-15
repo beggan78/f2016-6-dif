@@ -64,3 +64,13 @@ The core of the application is its system for ensuring fair play time. This logi
   ```bash
   npm run build
   ```
+
+## 6. Testing Philosophy
+
+The project adheres to a comprehensive testing strategy to ensure code quality, prevent regressions, and maintain stability.
+
+- **High Coverage**: The goal is to maintain a high level of test coverage (90%+) across all parts of the application.
+- **Test-First Approach**: When adding new features or fixing bugs, the preferred workflow is to write a failing test first that reproduces the issue or defines the new functionality, and then write the code to make the test pass.
+- **Comprehensive Testing Suite**: The test suite includes unit tests, component tests, hook tests, and integration tests to cover all aspects of the application.
+- **Performance Testing**: The suite includes performance tests that run automatically in the local development environment to catch performance regressions early. These tests are skipped in CI environments to avoid flaky results.
+- **Linting and Building**: Before completing a task, it is required to run `CI=true && npm run build` to check for any ESLint errors that would cause the CI pipeline to fail.

@@ -782,7 +782,7 @@ export function PeriodSetupScreen({
             </h3>
             <Select
               value={formation.goalie || ""}
-              onChange={e => handleGoalieChangeForCurrentPeriod(e.target.value)}
+              onChange={value => handleGoalieChangeForCurrentPeriod(value)}
               options={[...selectedSquadPlayers].sort((a, b) => {
                 const aInactive = a.stats?.isInactive || false;
                 const bInactive = b.stats?.isInactive || false;
@@ -906,7 +906,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         <label className={`block text-xs font-medium ${headerColor} mb-0.5`}>Defender</label>
         <Select
           value={pair.defender || ""}
-          onChange={e => onPlayerAssign(pairKey, 'defender', e.target.value)}
+          onChange={value => onPlayerAssign(pairKey, 'defender', value)}
           options={defenderOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
           placeholder="Select Defender"
         />
@@ -915,7 +915,7 @@ export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAva
         <label className={`block text-xs font-medium ${headerColor} mb-0.5`}>Attacker</label>
         <Select
           value={pair.attacker || ""}
-          onChange={e => onPlayerAssign(pairKey, 'attacker', e.target.value)}
+          onChange={value => onPlayerAssign(pairKey, 'attacker', value)}
           options={attackerOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
           placeholder="Select Attacker"
         />
@@ -937,7 +937,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
       <h3 className={`text-sm font-medium ${headerColor} mb-1.5`}>{title}</h3>
       <Select
         value={playerId || ""}
-        onChange={e => onPlayerAssign(position, e.target.value)}
+        onChange={value => onPlayerAssign(position, value)}
         options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
         placeholder={`Select ${title}`}
       />

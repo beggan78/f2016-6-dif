@@ -16,26 +16,134 @@ import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
+import { ProfileScreen } from './components/profile/ProfileScreen';
+import { TeamManagement } from './components/team/TeamManagement';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
 import { isDebugMode } from './utils/debugUtils';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TeamProvider, useTeam } from './contexts/TeamContext';
+import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
+import { AuthModal, useAuthModal } from './components/auth/AuthModal';
+import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
+import { InvitationWelcome } from './components/auth/InvitationWelcome';
+import { TeamAccessRequestModal } from './components/team/TeamAccessRequestModal';
+import { InvitationNotificationModal } from './components/team/InvitationNotificationModal';
+import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
+import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
+import { supabase } from './lib/supabase';
 
-// Main App Component
-function App() {
+// Dismissed modals localStorage utilities
+const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
+
+const getDismissedModals = () => {
+  try {
+    const stored = localStorage.getItem(DISMISSED_MODALS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.warn('Failed to load dismissed modals:', error);
+    return {};
+  }
+};
+
+const markModalDismissed = (modalType, teamId) => {
+  try {
+    const dismissed = getDismissedModals();
+    const key = `${modalType}_${teamId}`;
+    dismissed[key] = {
+      dismissedAt: Date.now(),
+      teamId: teamId
+    };
+    localStorage.setItem(DISMISSED_MODALS_KEY, JSON.stringify(dismissed));
+  } catch (error) {
+    console.warn('Failed to mark modal as dismissed:', error);
+  }
+};
+
+const isModalDismissed = (modalType, teamId) => {
+  const dismissed = getDismissedModals();
+  const key = `${modalType}_${teamId}`;
+  return dismissed[key] !== undefined;
+};
+
+const clearDismissedModals = () => {
+  try {
+    localStorage.removeItem(DISMISSED_MODALS_KEY);
+  } catch (error) {
+    console.warn('Failed to clear dismissed modals:', error);
+  }
+};
+
+// Main App Content Component (needs to be inside AuthProvider to access useAuth)
+function AppContent() {
   const gameState = useGameState();
   const timers = useTimers(gameState.periodDurationMinutes);
-  
+  const {
+    showSessionWarning,
+    sessionExpiry,
+    extendSession,
+    dismissSessionWarning,
+    signOut,
+    loading: authLoading,
+    needsProfileCompletion,
+    user
+  } = useAuth();
+
+  const {
+    currentTeam,
+    hasPendingRequests,
+    pendingRequestsCount,
+    canManageTeam,
+    acceptTeamInvitation,
+    getUserPendingInvitations
+  } = useTeam();
+
+  // Authentication modal
+  const authModal = useAuthModal();
+
+  // Check for password reset tokens or codes in URL on app load
+  useEffect(() => {
+    const { hasTokens } = detectResetTokens();
+
+    // If we have password reset tokens or magic link codes, open the auth modal in reset mode
+    if (hasTokens) {
+      authModal.openReset();
+    }
+  }, [authModal]);
+
+  // Check if user becomes authenticated via magic link and should show password reset
+  useEffect(() => {
+    if (shouldShowPasswordResetModal(user)) {
+      authModal.openReset();
+    }
+  }, [user, authModal]);
+
+
+
   // Debug mode detection
   const debugMode = isDebugMode();
   
+  // Custom sign out handler that resets view to ConfigurationScreen
+  const handleSignOut = useCallback(async () => {
+    // Clear dismissed modals state for new session
+    clearDismissedModals();
+    // Reset view to ConfigurationScreen first
+    gameState.setView(VIEWS.CONFIG);
+    // Then perform the actual sign out
+    return await signOut();
+  }, [gameState, signOut]);
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [fromView, setFromView] = useState(null);
-  
+  const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
+  const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
 
@@ -45,7 +153,235 @@ function App() {
       gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
     }
   }, [gameState, fromView]);
-  
+  // Invitation state
+  const [invitationParams, setInvitationParams] = useState(null);
+  const [isProcessingInvitation, setIsProcessingInvitation] = useState(false);
+
+  // Pending invitation notifications
+  const [showInvitationNotifications, setShowInvitationNotifications] = useState(false);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [hasCheckedInvitations, setHasCheckedInvitations] = useState(false);
+
+  // Handle invitation acceptance
+  const handleInvitationAcceptance = useCallback(async (params) => {
+    if (!params.invitationId) {
+      console.error('No invitation ID provided');
+      return;
+    }
+
+    if (isProcessingInvitation) {
+      console.log('Invitation already being processed, skipping');
+      return;
+    }
+
+    try {
+      setIsProcessingInvitation(true);
+      console.log('Processing invitation:', params.invitationId);
+
+      const result = await acceptTeamInvitation(params.invitationId);
+
+      if (result.success) {
+        // Clear URL parameters
+        clearInvitationParamsFromUrl();
+        setInvitationParams(null);
+
+        // Show welcome message
+        setSuccessMessage(result.message || 'Welcome to the team!');
+
+        // Navigate to team management view
+        gameState.setView(VIEWS.TEAM_MANAGEMENT);
+      } else {
+        console.error('Failed to accept invitation:', result.error);
+        // Could show error modal here
+      }
+    } catch (error) {
+      console.error('Error processing invitation:', error);
+    } finally {
+      setIsProcessingInvitation(false);
+    }
+  }, [acceptTeamInvitation, gameState, isProcessingInvitation]);
+
+  // Handle invitation processed callback from InvitationWelcome
+  const handleInvitationProcessed = useCallback((result) => {
+    if (result?.success) {
+      // Clear URL parameters
+      clearInvitationParamsFromUrl();
+      setInvitationParams(null);
+
+      // Show welcome message
+      setSuccessMessage(result.message || 'Welcome to the team!');
+
+      // Navigate to team management view
+      gameState.setView(VIEWS.TEAM_MANAGEMENT);
+    }
+  }, [gameState]);
+
+  // Handle request to show sign-in modal after password setup
+  const handleRequestSignIn = useCallback(() => {
+    console.log('Handling sign-in request after password setup');
+
+    // Clear invitation parameters to close InvitationWelcome modal
+    clearInvitationParamsFromUrl();
+    setInvitationParams(null);
+
+    // Open the AuthModal in sign-in mode
+    authModal.openLogin();
+  }, [authModal]);
+
+  // Check for pending invitation notifications
+  const checkPendingInvitationNotifications = useCallback(async () => {
+    if (!user || hasCheckedInvitations) return;
+
+    try {
+      console.log('Checking for pending invitation notifications...');
+      const invitations = await getUserPendingInvitations();
+
+      if (invitations && invitations.length > 0) {
+        console.log(`Found ${invitations.length} pending invitation(s)`);
+        setPendingInvitations(invitations);
+        setShowInvitationNotifications(true);
+      } else {
+        console.log('No pending invitations found');
+      }
+
+      setHasCheckedInvitations(true);
+    } catch (error) {
+      console.error('Error checking pending invitations:', error);
+      setHasCheckedInvitations(true);
+    }
+  }, [user, getUserPendingInvitations, hasCheckedInvitations]);
+
+  // Handle invitation notification processed
+  const handleInvitationNotificationProcessed = useCallback((processedInvitation, action) => {
+    // Remove processed invitation from the list
+    setPendingInvitations(prev =>
+      prev.filter(inv => inv.id !== processedInvitation.id)
+    );
+
+    // Close modal if no more invitations
+    setPendingInvitations(prev => {
+      if (prev.length <= 1) {
+        setShowInvitationNotifications(false);
+      }
+      return prev.filter(inv => inv.id !== processedInvitation.id);
+    });
+
+    // Show success message
+    if (action === 'accepted') {
+      setSuccessMessage(`Successfully joined ${processedInvitation.team.name}!`);
+      // Navigate to team management view after a longer delay to ensure context is fully updated
+      setTimeout(() => {
+        gameState.setView(VIEWS.TEAM_MANAGEMENT);
+      }, 1000);
+    } else if (action === 'declined') {
+      setSuccessMessage('Invitation declined');
+    }
+
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+  }, [gameState]);
+
+
+  // Check for invitation parameters in URL on app load (only run once)
+  useEffect(() => {
+    const handleInvitationAndSession = async () => {
+      const params = detectInvitationParams();
+
+      if (params.hasInvitation) {
+        console.log('Invitation detected:', params);
+        setInvitationParams(params);
+
+        // If we have Supabase tokens in the URL hash, set the session
+        if (params.isSupabaseInvitation && params.accessToken && params.refreshToken) {
+          try {
+            console.log('Setting Supabase session with invitation tokens...');
+            const { data, error } = await supabase.auth.setSession({
+              access_token: params.accessToken,
+              refresh_token: params.refreshToken
+            });
+
+            if (error) {
+              console.error('Error setting session:', error);
+            } else {
+              console.log('Session set successfully:', data);
+            }
+          } catch (error) {
+            console.error('Exception setting session:', error);
+          }
+        }
+      }
+    };
+
+    handleInvitationAndSession();
+  }, []); // Run only once on mount
+
+  // Process invitation when user becomes authenticated (but only if they don't need password setup)
+  useEffect(() => {
+    if (user && invitationParams && shouldProcessInvitation(user, invitationParams)) {
+      // Check if user still needs to complete account setup (password)
+      if (needsAccountCompletion(invitationParams, user)) {
+        console.log('User needs to complete account setup before processing invitation');
+        return; // Don't process invitation yet, user needs to set password first
+      }
+
+      console.log('User is ready to process invitation');
+      handleInvitationAcceptance(invitationParams);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, invitationParams]); // Remove handleInvitationAcceptance from dependencies
+
+  // Check for pending invitation after user signs in (for users who completed password setup)
+  useEffect(() => {
+    if (user && !invitationParams && hasPendingInvitation()) {
+      console.log('User signed in, checking for pending invitation...');
+      const pendingInvitation = retrievePendingInvitation();
+
+      if (pendingInvitation && pendingInvitation.invitationId) {
+        console.log('Processing pending invitation:', pendingInvitation);
+
+        // Process the stored invitation
+        handleInvitationAcceptance({ invitationId: pendingInvitation.invitationId });
+
+        // Show success message with team context
+        const teamContext = pendingInvitation.teamName ?
+          ` Welcome to ${pendingInvitation.teamName}!` :
+          ' Welcome to the team!';
+        setSuccessMessage(`Successfully joined as ${pendingInvitation.role || 'member'}.${teamContext}`);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only run when user changes
+
+  // Check for pending invitation notifications after user login
+  useEffect(() => {
+    if (user && !invitationParams && !needsProfileCompletion) {
+      // Small delay to allow other authentication flows to complete
+      const timer = setTimeout(() => {
+        checkPendingInvitationNotifications();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+
+    // Reset check flag when user changes
+    if (!user) {
+      setHasCheckedInvitations(false);
+      setPendingInvitations([]);
+      setShowInvitationNotifications(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, invitationParams, needsProfileCompletion]); // Check when user state changes
+
+  // Clear dismissed modals when user authentication state changes
+  useEffect(() => {
+    // Clear dismissed modals on user change (login/logout)
+    // This ensures fresh modal behavior for each session
+    clearDismissedModals();
+    console.log('Dismissed modals cleared due to user state change');
+  }, [user?.id]); // Only trigger when user ID changes (not on every user object change)
+
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
     // Check current view and handle accordingly
@@ -236,7 +572,7 @@ function App() {
     // Close the modal first
     setShowNewGameModal(false);
     removeFromNavigationStack();
-    
+
     // Navigate back to where the user was before entering the Sport Wizard app
     // Go back to the state before we initialized the app
     const currentLevel = window.history.state?.navigationLevel || window.history.state?.modalLevel || 0;
@@ -261,6 +597,58 @@ function App() {
     gameState.setView(VIEWS.TACTICAL_BOARD);
   };
 
+  // Team admin modal handlers
+  const handleOpenTeamAdminModal = useCallback((team) => {
+    setSelectedTeamForAdmin(team);
+    setShowTeamAdminModal(true);
+    // Add modal to browser back button handling
+    pushNavigationState(() => {
+      setShowTeamAdminModal(false);
+      setSelectedTeamForAdmin(null);
+    });
+  }, [pushNavigationState]);
+
+  const handleCloseTeamAdminModal = useCallback(() => {
+    // Mark this team's access modal as dismissed for this session
+    if (selectedTeamForAdmin) {
+      markModalDismissed('team_access', selectedTeamForAdmin.id);
+      console.log(`Team access modal dismissed for team: ${selectedTeamForAdmin.name}`);
+    }
+    
+    setShowTeamAdminModal(false);
+    setSelectedTeamForAdmin(null);
+    removeFromNavigationStack();
+  }, [selectedTeamForAdmin, removeFromNavigationStack]);
+
+  const handleTeamAdminSuccess = useCallback((message) => {
+    // Show success message banner
+    setSuccessMessage(message);
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+    // Keep modal open for continued management
+  }, []);
+
+  // Automatic pending request modal for team admins
+  useEffect(() => {
+    // Only show modal if:
+    // 1. User can manage team (admin or coach)
+    // 2. There are pending requests
+    // 3. No modal is currently open
+    // 4. User is not completing their profile
+    // 5. Modal has not been dismissed by user in this session
+    if (canManageTeam && hasPendingRequests && currentTeam && !showTeamAdminModal && !needsProfileCompletion) {
+      // Check if user has dismissed this team's access modal
+      if (!isModalDismissed('team_access', currentTeam.id)) {
+        console.log(`Auto-opening admin modal for ${pendingRequestsCount} pending request(s) on team:`, currentTeam.name);
+        handleOpenTeamAdminModal(currentTeam);
+      } else {
+        console.log(`Team access modal dismissed by user for team: ${currentTeam.name}`);
+      }
+    }
+  }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal]);
+
   // Render logic
   const renderView = () => {
     switch (gameState.view) {
@@ -268,6 +656,7 @@ function App() {
         return (
           <ConfigurationScreen 
             allPlayers={gameState.allPlayers}
+            setAllPlayers={gameState.setAllPlayers}
             selectedSquadIds={gameState.selectedSquadIds}
             setSelectedSquadIds={gameState.setSelectedSquadIds}
             numPeriods={gameState.numPeriods}
@@ -290,6 +679,8 @@ function App() {
             captainId={gameState.captainId}
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}
+            authModal={authModal}
+            setView={gameState.setView}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -392,6 +783,7 @@ function App() {
             resetScore={gameState.resetScore}
             setOpponentTeamName={gameState.setOpponentTeamName}
             navigateToMatchReport={gameState.navigateToMatchReport}
+            authModal={authModal}
           />
         );
       case VIEWS.MATCH_REPORT:
@@ -420,13 +812,25 @@ function App() {
             debugMode={debugMode}
           />
         );
+      case VIEWS.PROFILE:
+        return (
+          <ProfileScreen
+            setView={gameState.setView}
+          />
+        );
       case VIEWS.TACTICAL_BOARD:
         return (
-          <TacticalBoardScreen 
+          <TacticalBoardScreen
             onNavigateBack={handleNavigateFromTacticalBoard}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             fromView={fromView}
+          />
+        );
+      case VIEWS.TEAM_MANAGEMENT:
+        return (
+          <TeamManagement
+            setView={gameState.setView}
           />
         );
       default:
@@ -448,10 +852,24 @@ function App() {
             onFormPairs={gameState.formPairs}
             allPlayers={gameState.allPlayers}
             selectedSquadIds={gameState.selectedSquadIds}
+            setView={gameState.setView}
+            authModal={authModal}
+            onOpenTeamAdminModal={handleOpenTeamAdminModal}
+            onSignOut={handleSignOut}
           />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
       </header>
+
+      {/* Success Message Banner */}
+      {successMessage && (
+        <div className="w-full max-w-2xl mb-4">
+          <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
+            <p className="text-emerald-200 text-sm">{successMessage}</p>
+          </div>
+        </div>
+      )}
+
       {gameState.view === VIEWS.TACTICAL_BOARD ? (
         <div className="w-full">
           {renderView()}
@@ -493,7 +911,73 @@ function App() {
         secondaryVariant="primary"
         tertiaryVariant="danger"
       />
-    </div>
+
+        {/* Session Expiry Warning Modal */}
+        <SessionExpiryModal
+          isOpen={showSessionWarning}
+          onExtend={extendSession}
+          onDismiss={dismissSessionWarning}
+          onSignOut={handleSignOut}
+          sessionExpiry={sessionExpiry}
+          loading={authLoading}
+        />
+
+        {/* Authentication Modal */}
+        <AuthModal
+          isOpen={authModal.isOpen}
+          onClose={authModal.closeModal}
+          initialMode={authModal.mode}
+        />
+
+        {/* Team Admin Modal */}
+        {showTeamAdminModal && selectedTeamForAdmin && (
+          <TeamAccessRequestModal
+            team={selectedTeamForAdmin}
+            onClose={handleCloseTeamAdminModal}
+            onSuccess={handleTeamAdminSuccess}
+            isStandaloneMode={true}
+          />
+        )}
+
+        {/* Profile Completion Prompt */}
+        {needsProfileCompletion && (
+          <ProfileCompletionPrompt
+            setView={gameState.setView}
+          />
+        )}
+
+        {/* Invitation Welcome Modal */}
+        {invitationParams && invitationParams.hasInvitation && (() => {
+          const invitationStatus = getInvitationStatus(user, invitationParams);
+          // Show invitation welcome modal for account setup or sign-in required states
+          return invitationStatus.type === 'account_setup' || invitationStatus.type === 'sign_in_required' ? (
+            <InvitationWelcome
+              invitationParams={invitationParams}
+              onInvitationProcessed={handleInvitationProcessed}
+              onRequestSignIn={handleRequestSignIn}
+            />
+          ) : null;
+        })()}
+
+        {/* Invitation Notification Modal */}
+        <InvitationNotificationModal
+          isOpen={showInvitationNotifications}
+          invitations={pendingInvitations}
+          onClose={() => setShowInvitationNotifications(false)}
+          onInvitationProcessed={handleInvitationNotificationProcessed}
+        />
+      </div>
+  );
+}
+
+// Main App Component with AuthProvider and TeamProvider
+function App() {
+  return (
+    <AuthProvider>
+      <TeamProvider>
+        <AppContent />
+      </TeamProvider>
+    </AuthProvider>
   );
 }
 

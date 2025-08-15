@@ -240,6 +240,7 @@ export const MockStatsScreen = ({
   gameHistory = {},
   onExportStats,
   onBackToGame,
+  authModal = { isOpen: false, openLogin: jest.fn(), openSignup: jest.fn() },
   ...props 
 }) => {
   const totalGameTime = gameHistory.periods?.reduce((total, period) => {

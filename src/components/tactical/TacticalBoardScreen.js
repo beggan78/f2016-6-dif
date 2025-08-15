@@ -81,13 +81,13 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
     setPlacedChips(prevChips => {
       const newChips = getNewChips(prevChips);
       const currentChipsKey = pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
-      
+
       persistenceManager.saveState({
         ...persistenceManager.loadState(),
         pitchMode, // ensure current pitchMode is saved
         [currentChipsKey]: newChips,
       });
-      
+
       return newChips;
     });
   }, [pitchMode, persistenceManager]);
@@ -115,7 +115,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
 
     // Determine which set of chips to clear in storage
     const currentChipsKey = pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
-    
+
     // Update localStorage
     persistenceManager.saveState({
       ...persistenceManager.loadState(),
@@ -128,7 +128,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
       {/* Navigation and Pitch Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
         {/* Back Button */}
-        <button 
+        <button
           onClick={handleBackPress}
           className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
         >
