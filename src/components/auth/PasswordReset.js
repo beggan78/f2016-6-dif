@@ -309,8 +309,8 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
           <h4 className="text-slate-300 font-medium mb-2">What happens next?</h4>
           <ul className="text-slate-400 text-sm space-y-1">
             <li>• We'll send a password reset email to your address</li>
-            <li>• The email contains both a reset link AND a 6-digit code</li>
-            <li>• Click the link for automatic reset, or enter the code manually</li>
+            <li>• The email contains a 6-digit code</li>
+            <li>• Enter the code manually</li>
             <li>• Choose a new password and confirm the change</li>
           </ul>
         </div>
