@@ -460,7 +460,8 @@ CREATE INDEX idx_team_access_request_status ON public.team_access_request(status
 CREATE INDEX idx_team_access_request_created_at ON public.team_access_request(created_at);
 
 -- Partial unique index to allow only one pending request per user/team combination
--- This allows users to reapply after rejection while preventing multiple pending requests
+-- This allows users to reapply after rejection/approval while preventing multiple pending requests
+-- Note: Application code provides user-friendly error messages when constraint is violated
 CREATE UNIQUE INDEX unique_pending_request_idx 
 ON public.team_access_request (team_id, user_id) 
 WHERE status = 'pending';

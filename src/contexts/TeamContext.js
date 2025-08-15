@@ -1051,7 +1051,12 @@ export const TeamProvider = ({ children }) => {
       if (error) {
         console.error('Error requesting team access:', error);
         if (!skipLoadingState) {
-          setError('Failed to request team access');
+          // Handle specific unique constraint violation (23505 = unique_violation)
+          if (error.code === '23505' && error.message?.includes('unique_pending_request_idx')) {
+            setError('You already have a pending request for this team. Please wait for the current request to be reviewed, or cancel it first to submit a new one.');
+          } else {
+            setError('Failed to request team access');
+          }
         }
         return null;
       }
