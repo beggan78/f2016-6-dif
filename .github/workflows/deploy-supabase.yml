@@ -58,7 +58,6 @@ jobs:
           fi
 
       - name: Deploy database migrations
-        if: steps.db_changes.outputs.has_changes == 'true'
         run: |
           echo "🚀 Deploying database migrations..."
           supabase db push
