@@ -32,6 +32,10 @@ jobs:
             echo "❌ SUPABASE_PROJECT_ID is not set"
             exit 1
           fi
+          if [[ -z "${{ secrets.SUPABASE_DB_PASSWORD }}" ]]; then
+            echo "❌ SUPABASE_DB_PASSWORD is not set"
+            exit 1
+          fi
           echo "✅ Environment variables verified"
 
       - name: Link Supabase project
@@ -40,6 +44,7 @@ jobs:
           echo "✅ Linked to Supabase project: ${{ secrets.SUPABASE_PROJECT_ID }}"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
       - name: Check for database changes
         id: db_changes
