@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   build-and-test:
+    environment: production
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
