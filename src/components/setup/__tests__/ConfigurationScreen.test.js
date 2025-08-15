@@ -54,7 +54,7 @@ jest.mock('../../shared/UI', () => ({
     <select 
       data-testid={id || 'select'} 
       value={value} 
-      onChange={onChange}
+      onChange={(e) => onChange(e.target.value)}
       {...props}
     >
       {placeholder && <option value="">{placeholder}</option>}
@@ -116,6 +116,7 @@ describe('ConfigurationScreen', () => {
 
     defaultProps = {
       allPlayers: mockPlayers,
+      setAllPlayers: jest.fn(),
       selectedSquadIds: [],
       numPeriods: 2,
       periodDurationMinutes: 15,

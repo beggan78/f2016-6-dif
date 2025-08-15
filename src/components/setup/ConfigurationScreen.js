@@ -16,6 +16,7 @@ import FeatureVoteModal from '../shared/FeatureVoteModal';
 
 export function ConfigurationScreen({ 
   allPlayers, 
+  setAllPlayers,
   selectedSquadIds, 
   setSelectedSquadIds, 
   numPeriods, 
@@ -110,6 +111,37 @@ export function ConfigurationScreen({
         jerseyNumber: player.jersey_number
       }))
     : allPlayers;
+
+  // Ensure allPlayers is updated with team data when authenticated
+  // This is necessary for selectedSquadPlayers to work correctly with team data
+  React.useEffect(() => {
+    if (isAuthenticated && currentTeam && teamPlayers.length > 0) {
+      const transformedTeamPlayers = teamPlayers.map(player => ({
+        id: player.id,
+        name: player.name,
+        jerseyNumber: player.jersey_number,
+        // Initialize player stats if not present (required for game logic)
+        stats: {
+          timeOnFieldSeconds: 0,
+          timeAsAttackerSeconds: 0,
+          timeAsDefenderSeconds: 0,
+          timeAsGoalieSeconds: 0,
+          timeAsMidfielderSeconds: 0,
+          currentStatus: 'substitute',
+          currentPosition: null,
+          currentRole: null,
+          isInactive: false,
+          lastStintStartTimeEpoch: null
+        }
+      }));
+      
+      // Only update allPlayers if the data has actually changed
+      if (JSON.stringify(allPlayers.map(p => ({ id: p.id, name: p.name }))) !== 
+          JSON.stringify(transformedTeamPlayers.map(p => ({ id: p.id, name: p.name })))) {
+        setAllPlayers(transformedTeamPlayers);
+      }
+    }
+  }, [isAuthenticated, currentTeam, teamPlayers, allPlayers, setAllPlayers]);
 
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {

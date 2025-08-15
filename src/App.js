@@ -656,6 +656,7 @@ function AppContent() {
         return (
           <ConfigurationScreen 
             allPlayers={gameState.allPlayers}
+            setAllPlayers={gameState.setAllPlayers}
             selectedSquadIds={gameState.selectedSquadIds}
             setSelectedSquadIds={gameState.setSelectedSquadIds}
             numPeriods={gameState.numPeriods}
