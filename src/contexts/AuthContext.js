@@ -291,16 +291,39 @@ export function AuthProvider({ children }) {
 
   // Auth functions
   const signUp = async (email, password, name) => {
+    console.log('=== SIGNUP DEBUG START ===');
+    console.log('signUp called with:', { 
+      email: email || 'undefined', 
+      password: password ? '[PROVIDED]' : 'undefined', 
+      name: name || 'undefined'
+    });
+    
     try {
       setLoading(true);
       setAuthError(null);
-
-      const { data, error } = await supabase.auth.signUp({
+      
+      const signUpParams = {
         email,
         password,
         options: {
           data: { name } // Store name in user metadata
         }
+      };
+      
+      console.log('signUp params:', {
+        email: signUpParams.email,
+        password: signUpParams.password ? '[PROVIDED]' : 'undefined',
+        options: signUpParams.options
+      });
+      
+      console.log('About to call supabase.auth.signUp...');
+      
+      const { data, error } = await supabase.auth.signUp(signUpParams);
+      
+      console.log('supabase.auth.signUp completed:', { 
+        hasData: !!data, 
+        hasError: !!error,
+        errorMessage: error?.message 
       });
 
       if (error) throw error;
@@ -316,12 +339,20 @@ export function AuthProvider({ children }) {
       }
 
       // User was created and signed in immediately
+      console.log('signUp success, returning user');
       return { user: data.user, error: null };
     } catch (error) {
+      console.log('=== SIGNUP ERROR CAUGHT ===');
+      console.log('Error type:', error.constructor.name);
+      console.log('Error message:', error.message);
+      console.log('Error stack:', error.stack);
+      console.log('Full error object:', error);
+      
       const errorMessage = error.message || 'Failed to sign up';
       setAuthError(errorMessage);
       return { user: null, error: { message: errorMessage } };
     } finally {
+      console.log('=== SIGNUP DEBUG END ===');
       setLoading(false);
     }
   };
