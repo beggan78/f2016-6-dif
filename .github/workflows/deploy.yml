@@ -43,15 +43,20 @@ jobs:
       - name: Run tests
         run: CI=true npm test -- --verbose=false --silent --reporters=default
 
-      - name: Debug Environment Variables
+      - name: Debug Environment Variables and Whitespace
         run: |
           echo "REACT_APP_SUPABASE_URL is set: ${{ secrets.REACT_APP_SUPABASE_URL != '' }}"
           echo "REACT_APP_SUPABASE_ANON_KEY is set: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY != '' }}"
-          echo "URL starts with: $(echo '${{ secrets.REACT_APP_SUPABASE_URL }}' | cut -c1-20)..."
-          echo "Key starts with: $(echo '${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}' | cut -c1-20)..."
-        env:
-          REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
-          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
+          echo "=== ANON KEY WHITESPACE ANALYSIS ==="
+          echo "Key length: $(echo -n '${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}' | wc -c)"
+          echo "Key lines: $(echo '${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}' | wc -l)"
+          echo "Contains newline: $(echo '${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}' | grep -c '\n' || echo '0')"
+          echo "Contains space: $(echo '${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}' | grep -c ' ' || echo '0')"
+          echo "Expected length: 211"
+          echo "=== HEX DUMP (first 100 chars) ==="
+          echo '${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}' | head -c 100 | xxd
+          echo "=== HEX DUMP (last 100 chars) ==="
+          echo '${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}' | tail -c 100 | xxd
 
       - name: Build
         run: CI=true && npm run build
