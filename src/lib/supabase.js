@@ -11,6 +11,18 @@ const isTestEnvironment = process.env.NODE_ENV === 'test';
 const testUrl = 'https://test.supabase.co';
 const testKey = 'test-anon-key';
 
+// Debug logging for production troubleshooting
+if (process.env.NODE_ENV === 'production') {
+  console.log('Supabase Config Debug:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    urlLength: supabaseUrl?.length || 0,
+    keyLength: supabaseAnonKey?.length || 0,
+    urlStart: supabaseUrl?.substring(0, 20) || 'undefined',
+    keyStart: supabaseAnonKey?.substring(0, 20) || 'undefined'
+  });
+}
+
 // Only throw error in non-test environments
 if (!supabaseUrl || !supabaseAnonKey) {
   if (!isTestEnvironment) {
