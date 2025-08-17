@@ -936,6 +936,7 @@ export const TeamProvider = ({ children }) => {
           )
         `)
         .eq('status', 'pending')
+        .eq('email', user.email)
         .gt('expires_at', 'now()')
         .order('created_at', { ascending: false });
 
