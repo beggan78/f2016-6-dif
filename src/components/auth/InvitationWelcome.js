@@ -158,8 +158,9 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
       const payloadBase64 = accessToken.split('.')[1];
       if (!payloadBase64) return null;
       
-      // Decode the base64 payload
-      const payloadJson = atob(payloadBase64);
+      // Decode the base64 payload with proper UTF-8 handling
+      const payloadBytes = Uint8Array.from(atob(payloadBase64), c => c.charCodeAt(0));
+      const payloadJson = new TextDecoder('utf-8').decode(payloadBytes);
       const payload = JSON.parse(payloadJson);
       
       // Extract team name from user metadata
