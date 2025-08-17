@@ -257,15 +257,6 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         </div>
       )}
 
-      {/* Alternative Verification Method */}
-      <div className="bg-slate-700 rounded-lg p-4 text-center">
-        <p className="text-slate-300 text-sm mb-2">
-          <strong>Alternative:</strong> Check your email for a confirmation link
-        </p>
-        <p className="text-slate-400 text-xs">
-          You can also click the link in your email to verify your account instead of entering the code
-        </p>
-      </div>
 
       {/* Expandable Help Section */}
       <div className="text-center">

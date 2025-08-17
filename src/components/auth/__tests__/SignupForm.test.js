@@ -542,9 +542,6 @@ describe('SignupForm', () => {
       expect(screen.getByText('Enter the 6-digit code from your email')).toBeInTheDocument();
     });
 
-    it('should display alternative instructions', () => {
-      expect(screen.getByText('Check your email for a confirmation link')).toBeInTheDocument();
-    });
 
     it('should display Sign in button', () => {
       expect(screen.getByText('Sign in')).toBeInTheDocument();

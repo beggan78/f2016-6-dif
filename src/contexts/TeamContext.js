@@ -806,11 +806,7 @@ export const TeamProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('team_invitation')
-        .select(`
-          id, email, role, message, status, created_at,
-          invited_by:invited_by_user_id (id, name),
-          invited_user:invited_user_id (id, name)
-        `)
+        .select('id, email, role, message, status, created_at, invited_by_user_id')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false });
 

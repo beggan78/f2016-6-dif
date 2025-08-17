@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Input, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,11 +7,13 @@ import {
   Users, 
   CheckCircle, 
   AlertTriangle,
-  X
+  X,
+  Clock,
+  UserCheck
 } from 'lucide-react';
 
 export function TeamInviteModal({ isOpen, onClose, team }) {
-  const { inviteUserToTeam, loading, error } = useTeam();
+  const { inviteUserToTeam, getTeamInvitations, loading, error } = useTeam();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -20,12 +22,40 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
   });
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessageOriginal] = useState('');
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
   
   // Simplified setSuccessMessage wrapper for basic logging
   const setSuccessMessage = (value) => {
     console.log('✅ [TeamInviteModal] Setting success message:', value);
     setSuccessMessageOriginal(value);
   };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  // Fetch pending invitations for the current team
+  const fetchPendingInvitations = useCallback(async () => {
+    if (!team?.id) return;
+    
+    setLoadingInvitations(true);
+    try {
+      const invitations = await getTeamInvitations(team.id);
+      // Filter for only pending invitations
+      const pending = invitations.filter(invitation => invitation.status === 'pending');
+      setPendingInvitations(pending);
+    } catch (error) {
+      console.error('Error fetching pending invitations:', error);
+    } finally {
+      setLoadingInvitations(false);
+    }
+  }, [team?.id, getTeamInvitations]);
 
   // Track previous isOpen state to detect transitions - always start with false
   const prevIsOpenRef = useRef(false);
@@ -44,6 +74,8 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
         message: ''
       });
       setErrors({});
+      // Fetch pending invitations when modal opens
+      fetchPendingInvitations();
     } else if (wasOpen && !isNowOpen) {
       // Clear success message when modal closes
       setSuccessMessage('');
@@ -51,7 +83,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     
     // Update ref for next render
     prevIsOpenRef.current = isOpen;
-  }, [isOpen]);
+  }, [isOpen, fetchPendingInvitations]);
 
   // Handle ESC key press
   useEffect(() => {
@@ -119,6 +151,9 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
           role: 'coach',
           message: ''
         });
+        
+        // Refresh pending invitations list
+        fetchPendingInvitations();
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
@@ -152,6 +187,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
   if (!isOpen) {
     return null;
   }
+
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
@@ -294,6 +330,65 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 {loading ? 'Sending Invitation...' : 'Send Invitation'}
               </Button>
             </form>
+
+            {/* Pending Invitations Section */}
+            <div className="border-t border-slate-600 pt-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Clock className="w-5 h-5 text-amber-400" />
+                <h4 className="text-slate-300 font-medium">
+                  Pending Invitations
+                  {pendingInvitations.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-slate-400">
+                      ({pendingInvitations.length})
+                    </span>
+                  )}
+                </h4>
+              </div>
+
+              {loadingInvitations ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-400"></div>
+                  <span className="ml-2 text-slate-400 text-sm">Loading invitations...</span>
+                </div>
+              ) : pendingInvitations.length === 0 ? (
+                <div className="text-center py-4 text-slate-400">
+                  <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No pending invitations</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingInvitations.map((invitation) => (
+                    <div
+                      key={invitation.id}
+                      className="bg-slate-700/50 border border-slate-600 rounded-lg p-3"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="text-slate-300 font-medium text-sm">
+                              {invitation.email}
+                            </span>
+                            <div className="flex items-center space-x-1">
+                              <UserCheck className="w-3 h-3 text-emerald-400" />
+                              <span className="text-emerald-400 text-xs font-medium">
+                                {invitation.role}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4 text-xs text-slate-400">
+                            <span>Sent: {formatDate(invitation.created_at)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                          <span className="text-amber-400 text-xs font-medium">Pending</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Info Box */}
             <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
