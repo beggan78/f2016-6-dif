@@ -377,13 +377,15 @@ export function ConfigurationScreen({
             <p className="text-sm text-slate-400 mb-4">
               Your team roster is empty. Add players to start setting up your game.
             </p>
-            <Button
-              onClick={() => setTeamManagementInitialTab(TAB_VIEWS.ROSTER)}
-              variant="primary"
-              Icon={UserPlus}
-            >
-              Add Players
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setTeamManagementInitialTab(TAB_VIEWS.ROSTER)}
+                variant="primary"
+                Icon={UserPlus}
+              >
+                Add Players
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
