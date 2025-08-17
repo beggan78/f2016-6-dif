@@ -57,17 +57,17 @@ export function ProfileScreen({ setView }) {
     }
 
     try {
-      const { data, error } = await updateProfile({
+      const { profile, error } = await updateProfile({
         name: editedName.trim()
       });
 
       if (error) {
         setErrors({ general: error.message });
-      } else if (data) {
+      } else if (profile) {
         setIsEditing(false);
         setSuccessMessage('Profile updated successfully!');
         // Mark profile as completed if name was added
-        if (data.name && data.name.trim()) {
+        if (profile.name && profile.name.trim()) {
           markProfileCompleted();
         }
         // Clear success message after 3 seconds
