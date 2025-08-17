@@ -1,7 +1,7 @@
 # Authentication System Implementation Plan
 
 ## Overview
-Implement a secure login/logout system with best practices for the DIF F16-6 Coach application. Add authentication options to the hamburger menu with secure sign-in and account creation functionality.
+Implement a secure login/logout system with best practices for the Sport Wizard application. Add authentication options to the hamburger menu with secure sign-in and account creation functionality.
 
 ## Phase 1: Supabase Client Setup & User Context
 

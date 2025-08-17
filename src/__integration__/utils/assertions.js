@@ -2,7 +2,7 @@
  * Custom Assertions for Integration Testing
  * 
  * Custom assertion utilities specifically designed for integration testing
- * of the DIF F16-6 Coach application. These assertions validate complex
+ * of the Sport Wizard application. These assertions validate complex
  * state relationships and cross-component interactions.
  */
 

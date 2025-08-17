@@ -1,4 +1,4 @@
--- Seed data for DIF F16-6 Coach application
+-- Seed data for Sport Wizard application
 -- This file provides sample data for development and testing
 
 -- Insert sample club

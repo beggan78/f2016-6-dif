@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the component architecture patterns, relationships, and best practices established in the DIF F16-6 Coach application. Understanding this architecture is crucial for maintaining consistency and making effective changes.
+This document outlines the component architecture patterns, relationships, and best practices established in the Sport Wizard application. Understanding this architecture is crucial for maintaining consistency and making effective changes.
 
 ## Component Hierarchy
 

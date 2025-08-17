@@ -1,7 +1,7 @@
 /**
  * Mock Game Data for Integration Tests
  * 
- * Comprehensive test data scenarios for integration testing of the DIF F16-6 Coach application.
+ * Comprehensive test data scenarios for integration testing of the Sport Wizard application.
  * Includes realistic game states, player statistics, error scenarios, and edge cases.
  */
 

@@ -2,7 +2,7 @@
 
 ## Common Jest Mocking Issues and Solutions
 
-This document provides quick solutions to common testing issues encountered in the DIF F16-6 Coach application.
+This document provides quick solutions to common testing issues encountered in the Sport Wizard application.
 
 *See `.claude/testing-guidelines.md` for comprehensive testing patterns and best practices.*
 

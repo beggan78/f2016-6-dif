@@ -1,6 +1,6 @@
 # Database Schema Management
 
-This document outlines the database schema management approach for the DIF F16-6 Coach application using Supabase.
+This document outlines the database schema management approach for the Sport Wizard application using Supabase.
 
 ## Overview
 

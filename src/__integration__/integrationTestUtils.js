@@ -1,7 +1,7 @@
 /**
  * Integration Test Utilities
  * 
- * Comprehensive utilities for integration testing across the DIF F16-6 Coach application.
+ * Comprehensive utilities for integration testing across the Sport Wizard application.
  * These utilities help simulate complete user journeys, validate data consistency,
  * and provide robust testing infrastructure for complex component interactions.
  */

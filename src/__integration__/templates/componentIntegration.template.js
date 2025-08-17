@@ -1,7 +1,7 @@
 /**
  * Component Integration Test Template
  * 
- * Standard template for testing component integrations in the DIF F16-6 Coach application.
+ * Standard template for testing component integrations in the Sport Wizard application.
  * This template provides a consistent structure for testing how components work together
  * and interact with hooks, state management, and other components.
  * 

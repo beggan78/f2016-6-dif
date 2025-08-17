@@ -858,7 +858,7 @@ function AppContent() {
             onSignOut={handleSignOut}
           />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">DIF F16-6 Coach</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
       </header>
 
       {/* Success Message Banner */}

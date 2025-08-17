@@ -1,4 +1,4 @@
--- CONSOLIDATED SCHEMA FOR DIF F16-6 COACH APPLICATION
+-- CONSOLIDATED SCHEMA FOR Sport Wizard APPLICATION
 -- This migration creates the complete database schema including:
 -- 1. Core team management tables
 -- 2. Club membership system  

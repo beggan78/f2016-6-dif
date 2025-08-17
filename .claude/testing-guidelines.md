@@ -1,8 +1,8 @@
-# Testing Guidelines for DIF F16-6 Coach Application
+# Testing Guidelines for Sport Wizard Application
 
 ## Overview
 
-This document outlines the testing strategies, patterns, and best practices established for the DIF F16-6 Coach application. These guidelines ensure consistent, maintainable, and comprehensive test coverage across all components and modules.
+This document outlines the testing strategies, patterns, and best practices established for the Sport Wizard application. These guidelines ensure consistent, maintainable, and comprehensive test coverage across all components and modules.
 
 ## Test Architecture
 

@@ -1,7 +1,7 @@
 /**
  * Workflow Integration Test Template
  * 
- * Standard template for testing complete user workflows in the DIF F16-6 Coach application.
+ * Standard template for testing complete user workflows in the Sport Wizard application.
  * This template focuses on end-to-end user journeys that span multiple screens,
  * components, and application states.
  * 

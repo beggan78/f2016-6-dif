@@ -1,7 +1,7 @@
 /**
  * Integration Test Helpers
  * 
- * Common integration test patterns and utilities for the DIF F16-6 Coach application.
+ * Common integration test patterns and utilities for the Sport Wizard application.
  * These helpers provide standardized approaches to common integration testing scenarios.
  */
 
