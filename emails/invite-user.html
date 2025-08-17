@@ -28,26 +28,9 @@
               
               <!-- Welcome Section (inner slate-700 container) -->
               <div style="background-color: #334155; border-radius: 12px; padding: 32px; text-align: center; margin-bottom: 24px; border: 1px solid #475569;">
-                <h2 style="font-size: 26px; font-weight: 700; color: #f1f5f9; margin: 0 0 16px 0; line-height: 1.2;">You're Invited to Join Our Team!</h2>
-                <p style="font-size: 16px; line-height: 1.6; color: #cbd5e1; margin: 0 0 16px 0;">You've been invited to join a Sport Wizard team. Click the invitation link below to get started and become part of our soccer community.</p>
+                <h2 style="font-size: 26px; font-weight: 700; color: #f1f5f9; margin: 0 0 16px 0; line-height: 1.2;">You're Invited to Join <span style="color: #38bdf8;">{{ .Data.team_name }}</span>!</h2>
+                <p style="font-size: 16px; line-height: 1.6; color: #cbd5e1; margin: 0 0 16px 0;">You've been invited to join <strong style="color: #38bdf8;">{{ .Data.team_name }}</strong> as a <span style="text-transform: capitalize; font-weight: 600;">{{ .Data.role }}</span>. Click the invitation link below to get started and become part of our soccer community.</p>
                 <p style="font-size: 14px; color: #94a3b8; margin: 0;">If you didn't expect this invitation, you can safely ignore this email.</p>
-              </div>
-
-              <!-- Invitation Details Section (inner slate-700 container) -->
-              <div style="background-color: #334155; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #475569;">
-                <h3 style="font-size: 16px; font-weight: 600; color: #f1f5f9; margin: 0 0 16px 0; text-align: center;">Invitation Details</h3>
-                
-                <div style="text-align: center;">
-                  <div style="margin-bottom: 16px;">
-                    <p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px 0;">Team</p>
-                    <p style="font-size: 18px; color: #f1f5f9; font-weight: 600; margin: 0;">{{ .Data.team_name }}</p>
-                  </div>
-                  
-                  <div style="margin-bottom: 0;">
-                    <p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px 0;">Your Role</p>
-                    <p style="font-size: 18px; color: #f1f5f9; font-weight: 600; margin: 0; text-transform: capitalize;">{{ .Data.role }}</p>
-                  </div>
-                </div>
               </div>
 
               <!-- Action Section (inner slate-700 container) -->

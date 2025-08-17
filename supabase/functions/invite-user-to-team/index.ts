@@ -51,11 +51,13 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3001';
 
     console.log('🔍 Checking environment variables...');
     console.log('SUPABASE_URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
     console.log('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✅ Set' : '❌ Missing');
     console.log('SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
+    console.log('SITE_URL:', siteUrl);
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       console.error('❌ Missing required environment variables');
@@ -134,6 +136,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Construct environment-aware redirect URL
+    const redirectUrl = p_redirect_url || `${siteUrl}/?invitation=true&team=${p_team_id}&role=${p_role}`;
+    console.log('🔗 Using redirect URL:', redirectUrl);
+
     console.log('🎯 Step 1: Calling database function for validation and record creation...');
 
     // Step 1: Call existing database function to validate and create invitation record
@@ -142,7 +148,7 @@ Deno.serve(async (req) => {
       p_email,
       p_role,
       p_message: p_message || '',
-      p_redirect_url
+      p_redirect_url: redirectUrl
     });
 
     if (dbError) {
