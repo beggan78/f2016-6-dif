@@ -69,7 +69,11 @@ jobs:
       - name: Check for function changes
         id: function_changes
         run: |
-          if git diff HEAD~1 --name-only | grep -q "supabase/functions/"; then
+          # Fetch more history for reliable diff
+          git fetch --depth=2 origin ${{ github.ref_name }}
+          
+          # Use GitHub's event context for reliable comparison
+          if git diff ${{ github.event.before }}..${{ github.sha }} --name-only | grep -q "supabase/functions/"; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "⚡ Edge Function changes detected"
           else

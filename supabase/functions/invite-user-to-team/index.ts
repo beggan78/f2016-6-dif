@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('💥 Unexpected error in Edge Function:', error);
+    console.error('💥 Unexpected error - Edge Function:', error);
     
     return new Response(
       JSON.stringify({ 
