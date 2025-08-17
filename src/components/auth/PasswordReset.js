@@ -136,6 +136,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
       } else if (user) {
         // Switch to password update mode
         setMode(RESET_MODES.UPDATE);
+        setSuccessMessage('');
         setErrors({});
       }
     } catch (error) {
@@ -194,7 +195,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
           <div className="bg-sky-900/50 border border-sky-600 rounded-lg p-4">
             <div className="space-y-2 text-sky-200 text-sm">
               <p>We've sent a password reset email to <strong>{email}</strong></p>
-              <p>Click the link in the email OR enter the 6-digit code below.</p>
+              <p>Enter the 6-digit verification code from the email below.</p>
               <p className="text-slate-400">
                 Don't see the email? Check your spam folder.
               </p>
@@ -202,8 +203,8 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
           </div>
         )}
 
-        <div className="space-y-3">
-          {mode === RESET_MODES.UPDATE ? (
+        {mode === RESET_MODES.UPDATE ? (
+          <div className="space-y-3">
             <Button
               onClick={user ? onClose : onSwitchToLogin}
               variant="primary"
@@ -212,43 +213,93 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
             >
               {user ? 'Continue' : 'Sign In Now'}
             </Button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(RESET_MODES.CODE);
-                  setSuccessMessage('');
-                  setErrors({});
-                }}
-                className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
+            
+            <button
+              type="button"
+              onClick={onClose}
+              className="block text-slate-400 hover:text-slate-300 text-sm transition-colors mx-auto"
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Code input form */}
+            {getErrorMessage() && (
+              <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
+                <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleCodeSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="reset-code" className="block text-sm font-medium text-slate-300 mb-2">
+                  6-Digit Verification Code
+                </label>
+                <Input
+                  id="reset-code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={code}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setCode(value);
+                    if (errors.code) {
+                      setErrors(prev => ({ ...prev, code: null }));
+                    }
+                  }}
+                  placeholder="Enter 6-digit code"
+                  disabled={loading}
+                  className={`text-center text-lg tracking-widest ${errors.code ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}`}
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                />
+                {errors.code && (
+                  <p className="text-rose-400 text-sm mt-1">{errors.code}</p>
+                )}
+                <p className="text-slate-500 text-xs mt-1">
+                  Check your email for the 6-digit verification code
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                disabled={loading || code.length !== 6}
+                className="w-full"
               >
-                I have the 6-digit code from my email
-              </button>
-              
+                {loading ? 'Verifying Code...' : 'Verify Code'}
+              </Button>
+            </form>
+
+            <div className="text-center space-y-2">
               <button
                 type="button"
                 onClick={() => {
                   setSuccessMessage('');
                   setEmail('');
+                  setCode('');
                   setErrors({});
                   setMode(RESET_MODES.EMAIL);
                 }}
-                className="block text-sky-400 hover:text-sky-300 text-sm transition-colors mx-auto"
+                className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
+                disabled={loading}
               >
                 Send another reset email
               </button>
-            </>
-          )}
-          
-          <button
-            type="button"
-            onClick={onClose}
-            className="block text-slate-400 hover:text-slate-300 text-sm transition-colors mx-auto"
-          >
-            Close
-          </button>
-        </div>
+              
+              <button
+                type="button"
+                onClick={onClose}
+                className="block text-slate-400 hover:text-slate-300 text-sm transition-colors mx-auto"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -260,7 +311,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-sky-300">Reset Password</h2>
           <p className="text-slate-400 mt-2">
-            Enter your email address and we'll send you a link and code to reset your password
+            Enter your email address and we'll send you a verification code to reset your password
           </p>
         </div>
 
@@ -309,8 +360,8 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
           <h4 className="text-slate-300 font-medium mb-2">What happens next?</h4>
           <ul className="text-slate-400 text-sm space-y-1">
             <li>• We'll send a password reset email to your address</li>
-            <li>• The email contains a 6-digit code</li>
-            <li>• Enter the code manually</li>
+            <li>• The email contains a 6-digit verification code</li>
+            <li>• Enter the code in the verification form</li>
             <li>• Choose a new password and confirm the change</li>
           </ul>
         </div>
@@ -329,88 +380,6 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
     );
   }
 
-  // OTP code entry mode
-  if (mode === RESET_MODES.CODE) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-sky-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-sky-300">Enter Reset Code</h2>
-          <p className="text-slate-400 mt-2">
-            Enter the 6-digit code from your password reset email
-          </p>
-        </div>
-
-        {getErrorMessage() && (
-          <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-            <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleCodeSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="reset-code" className="block text-sm font-medium text-slate-300 mb-2">
-              6-Digit Code
-            </label>
-            <Input
-              id="reset-code"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={code}
-              onChange={(e) => {
-                let value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                setCode(value);
-                if (errors.code) {
-                  setErrors(prev => ({ ...prev, code: null }));
-                }
-              }}
-              placeholder="Enter 6-digit code"
-              disabled={loading}
-              className={`text-center text-lg tracking-widest ${errors.code ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}`}
-              maxLength={6}
-              autoComplete="one-time-code"
-            />
-            {errors.code && (
-              <p className="text-rose-400 text-sm mt-1">{errors.code}</p>
-            )}
-            <p className="text-slate-500 text-xs mt-1">
-              Check your email for the 6-digit verification code
-            </p>
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            disabled={loading || code.length !== 6}
-            className="w-full"
-          >
-            {loading ? 'Verifying Code...' : 'Verify Code'}
-          </Button>
-        </form>
-
-        <div className="text-center space-y-2">
-          <button
-            type="button"
-            onClick={() => {
-              setMode(RESET_MODES.EMAIL);
-              setCode('');
-              setErrors({});
-            }}
-            className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
-            disabled={loading}
-          >
-            ← Back to email entry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
 
   // Password update mode (when user clicked email link or verified code)
