@@ -1,5 +1,5 @@
     import React, { useState, useEffect } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload, Layers } from 'lucide-react';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES } from '../../constants/teamConfiguration';
@@ -13,6 +13,14 @@ import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
+
+// Import TAB_VIEWS for team management navigation
+const TAB_VIEWS = {
+  OVERVIEW: 'overview',
+  ACCESS: 'access',
+  ROSTER: 'roster',
+  PREFERENCES: 'preferences'
+};
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -40,7 +48,8 @@ export function ConfigurationScreen({
   setCaptain,
   debugMode = false,
   authModal,
-  setView
+  setView,
+  setTeamManagementInitialTab
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -103,7 +112,8 @@ export function ConfigurationScreen({
     }
   }, [user]);
 
-  // Determine which players to show
+  // Determine which players to show and if team has no players
+  const hasNoTeamPlayers = isAuthenticated && currentTeam && teamPlayers.length === 0;
   const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0
     ? teamPlayers.map(player => ({
         id: player.id,
@@ -111,6 +121,13 @@ export function ConfigurationScreen({
         jerseyNumber: player.jersey_number
       }))
     : allPlayers;
+
+  // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
+  React.useEffect(() => {
+    if (hasNoTeamPlayers && selectedSquadIds.length > 0) {
+      setSelectedSquadIds([]);
+    }
+  }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds]);
 
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
@@ -347,21 +364,43 @@ export function ConfigurationScreen({
 
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
-        <h3 className="text-base font-medium text-sky-200 mb-2">Select Squad (5-10 Players) - Selected: {selectedSquadIds.length}</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {playersToShow.map(player => (
-            <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
-              <input
-                type="checkbox"
-                checked={selectedSquadIds.includes(player.id)}
-                onChange={() => togglePlayerSelection(player.id)}
-                className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
-                disabled={selectedSquadIds.length >= 10 && !selectedSquadIds.includes(player.id)}
-              />
-              <span>{formatPlayerName(player)}</span>
-            </label>
-          ))}
-        </div>
+        <h3 className="text-base font-medium text-sky-200 mb-2">
+          {hasNoTeamPlayers 
+            ? "Add Players to Your Team" 
+            : `Select Squad (5-10 Players) - Selected: ${selectedSquadIds.length}`
+          }
+        </h3>
+        {hasNoTeamPlayers ? (
+          <div className="text-center py-8">
+            <UserPlus className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+            <p className="text-lg font-medium text-slate-300 mb-2">No Players Added Yet</p>
+            <p className="text-sm text-slate-400 mb-4">
+              Your team roster is empty. Add players to start setting up your game.
+            </p>
+            <Button
+              onClick={() => setTeamManagementInitialTab(TAB_VIEWS.ROSTER)}
+              variant="primary"
+              Icon={UserPlus}
+            >
+              Add Players
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {playersToShow.map(player => (
+              <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
+                <input
+                  type="checkbox"
+                  checked={selectedSquadIds.includes(player.id)}
+                  onChange={() => togglePlayerSelection(player.id)}
+                  className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
+                  disabled={selectedSquadIds.length >= 10 && !selectedSquadIds.includes(player.id)}
+                />
+                <span>{formatPlayerName(player)}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Opponent Team Name */}

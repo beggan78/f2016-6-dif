@@ -37,7 +37,7 @@ const TAB_VIEWS = {
   PREFERENCES: 'preferences'
 };
 
-export function TeamManagement({ setView }) {
+export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
   const { user } = useAuth();
   const { 
     hasTeams, 
@@ -53,7 +53,7 @@ export function TeamManagement({ setView }) {
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept();
   
-  const [activeTab, setActiveTab] = useState(TAB_VIEWS.OVERVIEW);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);

@@ -36,7 +36,10 @@ jest.mock('lucide-react', () => ({
   Settings: ({ className, ...props }) => <div data-testid="settings-icon" className={className} {...props} />,
   Play: ({ className, ...props }) => <div data-testid="play-icon" className={className} {...props} />,
   Shuffle: ({ className, ...props }) => <div data-testid="shuffle-icon" className={className} {...props} />,
-  Layers: ({ className, ...props }) => <div data-testid="layers-icon" className={className} {...props} />
+  Layers: ({ className, ...props }) => <div data-testid="layers-icon" className={className} {...props} />,
+  UserPlus: ({ className, ...props }) => <div data-testid="user-plus-icon" className={className} {...props} />,
+  Cloud: ({ className, ...props }) => <div data-testid="cloud-icon" className={className} {...props} />,
+  Upload: ({ className, ...props }) => <div data-testid="upload-icon" className={className} {...props} />
 }));
 
 // Mock FormationPreview component
@@ -46,6 +49,44 @@ jest.mock('../FormationPreview', () => ({
       Formation: {formation}
     </div>
   )
+}));
+
+// Mock Auth and Team contexts with default values
+jest.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: false,
+    user: null
+  })
+}));
+
+jest.mock('../../../contexts/TeamContext', () => ({
+  useTeam: () => ({
+    currentTeam: null,
+    teamPlayers: [],
+    hasTeams: false,
+    hasClubs: false
+  })
+}));
+
+// Mock required components and utilities
+jest.mock('../../../utils/DataSyncManager', () => ({
+  dataSyncManager: {
+    setUserId: jest.fn(),
+    getLocalMatches: jest.fn(() => [])
+  }
+}));
+
+jest.mock('../../team/TeamManagement', () => ({
+  TeamManagement: () => <div data-testid="team-management">Team Management</div>
+}));
+
+jest.mock('../../auth/FeatureGate', () => ({
+  FeatureGate: ({ children }) => <div data-testid="feature-gate">{children}</div>
+}));
+
+jest.mock('../../shared/FeatureVoteModal', () => ({
+  __esModule: true,
+  default: () => <div data-testid="feature-vote-modal">Feature Vote Modal</div>
 }));
 
 // Mock UI components
@@ -132,6 +173,7 @@ describe('ConfigurationScreen', () => {
       selectedSquadPlayers: [],
       opponentTeamName: '',
       captainId: null,
+      setTeamManagementInitialTab: jest.fn(),
       ...mockSetters
     };
 

@@ -161,6 +161,21 @@ function AppContent() {
   const [showInvitationNotifications, setShowInvitationNotifications] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [hasCheckedInvitations, setHasCheckedInvitations] = useState(false);
+  const [teamManagementInitialTab, setTeamManagementInitialTab] = useState(null);
+
+  // Handle navigation to team management with specific tab
+  useEffect(() => {
+    if (teamManagementInitialTab) {
+      gameState.setView(VIEWS.TEAM_MANAGEMENT);
+    }
+  }, [teamManagementInitialTab, gameState]);
+
+  // Reset initial tab when leaving team management view
+  useEffect(() => {
+    if (gameState.view !== VIEWS.TEAM_MANAGEMENT && teamManagementInitialTab) {
+      setTeamManagementInitialTab(null);
+    }
+  }, [gameState.view, teamManagementInitialTab]);
 
   // Handle invitation acceptance
   const handleInvitationAcceptance = useCallback(async (params) => {
@@ -681,6 +696,7 @@ function AppContent() {
             debugMode={debugMode}
             authModal={authModal}
             setView={gameState.setView}
+            setTeamManagementInitialTab={setTeamManagementInitialTab}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -831,6 +847,7 @@ function AppContent() {
         return (
           <TeamManagement
             setView={gameState.setView}
+            initialTab={teamManagementInitialTab}
           />
         );
       default:
