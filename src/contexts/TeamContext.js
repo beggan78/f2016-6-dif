@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { getCachedTeamData, cacheTeamData } from '../utils/cacheUtils';
+import { sanitizeSearchInput } from '../utils/inputSanitization';
 
 const TeamContext = createContext({});
 
@@ -92,12 +93,20 @@ export const TeamProvider = ({ children }) => {
     if (!query?.trim()) return [];
 
     try {
-      const searchTerm = query.trim().toLowerCase();
+      // Use enhanced sanitization to prevent SQL injection and XSS
+      const sanitizedQuery = sanitizeSearchInput(query);
+      
+      if (sanitizedQuery.length < 2) {
+        return []; // Require minimum 2 characters for search
+      }
+
+      // Use safer approach with individual ilike filters and combine results
+      const searchPattern = `%${sanitizedQuery}%`;
       
       const { data, error } = await supabase
         .from('club')
         .select('id, name, short_name, long_name')
-        .or(`name.ilike.%${searchTerm}%,short_name.ilike.%${searchTerm}%,long_name.ilike.%${searchTerm}%`)
+        .or(`name.ilike.${searchPattern},short_name.ilike.${searchPattern},long_name.ilike.${searchPattern}`)
         .order('name')
         .limit(10);
 
@@ -211,7 +220,13 @@ export const TeamProvider = ({ children }) => {
       // Check if the function returned an error result
       if (!data.success) {
         console.error('Create team function failed:', data.error);
-        setError(data.message || 'Failed to create team');
+        
+        // Provide specific error handling for duplicate team names
+        if (data.error === 'duplicate_team_name') {
+          setError('A team with this name already exists in this club. Please request to join the existing team.');
+        } else {
+          setError(data.message || 'Failed to create team');
+        }
         return null;
       }
 

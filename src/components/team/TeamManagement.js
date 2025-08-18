@@ -248,13 +248,6 @@ export function TeamManagement({ setView, openToTab }) {
     );
   }
 
-  // Debug logging for available tabs
-  console.log('Available tabs:', tabs.map(t => ({ id: t.id, label: t.label })));
-  console.log('Tab availability check:', {
-    rosterTabExists: tabs.some(t => t.id === TAB_VIEWS.ROSTER),
-    activeTabExists: tabs.some(t => t.id === activeTab),
-    activeTabMatchesAny: activeTab && tabs.find(t => t.id === activeTab)
-  });
 
   const renderTabContent = () => {
     switch (activeTab) {

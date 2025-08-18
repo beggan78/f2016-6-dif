@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Input, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput } from '../../utils/inputSanitization';
 import { 
   Mail, 
   Users, 
@@ -105,10 +106,11 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
   const validateForm = () => {
     const newErrors = {};
     
-    // Email validation
-    if (!formData.email.trim()) {
+    // Enhanced email validation with sanitization
+    const sanitizedEmail = sanitizeEmailInput(formData.email);
+    if (!sanitizedEmail) {
       newErrors.email = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+    } else if (!isValidEmailInput(sanitizedEmail)) {
       newErrors.email = 'Please enter a valid email address';
     }
     
@@ -117,8 +119,9 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       newErrors.role = 'Please select a role';
     }
     
-    // Message validation (optional but limit length)
-    if (formData.message.length > 500) {
+    // Enhanced message validation with sanitization
+    const sanitizedMessage = sanitizeMessageInput(formData.message);
+    if (sanitizedMessage.length > 500) {
       newErrors.message = 'Message must be less than 500 characters';
     }
     
@@ -134,11 +137,15 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     }
 
     try {
+      // Use sanitized inputs for security
+      const sanitizedEmail = sanitizeEmailInput(formData.email);
+      const sanitizedMessage = sanitizeMessageInput(formData.message);
+      
       const result = await inviteUserToTeam({
         teamId: team.id,
-        email: formData.email.trim(),
+        email: sanitizedEmail,
         role: formData.role,
-        message: formData.message.trim()
+        message: sanitizedMessage
       });
 
       if (result.success) {

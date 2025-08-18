@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 import { ChangePassword } from '../auth/ChangePassword';
+import { sanitizeNameInput, isValidNameInput } from '../../utils/inputSanitization';
 
 export function ProfileScreen({ setView }) {
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
@@ -41,10 +42,14 @@ export function ProfileScreen({ setView }) {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!editedName.trim()) {
+    const trimmedName = editedName.trim();
+    
+    if (!trimmedName) {
       newErrors.name = 'Name is required';
-    } else if (editedName.trim().length < 2) {
+    } else if (trimmedName.length < 2) {
       newErrors.name = 'Name must be at least 2 characters';
+    } else if (!isValidNameInput(trimmedName)) {
+      newErrors.name = 'Name contains invalid characters. Please use only letters, numbers, spaces, hyphens, apostrophes, and periods.';
     }
     
     setErrors(newErrors);
@@ -57,8 +62,11 @@ export function ProfileScreen({ setView }) {
     }
 
     try {
+      // Sanitize the name input for security
+      const sanitizedName = sanitizeNameInput(editedName.trim());
+      
       const { profile, error } = await updateProfile({
-        name: editedName.trim()
+        name: sanitizedName
       });
 
       if (error) {
@@ -77,6 +85,13 @@ export function ProfileScreen({ setView }) {
       }
     } catch (error) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' });
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !loading) {
+      e.preventDefault(); // Prevent any default form submission behavior
+      handleSave();
     }
   };
 
@@ -200,6 +215,7 @@ export function ProfileScreen({ setView }) {
                           setErrors(prev => ({ ...prev, name: null }));
                         }
                       }}
+                      onKeyDown={handleKeyDown}
                       placeholder="Enter your full name"
                       disabled={loading}
                       className={errors.name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
@@ -437,6 +453,7 @@ export function ProfileScreen({ setView }) {
                   onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
                   variant="primary"
                   size="sm"
+                  className="mx-auto"
                 >
                   Create Your First Team
                 </Button>

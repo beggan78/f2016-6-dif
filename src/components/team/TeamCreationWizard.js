@@ -133,9 +133,10 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
   // Handle existing team selection - show team access request modal
   const handleExistingTeamSelect = useCallback((team) => {
+    clearError(); // Clear any previous error messages from team creation
     setSelectedTeamForAccess(team);
     setShowTeamAccessModal(true);
-  }, []);
+  }, [clearError]);
 
   // Handle team creation
   const handleTeamCreation = useCallback(async () => {
