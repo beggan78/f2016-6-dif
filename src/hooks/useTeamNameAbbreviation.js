@@ -32,18 +32,23 @@ export function useTeamNameAbbreviation(homeTeamName, awayTeamName, homeScore, a
       testDiv.style.whiteSpace = 'nowrap';
       testDiv.className = container.className;
       
-      // Create test content with full names
-      testDiv.innerHTML = `
-        <button class="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors">
-          ${homeTeamName}
-        </button>
-        <div class="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0">
-          ${homeScore} - ${awayScore}
-        </div>
-        <button class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors">
-          ${awayTeamName}
-        </button>
-      `;
+      // Create test content with full names using safe DOM methods to prevent XSS
+      const homeButton = document.createElement('button');
+      homeButton.className = 'flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors';
+      homeButton.textContent = homeTeamName || ''; // Safe - uses textContent instead of innerHTML
+      
+      const scoreDiv = document.createElement('div');
+      scoreDiv.className = 'text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0';
+      scoreDiv.textContent = `${homeScore || 0} - ${awayScore || 0}`; // Safe - uses textContent
+      
+      const awayButton = document.createElement('button');
+      awayButton.className = 'flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors';
+      awayButton.textContent = awayTeamName || ''; // Safe - uses textContent instead of innerHTML
+      
+      // Append elements safely
+      testDiv.appendChild(homeButton);
+      testDiv.appendChild(scoreDiv);
+      testDiv.appendChild(awayButton);
       
       // Temporarily add to DOM to measure
       container.parentElement.appendChild(testDiv);

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Input, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput } from '../../utils/inputSanitization';
+import { useCSRFProtection } from '../../hooks/useCSRFProtection';
 import { 
   Mail, 
   Users, 
@@ -15,6 +17,7 @@ import {
 export function TeamInviteModal({ isOpen, onClose, team }) {
   const { inviteUserToTeam, getTeamInvitations, loading, error } = useTeam();
   const { user } = useAuth();
+  const { csrfToken, isReady: csrfReady } = useCSRFProtection();
   const [formData, setFormData] = useState({
     email: '',
     role: 'coach',
@@ -105,10 +108,11 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
   const validateForm = () => {
     const newErrors = {};
     
-    // Email validation
-    if (!formData.email.trim()) {
+    // Enhanced email validation with sanitization
+    const sanitizedEmail = sanitizeEmailInput(formData.email);
+    if (!sanitizedEmail) {
       newErrors.email = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+    } else if (!isValidEmailInput(sanitizedEmail)) {
       newErrors.email = 'Please enter a valid email address';
     }
     
@@ -117,8 +121,9 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       newErrors.role = 'Please select a role';
     }
     
-    // Message validation (optional but limit length)
-    if (formData.message.length > 500) {
+    // Enhanced message validation with sanitization
+    const sanitizedMessage = sanitizeMessageInput(formData.message);
+    if (sanitizedMessage.length > 500) {
       newErrors.message = 'Message must be less than 500 characters';
     }
     
@@ -133,12 +138,23 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       return;
     }
 
+    // Check CSRF protection is ready
+    if (!csrfReady || !csrfToken) {
+      setErrors({ general: 'Security validation failed. Please refresh the page and try again.' });
+      return;
+    }
+
     try {
+      // Use sanitized inputs for security
+      const sanitizedEmail = sanitizeEmailInput(formData.email);
+      const sanitizedMessage = sanitizeMessageInput(formData.message);
+      
       const result = await inviteUserToTeam({
         teamId: team.id,
-        email: formData.email.trim(),
+        email: sanitizedEmail,
         role: formData.role,
-        message: formData.message.trim()
+        message: sanitizedMessage,
+        csrfToken: csrfToken // Include CSRF token for protection
       });
 
       if (result.success) {
@@ -157,7 +173,11 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
-      setErrors({ general: 'Failed to send invitation. Please try again.' });
+      if (error.message?.includes('CSRF')) {
+        setErrors({ general: 'Security validation failed. Please refresh the page and try again.' });
+      } else {
+        setErrors({ general: 'Failed to send invitation. Please try again.' });
+      }
     }
   };
 

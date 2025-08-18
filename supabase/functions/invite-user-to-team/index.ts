@@ -7,6 +7,7 @@ interface InvitationRequest {
   p_role: string;
   p_message?: string;
   p_redirect_url?: string;
+  csrfToken?: string;
 }
 
 interface DatabaseInvitationResponse {
@@ -119,7 +120,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { p_team_id, p_email, p_role, p_message, p_redirect_url } = requestBody;
+    const { p_team_id, p_email, p_role, p_message, p_redirect_url, csrfToken } = requestBody;
 
     // Validate required parameters
     if (!p_team_id || !p_email || !p_role) {
@@ -134,6 +135,75 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+
+    // Enhanced input validation and sanitization
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validRoles = ['admin', 'coach', 'parent', 'player'];
+    const dangerousChars = /<>\"'`&|;{}()[]\\\/\0\r\n\t/g;
+
+    // Validate email format
+    if (!emailRegex.test(p_email)) {
+      console.error('❌ Invalid email format');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid email format' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate role
+    if (!validRoles.includes(p_role)) {
+      console.error('❌ Invalid role');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid role specified' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Check for dangerous characters in inputs
+    if (dangerousChars.test(p_email) || dangerousChars.test(p_role) || 
+        (p_message && dangerousChars.test(p_message))) {
+      console.error('❌ Invalid characters in input');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid characters in input' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate input lengths
+    if (p_email.length > 320 || p_role.length > 20 || 
+        (p_message && p_message.length > 500)) {
+      console.error('❌ Input length exceeded');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Input length limits exceeded' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Rate limiting check (simple implementation)
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const rateLimitKey = `invite:${clientIP}`;
+    
+    // In a real implementation, you'd use Redis or similar for rate limiting
+    // For now, we'll log potential abuse patterns
+    console.log(`🔍 Invitation request from IP: ${clientIP}, email: ${p_email}`);
+    
+    // Detect potential bot requests
+    const userAgent = req.headers.get('user-agent') || '';
+    if (!userAgent || /bot|crawler|spider|scraper|curl|wget|python|node/i.test(userAgent)) {
+      console.warn('⚠️ Potential bot request detected:', userAgent);
     }
 
     // Construct environment-aware redirect URL

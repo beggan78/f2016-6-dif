@@ -1,4 +1,12 @@
-import { sanitizeNameInput, isValidNameInput } from '../inputSanitization';
+import { 
+  sanitizeNameInput, 
+  isValidNameInput,
+  sanitizeEmailInput,
+  isValidEmailInput,
+  sanitizeMessageInput,
+  isValidMessageInput,
+  sanitizeSearchInput
+} from '../inputSanitization';
 
 describe('sanitizeNameInput', () => {
   describe('basic functionality', () => {
@@ -300,6 +308,232 @@ describe('input sanitization integration', () => {
     testInputs.forEach(input => {
       const sanitized = sanitizeNameInput(input);
       expect(isValidNameInput(sanitized)).toBe(true);
+    });
+  });
+});
+
+// Security-focused tests for enhanced sanitization features
+describe('Security Features', () => {
+  describe('XSS Protection in Names', () => {
+    it('should remove script tags and dangerous HTML', () => {
+      expect(sanitizeNameInput('<script>alert("xss")</script>Team')).toBe('scriptalertxssscriptTeam');
+      expect(sanitizeNameInput('<img src=x onerror=alert(1)>Name')).toBe('img srcx onerroralert1Name');
+      expect(sanitizeNameInput('Team<iframe>Content</iframe>')).toBe('TeamiframeContentiframe');
+    });
+
+    it('should remove dangerous characters but preserve allowed ones', () => {
+      expect(sanitizeNameInput('Team<>Name')).toBe('TeamName');
+      expect(sanitizeNameInput('Player"Name')).toBe('PlayerName');
+      expect(sanitizeNameInput("Test'Name")).toBe("Test'Name"); // apostrophe is allowed
+      expect(sanitizeNameInput('Name`backtick')).toBe('Namebacktick');
+    });
+
+    it('should preserve valid names', () => {
+      expect(sanitizeNameInput("O'Connor")).toBe("O'Connor");
+      expect(sanitizeNameInput('Team & Co.')).toBe('Team & Co.');
+    });
+  });
+
+  describe('SQL Injection Protection in Names', () => {
+    it('should remove SQL injection patterns', () => {
+      expect(sanitizeNameInput("Team'; DROP TABLE users;--")).toBe("Team'   users");
+      expect(sanitizeNameInput('Player UNION SELECT')).toBe('Player  ');
+      expect(sanitizeNameInput('Name/* comment */')).toBe('Name comment ');
+      expect(sanitizeNameInput('Test OR 1=1')).toBe('Test OR 11');
+    });
+
+    it('should remove dangerous SQL keywords', () => {
+      expect(sanitizeNameInput('INSERT INTO Team')).toBe(' INTO Team');
+      expect(sanitizeNameInput('UPDATE Player SET')).toBe(' Player SET');
+      expect(sanitizeNameInput('DELETE FROM Club')).toBe(' FROM Club');
+      expect(sanitizeNameInput('CREATE TABLE Test')).toBe('  Test');
+    });
+  });
+});
+
+describe('sanitizeEmailInput', () => {
+  it('should sanitize normal email inputs correctly', () => {
+    expect(sanitizeEmailInput('user@example.com')).toBe('user@example.com');
+    expect(sanitizeEmailInput('Test.User@Domain.co.uk')).toBe('test.user@domain.co.uk');
+  });
+
+  it('should remove dangerous characters', () => {
+    expect(sanitizeEmailInput('user<script>@example.com')).toBe('user@example.com');
+    expect(sanitizeEmailInput('user"@example.com')).toBe('user"@example.com');
+    expect(sanitizeEmailInput("user'@example.com")).toBe('user\'@example.com');
+  });
+
+  it('should remove SQL injection patterns', () => {
+    expect(sanitizeEmailInput("user'; DROP TABLE users;--@example.com")).toBe('user\';   users;@example.com');
+    expect(sanitizeEmailInput('user UNION SELECT@example.com')).toBe('user  @example.com');
+  });
+
+  it('should enforce length limits', () => {
+    const longEmail = 'a'.repeat(400) + '@example.com';
+    const result = sanitizeEmailInput(longEmail);
+    expect(result.length).toBeLessThanOrEqual(320);
+  });
+
+  it('should handle non-string inputs', () => {
+    expect(sanitizeEmailInput(null)).toBe('');
+    expect(sanitizeEmailInput(undefined)).toBe('');
+    expect(sanitizeEmailInput(123)).toBe('');
+  });
+});
+
+describe('isValidEmailInput', () => {
+  it('should validate correct emails', () => {
+    expect(isValidEmailInput('user@example.com')).toBe(true);
+    expect(isValidEmailInput('test.user@domain.co.uk')).toBe(true);
+    expect(isValidEmailInput('user+tag@example.org')).toBe(true);
+  });
+
+  it('should reject invalid email formats', () => {
+    expect(isValidEmailInput('invalid-email')).toBe(false);
+    expect(isValidEmailInput('@example.com')).toBe(false);
+    expect(isValidEmailInput('user@')).toBe(false);
+  });
+
+  it('should reject dangerous inputs', () => {
+    expect(isValidEmailInput('user<script>@example.com')).toBe(false);
+    expect(isValidEmailInput("user'; DROP TABLE users;--@example.com")).toBe(false);
+  });
+
+  it('should reject empty or too long inputs', () => {
+    expect(isValidEmailInput('')).toBe(false);
+    expect(isValidEmailInput('a'.repeat(400) + '@example.com')).toBe(false);
+  });
+});
+
+describe('sanitizeMessageInput', () => {
+  it('should sanitize normal messages correctly', () => {
+    expect(sanitizeMessageInput('Hello, this is a normal message.')).toBe('Hello, this is a normal message.');
+    expect(sanitizeMessageInput('Welcome to the team!')).toBe('Welcome to the team!');
+  });
+
+  it('should remove script tags and HTML', () => {
+    expect(sanitizeMessageInput('<script>alert("xss")</script>Hello')).toBe('Hello');
+    expect(sanitizeMessageInput('<div>Hello</div>')).toBe('Hello');
+    expect(sanitizeMessageInput('<p onclick="alert()">Click me</p>')).toBe('Click me');
+  });
+
+  it('should remove javascript: URLs and event handlers', () => {
+    expect(sanitizeMessageInput('Visit javascript:alert("xss")')).toBe('Visit alert("xss")');
+    expect(sanitizeMessageInput('Text with onclick="alert()" handler')).toBe('Text with "alert()" handler');
+    expect(sanitizeMessageInput('Link with onload="evil()" attribute')).toBe('Link with "evil()" attribute');
+  });
+
+  it('should remove SQL injection patterns', () => {
+    expect(sanitizeMessageInput("Message'; DROP TABLE users;--")).toBe('Message\';   users;');
+    expect(sanitizeMessageInput('Text UNION SELECT password')).toBe('Text   password');
+  });
+
+  it('should enforce length limits', () => {
+    const longMessage = 'a'.repeat(1000);
+    const result = sanitizeMessageInput(longMessage);
+    expect(result.length).toBeLessThanOrEqual(500);
+  });
+
+  it('should handle non-string inputs', () => {
+    expect(sanitizeMessageInput(null)).toBe('');
+    expect(sanitizeMessageInput(undefined)).toBe('');
+    expect(sanitizeMessageInput(123)).toBe('');
+  });
+});
+
+describe('isValidMessageInput', () => {
+  it('should validate normal messages', () => {
+    expect(isValidMessageInput('Hello, this is a normal message.')).toBe(true);
+    expect(isValidMessageInput('Welcome to the team!')).toBe(true);
+    expect(isValidMessageInput('')).toBe(true); // Empty messages are allowed
+  });
+
+  it('should reject dangerous patterns', () => {
+    expect(isValidMessageInput('<script>alert("xss")</script>')).toBe(false);
+    expect(isValidMessageInput('Visit javascript:alert("xss")')).toBe(false);
+    expect(isValidMessageInput('Text with onclick="alert()" handler')).toBe(false);
+    expect(isValidMessageInput("Message'; DROP TABLE users;--")).toBe(false);
+  });
+
+  it('should reject messages that are too long', () => {
+    expect(isValidMessageInput('a'.repeat(1000))).toBe(false);
+  });
+
+  it('should handle non-string inputs', () => {
+    expect(isValidMessageInput(null)).toBe(false);
+    expect(isValidMessageInput(undefined)).toBe(false);
+    expect(isValidMessageInput(123)).toBe(false);
+  });
+});
+
+describe('sanitizeSearchInput', () => {
+  it('should sanitize normal search queries', () => {
+    expect(sanitizeSearchInput('Barcelona')).toBe('barcelona');
+    expect(sanitizeSearchInput('Real Madrid')).toBe('real madrid');
+  });
+
+  it('should remove SQL wildcards and dangerous characters', () => {
+    expect(sanitizeSearchInput('test%')).toBe('test');
+    expect(sanitizeSearchInput('test_underscore')).toBe('testunderscore');
+    expect(sanitizeSearchInput("test'quote")).toBe('testquote');
+    expect(sanitizeSearchInput('test;semicolon')).toBe('testsemicolon');
+  });
+
+  it('should remove potential injection characters', () => {
+    expect(sanitizeSearchInput('test\\')).toBe('test');
+    expect(sanitizeSearchInput('test"quote')).toBe('testquote');
+    expect(sanitizeSearchInput('test`backtick')).toBe('testbacktick');
+  });
+
+  it('should enforce length limits', () => {
+    const longQuery = 'a'.repeat(200);
+    const result = sanitizeSearchInput(longQuery);
+    expect(result.length).toBeLessThanOrEqual(100);
+  });
+
+  it('should handle non-string inputs', () => {
+    expect(sanitizeSearchInput(null)).toBe('');
+    expect(sanitizeSearchInput(undefined)).toBe('');
+    expect(sanitizeSearchInput(123)).toBe('');
+  });
+});
+
+describe('Cross-function Security Integration', () => {
+  it('should consistently protect against XSS across all functions', () => {
+    const xssPayload = '<script>alert("xss")</script>';
+    
+    expect(sanitizeNameInput(xssPayload + 'Name')).not.toContain('<script>');
+    expect(sanitizeEmailInput(xssPayload + '@example.com')).not.toContain('<script>');
+    expect(sanitizeMessageInput(xssPayload + 'Message')).not.toContain('<script>');
+    expect(sanitizeSearchInput(xssPayload + 'Search')).not.toContain('<script>');
+  });
+
+  it('should consistently protect against SQL injection across all functions', () => {
+    const sqlPayload = "'; DROP TABLE users;--";
+    
+    expect(sanitizeNameInput('Name' + sqlPayload)).not.toContain('DROP');
+    expect(sanitizeEmailInput('user' + sqlPayload + '@example.com')).not.toContain('DROP');
+    expect(sanitizeMessageInput('Message' + sqlPayload)).not.toContain('DROP');
+    expect(sanitizeSearchInput('Search' + sqlPayload)).not.toContain('DROP');
+  });
+
+  it('should enforce consistent length limits', () => {
+    const longInput = 'a'.repeat(1000);
+    
+    expect(sanitizeNameInput(longInput).length).toBeLessThanOrEqual(50);
+    expect(sanitizeEmailInput(longInput + '@example.com').length).toBeLessThanOrEqual(320);
+    expect(sanitizeMessageInput(longInput).length).toBeLessThanOrEqual(500);
+    expect(sanitizeSearchInput(longInput).length).toBeLessThanOrEqual(100);
+  });
+
+  it('should handle edge cases consistently', () => {
+    const edgeCases = [null, undefined, '', 123, {}, []];
+    
+    edgeCases.forEach(input => {
+      expect(sanitizeNameInput(input)).toBe('');
+      expect(sanitizeEmailInput(input)).toBe('');
+      expect(sanitizeMessageInput(input)).toBe('');
+      expect(sanitizeSearchInput(input)).toBe('');
     });
   });
 });
