@@ -165,25 +165,17 @@ function AppContent() {
 
   // Handle navigation to team management with specific tab
   useEffect(() => {
-    console.log('=== App.js Navigation Debug ===');
-    console.log('teamManagementInitialTab changed:', teamManagementInitialTab);
     if (teamManagementInitialTab) {
-      console.log('Navigating to TEAM_MANAGEMENT view');
       gameState.setView(VIEWS.TEAM_MANAGEMENT);
     }
   }, [teamManagementInitialTab, gameState]);
 
   // Reset initial tab when leaving team management view
   useEffect(() => {
-    console.log('=== App.js Cleanup Debug ===');
-    console.log('Current view:', gameState.view, 'teamManagementInitialTab:', teamManagementInitialTab);
-    
     // Only cleanup when we're leaving team management for a different view
     // Use a timeout to ensure TeamManagement component has processed the initialTab first
     if (gameState.view !== VIEWS.TEAM_MANAGEMENT && teamManagementInitialTab) {
-      console.log('Scheduling teamManagementInitialTab reset...');
       const timeoutId = setTimeout(() => {
-        console.log('Resetting teamManagementInitialTab to null');
         setTeamManagementInitialTab(null);
       }, 100); // Small delay to let TeamManagement component process the prop
       
@@ -858,8 +850,6 @@ function AppContent() {
           />
         );
       case VIEWS.TEAM_MANAGEMENT:
-        console.log('=== App.js Rendering TeamManagement ===');
-        console.log('Passing initialTab prop:', teamManagementInitialTab);
         return (
           <TeamManagement
             setView={gameState.setView}

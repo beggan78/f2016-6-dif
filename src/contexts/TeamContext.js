@@ -220,7 +220,13 @@ export const TeamProvider = ({ children }) => {
       // Check if the function returned an error result
       if (!data.success) {
         console.error('Create team function failed:', data.error);
-        setError(data.message || 'Failed to create team');
+        
+        // Provide specific error handling for duplicate team names
+        if (data.error === 'duplicate_team_name') {
+          setError('A team with this name already exists in this club. Please request to join the existing team.');
+        } else {
+          setError(data.message || 'Failed to create team');
+        }
         return null;
       }
 

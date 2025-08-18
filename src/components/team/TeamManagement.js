@@ -62,10 +62,6 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
   const [teamMembers, setTeamMembers] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Debug logging for tab state
-  console.log('=== TeamManagement Debug ===');
-  console.log('Props received:', { initialTab, canManageTeam, isTeamAdmin });
-  console.log('Current activeTab state:', activeTab);
 
   // Main team management view - define tabs early to avoid hooks order issues
   const tabs = React.useMemo(() => [
@@ -98,23 +94,18 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
 
   // Update activeTab when initialTab prop changes (for navigation from other screens)
   useEffect(() => {
-    console.log('useEffect triggered - initialTab changed:', { initialTab, activeTab });
     if (initialTab && initialTab !== activeTab) {
-      console.log('Setting activeTab to:', initialTab);
       setActiveTab(initialTab);
     }
   }, [initialTab, activeTab]);
 
   // Ensure activeTab always matches an available tab
   useEffect(() => {
-    console.log('Checking if activeTab is valid...');
     if (tabs.length > 0) {
       const activeTabExists = tabs.some(tab => tab.id === activeTab);
-      console.log('Active tab validation:', { activeTab, activeTabExists, availableTabs: tabs.map(t => t.id) });
       
       if (!activeTabExists) {
         const fallbackTab = tabs[0].id;
-        console.log('Active tab not found, setting fallback to:', fallbackTab);
         setActiveTab(fallbackTab);
       }
     }
@@ -256,13 +247,6 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
     );
   }
 
-  // Debug logging for available tabs
-  console.log('Available tabs:', tabs.map(t => ({ id: t.id, label: t.label })));
-  console.log('Tab availability check:', {
-    rosterTabExists: tabs.some(t => t.id === TAB_VIEWS.ROSTER),
-    activeTabExists: tabs.some(t => t.id === activeTab),
-    activeTabMatchesAny: activeTab && tabs.find(t => t.id === activeTab)
-  });
 
   const renderTabContent = () => {
     switch (activeTab) {
