@@ -62,6 +62,64 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
   const [teamMembers, setTeamMembers] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Debug logging for tab state
+  console.log('=== TeamManagement Debug ===');
+  console.log('Props received:', { initialTab, canManageTeam, isTeamAdmin });
+  console.log('Current activeTab state:', activeTab);
+
+  // Main team management view - define tabs early to avoid hooks order issues
+  const tabs = React.useMemo(() => [
+    { 
+      id: TAB_VIEWS.OVERVIEW, 
+      label: 'Overview', 
+      icon: Users,
+      description: 'Team information and members'
+    },
+    ...(isTeamAdmin ? [{ 
+      id: TAB_VIEWS.ACCESS, 
+      label: 'Access Management', 
+      icon: Shield,
+      description: 'Approve requests and invite users',
+      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null
+    }] : []),
+    ...(canManageTeam ? [{ 
+      id: TAB_VIEWS.ROSTER, 
+      label: 'Roster', 
+      icon: Rows4,
+      description: 'Manage team players'
+    }] : []),
+    ...(canManageTeam ? [{ 
+      id: TAB_VIEWS.PREFERENCES, 
+      label: 'Preferences', 
+      icon: Settings,
+      description: 'Team settings and preferences'
+    }] : [])
+  ], [isTeamAdmin, canManageTeam, pendingRequestsCount]);
+
+  // Update activeTab when initialTab prop changes (for navigation from other screens)
+  useEffect(() => {
+    console.log('useEffect triggered - initialTab changed:', { initialTab, activeTab });
+    if (initialTab && initialTab !== activeTab) {
+      console.log('Setting activeTab to:', initialTab);
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, activeTab]);
+
+  // Ensure activeTab always matches an available tab
+  useEffect(() => {
+    console.log('Checking if activeTab is valid...');
+    if (tabs.length > 0) {
+      const activeTabExists = tabs.some(tab => tab.id === activeTab);
+      console.log('Active tab validation:', { activeTab, activeTabExists, availableTabs: tabs.map(t => t.id) });
+      
+      if (!activeTabExists) {
+        const fallbackTab = tabs[0].id;
+        console.log('Active tab not found, setting fallback to:', fallbackTab);
+        setActiveTab(fallbackTab);
+      }
+    }
+  }, [activeTab, tabs]);
+
   // Load team data when current team changes
   const loadTeamData = useCallback(async () => {
     if (!currentTeam) return;
@@ -198,34 +256,13 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
     );
   }
 
-  // Main team management view
-  const tabs = [
-    { 
-      id: TAB_VIEWS.OVERVIEW, 
-      label: 'Overview', 
-      icon: Users,
-      description: 'Team information and members'
-    },
-    ...(isTeamAdmin ? [{ 
-      id: TAB_VIEWS.ACCESS, 
-      label: 'Access Management', 
-      icon: Shield,
-      description: 'Approve requests and invite users',
-      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null
-    }] : []),
-    ...(canManageTeam ? [{ 
-      id: TAB_VIEWS.ROSTER, 
-      label: 'Roster', 
-      icon: Rows4,
-      description: 'Manage team players'
-    }] : []),
-    ...(canManageTeam ? [{ 
-      id: TAB_VIEWS.PREFERENCES, 
-      label: 'Preferences', 
-      icon: Settings,
-      description: 'Team settings and preferences'
-    }] : [])
-  ];
+  // Debug logging for available tabs
+  console.log('Available tabs:', tabs.map(t => ({ id: t.id, label: t.label })));
+  console.log('Tab availability check:', {
+    rosterTabExists: tabs.some(t => t.id === TAB_VIEWS.ROSTER),
+    activeTabExists: tabs.some(t => t.id === activeTab),
+    activeTabMatchesAny: activeTab && tabs.find(t => t.id === activeTab)
+  });
 
   const renderTabContent = () => {
     switch (activeTab) {
