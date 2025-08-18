@@ -88,6 +88,13 @@ export function ProfileScreen({ setView }) {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !loading) {
+      e.preventDefault(); // Prevent any default form submission behavior
+      handleSave();
+    }
+  };
+
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
     if (authError) return authError;
@@ -208,6 +215,7 @@ export function ProfileScreen({ setView }) {
                           setErrors(prev => ({ ...prev, name: null }));
                         }
                       }}
+                      onKeyDown={handleKeyDown}
                       placeholder="Enter your full name"
                       disabled={loading}
                       className={errors.name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
