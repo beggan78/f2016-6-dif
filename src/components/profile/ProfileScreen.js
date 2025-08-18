@@ -453,6 +453,7 @@ export function ProfileScreen({ setView }) {
                   onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
                   variant="primary"
                   size="sm"
+                  className="mx-auto"
                 >
                   Create Your First Team
                 </Button>
