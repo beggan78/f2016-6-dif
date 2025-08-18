@@ -37,7 +37,7 @@ const TAB_VIEWS = {
   PREFERENCES: 'preferences'
 };
 
-export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
+export function TeamManagement({ setView, openToTab }) {
   const { user } = useAuth();
   const { 
     hasTeams, 
@@ -53,7 +53,7 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept();
   
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState(openToTab || TAB_VIEWS.OVERVIEW);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -62,10 +62,6 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
   const [teamMembers, setTeamMembers] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Debug logging for tab state
-  console.log('=== TeamManagement Debug ===');
-  console.log('Props received:', { initialTab, canManageTeam, isTeamAdmin });
-  console.log('Current activeTab state:', activeTab);
 
   // Main team management view - define tabs early to avoid hooks order issues
   const tabs = React.useMemo(() => [
@@ -96,25 +92,21 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
     }] : [])
   ], [isTeamAdmin, canManageTeam, pendingRequestsCount]);
 
-  // Update activeTab when initialTab prop changes (for navigation from other screens)
+  // Simple handling of openToTab prop (only on mount)
   useEffect(() => {
-    console.log('useEffect triggered - initialTab changed:', { initialTab, activeTab });
-    if (initialTab && initialTab !== activeTab) {
-      console.log('Setting activeTab to:', initialTab);
-      setActiveTab(initialTab);
+    if (openToTab) {
+      setActiveTab(openToTab);
     }
-  }, [initialTab, activeTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run on mount
 
   // Ensure activeTab always matches an available tab
   useEffect(() => {
-    console.log('Checking if activeTab is valid...');
     if (tabs.length > 0) {
       const activeTabExists = tabs.some(tab => tab.id === activeTab);
-      console.log('Active tab validation:', { activeTab, activeTabExists, availableTabs: tabs.map(t => t.id) });
       
       if (!activeTabExists) {
         const fallbackTab = tabs[0].id;
-        console.log('Active tab not found, setting fallback to:', fallbackTab);
         setActiveTab(fallbackTab);
       }
     }
@@ -335,30 +327,32 @@ export function TeamManagement({ setView, initialTab = TAB_VIEWS.OVERVIEW }) {
 
         {/* Tab Navigation */}
         <div className="border-b border-slate-600">
-          <nav className="flex space-x-0">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                    activeTab === tab.id
-                      ? 'border-sky-400 text-sky-300 bg-slate-600/50'
-                      : 'border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-600/30'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                  {tab.badge && (
-                    <span className="absolute -top-1 -right-1 bg-red-600 text-red-100 text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+          <div className="overflow-x-auto">
+            <nav className="flex space-x-0 min-w-max">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-2 px-2 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors relative flex-shrink-0 whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-sky-400 text-sky-300 bg-slate-600/50'
+                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-600/30'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                    {tab.badge && (
+                      <span className="absolute -top-1 -right-1 bg-red-600 text-red-100 text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
         </div>
 
         {/* Tab Content */}

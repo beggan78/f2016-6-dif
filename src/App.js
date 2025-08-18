@@ -161,35 +161,20 @@ function AppContent() {
   const [showInvitationNotifications, setShowInvitationNotifications] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [hasCheckedInvitations, setHasCheckedInvitations] = useState(false);
-  const [teamManagementInitialTab, setTeamManagementInitialTab] = useState(null);
+  const [navigationData, setNavigationData] = useState(null);
 
-  // Handle navigation to team management with specific tab
-  useEffect(() => {
-    console.log('=== App.js Navigation Debug ===');
-    console.log('teamManagementInitialTab changed:', teamManagementInitialTab);
-    if (teamManagementInitialTab) {
-      console.log('Navigating to TEAM_MANAGEMENT view');
-      gameState.setView(VIEWS.TEAM_MANAGEMENT);
-    }
-  }, [teamManagementInitialTab, gameState]);
+  // Enhanced setView function that can accept navigation data
+  const setViewWithData = useCallback((view, data = null) => {
+    setNavigationData(data);
+    gameState.setView(view);
+  }, [gameState]);
 
-  // Reset initial tab when leaving team management view
+  // Clear navigation data when view changes (except for TEAM_MANAGEMENT)
   useEffect(() => {
-    console.log('=== App.js Cleanup Debug ===');
-    console.log('Current view:', gameState.view, 'teamManagementInitialTab:', teamManagementInitialTab);
-    
-    // Only cleanup when we're leaving team management for a different view
-    // Use a timeout to ensure TeamManagement component has processed the initialTab first
-    if (gameState.view !== VIEWS.TEAM_MANAGEMENT && teamManagementInitialTab) {
-      console.log('Scheduling teamManagementInitialTab reset...');
-      const timeoutId = setTimeout(() => {
-        console.log('Resetting teamManagementInitialTab to null');
-        setTeamManagementInitialTab(null);
-      }, 100); // Small delay to let TeamManagement component process the prop
-      
-      return () => clearTimeout(timeoutId);
+    if (gameState.view !== VIEWS.TEAM_MANAGEMENT && navigationData) {
+      setNavigationData(null);
     }
-  }, [gameState.view, teamManagementInitialTab]);
+  }, [gameState.view, navigationData]);
 
   // Handle invitation acceptance
   const handleInvitationAcceptance = useCallback(async (params) => {
@@ -710,7 +695,7 @@ function AppContent() {
             debugMode={debugMode}
             authModal={authModal}
             setView={gameState.setView}
-            setTeamManagementInitialTab={setTeamManagementInitialTab}
+            setViewWithData={setViewWithData}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -858,12 +843,10 @@ function AppContent() {
           />
         );
       case VIEWS.TEAM_MANAGEMENT:
-        console.log('=== App.js Rendering TeamManagement ===');
-        console.log('Passing initialTab prop:', teamManagementInitialTab);
         return (
           <TeamManagement
             setView={gameState.setView}
-            initialTab={teamManagementInitialTab}
+            openToTab={navigationData?.openToTab}
           />
         );
       default:

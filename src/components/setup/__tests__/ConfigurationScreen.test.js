@@ -173,7 +173,7 @@ describe('ConfigurationScreen', () => {
       selectedSquadPlayers: [],
       opponentTeamName: '',
       captainId: null,
-      setTeamManagementInitialTab: jest.fn(),
+      setViewWithData: jest.fn(),
       ...mockSetters
     };
 

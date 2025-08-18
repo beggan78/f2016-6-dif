@@ -13,6 +13,7 @@ import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
+import { VIEWS } from '../../constants/viewConstants';
 
 // Import TAB_VIEWS for team management navigation
 const TAB_VIEWS = {
@@ -49,7 +50,7 @@ export function ConfigurationScreen({
   debugMode = false,
   authModal,
   setView,
-  setTeamManagementInitialTab
+  setViewWithData
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -379,7 +380,7 @@ export function ConfigurationScreen({
             </p>
             <div className="flex justify-center">
               <Button
-                onClick={() => setTeamManagementInitialTab(TAB_VIEWS.ROSTER)}
+                onClick={() => setViewWithData(VIEWS.TEAM_MANAGEMENT, { openToTab: TAB_VIEWS.ROSTER })}
                 variant="primary"
                 Icon={UserPlus}
               >
