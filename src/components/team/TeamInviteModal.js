@@ -3,7 +3,6 @@ import { Button, Input, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput } from '../../utils/inputSanitization';
-import { useCSRFProtection } from '../../hooks/useCSRFProtection';
 import { 
   Mail, 
   Users, 
@@ -17,7 +16,6 @@ import {
 export function TeamInviteModal({ isOpen, onClose, team }) {
   const { inviteUserToTeam, getTeamInvitations, loading, error } = useTeam();
   const { user } = useAuth();
-  const { csrfToken, isReady: csrfReady } = useCSRFProtection();
   const [formData, setFormData] = useState({
     email: '',
     role: 'coach',
@@ -138,12 +136,6 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       return;
     }
 
-    // Check CSRF protection is ready
-    if (!csrfReady || !csrfToken) {
-      setErrors({ general: 'Security validation failed. Please refresh the page and try again.' });
-      return;
-    }
-
     try {
       // Use sanitized inputs for security
       const sanitizedEmail = sanitizeEmailInput(formData.email);
@@ -153,8 +145,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
         teamId: team.id,
         email: sanitizedEmail,
         role: formData.role,
-        message: sanitizedMessage,
-        csrfToken: csrfToken // Include CSRF token for protection
+        message: sanitizedMessage
       });
 
       if (result.success) {
@@ -173,11 +164,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
-      if (error.message?.includes('CSRF')) {
-        setErrors({ general: 'Security validation failed. Please refresh the page and try again.' });
-      } else {
-        setErrors({ general: 'Failed to send invitation. Please try again.' });
-      }
+      setErrors({ general: 'Failed to send invitation. Please try again.' });
     }
   };
 
