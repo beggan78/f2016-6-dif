@@ -190,7 +190,7 @@ export function TeamManagement({ setView, openToTab }) {
             Back
           </Button>
         </div>
-        <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
+        <div className="p-2 bg-slate-700 rounded-lg border border-slate-600">
           <div className="flex items-center justify-center space-x-3">
             <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
             <span className="text-slate-300">Loading team information...</span>
@@ -349,7 +349,7 @@ export function TeamManagement({ setView, openToTab }) {
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-2">
           {renderTabContent()}
         </div>
       </div>
@@ -780,7 +780,7 @@ function RosterManagement({ team, onRefresh }) {
                     Player
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
-                    Jersey #
+                    #
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-slate-300 uppercase tracking-wider">
                     Actions
@@ -816,7 +816,7 @@ function RosterManagement({ team, onRefresh }) {
                           {player.jersey_number}
                         </span>
                       ) : (
-                        <span className="text-slate-400 text-sm">Not assigned</span>
+                        <span className="text-slate-400 text-sm">-</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
