@@ -477,6 +477,8 @@ export function GameScreen({
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
         eligiblePlayers={eligiblePlayers}
         mode={modalHandlers.modals.goalScorer.mode}
+        eventId={modalHandlers.modals.goalScorer.eventId}
+        currentScorerId={modalHandlers.modals.goalScorer.currentScorerId}
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}
         team={modalHandlers.modals.goalScorer.team}
