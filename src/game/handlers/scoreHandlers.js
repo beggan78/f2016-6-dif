@@ -27,64 +27,84 @@ export const createScoreHandlers = (
     return `evt_${timestamp}_${random}`;
   };
 
-  const handleAddHomeGoal = (gameState = null) => {
+  // Unified helper to find event by ID with proper error handling
+  const findEventById = (eventId) => {
+    const allEvents = getAllEvents();
+    const event = allEvents.find(e => e.id === eventId && !e.undone);
+    
+    if (!event) {
+      console.warn(`Goal event not found: ${eventId}`);
+      return null;
+    }
+    
+    return event;
+  };
+
+  // Helper to determine team type from event type
+  const getTeamFromEventType = (eventType) => {
+    return eventType === EVENT_TYPES.GOAL_HOME ? 'home' : 'away';
+  };
+
+  // Helper to create pending goal data structure
+  const createPendingGoalData = (teamType, eventId, gameState) => {
+    const { homeScore, awayScore, currentPeriodNumber } = gameState;
+    const now = Date.now();
+    
+    return {
+      eventId,
+      type: teamType === 'home' ? EVENT_TYPES.GOAL_HOME : EVENT_TYPES.GOAL_AWAY,
+      periodNumber: currentPeriodNumber,
+      homeScore: teamType === 'home' ? homeScore + 1 : homeScore,
+      awayScore: teamType === 'away' ? awayScore + 1 : awayScore,
+      teamName: teamType,
+      timestamp: now
+    };
+  };
+
+  // Unified goal handling for both home and away teams
+  const handleAddGoal = (teamType, gameState = null) => {
     // For backward compatibility, if no gameState provided, just add goal immediately
     if (!gameState) {
-      addHomeGoal();
+      if (teamType === 'home') {
+        addHomeGoal();
+      } else {
+        addAwayGoal();
+      }
       return;
     }
     
-    // New flow: Store as pending goal, don't increment score yet
+    // New unified flow: Store as pending goal, don't increment score yet
     const eventId = generateEventId();
-    const now = Date.now();
-    const { homeScore, awayScore, currentPeriodNumber } = gameState;
-    
-    // Store pending goal data
-    const pendingGoalData = {
-      eventId,
-      type: EVENT_TYPES.GOAL_HOME,
-      periodNumber: currentPeriodNumber,
-      homeScore: homeScore + 1,
-      awayScore,
-      teamName: 'home',
-      timestamp: now
-    };
+    const pendingGoalData = createPendingGoalData(teamType, eventId, gameState);
     
     setPendingGoalData(pendingGoalData);
     
-    // Show goal scorer modal for attribution
+    // Open goal scorer modal for both teams
     if (openGoalScorerModal) {
       openGoalScorerModal({
         eventId,
-        team: 'home',
+        team: teamType,
         mode: 'new',
-        matchTime: calculateMatchTime(now),
-        periodNumber: currentPeriodNumber
+        matchTime: calculateMatchTime(pendingGoalData.timestamp),
+        periodNumber: pendingGoalData.periodNumber
       });
+    } else {
+      console.warn('Goal scorer modal not available, adding goal immediately');
+      // Fallback: increment score immediately if modal not available
+      if (teamType === 'home') {
+        addHomeGoal();
+      } else {
+        addAwayGoal();
+      }
     }
   };
 
+  const handleAddHomeGoal = (gameState = null) => {
+    return handleAddGoal('home', gameState);
+  };
+
   const handleAddAwayGoal = (gameState = null) => {
-    // Update score immediately (backward compatibility)
-    addAwayGoal();
-    
-    // Only do event logging if gameState is provided (new functionality)
-    if (gameState) {
-      const eventId = generateEventId();
-      const { homeScore, awayScore, currentPeriodNumber } = gameState;
-      
-      // Log goal event
-      logEvent(EVENT_TYPES.GOAL_AWAY, {
-        eventId,
-        periodNumber: currentPeriodNumber,
-        homeScore,
-        awayScore: awayScore + 1,
-        teamName: 'away'
-      });
-      
-      // Away goals don't need scorer attribution for now
-      // This can be extended later if needed
-    }
+    return handleAddGoal('away', gameState);
   };
 
   const handleSelectGoalScorer = (eventId, scorerId) => {
@@ -139,94 +159,106 @@ export const createScoreHandlers = (
 
   const handleDeleteGoal = (eventId) => {
     // Find the goal event to delete
-    const allEvents = getAllEvents();
-    const goalEvent = allEvents.find(event => 
-      (event.eventId === eventId || event.id === eventId) && !event.undone
+    const goalEvent = findEventById(eventId);
+    
+    if (!goalEvent) {
+      // Warning already logged in findEventById
+      return;
+    }
+    
+    // Verify this is actually a goal event
+    if (![EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY].includes(goalEvent.type)) {
+      console.warn(`Attempted to delete non-goal event: ${eventId}, type: ${goalEvent.type}`);
+      return;
+    }
+    
+    // Mark the goal as undone using the proper function
+    const markSuccess = markEventAsUndone(goalEvent.id, 'manual_deletion');
+    
+    if (!markSuccess) {
+      console.error(`Failed to mark goal event as undone: ${eventId}`);
+      return;
+    }
+    
+    // Get updated events after marking as undone
+    const updatedEvents = getAllEvents();
+      
+    // Find the index of the deleted goal in the original chronological sequence (includes undone events)
+    const originalGoalEvents = updatedEvents
+      .filter(event => ['goal_home', 'goal_away'].includes(event.type))
+      .sort((a, b) => a.timestamp - b.timestamp);
+      
+    const deletedGoalIndex = originalGoalEvents.findIndex(event => event.id === eventId
     );
     
-    if (goalEvent) {
-      // Mark the goal as undone using the proper function
-      const markSuccess = markEventAsUndone(goalEvent.eventId || goalEvent.id, 'manual_deletion');
+    if (deletedGoalIndex >= 0) {
+      // Determine if deleted goal was home or away to know which score to decrement
+      const wasHomeGoal = goalEvent.type === EVENT_TYPES.GOAL_HOME;
       
-      if (markSuccess) {
-        // Get updated events after marking as undone
-        const updatedEvents = getAllEvents();
+      // Get all subsequent goal events (after the deleted one) - from original list
+      const subsequentGoals = originalGoalEvents.slice(deletedGoalIndex + 1);
+      
+      // Rewrite history: update score data for all subsequent goals
+      subsequentGoals.forEach((event) => {
+        if (event.data && event.data.homeScore !== undefined && event.data.awayScore !== undefined) {
+          // Create corrected event data with decremented scores
+          const correctedData = {
+            homeScore: wasHomeGoal ? (event.data.homeScore - 1) : event.data.homeScore,
+            awayScore: wasHomeGoal ? event.data.awayScore : (event.data.awayScore - 1)
+          };
           
-        // Find the index of the deleted goal in the original chronological sequence (includes undone events)
-        const originalGoalEvents = updatedEvents
-          .filter(event => ['goal_home', 'goal_away'].includes(event.type))
-          .sort((a, b) => a.timestamp - b.timestamp);
-          
-        const deletedGoalIndex = originalGoalEvents.findIndex(event => 
-          (event.eventId === eventId || event.id === eventId)
-        );
-        
-        if (deletedGoalIndex >= 0) {
-          // Determine if deleted goal was home or away to know which score to decrement
-          const wasHomeGoal = goalEvent.type === EVENT_TYPES.GOAL_HOME;
-          
-          // Get all subsequent goal events (after the deleted one) - from original list
-          const subsequentGoals = originalGoalEvents.slice(deletedGoalIndex + 1);
-          
-          // Rewrite history: update score data for all subsequent goals
-          subsequentGoals.forEach((event) => {
-            if (event.data && event.data.homeScore !== undefined && event.data.awayScore !== undefined) {
-              // Create corrected event data with decremented scores
-              const correctedData = {
-                homeScore: wasHomeGoal ? (event.data.homeScore - 1) : event.data.homeScore,
-                awayScore: wasHomeGoal ? event.data.awayScore : (event.data.awayScore - 1)
-              };
-              
-              // Update the event data directly
-              updateEventData(event.id, correctedData);
-            }
-          });
-        }
-        
-        // Recalculate final scores by counting remaining active goals
-        const remainingGoals = updatedEvents.filter(event => 
-          ['goal_home', 'goal_away'].includes(event.type) && !event.undone
-        );
-        
-        let newHomeScore = 0;
-        let newAwayScore = 0;
-        
-        remainingGoals.forEach(goal => {
-          if (goal.type === EVENT_TYPES.GOAL_HOME) {
-            newHomeScore++;
-          } else if (goal.type === EVENT_TYPES.GOAL_AWAY) {
-            newAwayScore++;
+          // Update the event data directly
+          const updateSuccess = updateEventData(event.id, correctedData);
+          if (!updateSuccess) {
+            console.warn(`Failed to update score history for event: ${event.id}`);
           }
-        });
-        
-        setScore(newHomeScore, newAwayScore);
-      }
+        }
+      });
+      
+      // Recalculate final scores by counting remaining active goals
+      const remainingGoals = updatedEvents.filter(event => 
+        ['goal_home', 'goal_away'].includes(event.type) && !event.undone
+      );
+      
+      let newHomeScore = 0;
+      let newAwayScore = 0;
+      
+      remainingGoals.forEach(goal => {
+        if (goal.type === EVENT_TYPES.GOAL_HOME) {
+          newHomeScore++;
+        } else if (goal.type === EVENT_TYPES.GOAL_AWAY) {
+          newAwayScore++;
+        }
+      });
+      
+      setScore(newHomeScore, newAwayScore);
+      console.log(`Goal deleted successfully. New scores: Home ${newHomeScore}, Away ${newAwayScore}`);
+    } else {
+      console.warn(`Could not find deleted goal in chronological sequence: ${eventId}`);
     }
   };
 
   const handleEditGoalScorer = (eventId) => {
     // Open goal scorer modal for editing existing goal
-    if (openGoalScorerModal) {
-      const allEvents = getAllEvents();
-      const goalEvent = allEvents.find(event => 
-        (event.eventId === eventId || event.id === eventId) && !event.undone
-      );
-      
-      if (goalEvent) {
-        openGoalScorerModal({
-          eventId: goalEvent.eventId || goalEvent.id,
-          team: goalEvent.type === EVENT_TYPES.GOAL_HOME ? 'home' : 'away',
-          mode: 'correct',
-          matchTime: calculateMatchTime(goalEvent.timestamp),
-          periodNumber: goalEvent.data?.periodNumber || 1,
-          existingGoalData: {
-            eventId: goalEvent.eventId || goalEvent.id,
-            scorerId: goalEvent.data?.scorerId || null,
-            period: goalEvent.data?.periodNumber || 1
-          }
-        });
-      }
+    if (!openGoalScorerModal) {
+      console.warn('Goal scorer modal not available for editing');
+      return;
     }
+
+    const goalEvent = findEventById(eventId);
+    if (!goalEvent) {
+      // Warning already logged in findEventById
+      return;
+    }
+
+    openGoalScorerModal({
+      eventId: goalEvent.id,
+      team: getTeamFromEventType(goalEvent.type),
+      mode: 'correct',
+      matchTime: calculateMatchTime(goalEvent.timestamp),
+      periodNumber: goalEvent.data?.periodNumber || 1,
+      currentScorerId: goalEvent.data?.scorerId || null
+    });
   };
 
   const handleScoreEdit = (newHomeScore, newAwayScore) => {

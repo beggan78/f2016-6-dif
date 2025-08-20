@@ -129,11 +129,9 @@ describe('scoreHandlers', () => {
         eventId: 'goal1',
         team: 'home',
         mode: 'correct',
-        existingGoalData: expect.objectContaining({
-          eventId: 'goal1',
-          scorerId: null,
-          period: 1
-        })
+        matchTime: '00:00',
+        periodNumber: 1,
+        currentScorerId: null
       }));
     });
 
