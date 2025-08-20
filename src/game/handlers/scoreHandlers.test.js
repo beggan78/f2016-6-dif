@@ -103,7 +103,7 @@ describe('createScoreHandlers', () => {
       expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
     });
 
-    it('should handle goal with event logging when gameState provided', () => {
+    it('should handle home goal with modal when gameState provided', () => {
       const mockGameState = {
         homeScore: 1,
         awayScore: 2,
@@ -119,7 +119,7 @@ describe('createScoreHandlers', () => {
 
       handlers.handleAddHomeGoal(mockGameState);
 
-      // With new implementation, goal is stored as pending, not added immediately
+      // Home goals: stored as pending, not added immediately (waits for scorer selection)
       expect(mockStateUpdaters.addHomeGoal).not.toHaveBeenCalled();
       expect(logEvent).not.toHaveBeenCalled();
       
@@ -180,7 +180,7 @@ describe('createScoreHandlers', () => {
       expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
     });
 
-    it('should handle goal with unified behavior when gameState provided', () => {
+    it('should handle away goal without modal when gameState provided', () => {
       const mockGameState = {
         homeScore: 0,
         awayScore: 1,
@@ -194,25 +194,20 @@ describe('createScoreHandlers', () => {
 
       handlers.handleAddAwayGoal(mockGameState);
 
-      // New unified behavior: don't increment score immediately, store as pending
-      expect(mockStateUpdaters.addAwayGoal).not.toHaveBeenCalled();
-      expect(logEvent).not.toHaveBeenCalled(); // Not called until scorer is selected
-      
-      // Should store as pending goal and show modal
-      expect(mockModalHandlers.setPendingGoalData).toHaveBeenCalledWith(expect.objectContaining({
-        teamName: 'away',
-        type: 'goal_away',
+      // Away goals: immediately increment score and log event (no modal)
+      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith('goal_away', {
+        eventId: expect.any(String),
         periodNumber: 2,
         homeScore: 0,
-        awayScore: 2 // Pending incremented score
-      }));
+        awayScore: 2,
+        scorerId: null, // No scorer attribution for opponent goals
+        teamName: 'away'
+      }, expect.any(Number));
       
-      // Should open goal scorer modal for both teams
-      expect(mockModalHandlers.openGoalScorerModal).toHaveBeenCalledWith(expect.objectContaining({
-        team: 'away',
-        mode: 'new',
-        periodNumber: 2
-      }));
+      // Should NOT store as pending goal or show modal for away team
+      expect(mockModalHandlers.setPendingGoalData).not.toHaveBeenCalled();
+      expect(mockModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
     });
 
     it('should not call event logging when gameState not provided', () => {

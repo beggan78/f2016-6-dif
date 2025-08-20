@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
+import { EVENT_TYPES } from '../../utils/gameEventLogger';
 
 export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
@@ -457,7 +458,7 @@ export function ScoreManagerModal({
   // Filter and process goal events (using same pattern as MatchReportScreen)
   const goalEvents = React.useMemo(() => {
     const goals = matchEvents
-      .filter(event => ['goal_home', 'goal_away'].includes(event.type))
+      .filter(event => [EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY].includes(event.type))
       .filter(event => !event.undone)
       .map(event => {
         // Use event.matchTime first, then calculate if missing (same as MatchReportScreen)
@@ -471,7 +472,7 @@ export function ScoreManagerModal({
           ...event,
           matchTime,
           scorerName,
-          isHomeGoal: event.type === 'goal_home'
+          isHomeGoal: event.type === EVENT_TYPES.GOAL_HOME
         };
       })
       .sort((a, b) => a.timestamp - b.timestamp);

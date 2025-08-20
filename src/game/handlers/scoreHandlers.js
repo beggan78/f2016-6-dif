@@ -73,29 +73,45 @@ export const createScoreHandlers = (
       return;
     }
     
-    // New unified flow: Store as pending goal, don't increment score yet
     const eventId = generateEventId();
     const pendingGoalData = createPendingGoalData(teamType, eventId, gameState);
     
-    setPendingGoalData(pendingGoalData);
-    
-    // Open goal scorer modal for both teams
-    if (openGoalScorerModal) {
-      openGoalScorerModal({
-        eventId,
-        team: teamType,
-        mode: 'new',
-        matchTime: calculateMatchTime(pendingGoalData.timestamp),
-        periodNumber: pendingGoalData.periodNumber
-      });
-    } else {
-      console.error('Goal scorer modal not available - cannot process goal with gameState');
-      console.error('This indicates a configuration problem. Modal handlers may not be properly initialized.');
-      // Clear pending data to prevent orphaning
-      if (clearPendingGoal) {
-        clearPendingGoal();
+    // For home team goals: use modal flow for scorer attribution
+    if (teamType === 'home') {
+      // Store as pending goal, don't increment score yet
+      setPendingGoalData(pendingGoalData);
+      
+      // Open goal scorer modal for home team goals only
+      if (openGoalScorerModal) {
+        openGoalScorerModal({
+          eventId,
+          team: teamType,
+          mode: 'new',
+          matchTime: calculateMatchTime(pendingGoalData.timestamp),
+          periodNumber: pendingGoalData.periodNumber
+        });
+      } else {
+        console.error('Goal scorer modal not available - cannot process goal with gameState');
+        console.error('This indicates a configuration problem. Modal handlers may not be properly initialized.');
+        // Clear pending data to prevent orphaning
+        if (clearPendingGoal) {
+          clearPendingGoal();
+        }
+        return;
       }
-      return;
+    } else {
+      // For away team goals: immediately increment score and log event (no modal)
+      addAwayGoal();
+      
+      // Log the goal event immediately with no scorer attribution
+      logEvent(pendingGoalData.type, {
+        eventId: pendingGoalData.eventId,
+        periodNumber: pendingGoalData.periodNumber,
+        homeScore: pendingGoalData.homeScore,
+        awayScore: pendingGoalData.awayScore,
+        scorerId: null, // No scorer attribution for opponent goals
+        teamName: pendingGoalData.teamName
+      }, pendingGoalData.timestamp);
     }
   };
 
@@ -185,7 +201,7 @@ export const createScoreHandlers = (
       
     // Find the index of the deleted goal in the original chronological sequence (includes undone events)
     const originalGoalEvents = updatedEvents
-      .filter(event => ['goal_home', 'goal_away'].includes(event.type))
+      .filter(event => [EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY].includes(event.type))
       .sort((a, b) => a.timestamp - b.timestamp);
       
     const deletedGoalIndex = originalGoalEvents.findIndex(event => event.id === eventId
@@ -217,7 +233,7 @@ export const createScoreHandlers = (
       
       // Recalculate final scores by counting remaining active goals
       const remainingGoals = updatedEvents.filter(event => 
-        ['goal_home', 'goal_away'].includes(event.type) && !event.undone
+        [EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY].includes(event.type) && !event.undone
       );
       
       let newHomeScore = 0;
