@@ -128,7 +128,12 @@ describe('scoreHandlers', () => {
       expect(mockOpenGoalScorerModal).toHaveBeenCalledWith(expect.objectContaining({
         eventId: 'goal1',
         team: 'home',
-        mode: 'edit'
+        mode: 'correct',
+        existingGoalData: expect.objectContaining({
+          eventId: 'goal1',
+          scorerId: null,
+          period: 1
+        })
       }));
     });
 

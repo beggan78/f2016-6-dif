@@ -118,12 +118,19 @@ export const createScoreHandlers = (
   };
 
   const handleCorrectGoalScorer = (eventId, newScorerId) => {
-    // Log correction event
-    logEvent(EVENT_TYPES.GOAL_CORRECTED, {
-      originalEventId: eventId,
-      scorerId: newScorerId,
-      correctionType: 'scorer_correction'
-    });
+    // Update the original goal event with new scorer
+    const updateSuccess = updateEventData(eventId, { scorerId: newScorerId });
+    
+    if (updateSuccess) {
+      // Log correction event for audit trail
+      logEvent(EVENT_TYPES.GOAL_CORRECTED, {
+        originalEventId: eventId,
+        scorerId: newScorerId,
+        correctionType: 'scorer_correction'
+      });
+    } else {
+      console.warn('Failed to update goal scorer for event:', eventId);
+    }
     
     closeGoalScorerModal();
   };
@@ -209,9 +216,14 @@ export const createScoreHandlers = (
         openGoalScorerModal({
           eventId: goalEvent.eventId || goalEvent.id,
           team: goalEvent.type === EVENT_TYPES.GOAL_HOME ? 'home' : 'away',
-          mode: 'edit',
+          mode: 'correct',
           matchTime: calculateMatchTime(goalEvent.timestamp),
-          periodNumber: goalEvent.data?.periodNumber || 1
+          periodNumber: goalEvent.data?.periodNumber || 1,
+          existingGoalData: {
+            eventId: goalEvent.eventId || goalEvent.id,
+            scorerId: goalEvent.data?.scorerId || null,
+            period: goalEvent.data?.periodNumber || 1
+          }
         });
       }
     }

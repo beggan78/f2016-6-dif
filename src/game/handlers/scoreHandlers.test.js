@@ -1,6 +1,6 @@
 import { createScoreHandlers } from './scoreHandlers';
 import { createMockDependencies } from '../testUtils';
-import { logEvent, EVENT_TYPES, calculateMatchTime, getEventById, removeEvent } from '../../utils/gameEventLogger';
+import { logEvent, EVENT_TYPES, calculateMatchTime, getEventById, removeEvent, updateEventData, getAllEvents, markEventAsUndone } from '../../utils/gameEventLogger';
 
 // Mock the gameEventLogger module
 jest.mock('../../utils/gameEventLogger', () => ({
@@ -13,7 +13,10 @@ jest.mock('../../utils/gameEventLogger', () => ({
   },
   calculateMatchTime: jest.fn(),
   getEventById: jest.fn(),
-  removeEvent: jest.fn()
+  removeEvent: jest.fn(),
+  updateEventData: jest.fn(() => true),
+  getAllEvents: jest.fn(() => []),
+  markEventAsUndone: jest.fn(() => true)
 }));
 
 describe('createScoreHandlers', () => {
@@ -46,6 +49,9 @@ describe('createScoreHandlers', () => {
 
     // Reset all mocks before each test
     jest.clearAllMocks();
+    
+    // Ensure updateEventData returns true by default
+    updateEventData.mockReturnValue(true);
   });
 
   describe('handler creation', () => {
