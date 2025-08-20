@@ -89,13 +89,13 @@ export const createScoreHandlers = (
         periodNumber: pendingGoalData.periodNumber
       });
     } else {
-      console.warn('Goal scorer modal not available, adding goal immediately');
-      // Fallback: increment score immediately if modal not available
-      if (teamType === 'home') {
-        addHomeGoal();
-      } else {
-        addAwayGoal();
+      console.error('Goal scorer modal not available - cannot process goal with gameState');
+      console.error('This indicates a configuration problem. Modal handlers may not be properly initialized.');
+      // Clear pending data to prevent orphaning
+      if (clearPendingGoal) {
+        clearPendingGoal();
       }
+      return;
     }
   };
 
