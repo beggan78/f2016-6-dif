@@ -6,20 +6,20 @@ import { formatTime } from '../../utils/formatUtils';
  * MatchSummaryHeader - Displays match summary information
  * 
  * @param {Object} props - Component props
- * @param {string} props.homeTeamName - Home team name (default: "Djurgården")
- * @param {string} props.awayTeamName - Away team name
- * @param {number} props.homeScore - Home team score
- * @param {number} props.awayScore - Away team score
+ * @param {string} props.ownTeamName - Own team name (default: "Djurgården")
+ * @param {string} props.opponentTeam - Opponent team name
+ * @param {number} props.ownScore - Own team score
+ * @param {number} props.opponentScore - Opponent team score
  * @param {number} props.matchStartTime - Match start timestamp or null
  * @param {number} props.matchDuration - Match duration in seconds or null
  * @param {number} props.totalPeriods - Total number of periods played
  * @param {number} props.periodDurationMinutes - Duration of each period in minutes
  */
 export function MatchSummaryHeader({
-  homeTeamName = "Djurgården",
-  awayTeamName = "Opponent",
-  homeScore = 0,
-  awayScore = 0,
+  ownTeamName = "Djurgården",
+  opponentTeam = "Opponent",
+  ownScore = 0,
+  opponentScore = 0,
   matchStartTime = null,
   matchDuration = null,
   totalPeriods = 0,
@@ -57,9 +57,9 @@ export function MatchSummaryHeader({
   };
 
   // Determine winning team styling
-  const getTeamScoreStyle = (isHome) => {
-    const isWinner = isHome ? homeScore > awayScore : awayScore > homeScore;
-    const isTie = homeScore === awayScore;
+  const getTeamScoreStyle = (isOwnTeam) => {
+    const isWinner = isOwnTeam ? ownScore > opponentScore : opponentScore > ownScore;
+    const isTie = ownScore === opponentScore;
     
     if (isTie) {
       return "text-sky-300"; // Neutral color for ties
@@ -79,13 +79,13 @@ export function MatchSummaryHeader({
       {/* Teams and Score */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center space-x-6">
-          {/* Home Team */}
+          {/* Own Team */}
           <div className="flex-1 text-right">
             <div className="text-lg font-semibold text-slate-200 truncate">
-              {homeTeamName}
+              {ownTeamName}
             </div>
             <div className={`text-4xl font-bold font-mono ${getTeamScoreStyle(true)}`}>
-              {homeScore}
+              {ownScore}
             </div>
           </div>
 
@@ -94,13 +94,13 @@ export function MatchSummaryHeader({
             <div className="text-2xl font-bold text-slate-500">-</div>
           </div>
 
-          {/* Away Team */}
+          {/* Own Team */}
           <div className="flex-1 text-left">
             <div className="text-lg font-semibold text-slate-200 truncate">
-              {awayTeamName}
+              {opponentTeam}
             </div>
             <div className={`text-4xl font-bold font-mono ${getTeamScoreStyle(false)}`}>
-              {awayScore}
+              {opponentScore}
             </div>
           </div>
         </div>
@@ -109,8 +109,8 @@ export function MatchSummaryHeader({
         <div className="flex items-center justify-center space-x-2 text-sm">
           <Trophy className="h-4 w-4 text-yellow-400" />
           <span className="text-slate-300">
-            {homeScore > awayScore ? `${homeTeamName} wins` : 
-             awayScore > homeScore ? `${awayTeamName} wins` : 
+            {ownScore > opponentScore ? `${ownTeamName} wins` :
+             opponentScore > ownScore ? `${opponentTeam} wins` :
              'Match tied'}
           </span>
         </div>

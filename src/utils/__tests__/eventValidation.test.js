@@ -19,8 +19,8 @@ jest.mock('../gameEventLogger', () => ({
     MATCH_END: 'match_end',
     SUBSTITUTION: 'substitution',
     GOALIE_SWITCH: 'goalie_switch',
-    GOAL_HOME: 'goal_home',
-    GOAL_AWAY: 'goal_away',
+    GOAL_SCORED: 'goal_home',
+    GOAL_CONCEDED: 'goal_conceded',
     TIMER_PAUSED: 'timer_paused',
     TIMER_RESUMED: 'timer_resumed',
     PERIOD_PAUSED: 'period_paused',
@@ -138,7 +138,7 @@ describe('eventValidation', () => {
     test('should return 0 if no match start event', () => {
       const events = [
         { type: EVENT_TYPES.SUBSTITUTION, timestamp: 1000 },
-        { type: EVENT_TYPES.GOAL_HOME, timestamp: 2000 }
+        { type: EVENT_TYPES.GOAL_SCORED, timestamp: 2000 }
       ];
       
       expect(calculateEffectivePlayingTime(events)).toBe(0);
@@ -376,7 +376,7 @@ describe('eventValidation', () => {
         },
         {
           // Missing ID
-          type: EVENT_TYPES.GOAL_HOME,
+          type: EVENT_TYPES.GOAL_SCORED,
           timestamp: 3000,
           sequence: 3
         }
@@ -407,7 +407,7 @@ describe('eventValidation', () => {
         null, // Corrupted
         { id: 'evt2', type: EVENT_TYPES.SUBSTITUTION, timestamp: 1000 },
         { id: 'evt3', type: 'INVALID_TYPE', timestamp: 3000 }, // Invalid type
-        { id: 'evt4', type: EVENT_TYPES.GOAL_HOME, timestamp: 4000 },
+        { id: 'evt4', type: EVENT_TYPES.GOAL_SCORED, timestamp: 4000 },
         'not an object' // Corrupted
       ];
       
@@ -435,7 +435,7 @@ describe('eventValidation', () => {
       const eventsWithDuplicates = [
         { id: 'evt1', type: EVENT_TYPES.MATCH_START, timestamp: 1000 },
         { id: 'evt1', type: EVENT_TYPES.MATCH_START, timestamp: 1000 }, // Duplicate
-        { id: 'evt2', type: EVENT_TYPES.GOAL_HOME, timestamp: 2000 }
+        { id: 'evt2', type: EVENT_TYPES.GOAL_SCORED, timestamp: 2000 }
       ];
       
       const recovered = recoverCorruptedEvents(eventsWithDuplicates);

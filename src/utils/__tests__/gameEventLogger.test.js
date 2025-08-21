@@ -103,7 +103,7 @@ describe('gameEventLogger', () => {
 
     test('should handle custom event IDs', () => {
       const customId = 'custom_event_123';
-      const event = logEvent(EVENT_TYPES.GOAL_HOME, {
+      const event = logEvent(EVENT_TYPES.GOAL_SCORED, {
         eventId: customId,
         scorerId: 'player_1'
       });
@@ -118,7 +118,7 @@ describe('gameEventLogger', () => {
       logEvent(EVENT_TYPES.MATCH_START, {});
       logEvent(EVENT_TYPES.PERIOD_START, { periodNumber: 1 });
       logEvent(EVENT_TYPES.SUBSTITUTION, { playersOff: ['p1'], playersOn: ['p2'] });
-      logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p3' });
+      logEvent(EVENT_TYPES.GOAL_SCORED, { scorerId: 'p3' });
     });
 
     test('should retrieve all events', () => {
@@ -126,20 +126,20 @@ describe('gameEventLogger', () => {
       
       expect(events).toHaveLength(4);
       expect(events[0].type).toBe(EVENT_TYPES.MATCH_START);
-      expect(events[3].type).toBe(EVENT_TYPES.GOAL_HOME);
+      expect(events[3].type).toBe(EVENT_TYPES.GOAL_SCORED);
     });
 
     test('should filter events by type', () => {
       const goalEvents = getMatchEvents({
-        eventTypes: [EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY]
+        eventTypes: [EVENT_TYPES.GOAL_SCORED, EVENT_TYPES.GOAL_CONCEDED]
       });
       
       expect(goalEvents).toHaveLength(1);
-      expect(goalEvents[0].type).toBe(EVENT_TYPES.GOAL_HOME);
+      expect(goalEvents[0].type).toBe(EVENT_TYPES.GOAL_SCORED);
     });
 
     test('should exclude undone events by default', () => {
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p4' });
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_SCORED, { scorerId: 'p4' });
       markEventAsUndone(goalEvent.id);
       
       const events = getMatchEvents();
@@ -150,11 +150,11 @@ describe('gameEventLogger', () => {
     });
 
     test('should get event by ID', () => {
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_AWAY, { scorerId: 'p5' });
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_CONCEDED, { scorerId: 'p5' });
       const retrievedEvent = getEventById(goalEvent.id);
       
       expect(retrievedEvent).toEqual(goalEvent);
-      expect(retrievedEvent.type).toBe(EVENT_TYPES.GOAL_AWAY);
+      expect(retrievedEvent.type).toBe(EVENT_TYPES.GOAL_CONCEDED);
     });
 
     test('should return null for non-existent event ID', () => {
@@ -166,7 +166,7 @@ describe('gameEventLogger', () => {
   describe('Event Removal and Undo', () => {
     test('should remove event completely', () => {
       const event1 = logEvent(EVENT_TYPES.SUBSTITUTION, { playersOff: ['p1'] });
-      const event2 = logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p2' });
+      const event2 = logEvent(EVENT_TYPES.GOAL_SCORED, { scorerId: 'p2' });
       
       const beforeRemoval = getMatchEvents();
       expect(beforeRemoval).toHaveLength(2);
@@ -207,56 +207,56 @@ describe('gameEventLogger', () => {
 
   describe('Event Data Updates (Score History Rewriting)', () => {
     test('should update existing event data', () => {
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { 
-        homeScore: 1, 
-        awayScore: 0, 
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_SCORED, {
+        ownScore: 1,
+        opponentScore: 0,
         scorerId: 'player1' 
       });
       
       const updated = updateEventData(goalEvent.id, { 
-        homeScore: 2, 
-        awayScore: 0 
+        ownScore: 2,
+        opponentScore: 0
       });
       
       expect(updated).toBe(true);
       
       const updatedEvent = getEventById(goalEvent.id);
-      expect(updatedEvent.data.homeScore).toBe(2);
-      expect(updatedEvent.data.awayScore).toBe(0);
+      expect(updatedEvent.data.ownScore).toBe(2);
+      expect(updatedEvent.data.opponentScore).toBe(0);
       expect(updatedEvent.data.scorerId).toBe('player1'); // Should preserve existing data
     });
 
     test('should merge new data with existing data', () => {
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_AWAY, { 
-        homeScore: 1, 
-        awayScore: 1, 
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_CONCEDED, {
+        ownScore: 1,
+        opponentScore: 1,
         scorerId: 'player2',
         extraData: 'preserve' 
       });
       
       updateEventData(goalEvent.id, { 
-        awayScore: 2 // Only update awayScore
+        opponentScore: 2 // Only update opponentScore
       });
       
       const updatedEvent = getEventById(goalEvent.id);
-      expect(updatedEvent.data.homeScore).toBe(1); // Preserved
-      expect(updatedEvent.data.awayScore).toBe(2); // Updated
+      expect(updatedEvent.data.ownScore).toBe(1); // Preserved
+      expect(updatedEvent.data.opponentScore).toBe(2); // Updated
       expect(updatedEvent.data.scorerId).toBe('player2'); // Preserved
       expect(updatedEvent.data.extraData).toBe('preserve'); // Preserved
     });
 
     test('should handle update of non-existent event', () => {
-      const updated = updateEventData('non_existent_id', { homeScore: 5 });
+      const updated = updateEventData('non_existent_id', { ownScore: 5 });
       expect(updated).toBe(false);
     });
 
     test('should preserve event metadata during data update', () => {
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_SCORED, { ownScore: 1, opponentScore: 0 });
       const originalType = goalEvent.type;
       const originalTimestamp = goalEvent.timestamp;
       const originalSequence = goalEvent.sequence;
       
-      updateEventData(goalEvent.id, { homeScore: 3 });
+      updateEventData(goalEvent.id, { ownScore: 3 });
       
       const updatedEvent = getEventById(goalEvent.id);
       expect(updatedEvent.type).toBe(originalType);
@@ -269,10 +269,10 @@ describe('gameEventLogger', () => {
       const mockCallback = jest.fn();
       const removeListener = addEventListener(mockCallback);
       
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_SCORED, { ownScore: 1, opponentScore: 0 });
       mockCallback.mockClear(); // Clear the logEvent call
       
-      updateEventData(goalEvent.id, { homeScore: 2 });
+      updateEventData(goalEvent.id, { ownScore: 2 });
       
       expect(mockCallback).toHaveBeenCalledWith('events_saved', expect.objectContaining({
         events: expect.any(Array)
@@ -283,17 +283,17 @@ describe('gameEventLogger', () => {
 
     test('should support goal deletion history rewrite workflow', () => {
       // Create sequence of goals with incrementing scores
-      const goal1 = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
-      const goal2 = logEvent(EVENT_TYPES.GOAL_AWAY, { homeScore: 1, awayScore: 1 });
-      const goal3 = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 2, awayScore: 1 });
-      const goal4 = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 3, awayScore: 1 });
+      const goal1 = logEvent(EVENT_TYPES.GOAL_SCORED, { ownScore: 1, opponentScore: 0 });
+      const goal2 = logEvent(EVENT_TYPES.GOAL_CONCEDED, { ownScore: 1, opponentScore: 1 });
+      const goal3 = logEvent(EVENT_TYPES.GOAL_SCORED, { ownScore: 2, opponentScore: 1 });
+      const goal4 = logEvent(EVENT_TYPES.GOAL_SCORED, { ownScore: 3, opponentScore: 1 });
       
       // Mark middle goal as deleted (goal2)
       markEventAsUndone(goal2.id, 'manual_deletion');
       
       // Rewrite history for subsequent goals (decrement away score)
-      updateEventData(goal3.id, { homeScore: 2, awayScore: 0 }); // Was 2-1, now 2-0
-      updateEventData(goal4.id, { homeScore: 3, awayScore: 0 }); // Was 3-1, now 3-0
+      updateEventData(goal3.id, { ownScore: 2, opponentScore: 0 }); // Was 2-1, now 2-0
+      updateEventData(goal4.id, { ownScore: 3, opponentScore: 0 }); // Was 3-1, now 3-0
       
       // Verify final state
       const events = getMatchEvents({ includeUndone: true });
@@ -302,10 +302,10 @@ describe('gameEventLogger', () => {
       const correctedGoal4 = events.find(e => e.id === goal4.id);
       
       expect(deletedGoal.undone).toBe(true);
-      expect(correctedGoal3.data.homeScore).toBe(2);
-      expect(correctedGoal3.data.awayScore).toBe(0);
-      expect(correctedGoal4.data.homeScore).toBe(3);
-      expect(correctedGoal4.data.awayScore).toBe(0);
+      expect(correctedGoal3.data.ownScore).toBe(2);
+      expect(correctedGoal3.data.opponentScore).toBe(0);
+      expect(correctedGoal4.data.ownScore).toBe(3);
+      expect(correctedGoal4.data.opponentScore).toBe(0);
     });
   });
 
@@ -413,7 +413,7 @@ describe('gameEventLogger', () => {
       const removeListener = addEventListener(mockCallback);
       
       // Trigger an event
-      logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p1' });
+      logEvent(EVENT_TYPES.GOAL_SCORED, { scorerId: 'p1' });
       
       expect(mockCallback).toHaveBeenCalledWith('events_saved', expect.any(Object));
       
@@ -422,7 +422,7 @@ describe('gameEventLogger', () => {
       mockCallback.mockClear();
       
       // Trigger another event
-      logEvent(EVENT_TYPES.GOAL_AWAY, { scorerId: 'p2' });
+      logEvent(EVENT_TYPES.GOAL_CONCEDED, { scorerId: 'p2' });
       
       expect(mockCallback).not.toHaveBeenCalled();
     });
@@ -432,7 +432,7 @@ describe('gameEventLogger', () => {
       const removeListener = addEventListener(mockCallback);
       
       // Test logEvent
-      logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p1' });
+      logEvent(EVENT_TYPES.GOAL_SCORED, { scorerId: 'p1' });
       expect(mockCallback).toHaveBeenCalledTimes(1);
       
       const events = getMatchEvents();
@@ -443,7 +443,7 @@ describe('gameEventLogger', () => {
       expect(mockCallback).toHaveBeenCalledTimes(2);
       
       // Test updateEventData
-      updateEventData(goalEvent.id, { homeScore: 5 });
+      updateEventData(goalEvent.id, { ownScore: 5 });
       expect(mockCallback).toHaveBeenCalledTimes(3);
       
       // Verify all calls were 'events_saved' events
@@ -465,7 +465,7 @@ describe('gameEventLogger', () => {
       const remove2 = addEventListener(callback2);
       const remove3 = addEventListener(callback3);
       
-      logEvent(EVENT_TYPES.GOAL_HOME, { scorerId: 'p1' });
+      logEvent(EVENT_TYPES.GOAL_SCORED, { scorerId: 'p1' });
       
       expect(callback1).toHaveBeenCalledTimes(1);
       expect(callback2).toHaveBeenCalledTimes(1);
@@ -474,7 +474,7 @@ describe('gameEventLogger', () => {
       // Remove middle listener
       remove2();
       
-      logEvent(EVENT_TYPES.GOAL_AWAY, { scorerId: 'p2' });
+      logEvent(EVENT_TYPES.GOAL_CONCEDED, { scorerId: 'p2' });
       
       expect(callback1).toHaveBeenCalledTimes(2);
       expect(callback2).toHaveBeenCalledTimes(1); // Should not increase
@@ -514,9 +514,9 @@ describe('gameEventLogger', () => {
       const removeListener = addEventListener(mockCallback);
       
       // Create a goal
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { 
-        homeScore: 1, 
-        awayScore: 0, 
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_SCORED, {
+        ownScore: 1,
+        opponentScore: 0,
         scorerId: 'player1' 
       });
       
@@ -556,7 +556,7 @@ describe('gameEventLogger', () => {
       const removeListener = addEventListener(realTimeSyncCallback);
       
       // Simulate operations that should trigger real-time sync
-      const goalEvent = logEvent(EVENT_TYPES.GOAL_HOME, { homeScore: 1, awayScore: 0 });
+      const goalEvent = logEvent(EVENT_TYPES.GOAL_SCORED, { ownScore: 1, opponentScore: 0 });
       expect(syncTriggered).toBe(true);
       
       syncTriggered = false;
@@ -564,7 +564,7 @@ describe('gameEventLogger', () => {
       expect(syncTriggered).toBe(true);
       
       syncTriggered = false;
-      updateEventData(goalEvent.id, { homeScore: 2 });
+      updateEventData(goalEvent.id, { ownScore: 2 });
       expect(syncTriggered).toBe(true);
       
       removeListener();
@@ -578,7 +578,7 @@ describe('gameEventLogger', () => {
       });
       
       expect(() => {
-        logEvent(EVENT_TYPES.GOAL_HOME, {});
+        logEvent(EVENT_TYPES.GOAL_SCORED, {});
       }).not.toThrow();
     });
   });

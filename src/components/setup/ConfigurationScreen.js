@@ -44,8 +44,8 @@ export function ConfigurationScreen({
   setAlertMinutes,
   handleStartPeriodSetup, 
   selectedSquadPlayers,
-  opponentTeamName,
-  setOpponentTeamName,
+  opponentTeam,
+  setOpponentTeam,
   captainId,
   setCaptain,
   debugMode = false,
@@ -260,7 +260,7 @@ export function ConfigurationScreen({
     // Set a random opponent name
     const opponentNames = ['Lions FC', 'Eagles United', 'Sharks', 'Thunder', 'Storm', 'Wildcats'];
     const randomOpponent = opponentNames[Math.floor(Math.random() * opponentNames.length)];
-    setOpponentTeamName(randomOpponent);
+    setOpponentTeam(randomOpponent);
   };
 
   const handleMigrateData = async () => {
@@ -444,8 +444,8 @@ export function ConfigurationScreen({
         <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
         <Input
           id="opponentTeam"
-          value={opponentTeamName}
-          onChange={e => setOpponentTeamName(sanitizeNameInput(e.target.value))}
+          value={opponentTeam}
+          onChange={e => setOpponentTeam(sanitizeNameInput(e.target.value))}
           placeholder="Enter opponent team name (optional)"
           maxLength={50}
         />

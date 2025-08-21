@@ -91,11 +91,11 @@ export class DataSyncManager {
           match_duration_seconds: (matchData.periodDurationMinutes || 15) * (matchData.numPeriods || 3) * 60,
           finished_at: new Date().toISOString(),
           type: 'friendly',
-          opponent: matchData.opponentTeamName || 'Opponent',
+          opponent: matchData.opponentTeam || 'Opponent',
           captain: matchData.captainId || null,
-          goals_scored: matchData.homeScore || 0,
-          goals_conceded: matchData.awayScore || 0,
-          outcome: this.calculateMatchOutcome(matchData.homeScore, matchData.awayScore),
+          goals_scored: matchData.ownScore || 0,
+          goals_conceded: matchData.opponentScore || 0,
+          outcome: this.calculateMatchOutcome(matchData.ownScore, matchData.opponentScore),
           state: 'finished'
         }])
         .select()
@@ -361,9 +361,9 @@ export class DataSyncManager {
     return userTeams[0].team_id;
   }
 
-  calculateMatchOutcome(homeScore, awayScore) {
-    if (homeScore > awayScore) return 'win';
-    if (homeScore < awayScore) return 'loss';
+  calculateMatchOutcome(ownScore, opponentScore) {
+    if (ownScore > opponentScore) return 'win';
+    if (ownScore < opponentScore) return 'loss';
     return 'draw';
   }
 

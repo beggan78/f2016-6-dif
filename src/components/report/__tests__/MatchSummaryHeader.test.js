@@ -27,10 +27,10 @@ describe('MatchSummaryHeader', () => {
 
   beforeEach(() => {
     defaultProps = {
-      homeTeamName: 'Djurgården',
-      awayTeamName: 'Hammarby',
-      homeScore: 2,
-      awayScore: 1,
+      ownTeamName: 'Djurgården',
+      opponentTeam: 'Hammarby',
+      ownScore: 2,
+      opponentScore: 1,
       matchStartTime: 1640995200000, // 2022-01-01 12:00:00
       matchDuration: 900, // 15 minutes
       totalPeriods: 2,
@@ -91,7 +91,7 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          awayTeamName={longTeamName}
+          opponentTeam={longTeamName}
         />
       );
       
@@ -268,52 +268,52 @@ describe('MatchSummaryHeader', () => {
   });
 
   describe('Score Display and Winner Determination', () => {
-    it('displays home team win correctly', () => {
+    it('displays own team win correctly', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={3}
-          awayScore={1}
+          ownScore={3}
+          opponentScore={1}
         />
       );
       
       expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
       
-      // Check score styling - home score should be winner (emerald)
-      const homeScoreElement = screen.getByText('3');
-      expect(homeScoreElement).toHaveClass('text-emerald-400');
+      // Check score styling - own score should be winner (emerald)
+      const ownScoreElement = screen.getByText('3');
+      expect(ownScoreElement).toHaveClass('text-emerald-400');
       
-      // Away score should be loser (muted)
-      const awayScoreElement = screen.getByText('1');
-      expect(awayScoreElement).toHaveClass('text-slate-300');
+      // Opponent score should be loser (muted)
+      const opponentScoreElement = screen.getByText('1');
+      expect(opponentScoreElement).toHaveClass('text-slate-300');
     });
 
-    it('displays away team win correctly', () => {
+    it('displays opponent team win correctly', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={1}
-          awayScore={3}
+          ownScore={1}
+          opponentScore={3}
         />
       );
       
       expect(screen.getByText('Hammarby wins')).toBeInTheDocument();
       
-      // Check score styling - away score should be winner (emerald)
-      const awayScoreElement = screen.getByText('3');
-      expect(awayScoreElement).toHaveClass('text-emerald-400');
+      // Check score styling - opponent score should be winner (emerald)
+      const opponentScoreElement = screen.getByText('3');
+      expect(opponentScoreElement).toHaveClass('text-emerald-400');
       
-      // Home score should be loser (muted)
-      const homeScoreElement = screen.getByText('1');
-      expect(homeScoreElement).toHaveClass('text-slate-300');
+      // Own score should be loser (muted)
+      const ownScoreElement = screen.getByText('1');
+      expect(ownScoreElement).toHaveClass('text-slate-300');
     });
 
     it('displays tie correctly', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={2}
-          awayScore={2}
+          ownScore={2}
+          opponentScore={2}
         />
       );
       
@@ -330,8 +330,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={0}
-          awayScore={0}
+          ownScore={0}
+          opponentScore={0}
         />
       );
       
@@ -351,8 +351,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={15}
-          awayScore={12}
+          ownScore={15}
+          opponentScore={12}
         />
       );
       
@@ -364,16 +364,16 @@ describe('MatchSummaryHeader', () => {
     it('applies correct CSS classes to score elements', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
-      const homeScoreElement = screen.getByText('2');
-      const awayScoreElement = screen.getByText('1');
+      const ownScoreElement = screen.getByText('2');
+      const opponentScoreElement = screen.getByText('1');
       
       // Check common score styling
-      expect(homeScoreElement).toHaveClass('text-4xl', 'font-bold', 'font-mono');
-      expect(awayScoreElement).toHaveClass('text-4xl', 'font-bold', 'font-mono');
+      expect(ownScoreElement).toHaveClass('text-4xl', 'font-bold', 'font-mono');
+      expect(opponentScoreElement).toHaveClass('text-4xl', 'font-bold', 'font-mono');
       
       // Check winner/loser styling
-      expect(homeScoreElement).toHaveClass('text-emerald-400');
-      expect(awayScoreElement).toHaveClass('text-slate-300');
+      expect(ownScoreElement).toHaveClass('text-emerald-400');
+      expect(opponentScoreElement).toHaveClass('text-slate-300');
     });
   });
 
@@ -388,20 +388,20 @@ describe('MatchSummaryHeader', () => {
     it('displays custom team names', () => {
       render(
         <MatchSummaryHeader 
-          homeTeamName="Custom Home"
-          awayTeamName="Custom Away"
+          ownTeamName="Custom Own Team"
+          opponentTeam="Custom Opponent"
         />
       );
       
-      expect(screen.getByText('Custom Home')).toBeInTheDocument();
-      expect(screen.getByText('Custom Away')).toBeInTheDocument();
+      expect(screen.getByText('Custom Own Team')).toBeInTheDocument();
+      expect(screen.getByText('Custom Opponent')).toBeInTheDocument();
     });
 
     it('handles empty team names', () => {
       render(
         <MatchSummaryHeader 
-          homeTeamName=""
-          awayTeamName=""
+          ownTeamName=""
+          opponentTeam=""
         />
       );
       
@@ -413,18 +413,18 @@ describe('MatchSummaryHeader', () => {
     it('applies correct CSS classes to team name elements', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
-      const homeTeamElement = screen.getByText('Djurgården');
-      const awayTeamElement = screen.getByText('Hammarby');
+      const ownTeamElement = screen.getByText('Djurgården');
+      const opponentTeamElement = screen.getByText('Hammarby');
       
       // Check team name styling
-      expect(homeTeamElement).toHaveClass('text-lg', 'font-semibold', 'text-slate-200', 'truncate');
-      expect(awayTeamElement).toHaveClass('text-lg', 'font-semibold', 'text-slate-200', 'truncate');
+      expect(ownTeamElement).toHaveClass('text-lg', 'font-semibold', 'text-slate-200', 'truncate');
+      expect(opponentTeamElement).toHaveClass('text-lg', 'font-semibold', 'text-slate-200', 'truncate');
     });
 
     it('handles special characters in team names', () => {
       const specialNames = {
-        homeTeamName: 'Åkersberga ÖSK',
-        awayTeamName: 'Märsta FF'
+        ownTeamName: 'Åkersberga ÖSK',
+        opponentTeam: 'Märsta FF'
       };
       
       render(<MatchSummaryHeader {...defaultProps} {...specialNames} />);
@@ -498,10 +498,10 @@ describe('MatchSummaryHeader', () => {
   describe('Edge Cases and Error Handling', () => {
     it('handles all null/undefined props gracefully', () => {
       const nullProps = {
-        homeTeamName: null,
-        awayTeamName: null,
-        homeScore: null,
-        awayScore: null,
+        ownTeamName: null,
+        opponentTeam: null,
+        ownScore: null,
+        opponentScore: null,
         matchStartTime: null,
         matchDuration: null,
         totalPeriods: null,
@@ -519,8 +519,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={-1}
-          awayScore={-2}
+          ownScore={-1}
+          opponentScore={-2}
         />
       );
       
@@ -533,8 +533,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={999}
-          awayScore={1000}
+          ownScore={999}
+          opponentScore={1000}
         />
       );
       
@@ -558,8 +558,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore="2"
-          awayScore="1"
+          ownScore="2"
+          opponentScore="1"
           matchDuration="900"
           totalPeriods="2"
         />
@@ -600,40 +600,40 @@ describe('MatchSummaryHeader', () => {
     });
 
     it('applies correct text colors for different match outcomes', () => {
-      // Test home win
+      // Test own win
       const { rerender } = render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={3}
-          awayScore={1}
+          ownScore={3}
+          opponentScore={1}
         />
       );
       
-      let homeScore = screen.getByText('3');
-      let awayScore = screen.getByText('1');
-      expect(homeScore).toHaveClass('text-emerald-400');
-      expect(awayScore).toHaveClass('text-slate-300');
+      let ownScore = screen.getByText('3');
+      let opponentScore = screen.getByText('1');
+      expect(ownScore).toHaveClass('text-emerald-400');
+      expect(opponentScore).toHaveClass('text-slate-300');
       
-      // Test away win
+      // Test opponent win
       rerender(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={1}
-          awayScore={3}
+          ownScore={1}
+          opponentScore={3}
         />
       );
       
-      homeScore = screen.getByText('1');
-      awayScore = screen.getByText('3');
-      expect(homeScore).toHaveClass('text-slate-300');
-      expect(awayScore).toHaveClass('text-emerald-400');
+      ownScore = screen.getByText('1');
+      opponentScore = screen.getByText('3');
+      expect(ownScore).toHaveClass('text-slate-300');
+      expect(opponentScore).toHaveClass('text-emerald-400');
       
       // Test tie
       rerender(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={2}
-          awayScore={2}
+          ownScore={2}
+          opponentScore={2}
         />
       );
       
@@ -671,24 +671,24 @@ describe('MatchSummaryHeader', () => {
     });
 
     it('getTeamScoreStyle function works correctly for all scenarios', () => {
-      // Test home win styling
+      // Test own win styling
       const { rerender } = render(
         <MatchSummaryHeader 
           {...defaultProps}
-          homeScore={3}
-          awayScore={1}
+          ownScore={3}
+          opponentScore={1}
         />
       );
       
       expect(screen.getByText('3')).toHaveClass('text-emerald-400');
       expect(screen.getByText('1')).toHaveClass('text-slate-300');
       
-      // Test away win styling
+      // Test opponent win styling
       rerender(
         <MatchSummaryHeader 
           {...defaultProps}
-          homeScore={1}
-          awayScore={3}
+          ownScore={1}
+          opponentScore={3}
         />
       );
       
@@ -699,8 +699,8 @@ describe('MatchSummaryHeader', () => {
       rerender(
         <MatchSummaryHeader 
           {...defaultProps}
-          homeScore={2}
-          awayScore={2}
+          ownScore={2}
+          opponentScore={2}
         />
       );
       
@@ -716,8 +716,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={2.5}
-          awayScore={1.5}
+          ownScore={2.5}
+          opponentScore={1.5}
         />
       );
       
@@ -730,25 +730,25 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={0}
-          awayScore={1}
+          ownScore={0}
+          opponentScore={1}
         />
       );
       
       expect(screen.getByText('Hammarby wins')).toBeInTheDocument();
       
-      const homeScore = screen.getByText('0');
-      const awayScore = screen.getByText('1');
-      expect(homeScore).toHaveClass('text-slate-300');
-      expect(awayScore).toHaveClass('text-emerald-400');
+      const ownScore = screen.getByText('0');
+      const opponentScore = screen.getByText('1');
+      expect(ownScore).toHaveClass('text-slate-300');
+      expect(opponentScore).toHaveClass('text-emerald-400');
     });
 
     it('handles very close fractional scores', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={1.00001}
-          awayScore={1.00000}
+          ownScore={1.00001}
+          opponentScore={1.00000}
         />
       );
       
@@ -762,8 +762,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={NaN}
-          awayScore={NaN}
+          ownScore={NaN}
+          opponentScore={NaN}
         />
       );
       
@@ -776,8 +776,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={Infinity}
-          awayScore={5}
+          ownScore={Infinity}
+          opponentScore={5}
         />
       );
       
@@ -878,33 +878,33 @@ describe('MatchSummaryHeader', () => {
       
       // Find score element and verify it has appropriate styling
       const scoreElements = screen.getAllByText('2');
-      const homeScoreElement = scoreElements.find(el => el.className.includes('text-4xl'));
-      expect(homeScoreElement).toBeDefined();
-      expect(homeScoreElement).toHaveClass('text-4xl', 'font-bold');
+      const ownScoreElement = scoreElements.find(el => el.className.includes('text-4xl'));
+      expect(ownScoreElement).toBeDefined();
+      expect(ownScoreElement).toHaveClass('text-4xl', 'font-bold');
     });
 
     it('provides clear visual hierarchy for match results', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
       // Check team names have appropriate font sizes
-      const homeTeam = screen.getByText('Djurgården');
-      const awayTeam = screen.getByText('Hammarby');
-      expect(homeTeam).toHaveClass('text-lg', 'font-semibold');
-      expect(awayTeam).toHaveClass('text-lg', 'font-semibold');
+      const ownTeam = screen.getByText('Djurgården');
+      const opponentTeam = screen.getByText('Hammarby');
+      expect(ownTeam).toHaveClass('text-lg', 'font-semibold');
+      expect(opponentTeam).toHaveClass('text-lg', 'font-semibold');
       
       // Check scores are prominently displayed
-      const homeScore = screen.getByText('2');
-      const awayScore = screen.getByText('1');
-      expect(homeScore).toHaveClass('text-4xl', 'font-bold');
-      expect(awayScore).toHaveClass('text-4xl', 'font-bold');
+      const ownScore = screen.getByText('2');
+      const opponentScore = screen.getByText('1');
+      expect(ownScore).toHaveClass('text-4xl', 'font-bold');
+      expect(opponentScore).toHaveClass('text-4xl', 'font-bold');
     });
 
     it('maintains readable contrast for different match outcomes', () => {
       const { rerender } = render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={3}
-          awayScore={1}
+          ownScore={3}
+          opponentScore={1}
         />
       );
       
@@ -917,8 +917,8 @@ describe('MatchSummaryHeader', () => {
       rerender(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeScore={2}
-          awayScore={2}
+          ownScore={2}
+          opponentScore={2}
         />
       );
       
@@ -948,8 +948,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeTeamName={veryLongName}
-          awayTeamName={veryLongName}
+          ownTeamName={veryLongName}
+          opponentTeam={veryLongName}
         />
       );
       
@@ -980,8 +980,8 @@ describe('MatchSummaryHeader', () => {
       render(
         <MatchSummaryHeader 
           {...defaultProps} 
-          homeTeamName="A"
-          awayTeamName="B"
+          ownTeamName="A"
+          opponentTeam="B"
         />
       );
       
@@ -1107,10 +1107,10 @@ describe('MatchSummaryHeader', () => {
       
       // Completely change all props
       const newProps = {
-        homeTeamName: 'New Home',
-        awayTeamName: 'New Away',
-        homeScore: 5,
-        awayScore: 3,
+        ownTeamName: 'New Own Team',
+        opponentTeam: 'New Opponent',
+        ownScore: 5,
+        opponentScore: 3,
         matchStartTime: new Date('2023-06-15T18:30:00').getTime(),
         matchDuration: 1800,
         totalPeriods: 4,
@@ -1119,11 +1119,11 @@ describe('MatchSummaryHeader', () => {
       
       rerender(<MatchSummaryHeader {...newProps} />);
       
-      expect(screen.getByText('New Home')).toBeInTheDocument();
-      expect(screen.getByText('New Away')).toBeInTheDocument();
+      expect(screen.getByText('New Own Team')).toBeInTheDocument();
+      expect(screen.getByText('New Opponent')).toBeInTheDocument();
       expect(screen.getByText('5')).toBeInTheDocument();
       expect(screen.getByText('3')).toBeInTheDocument();
-      expect(screen.getByText('New Home wins')).toBeInTheDocument();
+      expect(screen.getByText('New Own Team wins')).toBeInTheDocument();
       expect(screen.getByText('4 × 10min')).toBeInTheDocument();
     });
 
@@ -1135,8 +1135,8 @@ describe('MatchSummaryHeader', () => {
         rerender(
           <MatchSummaryHeader 
             {...defaultProps} 
-            homeScore={i}
-            awayScore={i + 1}
+            ownScore={i}
+            opponentScore={i + 1}
           />
         );
       }
@@ -1154,10 +1154,10 @@ describe('MatchSummaryHeader', () => {
       
       render(
         <MatchSummaryHeader 
-          homeTeamName="Valid Team"
-          awayTeamName={null}
-          homeScore="3"
-          awayScore={undefined}
+          ownTeamName="Valid Team"
+          opponentTeam={null}
+          ownScore="3"
+          opponentScore={undefined}
           matchStartTime={null}
           matchDuration="invalid"
           totalPeriods={2}
@@ -1185,8 +1185,8 @@ describe('MatchSummaryHeader', () => {
         rerender(
           <MatchSummaryHeader 
             {...defaultProps} 
-            homeScore={i % 10}
-            awayScore={(i + 1) % 10}
+            ownScore={i % 10}
+            opponentScore={(i + 1) % 10}
           />
         );
       }
@@ -1203,10 +1203,10 @@ describePerformance('MatchSummaryHeader Performance', () => {
 
   beforeEach(() => {
     defaultProps = {
-      homeTeamName: 'Djurgården',
-      awayTeamName: 'Hammarby',
-      homeScore: 2,
-      awayScore: 1,
+      ownTeamName: 'Djurgården',
+      opponentTeam: 'Hammarby',
+      ownScore: 2,
+      opponentScore: 1,
       matchStartTime: 1640995200000,
       matchDuration: 900,
       totalPeriods: 2,
@@ -1226,8 +1226,8 @@ describePerformance('MatchSummaryHeader Performance', () => {
           rerender(
             <MatchSummaryHeader 
               {...defaultProps} 
-              homeScore={i}
-              awayScore={i + 1}
+              ownScore={i}
+              opponentScore={i + 1}
             />
           );
         }

@@ -88,9 +88,9 @@ export function useGameState() {
   const [nextNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut] = useState(initialState.nextNextPlayerIdToSubOut);
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
-  const [opponentTeamName, setOpponentTeamName] = useState(initialState.opponentTeamName || '');
-  const [homeScore, setHomeScore] = useState(initialState.homeScore || 0); // Djurgården score
-  const [awayScore, setAwayScore] = useState(initialState.awayScore || 0); // Opponent score
+  const [opponentTeam, setOpponentTeam] = useState(initialState.opponentTeam || '');
+  const [ownScore, setOwnScore] = useState(initialState.ownScore || 0); // Djurgården score
+  const [opponentScore, setOpponentScore] = useState(initialState.opponentScore || 0); // Opponent score
   const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
 
   // Match event tracking state - NEW for match report feature
@@ -313,9 +313,9 @@ export function useGameState() {
       nextNextPlayerIdToSubOut,
       rotationQueue,
       gameLog,
-      opponentTeamName,
-      homeScore,
-      awayScore,
+      opponentTeam,
+      ownScore,
+      opponentScore,
       lastSubstitutionTimestamp,
       // NEW: Match event tracking state
       matchEvents,
@@ -330,7 +330,7 @@ export function useGameState() {
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeamName, homeScore, awayScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
 
 
 
@@ -1420,22 +1420,22 @@ export function useGameState() {
   }, [allPlayers, selectedSquadIds, formation.goalie]);
 
   // Score management functions
-  const addHomeGoal = useCallback(() => {
-    setHomeScore(prev => prev + 1);
+  const addGoalScored = useCallback(() => {
+    setOwnScore(prev => prev + 1);
   }, []);
 
-  const addAwayGoal = useCallback(() => {
-    setAwayScore(prev => prev + 1);
+  const addGoalConceded = useCallback(() => {
+    setOpponentScore(prev => prev + 1);
   }, []);
 
-  const setScore = useCallback((home, away) => {
-    setHomeScore(home);
-    setAwayScore(away);
+  const setScore = useCallback((own, opponent) => {
+    setOwnScore(own);
+    setOpponentScore(opponent);
   }, []);
 
   const resetScore = useCallback(() => {
-    setHomeScore(0);
-    setAwayScore(0);
+    setOwnScore(0);
+    setOpponentScore(0);
   }, []);
 
   // Navigation to match report
@@ -1528,10 +1528,10 @@ export function useGameState() {
     setRotationQueue,
     gameLog,
     setGameLog,
-    opponentTeamName,
-    setOpponentTeamName,
-    homeScore,
-    awayScore,
+    opponentTeam,
+    setOpponentTeam,
+    ownScore,
+    opponentScore,
     lastSubstitutionTimestamp,
     setLastSubstitutionTimestamp,
     
@@ -1569,8 +1569,8 @@ export function useGameState() {
     switchPlayerPositions,
     switchGoalie,
     getOutfieldPlayers: getOutfieldPlayersForGame,
-    addHomeGoal,
-    addAwayGoal,
+    addGoalScored,
+    addGoalConceded,
     setScore,
     resetScore,
     navigateToMatchReport,

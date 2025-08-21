@@ -89,8 +89,8 @@ describe('matchReportUtils', () => {
       expect(summary.matchStartTime).toBe(1000);
       expect(summary.matchEndTime).toBe(5000);
       expect(summary.matchDurationMs).toBe(4000);
-      expect(summary.homeScore).toBe(2);
-      expect(summary.awayScore).toBe(1);
+      expect(summary.ownScore).toBe(2);
+      expect(summary.opponentScore).toBe(1);
       expect(summary.isMatchComplete).toBe(true);
       expect(summary.totalEvents).toBe(4);
       expect(summary.activeEvents).toBe(4);

@@ -165,7 +165,7 @@ export const persistenceScenarios = {
     selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6'],
     numPeriods: 2,
     periodDurationMinutes: 20,
-    opponentTeamName: 'Saved Opponent'
+    opponentTeam: 'Saved Opponent'
   },
   
   corruptedState: '{"invalid": json, data}',

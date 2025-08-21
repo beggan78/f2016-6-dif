@@ -29,7 +29,7 @@ export function PlayerStatsTable({
     
     // Count goals from match events
     matchEvents.forEach(event => {
-      if ((event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY) && !event.undone) {
+      if ((event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED) && !event.undone) {
         // Check goalScorers mapping first, then fall back to event data
         const scorerId = goalScorers[event.id] || event.data?.scorerId;
         if (scorerId) {

@@ -51,11 +51,11 @@ describe('GameEventTimeline', () => {
     },
     {
       id: 'goal-event-1',
-      type: EVENT_TYPES.GOAL_HOME,
+      type: EVENT_TYPES.GOAL_SCORED,
       timestamp: 1000000060000,
       matchTime: '01:00',
       sequence: 2,
-      data: { homeScore: 1, awayScore: 0 },
+      data: { ownScore: 1, opponentScore: 0 },
       undone: false
     },
     {
@@ -96,8 +96,8 @@ describe('GameEventTimeline', () => {
         events={sampleEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -124,7 +124,7 @@ describe('GameEventTimeline', () => {
     const goalEvents = [
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 1,
@@ -133,7 +133,7 @@ describe('GameEventTimeline', () => {
       },
       {
         id: 'goal-event-unknown',
-        type: EVENT_TYPES.GOAL_AWAY,
+        type: EVENT_TYPES.GOAL_CONCEDED,
         timestamp: 1000000120000,
         matchTime: '02:00',
         sequence: 2,
@@ -147,8 +147,8 @@ describe('GameEventTimeline', () => {
         events={goalEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -171,7 +171,7 @@ describe('GameEventTimeline', () => {
       ...sampleEvents,
       {
         id: 'undone-event',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000180000,
         matchTime: '03:00',
         sequence: 4,
@@ -225,7 +225,7 @@ describe('GameEventTimeline', () => {
     const mockOnGoalClick = jest.fn();
     const goalEvent = {
       id: 'goal-event-1',
-      type: EVENT_TYPES.GOAL_HOME,
+      type: EVENT_TYPES.GOAL_SCORED,
       timestamp: 1000000060000,
       matchTime: '01:00',
       sequence: 1,
@@ -239,7 +239,7 @@ describe('GameEventTimeline', () => {
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
         onGoalClick={mockOnGoalClick}
-        homeTeamName="Djurgården"
+        ownTeamName="Djurgården"
       />
     );
 
@@ -262,7 +262,7 @@ describe('GameEventTimeline', () => {
       },
       {
         id: 'goal-home',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
@@ -312,7 +312,7 @@ describe('GameEventTimeline', () => {
   it('handles missing getPlayerName function gracefully', () => {
     const goalEvent = {
       id: 'goal-event-1',
-      type: EVENT_TYPES.GOAL_HOME,
+      type: EVENT_TYPES.GOAL_SCORED,
       timestamp: 1000000060000,
       matchTime: '01:00',
       sequence: 1,
@@ -324,7 +324,7 @@ describe('GameEventTimeline', () => {
       <GameEventTimeline
         events={[goalEvent]}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
+        ownTeamName="Djurgården"
         // No getPlayerName prop provided
       />
     );
@@ -359,12 +359,12 @@ describe('GameEventTimeline', () => {
       },
       {
         id: 'goal-p1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         periodNumber: 1,
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
       },
       {
@@ -419,12 +419,12 @@ describe('GameEventTimeline', () => {
       },
       {
         id: 'goal-p2',
-        type: EVENT_TYPES.GOAL_AWAY,
+        type: EVENT_TYPES.GOAL_CONCEDED,
         timestamp: 1000001140000,
         matchTime: '19:00',
         periodNumber: 2,
         sequence: 7,
-        data: { homeScore: 1, awayScore: 1 },
+        data: { ownScore: 1, opponentScore: 1 },
         undone: false
       }
     ];
@@ -434,8 +434,8 @@ describe('GameEventTimeline', () => {
         events={multiPeriodEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -516,7 +516,7 @@ describe('GameEventTimeline', () => {
       <GameEventTimeline
         events={shortIntermissionEvents}
         getPlayerName={mockGetPlayerName}
-        homeTeamName="Djurgården"
+        ownTeamName="Djurgården"
       />
     );
 
@@ -540,11 +540,11 @@ describe('GameEventTimeline', () => {
     const eventsWithoutPeriods = [
       {
         id: 'goal-no-period',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 1,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
         // No periodNumber - should default to period 1
       }
@@ -555,7 +555,7 @@ describe('GameEventTimeline', () => {
         events={eventsWithoutPeriods}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
+        ownTeamName="Djurgården"
       />
     );
 
@@ -600,7 +600,7 @@ describe('GameEventTimeline', () => {
       <GameEventTimeline
         events={pairsSubstitutionEvents}
         getPlayerName={mockGetPlayerName}
-        homeTeamName="Djurgården"
+        ownTeamName="Djurgården"
       />
     );
 
@@ -639,7 +639,7 @@ describe('GameEventTimeline', () => {
       <GameEventTimeline
         events={individualSubstitutionEvents}
         getPlayerName={mockGetPlayerName}
-        homeTeamName="Djurgården"
+        ownTeamName="Djurgården"
       />
     );
 
@@ -734,11 +734,11 @@ describe('GameEventTimeline', () => {
       },
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
       },
       {
@@ -765,8 +765,8 @@ describe('GameEventTimeline', () => {
         events={eventsWithSubstitution}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
         selectedPlayerId="player1"
         availablePlayers={availablePlayers}
       />
@@ -809,11 +809,11 @@ describe('GameEventTimeline', () => {
       },
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
       },
       {
@@ -840,8 +840,8 @@ describe('GameEventTimeline', () => {
         events={eventsWithMultipleEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
         selectedPlayerId="player1"
         availablePlayers={availablePlayers}
       />
@@ -869,7 +869,7 @@ describe('GameEventTimeline', () => {
       // Create 500 events of various types
       for (let i = 0; i < 500; i++) {
         const eventTypes = [
-          EVENT_TYPES.GOAL_HOME,
+          EVENT_TYPES.GOAL_SCORED,
           EVENT_TYPES.SUBSTITUTION,
           EVENT_TYPES.TIMER_PAUSED,
           EVENT_TYPES.TIMER_RESUMED,
@@ -882,7 +882,7 @@ describe('GameEventTimeline', () => {
           timestamp: baseTimestamp + (i * 60000), // 1 minute apart
           matchTime: `${Math.floor(i / 60).toString().padStart(2, '0')}:${(i % 60).toString().padStart(2, '0')}`,
           sequence: i + 1,
-          data: i % 5 === 0 ? { homeScore: Math.floor(i / 50), awayScore: Math.floor(i / 60) } : {},
+          data: i % 5 === 0 ? { ownScore: Math.floor(i / 50), opponentScore: Math.floor(i / 60) } : {},
           undone: false
         });
       }
@@ -968,12 +968,12 @@ describe('GameEventTimeline', () => {
     it('should expand and collapse event details correctly', () => {
       const eventWithDetails = {
         id: 'detailed-goal',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         periodNumber: 1,
         sequence: 1,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
       };
 
@@ -1015,12 +1015,12 @@ describe('GameEventTimeline', () => {
       const mockOnGoalClick = jest.fn();
       const eventWithDetails = {
         id: 'goal-with-details',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         periodNumber: 1,
         sequence: 1,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
       };
 
@@ -1053,7 +1053,7 @@ describe('GameEventTimeline', () => {
         timestamp: 1000000120000,
         matchTime: '02:00',
         sequence: 1,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: true,
         undoReason: 'Mistake by coach',
         undoTimestamp: 1000000180000
@@ -1251,7 +1251,7 @@ describe('GameEventTimeline', () => {
         },
         {
           id: 'malformed-2',
-          type: EVENT_TYPES.GOAL_HOME,
+          type: EVENT_TYPES.GOAL_SCORED,
           timestamp: 1000000120000,
           matchTime: '02:00',
           sequence: 2,
@@ -1266,7 +1266,7 @@ describe('GameEventTimeline', () => {
             events={malformedEvents}
             getPlayerName={mockGetPlayerName}
             goalScorers={mockGoalScorers}
-            homeTeamName="Djurgården"
+            ownTeamName="Djurgården"
           />
         );
       }).not.toThrow();
@@ -1283,7 +1283,7 @@ describe('GameEventTimeline', () => {
       // by defaulting to empty object when event.data is null
       const eventWithNullData = {
         id: 'null-data-event',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000120000,
         matchTime: '02:00',
         sequence: 1,
@@ -1298,7 +1298,7 @@ describe('GameEventTimeline', () => {
             events={[eventWithNullData]}
             getPlayerName={mockGetPlayerName}
             goalScorers={mockGoalScorers}
-            homeTeamName="Djurgården"
+            ownTeamName="Djurgården"
           />
         );
       }).not.toThrow();
@@ -1365,11 +1365,11 @@ describe('GameEventTimeline', () => {
       const futureTimestamp = Date.now() + 86400000; // 24 hours in future
       const futureEvent = {
         id: 'future-event',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: futureTimestamp,
         matchTime: '25:00', // Future time
         sequence: 1,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
       };
 
@@ -1425,7 +1425,7 @@ describe('GameEventTimeline', () => {
       const mockOnGoalClick = jest.fn();
       const goalEvent = {
         id: 'keyboard-goal',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 1,
@@ -1439,7 +1439,7 @@ describe('GameEventTimeline', () => {
           getPlayerName={mockGetPlayerName}
           goalScorers={mockGoalScorers}
           onGoalClick={mockOnGoalClick}
-          homeTeamName="Djurgården"
+          ownTeamName="Djurgården"
         />
       );
 
@@ -1457,12 +1457,12 @@ describe('GameEventTimeline', () => {
     it('should have proper focus management for expand/collapse buttons', () => {
       const eventWithDetails = {
         id: 'focus-test-event',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         periodNumber: 1,
         sequence: 1,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false
       };
 

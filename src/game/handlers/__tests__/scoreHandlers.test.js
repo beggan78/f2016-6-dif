@@ -44,8 +44,8 @@ describe('scoreHandlers', () => {
     // Create proper mock state updaters and modal handlers
     const mockStateUpdaters = {
       setScore: mockSetScore,
-      addHomeGoal: jest.fn(),
-      addAwayGoal: jest.fn()
+      addGoalScored: jest.fn(),
+      addGoalConceded: jest.fn()
     };
     
     const mockModalHandlers = {
@@ -69,33 +69,33 @@ describe('scoreHandlers', () => {
       {
         id: 'goal1',
         eventId: 'goal1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000,
-        data: { homeScore: 1, awayScore: 0, scorerId: 'player1' },
+        data: { ownScore: 1, opponentScore: 0, scorerId: 'player1' },
         undone: false
       },
       {
         id: 'goal2',
         eventId: 'goal2',
-        type: EVENT_TYPES.GOAL_AWAY,
+        type: EVENT_TYPES.GOAL_CONCEDED,
         timestamp: 2000,
-        data: { homeScore: 1, awayScore: 1, scorerId: 'player2' },
+        data: { ownScore: 1, opponentScore: 1, scorerId: 'player2' },
         undone: false
       },
       {
         id: 'goal3',
         eventId: 'goal3',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 3000,
-        data: { homeScore: 2, awayScore: 1, scorerId: 'player3' },
+        data: { ownScore: 2, opponentScore: 1, scorerId: 'player3' },
         undone: false
       },
       {
         id: 'goal4',
         eventId: 'goal4',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 4000,
-        data: { homeScore: 3, awayScore: 1, scorerId: 'player4' },
+        data: { ownScore: 3, opponentScore: 1, scorerId: 'player4' },
         undone: false
       }
     ];
@@ -119,7 +119,7 @@ describe('scoreHandlers', () => {
     it('should call openGoalScorerModal when provided', () => {
       // Mock getAllEvents to return goal events
       getAllEvents.mockReturnValue([
-        { id: 'goal1', eventId: 'goal1', type: EVENT_TYPES.GOAL_HOME, timestamp: 1000, undone: false }
+        { id: 'goal1', eventId: 'goal1', type: EVENT_TYPES.GOAL_SCORED, timestamp: 1000, undone: false }
       ]);
       
       scoreHandlers.handleEditGoalScorer('goal1');
@@ -127,14 +127,17 @@ describe('scoreHandlers', () => {
       // Should call openGoalScorerModal with goal data object
       expect(mockOpenGoalScorerModal).toHaveBeenCalledWith(expect.objectContaining({
         eventId: 'goal1',
-        team: 'home',
-        mode: 'edit'
+        team: 'scored',
+        mode: 'correct',
+        matchTime: '00:00',
+        periodNumber: 1,
+        currentScorerId: null
       }));
     });
 
     it('should handle missing openGoalScorerModal gracefully', () => {
       // Create handlers without modal function
-      const mockStateUpdaters = { setScore: jest.fn(), addHomeGoal: jest.fn(), addAwayGoal: jest.fn() };
+      const mockStateUpdaters = { setScore: jest.fn(), addGoalScored: jest.fn(), addGoalConceded: jest.fn() };
       const mockModalHandlers = {
         openScoreEditModal: jest.fn(),
         closeScoreEditModal: jest.fn(),
@@ -161,7 +164,7 @@ describe('scoreHandlers', () => {
     });
 
     it('should handle missing setScore function', () => {
-      const mockStateUpdaters = { setScore: null, addHomeGoal: jest.fn(), addAwayGoal: jest.fn() };
+      const mockStateUpdaters = { setScore: null, addGoalScored: jest.fn(), addGoalConceded: jest.fn() };
       const mockModalHandlers = {
         openScoreEditModal: jest.fn(),
         closeScoreEditModal: jest.fn(),

@@ -12,11 +12,11 @@ import { formatTime, formatPlayerName } from './formatUtils';
  * Generate comprehensive match summary from match events and game log
  * @param {Array} matchEvents - Array of match events from gameEventLogger
  * @param {Array} gameLog - Array of game log entries
- * @param {number} homeScore - Final home team score
- * @param {number} awayScore - Final away team score
+ * @param {number} ownScore - Final own team score
+ * @param {number} opponentScore - Final opponent team score
  * @returns {Object} Match summary with duration, timestamps, and statistics
  */
-export const generateMatchSummary = (matchEvents, gameLog, homeScore = 0, awayScore = 0) => {
+export const generateMatchSummary = (matchEvents, gameLog, ownScore = 0, opponentScore = 0) => {
   try {
     // Input validation
     if (!Array.isArray(matchEvents)) {
@@ -55,8 +55,8 @@ export const generateMatchSummary = (matchEvents, gameLog, homeScore = 0, awaySc
       matchDurationFormatted: formatTime(Math.floor(matchDurationMs / 1000)),
       effectivePlayingTimeMs,
       effectivePlayingTimeFormatted: formatTime(Math.floor(effectivePlayingTimeMs / 1000)),
-      homeScore,
-      awayScore,
+      ownScore,
+      opponentScore,
       isMatchComplete: !!matchEndEvent,
       totalEvents: matchEvents.length,
       activeEvents: matchEvents.filter(e => !e.undone).length,
@@ -77,8 +77,8 @@ export const generateMatchSummary = (matchEvents, gameLog, homeScore = 0, awaySc
       matchDurationFormatted: '00:00',
       effectivePlayingTimeMs: 0,
       effectivePlayingTimeFormatted: '00:00',
-      homeScore: 0,
-      awayScore: 0,
+      ownScore: 0,
+      opponentScore: 0,
       isMatchComplete: false,
       totalEvents: 0,
       activeEvents: 0,
@@ -538,8 +538,8 @@ const isTimerEvent = (eventType) => {
  */
 const isGoalEvent = (eventType) => {
   const goalTypes = [
-    EVENT_TYPES.GOAL_HOME,
-    EVENT_TYPES.GOAL_AWAY,
+    EVENT_TYPES.GOAL_SCORED,
+    EVENT_TYPES.GOAL_CONCEDED,
     EVENT_TYPES.GOAL_CORRECTED,
     EVENT_TYPES.GOAL_UNDONE
   ];
@@ -600,10 +600,10 @@ const generateEventDescription = (event) => {
       return 'Goalie switch';
     case EVENT_TYPES.POSITION_CHANGE:
       return 'Position change';
-    case EVENT_TYPES.GOAL_HOME:
-      return 'Goal scored (Home)';
-    case EVENT_TYPES.GOAL_AWAY:
-      return 'Goal scored (Away)';
+    case EVENT_TYPES.GOAL_SCORED:
+      return 'Goal scored';
+    case EVENT_TYPES.GOAL_CONCEDED:
+      return 'Goal conceded';
     case EVENT_TYPES.TIMER_PAUSED:
       return 'Timer paused';
     case EVENT_TYPES.TIMER_RESUMED:
@@ -651,8 +651,8 @@ const getEventSeverity = (eventType) => {
   ];
 
   const mediumSeverity = [
-    EVENT_TYPES.GOAL_HOME,
-    EVENT_TYPES.GOAL_AWAY,
+    EVENT_TYPES.GOAL_SCORED,
+    EVENT_TYPES.GOAL_CONCEDED,
     EVENT_TYPES.PERIOD_START,
     EVENT_TYPES.PERIOD_END
   ];

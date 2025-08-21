@@ -149,7 +149,7 @@ describe('ConfigurationScreen', () => {
       updateTeamConfig: jest.fn(),
       setAlertMinutes: jest.fn(),
       handleStartPeriodSetup: jest.fn(),
-      setOpponentTeamName: jest.fn(),
+      setOpponentTeam: jest.fn(),
       updateFormationSelection: jest.fn(),
       createTeamConfigFromSquadSize: jest.fn(),
       setCaptain: jest.fn()
@@ -171,7 +171,7 @@ describe('ConfigurationScreen', () => {
       selectedFormation: FORMATIONS.FORMATION_2_2,
       alertMinutes: 2,
       selectedSquadPlayers: [],
-      opponentTeamName: '',
+      opponentTeam: '',
       captainId: null,
       setViewWithData: jest.fn(),
       ...mockSetters
@@ -504,7 +504,7 @@ describe('ConfigurationScreen', () => {
       fireEvent.change(input, { target: { value: 'Test Team Name' } });
       
       expect(sanitizeNameInput).toHaveBeenCalledWith('Test Team Name');
-      expect(mockSetters.setOpponentTeamName).toHaveBeenCalledWith('Sanitized Team Name');
+      expect(mockSetters.setOpponentTeam).toHaveBeenCalledWith('Sanitized Team Name');
     });
 
     it('should show helper text for opponent name', () => {
