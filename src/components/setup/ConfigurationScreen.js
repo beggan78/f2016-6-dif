@@ -8,11 +8,13 @@ import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugU
 import { formatPlayerName } from '../../utils/formatUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
+import { useFormationVotes } from '../../hooks/useFormationVotes';
 import { TeamManagement } from '../team/TeamManagement';
 import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
+import { VIEWS } from '../../constants/viewConstants';
 
 // Import TAB_VIEWS for team management navigation
 const TAB_VIEWS = {
@@ -42,17 +44,28 @@ export function ConfigurationScreen({
   setAlertMinutes,
   handleStartPeriodSetup, 
   selectedSquadPlayers,
-  opponentTeamName,
-  setOpponentTeamName,
+  opponentTeam,
+  setOpponentTeam,
   captainId,
   setCaptain,
   debugMode = false,
   authModal,
   setView,
-  setTeamManagementInitialTab
+  setViewWithData
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
+  
+  // Formation voting hook
+  const { 
+    submitVote, 
+    loading: voteLoading, 
+    error: voteError, 
+    successMessage: voteSuccessMessage, 
+    infoMessage: voteInfoMessage,
+    clearMessages: clearVoteMessages,
+    isAuthenticated: isVoteAuthenticated
+  } = useFormationVotes();
 
   // Handle substitution mode changes
   const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
@@ -88,10 +101,31 @@ export function ConfigurationScreen({
     }
   };
 
-  const handleVoteConfirm = () => {
-    console.log(`Voted for ${formationToVoteFor}`);
-    // Here you would typically send the vote to a server
-    setIsVoteModalOpen(false);
+  const handleVoteConfirm = async () => {
+    if (!formationToVoteFor) return;
+    
+    // Clear any previous messages
+    clearVoteMessages();
+    
+    // Check if user is authenticated
+    if (!isVoteAuthenticated) {
+      console.error('User must be authenticated to vote');
+      // The modal will handle showing authentication requirement
+      return;
+    }
+    
+    // Submit the vote (currently always for 5v5 format)
+    const result = await submitVote(formationToVoteFor, '5v5');
+    
+    if (result.success) {
+      // Close modal on success after a brief delay to show success message
+      setTimeout(() => {
+        setIsVoteModalOpen(false);
+        // Clear the formation to vote for
+        setFormationToVoteFor(null);
+      }, 2000);
+    }
+    // On error, keep modal open to show error message
   };
   const { isAuthenticated, user } = useAuth();
   const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
@@ -226,7 +260,7 @@ export function ConfigurationScreen({
     // Set a random opponent name
     const opponentNames = ['Lions FC', 'Eagles United', 'Sharks', 'Thunder', 'Storm', 'Wildcats'];
     const randomOpponent = opponentNames[Math.floor(Math.random() * opponentNames.length)];
-    setOpponentTeamName(randomOpponent);
+    setOpponentTeam(randomOpponent);
   };
 
   const handleMigrateData = async () => {
@@ -379,7 +413,7 @@ export function ConfigurationScreen({
             </p>
             <div className="flex justify-center">
               <Button
-                onClick={() => setTeamManagementInitialTab(TAB_VIEWS.ROSTER)}
+                onClick={() => setViewWithData(VIEWS.TEAM_MANAGEMENT, { openToTab: TAB_VIEWS.ROSTER })}
                 variant="primary"
                 Icon={UserPlus}
               >
@@ -410,8 +444,8 @@ export function ConfigurationScreen({
         <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
         <Input
           id="opponentTeam"
-          value={opponentTeamName}
-          onChange={e => setOpponentTeamName(sanitizeNameInput(e.target.value))}
+          value={opponentTeam}
+          onChange={e => setOpponentTeam(sanitizeNameInput(e.target.value))}
           placeholder="Enter opponent team name (optional)"
           maxLength={50}
         />
@@ -568,9 +602,19 @@ export function ConfigurationScreen({
 
       <FeatureVoteModal
         isOpen={isVoteModalOpen}
-        onClose={() => setIsVoteModalOpen(false)}
+        onClose={() => {
+          setIsVoteModalOpen(false);
+          setFormationToVoteFor(null);
+          clearVoteMessages();
+        }}
         onConfirm={handleVoteConfirm}
         featureName={formationToVoteFor}
+        loading={voteLoading}
+        error={voteError}
+        successMessage={voteSuccessMessage}
+        infoMessage={voteInfoMessage}
+        isAuthenticated={isVoteAuthenticated}
+        authModal={authModal}
       >
         <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
       </FeatureVoteModal>

@@ -119,7 +119,7 @@ describe('GameScreen', () => {
         goalScorer: {
           isOpen: false,
           eventId: null,
-          team: 'home',
+          team: 'own',
           mode: 'new',
           matchTime: '00:00',
           periodNumber: 1,
@@ -165,8 +165,8 @@ describe('GameScreen', () => {
     
     require('../../../hooks/useTeamNameAbbreviation').useTeamNameAbbreviation.mockReturnValue({
       scoreRowRef: { current: null },
-      displayHomeTeam: 'Djurgården',
-      displayAwayTeam: 'Test Opponent'
+      displayOwnTeam: 'Djurgården',
+      displayOpponentTeam: 'Test Opponent'
     });
     
     require('../../../hooks/useFieldPositionHandlers').useFieldPositionHandlers.mockReturnValue({
@@ -217,8 +217,8 @@ describe('GameScreen', () => {
     });
 
     require('../../../game/handlers/scoreHandlers').createScoreHandlers.mockReturnValue({
-      handleAddHomeGoal: jest.fn(),
-      handleAddAwayGoal: jest.fn(),
+      handleAddGoalScored: jest.fn(),
+      handleAddGoalConceded: jest.fn(),
       handleSelectGoalScorer: jest.fn(),
       handleCorrectGoalScorer: jest.fn(),
       handleScoreEdit: jest.fn(),
@@ -254,8 +254,8 @@ describe('GameScreen', () => {
     it('should display correct scores', () => {
       const props = {
         ...defaultProps,
-        homeScore: 3,
-        awayScore: 1
+        ownScore: 3,
+        opponentScore: 1
       };
       
       render(<GameScreen {...props} />);
@@ -318,13 +318,13 @@ describe('GameScreen', () => {
     it('should handle missing opponent team name', () => {
       const props = {
         ...defaultProps,
-        opponentTeamName: ''
+        opponentTeam: ''
       };
       
       require('../../../hooks/useTeamNameAbbreviation').useTeamNameAbbreviation.mockReturnValue({
         scoreRowRef: { current: null },
-        displayHomeTeam: 'Djurgården',
-        displayAwayTeam: 'Opponent'
+        displayOwnTeam: 'Djurgården',
+        displayOpponentTeam: 'Opponent'
       });
       
       render(<GameScreen {...props} />);

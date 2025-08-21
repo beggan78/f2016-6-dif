@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
+import { EVENT_TYPES } from '../../utils/gameEventLogger';
 
 export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
@@ -330,28 +331,28 @@ export function ScoreEditModal({
   isOpen, 
   onCancel, 
   onSave, 
-  homeScore, 
-  awayScore, 
-  homeTeamName = "Djurgården",
-  awayTeamName = "Opponent" 
+  ownScore,
+  opponentScore,
+  ownTeamName = "Djurgården",
+  opponentTeam = "Opponent"
 }) {
-  const [editHomeScore, setEditHomeScore] = React.useState(homeScore);
-  const [editAwayScore, setEditAwayScore] = React.useState(awayScore);
+  const [editOwnScore, setEditOwnScore] = React.useState(ownScore);
+  const [editOpponentScore, setEditOpponentScore] = React.useState(opponentScore);
 
   React.useEffect(() => {
     if (isOpen) {
-      setEditHomeScore(homeScore);
-      setEditAwayScore(awayScore);
+      setEditOwnScore(ownScore);
+      setEditOpponentScore(opponentScore);
     }
-  }, [isOpen, homeScore, awayScore]);
+  }, [isOpen, ownScore, opponentScore]);
 
   const handleSave = () => {
-    onSave(editHomeScore, editAwayScore);
+    onSave(editOwnScore, editOpponentScore);
   };
 
   const handleCancel = () => {
-    setEditHomeScore(homeScore);
-    setEditAwayScore(awayScore);
+    setEditOwnScore(ownScore);
+    setEditOpponentScore(opponentScore);
     onCancel();
   };
 
@@ -366,24 +367,24 @@ export function ScoreEditModal({
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-300 mb-2">{homeTeamName}</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{ownTeamName}</label>
               <div className="flex items-center space-x-2">
                 <Button 
-                  onClick={() => setEditHomeScore(Math.max(0, editHomeScore - 1))}
+                  onClick={() => setEditOwnScore(Math.max(0, editOwnScore - 1))}
                   variant="secondary"
                   size="sm"
-                  disabled={editHomeScore <= 0}
+                  disabled={editOwnScore <= 0}
                 >
                   -
                 </Button>
                 <Input
                   type="number"
-                  value={editHomeScore}
-                  onChange={(e) => setEditHomeScore(Math.max(0, parseInt(e.target.value) || 0))}
+                  value={editOwnScore}
+                  onChange={(e) => setEditOwnScore(Math.max(0, parseInt(e.target.value) || 0))}
                   className="text-center w-16"
                 />
                 <Button 
-                  onClick={() => setEditHomeScore(editHomeScore + 1)}
+                  onClick={() => setEditOwnScore(editOwnScore + 1)}
                   variant="secondary"
                   size="sm"
                 >
@@ -395,24 +396,24 @@ export function ScoreEditModal({
             <div className="text-2xl font-mono font-bold text-slate-400">-</div>
             
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-300 mb-2">{awayTeamName}</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{opponentTeam}</label>
               <div className="flex items-center space-x-2">
                 <Button 
-                  onClick={() => setEditAwayScore(Math.max(0, editAwayScore - 1))}
+                  onClick={() => setEditOpponentScore(Math.max(0, editOpponentScore - 1))}
                   variant="secondary"
                   size="sm"
-                  disabled={editAwayScore <= 0}
+                  disabled={editOpponentScore <= 0}
                 >
                   -
                 </Button>
                 <Input
                   type="number"
-                  value={editAwayScore}
-                  onChange={(e) => setEditAwayScore(Math.max(0, parseInt(e.target.value) || 0))}
+                  value={editOpponentScore}
+                  onChange={(e) => setEditOpponentScore(Math.max(0, parseInt(e.target.value) || 0))}
                   className="text-center w-16"
                 />
                 <Button 
-                  onClick={() => setEditAwayScore(editAwayScore + 1)}
+                  onClick={() => setEditOpponentScore(editOpponentScore + 1)}
                   variant="secondary"
                   size="sm"
                 >
@@ -439,15 +440,15 @@ export function ScoreEditModal({
 export function ScoreManagerModal({ 
   isOpen, 
   onCancel, 
-  homeScore, 
-  awayScore, 
-  homeTeamName = "Djurgården",
-  awayTeamName = "Opponent",
+  ownScore,
+  opponentScore,
+  ownTeamName = "Djurgården",
+  opponentTeam = "Opponent",
   matchEvents = [],
   goalScorers = {},
   allPlayers = [],
-  onAddHomeGoal,
-  onAddAwayGoal,
+  onAddGoalScored,
+  onAddGoalConceded,
   onEditGoalScorer,
   onDeleteGoal,
   calculateMatchTime,
@@ -457,7 +458,7 @@ export function ScoreManagerModal({
   // Filter and process goal events (using same pattern as MatchReportScreen)
   const goalEvents = React.useMemo(() => {
     const goals = matchEvents
-      .filter(event => ['goal_home', 'goal_away'].includes(event.type))
+      .filter(event => [EVENT_TYPES.GOAL_SCORED, EVENT_TYPES.GOAL_CONCEDED].includes(event.type))
       .filter(event => !event.undone)
       .map(event => {
         // Use event.matchTime first, then calculate if missing (same as MatchReportScreen)
@@ -471,7 +472,7 @@ export function ScoreManagerModal({
           ...event,
           matchTime,
           scorerName,
-          isHomeGoal: event.type === 'goal_home'
+          isGoalScored: event.type === EVENT_TYPES.GOAL_SCORED
         };
       })
       .sort((a, b) => a.timestamp - b.timestamp);
@@ -518,13 +519,13 @@ export function ScoreManagerModal({
           {/* Current Score Display */}
           <div className="flex items-center justify-between space-x-4 bg-slate-700 p-3 rounded-lg">
             <div className="text-center">
-              <div className="text-sm text-slate-300">{homeTeamName}</div>
-              <div className="text-2xl font-bold text-sky-400">{homeScore}</div>
+              <div className="text-sm text-slate-300">{ownTeamName}</div>
+              <div className="text-2xl font-bold text-sky-400">{ownScore}</div>
             </div>
             <div className="text-2xl font-mono font-bold text-slate-400">-</div>
             <div className="text-center">
-              <div className="text-sm text-slate-300">{awayTeamName}</div>
-              <div className="text-2xl font-bold text-sky-400">{awayScore}</div>
+              <div className="text-sm text-slate-300">{opponentTeam}</div>
+              <div className="text-2xl font-bold text-sky-400">{opponentScore}</div>
             </div>
           </div>
 
@@ -543,7 +544,7 @@ export function ScoreManagerModal({
                   <div 
                     key={eventId} 
                     className={`p-3 rounded-lg border ${
-                      goal.isHomeGoal 
+                      goal.isGoalScored
                         ? 'bg-sky-900/30 border-sky-600/50' 
                         : 'bg-slate-700/50 border-slate-600'
                     }`}
@@ -556,9 +557,9 @@ export function ScoreManagerModal({
                           </span>
                           <span className="text-sm text-slate-400">|</span>
                           <span className="text-sm font-semibold text-slate-200">
-                            {goal.data?.homeScore || 0}-{goal.data?.awayScore || 0}
+                            {goal.data?.ownScore || 0}-{goal.data?.opponentScore || 0}
                           </span>
-                          {goal.isHomeGoal && (
+                          {goal.isGoalScored && (
                             <>
                               <span className="text-sm text-slate-400">|</span>
                               <span className="text-sm text-sky-300">
@@ -566,7 +567,7 @@ export function ScoreManagerModal({
                               </span>
                             </>
                           )}
-                          {!goal.isHomeGoal && (
+                          {!goal.isGoalScored && (
                             <>
                               <span className="text-sm text-slate-400">|</span>
                               <span className="text-sm text-slate-300">Opponent</span>
@@ -575,7 +576,7 @@ export function ScoreManagerModal({
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {goal.isHomeGoal && (
+                        {goal.isGoalScored && (
                           <Button
                             onClick={() => handleEditScorer(eventId)}
                             variant="secondary"
@@ -605,18 +606,18 @@ export function ScoreManagerModal({
             <h4 className="text-sm font-medium text-slate-300 mb-2">Add Goal</h4>
             <div className="flex gap-2">
               <Button 
-                onClick={onAddHomeGoal}
+                onClick={onAddGoalScored}
                 variant="primary"
                 className="flex-1"
               >
-                + {homeTeamName}
+                + {ownTeamName}
               </Button>
               <Button 
-                onClick={onAddAwayGoal}
+                onClick={onAddGoalConceded}
                 variant="secondary"
                 className="flex-1"
               >
-                + {awayTeamName}
+                + {opponentTeam}
               </Button>
             </div>
           </div>

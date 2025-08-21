@@ -33,8 +33,8 @@ const timelinePrefsManager = createPersistenceManager('dif-coach-timeline-prefer
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs
  * @param {Function} props.getPlayerName - Function to get player name by ID
  * @param {Function} props.onGoalClick - Callback for goal events, for editing
- * @param {string} props.homeTeamName - Home team name
- * @param {string} props.awayTeamName - Away team name
+ * @param {string} props.ownTeamName - Own team name
+ * @param {string} props.opponentTeam - Opponent team name
  * @param {number} props.matchStartTime - Match start timestamp
  * @param {string} props.filterType - Current filter type
  * @param {string} props.selectedPlayerId - Currently selected player ID for filtering (null for "All")
@@ -49,8 +49,8 @@ export function GameEventTimeline({
   goalScorers = {},
   getPlayerName,
   onGoalClick,
-  homeTeamName = "Djurgården",
-  awayTeamName = "Opponent",
+  ownTeamName = "Djurgården",
+  opponentTeam = "Opponent",
   matchStartTime,
   filterType = 'all',
   selectedPlayerId = null,
@@ -100,7 +100,7 @@ export function GameEventTimeline({
         }
         
         // Show goal events if the selected player is the scorer
-        if (type === EVENT_TYPES.GOAL_HOME || type === EVENT_TYPES.GOAL_AWAY) {
+        if (type === EVENT_TYPES.GOAL_SCORED || type === EVENT_TYPES.GOAL_CONCEDED) {
           const scorerId = goalScorers[event.id] || eventData.scorerId;
           return scorerId === selectedPlayerId;
         }
@@ -212,8 +212,8 @@ export function GameEventTimeline({
         return Square;
       case EVENT_TYPES.INTERMISSION:
         return Clock;
-      case EVENT_TYPES.GOAL_HOME:
-      case EVENT_TYPES.GOAL_AWAY:
+      case EVENT_TYPES.GOAL_SCORED:
+      case EVENT_TYPES.GOAL_CONCEDED:
         return Trophy;
       case EVENT_TYPES.SUBSTITUTION:
         return RotateCcw;
@@ -254,8 +254,8 @@ export function GameEventTimeline({
         return 'text-blue-400';
       case EVENT_TYPES.INTERMISSION:
         return 'text-slate-400';
-      case EVENT_TYPES.GOAL_HOME:
-      case EVENT_TYPES.GOAL_AWAY:
+      case EVENT_TYPES.GOAL_SCORED:
+      case EVENT_TYPES.GOAL_CONCEDED:
         return 'text-yellow-400';
       case EVENT_TYPES.SUBSTITUTION:
       case EVENT_TYPES.POSITION_CHANGE:
@@ -286,8 +286,8 @@ export function GameEventTimeline({
     if (isUndone) return 'bg-slate-700/50';
     
     switch (eventType) {
-      case EVENT_TYPES.GOAL_HOME:
-      case EVENT_TYPES.GOAL_AWAY:
+      case EVENT_TYPES.GOAL_SCORED:
+      case EVENT_TYPES.GOAL_CONCEDED:
         return 'bg-yellow-400/40 border-yellow-400/60';
       case EVENT_TYPES.SUBSTITUTION:
       case EVENT_TYPES.POSITION_CHANGE:
@@ -314,35 +314,35 @@ export function GameEventTimeline({
         return `Period ${eventData.periodNumber || 'Unknown'} started`;
       case EVENT_TYPES.PERIOD_END:
         return `Period ${eventData.periodNumber || 'Unknown'} ended`;
-      case EVENT_TYPES.GOAL_HOME:
+      case EVENT_TYPES.GOAL_SCORED:
         // Extract score data for new format: "3-2 - Djurgården Scored - PlayerName"
-        const homeScore = eventData.homeScore;
-        const awayScore = eventData.awayScore;
-        const homeScorer = goalScorers[event.id] 
+        const ownScore = eventData.ownScore;
+        const opponentScore = eventData.opponentScore;
+        const ownScorer = goalScorers[event.id]
           ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || null) : null)
           : (eventData.scorerId ? (getPlayerName ? (getPlayerName(eventData.scorerId) || null) : null) : null);
         
         // Format with score and team, optionally include scorer
-        if (homeScore !== undefined && awayScore !== undefined) {
-          const baseFormat = `${homeScore}-${awayScore} ${homeTeamName} Scored`;
-          return homeScorer ? `${baseFormat} - ${homeScorer}` : baseFormat;
+        if (ownScore !== undefined && opponentScore !== undefined) {
+          const baseFormat = `${ownScore}-${opponentScore} ${ownTeamName} Scored`;
+          return ownScorer ? `${baseFormat} - ${ownScorer}` : baseFormat;
         } else {
           // Fallback to old format if score data missing
-          const fallbackScorer = homeScorer || 'Unknown scorer';
-          return `Goal for ${homeTeamName} - ${fallbackScorer}`;
+          const fallbackScorer = ownScorer || 'Unknown scorer';
+          return `Goal for ${ownTeamName} - ${fallbackScorer}`;
         }
         
-      case EVENT_TYPES.GOAL_AWAY:
+      case EVENT_TYPES.GOAL_CONCEDED:
         // Extract score data for new format: "4-2 - Eagles United Scored" (no scorer)
-        const awayHomeScore = eventData.homeScore;
-        const awayAwayScore = eventData.awayScore;
+        const awayOwnScore = eventData.ownScore;
+        const awayOpponentScore = eventData.opponentScore;
         
         // Format with score and team only (no scorer for away team)
-        if (awayHomeScore !== undefined && awayAwayScore !== undefined) {
-          return `${awayHomeScore}-${awayAwayScore} ${awayTeamName} Scored`;
+        if (awayOwnScore !== undefined && awayOpponentScore !== undefined) {
+          return `${awayOwnScore}-${awayOpponentScore} ${opponentTeam} Scored`;
         } else {
           // Fallback to old format if score data missing
-          return `Goal for ${awayTeamName}`;
+          return `Goal for ${opponentTeam}`;
         }
       case EVENT_TYPES.SUBSTITUTION:
         // Handle multiple players for pairs mode substitutions
@@ -412,14 +412,14 @@ export function GameEventTimeline({
 
   // Handle goal event click
   const handleGoalEventClick = (event) => {
-    if (onGoalClick && (event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY)) {
+    if (onGoalClick && (event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED)) {
       onGoalClick(event);
     }
   };
 
   // Determine if event should be clickable
   const isEventClickable = (event) => {
-    return onGoalClick && (event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY);
+    return onGoalClick && (event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED);
   };
 
   // Format event time
@@ -435,8 +435,8 @@ export function GameEventTimeline({
     const isClickable = isEventClickable(event);
     const isExpanded = expandedEvents.has(event.id);
     const details = renderEventDetails(event);
-    const isGoalEvent = event.type === EVENT_TYPES.GOAL_HOME || event.type === EVENT_TYPES.GOAL_AWAY;
-    const isHomeGoal = event.type === EVENT_TYPES.GOAL_HOME;
+    const isGoalEvent = event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED;
+    const isGoalScored = event.type === EVENT_TYPES.GOAL_SCORED;
     
     return (
       <div key={event.id} className="relative flex items-start">
@@ -453,7 +453,7 @@ export function GameEventTimeline({
             className={`rounded-lg border p-4 ${bgColor} ${
               isClickable ? 'cursor-pointer hover:bg-opacity-80 transition-colors' : ''
             } ${event.undone ? 'opacity-60' : ''} ${
-              isHomeGoal ? 'shadow-lg shadow-yellow-400/30' : ''
+              isGoalScored ? 'shadow-lg shadow-yellow-400/30' : ''
             }`}
             onClick={() => handleGoalEventClick(event)}
           >
@@ -545,8 +545,8 @@ export function GameEventTimeline({
       details.push(`Period: ${event.periodNumber}`);
     }
 
-    if (eventData.homeScore !== undefined && eventData.awayScore !== undefined) {
-      details.push(`Score: ${eventData.homeScore} - ${eventData.awayScore}`);
+    if (eventData.ownScore !== undefined && eventData.opponentScore !== undefined) {
+      details.push(`Score: ${eventData.ownScore} - ${eventData.opponentScore}`);
     }
 
     if (event.undone) {

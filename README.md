@@ -322,8 +322,7 @@ For players not restricted by balancing rules:
 
 ## Team Roster
 
-The default roster includes 14 players:
-Alma, Ebba, Elise, Filippa, Fiona, Ines, Isabelle, Julie, Leonie, Nicole, Rebecka, Sigrid, Sophie, Tyra
+There's a default set of players for testing purposes
 
 Additional players can be added temporarily during game configuration.
 

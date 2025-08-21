@@ -20,6 +20,24 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Required documentation**: Read `README.md` and `src/game/README.md` before making changes
 - **Testing guidelines**: Read `.claude/testing-guidelines.md` for testing patterns and best practices
 - **Architecture principles**: DRY, KISS, Separation of Concerns, Single Responsibility
+- **IMPORTANT: SUPABASE DEPLOYMENT POLICY**: NEVER deploy Edge Functions or migrations directly to remote Supabase. ALL testing and development is done against local Supabase only. The user handles remote deployments.
+
+### CRITICAL: Database User ID References
+**Understanding auth.users.id vs public.user_profile.id**:
+
+- **auth.users.id**: Supabase Auth user ID - use for RLS policies and Edge Functions
+  - **RLS Policies**: Tables with RLS policies using `auth.uid()` MUST reference `auth.users(id)`
+  - **Edge Functions**: `supabase.auth.getUser()` returns `auth.users` record
+  - **Examples**: `team_invitation.invited_by_user_id`, audit fields (`created_by`, `last_updated_by`)
+
+- **public.user_profile.id**: Application user profile - use for business logic relationships  
+  - **Business Tables**: Tables for app features reference `public.user_profile(id)` 
+  - **Relationship**: `user_profile.id` has FK to `auth.users.id` (1:1 mapping)
+  - **Examples**: `team_user.user_id`, `club_user.user_id`, `player` ownership
+
+**Rule of Thumb**: 
+- RLS + `auth.uid()` = reference `auth.users(id)`
+- Business relationships = reference `public.user_profile(id)`
 
 ### Code Organization
 - **Game logic**: `/src/game/` - Pure functions, no side effects

@@ -27,8 +27,8 @@ export const EVENT_TYPES = {
   POSITION_CHANGE: 'position_change',
   
   // Scoring events
-  GOAL_HOME: 'goal_home',
-  GOAL_AWAY: 'goal_away',
+  GOAL_SCORED: 'goal_home',
+  GOAL_CONCEDED: 'goal_conceded',
   GOAL_CORRECTED: 'goal_corrected',
   GOAL_UNDONE: 'goal_undone',
   

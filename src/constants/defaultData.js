@@ -1,4 +1,4 @@
 export const initialRoster = [
-  "Alma", "Ebba", "Elise", "Filippa", "Fiona", "Ines", "Isabelle",
-  "Julie", "Leonie", "Nicole", "Rebecka", "Sigrid", "Sophie", "Tyra"
+  "Anna", "Bea", "Cleo", "Doris", "Emma", "Fanny", "Gina", "Hanna", "Ingrid",
+  "Josefin", "Katrin", "Lina", "Mona", "Nina"
 ];
