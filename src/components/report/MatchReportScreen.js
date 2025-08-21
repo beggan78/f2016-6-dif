@@ -19,11 +19,11 @@ import { ReportNavigation } from './ReportNavigation';
  * @param {number} props.matchStartTime - Match start timestamp
  * @param {Array} props.allPlayers - Player data with stats
  * @param {Array} props.gameLog - Period-by-period data
- * @param {number} props.homeScore - Final home team score
- * @param {number} props.awayScore - Final away team score
+ * @param {number} props.ownScore - Final own team score
+ * @param {number} props.opponentScore - Final opponent team score
  * @param {number} props.periodDurationMinutes - Duration of each period
- * @param {string} props.homeTeamName - Home team name (defaults to "Djurgården")
- * @param {string} props.awayTeamName - Away team name
+ * @param {string} props.ownTeamName - Own team name (defaults to "Djurgården")
+ * @param {string} props.opponentTeam - Opponent team name
  * @param {Function} props.onNavigateToStats - Navigation callback to stats screen
  * @param {Function} props.onBackToGame - Navigation callback to game screen
  * @param {Function} props.navigateToMatchReport - Internal navigation callback
@@ -37,11 +37,11 @@ export function MatchReportScreen({
   matchStartTime,
   allPlayers = [],
   gameLog = [],
-  homeScore = 0,
-  awayScore = 0,
+  ownScore = 0,
+  opponentScore = 0,
   periodDurationMinutes = 12,
-  homeTeamName = TEAM_CONFIG.HOME_TEAM_NAME || "Djurgården",
-  awayTeamName = "Opponent",
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME || "Djurgården",
+  opponentTeam = "Opponent",
   goalScorers = {},
   onNavigateToStats,
   onBackToGame,
@@ -159,10 +159,10 @@ export function MatchReportScreen({
           {/* Match Summary Section */}
           <ReportSection icon={Trophy} title="Match Summary">
             <MatchSummaryHeader
-              homeTeamName={homeTeamName}
-              awayTeamName={awayTeamName}
-              homeScore={homeScore}
-              awayScore={awayScore}
+              ownTeamName={ownTeamName}
+              opponentTeam={opponentTeam}
+              ownScore={ownScore}
+              opponentScore={opponentScore}
               matchDuration={matchDuration}
               totalPeriods={totalPeriods}
               periodDurationMinutes={periodDurationMinutes}
@@ -193,8 +193,8 @@ export function MatchReportScreen({
           >
             <GameEventTimeline
               events={filteredEvents}
-              homeTeamName={homeTeamName}
-              awayTeamName={awayTeamName}
+              ownTeamName={ownTeamName}
+              opponentTeam={opponentTeam}
               matchStartTime={matchStartTime}
               showSubstitutions={showSubstitutionEvents}
               goalScorers={goalScorers}
@@ -213,10 +213,10 @@ export function MatchReportScreen({
               matchEvents={matchEvents}
               allPlayers={allPlayers}
               gameLog={gameLog}
-              homeScore={homeScore}
-              awayScore={awayScore}
-              homeTeamName={homeTeamName}
-              awayTeamName={awayTeamName}
+              ownScore={ownScore}
+              opponentScore={opponentScore}
+              ownTeamName={ownTeamName}
+              opponentTeam={opponentTeam}
               matchStartTime={matchStartTime}
               periodDurationMinutes={periodDurationMinutes}
               onNavigateToStats={onNavigateToStats}

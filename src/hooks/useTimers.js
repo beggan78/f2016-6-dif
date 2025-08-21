@@ -273,7 +273,7 @@ export function useTimers(periodDurationMinutes) {
     }
   }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides, lastSubstitutionTime, periodStartTime, periodDurationMinutes]);
 
-  const startTimers = useCallback((periodNumber = 1, teamConfig = null, homeTeamName = null, awayTeamName = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
+  const startTimers = useCallback((periodNumber = 1, teamConfig = null, ownTeamName = null, opponentTeam = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
     const now = Date.now();
     setPeriodStartTime(now);
     setLastSubstitutionTime(now);
@@ -289,8 +289,8 @@ export function useTimers(periodDurationMinutes) {
           timestamp: now,
           periodDurationMinutes,
           teamConfig,
-          homeTeamName: homeTeamName || 'Djurgården',
-          awayTeamName: awayTeamName || 'Opponent',
+          ownTeamName: ownTeamName || 'Djurgården',
+          opponentTeam: opponentTeam || 'Opponent',
           numPeriods: numPeriods || 2, // Total number of periods planned for the match
           matchMetadata: {
             startTime: now,

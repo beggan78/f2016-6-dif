@@ -55,11 +55,11 @@ export const createMockGameScreenProps = (overrides = {}) => {
     alertMinutes: 2,
     pushNavigationState: jest.fn(),
     removeFromNavigationStack: jest.fn(),
-    homeScore: 0,
-    awayScore: 0,
-    opponentTeamName: 'Test Opponent',
-    addHomeGoal: jest.fn(),
-    addAwayGoal: jest.fn(),
+    ownScore: 0,
+    opponentScore: 0,
+    opponentTeam: 'Test Opponent',
+    addGoalScored: jest.fn(),
+    addGoalConceded: jest.fn(),
     setScore: jest.fn(),
     rotationQueue: ['1', '2', '3', '4', '5', '6'],
     setRotationQueue: jest.fn(),
@@ -242,7 +242,7 @@ export const createMockHooks = () => ({
       goalScorer: {
         isOpen: false,
         eventId: null,
-        team: 'home',
+        team: 'own',
         mode: 'new',
         matchTime: '00:00',
         periodNumber: 1,
@@ -284,8 +284,8 @@ export const createMockHooks = () => ({
   
   useTeamNameAbbreviation: jest.fn(() => ({
     scoreRowRef: { current: null },
-    displayHomeTeam: 'Djurgården',
-    displayAwayTeam: 'Test Opponent'
+    displayOwnTeam: 'Djurgården',
+    displayOpponentTeam: 'Test Opponent'
   })),
   
   useFieldPositionHandlers: jest.fn(() => ({
@@ -334,8 +334,8 @@ export const createMockHandlers = () => ({
   })),
   
   createScoreHandlers: jest.fn(() => ({
-    handleAddHomeGoal: jest.fn(),
-    handleAddAwayGoal: jest.fn(),
+    handleAddGoalScored: jest.fn(),
+    handleAddGoalConceded: jest.fn(),
     handleSelectGoalScorer: jest.fn(),
     handleCorrectGoalScorer: jest.fn(),
     handleScoreEdit: jest.fn(),

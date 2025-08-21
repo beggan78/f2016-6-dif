@@ -6,8 +6,8 @@ export const createScoreHandlers = (
 ) => {
   const { 
     setScore,
-    addHomeGoal,
-    addAwayGoal 
+    addGoalScored,
+    addGoalConceded
   } = stateUpdaters;
   
   const { 
@@ -42,50 +42,50 @@ export const createScoreHandlers = (
 
   // Helper to determine team type from event type
   const getTeamFromEventType = (eventType) => {
-    return eventType === EVENT_TYPES.GOAL_HOME ? 'home' : 'away';
+    return eventType === EVENT_TYPES.GOAL_SCORED ? 'scored' : 'conceded';
   };
 
   // Helper to create pending goal data structure
-  const createPendingGoalData = (teamType, eventId, gameState) => {
-    const { homeScore, awayScore, currentPeriodNumber } = gameState;
+  const createPendingGoalData = (goalType, eventId, gameState) => {
+    const { ownScore, opponentScore, currentPeriodNumber } = gameState;
     const now = Date.now();
     
     return {
       eventId,
-      type: teamType === 'home' ? EVENT_TYPES.GOAL_HOME : EVENT_TYPES.GOAL_AWAY,
+      type: goalType === 'scored' ? EVENT_TYPES.GOAL_SCORED : EVENT_TYPES.GOAL_CONCEDED,
       periodNumber: currentPeriodNumber,
-      homeScore: teamType === 'home' ? homeScore + 1 : homeScore,
-      awayScore: teamType === 'away' ? awayScore + 1 : awayScore,
-      teamName: teamType,
+      ownScore: goalType === 'scored' ? ownScore + 1 : ownScore,
+      opponentScore: goalType === 'conceded' ? opponentScore + 1 : opponentScore,
+      goalType: goalType,
       timestamp: now
     };
   };
 
-  // Unified goal handling for both home and away teams
-  const handleAddGoal = (teamType, gameState = null) => {
+  // Unified goal handling for both goals scored and conceded
+  const handleAddGoal = (goalType, gameState = null) => {
     // For backward compatibility, if no gameState provided, just add goal immediately
     if (!gameState) {
-      if (teamType === 'home') {
-        addHomeGoal();
+      if (goalType === 'scored') {
+        addGoalScored();
       } else {
-        addAwayGoal();
+        addGoalConceded();
       }
       return;
     }
     
     const eventId = generateEventId();
-    const pendingGoalData = createPendingGoalData(teamType, eventId, gameState);
+    const pendingGoalData = createPendingGoalData(goalType, eventId, gameState);
     
-    // For home team goals: use modal flow for scorer attribution
-    if (teamType === 'home') {
+    // For own team goals: use modal flow for scorer attribution
+    if (goalType === 'scored') {
       // Store as pending goal, don't increment score yet
       setPendingGoalData(pendingGoalData);
       
-      // Open goal scorer modal for home team goals only
+      // Open goal scorer modal for own team goals scored only
       if (openGoalScorerModal) {
         openGoalScorerModal({
           eventId,
-          team: teamType,
+          team: goalType,
           mode: 'new',
           matchTime: calculateMatchTime(pendingGoalData.timestamp),
           periodNumber: pendingGoalData.periodNumber
@@ -100,27 +100,27 @@ export const createScoreHandlers = (
         return;
       }
     } else {
-      // For away team goals: immediately increment score and log event (no modal)
-      addAwayGoal();
+      // For opponent team goals: immediately increment score and log event (no modal)
+      addGoalConceded();
       
       // Log the goal event immediately with no scorer attribution
       logEvent(pendingGoalData.type, {
         eventId: pendingGoalData.eventId,
         periodNumber: pendingGoalData.periodNumber,
-        homeScore: pendingGoalData.homeScore,
-        awayScore: pendingGoalData.awayScore,
+        ownScore: pendingGoalData.ownScore,
+        opponentScore: pendingGoalData.opponentScore,
         scorerId: null, // No scorer attribution for opponent goals
-        teamName: pendingGoalData.teamName
+        goalType: pendingGoalData.goalType
       }, pendingGoalData.timestamp);
     }
   };
 
-  const handleAddHomeGoal = (gameState = null) => {
-    return handleAddGoal('home', gameState);
+  const handleAddGoalScored = (gameState = null) => {
+    return handleAddGoal('scored', gameState);
   };
 
-  const handleAddAwayGoal = (gameState = null) => {
-    return handleAddGoal('away', gameState);
+  const handleAddGoalConceded = (gameState = null) => {
+    return handleAddGoal('conceded', gameState);
   };
 
   const handleSelectGoalScorer = (eventId, scorerId) => {
@@ -130,20 +130,20 @@ export const createScoreHandlers = (
     // If there's a pending goal, confirm it now
     if (pendingGoal && pendingGoal.eventId === eventId) {
       // Increment the score
-      if (pendingGoal.type === EVENT_TYPES.GOAL_HOME) {
-        addHomeGoal();
-      } else if (pendingGoal.type === EVENT_TYPES.GOAL_AWAY) {
-        addAwayGoal();
+      if (pendingGoal.type === EVENT_TYPES.GOAL_SCORED) {
+        addGoalScored();
+      } else if (pendingGoal.type === EVENT_TYPES.GOAL_CONCEDED) {
+        addGoalConceded();
       }
       
       // Log the goal event with original timestamp from when goal was clicked
       logEvent(pendingGoal.type, {
         eventId: pendingGoal.eventId,
         periodNumber: pendingGoal.periodNumber,
-        homeScore: pendingGoal.homeScore,
-        awayScore: pendingGoal.awayScore,
+        ownScore: pendingGoal.ownScore,
+        opponentScore: pendingGoal.opponentScore,
         scorerId: scorerId || null,
-        teamName: pendingGoal.teamName
+        goalType: pendingGoal.goalType
       }, pendingGoal.timestamp);
       
       // Clear pending goal
@@ -183,7 +183,7 @@ export const createScoreHandlers = (
     }
     
     // Verify this is actually a goal event
-    if (![EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY].includes(goalEvent.type)) {
+    if (![EVENT_TYPES.GOAL_SCORED, EVENT_TYPES.GOAL_CONCEDED].includes(goalEvent.type)) {
       console.warn(`Attempted to delete non-goal event: ${eventId}, type: ${goalEvent.type}`);
       return;
     }
@@ -201,26 +201,26 @@ export const createScoreHandlers = (
       
     // Find the index of the deleted goal in the original chronological sequence (includes undone events)
     const originalGoalEvents = updatedEvents
-      .filter(event => [EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY].includes(event.type))
+      .filter(event => [EVENT_TYPES.GOAL_SCORED, EVENT_TYPES.GOAL_CONCEDED].includes(event.type))
       .sort((a, b) => a.timestamp - b.timestamp);
       
     const deletedGoalIndex = originalGoalEvents.findIndex(event => event.id === eventId
     );
     
     if (deletedGoalIndex >= 0) {
-      // Determine if deleted goal was home or away to know which score to decrement
-      const wasHomeGoal = goalEvent.type === EVENT_TYPES.GOAL_HOME;
+      // Determine if deleted goal scored or conceded to know which score to decrement
+      const wasGoalScored = goalEvent.type === EVENT_TYPES.GOAL_SCORED;
       
       // Get all subsequent goal events (after the deleted one) - from original list
       const subsequentGoals = originalGoalEvents.slice(deletedGoalIndex + 1);
       
       // Rewrite history: update score data for all subsequent goals
       subsequentGoals.forEach((event) => {
-        if (event.data && event.data.homeScore !== undefined && event.data.awayScore !== undefined) {
+        if (event.data && event.data.ownScore !== undefined && event.data.opponentScore !== undefined) {
           // Create corrected event data with decremented scores
           const correctedData = {
-            homeScore: wasHomeGoal ? (event.data.homeScore - 1) : event.data.homeScore,
-            awayScore: wasHomeGoal ? event.data.awayScore : (event.data.awayScore - 1)
+            ownScore: wasGoalScored ? (event.data.ownScore - 1) : event.data.ownScore,
+            opponentScore: wasGoalScored ? event.data.opponentScore : (event.data.opponentScore - 1)
           };
           
           // Update the event data directly
@@ -233,22 +233,21 @@ export const createScoreHandlers = (
       
       // Recalculate final scores by counting remaining active goals
       const remainingGoals = updatedEvents.filter(event => 
-        [EVENT_TYPES.GOAL_HOME, EVENT_TYPES.GOAL_AWAY].includes(event.type) && !event.undone
+        [EVENT_TYPES.GOAL_SCORED, EVENT_TYPES.GOAL_CONCEDED].includes(event.type) && !event.undone
       );
       
-      let newHomeScore = 0;
-      let newAwayScore = 0;
+      let newOwnScore = 0;
+      let newOpponentScore = 0;
       
       remainingGoals.forEach(goal => {
-        if (goal.type === EVENT_TYPES.GOAL_HOME) {
-          newHomeScore++;
-        } else if (goal.type === EVENT_TYPES.GOAL_AWAY) {
-          newAwayScore++;
+        if (goal.type === EVENT_TYPES.GOAL_SCORED) {
+          newOwnScore++;
+        } else if (goal.type === EVENT_TYPES.GOAL_CONCEDED) {
+          newOpponentScore++;
         }
       });
       
-      setScore(newHomeScore, newAwayScore);
-      console.log(`Goal deleted successfully. New scores: Home ${newHomeScore}, Away ${newAwayScore}`);
+      setScore(newOwnScore, newOpponentScore);
     } else {
       console.warn(`Could not find deleted goal in chronological sequence: ${eventId}`);
     }
@@ -277,8 +276,8 @@ export const createScoreHandlers = (
     });
   };
 
-  const handleScoreEdit = (newHomeScore, newAwayScore) => {
-    setScore(newHomeScore, newAwayScore);
+  const handleScoreEdit = (newOwnScore, newOpponentScore) => {
+    setScore(newOwnScore, newOpponentScore);
     closeScoreEditModal();
   };
 
@@ -302,8 +301,8 @@ export const createScoreHandlers = (
   };
   
   return {
-    handleAddHomeGoal,
-    handleAddAwayGoal,
+    handleAddGoalScored,
+    handleAddGoalConceded,
     handleSelectGoalScorer,
     handleCorrectGoalScorer,
     handleScoreEdit,

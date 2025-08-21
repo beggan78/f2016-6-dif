@@ -78,9 +78,9 @@ export function PeriodSetupScreen({
   teamConfig,
   selectedFormation,
   setView,
-  homeScore,
-  awayScore,
-  opponentTeamName,
+  ownScore,
+  opponentScore,
+  opponentTeam,
   rotationQueue,
   setRotationQueue,
   preparePeriodWithGameLog,
@@ -757,13 +757,13 @@ export function PeriodSetupScreen({
         <h3 className="text-sm font-medium text-sky-200 mb-2">Current Score</h3>
         <div className="flex items-center justify-center space-x-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-sky-400">{homeScore}</div>
+            <div className="text-2xl font-bold text-sky-400">{ownScore}</div>
             <div className="text-xs text-slate-300 font-semibold">Djurgården</div>
           </div>
           <div className="text-xl font-mono font-bold text-slate-400">-</div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-slate-400">{awayScore}</div>
-            <div className="text-xs text-slate-300 font-semibold">{opponentTeamName || 'Opponent'}</div>
+            <div className="text-2xl font-bold text-slate-400">{opponentScore}</div>
+            <div className="text-xs text-slate-300 font-semibold">{opponentTeam || 'Opponent'}</div>
           </div>
         </div>
       </div>

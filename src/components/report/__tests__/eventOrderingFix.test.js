@@ -53,11 +53,11 @@ describe('Event Ordering Fix', () => {
       },
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false,
         periodNumber: 1
       },
@@ -77,8 +77,8 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -103,21 +103,21 @@ describe('Event Ordering Fix', () => {
       },
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false,
         periodNumber: 1
       },
       {
         id: 'goal-event-2',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000080000,
         matchTime: '01:20',
         sequence: 3,
-        data: { homeScore: 2, awayScore: 0 },
+        data: { ownScore: 2, opponentScore: 0 },
         undone: false,
         periodNumber: 2
       },
@@ -137,8 +137,8 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -162,11 +162,11 @@ describe('Event Ordering Fix', () => {
       },
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false,
         periodNumber: 1
       }
@@ -177,8 +177,8 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -203,11 +203,11 @@ describe('Event Ordering Fix', () => {
       },
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false,
         periodNumber: 1
       },
@@ -223,11 +223,11 @@ describe('Event Ordering Fix', () => {
       },
       {
         id: 'goal-event-2',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000120000,
         matchTime: '02:00',
         sequence: 4,
-        data: { homeScore: 2, awayScore: 0 },
+        data: { ownScore: 2, opponentScore: 0 },
         undone: false,
         periodNumber: 2
       }
@@ -238,8 +238,8 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -269,11 +269,11 @@ describe('Event Ordering Fix', () => {
       },
       {
         id: 'goal-event-1',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         timestamp: 1000000060000,
         matchTime: '01:00',
         sequence: 2,
-        data: { homeScore: 1, awayScore: 0 },
+        data: { ownScore: 1, opponentScore: 0 },
         undone: false,
         periodNumber: 1
       }
@@ -284,8 +284,8 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
       />
     );
 
@@ -366,8 +366,8 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        homeTeamName="Djurgården"
-        awayTeamName="Opponent"
+        ownTeamName="Djurgården"
+        opponentTeam="Opponent"
         debugMode={true} // Enable debug mode to show SUBSTITUTION_UNDONE events
       />
     );

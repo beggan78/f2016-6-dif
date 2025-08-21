@@ -66,7 +66,7 @@ describe('GoalScorerModal', () => {
     mode: 'new',
     existingGoalData: null,
     matchTime: '15:30',
-    team: 'home'
+    goalType: 'scored'
   };
 
   beforeEach(() => {
@@ -80,7 +80,7 @@ describe('GoalScorerModal', () => {
       render(<GoalScorerModal {...defaultProps} />);
       
       expect(screen.getByText('Who Scored?')).toBeInTheDocument();
-      expect(screen.getByText('Home goal at 15:30')).toBeInTheDocument();
+      expect(screen.getByText('Scored goal at 15:30')).toBeInTheDocument();
     });
 
     it('should not render modal when isOpen is false', () => {

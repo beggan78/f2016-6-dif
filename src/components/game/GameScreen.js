@@ -54,11 +54,11 @@ export function GameScreen({
   alertMinutes,
   pushNavigationState,
   removeFromNavigationStack,
-  homeScore,
-  awayScore,
-  opponentTeamName,
-  addHomeGoal,
-  addAwayGoal,
+  ownScore,
+  opponentScore,
+  opponentTeam,
+  addGoalScored,
+  addGoalConceded,
   setScore,
   rotationQueue,
   setRotationQueue,
@@ -72,10 +72,10 @@ export function GameScreen({
   const uiState = useGameUIState();
   
   // Team name management
-  const homeTeamName = TEAM_CONFIG.HOME_TEAM_NAME;
-  const awayTeamName = opponentTeamName || TEAM_CONFIG.DEFAULT_AWAY_TEAM_NAME;
-  const { scoreRowRef, displayHomeTeam, displayAwayTeam } = useTeamNameAbbreviation(
-    homeTeamName, awayTeamName, homeScore, awayScore
+  const ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME;
+  const opponentTeamName = opponentTeam || TEAM_CONFIG.DEFAULT_OPPONENT_TEAM_NAME;
+  const { scoreRowRef, displayOwnTeam, displayOpponentTeam } = useTeamNameAbbreviation(
+    ownTeamName, opponentTeamName, ownScore, opponentScore
   );
 
   // Helper functions  
@@ -110,8 +110,8 @@ export function GameScreen({
       isSubTimerPaused,
       currentPeriodNumber,
       matchTimerSeconds,
-      homeScore,
-      awayScore
+      ownScore,
+      opponentScore
     };
     
     
@@ -120,7 +120,7 @@ export function GameScreen({
     formation, allPlayers, teamConfig, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
-    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, homeScore, awayScore
+    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore
   ]);
 
   // State updaters object for handlers
@@ -136,17 +136,17 @@ export function GameScreen({
     setLastSubstitution: uiState.setLastSubstitution,
     setLastSubstitutionTimestamp: () => {}, // Legacy - not used in new architecture
     setScore, // Direct access for atomic updates
-    setHomeScore: (score) => setScore(score, awayScore),
-    setAwayScore: (score) => setScore(homeScore, score),
-    addHomeGoal,
-    addAwayGoal,
+    setOwnScore: (score) => setScore(score, opponentScore),
+    setOpponentScore: (score) => setScore(ownScore, score),
+    addGoalScored,
+    addGoalConceded,
     resetSubTimer,
     handleUndoSubstitutionTimer
   }), [
     setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setLastSubstitution,
-    setScore, homeScore, awayScore, addHomeGoal, addAwayGoal, resetSubTimer,
+    setScore, ownScore, opponentScore, addGoalScored, addGoalConceded, resetSubTimer,
     handleUndoSubstitutionTimer
   ]);
 
@@ -325,22 +325,22 @@ export function GameScreen({
       <div className="p-2 bg-slate-700 rounded-lg text-center">
         <div ref={scoreRowRef} className="flex items-center justify-center space-x-2.5">
           <button
-            onClick={() => scoreHandlers.handleAddHomeGoal(createGameState())}
+            onClick={() => scoreHandlers.handleAddGoalScored(createGameState())}
             className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded-md text-white font-semibold transition-colors"
           >
-            {displayHomeTeam}
+            {displayOwnTeam}
           </button>
           <div 
             {...scoreEvents}
             className="text-2xl font-mono font-bold text-sky-200 cursor-pointer select-none px-1.5 py-2 rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap flex-shrink-0"
           >
-            {homeScore} - {awayScore}
+            {ownScore} - {opponentScore}
           </div>
           <button
-            onClick={() => scoreHandlers.handleAddAwayGoal(createGameState())}
+            onClick={() => scoreHandlers.handleAddGoalConceded(createGameState())}
             className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-white font-semibold transition-colors"
           >
-            {displayAwayTeam}
+            {displayOpponentTeam}
           </button>
         </div>
         <p className="text-xs text-slate-400 mt-1">Tap team name to add goal • Hold score to edit</p>
@@ -441,15 +441,15 @@ export function GameScreen({
       <ScoreManagerModal
         isOpen={modalHandlers.modals.scoreEdit.isOpen}
         onCancel={modalHandlers.closeScoreEditModal}
-        homeScore={homeScore}
-        awayScore={awayScore}
-        homeTeamName={homeTeamName}
-        awayTeamName={awayTeamName}
+        ownScore={ownScore}
+        opponentScore={opponentScore}
+        ownTeamName={ownTeamName}
+        opponentTeam={opponentTeamName}
         matchEvents={matchEvents}
         goalScorers={goalScorers}
         allPlayers={allPlayers}
-        onAddHomeGoal={() => scoreHandlers.handleAddHomeGoal(createGameState())}
-        onAddAwayGoal={() => scoreHandlers.handleAddAwayGoal(createGameState())}
+        onAddGoalScored={() => scoreHandlers.handleAddGoalScored(createGameState())}
+        onAddGoalConceded={() => scoreHandlers.handleAddGoalConceded(createGameState())}
         onEditGoalScorer={scoreHandlers.handleEditGoalScorer}
         onDeleteGoal={scoreHandlers.handleDeleteGoal}
         calculateMatchTime={(timestamp) => calculateMatchTime(timestamp, matchStartTime)}
@@ -481,7 +481,7 @@ export function GameScreen({
         currentScorerId={modalHandlers.modals.goalScorer.currentScorerId}
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}
-        team={modalHandlers.modals.goalScorer.team}
+        goalType={modalHandlers.modals.goalScorer.team}
       />
     </div>
   );
@@ -493,7 +493,7 @@ const arePropsEqual = (prevProps, nextProps) => {
   const primitiveProps = [
     'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
     'teamConfig', 'selectedFormation', 'nextPhysicalPairToSubOut', 'nextPlayerToSubOut',
-    'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'homeScore', 'awayScore'
+    'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'ownScore', 'opponentScore'
   ];
   
   for (const prop of primitiveProps) {

@@ -20,7 +20,7 @@ const GoalScorerModal = ({
   currentScorerId = null,   // Direct currentScorerId prop (new approach)  
   existingGoalData = null,  // Keep for backward compatibility
   matchTime = '00:00',
-  team = 'home'
+  goalType = 'scored'
 }) => {
   // Default to "No specific scorer" for new goals, existing scorer for corrections
   // Use direct props first, fall back to existingGoalData for backward compatibility
@@ -97,12 +97,12 @@ const GoalScorerModal = ({
       default: // 'new'
         return {
           title: 'Who Scored?',
-          subtitle: `${team === 'home' ? 'Home' : 'Away'} goal at ${matchTime}`,
+          subtitle: `${goalType === 'scored' ? 'Scored' : 'Conceded'} goal at ${matchTime}`,
           primaryAction: 'Confirm Scorer',
           primaryColor: 'bg-sky-600 hover:bg-sky-500 focus:ring-sky-500'
         };
     }
-  }, [mode, matchTime, team]);
+  }, [mode, matchTime, goalType]);
 
   const handlePlayerSelect = (playerId) => {
     setSelectedPlayerId(playerId);
@@ -235,7 +235,7 @@ const GoalScorerModal = ({
               <div>
                 <h3 className="text-sm font-medium text-slate-100 mb-2">Goal Details:</h3>
                 <div className="space-y-2 text-sm text-slate-300">
-                  <div>Team: <span className="font-medium text-slate-100">{team === 'home' ? 'Home' : 'Away'}</span></div>
+                  <div>Team: <span className="font-medium text-slate-100">{goalType === 'scored' ? 'Scored' : 'Conceded'}</span></div>
                   <div>Time: <span className="font-medium text-slate-100">{matchTime}</span></div>
                   <div>Period: <span className="font-medium text-slate-100">{existingGoalData?.period || 'Unknown'}</span></div>
                   <div>Scorer: <span className="font-medium text-slate-100">

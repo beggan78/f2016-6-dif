@@ -365,9 +365,9 @@ export const simulateConfigurationSetup = async (gameScenario) => {
   const durationSelect = screen.getByLabelText(/period duration/i);
   fireEvent.change(durationSelect, { target: { value: gameConfig.periodDurationMinutes.toString() } });
   
-  if (gameConfig.opponentTeamName) {
+  if (gameConfig.opponentTeam) {
     const opponentInput = screen.getByLabelText(/opponent team name/i);
-    fireEvent.change(opponentInput, { target: { value: gameConfig.opponentTeamName } });
+    fireEvent.change(opponentInput, { target: { value: gameConfig.opponentTeam } });
   }
   
   // Set goalies for each period (required to proceed)
