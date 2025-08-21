@@ -8,6 +8,7 @@ import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugU
 import { formatPlayerName } from '../../utils/formatUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
+import { useFormationVotes } from '../../hooks/useFormationVotes';
 import { TeamManagement } from '../team/TeamManagement';
 import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
@@ -54,6 +55,17 @@ export function ConfigurationScreen({
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
+  
+  // Formation voting hook
+  const { 
+    submitVote, 
+    loading: voteLoading, 
+    error: voteError, 
+    successMessage: voteSuccessMessage, 
+    infoMessage: voteInfoMessage,
+    clearMessages: clearVoteMessages,
+    isAuthenticated: isVoteAuthenticated
+  } = useFormationVotes();
 
   // Handle substitution mode changes
   const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
@@ -89,10 +101,31 @@ export function ConfigurationScreen({
     }
   };
 
-  const handleVoteConfirm = () => {
-    console.log(`Voted for ${formationToVoteFor}`);
-    // Here you would typically send the vote to a server
-    setIsVoteModalOpen(false);
+  const handleVoteConfirm = async () => {
+    if (!formationToVoteFor) return;
+    
+    // Clear any previous messages
+    clearVoteMessages();
+    
+    // Check if user is authenticated
+    if (!isVoteAuthenticated) {
+      console.error('User must be authenticated to vote');
+      // The modal will handle showing authentication requirement
+      return;
+    }
+    
+    // Submit the vote (currently always for 5v5 format)
+    const result = await submitVote(formationToVoteFor, '5v5');
+    
+    if (result.success) {
+      // Close modal on success after a brief delay to show success message
+      setTimeout(() => {
+        setIsVoteModalOpen(false);
+        // Clear the formation to vote for
+        setFormationToVoteFor(null);
+      }, 2000);
+    }
+    // On error, keep modal open to show error message
   };
   const { isAuthenticated, user } = useAuth();
   const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
@@ -569,9 +602,19 @@ export function ConfigurationScreen({
 
       <FeatureVoteModal
         isOpen={isVoteModalOpen}
-        onClose={() => setIsVoteModalOpen(false)}
+        onClose={() => {
+          setIsVoteModalOpen(false);
+          setFormationToVoteFor(null);
+          clearVoteMessages();
+        }}
         onConfirm={handleVoteConfirm}
         featureName={formationToVoteFor}
+        loading={voteLoading}
+        error={voteError}
+        successMessage={voteSuccessMessage}
+        infoMessage={voteInfoMessage}
+        isAuthenticated={isVoteAuthenticated}
+        authModal={authModal}
       >
         <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
       </FeatureVoteModal>
