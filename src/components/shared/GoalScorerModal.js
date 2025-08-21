@@ -16,22 +16,25 @@ const GoalScorerModal = ({
   onCorrectGoal,
   eligiblePlayers = [],
   mode = 'new', // 'new', 'correct', 'view'
-  existingGoalData = null,
+  eventId = null,           // Direct eventId prop (new approach)
+  currentScorerId = null,   // Direct currentScorerId prop (new approach)  
+  existingGoalData = null,  // Keep for backward compatibility
   matchTime = '00:00',
-  team = 'home'
+  goalType = 'scored'
 }) => {
   // Default to "No specific scorer" for new goals, existing scorer for corrections
+  // Use direct props first, fall back to existingGoalData for backward compatibility
   const [selectedPlayerId, setSelectedPlayerId] = useState(
-    mode === 'new' ? null : (existingGoalData?.scorerId || null)
+    mode === 'new' ? null : (currentScorerId ?? existingGoalData?.scorerId ?? null)
   );
   
-  // Reset selection when modal opens or when existingGoalData changes
+  // Reset selection when modal opens or when props change
   useEffect(() => {
     if (isOpen) {
-      const newSelection = mode === 'new' ? null : (existingGoalData?.scorerId || null);
+      const newSelection = mode === 'new' ? null : (currentScorerId ?? existingGoalData?.scorerId ?? null);
       setSelectedPlayerId(newSelection);
     }
-  }, [isOpen, existingGoalData, mode]);
+  }, [isOpen, currentScorerId, existingGoalData, mode]);
   // Note: eligiblePlayers is intentionally excluded to prevent selection reset when player list updates
 
   // Get position icon for a player
@@ -94,12 +97,12 @@ const GoalScorerModal = ({
       default: // 'new'
         return {
           title: 'Who Scored?',
-          subtitle: `${team === 'home' ? 'Home' : 'Away'} goal at ${matchTime}`,
+          subtitle: `${goalType === 'scored' ? 'Scored' : 'Conceded'} goal at ${matchTime}`,
           primaryAction: 'Confirm Scorer',
           primaryColor: 'bg-sky-600 hover:bg-sky-500 focus:ring-sky-500'
         };
     }
-  }, [mode, matchTime, team]);
+  }, [mode, matchTime, goalType]);
 
   const handlePlayerSelect = (playerId) => {
     setSelectedPlayerId(playerId);
@@ -114,7 +117,13 @@ const GoalScorerModal = ({
     if (mode === 'new') {
       onSelectScorer(selectedPlayerId); // Can be null ("No specific scorer") or player ID
     } else if (mode === 'correct') {
-      onCorrectGoal(existingGoalData.eventId, selectedPlayerId);
+      // Use direct eventId prop first, fall back to existingGoalData for backward compatibility
+      const actualEventId = eventId || existingGoalData?.eventId;
+      if (!actualEventId) {
+        console.error('No eventId provided for goal correction');
+        return;
+      }
+      onCorrectGoal(actualEventId, selectedPlayerId);
     }
     
     onClose();
@@ -150,15 +159,15 @@ const GoalScorerModal = ({
         {/* Content */}
         <div className="p-6">
           {/* Current scorer display for correct/view modes */}
-          {(mode === 'correct' || mode === 'view') && existingGoalData && (
+          {(mode === 'correct' || mode === 'view') && (currentScorerId !== undefined || existingGoalData) && (
             <div className="mb-6 p-4 bg-slate-700 rounded-lg border border-slate-600">
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="w-4 h-4 text-sky-400" />
                 <span className="text-sm font-medium text-sky-300">Current Scorer</span>
               </div>
               <p className="text-slate-100">
-                {existingGoalData.scorerId 
-                  ? getPlayerName(eligiblePlayers, existingGoalData.scorerId)
+                {(currentScorerId ?? existingGoalData?.scorerId)
+                  ? getPlayerName(eligiblePlayers, currentScorerId ?? existingGoalData?.scorerId)
                   : 'No scorer recorded'
                 }
               </p>
@@ -226,12 +235,12 @@ const GoalScorerModal = ({
               <div>
                 <h3 className="text-sm font-medium text-slate-100 mb-2">Goal Details:</h3>
                 <div className="space-y-2 text-sm text-slate-300">
-                  <div>Team: <span className="font-medium text-slate-100">{team === 'home' ? 'Home' : 'Away'}</span></div>
+                  <div>Team: <span className="font-medium text-slate-100">{goalType === 'scored' ? 'Scored' : 'Conceded'}</span></div>
                   <div>Time: <span className="font-medium text-slate-100">{matchTime}</span></div>
                   <div>Period: <span className="font-medium text-slate-100">{existingGoalData?.period || 'Unknown'}</span></div>
                   <div>Scorer: <span className="font-medium text-slate-100">
-                    {existingGoalData?.scorerId 
-                      ? getPlayerName(eligiblePlayers, existingGoalData.scorerId)
+                    {(currentScorerId ?? existingGoalData?.scorerId)
+                      ? getPlayerName(eligiblePlayers, currentScorerId ?? existingGoalData?.scorerId)
                       : 'No scorer recorded'
                     }
                   </span></div>

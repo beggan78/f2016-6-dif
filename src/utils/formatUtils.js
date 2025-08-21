@@ -89,13 +89,13 @@ export const formatPoints = (points) => {
 /**
  * Generates formatted text for statistics copying
  * @param {Array} squadForStats - Array of players who participated in the match
- * @param {number} homeScore - Home team score
- * @param {number} awayScore - Away team score
- * @param {string} opponentTeamName - Opponent team name
+ * @param {number} ownScore - Own team score
+ * @param {number} opponentScore - Opponent team score
+ * @param {string} opponentTeam - Opponent team name
  * @returns {string} Formatted statistics text
  */
-export const generateStatsText = (squadForStats, homeScore, awayScore, opponentTeamName) => {
-  let text = `Final Score: Djurgården ${homeScore} - ${awayScore} ${opponentTeamName || 'Opponent'}\n\n`;
+export const generateStatsText = (squadForStats, ownScore, opponentScore, opponentTeam) => {
+  let text = `Final Score: Djurgården ${ownScore} - ${opponentScore} ${opponentTeam || 'Opponent'}\n\n`;
   text += "Spelare\t\tStart\tM\tB\tMit\tA\tUte\tBack\tMid\tFw\tMv\n";
   text += "------\t\t-------\t-\t-\t---\t-\t----------\t----\t---\t--\t--\n";
   

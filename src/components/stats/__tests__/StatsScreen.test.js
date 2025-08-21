@@ -24,8 +24,8 @@ import {
 // Mock utility functions
 jest.mock('../../../utils/formatUtils', () => ({
   formatPoints: jest.fn((points) => points % 1 === 0 ? points.toString() : points.toFixed(1)),
-  generateStatsText: jest.fn((squadForStats, homeScore, awayScore, opponentTeamName) => 
-    `Final Score: Djurgården ${homeScore} - ${awayScore} ${opponentTeamName || 'Opponent'}
+  generateStatsText: jest.fn((squadForStats, ownScore, opponentScore, opponentTeam) =>
+    `Final Score: Djurgården ${ownScore} - ${opponentScore} ${opponentTeam || 'Opponent'}
 
 Spelare		Start	M	B	A	Ute	Back	Fw	Mv
 ------		-------	-	-	-	----------	----	--	--
@@ -93,16 +93,16 @@ describe('StatsScreen', () => {
       clearStoredState: jest.fn(),
       clearTimerState: jest.fn(),
       resetScore: jest.fn(),
-      setOpponentTeamName: jest.fn()
+      setOpponentTeam: jest.fn()
     };
 
     defaultProps = {
       allPlayers: mockPlayers,
       formatTime: mockFormatTime,
       initialRoster: createMockPlayers(7),
-      homeScore: 3,
-      awayScore: 1,
-      opponentTeamName: 'Test Opponent',
+      ownScore: 3,
+      opponentScore: 1,
+      opponentTeam: 'Test Opponent',
       authModal: {
         isOpen: false,
         mode: 'login',

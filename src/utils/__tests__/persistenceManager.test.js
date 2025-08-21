@@ -581,14 +581,14 @@ describe('GamePersistenceManager', () => {
       expect(savedState).toHaveProperty('formation');
     });
 
-    it('should save homeScore and awayScore fields', () => {
+    it('should save ownScore and opponentScore fields', () => {
       const gameStateWithScores = {
         allPlayers: [{ id: '1', name: 'Player 1' }],
         view: 'game',
         selectedSquadIds: ['1'],
-        homeScore: 3,
-        awayScore: 2,
-        opponentTeamName: 'Test Opponent',
+        ownScore: 3,
+        opponentScore: 2,
+        opponentTeam: 'Test Opponent',
         formation: { goalie: '1' },
         gameLog: []
       };
@@ -600,9 +600,9 @@ describe('GamePersistenceManager', () => {
       const savedState = gameManager.saveState.mock.calls[0][0];
       
       // Verify scores are included in saved state
-      expect(savedState).toHaveProperty('homeScore', 3);
-      expect(savedState).toHaveProperty('awayScore', 2);
-      expect(savedState).toHaveProperty('opponentTeamName', 'Test Opponent');
+      expect(savedState).toHaveProperty('ownScore', 3);
+      expect(savedState).toHaveProperty('opponentScore', 2);
+      expect(savedState).toHaveProperty('opponentTeam', 'Test Opponent');
     });
 
     it('should handle missing score fields gracefully', () => {
@@ -621,10 +621,10 @@ describe('GamePersistenceManager', () => {
       const savedState = gameManager.saveState.mock.calls[0][0];
       
       // Verify score fields are present (even if undefined)
-      expect('homeScore' in savedState).toBe(true);
-      expect('awayScore' in savedState).toBe(true);
-      expect(savedState.homeScore).toBeUndefined();
-      expect(savedState.awayScore).toBeUndefined();
+      expect('ownScore' in savedState).toBe(true);
+      expect('opponentScore' in savedState).toBe(true);
+      expect(savedState.ownScore).toBeUndefined();
+      expect(savedState.opponentScore).toBeUndefined();
     });
 
     it('should save zero scores correctly', () => {
@@ -632,8 +632,8 @@ describe('GamePersistenceManager', () => {
         allPlayers: [{ id: '1', name: 'Player 1' }],
         view: 'game',
         selectedSquadIds: ['1'],
-        homeScore: 0,
-        awayScore: 0,
+        ownScore: 0,
+        opponentScore: 0,
         formation: { goalie: '1' },
         gameLog: []
       };
@@ -645,8 +645,8 @@ describe('GamePersistenceManager', () => {
       const savedState = gameManager.saveState.mock.calls[0][0];
       
       // Verify zero scores are saved correctly
-      expect(savedState.homeScore).toBe(0);
-      expect(savedState.awayScore).toBe(0);
+      expect(savedState.ownScore).toBe(0);
+      expect(savedState.opponentScore).toBe(0);
     });
   });
 

@@ -1,19 +1,22 @@
 import { createScoreHandlers } from './scoreHandlers';
 import { createMockDependencies } from '../testUtils';
-import { logEvent, EVENT_TYPES, calculateMatchTime, getEventById, removeEvent } from '../../utils/gameEventLogger';
+import { logEvent, EVENT_TYPES, calculateMatchTime, getEventById, removeEvent, updateEventData, getAllEvents, markEventAsUndone } from '../../utils/gameEventLogger';
 
 // Mock the gameEventLogger module
 jest.mock('../../utils/gameEventLogger', () => ({
   logEvent: jest.fn(),
   EVENT_TYPES: {
-    GOAL_HOME: 'goal_home',
-    GOAL_AWAY: 'goal_away',
+    GOAL_SCORED: 'goal_scored',
+    GOAL_CONCEDED: 'goal_conceded',
     GOAL_CORRECTED: 'goal_corrected',
     GOAL_UNDONE: 'goal_undone'
   },
   calculateMatchTime: jest.fn(),
   getEventById: jest.fn(),
-  removeEvent: jest.fn()
+  removeEvent: jest.fn(),
+  updateEventData: jest.fn(() => true),
+  getAllEvents: jest.fn(() => []),
+  markEventAsUndone: jest.fn(() => true)
 }));
 
 describe('createScoreHandlers', () => {
@@ -28,8 +31,8 @@ describe('createScoreHandlers', () => {
     mockStateUpdaters = {
       ...mockDependencies.stateUpdaters,
       setScore: jest.fn(),
-      addHomeGoal: jest.fn(),
-      addAwayGoal: jest.fn()
+      addGoalScored: jest.fn(),
+      addGoalConceded: jest.fn()
     };
 
     // Add score-specific modal handlers
@@ -46,6 +49,9 @@ describe('createScoreHandlers', () => {
 
     // Reset all mocks before each test
     jest.clearAllMocks();
+    
+    // Ensure updateEventData returns true by default
+    updateEventData.mockReturnValue(true);
   });
 
   describe('handler creation', () => {
@@ -55,16 +61,16 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      expect(handlers.handleAddHomeGoal).toBeDefined();
-      expect(handlers.handleAddAwayGoal).toBeDefined();
+      expect(handlers.handleAddGoalScored).toBeDefined();
+      expect(handlers.handleAddGoalConceded).toBeDefined();
       expect(handlers.handleSelectGoalScorer).toBeDefined();
       expect(handlers.handleCorrectGoalScorer).toBeDefined();
       expect(handlers.handleScoreEdit).toBeDefined();
       expect(handlers.handleOpenScoreEdit).toBeDefined();
       expect(handlers.handleCancelGoalScorer).toBeDefined();
       expect(handlers.scoreCallback).toBeDefined();
-      expect(typeof handlers.handleAddHomeGoal).toBe('function');
-      expect(typeof handlers.handleAddAwayGoal).toBe('function');
+      expect(typeof handlers.handleAddGoalScored).toBe('function');
+      expect(typeof handlers.handleAddGoalConceded).toBe('function');
       expect(typeof handlers.handleSelectGoalScorer).toBe('function');
       expect(typeof handlers.handleCorrectGoalScorer).toBe('function');
       expect(typeof handlers.handleCancelGoalScorer).toBe('function');
@@ -72,17 +78,17 @@ describe('createScoreHandlers', () => {
     });
   });
 
-  describe('handleAddHomeGoal', () => {
-    it('should call addHomeGoal state updater', () => {
+  describe('handleAddGoalScored', () => {
+    it('should call addGoalScored state updater', () => {
       const handlers = createScoreHandlers(
         mockStateUpdaters,
         mockModalHandlers
       );
 
-      handlers.handleAddHomeGoal();
+      handlers.handleAddGoalScored();
 
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledWith();
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledWith();
     });
 
     it('should not call other score updaters', () => {
@@ -91,16 +97,16 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.handleAddHomeGoal();
+      handlers.handleAddGoalScored();
 
-      expect(mockStateUpdaters.addAwayGoal).not.toHaveBeenCalled();
+      expect(mockStateUpdaters.addGoalConceded).not.toHaveBeenCalled();
       expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
     });
 
-    it('should handle goal with event logging when gameState provided', () => {
+    it('should handle goal scored with modal when gameState provided', () => {
       const mockGameState = {
-        homeScore: 1,
-        awayScore: 2,
+        ownScore: 1,
+        opponentScore: 2,
         currentPeriodNumber: 1
       };
       
@@ -111,24 +117,24 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.handleAddHomeGoal(mockGameState);
+      handlers.handleAddGoalScored(mockGameState);
 
-      // With new implementation, goal is stored as pending, not added immediately
-      expect(mockStateUpdaters.addHomeGoal).not.toHaveBeenCalled();
+      // Goals Scored: stored as pending, not added immediately (waits for scorer selection)
+      expect(mockStateUpdaters.addGoalScored).not.toHaveBeenCalled();
       expect(logEvent).not.toHaveBeenCalled();
       
       // Should store pending goal data
       expect(mockModalHandlers.setPendingGoalData).toHaveBeenCalledWith(expect.objectContaining({
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         periodNumber: 1,
-        homeScore: 2,
-        awayScore: 2,
-        teamName: 'home'
+        ownScore: 2,
+        opponentScore: 2,
+        goalType: 'scored'
       }));
       
       // Should open goal scorer modal
       expect(mockModalHandlers.openGoalScorerModal).toHaveBeenCalledWith(expect.objectContaining({
-        team: 'home',
+        team: 'scored',
         mode: 'new',
         matchTime: '05:30',
         periodNumber: 1
@@ -141,25 +147,25 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.handleAddHomeGoal();
+      handlers.handleAddGoalScored();
 
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
       expect(logEvent).not.toHaveBeenCalled();
       expect(mockModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
     });
   });
 
-  describe('handleAddAwayGoal', () => {
-    it('should call addAwayGoal state updater', () => {
+  describe('handleAddGoalConceded', () => {
+    it('should call addGoalConceded state updater', () => {
       const handlers = createScoreHandlers(
         mockStateUpdaters,
         mockModalHandlers
       );
 
-      handlers.handleAddAwayGoal();
+      handlers.handleAddGoalConceded();
 
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledWith();
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledWith();
     });
 
     it('should not call other score updaters', () => {
@@ -168,16 +174,16 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.handleAddAwayGoal();
+      handlers.handleAddGoalConceded();
 
-      expect(mockStateUpdaters.addHomeGoal).not.toHaveBeenCalled();
+      expect(mockStateUpdaters.addGoalScored).not.toHaveBeenCalled();
       expect(mockStateUpdaters.setScore).not.toHaveBeenCalled();
     });
 
-    it('should handle goal with event logging when gameState provided', () => {
+    it('should handle opponent goal without modal when gameState provided', () => {
       const mockGameState = {
-        homeScore: 0,
-        awayScore: 1,
+        ownScore: 0,
+        opponentScore: 1,
         currentPeriodNumber: 2
       };
       
@@ -186,16 +192,21 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.handleAddAwayGoal(mockGameState);
+      handlers.handleAddGoalConceded(mockGameState);
 
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_AWAY, expect.objectContaining({
+      // Goals Conceded: immediately increment score and log event (no modal)
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith('goal_conceded', {
+        eventId: expect.any(String),
         periodNumber: 2,
-        homeScore: 0,
-        awayScore: 2,
-        teamName: 'away'
-      }));
-      // Away goals don't open modal for now
+        ownScore: 0,
+        opponentScore: 2,
+        scorerId: null, // No scorer attribution for opponent goals
+        goalType: 'conceded'
+      }, expect.any(Number));
+      
+      // Should NOT store as pending goal or show modal for opponent team
+      expect(mockModalHandlers.setPendingGoalData).not.toHaveBeenCalled();
       expect(mockModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
     });
 
@@ -205,9 +216,9 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.handleAddAwayGoal();
+      handlers.handleAddGoalConceded();
 
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledTimes(1);
       expect(logEvent).not.toHaveBeenCalled();
       expect(mockModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
     });
@@ -332,11 +343,11 @@ describe('createScoreHandlers', () => {
     it('should confirm pending goal and log events when scorerId provided', () => {
       const mockPendingGoal = {
         eventId: 'evt_123',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 0,
-        teamName: 'home',
+        ownScore: 1,
+        opponentScore: 0,
+        goalType: 'own',
         timestamp: Date.now()
       };
       
@@ -350,14 +361,14 @@ describe('createScoreHandlers', () => {
       handlers.handleSelectGoalScorer('evt_123', 'player_5');
 
       expect(mockModalHandlers.getPendingGoalData).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_HOME, {
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_SCORED, {
         eventId: 'evt_123',
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 0,
+        ownScore: 1,
+        opponentScore: 0,
         scorerId: 'player_5',
-        teamName: 'home'
+        goalType: 'own'
       }, mockPendingGoal.timestamp);
       // No GOAL_CORRECTED event should be logged for initial scorer attribution
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
@@ -367,11 +378,11 @@ describe('createScoreHandlers', () => {
     it('should confirm pending goal without scorer attribution when scorerId not provided', () => {
       const mockPendingGoal = {
         eventId: 'evt_123',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 0,
-        teamName: 'home',
+        ownScore: 1,
+        opponentScore: 0,
+        goalType: 'own',
         timestamp: Date.now()
       };
       
@@ -385,14 +396,14 @@ describe('createScoreHandlers', () => {
       handlers.handleSelectGoalScorer('evt_123', null);
 
       expect(mockModalHandlers.getPendingGoalData).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_HOME, {
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_SCORED, {
         eventId: 'evt_123',
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 0,
+        ownScore: 1,
+        opponentScore: 0,
         scorerId: null,
-        teamName: 'home'
+        goalType: 'own'
       }, mockPendingGoal.timestamp);
       expect(logEvent).not.toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, expect.any(Object));
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
@@ -402,11 +413,11 @@ describe('createScoreHandlers', () => {
     it('should handle empty scorerId similar to null', () => {
       const mockPendingGoal = {
         eventId: 'evt_123',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 0,
-        teamName: 'home',
+        ownScore: 1,
+        opponentScore: 0,
+        goalType: 'own',
         timestamp: Date.now()
       };
       
@@ -420,14 +431,14 @@ describe('createScoreHandlers', () => {
       handlers.handleSelectGoalScorer('evt_123', '');
 
       expect(mockModalHandlers.getPendingGoalData).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_HOME, {
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_SCORED, {
         eventId: 'evt_123',
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 0,
+        ownScore: 1,
+        opponentScore: 0,
         scorerId: null,
-        teamName: 'home'
+        goalType: 'own'
       }, mockPendingGoal.timestamp);
       expect(logEvent).not.toHaveBeenCalledWith(EVENT_TYPES.GOAL_CORRECTED, expect.any(Object));
       expect(mockModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
@@ -445,7 +456,7 @@ describe('createScoreHandlers', () => {
       handlers.handleSelectGoalScorer('evt_123', 'player_5');
 
       expect(mockModalHandlers.getPendingGoalData).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addHomeGoal).not.toHaveBeenCalled();
+      expect(mockStateUpdaters.addGoalScored).not.toHaveBeenCalled();
       expect(logEvent).not.toHaveBeenCalled(); // No events should be logged
       expect(mockModalHandlers.clearPendingGoal).not.toHaveBeenCalled();
       expect(mockModalHandlers.closeGoalScorerModal).toHaveBeenCalledTimes(1);
@@ -490,11 +501,11 @@ describe('createScoreHandlers', () => {
     it('should clear pending goal data and close modal', () => {
       const mockPendingGoal = {
         eventId: 'evt_123',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 0,
-        teamName: 'home',
+        ownScore: 1,
+        opponentScore: 0,
+        goalType: 'own',
         timestamp: Date.now()
       };
       
@@ -536,12 +547,12 @@ describe('createScoreHandlers', () => {
       );
 
       // Add some goals
-      handlers.handleAddHomeGoal();
-      handlers.handleAddAwayGoal();
-      handlers.handleAddHomeGoal();
+      handlers.handleAddGoalScored();
+      handlers.handleAddGoalConceded();
+      handlers.handleAddGoalScored();
 
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(2);
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(2);
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledTimes(1);
 
       // Open score edit modal
       handlers.handleOpenScoreEdit();
@@ -560,14 +571,14 @@ describe('createScoreHandlers', () => {
       );
 
       // Rapid scoring
-      handlers.handleAddHomeGoal();
-      handlers.handleAddHomeGoal();
-      handlers.handleAddAwayGoal();
-      handlers.handleAddHomeGoal();
-      handlers.handleAddAwayGoal();
+      handlers.handleAddGoalScored();
+      handlers.handleAddGoalScored();
+      handlers.handleAddGoalConceded();
+      handlers.handleAddGoalScored();
+      handlers.handleAddGoalConceded();
 
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(3);
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(2);
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(3);
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledTimes(2);
     });
 
     it('should handle modal operations correctly', () => {
@@ -593,18 +604,18 @@ describe('createScoreHandlers', () => {
 
     it('should work with complete goal scorer workflow', () => {
       const mockGameState = {
-        homeScore: 0,
-        awayScore: 1,
+        ownScore: 0,
+        opponentScore: 1,
         currentPeriodNumber: 1
       };
       
       const mockPendingGoal = {
         eventId: 'evt_123',
-        type: EVENT_TYPES.GOAL_HOME,
+        type: EVENT_TYPES.GOAL_SCORED,
         periodNumber: 1,
-        homeScore: 1,
-        awayScore: 1,
-        teamName: 'home',
+        ownScore: 1,
+        opponentScore: 1,
+        goalType: 'own',
         timestamp: Date.now()
       };
       
@@ -616,11 +627,11 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      // Add home goal with event logging
-      handlers.handleAddHomeGoal(mockGameState);
+      // Add goal scored with event logging
+      handlers.handleAddGoalScored(mockGameState);
       expect(mockModalHandlers.setPendingGoalData).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.openGoalScorerModal).toHaveBeenCalledWith(expect.objectContaining({
-        team: 'home',
+        team: 'scored',
         mode: 'new',
         matchTime: '12:45',
         periodNumber: 1
@@ -629,8 +640,8 @@ describe('createScoreHandlers', () => {
       // Select goal scorer
       handlers.handleSelectGoalScorer('evt_123', 'player_7');
       expect(mockModalHandlers.getPendingGoalData).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
-      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_HOME, expect.objectContaining({
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(logEvent).toHaveBeenCalledWith(EVENT_TYPES.GOAL_SCORED, expect.objectContaining({
         eventId: 'evt_123',
         scorerId: 'player_7'
       }), mockPendingGoal.timestamp);
@@ -658,7 +669,7 @@ describe('createScoreHandlers', () => {
     it('should handle missing state updaters gracefully', () => {
       const incompleteStateUpdaters = {
         setScore: jest.fn()
-        // Missing addHomeGoal and addAwayGoal
+        // Missing addGoalScored and addGoalConceded
       };
 
       const handlers = createScoreHandlers(
@@ -726,12 +737,12 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers.handleAddHomeGoal();
+      handlers.handleAddGoalScored();
       handlers.handleOpenScoreEdit();
-      handlers.handleAddAwayGoal();
+      handlers.handleAddGoalConceded();
 
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledTimes(1);
       expect(mockModalHandlers.openScoreEditModal).toHaveBeenCalledTimes(1);
     });
 
@@ -746,11 +757,11 @@ describe('createScoreHandlers', () => {
         mockModalHandlers
       );
 
-      handlers1.handleAddHomeGoal();
-      handlers2.handleAddAwayGoal();
+      handlers1.handleAddGoalScored();
+      handlers2.handleAddGoalConceded();
 
-      expect(mockStateUpdaters.addHomeGoal).toHaveBeenCalledTimes(1);
-      expect(mockStateUpdaters.addAwayGoal).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(mockStateUpdaters.addGoalConceded).toHaveBeenCalledTimes(1);
     });
   });
 });

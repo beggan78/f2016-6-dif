@@ -20,11 +20,11 @@ export function StatsScreen({
   initialRoster,
   clearStoredState,
   clearTimerState,
-  homeScore,
-  awayScore,
-  opponentTeamName,
+  ownScore,
+  opponentScore,
+  opponentTeam,
   resetScore,
-  setOpponentTeamName,
+  setOpponentTeam,
   navigateToMatchReport,
   // Additional props for match data persistence
   teamMode,
@@ -53,7 +53,7 @@ export function StatsScreen({
 
 
   const copyStatsToClipboard = async () => {
-    const statsText = generateStatsText(squadForStats, homeScore, awayScore, opponentTeamName);
+    const statsText = generateStatsText(squadForStats, ownScore, opponentScore, opponentTeam);
     try {
       await navigator.clipboard.writeText(statsText);
       setCopySuccess(true);
@@ -71,9 +71,9 @@ export function StatsScreen({
       // Prepare match data for saving
       const matchData = {
         players: squadForStats,
-        homeScore: homeScore || 0,
-        awayScore: awayScore || 0,
-        opponentTeamName: opponentTeamName || 'Opponent',
+        ownScore: ownScore || 0,
+        opponentScore: opponentScore || 0,
+        opponentTeam: opponentTeam || 'Opponent',
         teamMode: teamMode || 'individual_6',
         numPeriods: numPeriods || 3,
         periodDurationMinutes: periodDurationMinutes || 15,
@@ -84,7 +84,7 @@ export function StatsScreen({
         // Additional metadata
         totalPlayers: squadForStats.length,
         matchDuration: (numPeriods || 3) * (periodDurationMinutes || 15),
-        result: homeScore > awayScore ? 'win' : homeScore < awayScore ? 'loss' : 'draw'
+        result: ownScore > opponentScore ? 'win' : ownScore < opponentScore ? 'loss' : 'draw'
       };
 
       console.log('Saving match data:', matchData);
@@ -126,7 +126,7 @@ export function StatsScreen({
     setPeriodGoalieIds({});
     setGameLog([]);
     resetScore(); // Clear score
-    setOpponentTeamName(''); // Clear opponent team name
+    setOpponentTeam(''); // Clear opponent team name
     setView('config');
   };
 
@@ -141,13 +141,13 @@ export function StatsScreen({
         <h3 className="text-lg font-semibold text-sky-200 mb-3">Final Score</h3>
         <div className="flex items-center justify-center space-x-6">
           <div className="text-center">
-            <div className="text-3xl font-bold text-sky-400">{homeScore}</div>
+            <div className="text-3xl font-bold text-sky-400">{ownScore}</div>
             <div className="text-sm text-slate-300 font-semibold">Djurgården</div>
           </div>
           <div className="text-2xl font-mono font-bold text-slate-400">-</div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-slate-400">{awayScore}</div>
-            <div className="text-sm text-slate-300 font-semibold">{opponentTeamName || 'Opponent'}</div>
+            <div className="text-3xl font-bold text-slate-400">{opponentScore}</div>
+            <div className="text-sm text-slate-300 font-semibold">{opponentTeam || 'Opponent'}</div>
           </div>
         </div>
       </div>

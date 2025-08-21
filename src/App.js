@@ -452,8 +452,8 @@ function AppContent() {
     timers.startTimers(
       gameState.currentPeriodNumber,
       gameState.teamConfig,
-      'Djurgården', // Home team name
-      gameState.opponentTeamName,
+      'Djurgården', // Own team name
+      gameState.opponentTeam,
       gameState.formation,
       gameState.numPeriods,
       gameState.allPlayers
@@ -545,7 +545,7 @@ function AppContent() {
       substitute: null,
     });
     gameState.resetScore();
-    gameState.setOpponentTeamName('');
+    gameState.setOpponentTeam('');
     gameState.clearStoredState();
   };
 
@@ -688,8 +688,8 @@ function AppContent() {
             setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
             selectedSquadPlayers={selectedSquadPlayers}
-            opponentTeamName={gameState.opponentTeamName}
-            setOpponentTeamName={gameState.setOpponentTeamName}
+            opponentTeam={gameState.opponentTeam}
+            setOpponentTeam={gameState.setOpponentTeam}
             captainId={gameState.captainId}
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}
@@ -716,9 +716,9 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
             setView={gameState.setView}
-            homeScore={gameState.homeScore}
-            awayScore={gameState.awayScore}
-            opponentTeamName={gameState.opponentTeamName}
+            ownScore={gameState.ownScore}
+            opponentScore={gameState.opponentScore}
+            opponentTeam={gameState.opponentTeam}
             rotationQueue={gameState.rotationQueue}
             setRotationQueue={gameState.setRotationQueue}
             preparePeriodWithGameLog={gameState.preparePeriodWithGameLog}
@@ -763,11 +763,11 @@ function AppContent() {
             getOutfieldPlayers={gameState.getOutfieldPlayers}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
-            homeScore={gameState.homeScore}
-            awayScore={gameState.awayScore}
-            opponentTeamName={gameState.opponentTeamName}
-            addHomeGoal={gameState.addHomeGoal}
-            addAwayGoal={gameState.addAwayGoal}
+            ownScore={gameState.ownScore}
+            opponentScore={gameState.opponentScore}
+            opponentTeam={gameState.opponentTeam}
+            addGoalScored={gameState.addGoalScored}
+            addGoalConceded={gameState.addGoalConceded}
             setScore={gameState.setScore}
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
@@ -792,11 +792,11 @@ function AppContent() {
             initialRoster={initialRoster}
             clearStoredState={gameState.clearStoredState}
             clearTimerState={timers.clearTimerState}
-            homeScore={gameState.homeScore}
-            awayScore={gameState.awayScore}
-            opponentTeamName={gameState.opponentTeamName}
+            ownScore={gameState.ownScore}
+            opponentScore={gameState.opponentScore}
+            opponentTeam={gameState.opponentTeam}
             resetScore={gameState.resetScore}
-            setOpponentTeamName={gameState.setOpponentTeamName}
+            setOpponentTeam={gameState.setOpponentTeam}
             navigateToMatchReport={gameState.navigateToMatchReport}
             authModal={authModal}
           />
@@ -808,12 +808,12 @@ function AppContent() {
             matchStartTime={gameState.matchStartTime}
             allPlayers={gameState.allPlayers}
             gameLog={gameState.gameLog}
-            homeScore={gameState.homeScore}
-            awayScore={gameState.awayScore}
+            ownScore={gameState.ownScore}
+            opponentScore={gameState.opponentScore}
             periodDurationMinutes={gameState.periodDurationMinutes}
             teamConfig={gameState.teamConfig}
-            homeTeamName={selectedSquadPlayers ? 'Djurgården' : 'Home'}
-            awayTeamName={gameState.opponentTeamName || 'Opponent'}
+            ownTeamName={selectedSquadPlayers ? 'Djurgården' : 'Own'}
+            opponentTeam={gameState.opponentTeam || 'Opponent'}
             onNavigateToStats={() => gameState.setView(VIEWS.STATS)}
             onBackToGame={() => gameState.setView(VIEWS.GAME)}
             goalScorers={gameState.goalScorers || {}}

@@ -681,8 +681,8 @@ export const localStoragePersistenceHelpers = {
     // Test data
     const testGameState = {
       currentPeriodNumber: 2,
-      homeScore: 3,
-      awayScore: 1,
+      ownScore: 3,
+      opponentScore: 1,
     };
     
     const testTimerState = {

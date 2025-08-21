@@ -215,8 +215,8 @@ export const MockConfigurationScreen = ({
         
         <input 
           data-testid="opponent-input"
-          value={gameConfig.opponentTeamName || ''}
-          onChange={(e) => onGameConfigChange?.({ ...gameConfig, opponentTeamName: e.target.value })}
+          value={gameConfig.opponentTeam || ''}
+          onChange={(e) => onGameConfigChange?.({ ...gameConfig, opponentTeam: e.target.value })}
           placeholder="Opponent Team Name"
         />
       </div>
