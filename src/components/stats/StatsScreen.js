@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ListChecks, PlusCircle, Copy, FileText, Save, History } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { FeatureGate } from '../auth/FeatureGate';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
 import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
-import { dataSyncManager } from '../../utils/DataSyncManager';
+import { updateMatchToConfirmed } from '../../services/matchStateManager';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -33,23 +33,16 @@ export function StatsScreen({
   captainId,
   matchEvents,
   gameLog,
+  currentMatchId,
   authModal
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
 
-  // Update DataSyncManager when user changes
-  useEffect(() => {
-    if (user?.id) {
-      dataSyncManager.setUserId(user.id);
-    } else {
-      dataSyncManager.setUserId(null);
-    }
-  }, [user]);
 
 
   const copyStatsToClipboard = async () => {
@@ -68,43 +61,30 @@ export function StatsScreen({
     setSaveError(null);
     
     try {
-      // Prepare match data for saving
-      const matchData = {
-        players: squadForStats,
-        ownScore: ownScore || 0,
-        opponentScore: opponentScore || 0,
-        opponentTeam: opponentTeam || 'Opponent',
-        teamMode: teamMode || 'individual_6',
-        numPeriods: numPeriods || 3,
-        periodDurationMinutes: periodDurationMinutes || 15,
-        captainId: captainId || null,
-        matchEvents: matchEvents || [],
-        gameLog: gameLog || [],
-        matchDate: new Date().toISOString(),
-        // Additional metadata
-        totalPlayers: squadForStats.length,
-        matchDuration: (numPeriods || 3) * (periodDurationMinutes || 15),
-        result: ownScore > opponentScore ? 'win' : ownScore < opponentScore ? 'loss' : 'draw'
-      };
+      if (!currentMatchId) {
+        setSaveError('No match ID found. Please restart the match to enable saving.');
+        console.error('❌ Cannot save match: currentMatchId is missing');
+        return;
+      }
 
-      console.log('Saving match data:', matchData);
+      console.log('💾 Confirming match in database:', currentMatchId);
       
-      const result = await dataSyncManager.saveMatch(matchData);
+      const result = await updateMatchToConfirmed(currentMatchId);
       
       if (result.success) {
         setSaveSuccess(true);
-        console.log('Match saved successfully:', result);
+        console.log('✅ Match confirmed successfully');
         
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSaveSuccess(false);
         }, 3000);
       } else {
-        setSaveError(result.error || 'Failed to save match');
-        console.error('Failed to save match:', result);
+        setSaveError(result.error || 'Failed to confirm match');
+        console.error('❌ Failed to confirm match:', result);
       }
     } catch (err) {
-      console.error('Exception while saving match:', err);
+      console.error('❌ Exception while saving match:', err);
       setSaveError(err.message || 'An unexpected error occurred');
     } finally {
       setSaving(false);

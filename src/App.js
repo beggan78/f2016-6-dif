@@ -798,6 +798,7 @@ function AppContent() {
             resetScore={gameState.resetScore}
             setOpponentTeam={gameState.setOpponentTeam}
             navigateToMatchReport={gameState.navigateToMatchReport}
+            currentMatchId={gameState.currentMatchId}
             authModal={authModal}
           />
         );

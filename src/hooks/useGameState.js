@@ -2,12 +2,14 @@ import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
+import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
 import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
+import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, formatFinalStatsFromGameState } from '../services/matchStateManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
@@ -37,6 +39,9 @@ const updateNextNextPlayerIfSupported = (teamConfig, playerList, setNextNextPlay
 };
 
 export function useGameState() {
+  // Get current team from context for database operations
+  const { currentTeam } = useTeam();
+  
   // Initialize state from PersistenceManager
   const initialState = persistenceManager.loadState();
   
@@ -102,6 +107,10 @@ export function useGameState() {
   const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
   const [captainId, setCaptainId] = useState(initialState.captainId || null);
+
+  // Match state management - track database match record lifecycle
+  const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
+  const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
 
   // Sync captain data in allPlayers whenever captainId changes
   useEffect(() => {
@@ -677,6 +686,39 @@ export function useGameState() {
       }
     }
 
+    // CREATE MATCH RECORD when starting first period
+    if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
+      setMatchCreationAttempted(true); // Prevent duplicate attempts
+      
+      // Format match data from current game state
+      const matchData = formatMatchDataFromGameState({
+        teamConfig,
+        selectedFormation,
+        periods: numPeriods,
+        periodDurationMinutes,
+        selectedSquadIds,
+        allPlayers,
+        opponentTeam,
+        captainId
+      }, currentTeam.id);
+
+      // Create match record in background (non-blocking)
+      createMatch(matchData)
+        .then((result) => {
+          if (result.success) {
+            console.log('✅ Match record created:', result.matchId);
+            setCurrentMatchId(result.matchId);
+          } else {
+            console.warn('⚠️  Failed to create match record:', result.error);
+            // Continue with game anyway - match creation is optional
+          }
+        })
+        .catch((error) => {
+          console.warn('⚠️  Exception during match creation:', error);
+          // Continue with game anyway - match creation is optional
+        });
+    }
+
     setView(VIEWS.GAME);
     
     // Sync match data after game starts (small delay to ensure events are logged)
@@ -782,6 +824,34 @@ export function useGameState() {
       preparePeriodWithGameLog(currentPeriodNumber + 1, updatedGameLog);
       setView(VIEWS.PERIOD_SETUP);
     } else {
+      // COMPLETE MATCH RECORD when last period ends
+      if (currentMatchId && matchStartTime) {
+        // Calculate total match duration
+        const matchDurationSeconds = Math.floor((currentTimeEpoch - matchStartTime) / 1000);
+        
+        // Format final stats for database
+        const finalStats = formatFinalStatsFromGameState({
+          ownScore,
+          opponentScore,
+          allPlayers: updatedPlayersWithFinalStats
+        }, matchDurationSeconds);
+
+        // Update match to finished state in background (non-blocking)
+        updateMatchToFinished(currentMatchId, finalStats)
+          .then((result) => {
+            if (result.success) {
+              console.log('✅ Match record updated to finished');
+            } else {
+              console.warn('⚠️  Failed to update match to finished:', result.error);
+            }
+          })
+          .catch((error) => {
+            console.warn('⚠️  Exception during match completion:', error);
+          });
+      } else if (currentMatchId && !matchStartTime) {
+        console.warn('⚠️  Cannot complete match: missing match start time');
+      }
+      
       // Release wake lock when game ends
       clearAlertTimer();
       releaseWakeLock();
@@ -1591,6 +1661,12 @@ export function useGameState() {
     setTotalMatchPausedDuration,
     captainId,
     setCaptainId,
+    
+    // Match lifecycle state
+    currentMatchId,
+    setCurrentMatchId,
+    matchCreationAttempted,
+    setMatchCreationAttempted,
     
     // Actions
     preparePeriod,
