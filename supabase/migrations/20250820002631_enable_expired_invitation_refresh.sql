@@ -245,7 +245,10 @@ BEGIN
         status = 'pending',  -- **NEW**: Reset expired invitations back to pending
         message = COALESCE(p_message, message),  -- Update message if provided
         invited_by_user_id = v_inviting_user_id,  -- Update who sent the latest invitation
-        role = p_role  -- Update role in case it changed
+        role = CASE 
+          WHEN role != p_role THEN p_role  -- Only update if different
+          ELSE role  -- Preserve existing role
+        END  -- Prevents unintended role changes during refresh
     WHERE id = v_existing_invitation_id
     RETURNING * INTO v_invitation_record;
     
@@ -296,9 +299,13 @@ BEGIN
     
     -- Build redirect URL
     IF p_redirect_url IS NOT NULL THEN
-      v_final_redirect_url := p_redirect_url || '&invitation_id=' || v_invitation_id::text;
+      v_final_redirect_url := p_redirect_url || '&invitation_id=' || regexp_replace(v_invitation_id::text, '[^a-zA-Z0-9\-]', '', 'g');
     ELSE
-      v_final_redirect_url := 'https://your-app-domain.com/?invitation=true&team=' || p_team_id::text || '&role=' || p_role || '&invitation_id=' || v_invitation_id::text;
+      -- Use proper URL encoding for parameters to prevent URL breaking
+      v_final_redirect_url := 'https://your-app-domain.com/?invitation=true&team=' || 
+        regexp_replace(p_team_id::text, '[^a-zA-Z0-9\-]', '', 'g') || 
+        '&role=' || regexp_replace(p_role, '[^a-zA-Z0-9\-]', '', 'g') || 
+        '&invitation_id=' || regexp_replace(v_invitation_id::text, '[^a-zA-Z0-9\-]', '', 'g');
     END IF;
     
     -- Create appropriate success message based on what happened

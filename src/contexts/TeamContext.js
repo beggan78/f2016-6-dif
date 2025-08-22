@@ -776,7 +776,7 @@ export const TeamProvider = ({ children }) => {
           p_email: email.toLowerCase(),
           p_role: role,
           p_message: message,
-          p_redirect_url: `${window.location.origin}/?invitation=true&team=${teamId}&role=${role}`
+          p_redirect_url: `${window.location.origin}/?invitation=true&team=${encodeURIComponent(teamId)}&role=${encodeURIComponent(role)}`
         }
       });
 
