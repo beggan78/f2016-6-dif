@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
-import { PLAYER_ROLES } from '../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
 import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
@@ -541,6 +541,23 @@ export function useGameState() {
 
     const currentTimeEpoch = Date.now();
     
+    // VALIDATION: Ensure formation contains only selected players
+    const formationPlayerIds = [];
+    Object.entries(formation).forEach(([position, value]) => {
+      if (value && typeof value === 'string') {
+        formationPlayerIds.push(value);
+      } else if (value && typeof value === 'object') {
+        // Handle pairs format
+        if (value.defender) formationPlayerIds.push(value.defender);
+        if (value.attacker) formationPlayerIds.push(value.attacker);
+      }
+    });
+    
+    const nonSelectedInFormation = formationPlayerIds.filter(id => !selectedSquadIds.includes(id));
+    if (nonSelectedInFormation.length > 0) {
+      console.warn('⚠️  [handleStartGame] Non-selected players found in formation:', nonSelectedInFormation);
+    }
+    
     // Create formation-aware team config for role initialization
     const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
       ...teamConfig,
@@ -554,11 +571,21 @@ export function useGameState() {
 
       if (selectedSquadIds.includes(p.id)) {
         const initialStats = { ...p.stats };
-        if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
-          if (currentStatus === 'goalie') initialStats.startedMatchAs = PLAYER_ROLES.GOALIE;
-          else if (currentStatus === 'on_field') initialStats.startedMatchAs = PLAYER_ROLES.ON_FIELD;
-          else if (currentStatus === 'substitute') initialStats.startedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+        
+        // SAFEGUARD: Clear any stale startedMatchAs values for new games
+        if (currentPeriodNumber === 1) {
+          initialStats.startedMatchAs = null;
         }
+        
+        if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
+          let newStartedMatchAs = null;
+          if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
+          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.ON_FIELD;
+          else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+          
+          initialStats.startedMatchAs = newStartedMatchAs;
+        }
+        
         return {
           ...p,
           stats: {
@@ -569,6 +596,18 @@ export function useGameState() {
             currentPairKey: currentPairKey,
           }
         };
+      } else {
+        // SAFEGUARD: Ensure non-selected players have null startedMatchAs
+        if (p.stats?.startedMatchAs !== null) {
+          console.warn(`⚠️  [handleStartGame] Non-selected player ${p.name} (${p.id}) had startedMatchAs: ${p.stats.startedMatchAs}, clearing it`);
+          return {
+            ...p,
+            stats: {
+              ...p.stats,
+              startedMatchAs: null
+            }
+          };
+        }
       }
       return p;
     }));

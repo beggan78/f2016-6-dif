@@ -1,4 +1,4 @@
-import { PLAYER_ROLES } from './playerConstants.js';
+import { PLAYER_ROLES, PLAYER_STATUS } from './playerConstants.js';
 import { SUBSTITUTION_TYPES, GAME_CONSTANTS } from './teamConfiguration.js';
 
 /**
@@ -464,13 +464,13 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
         // Goalie in pairs mode
         return {
           currentRole: PLAYER_ROLES.GOALIE,
-          currentStatus: PLAYER_ROLES.GOALIE,
+          currentStatus: PLAYER_STATUS.GOALIE,
           currentPairKey: position
         };
       } else if (pairData && typeof pairData === 'object' && (pairData.defender || pairData.attacker)) {
         // Check if player is defender in this pair
         if (pairData.defender === playerId) {
-          const currentStatus = position === 'subPair' ? 'substitute' : 'on_field';
+          const currentStatus = position === 'subPair' ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
           const currentRole = position === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.DEFENDER;
           return {
             currentRole: currentRole,
@@ -480,7 +480,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
         }
         // Check if player is attacker in this pair
         if (pairData.attacker === playerId) {
-          const currentStatus = position === 'subPair' ? 'substitute' : 'on_field';
+          const currentStatus = position === 'subPair' ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
           const currentRole = position === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.ATTACKER;
           return {
             currentRole: currentRole,
@@ -500,11 +500,11 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
           // Map position types to proper status values for timer calculations
           let currentStatus;
           if (position === 'goalie') {
-            currentStatus = 'goalie';
+            currentStatus = PLAYER_STATUS.GOALIE;
           } else if (definition.fieldPositions.includes(position)) {
-            currentStatus = 'on_field';
+            currentStatus = PLAYER_STATUS.ON_FIELD;
           } else if (definition.substitutePositions.includes(position)) {
-            currentStatus = 'substitute';
+            currentStatus = PLAYER_STATUS.SUBSTITUTE;
           } else {
             currentStatus = role; // fallback to role for unknown positions
           }
