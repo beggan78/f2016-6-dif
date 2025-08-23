@@ -419,32 +419,22 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
   // DEBUG: Log detailed event analysis once only to avoid spam  
   if (playerId && matchEvents && matchEvents.length > 0 && !countPlayerGoals._debugLogged) {
     countPlayerGoals._debugLogged = true;
-    console.log(`🎯 [DEBUG] Analyzing events for first player ${playerId}:`);
-    
+
     // Show event types breakdown
     const eventTypes = {};
     matchEvents.forEach(event => {
       eventTypes[event.type] = (eventTypes[event.type] || 0) + 1;
     });
-    console.log(`🎯 [DEBUG] Event types in matchEvents:`, eventTypes);
-    
+
     // Show sample goal events if any exist
     const goalEvents = matchEvents.filter(event => 
       (event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED) && !event.undone
     );
-    console.log(`🎯 [DEBUG] Found ${goalEvents.length} goal events:`, goalEvents.slice(0, 3));
-    
+
     // Show scorer data structure for goal events
     goalEvents.slice(0, 3).forEach((event, index) => {
       const goalScorerData = goalScorers[event.id];
       const eventScorerData = event.data?.scorerId;
-      console.log(`🎯 [DEBUG] Goal event ${index + 1}:`, {
-        id: event.id,
-        type: event.type,
-        goalScorers_entry: goalScorerData,
-        event_data_scorerId: eventScorerData,
-        full_event_data: event.data
-      });
     });
   }
   
@@ -456,7 +446,6 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
         const scorerId = goalScorers[event.id] || event.data?.scorerId;
         if (scorerId === playerId) {
           goalCount++;
-          console.log(`🎯 [DEBUG] GOAL FOUND for player ${playerId} in event ${event.id}`);
         }
       }
     });
@@ -466,8 +455,6 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
   if (goalCount === 0 && goalScorers && typeof goalScorers === 'object') {
     goalCount = Object.values(goalScorers).filter(scorerId => scorerId === playerId).length;
   }
-  
-  console.log(`🎯 [DEBUG] countPlayerGoals: Player ${playerId} scored ${goalCount} goals`);
   
   return goalCount;
 }
@@ -491,13 +478,11 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
   
   // Count goals scored by this player
   const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
-  console.log(`🎯 [DEBUG] formatPlayerMatchStats: Player ${player.name} (ID: ${player.id}) scored ${goalsScored} goals`);
-  
+
   // DEBUG: Log starting position mapping
   const startedAtPosition = player.stats.startedAtPosition;
   const startedMatchAs = player.stats.startedMatchAs;
   const currentRole = player.stats.currentRole;
-  console.log(`🎯 [DEBUG] Player ${player.name} startedAtPosition: ${startedAtPosition}, startedMatchAs: ${startedMatchAs}, currentRole: ${currentRole}`);
 
   return {
     player_id: player.id,
@@ -531,14 +516,6 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
  */
 export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = {}, matchEvents = []) {
   try {
-    // DEBUG: Log goalScorers and matchEvents structure
-    console.log('🎯 [DEBUG] goalScorers structure:', goalScorers);
-    console.log('🎯 [DEBUG] goalScorers type:', typeof goalScorers);
-    console.log('🎯 [DEBUG] goalScorers keys:', Object.keys(goalScorers));
-    console.log('🎯 [DEBUG] goalScorers values:', Object.values(goalScorers));
-    console.log('🎯 [DEBUG] matchEvents count:', matchEvents.length);
-    console.log('🎯 [DEBUG] matchEvents structure sample:', matchEvents.slice(0, 3));
-    
     // Filter and format player stats for players who participated
     const playerStatsData = allPlayers
       .map(player => formatPlayerMatchStats(player, matchId, goalScorers, matchEvents))
