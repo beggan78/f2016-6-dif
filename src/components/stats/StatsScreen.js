@@ -6,7 +6,7 @@ import { FeatureGate } from '../auth/FeatureGate';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
 import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
-import { updateMatchToConfirmed } from '../../services/matchStateManager';
+import { updateMatchToConfirmed, insertPlayerMatchStats } from '../../services/matchStateManager';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -34,6 +34,7 @@ export function StatsScreen({
   matchEvents,
   gameLog,
   currentMatchId,
+  goalScorers,
   authModal
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
@@ -42,6 +43,9 @@ export function StatsScreen({
   const [saving, setSaving] = useState(false);
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
+  
+  // DEBUG: Log currentMatchId prop
+  console.log('📊 [StatsScreen] Received currentMatchId:', currentMatchId);
 
 
 
@@ -72,13 +76,28 @@ export function StatsScreen({
       const result = await updateMatchToConfirmed(currentMatchId);
       
       if (result.success) {
-        setSaveSuccess(true);
         console.log('✅ Match confirmed successfully');
         
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
+        // Insert player match statistics
+        console.log('📊 Inserting player match statistics...');
+        const playerStatsResult = await insertPlayerMatchStats(currentMatchId, allPlayers, goalScorers, matchEvents);
+        
+        if (playerStatsResult.success) {
+          console.log(`✅ Player stats inserted: ${playerStatsResult.inserted} players`);
+          setSaveSuccess(true);
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            setSaveSuccess(false);
+          }, 3000);
+        } else {
+          console.warn('⚠️  Match confirmed but failed to save player stats:', playerStatsResult.error);
+          // Still show success since match was confirmed, but log the player stats issue
+          setSaveSuccess(true);
+          setTimeout(() => {
+            setSaveSuccess(false);
+          }, 3000);
+        }
       } else {
         setSaveError(result.error || 'Failed to confirm match');
         console.error('❌ Failed to confirm match:', result);

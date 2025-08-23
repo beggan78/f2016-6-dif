@@ -312,3 +312,240 @@ export function formatFinalStatsFromGameState(gameState, matchDurationSeconds) {
     fairPlayAwardId: fairPlayWinner?.id || null
   };
 }
+
+/**
+ * Map formation position to database player_role enum with pairs mode support
+ * @param {string} position - Formation position (e.g., 'defender', 'left', 'attacker', 'goalie', 'leftPair', 'rightPair')
+ * @param {string} currentRole - Player's current role (for pairs mode: 'Goalie', 'Defender', 'Attacker')
+ * @returns {string} Database player_role enum value
+ */
+export function mapFormationPositionToRole(position, currentRole = null) {
+  if (!position) {
+    console.warn('⚠️  No position provided to mapFormationPositionToRole');
+    return 'substitute';
+  }
+
+  // Handle pairs mode positions using currentRole
+  if (position === 'leftPair' || position === 'rightPair') {
+    if (currentRole === 'Defender') return 'defender';
+    if (currentRole === 'Attacker') return 'attacker';
+    if (currentRole === 'Goalie') return 'goalie'; // Edge case - shouldn't happen
+    console.warn(`⚠️  Pairs mode position ${position} but unexpected currentRole: ${currentRole}`);
+    return 'substitute';
+  }
+
+  // Handle substitute pair
+  if (position === 'subPair') {
+    return 'substitute';
+  }
+
+  switch (position) {
+    // Goalie position
+    case 'goalie':
+      return 'goalie';
+    
+    // Defender positions (2-2 and 1-2-1 formations)
+    case 'leftDefender':
+    case 'rightDefender':
+    case 'defender':        // 1-2-1 center back
+      return 'defender';
+    
+    // Midfielder positions (1-2-1 formation)
+    case 'left':            // Left midfielder in 1-2-1
+    case 'right':           // Right midfielder in 1-2-1
+      return 'midfielder';
+    
+    // Attacker positions (2-2 and 1-2-1 formations)  
+    case 'leftAttacker':
+    case 'rightAttacker':
+    case 'attacker':        // 1-2-1 center forward
+      return 'attacker';
+    
+    // Substitute positions
+    case 'substitute':
+    case 'substitute_1':
+    case 'substitute_2':
+    case 'substitute_3':
+    case 'substitute_4':
+    case 'substitute_5':
+      return 'substitute';
+    
+    default:
+      console.warn('⚠️  Unexpected position value:', position);
+      return 'substitute';
+  }
+}
+
+/**
+ * Map game state player role to database player_role enum (DEPRECATED - use mapFormationPositionToRole)
+ * @param {string} gameStateRole - Role from game state (PLAYER_ROLES constants)
+ * @returns {string} Database player_role enum value
+ */
+export function mapStartingRoleToDBRole(gameStateRole) {
+  // Map from PLAYER_ROLES constants to database enum values
+  switch (gameStateRole) {
+    case 'GOALIE':        // Match PLAYER_ROLES.GOALIE
+      return 'goalie';
+    case 'SUBSTITUTE':    // Match PLAYER_ROLES.SUBSTITUTE
+      return 'substitute';
+    case 'ON_FIELD':      // Match PLAYER_ROLES.ON_FIELD
+      // For 'ON_FIELD', default to 'defender' since we track actual time in specific roles
+      // The time tracking will show the actual distribution of roles played
+      return 'defender';
+    default:
+      // Handle any unexpected values
+      console.warn('⚠️  Unexpected starting role value:', gameStateRole);
+      return 'substitute';
+  }
+}
+
+/**
+ * Count goals scored by a specific player using same logic as PlayerStatsTable
+ * @param {Object} goalScorers - Goal scorers object { eventId: playerId }
+ * @param {Array} matchEvents - Array of match events
+ * @param {string} playerId - Player ID to count goals for
+ * @returns {number} Number of goals scored by the player
+ */
+export function countPlayerGoals(goalScorers, matchEvents, playerId) {
+  // Import EVENT_TYPES dynamically to avoid circular dependencies
+  const EVENT_TYPES = {
+    GOAL_SCORED: 'goal_scored',
+    GOAL_CONCEDED: 'goal_conceded'
+  };
+  
+  let goalCount = 0;
+  
+  // Count goals from match events (same logic as PlayerStatsTable)
+  if (matchEvents && Array.isArray(matchEvents)) {
+    matchEvents.forEach(event => {
+      if ((event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED) && !event.undone) {
+        // Check goalScorers mapping first, then fall back to event data
+        const scorerId = goalScorers[event.id] || event.data?.scorerId;
+        if (scorerId === playerId) {
+          goalCount++;
+        }
+      }
+    });
+  }
+  
+  // Fallback to goalScorers object if no matchEvents (backward compatibility)
+  if (goalCount === 0 && goalScorers && typeof goalScorers === 'object') {
+    goalCount = Object.values(goalScorers).filter(scorerId => scorerId === playerId).length;
+  }
+  
+  console.log(`🎯 [DEBUG] countPlayerGoals: Player ${playerId} scored ${goalCount} goals`);
+  console.log(`🎯 [DEBUG] countPlayerGoals: matchEvents count:`, matchEvents?.length || 0);
+  console.log(`🎯 [DEBUG] countPlayerGoals: goalScorers values:`, Object.values(goalScorers));
+  
+  return goalCount;
+}
+
+/**
+ * Format individual player stats for database insertion
+ * @param {Object} player - Player object from game state
+ * @param {string} matchId - Match ID
+ * @param {Object} goalScorers - Goal scorers data { eventId: playerId }
+ * @param {Array} matchEvents - Array of match events for goal counting
+ * @returns {Object} Formatted player match stats for database
+ */
+export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchEvents = []) {
+  // Only process players who participated in the match
+  if (!player.stats?.startedMatchAs) {
+    return null;
+  }
+
+  // Calculate total field time excluding goalie time
+  const totalFieldTime = Math.max(0, (player.stats.timeOnFieldSeconds || 0) - (player.stats.timeAsGoalieSeconds || 0));
+  
+  // Count goals scored by this player
+  const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
+  console.log(`🎯 [DEBUG] formatPlayerMatchStats: Player ${player.name} (ID: ${player.id}) scored ${goalsScored} goals`);
+  
+  // DEBUG: Log starting position mapping
+  const startedAtPosition = player.stats.startedAtPosition;
+  const startedMatchAs = player.stats.startedMatchAs;
+  const currentRole = player.stats.currentRole;
+  console.log(`🎯 [DEBUG] Player ${player.name} startedAtPosition: ${startedAtPosition}, startedMatchAs: ${startedMatchAs}, currentRole: ${currentRole}`);
+
+  return {
+    player_id: player.id,
+    match_id: matchId,
+    // Performance metrics
+    goals_scored: goalsScored,
+    // Time tracking for all roles
+    goalie_time_seconds: player.stats.timeAsGoalieSeconds || 0,
+    defender_time_seconds: player.stats.timeAsDefenderSeconds || 0,
+    midfielder_time_seconds: player.stats.timeAsMidfielderSeconds || 0,
+    attacker_time_seconds: player.stats.timeAsAttackerSeconds || 0,
+    substitute_time_seconds: player.stats.timeAsSubSeconds || 0,
+    // Total outfield time (excluding goalie time)
+    total_field_time_seconds: totalFieldTime,
+    // Match participation details
+    started_as: player.stats.startedAtPosition 
+      ? mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole)
+      : mapStartingRoleToDBRole(player.stats.startedMatchAs), // Fallback for backward compatibility
+    was_captain: player.stats.isCaptain || false,
+    got_fair_play_award: player.hasFairPlayAward || false
+  };
+}
+
+/**
+ * Insert player match statistics for all players who participated
+ * @param {string} matchId - Match ID
+ * @param {Array} allPlayers - Array of all players from game state
+ * @param {Object} goalScorers - Goal scorers data { eventId: playerId }
+ * @param {Array} matchEvents - Array of match events for goal counting
+ * @returns {Promise<{success: boolean, inserted: number, error?: string}>}
+ */
+export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = {}, matchEvents = []) {
+  try {
+    // DEBUG: Log goalScorers and matchEvents structure
+    console.log('🎯 [DEBUG] goalScorers structure:', goalScorers);
+    console.log('🎯 [DEBUG] goalScorers type:', typeof goalScorers);
+    console.log('🎯 [DEBUG] goalScorers keys:', Object.keys(goalScorers));
+    console.log('🎯 [DEBUG] goalScorers values:', Object.values(goalScorers));
+    console.log('🎯 [DEBUG] matchEvents count:', matchEvents.length);
+    console.log('🎯 [DEBUG] matchEvents structure sample:', matchEvents.slice(0, 3));
+    
+    // Filter and format player stats for players who participated
+    const playerStatsData = allPlayers
+      .map(player => formatPlayerMatchStats(player, matchId, goalScorers, matchEvents))
+      .filter(stats => stats !== null); // Remove players who didn't participate
+
+    if (playerStatsData.length === 0) {
+      console.warn('⚠️  No player stats to insert - no players participated?');
+      return {
+        success: true,
+        inserted: 0
+      };
+    }
+
+    console.log('📊 Inserting player match stats:', playerStatsData.length, 'players');
+
+    const { data, error } = await supabase
+      .from('player_match_stats')
+      .insert(playerStatsData)
+      .select('id');
+
+    if (error) {
+      console.error('❌ Failed to insert player match stats:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    console.log('✅ Player match stats inserted successfully:', data?.length || 0, 'records');
+    return {
+      success: true,
+      inserted: data?.length || 0
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while inserting player match stats:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}

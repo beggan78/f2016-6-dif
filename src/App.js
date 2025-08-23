@@ -799,6 +799,7 @@ function AppContent() {
             setOpponentTeam={gameState.setOpponentTeam}
             navigateToMatchReport={gameState.navigateToMatchReport}
             currentMatchId={gameState.currentMatchId}
+            goalScorers={gameState.goalScorers || {}}
             authModal={authModal}
           />
         );

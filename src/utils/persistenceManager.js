@@ -317,6 +317,9 @@ export class GamePersistenceManager extends PersistenceManager {
       lastEventBackup: null,
       timerPauseStartTime: null,
       totalMatchPausedDuration: 0,
+      // Match lifecycle state management
+      currentMatchId: null,
+      matchCreationAttempted: false,
     };
 
     super(storageKey, defaultGameState);
@@ -357,7 +360,17 @@ export class GamePersistenceManager extends PersistenceManager {
       lastEventBackup: gameState.lastEventBackup,
       timerPauseStartTime: gameState.timerPauseStartTime,
       totalMatchPausedDuration: gameState.totalMatchPausedDuration,
+      // Match lifecycle state management
+      currentMatchId: gameState.currentMatchId,
+      matchCreationAttempted: gameState.matchCreationAttempted,
     };
+
+    // DEBUG: Log currentMatchId saving
+    console.log('💾 [GamePersistenceManager] Saving currentMatchId:', {
+      currentMatchId: stateToSave.currentMatchId,
+      matchCreationAttempted: stateToSave.matchCreationAttempted,
+      view: stateToSave.view
+    });
 
     return this.saveState(stateToSave);
   }
