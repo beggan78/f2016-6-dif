@@ -1443,7 +1443,7 @@ export function useGameState() {
         
         // Determine new role and status based on position they're moving to
         let newRole = PLAYER_ROLES.DEFENDER; // Default
-        let newStatus = 'on_field'; // Default
+        let newStatus = PLAYER_STATUS.ON_FIELD; // Default
         
         if (teamConfig.substitutionType === 'pairs') {
           if (newGoaliePosition === 'leftPair' || newGoaliePosition === 'rightPair') {
@@ -1456,7 +1456,7 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'on_field';
+            newStatus = PLAYER_STATUS.ON_FIELD;
           } else if (newGoaliePosition === 'subPair') {
             // Substitute position
             const pairData = formation[newGoaliePosition];
@@ -1467,12 +1467,12 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'substitute';
+            newStatus = PLAYER_STATUS.SUBSTITUTE;
           }
         } else {
           // Individual formations - use centralized role determination
           newRole = getPositionRole(newGoaliePosition) || PLAYER_ROLES.DEFENDER; // Default to defender
-          newStatus = newGoaliePosition.includes('substitute') ? 'substitute' : 'on_field';
+          newStatus = newGoaliePosition.includes('substitute') ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
         }
         
         // Handle role change from goalie to new position
@@ -1501,7 +1501,7 @@ export function useGameState() {
         );
         
         // Update status and position
-        newStats.currentStatus = 'goalie';
+        newStats.currentStatus = PLAYER_STATUS.GOALIE;
         newStats.currentPairKey = 'goalie';
         
         return { ...p, stats: newStats };

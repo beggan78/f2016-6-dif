@@ -9,6 +9,8 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { PLAYER_ROLES } from '../constants/playerConstants';
+import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 
 /**
  * Create a new match record when the first period starts
@@ -316,46 +318,50 @@ export function formatFinalStatsFromGameState(gameState, matchDurationSeconds) {
 /**
  * Map formation position to database player_role enum with pairs mode support
  * @param {string} position - Formation position (e.g., 'defender', 'left', 'attacker', 'goalie', 'leftPair', 'rightPair')
- * @param {string} currentRole - Player's current role (for pairs mode: 'Goalie', 'Defender', 'Attacker')
+ * @param {string} currentRole - Player's current role (for pairs mode: any format accepted)
  * @returns {string} Database player_role enum value
  */
 export function mapFormationPositionToRole(position, currentRole = null) {
   if (!position) {
     console.warn('⚠️  No position provided to mapFormationPositionToRole');
-    return 'substitute';
+    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
 
-  // Handle pairs mode positions - return currentRole directly
+  // Handle pairs mode positions - normalize and convert currentRole
   if (position === 'leftPair' || position === 'rightPair') {
-    return currentRole || 'substitute';
+    if (currentRole) {
+      const normalizedRole = normalizeRole(currentRole);
+      return roleToDatabase(normalizedRole);
+    }
+    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
 
   // Handle substitute pair
   if (position === 'subPair') {
-    return 'substitute';
+    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
 
   switch (position) {
     // Goalie position
     case 'goalie':
-      return 'goalie';
+      return roleToDatabase(PLAYER_ROLES.GOALIE);
     
     // Defender positions (2-2 and 1-2-1 formations)
     case 'leftDefender':
     case 'rightDefender':
     case 'defender':        // 1-2-1 center back
-      return 'defender';
+      return roleToDatabase(PLAYER_ROLES.DEFENDER);
     
     // Midfielder positions (1-2-1 formation)
     case 'left':            // Left midfielder in 1-2-1
     case 'right':           // Right midfielder in 1-2-1
-      return 'midfielder';
+      return roleToDatabase(PLAYER_ROLES.MIDFIELDER);
     
     // Attacker positions (2-2 and 1-2-1 formations)  
     case 'leftAttacker':
     case 'rightAttacker':
     case 'attacker':        // 1-2-1 center forward
-      return 'attacker';
+      return roleToDatabase(PLAYER_ROLES.ATTACKER);
     
     // Substitute positions
     case 'substitute':
@@ -364,35 +370,34 @@ export function mapFormationPositionToRole(position, currentRole = null) {
     case 'substitute_3':
     case 'substitute_4':
     case 'substitute_5':
-      return 'substitute';
+      return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
     
     default:
       console.warn('⚠️  Unexpected position value:', position);
-      return 'substitute';
+      return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
 }
 
 /**
  * Map game state player role to database player_role enum (DEPRECATED - use mapFormationPositionToRole)
- * @param {string} gameStateRole - Role from game state (PLAYER_ROLES constants)
+ * @param {string} gameStateRole - Role from game state (PLAYER_ROLES constants or any format)
  * @returns {string} Database player_role enum value
  */
 export function mapStartingRoleToDBRole(gameStateRole) {
-  // Map from PLAYER_ROLES constants to database enum values
-  switch (gameStateRole) {
-    case 'GOALIE':        // Match PLAYER_ROLES.GOALIE
-      return 'goalie';
-    case 'SUBSTITUTE':    // Match PLAYER_ROLES.SUBSTITUTE
-      return 'substitute';
-    case 'ON_FIELD':      // Match PLAYER_ROLES.ON_FIELD
-      // For 'ON_FIELD', default to 'defender' since we track actual time in specific roles
-      // The time tracking will show the actual distribution of roles played
-      return 'defender';
-    default:
-      // Handle any unexpected values
-      console.warn('⚠️  Unexpected starting role value:', gameStateRole);
-      return 'substitute';
+  if (!gameStateRole) {
+    console.warn('⚠️  No starting role provided, defaulting to substitute');
+    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
+
+  // Normalize any role format to PLAYER_ROLES constant, then convert to database format
+  const normalizedRole = normalizeRole(gameStateRole);
+  
+  // For 'ON_FIELD', default to 'defender' since we track actual time in specific roles
+  if (normalizedRole === PLAYER_ROLES.ON_FIELD) {
+    return roleToDatabase(PLAYER_ROLES.DEFENDER);
+  }
+  
+  return roleToDatabase(normalizedRole);
 }
 
 /**

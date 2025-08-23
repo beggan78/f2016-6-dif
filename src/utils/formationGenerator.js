@@ -1,5 +1,12 @@
 import { FORMATIONS } from '../constants/teamConfiguration';
 import { getFormationDefinition } from './formationConfigUtils';
+import { PLAYER_ROLES } from '../constants/playerConstants';
+import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
+
+// Role constants for formation logic (database format for consistency)
+const DB_DEFENDER = roleToDatabase(PLAYER_ROLES.DEFENDER);
+const DB_ATTACKER = roleToDatabase(PLAYER_ROLES.ATTACKER);
+const DB_MIDFIELDER = roleToDatabase(PLAYER_ROLES.MIDFIELDER);
 
 // Helper to get mode definition - uses centralized formation utilities
 const getDefinition = (teamConfig, selectedFormation = null) => {
@@ -26,13 +33,13 @@ export const generateBalancedFormationForPeriod3 = (currentGoalieId, prevGoalieI
       timeRatio,
       totalOutfieldTime: pStats?.stats.timeOnFieldSeconds || 0,
       // Determine required role based on time balance
-      requiredRole: timeRatio < 0.8 ? 'defender' : timeRatio > 1.25 ? 'attacker' : null
+      requiredRole: timeRatio < 0.8 ? DB_DEFENDER : timeRatio > 1.25 ? DB_ATTACKER : null
     };
   });
 
   // Step 1: Role Balance Enforcement - identify players who must play specific roles
-  const mustPlayDefender = outfieldersWithStats.filter(p => p.requiredRole === 'defender');
-  const mustPlayAttacker = outfieldersWithStats.filter(p => p.requiredRole === 'attacker');
+  const mustPlayDefender = outfieldersWithStats.filter(p => p.requiredRole === DB_DEFENDER);
+  const mustPlayAttacker = outfieldersWithStats.filter(p => p.requiredRole === DB_ATTACKER);
   const flexiblePlayers = outfieldersWithStats.filter(p => p.requiredRole === null);
 
   // Step 2: Try to maintain pair integrity while respecting role requirements
@@ -55,12 +62,12 @@ export const generateBalancedFormationForPeriod3 = (currentGoalieId, prevGoalieI
       if (exGoalie && newGoaliePartner && !usedPlayerIds.has(exGoalie.id) && !usedPlayerIds.has(newGoaliePartner.id)) {
         // Determine roles for ex-goalie and orphaned partner
         const partnerPrevRole = getPlayerPreviousRole(newGoaliePartner.id, prevFormation);
-        const newPartnerRole = partnerPrevRole === 'defender' ? 'attacker' : 'defender';
-        const exGoalieRole = newPartnerRole === 'defender' ? 'attacker' : 'defender';
+        const newPartnerRole = partnerPrevRole === DB_DEFENDER ? DB_ATTACKER : DB_DEFENDER;
+        const exGoalieRole = newPartnerRole === DB_DEFENDER ? DB_ATTACKER : DB_DEFENDER;
         
         // Check if this pairing respects role requirements
         if (canPlayRole(exGoalie, exGoalieRole) && canPlayRole(newGoaliePartner, newPartnerRole)) {
-          const pair = newPartnerRole === 'defender' 
+          const pair = newPartnerRole === DB_DEFENDER 
             ? { defender: newGoaliePartner.id, attacker: exGoalie.id }
             : { defender: exGoalie.id, attacker: newGoaliePartner.id };
           finalPairs.push(pair);
@@ -81,11 +88,11 @@ export const generateBalancedFormationForPeriod3 = (currentGoalieId, prevGoalieI
       
       if (defender && attacker) {
         // Try swapped roles first
-        if (canPlayRole(defender, 'attacker') && canPlayRole(attacker, 'defender')) {
+        if (canPlayRole(defender, DB_ATTACKER) && canPlayRole(attacker, DB_DEFENDER)) {
           finalPairs.push({ defender: attacker.id, attacker: defender.id });
           usedPlayerIds.add(defender.id);
           usedPlayerIds.add(attacker.id);
-        } else if (canPlayRole(defender, 'defender') && canPlayRole(attacker, 'attacker')) {
+        } else if (canPlayRole(defender, DB_DEFENDER) && canPlayRole(attacker, DB_ATTACKER)) {
           // Keep original roles if swapping doesn't work
           finalPairs.push({ defender: defender.id, attacker: attacker.id });
           usedPlayerIds.add(defender.id);
@@ -132,7 +139,7 @@ export const generateBalancedFormationForPeriod3 = (currentGoalieId, prevGoalieI
   if (prevFormation) {
     stillRemaining.forEach(p => {
       const prevRole = getPlayerPreviousRole(p.id, prevFormation);
-      p.recommendedRole = prevRole === 'defender' ? 'attacker' : 'defender';
+      p.recommendedRole = prevRole === DB_DEFENDER ? DB_ATTACKER : DB_DEFENDER;
     });
   }
 
@@ -141,13 +148,13 @@ export const generateBalancedFormationForPeriod3 = (currentGoalieId, prevGoalieI
     const player1 = stillRemaining.shift();
     let player2 = null;
     
-    if (player1.recommendedRole === 'defender') {
-      player2 = stillRemaining.find(p => p.recommendedRole === 'attacker') || stillRemaining[0];
+    if (player1.recommendedRole === DB_DEFENDER) {
+      player2 = stillRemaining.find(p => p.recommendedRole === DB_ATTACKER) || stillRemaining[0];
       if (player2) {
         finalPairs.push({ defender: player1.id, attacker: player2.id });
       }
     } else {
-      player2 = stillRemaining.find(p => p.recommendedRole === 'defender') || stillRemaining[0];
+      player2 = stillRemaining.find(p => p.recommendedRole === DB_DEFENDER) || stillRemaining[0];
       if (player2) {
         finalPairs.push({ defender: player2.id, attacker: player1.id });
       }
@@ -194,8 +201,8 @@ function getPlayerPreviousRole(playerId, prevFormation) {
   const pairKeys = ['leftPair', 'rightPair', 'subPair'];
   for (const key of pairKeys) {
     const pair = prevFormation[key];
-    if (pair.defender === playerId) return 'defender';
-    if (pair.attacker === playerId) return 'attacker';
+    if (pair.defender === playerId) return DB_DEFENDER;
+    if (pair.attacker === playerId) return DB_ATTACKER;
   }
   return null;
 }
@@ -309,9 +316,9 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
       return {
         ...baseStats,
         // Calculate role deficits for 1-2-1 balancing
-        defenderDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, 'defender'),
-        midfielderDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, 'midfielder'),
-        attackerDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, 'attacker')
+        defenderDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, DB_DEFENDER),
+        midfielderDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, DB_MIDFIELDER),
+        attackerDeficit: calculateRoleDeficit(defenderTime, midfielderTime, attackerTime, DB_ATTACKER)
       };
     } else {
       return {
@@ -520,13 +527,13 @@ const calculateRoleDeficit = (defenderTime, midfielderTime, attackerTime, role) 
   let currentRoleTime;
   
   switch (role) {
-    case 'defender':
+    case DB_DEFENDER:
       currentRoleTime = defenderTime;
       break;
-    case 'midfielder':
+    case DB_MIDFIELDER:
       currentRoleTime = midfielderTime;
       break;
-    case 'attacker':
+    case DB_ATTACKER:
       currentRoleTime = attackerTime;
       break;
     default:
@@ -602,9 +609,9 @@ export const generateRecommendedFormation = (currentPeriodNum, currentGoalieId, 
     if (exGoalie && newGoaliePartner && exGoalie.id !== newGoaliePartner.id) {
       // The orphaned partner changes role, ex-goalie takes the vacant role
       const partnerPrevRole = getPlayerPreviousRole(newGoaliePartner.id, prevFormation);
-      const newPartnerRole = partnerPrevRole === 'defender' ? 'attacker' : 'defender';
+      const newPartnerRole = partnerPrevRole === DB_DEFENDER ? DB_ATTACKER : DB_DEFENDER;
       
-      const pair = newPartnerRole === 'defender' 
+      const pair = newPartnerRole === DB_DEFENDER 
         ? { defender: newGoaliePartner.id, attacker: exGoalie.id }
         : { defender: exGoalie.id, attacker: newGoaliePartner.id };
       
