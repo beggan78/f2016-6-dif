@@ -15,17 +15,6 @@ export function ProfileScreen({ setView }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccountInfo, setShowAccountInfo] = useState(false);
-  const [showGlow, setShowGlow] = useState(false);
-
-  React.useEffect(() => {
-    if (profileName === 'Not set') {
-      setShowGlow(true);
-      const timer = setTimeout(() => {
-        setShowGlow(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [profileName]);
 
   // Clear messages when user starts editing
   React.useEffect(() => {
@@ -38,7 +27,6 @@ export function ProfileScreen({ setView }) {
   }, [isEditing, authError, clearAuthError]);
 
   const handleEdit = () => {
-    setShowGlow(false);
     setIsEditing(true);
     setEditedName(userProfile?.name || '');
     setErrors({});
@@ -256,15 +244,14 @@ export function ProfileScreen({ setView }) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className={`text-slate-100 rounded-md ${showGlow ? 'animate-glow' : ''}`}>
+                    <span className={`text-slate-100 rounded-md ${profileName === 'Not set' ? 'animate-glow-and-fade' : ''}`}>
                       {profileName}
                     </span>
                     <Button
                       onClick={handleEdit}
                       variant="secondary"
                       size="sm"
-                      className={showGlow ? 'animate-glow' : ''}
-                    >
+                      className={`${profileName === 'Not set' ? 'animate-glow-and-fade' : ''}`}>
                       Edit
                     </Button>
                   </div>
