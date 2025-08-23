@@ -325,13 +325,9 @@ export function mapFormationPositionToRole(position, currentRole = null) {
     return 'substitute';
   }
 
-  // Handle pairs mode positions using currentRole
+  // Handle pairs mode positions - return currentRole directly
   if (position === 'leftPair' || position === 'rightPair') {
-    if (currentRole === 'Defender') return 'defender';
-    if (currentRole === 'Attacker') return 'attacker';
-    if (currentRole === 'Goalie') return 'goalie'; // Edge case - shouldn't happen
-    console.warn(`⚠️  Pairs mode position ${position} but unexpected currentRole: ${currentRole}`);
-    return 'substitute';
+    return currentRole || 'substitute';
   }
 
   // Handle substitute pair
@@ -415,6 +411,38 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
   
   let goalCount = 0;
   
+  // DEBUG: Log detailed event analysis once only to avoid spam  
+  if (playerId && matchEvents && matchEvents.length > 0 && !countPlayerGoals._debugLogged) {
+    countPlayerGoals._debugLogged = true;
+    console.log(`🎯 [DEBUG] Analyzing events for first player ${playerId}:`);
+    
+    // Show event types breakdown
+    const eventTypes = {};
+    matchEvents.forEach(event => {
+      eventTypes[event.type] = (eventTypes[event.type] || 0) + 1;
+    });
+    console.log(`🎯 [DEBUG] Event types in matchEvents:`, eventTypes);
+    
+    // Show sample goal events if any exist
+    const goalEvents = matchEvents.filter(event => 
+      (event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED) && !event.undone
+    );
+    console.log(`🎯 [DEBUG] Found ${goalEvents.length} goal events:`, goalEvents.slice(0, 3));
+    
+    // Show scorer data structure for goal events
+    goalEvents.slice(0, 3).forEach((event, index) => {
+      const goalScorerData = goalScorers[event.id];
+      const eventScorerData = event.data?.scorerId;
+      console.log(`🎯 [DEBUG] Goal event ${index + 1}:`, {
+        id: event.id,
+        type: event.type,
+        goalScorers_entry: goalScorerData,
+        event_data_scorerId: eventScorerData,
+        full_event_data: event.data
+      });
+    });
+  }
+  
   // Count goals from match events (same logic as PlayerStatsTable)
   if (matchEvents && Array.isArray(matchEvents)) {
     matchEvents.forEach(event => {
@@ -423,6 +451,7 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
         const scorerId = goalScorers[event.id] || event.data?.scorerId;
         if (scorerId === playerId) {
           goalCount++;
+          console.log(`🎯 [DEBUG] GOAL FOUND for player ${playerId} in event ${event.id}`);
         }
       }
     });
@@ -434,8 +463,6 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
   }
   
   console.log(`🎯 [DEBUG] countPlayerGoals: Player ${playerId} scored ${goalCount} goals`);
-  console.log(`🎯 [DEBUG] countPlayerGoals: matchEvents count:`, matchEvents?.length || 0);
-  console.log(`🎯 [DEBUG] countPlayerGoals: goalScorers values:`, Object.values(goalScorers));
   
   return goalCount;
 }

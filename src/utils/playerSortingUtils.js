@@ -3,6 +3,7 @@
  * Provides relevance-based sorting for goal scorer attribution
  */
 
+import { PLAYER_ROLES } from '../constants/playerConstants';
 // import { isIndividualMode } from '../constants/gameModes';
 
 /**
@@ -10,21 +11,21 @@
  * Lower numbers = higher priority (more likely to score)
  */
 const GOAL_SCORING_PRIORITY = {
-  ATTACKER: 1,
-  MIDFIELDER: 2,
-  DEFENDER: 3,
-  GOALIE: 4,
-  SUBSTITUTE: 5
+  attacker: 1,
+  midfielder: 2,
+  defender: 3,
+  goalie: 4,
+  substitute: 5
 };
 
 /**
  * Get a player's current role from their stored data
  * @param {Object} player - Player object with stats
- * @returns {string} Role: 'ATTACKER', 'DEFENDER', 'GOALIE', or 'SUBSTITUTE'
+ * @returns {string} Role constant from PLAYER_ROLES
  */
 export const getPlayerCurrentRole = (player) => {
   if (!player?.stats) {
-    return 'SUBSTITUTE';
+    return PLAYER_ROLES.SUBSTITUTE;
   }
 
   const { currentRole, currentStatus } = player.stats;
@@ -32,21 +33,23 @@ export const getPlayerCurrentRole = (player) => {
   // Prioritize currentRole if available and not 'On Field'
   if (currentRole && currentRole !== 'On Field') {
     const role = currentRole.toUpperCase();
-    if (role === 'GOALIE' || role === 'ATTACKER' || role === 'DEFENDER' || role === 'MIDFIELDER' || role === 'SUBSTITUTE') {
-      return role;
-    }
+    if (role === 'GOALIE') return PLAYER_ROLES.GOALIE;
+    if (role === 'ATTACKER') return PLAYER_ROLES.ATTACKER;
+    if (role === 'DEFENDER') return PLAYER_ROLES.DEFENDER;
+    if (role === 'MIDFIELDER') return PLAYER_ROLES.MIDFIELDER;
+    if (role === 'SUBSTITUTE') return PLAYER_ROLES.SUBSTITUTE;
   }
 
   // Fallback for on-field players where role is in currentStatus
   if (currentStatus) {
     const status = currentStatus.toUpperCase();
-    if (status === 'GOALIE' || status === 'ATTACKER' || status === 'DEFENDER' || status === 'MIDFIELDER') {
-      return status;
-    }
+    if (status === 'GOALIE') return PLAYER_ROLES.GOALIE;
+    if (status === 'ATTACKER') return PLAYER_ROLES.ATTACKER;
+    if (status === 'DEFENDER') return PLAYER_ROLES.DEFENDER;
+    if (status === 'MIDFIELDER') return PLAYER_ROLES.MIDFIELDER;
   }
   
-  // Default fallback
-  return 'SUBSTITUTE';
+  return PLAYER_ROLES.SUBSTITUTE;
 };
 
 /**
@@ -111,6 +114,9 @@ export const sortPlayersByGoalScoringRelevance = (players) => {
   // Create a copy to avoid mutating the original array
   const sortedPlayers = [...players];
 
+  // DEBUG: Log initial player order
+  console.log(`🔄 [SORT] Initial player order:`, sortedPlayers.map(p => `${p.name}(${getPlayerCurrentRole(p)})`).join(', '));
+
   // Sort players by relevance and then by name within each category
   sortedPlayers.sort((playerA, playerB) => {
     const roleA = getPlayerCurrentRole(playerA);
@@ -118,6 +124,10 @@ export const sortPlayersByGoalScoringRelevance = (players) => {
 
     const priorityA = GOAL_SCORING_PRIORITY[roleA];
     const priorityB = GOAL_SCORING_PRIORITY[roleB];
+
+    // DEBUG: Log priority lookup issues
+    if (priorityA === undefined) console.warn(`⚠️  No priority found for role: "${roleA}"`);
+    if (priorityB === undefined) console.warn(`⚠️  No priority found for role: "${roleB}"`);
 
     // Primary sort: by goal scoring priority
     if (priorityA !== priorityB) {

@@ -44,14 +44,7 @@ export function useGameState() {
   
   // Initialize state from PersistenceManager
   const initialState = persistenceManager.loadState();
-  
-  // DEBUG: Log currentMatchId loading
-  console.log('🔍 [useGameState] Loading from localStorage:', {
-    currentMatchId: initialState.currentMatchId,
-    matchCreationAttempted: initialState.matchCreationAttempted,
-    view: initialState.view
-  });
-  
+
   // Ensure allPlayers is initialized if not present
   if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
     initialState.allPlayers = initializePlayers(initialRoster);
@@ -604,7 +597,6 @@ export function useGameState() {
           
           // Store the specific formation position for formation-aware role mapping
           initialStats.startedAtPosition = currentPairKey;
-          console.log(`🎯 [DEBUG] Player ${p.name} started as ${newStartedMatchAs} at position ${currentPairKey}`);
         }
         
         return {
@@ -620,7 +612,6 @@ export function useGameState() {
       } else {
         // SAFEGUARD: Ensure non-selected players have null startedMatchAs
         if (p.stats?.startedMatchAs !== null) {
-          console.warn(`⚠️  [handleStartGame] Non-selected player ${p.name} (${p.id}) had startedMatchAs: ${p.stats.startedMatchAs}, clearing it`);
           return {
             ...p,
             stats: {
