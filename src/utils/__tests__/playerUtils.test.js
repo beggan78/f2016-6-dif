@@ -19,7 +19,7 @@ import {
   setCaptain,
   hasActiveSubstitutes
 } from '../playerUtils';
-import { PLAYER_STATUS } from '../../constants/playerConstants';
+import { PLAYER_STATUS, PLAYER_ROLES } from '../../constants/playerConstants';
 
 describe('playerUtils', () => {
   const mockPlayers = [
@@ -28,7 +28,7 @@ describe('playerUtils', () => {
       name: 'Player 1',
       stats: {
         currentStatus: PLAYER_STATUS.ON_FIELD,
-        currentRole: 'DEFENDER',
+        currentRole: PLAYER_ROLES.DEFENDER,
         currentPairKey: 'leftDefender',
         isInactive: false,
         isCaptain: false
@@ -39,7 +39,7 @@ describe('playerUtils', () => {
       name: 'Player 2',
       stats: {
         currentStatus: PLAYER_STATUS.SUBSTITUTE,
-        currentRole: 'SUBSTITUTE',
+        currentRole: PLAYER_ROLES.SUBSTITUTE,
         currentPairKey: 'substitute_1',
         isInactive: false,
         isCaptain: true
@@ -50,7 +50,7 @@ describe('playerUtils', () => {
       name: 'Player 3',
       stats: {
         currentStatus: PLAYER_STATUS.GOALIE,
-        currentRole: 'GOALIE',
+        currentRole: PLAYER_ROLES.GOALIE,
         currentPairKey: 'goalie',
         isInactive: false,
         isCaptain: false
@@ -61,7 +61,7 @@ describe('playerUtils', () => {
       name: 'Player 4',
       stats: {
         currentStatus: PLAYER_STATUS.SUBSTITUTE,
-        currentRole: 'SUBSTITUTE',
+        currentRole: PLAYER_ROLES.SUBSTITUTE,
         currentPairKey: 'substitute_2',
         isInactive: true,
         isCaptain: false
@@ -87,6 +87,7 @@ describe('playerUtils', () => {
         name: 'Alice',
         stats: {
           startedMatchAs: null,
+          startedAtPosition: null,
           periodsAsGoalie: 0,
           periodsAsDefender: 0,
           periodsAsAttacker: 0,

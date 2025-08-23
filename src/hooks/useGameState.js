@@ -590,7 +590,7 @@ export function useGameState() {
         if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
           let newStartedMatchAs = null;
           if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
-          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.ON_FIELD;
+          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
           else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
           
           initialStats.startedMatchAs = newStartedMatchAs;

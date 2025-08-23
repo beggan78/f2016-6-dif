@@ -95,7 +95,7 @@ export function IndividualFormation({
 
     // Get utilities
     const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(quickTapHandlers, position);
-    const positionDisplayName = isGoaliePosition ? 'Goalie' : getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
+    const positionDisplayName = getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
 
     return (

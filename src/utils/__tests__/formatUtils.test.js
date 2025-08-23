@@ -182,7 +182,7 @@ describe('generateStatsText', () => {
     {
       name: 'Player Two',
       stats: {
-        startedMatchAs: PLAYER_ROLES.ON_FIELD,
+        startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         timeOnFieldSeconds: 600,
         timeAsDefenderSeconds: 400,
         timeAsAttackerSeconds: 200,
@@ -294,7 +294,7 @@ describe('generateStatsText', () => {
     const playerWithLongName = {
       name: 'Very Long Player Name That Might Cause Issues',
       stats: {
-        startedMatchAs: PLAYER_ROLES.ON_FIELD,
+        startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         timeOnFieldSeconds: 300,
         timeAsDefenderSeconds: 150,
         timeAsAttackerSeconds: 150,

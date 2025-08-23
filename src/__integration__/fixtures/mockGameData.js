@@ -354,7 +354,7 @@ export const performanceTestData = {
         timeAsDefenderSeconds: i * 15,
         timeAsSubSeconds: i > 10 ? i * 5 : 0,
         timeAsGoalieSeconds: i === 0 ? i * 60 : 0,
-        startedMatchAs: i < 4 ? PLAYER_ROLES.ON_FIELD : PLAYER_ROLES.SUBSTITUTE,
+        startedMatchAs: i < 4 ? PLAYER_ROLES.FIELD_PLAYER : PLAYER_ROLES.SUBSTITUTE,
         periodsAsGoalie: i === 0 ? 1 : 0,
         periodsAsDefender: i < 10 ? 1 : 0,
         periodsAsAttacker: i >= 10 && i < 20 ? 1 : 0

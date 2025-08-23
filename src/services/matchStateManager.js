@@ -392,8 +392,8 @@ export function mapStartingRoleToDBRole(gameStateRole) {
   // Normalize any role format to PLAYER_ROLES constant, then convert to database format
   const normalizedRole = normalizeRole(gameStateRole);
   
-  // For 'ON_FIELD', default to 'defender' since we track actual time in specific roles
-  if (normalizedRole === PLAYER_ROLES.ON_FIELD) {
+  // For 'FIELD_PLAYER', default to 'defender' since we track actual time in specific roles
+  if (normalizedRole === PLAYER_ROLES.FIELD_PLAYER) {
     return roleToDatabase(PLAYER_ROLES.DEFENDER);
   }
   

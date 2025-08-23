@@ -1,7 +1,7 @@
 import { FORMATIONS } from '../constants/teamConfiguration';
 import { getFormationDefinition } from './formationConfigUtils';
 import { PLAYER_ROLES } from '../constants/playerConstants';
-import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
+import { roleToDatabase } from '../constants/roleConstants';
 
 // Role constants for formation logic (database format for consistency)
 const DB_DEFENDER = roleToDatabase(PLAYER_ROLES.DEFENDER);

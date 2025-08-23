@@ -453,7 +453,7 @@ export function getBottomSubstitutePosition(teamConfig) {
 export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
   const definition = getModeDefinition(teamConfig);
   if (!definition) {
-    return { currentRole: PLAYER_ROLES.SUBSTITUTE, currentStatus: PLAYER_ROLES.SUBSTITUTE };
+    return { currentRole: PLAYER_ROLES.SUBSTITUTE, currentStatus: PLAYER_STATUS.SUBSTITUTE };
   }
 
   const isPairs = teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS;
@@ -526,7 +526,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
   // Default to substitute if not found in formation
   return {
     currentRole: PLAYER_ROLES.SUBSTITUTE,
-    currentStatus: PLAYER_ROLES.SUBSTITUTE,
+    currentStatus: PLAYER_STATUS.SUBSTITUTE,
     currentPairKey: isPairs ? 'subPair' : 'substitute_1'
   };
 }

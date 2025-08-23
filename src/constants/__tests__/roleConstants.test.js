@@ -33,9 +33,9 @@ describe('roleConstants', () => {
       });
     });
 
-    it('should have goal scoring priorities for all PLAYER_ROLES except ON_FIELD', () => {
+    it('should have goal scoring priorities for all PLAYER_ROLES except FIELD_PLAYER', () => {
       Object.values(PLAYER_ROLES).forEach(role => {
-        if (role !== PLAYER_ROLES.ON_FIELD) {
+        if (role !== PLAYER_ROLES.FIELD_PLAYER) {
           expect(GOAL_SCORING_PRIORITY[role]).toBeDefined();
           expect(typeof GOAL_SCORING_PRIORITY[role]).toBe('number');
         }
@@ -50,6 +50,7 @@ describe('roleConstants', () => {
       expect(roleToDatabase(PLAYER_ROLES.ATTACKER)).toBe('attacker');
       expect(roleToDatabase(PLAYER_ROLES.MIDFIELDER)).toBe('midfielder');
       expect(roleToDatabase(PLAYER_ROLES.SUBSTITUTE)).toBe('substitute');
+      expect(roleToDatabase(PLAYER_ROLES.FIELD_PLAYER)).toBe('defender');
     });
 
     it('should handle null/undefined gracefully', () => {
@@ -93,6 +94,7 @@ describe('roleConstants', () => {
       expect(roleToDisplay(PLAYER_ROLES.ATTACKER)).toBe('Attacker');
       expect(roleToDisplay(PLAYER_ROLES.MIDFIELDER)).toBe('Midfielder');
       expect(roleToDisplay(PLAYER_ROLES.SUBSTITUTE)).toBe('Substitute');
+      expect(roleToDisplay(PLAYER_ROLES.FIELD_PLAYER)).toBe('Field');
     });
 
     it('should handle null/undefined gracefully', () => {
@@ -195,8 +197,8 @@ describe('roleConstants', () => {
   describe('Round-trip conversions', () => {
     it('should maintain consistency in round-trip conversions', () => {
       Object.values(PLAYER_ROLES).forEach(role => {
-        if (role === PLAYER_ROLES.ON_FIELD) {
-          // ON_FIELD is a special case that maps to 'defender' in database
+        if (role === PLAYER_ROLES.FIELD_PLAYER) {
+          // FIELD_PLAYER is a special case that maps to 'defender' in database
           const toDb = roleToDatabase(role);
           expect(toDb).toBe('defender');
           const backFromDb = roleFromDatabase(toDb);
@@ -208,8 +210,8 @@ describe('roleConstants', () => {
           expect(backFromDb).toBe(role);
         }
 
-        // PLAYER_ROLES -> Display -> PLAYER_ROLES (except ON_FIELD)
-        if (role !== PLAYER_ROLES.ON_FIELD) {
+        // PLAYER_ROLES -> Display -> PLAYER_ROLES (except FIELD_PLAYER)
+        if (role !== PLAYER_ROLES.FIELD_PLAYER) {
           const toDisplay = roleToDisplay(role);
           const backFromDisplay = roleFromDisplay(toDisplay);
           expect(backFromDisplay).toBe(role);

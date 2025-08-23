@@ -170,7 +170,7 @@ export function StatsScreen({
                   <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{formatPlayerName(player)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">
                     {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
-                        player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
+                        player.stats.startedMatchAs === PLAYER_ROLES.FIELD_PLAYER ? 'S' :
                             player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-'}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(goaliePoints)}</td>

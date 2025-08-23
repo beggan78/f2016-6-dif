@@ -17,7 +17,7 @@ export const DB_ROLE_VALUES = {
   [PLAYER_ROLES.ATTACKER]: 'attacker',
   [PLAYER_ROLES.MIDFIELDER]: 'midfielder',
   [PLAYER_ROLES.SUBSTITUTE]: 'substitute',
-  [PLAYER_ROLES.ON_FIELD]: 'defender' // Default mapping for legacy ON_FIELD
+  [PLAYER_ROLES.FIELD_PLAYER]: 'defender' // Default mapping for generic field players
 };
 
 /**
@@ -29,7 +29,7 @@ export const DISPLAY_ROLE_VALUES = {
   [PLAYER_ROLES.ATTACKER]: 'Attacker', 
   [PLAYER_ROLES.MIDFIELDER]: 'Midfielder',
   [PLAYER_ROLES.SUBSTITUTE]: 'Substitute',
-  [PLAYER_ROLES.ON_FIELD]: 'Field'
+  [PLAYER_ROLES.FIELD_PLAYER]: 'Field'
 };
 
 /**
@@ -52,7 +52,7 @@ export const DISPLAY_TO_ROLE_MAP = {
   'Attacker': PLAYER_ROLES.ATTACKER,
   'Midfielder': PLAYER_ROLES.MIDFIELDER,
   'Substitute': PLAYER_ROLES.SUBSTITUTE,
-  'Field': PLAYER_ROLES.ON_FIELD
+  'Field': PLAYER_ROLES.FIELD_PLAYER
 };
 
 /**

@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { PLAYER_STATUS } from '../constants/playerConstants';
+import { roleToDatabase } from '../constants/roleConstants';
 
 /**
  * DataSyncManager - Handles synchronization between localStorage and Supabase database
@@ -369,11 +371,11 @@ export class DataSyncManager {
 
   mapPlayerRoleToDatabase(role) {
     const roleMap = {
-      'goalie': 'goalie',
-      'on_field': 'attacker', // Default to attacker for field players
-      'substitute': 'substitute'
+      'goalie': roleToDatabase('GOALIE'),
+      [PLAYER_STATUS.ON_FIELD]: roleToDatabase('ATTACKER'), // Default to attacker for field players
+      [PLAYER_STATUS.SUBSTITUTE]: roleToDatabase('SUBSTITUTE')
     };
-    return roleMap[role] || 'substitute';
+    return roleMap[role] || roleToDatabase('SUBSTITUTE');
   }
 
   mapEventTypeToDatabase(eventType) {
