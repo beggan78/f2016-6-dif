@@ -17,26 +17,22 @@ const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
  */
 export const convertTeamPlayerToGamePlayer = (teamPlayer) => {
   return {
-    id: teamPlayer.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: teamPlayer.id,
     name: teamPlayer.name,
     jerseyNumber: teamPlayer.jersey_number || null,
-    role: 'defender', // Default role
-    status: 'inactive', // Default status - not in current game
-    positionName: 'bench', // Default position
-    pairId: null,
-    lastSubTime: null,
-    lastStintStartTimeEpoch: null,
     stats: {
-      timeOnFieldSeconds: 0,
-      timeAsAttackerSeconds: 0,
-      timeAsDefenderSeconds: 0,
-      timeAsGoalieSeconds: 0,
-      timeAsMidfielderSeconds: 0,
-      substitutionsOut: 0,
-      substitutionsIn: 0,
-      totalGameTime: 0,
-      isCaptain: false,
-      isActive: teamPlayer.on_roster !== false // Default to active if not specified
+        currentPosition: null,
+        currentRole: null,
+        currentStatus: "substitute",
+        isCaptain: false,
+        isInactive: false,
+        lastStintStartTimeEpoch: null,
+        startedMatchAs: null,
+        timeAsAttackerSeconds: 0,
+        timeAsDefenderSeconds: 0,
+        timeAsGoalieSeconds: 0,
+        timeAsMidfielderSeconds: 0,
+        timeOnFieldSeconds: 0
     }
   };
 };
@@ -53,11 +49,7 @@ export const mergePlayerData = (teamPlayer, existingGamePlayer) => {
     // Update basic info from team roster
     name: teamPlayer.name,
     jerseyNumber: teamPlayer.jersey_number || existingGamePlayer.jerseyNumber,
-    stats: {
-      ...existingGamePlayer.stats,
-      // Update roster status from team data
-      isActive: teamPlayer.on_roster !== false
-    }
+    // stats object is already preserved by ...existingGamePlayer spread
   };
 };
 
@@ -69,6 +61,10 @@ export const mergePlayerData = (teamPlayer, existingGamePlayer) => {
  * @returns {Array} Updated allPlayers array
  */
 export const syncTeamPlayersToGameState = (teamPlayers = [], existingAllPlayers = []) => {
+  // Handle null/undefined inputs
+  teamPlayers = teamPlayers || [];
+  existingAllPlayers = existingAllPlayers || [];
+  
   if (!Array.isArray(teamPlayers) || teamPlayers.length === 0) {
     // No team players to sync, return existing players
     return existingAllPlayers;
@@ -77,7 +73,7 @@ export const syncTeamPlayersToGameState = (teamPlayers = [], existingAllPlayers 
   // Create lookup for existing players by ID
   const existingPlayersById = {};
   existingAllPlayers.forEach(player => {
-    if (player.id) {
+    if (player && player.id) {
       existingPlayersById[player.id] = player;
     }
   });
@@ -85,7 +81,7 @@ export const syncTeamPlayersToGameState = (teamPlayers = [], existingAllPlayers 
   // Create lookup for team players by ID  
   const teamPlayersById = {};
   teamPlayers.forEach(player => {
-    if (player.id) {
+    if (player && player.id) {
       teamPlayersById[player.id] = player;
     }
   });
@@ -93,8 +89,12 @@ export const syncTeamPlayersToGameState = (teamPlayers = [], existingAllPlayers 
   // Process all players
   const syncedPlayers = [];
 
-  // 1. Add/update players from team roster
+  // 1. Add/update players from team roster (only valid players with IDs)
   teamPlayers.forEach(teamPlayer => {
+    if (!teamPlayer || !teamPlayer.id) {
+      return; // Skip players without valid IDs
+    }
+    
     const existingPlayer = existingPlayersById[teamPlayer.id];
     
     if (existingPlayer) {
@@ -122,10 +122,10 @@ export const syncTeamPlayersToGameState = (teamPlayers = [], existingAllPlayers 
  * @param {Array} updatedAllPlayers - Updated players array
  * @returns {boolean} Success status
  */
-export const syncPlayersToLocalStorage = (updatedAllPlayers) => {
+export const syncPlayersToLocalStorage = (updatedAllPlayers, manager = persistenceManager) => {
   try {
     // Load current state
-    const currentState = persistenceManager.loadState();
+    const currentState = manager.loadState();
     
     // Update with new players
     const updatedState = {
@@ -134,7 +134,7 @@ export const syncPlayersToLocalStorage = (updatedAllPlayers) => {
     };
     
     // Save to localStorage
-    persistenceManager.saveState(updatedState);
+    manager.saveState(updatedState);
     
     console.log('✅ Players synced to localStorage:', updatedAllPlayers.length, 'players');
     return true;
@@ -150,13 +150,13 @@ export const syncPlayersToLocalStorage = (updatedAllPlayers) => {
  * @param {Array} currentAllPlayers - Current game state players  
  * @returns {Object} Result with success status and updated players
  */
-export const syncTeamRosterToGameState = (teamPlayers, currentAllPlayers) => {
+export const syncTeamRosterToGameState = (teamPlayers, currentAllPlayers, manager = persistenceManager) => {
   try {
     // Sync roster data into game state format
     const syncedPlayers = syncTeamPlayersToGameState(teamPlayers, currentAllPlayers);
     
     // Save to localStorage
-    const saveSuccess = syncPlayersToLocalStorage(syncedPlayers);
+    const saveSuccess = syncPlayersToLocalStorage(syncedPlayers, manager);
     
     if (saveSuccess) {
       console.log('✅ Team roster successfully synced to game state');
@@ -189,11 +189,15 @@ export const syncTeamRosterToGameState = (teamPlayers, currentAllPlayers) => {
  * @returns {Object} Analysis of missing players
  */
 export const analyzePlayerSync = (teamPlayers = [], allPlayers = []) => {
-  const teamPlayerIds = new Set(teamPlayers.map(p => p.id).filter(Boolean));
-  const gamePlayerIds = new Set(allPlayers.map(p => p.id).filter(Boolean));
+  // Handle null/undefined inputs
+  teamPlayers = teamPlayers || [];
+  allPlayers = allPlayers || [];
   
-  const missingFromGame = teamPlayers.filter(tp => tp.id && !gamePlayerIds.has(tp.id));
-  const extraInGame = allPlayers.filter(gp => gp.id && !teamPlayerIds.has(gp.id));
+  const teamPlayerIds = new Set(teamPlayers.map(p => p && p.id).filter(Boolean));
+  const gamePlayerIds = new Set(allPlayers.map(p => p && p.id).filter(Boolean));
+  
+  const missingFromGame = teamPlayers.filter(tp => tp && tp.id && !gamePlayerIds.has(tp.id));
+  const extraInGame = allPlayers.filter(gp => gp && gp.id && !teamPlayerIds.has(gp.id));
   
   return {
     needsSync: missingFromGame.length > 0,

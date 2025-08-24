@@ -106,11 +106,16 @@ export function ConfigurationScreen({
       teamPlayersCount: teamPlayers.length 
     });
     
-    if (!currentTeam || !teamPlayers || teamPlayers.length === 0 || !syncPlayersFromTeamRoster) {
+    // Check sync requirements with descriptive variables
+    const hasCurrentTeam = !!currentTeam;
+    const hasTeamPlayers = teamPlayers && teamPlayers.length > 0;
+    const hasSyncFunction = !!syncPlayersFromTeamRoster;
+    
+    if (!hasCurrentTeam || !hasTeamPlayers || !hasSyncFunction) {
       console.log('🚫 Sync skipped - missing requirements:', {
-        hasCurrentTeam: !!currentTeam,
-        hasTeamPlayers: teamPlayers.length > 0,
-        hasSyncFunction: !!syncPlayersFromTeamRoster
+        hasCurrentTeam,
+        hasTeamPlayers,
+        hasSyncFunction
       });
       return; // No team selected or no sync function available
     }
