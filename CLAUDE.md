@@ -44,6 +44,7 @@ Mobile-first web application for coaching youth soccer teams. Manages player rot
 - **Components**: `/src/components/` - React UI components
 - **Constants**: `/src/constants/` - Domain constants and configuration
 - **Utils**: `/src/utils/` - Cross-screen utilities
+- **Services**: `/src/services/` - Data persistence and external APIs (see `/src/services/README.md`)
 
 ### Key Architecture Patterns
 1. **Pure Functions**: All game state transitions are pure functions (input → output, no side effects)
@@ -160,6 +161,15 @@ Modern composite team configuration system using four components:
   - **Test Coverage**: Added 4 comprehensive test cases covering both normal time accumulation and pause time preservation across different team modes
   - **Documentation**: Updated substitutionManager.js with JSDoc comments documenting conditional time tracking logic
 
+- **Match Saving and Player Statistics System**: Implemented comprehensive match lifecycle management with database persistence
+  - **Architecture**: Three-state lifecycle (`running` → `finished` → `confirmed`) with proper state transitions
+  - **Match Creation**: Automatic database record creation on first period start with duplicate prevention
+  - **Player Statistics**: Complete time tracking across all roles with accurate goal counting integration  
+  - **Role Mapping**: Critical distinction between formation positions and database roles via `mapFormationPositionToRole()`
+  - **State Management**: Proper `currentMatchId` and `matchCreationAttempted` lifecycle with `clearStoredState()` integration
+  - **User Interface**: StatsScreen "Save Match to History" workflow for authenticated users
+  - **Data Integrity**: Bulk player stats insertion with comprehensive validation and error handling
+  - **Documentation**: Complete service documentation in `/src/services/README.md` with AI-focused integration patterns
 
 ## Notes for Future Sessions
 - Always use existing utilities rather than reimplementing
