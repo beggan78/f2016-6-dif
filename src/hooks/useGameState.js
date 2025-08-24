@@ -16,6 +16,7 @@ import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
+import { syncTeamRosterToGameState, analyzePlayerSync } from '../utils/playerSyncUtils';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -1611,6 +1612,34 @@ export function useGameState() {
     return newConfig;
   }, [selectedFormation, updateTeamConfig]);
 
+  // Sync team roster players to game state
+  const syncPlayersFromTeamRoster = useCallback((teamPlayers) => {
+    try {
+      const analysis = analyzePlayerSync(teamPlayers, allPlayers);
+      console.log('📊 Player sync analysis:', analysis.summary);
+      
+      if (analysis.needsSync) {
+        console.log('🔄 Syncing missing players to game state...');
+        const syncResult = syncTeamRosterToGameState(teamPlayers, allPlayers);
+        
+        if (syncResult.success) {
+          setAllPlayers(syncResult.players);
+          console.log('✅ Players synced successfully:', syncResult.message);
+          return { success: true, message: syncResult.message };
+        } else {
+          console.warn('⚠️ Player sync failed:', syncResult.error);
+          return { success: false, error: syncResult.error };
+        }
+      } else {
+        console.log('✅ All team players already available in game state');
+        return { success: true, message: 'No sync needed' };
+      }
+    } catch (error) {
+      console.error('❌ Player sync error:', error);
+      return { success: false, error: error.message };
+    }
+  }, [allPlayers]);
+
   return {
     // State
     allPlayers,
@@ -1705,6 +1734,9 @@ export function useGameState() {
     updateTeamConfig,
     updateFormationSelection,
     createTeamConfigFromSquadSize,
+    
+    // Player Synchronization
+    syncPlayersFromTeamRoster,
     
     // Enhanced persistence actions
     createManualBackup,
