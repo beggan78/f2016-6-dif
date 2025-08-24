@@ -93,6 +93,7 @@ function AppContent() {
 
   const {
     currentTeam,
+    teamPlayers,
     hasPendingRequests,
     pendingRequestsCount,
     canManageTeam,
@@ -519,6 +520,11 @@ function AppContent() {
   };
 
   const handleRestartMatch = () => {
+    console.log('🎮 New Game clicked - current state:', {
+      currentTeam: currentTeam?.name,
+      teamPlayersCount: teamPlayers.length
+    });
+    
     // Clear all game events from previous games
     clearAllEvents();
     
@@ -529,7 +535,26 @@ function AppContent() {
     gameState.setView('config');
     gameState.setCurrentPeriodNumber(1);
     gameState.setGameLog([]);
-    gameState.setAllPlayers(initializePlayers(initialRoster));
+    
+    // Sync team roster if available, otherwise use initial roster
+    if (currentTeam && teamPlayers && teamPlayers.length > 0 && gameState.syncPlayersFromTeamRoster) {
+      console.log('🔄 New Game: Syncing team roster players...');
+      try {
+        const result = gameState.syncPlayersFromTeamRoster(teamPlayers);
+        if (result.success) {
+          console.log('✅ New Game: Team players synced successfully');
+        } else {
+          console.warn('⚠️ New Game: Team sync failed, using initial roster');
+          gameState.setAllPlayers(initializePlayers(initialRoster));
+        }
+      } catch (error) {
+        console.warn('⚠️ New Game: Team sync error, using initial roster:', error);
+        gameState.setAllPlayers(initializePlayers(initialRoster));
+      }
+    } else {
+      console.log('🔄 New Game: No team selected, using initial roster');
+      gameState.setAllPlayers(initializePlayers(initialRoster));
+    }
     gameState.setSelectedSquadIds([]);
     gameState.setPeriodGoalieIds({});
     gameState.setFormation({
@@ -696,6 +721,7 @@ function AppContent() {
             authModal={authModal}
             setView={gameState.setView}
             setViewWithData={setViewWithData}
+            syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
           />
         );
       case VIEWS.PERIOD_SETUP:
