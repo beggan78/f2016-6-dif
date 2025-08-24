@@ -43,11 +43,6 @@ export function StatsScreen({
   const [saving, setSaving] = useState(false);
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
-  
-  // DEBUG: Log currentMatchId prop
-  console.log('📊 [StatsScreen] Received currentMatchId:', currentMatchId);
-
-
 
   const copyStatsToClipboard = async () => {
     const statsText = generateStatsText(squadForStats, ownScore, opponentScore, opponentTeam);
@@ -71,19 +66,27 @@ export function StatsScreen({
         return;
       }
 
-      console.log('💾 Confirming match in database:', currentMatchId);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('💾 Confirming match in database:', currentMatchId);
+      }
       
       const result = await updateMatchToConfirmed(currentMatchId);
       
       if (result.success) {
-        console.log('✅ Match confirmed successfully');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Match confirmed successfully');
+        }
         
         // Insert player match statistics
-        console.log('📊 Inserting player match statistics...');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 Inserting player match statistics...');
+        }
         const playerStatsResult = await insertPlayerMatchStats(currentMatchId, allPlayers, goalScorers, matchEvents);
         
         if (playerStatsResult.success) {
-          console.log(`✅ Player stats inserted: ${playerStatsResult.inserted} players`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`✅ Player stats inserted: ${playerStatsResult.inserted} players`);
+          }
           setSaveSuccess(true);
           
           // Clear success message after 3 seconds
@@ -112,7 +115,9 @@ export function StatsScreen({
 
   const handleViewMatchHistory = () => {
     // TODO: Navigate to match history view
-    console.log('Navigating to match history...');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Navigating to match history...');
+    }
   };
 
 

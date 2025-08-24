@@ -51,7 +51,9 @@ export async function createMatch(matchData) {
       state: 'running' // Explicit state (though it's also the default)
     };
 
-    console.log('🏃 Creating match record:', matchRecord);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🏃 Creating match record:', matchRecord);
+    }
 
     const { data, error } = await supabase
       .from('match')
@@ -67,7 +69,9 @@ export async function createMatch(matchData) {
       };
     }
 
-    console.log('✅ Match created successfully:', data.id);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Match created successfully:', data.id);
+    }
     return {
       success: true,
       matchId: data.id
@@ -116,7 +120,9 @@ export async function updateMatchToFinished(matchId, finalStats) {
       fair_play_award: finalStats.fairPlayAwardId || null
     };
 
-    console.log('🏁 Updating match to finished:', matchId, updateData);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🏁 Updating match to finished:', matchId, updateData);
+    }
 
     const { error } = await supabase
       .from('match')
@@ -132,7 +138,9 @@ export async function updateMatchToFinished(matchId, finalStats) {
       };
     }
 
-    console.log('✅ Match updated to finished successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Match updated to finished successfully');
+    }
     return { success: true };
 
   } catch (error) {
@@ -151,7 +159,9 @@ export async function updateMatchToFinished(matchId, finalStats) {
  */
 export async function updateMatchToConfirmed(matchId) {
   try {
-    console.log('✅ Updating match to confirmed:', matchId);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Updating match to confirmed:', matchId);
+    }
 
     const { error } = await supabase
       .from('match')
@@ -167,7 +177,9 @@ export async function updateMatchToConfirmed(matchId) {
       };
     }
 
-    console.log('✅ Match confirmed successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Match confirmed successfully');
+    }
     return { success: true };
 
   } catch (error) {
@@ -416,29 +428,6 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
   
   let goalCount = 0;
   
-  // DEBUG: Log detailed event analysis once only to avoid spam  
-  if (playerId && matchEvents && matchEvents.length > 0 && !countPlayerGoals._debugLogged) {
-    countPlayerGoals._debugLogged = true;
-
-    // Show event types breakdown
-    const eventTypes = {};
-    matchEvents.forEach(event => {
-      eventTypes[event.type] = (eventTypes[event.type] || 0) + 1;
-    });
-
-    // Show sample goal events if any exist
-    const goalEvents = matchEvents.filter(event => 
-      (event.type === EVENT_TYPES.GOAL_SCORED || event.type === EVENT_TYPES.GOAL_CONCEDED) && !event.undone
-    );
-
-    // Show scorer data structure for goal events
-    goalEvents.slice(0, 3).forEach((event, index) => {
-      // eslint-disable-next-line no-unused-vars
-      const goalScorerData = goalScorers[event.id];
-      // eslint-disable-next-line no-unused-vars
-      const eventScorerData = event.data?.scorerId;
-    });
-  }
   
   // Count goals from match events (same logic as PlayerStatsTable)
   if (matchEvents && Array.isArray(matchEvents)) {
@@ -534,7 +523,9 @@ export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = 
       };
     }
 
-    console.log('📊 Inserting player match stats:', playerStatsData.length, 'players');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Inserting player match stats:', playerStatsData.length, 'players');
+    }
 
     const { data, error } = await supabase
       .from('player_match_stats')
@@ -549,7 +540,9 @@ export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = 
       };
     }
 
-    console.log('✅ Player match stats inserted successfully:', data?.length || 0, 'records');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Player match stats inserted successfully:', data?.length || 0, 'records');
+    }
     return {
       success: true,
       inserted: data?.length || 0

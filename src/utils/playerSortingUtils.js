@@ -94,9 +94,6 @@ export const sortPlayersByGoalScoringRelevance = (players) => {
   // Create a copy to avoid mutating the original array
   const sortedPlayers = [...players];
 
-  // DEBUG: Log initial player order
-  console.log(`🔄 [SORT] Initial player order:`, sortedPlayers.map(p => `${p.name}(${getPlayerCurrentRole(p)})`).join(', '));
-
   // Sort players by relevance and then by name within each category
   sortedPlayers.sort((playerA, playerB) => {
     const roleA = getPlayerCurrentRole(playerA);

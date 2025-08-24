@@ -365,13 +365,6 @@ export class GamePersistenceManager extends PersistenceManager {
       matchCreationAttempted: gameState.matchCreationAttempted,
     };
 
-    // DEBUG: Log currentMatchId saving
-    console.log('💾 [GamePersistenceManager] Saving currentMatchId:', {
-      currentMatchId: stateToSave.currentMatchId,
-      matchCreationAttempted: stateToSave.matchCreationAttempted,
-      view: stateToSave.view
-    });
-
     return this.saveState(stateToSave);
   }
 
