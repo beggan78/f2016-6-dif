@@ -433,7 +433,9 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
 
     // Show scorer data structure for goal events
     goalEvents.slice(0, 3).forEach((event, index) => {
+      // eslint-disable-next-line no-unused-vars
       const goalScorerData = goalScorers[event.id];
+      // eslint-disable-next-line no-unused-vars
       const eventScorerData = event.data?.scorerId;
     });
   }
@@ -480,8 +482,11 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
   const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 
   // DEBUG: Log starting position mapping
+  // eslint-disable-next-line no-unused-vars
   const startedAtPosition = player.stats.startedAtPosition;
+  // eslint-disable-next-line no-unused-vars
   const startedMatchAs = player.stats.startedMatchAs;
+  // eslint-disable-next-line no-unused-vars
   const currentRole = player.stats.currentRole;
 
   return {

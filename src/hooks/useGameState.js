@@ -335,11 +335,14 @@ export function useGameState() {
       timerPauseStartTime,
       totalMatchPausedDuration,
       captainId,
+      // Match lifecycle state management
+      currentMatchId,
+      matchCreationAttempted,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted]);
 
 
 
@@ -890,6 +893,10 @@ export function useGameState() {
       
       // Clear captain assignment
       setCaptainId(null);
+      
+      // Clear match lifecycle state to prevent ID reuse
+      setCurrentMatchId(null);
+      setMatchCreationAttempted(false);
     } else {
       console.warn('Failed to clear game events');
     }
