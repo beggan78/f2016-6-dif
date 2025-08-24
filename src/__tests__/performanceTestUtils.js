@@ -165,7 +165,7 @@ export const createLargeDataset = {
    */
   events: (count) => Array.from({ length: count }, (_, i) => ({
     id: `event-${i}`,
-    type: ['substitution', 'position_change', 'goalie_change', 'goal_home', 'match_start'][i % 5],
+    type: ['substitution', 'position_change', 'goalie_change', 'goal_scored', 'match_start'][i % 5],
     timestamp: 1000000000000 + (i * 15000),
     matchTime: `${Math.floor(i / 4)}:${String((i * 15) % 60).padStart(2, '0')}`,
     sequence: i + 1,

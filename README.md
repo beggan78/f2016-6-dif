@@ -4,25 +4,43 @@ A mobile-first web application designed for coaching youth soccer teams. This ap
 
 ## Overview
 
-Sport Wizard is built specifically for managing a soccer team of 14 players where 6-7 players are selected for each game. The app supports three distinct team modes: 7-player pairs, 6-player individual, and 7-player individual modes, each with intelligent rotation systems to ensure fair playing time distribution.
+Sport Wizard is built for managing youth soccer teams with flexible squad sizes (5-15 players) and multiple tactical formations. The app uses a modern composite configuration system combining format (5v5), squad size, formation (2-2 or 1-2-1), and substitution type (individual or pairs) to create customized team management experiences with intelligent rotation systems that ensure fair playing time distribution.
 
 ### Key Features
 
-- **Smart Player Selection**: Choose 6 or 7 players from your 14-player roster for each game
-- **Three Team Modes**: Supports pair-based (7 players), 6-player individual, and 7-player individual formations
+#### Core Game Management
+- **Smart Player Selection**: Choose players from flexible squad sizes (5-15 players supported)
+- **Multiple Formations**: Support for 2-2 (classic) and 1-2-1 (tactical) formations with midfielder roles
+- **Flexible Team Modes**: Supports pair-based substitutions and individual player rotations
 - **Real-time Game Management**: Dual timers track match time and substitution intervals
 - **Automated Substitution Planning**: AI-powered recommendations for optimal player rotations
-- **Fair Time Distribution**: Comprehensive time tracking ensures equitable playing opportunities
-- **Advanced Visual Indicators**: Dual-layer substitution indicators for complex rotation patterns
+- **Fair Time Distribution**: Comprehensive time tracking ensures equitable playing opportunities across all roles
+
+#### Advanced Features
+- **Authentication System**: Full user accounts with secure login, registration, and profile management
+- **Team Management**: Create teams, invite members, manage rosters and club affiliations
+- **Match History**: Complete database persistence of matches with detailed player statistics
+- **Tactical Board**: Interactive drag-and-drop tactical planning with visual formations
+- **Match Reports**: Comprehensive event logging and post-game analysis with exportable statistics
+- **Formation Voting**: Collaborative team formation decisions with voting system
+- **Goal Tracking**: Real-time goal scoring with player attribution and event logging
+
+#### User Experience
+- **Advanced Visual Indicators**: Dual-layer substitution indicators with opacity differentiation
 - **Mobile-Optimized**: Touch-friendly interface designed for sideline use
-- **Persistent State**: Game state is preserved through browser refreshes
+- **Browser Navigation**: Seamless back button integration and navigation flow
+- **Persistent State**: Game state preserved through browser refreshes and database synchronization
+- **Offline Capability**: Local storage ensures functionality without internet connection
 
 ## Game Format
 
 ### Field Setup
-- **5v5 Format**: 1 goalie + 2 defenders + 2 attackers per team
+- **5v5 Format**: 1 goalie + 4 field players per team
+- **Formations Available**: 
+  - **2-2 Formation**: 2 defenders + 2 attackers (classic setup)
+  - **1-2-1 Formation**: 1 defender + 2 midfielders + 1 attacker (tactical flexibility)
 - **Configurable Periods**: 1-3 periods, each 10-30 minutes (default: 3 periods of 15 minutes)
-- **Substitution Strategy**: Regular rotations approximately every 2 minutes
+- **Substitution Strategy**: Regular rotations approximately every 2 minutes with formation-aware role tracking
 
 ### Team Configurations
 
@@ -72,11 +90,48 @@ Sport Wizard is built specifically for managing a soccer team of 14 players wher
 - **Quick Substitution**: One-tap substitution with smooth animations and glow effects
 
 ### 4. Statistics & Analysis
-- Comprehensive playing time tracking
-- Points-based role distribution system
-- Attacker vs Defender time balance tracking
-- Exportable statistics
-- Historical game data
+- Comprehensive playing time tracking across all roles (including midfielder for 1-2-1 formation)
+- Points-based role distribution system with formation-aware calculations
+- Role balance tracking (Attacker vs Defender vs Midfielder time)
+- Real-time goal tracking with player attribution
+- Exportable statistics for clipboard sharing
+- **Database-Backed History**: Persistent match records with detailed player statistics
+- **Advanced Analytics**: Historical performance trends and role distribution analysis
+
+## User Management & Authentication
+
+### Account System
+- **User Registration**: Create account with email verification
+- **Secure Login**: JWT-based authentication with session management
+- **Profile Management**: Complete user profiles with personal information
+- **Password Security**: Secure password reset and change functionality
+
+### Team Management
+- **Team Creation**: Set up teams with custom names and configurations
+- **Member Invitations**: Invite users via email to join teams
+- **Role Management**: Assign coaches, assistants, and player roles
+- **Club Integration**: Associate teams with clubs and manage affiliations
+- **Roster Management**: Add, edit, and organize player information
+
+### Advanced Features
+
+#### Tactical Board
+- **Interactive Planning**: Drag-and-drop tactical board for formation setup
+- **Visual Formations**: Real-time visual representation of player positions
+- **Formation Templates**: Pre-configured 2-2 and 1-2-1 formation layouts
+- **Export Capabilities**: Save and share tactical arrangements
+
+#### Match Reports & Event Logging
+- **Real-time Event Tracking**: Comprehensive logging of all match events
+- **Goal Attribution**: Track individual player goals with timestamp accuracy
+- **Substitution History**: Complete record of all player changes and timings
+- **Exportable Reports**: Generate detailed match reports for analysis
+- **Event Replay**: Review match progression through event timeline
+
+#### Formation Voting System
+- **Collaborative Decisions**: Team-based voting for formation selections
+- **Democratic Process**: Weighted voting based on team member roles
+- **Formation Recommendations**: AI-suggested formations based on historical data
 
 ## 7-Player Individual Mode (Detailed)
 
@@ -278,17 +333,23 @@ For players not restricted by balancing rules:
 
 ## Technology Stack
 
-- **Frontend**: React 19 with Hooks
+- **Frontend**: React 18.2 with Hooks
+- **Backend**: Supabase (PostgreSQL database, authentication, real-time subscriptions)
 - **Styling**: Tailwind CSS for responsive design
 - **Icons**: Lucide React for consistent iconography
-- **State Management**: Custom hooks with localStorage persistence
+- **State Management**: Custom hooks with localStorage persistence and database synchronization
+- **Authentication**: Supabase Auth with JWT tokens and RLS (Row Level Security)
+- **Database**: PostgreSQL with real-time capabilities via Supabase
 - **Build Tool**: Create React App
+- **Testing**: Jest with React Testing Library (90%+ test coverage)
 
 ## Installation & Development
 
 ### Prerequisites
-- Node.js (version 14 or higher)
+- Node.js (version 18 or higher recommended)
 - npm or yarn package manager
+- Supabase account (for database and authentication)
+- Git (for version control)
 
 ### Getting Started
 
@@ -303,13 +364,29 @@ For players not restricted by balancing rules:
    npm install
    ```
 
-3. **Start development server**
+3. **Environment Configuration**
+   Create a `.env.local` file in the root directory with:
+   ```bash
+   REACT_APP_SUPABASE_URL=your_supabase_project_url
+   REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. **Database Setup** (Optional - for local development)
+   ```bash
+   # Install Supabase CLI
+   npm install -g supabase
+   
+   # Start local Supabase instance
+   supabase start
+   ```
+
+5. **Start development server**
    ```bash
    npm start
    ```
    The app will be available at `http://localhost:3000`
 
-4. **Build for production**
+6. **Build for production**
    ```bash
    npm run build
    ```
@@ -317,23 +394,59 @@ For players not restricted by balancing rules:
 ### Available Scripts
 
 - `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
+- `npm test` - Launches the test runner in interactive watch mode
+- `npm test -- --coverage` - Runs tests with coverage report (target: 90%+)
+- `npm test -- --watchAll=false` - Runs tests once without watch mode
+- `npm run test:performance` - Explicitly runs performance tests
+- `npm run build` - Builds the app for production with optimizations
+- `CI=true npm run build` - Production build with ESLint error checking
 
-## Team Roster
+### Development Guidelines
 
-There's a default set of players for testing purposes
+#### Testing Standards
+- **Minimum Coverage**: 90% test coverage required for all new code
+- **Test Types**: Unit tests, integration tests, and performance tests
+- **Testing Framework**: Jest with React Testing Library
+- **Performance Tests**: Environment-aware performance testing (lenient in CI)
 
-Additional players can be added temporarily during game configuration.
+#### Code Quality
+- **Linting**: ESLint with React hooks rules
+- **Code Style**: Prettier for consistent formatting
+- **Type Safety**: PropTypes for component validation
+- **Architecture**: Pure functions for game logic, hooks for state management
 
-## Statistics System
+## Player & Team Management
 
-The app uses a sophisticated points-based system to ensure fair role distribution:
+### Roster Management
+- **Default Players**: Built-in roster for testing and quick setup
+- **Dynamic Addition**: Add players during game configuration or team setup
+- **Persistent Rosters**: Database-backed player management for teams
+- **Player Profiles**: Detailed player information with statistics history
+- **Flexible Squad Sizes**: Support for 5-15 player squads with automatic position generation
 
+### Statistics System
+
+The app features a comprehensive multi-dimensional statistics system:
+
+#### Points-Based Fair Play System
 - **Total Points**: Each player receives exactly 3 points per game
 - **Goalie Points**: 1 point per period as goalie
-- **Outfield Points**: Remaining points split between defender and attacker roles based on time played
-- **Granularity**: Points awarded in 0.5 increments for precise tracking
+- **Outfield Points**: Remaining points split between roles based on actual time played
+- **Formation-Aware**: Supports 2-2 (defender/attacker) and 1-2-1 (defender/midfielder/attacker) formations
+- **Granularity**: Points awarded in 0.5 increments for precise fairness tracking
+
+#### Database-Backed Analytics
+- **Match History**: Complete record of all matches with detailed statistics
+- **Player Performance**: Individual goal scoring, role distribution, and playing time analysis
+- **Time Tracking**: Comprehensive tracking across all roles:
+  - Goalie time (separate tracking)
+  - Defender time
+  - Midfielder time (1-2-1 formation)
+  - Attacker time
+  - Substitute time
+  - Total field time (outfield only)
+- **Goal Attribution**: Real-time goal tracking with player attribution and event timestamps
+- **Historical Trends**: Long-term performance analysis and role balance tracking
 
 ## Mobile Optimization
 
@@ -347,20 +460,50 @@ The interface is specifically designed for mobile use during games:
 
 ## Browser Compatibility
 
-Optimized for modern mobile browsers including:
-- Safari (iOS)
-- Chrome (Android)
-- Chrome (Desktop)
-- Firefox
-- Edge
+Optimized for modern browsers with full PWA capabilities:
+- **Mobile**: Safari (iOS 14+), Chrome (Android 8+)
+- **Desktop**: Chrome (90+), Firefox (88+), Safari (14+), Edge (90+)
+- **Features**: Service workers, local storage, touch events, drag & drop
+- **Offline Support**: Core functionality available without internet connection
+
+## Architecture & Performance
+
+### Modern React Architecture
+- **Hooks-based**: Custom hooks for state management and side effects
+- **Pure Functions**: Game logic implemented as pure functions for predictability
+- **Component Isolation**: Clear separation between UI, logic, and data layers
+- **Error Boundaries**: Robust error handling and recovery mechanisms
+
+### Performance Optimizations
+- **Code Splitting**: Lazy loading of major components
+- **Memoization**: React.memo and useMemo for expensive calculations
+- **Virtual Scrolling**: Efficient rendering of large player lists
+- **Debounced Updates**: Optimized state updates for real-time features
+
+### Security Features
+- **JWT Authentication**: Secure token-based authentication with Supabase
+- **Row Level Security**: Database-level access control for multi-tenant data
+- **Input Sanitization**: Protection against XSS and injection attacks
+- **HTTPS Only**: Secure communication for all data transmission
 
 ## Contributing
 
-This project is tailored for the specific needs of DIF F16-6 team. For modifications or feature requests, please consider the existing game format and coaching requirements.
+### Development Workflow
+This project follows modern React development practices with:
+- **Test-Driven Development**: 90%+ test coverage requirement
+- **Continuous Integration**: Automated testing and deployment
+- **Code Review**: All changes require review and testing
+- **Documentation**: Comprehensive documentation for AI-assisted development
+
+### Architecture Guidelines
+- Game logic must be pure functions (no side effects)
+- UI components should be stateless when possible
+- Database operations must respect RLS policies
+- Performance tests must pass in CI environment
 
 ## License
 
-Private project for DIF F16-6 team coaching purposes.
+Private project for youth soccer team coaching purposes with Supabase integration.
 
 ---
 

@@ -1,4 +1,5 @@
 import { FORMATION_STYLES } from '../../components/game/formations/constants';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 /**
  * Game-screen utility function for calculating player styling
@@ -21,11 +22,11 @@ export function getPlayerStyling({
   if (isGoalie) {
     bgColor = FORMATION_STYLES.bgColors.goalie;
   } else if (isFieldPosition) {
-    if (role === 'DEFENDER') {
+    if (role === PLAYER_ROLES.DEFENDER) {
       bgColor = FORMATION_STYLES.bgColors.defenderField;
-    } else if (role === 'MIDFIELDER') {
+    } else if (role === PLAYER_ROLES.MIDFIELDER) {
       bgColor = FORMATION_STYLES.bgColors.midfielderField;
-    } else if (role === 'ATTACKER') {
+    } else if (role === PLAYER_ROLES.ATTACKER) {
       bgColor = FORMATION_STYLES.bgColors.field;
     } else {
       bgColor = FORMATION_STYLES.bgColors.field; // Default fallback

@@ -4,6 +4,8 @@
  */
 
 import { EVENT_TYPES, getMatchEvents, calculateMatchTime } from './gameEventLogger';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
+import { normalizeRole } from '../constants/roleConstants';
 
 /**
  * Validation error types
@@ -98,17 +100,18 @@ export const calculatePlayerTimeTotals = (events) => {
     if (playerStints[playerId]) {
       const stintDuration = endTime - playerStints[playerId].startTime;
       
-      if (status === 'on_field') {
+      if (status === PLAYER_STATUS.ON_FIELD) {
         playerTimes[playerId].timeOnField += stintDuration;
       }
       
-      if (role === 'Goalie') {
+      const normalizedRole = normalizeRole(role);
+      if (normalizedRole === PLAYER_ROLES.GOALIE) {
         playerTimes[playerId].timeAsGoalie += stintDuration;
-      } else if (role === 'Defender') {
+      } else if (normalizedRole === PLAYER_ROLES.DEFENDER) {
         playerTimes[playerId].timeAsDefender += stintDuration;
-      } else if (role === 'Attacker') {
+      } else if (normalizedRole === PLAYER_ROLES.ATTACKER) {
         playerTimes[playerId].timeAsAttacker += stintDuration;
-      } else if (role === 'Substitute') {
+      } else if (normalizedRole === PLAYER_ROLES.SUBSTITUTE) {
         playerTimes[playerId].timeAsSub += stintDuration;
       }
       
@@ -128,7 +131,7 @@ export const calculatePlayerTimeTotals = (events) => {
               playerStints[playerId] = {
                 startTime: event.timestamp,
                 role: event.data.playerRoles?.[playerId] || 'Unknown',
-                status: 'on_field'
+                status: PLAYER_STATUS.ON_FIELD
               };
             }
           });
@@ -153,7 +156,7 @@ export const calculatePlayerTimeTotals = (events) => {
             playerStints[playerId] = {
               startTime: event.timestamp,
               role: event.data.newRoles?.[playerId] || 'Unknown',
-              status: 'on_field'
+              status: PLAYER_STATUS.ON_FIELD
             };
           });
         }
@@ -162,14 +165,14 @@ export const calculatePlayerTimeTotals = (events) => {
       case EVENT_TYPES.GOALIE_SWITCH:
         // Handle goalie changes
         if (event.data.oldGoalie) {
-          endStint(event.data.oldGoalie, event.timestamp, 'Goalie', 'on_field');
+          endStint(event.data.oldGoalie, event.timestamp, PLAYER_ROLES.GOALIE, PLAYER_STATUS.ON_FIELD);
         }
         if (event.data.newGoalie) {
           initializePlayer(event.data.newGoalie);
           playerStints[event.data.newGoalie] = {
             startTime: event.timestamp,
-            role: 'Goalie',
-            status: 'on_field'
+            role: PLAYER_ROLES.GOALIE,
+            status: PLAYER_STATUS.ON_FIELD
           };
         }
         break;

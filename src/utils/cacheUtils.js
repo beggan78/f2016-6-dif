@@ -98,7 +98,6 @@ export const getFromCache = (key) => {
   try {
     // Check if cache is valid first
     if (!isCacheValid(key)) {
-      console.log(`Cache expired for key: ${key}`);
       removeFromCache(key);
       return null;
     }
@@ -107,8 +106,7 @@ export const getFromCache = (key) => {
     if (!cachedData) return null;
     
     const parsed = JSON.parse(cachedData);
-    console.log(`Cache hit for key: ${key}`, { hasData: !!parsed, dataType: typeof parsed });
-    
+
     return parsed;
   } catch (error) {
     console.warn(`Error reading from cache for key ${key}:`, error);
@@ -144,7 +142,6 @@ export const saveToCache = (key, data) => {
       }
     });
     
-    console.log(`Cache saved for key: ${key}`, { size, dataType: typeof data });
     return true;
   } catch (error) {
     if (error.name === 'QuotaExceededError') {
@@ -187,7 +184,6 @@ export const removeFromCache = (key) => {
       localStorage.setItem(getCacheKey(CACHE_KEYS.CACHE_META), JSON.stringify(meta));
     }
     
-    console.log(`Cache cleared for key: ${key}`);
   } catch (error) {
     console.warn(`Error removing cache for key ${key}:`, error);
   }

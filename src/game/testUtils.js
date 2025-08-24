@@ -71,7 +71,7 @@ export const createMockPlayer = (id, overrides = {}) => ({
     timeAsDefenderSeconds: 0,
     timeAsSubSeconds: 0,
     timeAsGoalieSeconds: 0,
-    startedMatchAs: PLAYER_ROLES.ON_FIELD,
+    startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
     ...overrides.stats
   },
   ...overrides

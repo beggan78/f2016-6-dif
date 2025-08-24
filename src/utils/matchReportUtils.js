@@ -406,7 +406,7 @@ const analyzeFormationForStartingRoles = (formationEntry, startingRoles) => {
       const isSubstitutePosition = isSubstitutePositionKey(positionKey);
 
       if (isFieldPosition) {
-        startingRoles[playerId] = PLAYER_ROLES.ON_FIELD;
+        startingRoles[playerId] = PLAYER_ROLES.FIELD_PLAYER;
       } else if (isSubstitutePosition) {
         startingRoles[playerId] = PLAYER_ROLES.SUBSTITUTE;
       }
@@ -446,7 +446,7 @@ const analyzePlayerStartingRoleFromFormation = (playerId, formationEntry) => {
 
     // Determine role based on position
     if (isFieldPositionKey(positionKey)) {
-      return PLAYER_ROLES.ON_FIELD;
+      return PLAYER_ROLES.FIELD_PLAYER;
     } else if (isSubstitutePositionKey(positionKey)) {
       return PLAYER_ROLES.SUBSTITUTE;
     }

@@ -1,4 +1,5 @@
 import { getModeDefinition } from '../../constants/gameModes';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 /**
  * Core position utilities for game logic
@@ -15,20 +16,20 @@ export function getPositionRole(position) {
   if (!position) return null;
   
   if (position.includes('Defender') || position.includes('defender')) {
-    return 'DEFENDER';
+    return PLAYER_ROLES.DEFENDER;
   }
   if (position.includes('Attacker') || position.includes('attacker')) {
-    return 'ATTACKER';
+    return PLAYER_ROLES.ATTACKER;
   }
   // Handle midfielder positions (1-2-1 formation)
   if (position === 'left' || position === 'right') {
-    return 'MIDFIELDER';
+    return PLAYER_ROLES.MIDFIELDER;
   }
   if (position.includes('substitute') || position.includes('Substitute')) {
-    return 'SUBSTITUTE';
+    return PLAYER_ROLES.SUBSTITUTE;
   }
   if (position === 'goalie') {
-    return 'GOALIE';
+    return PLAYER_ROLES.GOALIE;
   }
   
   return null;
