@@ -19,6 +19,7 @@ import {
   setCaptain,
   hasActiveSubstitutes
 } from '../playerUtils';
+import { PLAYER_STATUS, PLAYER_ROLES } from '../../constants/playerConstants';
 
 describe('playerUtils', () => {
   const mockPlayers = [
@@ -26,8 +27,8 @@ describe('playerUtils', () => {
       id: 'p1',
       name: 'Player 1',
       stats: {
-        currentStatus: 'on_field',
-        currentRole: 'DEFENDER',
+        currentStatus: PLAYER_STATUS.ON_FIELD,
+        currentRole: PLAYER_ROLES.DEFENDER,
         currentPairKey: 'leftDefender',
         isInactive: false,
         isCaptain: false
@@ -37,8 +38,8 @@ describe('playerUtils', () => {
       id: 'p2',
       name: 'Player 2',
       stats: {
-        currentStatus: 'substitute',
-        currentRole: 'SUBSTITUTE',
+        currentStatus: PLAYER_STATUS.SUBSTITUTE,
+        currentRole: PLAYER_ROLES.SUBSTITUTE,
         currentPairKey: 'substitute_1',
         isInactive: false,
         isCaptain: true
@@ -48,8 +49,8 @@ describe('playerUtils', () => {
       id: 'p3',
       name: 'Player 3',
       stats: {
-        currentStatus: 'goalie',
-        currentRole: 'GOALIE',
+        currentStatus: PLAYER_STATUS.GOALIE,
+        currentRole: PLAYER_ROLES.GOALIE,
         currentPairKey: 'goalie',
         isInactive: false,
         isCaptain: false
@@ -59,8 +60,8 @@ describe('playerUtils', () => {
       id: 'p4',
       name: 'Player 4',
       stats: {
-        currentStatus: 'substitute',
-        currentRole: 'SUBSTITUTE',
+        currentStatus: PLAYER_STATUS.SUBSTITUTE,
+        currentRole: PLAYER_ROLES.SUBSTITUTE,
         currentPairKey: 'substitute_2',
         isInactive: true,
         isCaptain: false
@@ -86,6 +87,7 @@ describe('playerUtils', () => {
         name: 'Alice',
         stats: {
           startedMatchAs: null,
+          startedAtPosition: null,
           periodsAsGoalie: 0,
           periodsAsDefender: 0,
           periodsAsAttacker: 0,
@@ -274,7 +276,7 @@ describe('playerUtils', () => {
 
   describe('getPlayersByStatus', () => {
     it('should return players by status', () => {
-      const subs = getPlayersByStatus(mockPlayers, ['p1', 'p2', 'p3', 'p4'], 'substitute');
+      const subs = getPlayersByStatus(mockPlayers, ['p1', 'p2', 'p3', 'p4'], PLAYER_STATUS.SUBSTITUTE);
       expect(subs).toHaveLength(2);
       expect(subs.map(p => p.id)).toEqual(['p2', 'p4']);
     });

@@ -50,13 +50,24 @@ describe('UI positionUtils', () => {
 
   describe('getPositionDisplayName', () => {
 
-    test('should return proper display names for individual 7 positions', () => {
+    test('should return proper display names for individual 7 positions (2-2 formation)', () => {
       expect(getPositionDisplayName('leftDefender', null, TEAM_CONFIGS.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Defender');
       expect(getPositionDisplayName('rightDefender', null, TEAM_CONFIGS.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Defender');
       expect(getPositionDisplayName('leftAttacker', null, TEAM_CONFIGS.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Left Attacker');
       expect(getPositionDisplayName('rightAttacker', null, TEAM_CONFIGS.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Right Attacker');
       expect(getPositionDisplayName('substitute_1', null, TEAM_CONFIGS.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
       expect(getPositionDisplayName('substitute_2', null, TEAM_CONFIGS.INDIVIDUAL_7, mockSubstitutePositions7)).toBe('Substitute');
+    });
+
+    test('should return proper display names for 1-2-1 formation positions', () => {
+      const teamConfig121 = createTeamConfig({ format: '5v5', squadSize: 7, formation: '1-2-1', substitutionType: 'individual' });
+      expect(getPositionDisplayName('goalie', null, teamConfig121, mockSubstitutePositions7)).toBe('Goalie');
+      expect(getPositionDisplayName('defender', null, teamConfig121, mockSubstitutePositions7)).toBe('Defender');
+      expect(getPositionDisplayName('left', null, teamConfig121, mockSubstitutePositions7)).toBe('Left Mid');
+      expect(getPositionDisplayName('right', null, teamConfig121, mockSubstitutePositions7)).toBe('Right Mid');
+      expect(getPositionDisplayName('attacker', null, teamConfig121, mockSubstitutePositions7)).toBe('Attacker');
+      expect(getPositionDisplayName('substitute_1', null, teamConfig121, mockSubstitutePositions7)).toBe('Substitute');
+      expect(getPositionDisplayName('substitute_2', null, teamConfig121, mockSubstitutePositions7)).toBe('Substitute');
     });
 
     test('should return proper display names for individual 9 positions', () => {
@@ -83,9 +94,9 @@ describe('UI positionUtils', () => {
     });
 
     test('should return proper display names for pair positions', () => {
-      expect(getPositionDisplayName('leftPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('leftPair');
-      expect(getPositionDisplayName('rightPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('rightPair');
-      expect(getPositionDisplayName('subPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('subPair');
+      expect(getPositionDisplayName('leftPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('Left');
+      expect(getPositionDisplayName('rightPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('Right');
+      expect(getPositionDisplayName('subPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('Substitutes');
     });
 
     test('should handle inactive player status', () => {

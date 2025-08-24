@@ -70,7 +70,7 @@ describe('matchReportUtils', () => {
       id: 'p2',
       name: 'Player 2',
       stats: {
-        startedMatchAs: PLAYER_ROLES.ON_FIELD,
+        startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         timeOnFieldSeconds: 180,
         timeAsDefenderSeconds: 120,
         timeAsAttackerSeconds: 60,
@@ -126,7 +126,7 @@ describe('matchReportUtils', () => {
       expect(stats[0].totalActiveTime).toBe(240);
 
       expect(stats[1].name).toBe('Player 2');
-      expect(stats[1].startingRole).toBe(PLAYER_ROLES.ON_FIELD);
+      expect(stats[1].startingRole).toBe(PLAYER_ROLES.FIELD_PLAYER);
       expect(stats[1].timeBreakdown.timeOnFieldSeconds).toBe(180);
       expect(stats[1].totalActiveTime).toBe(180);
     });
@@ -239,7 +239,7 @@ describe('matchReportUtils', () => {
       const startingRoles = determinePlayerStartingRoles(mockPlayers, []);
 
       expect(startingRoles.p1).toBe(PLAYER_ROLES.GOALIE);
-      expect(startingRoles.p2).toBe(PLAYER_ROLES.ON_FIELD);
+      expect(startingRoles.p2).toBe(PLAYER_ROLES.FIELD_PLAYER);
     });
 
     it('should handle players without starting roles', () => {

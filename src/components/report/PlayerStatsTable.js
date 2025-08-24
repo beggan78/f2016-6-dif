@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatTime, formatPlayerName } from '../../utils/formatUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
-import { getPlayerCurrentRole } from '../../utils/playerSortingUtils';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
 
 /**
@@ -58,20 +57,12 @@ export function PlayerStatsTable({
       sortable: false,
       className: 'text-center text-slate-300',
       render: (player) => {
-        // First check current role based on formation
-        const currentRole = getPlayerCurrentRole(player);
-        if (currentRole === PLAYER_ROLES.GOALIE) return 'Goalie';
-        if (currentRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
-        if (currentRole === PLAYER_ROLES.DEFENDER) return 'Defender';
-        if (currentRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
-        if (currentRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-        
-        // Fallback to starting role if we can't determine current role
+        // Only use startedMatchAs - the role they started the match with in Period 1
         const role = player.stats?.startedMatchAs;
         if (role === PLAYER_ROLES.GOALIE) return 'Goalie';
         if (role === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-        if (role === PLAYER_ROLES.ON_FIELD) return 'Field';
-        return '--';
+        if (role === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+        return '--'; // Player didn't start the match
       }
     },
     {

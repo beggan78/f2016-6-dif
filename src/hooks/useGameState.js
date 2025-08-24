@@ -1,13 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
-import { PLAYER_ROLES } from '../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
+import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
 import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
+import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, formatFinalStatsFromGameState } from '../services/matchStateManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
@@ -38,9 +40,12 @@ const updateNextNextPlayerIfSupported = (teamConfig, playerList, setNextNextPlay
 };
 
 export function useGameState() {
+  // Get current team from context for database operations
+  const { currentTeam } = useTeam();
+  
   // Initialize state from PersistenceManager
   const initialState = persistenceManager.loadState();
-  
+
   // Ensure allPlayers is initialized if not present
   if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
     initialState.allPlayers = initializePlayers(initialRoster);
@@ -103,6 +108,10 @@ export function useGameState() {
   const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
   const [captainId, setCaptainId] = useState(initialState.captainId || null);
+
+  // Match state management - track database match record lifecycle
+  const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
+  const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
 
   // Sync captain data in allPlayers whenever captainId changes
   useEffect(() => {
@@ -327,11 +336,14 @@ export function useGameState() {
       timerPauseStartTime,
       totalMatchPausedDuration,
       captainId,
+      // Match lifecycle state management
+      currentMatchId,
+      matchCreationAttempted,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted]);
 
 
 
@@ -542,6 +554,23 @@ export function useGameState() {
 
     const currentTimeEpoch = Date.now();
     
+    // VALIDATION: Ensure formation contains only selected players
+    const formationPlayerIds = [];
+    Object.entries(formation).forEach(([position, value]) => {
+      if (value && typeof value === 'string') {
+        formationPlayerIds.push(value);
+      } else if (value && typeof value === 'object') {
+        // Handle pairs format
+        if (value.defender) formationPlayerIds.push(value.defender);
+        if (value.attacker) formationPlayerIds.push(value.attacker);
+      }
+    });
+    
+    const nonSelectedInFormation = formationPlayerIds.filter(id => !selectedSquadIds.includes(id));
+    if (nonSelectedInFormation.length > 0) {
+      console.warn('⚠️  [handleStartGame] Non-selected players found in formation:', nonSelectedInFormation);
+    }
+    
     // Create formation-aware team config for role initialization
     const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
       ...teamConfig,
@@ -555,11 +584,25 @@ export function useGameState() {
 
       if (selectedSquadIds.includes(p.id)) {
         const initialStats = { ...p.stats };
-        if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
-          if (currentStatus === 'goalie') initialStats.startedMatchAs = PLAYER_ROLES.GOALIE;
-          else if (currentStatus === 'on_field') initialStats.startedMatchAs = PLAYER_ROLES.ON_FIELD;
-          else if (currentStatus === 'substitute') initialStats.startedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+        
+        // SAFEGUARD: Clear any stale startedMatchAs values for new games
+        if (currentPeriodNumber === 1) {
+          initialStats.startedMatchAs = null;
+          initialStats.startedAtPosition = null; // Clear formation position too
         }
+        
+        if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
+          let newStartedMatchAs = null;
+          if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
+          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
+          else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+          
+          initialStats.startedMatchAs = newStartedMatchAs;
+          
+          // Store the specific formation position for formation-aware role mapping
+          initialStats.startedAtPosition = currentPairKey;
+        }
+        
         return {
           ...p,
           stats: {
@@ -570,6 +613,17 @@ export function useGameState() {
             currentPairKey: currentPairKey,
           }
         };
+      } else {
+        // SAFEGUARD: Ensure non-selected players have null startedMatchAs
+        if (p.stats?.startedMatchAs !== null) {
+          return {
+            ...p,
+            stats: {
+              ...p.stats,
+              startedMatchAs: null
+            }
+          };
+        }
       }
       return p;
     }));
@@ -637,6 +691,39 @@ export function useGameState() {
       } else {
         console.warn('🔧 [handleStartGame] Could not initialize rotation queue - incomplete formation');
       }
+    }
+
+    // CREATE MATCH RECORD when starting first period
+    if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
+      setMatchCreationAttempted(true); // Prevent duplicate attempts
+      
+      // Format match data from current game state
+      const matchData = formatMatchDataFromGameState({
+        teamConfig,
+        selectedFormation,
+        periods: numPeriods,
+        periodDurationMinutes,
+        selectedSquadIds,
+        allPlayers,
+        opponentTeam,
+        captainId
+      }, currentTeam.id);
+
+      // Create match record in background (non-blocking)
+      createMatch(matchData)
+        .then((result) => {
+          if (result.success) {
+            console.log('✅ Match record created:', result.matchId);
+            setCurrentMatchId(result.matchId);
+          } else {
+            console.warn('⚠️  Failed to create match record:', result.error);
+            // Continue with game anyway - match creation is optional
+          }
+        })
+        .catch((error) => {
+          console.warn('⚠️  Exception during match creation:', error);
+          // Continue with game anyway - match creation is optional
+        });
     }
 
     setView(VIEWS.GAME);
@@ -744,6 +831,34 @@ export function useGameState() {
       preparePeriodWithGameLog(currentPeriodNumber + 1, updatedGameLog);
       setView(VIEWS.PERIOD_SETUP);
     } else {
+      // COMPLETE MATCH RECORD when last period ends
+      if (currentMatchId && matchStartTime) {
+        // Calculate total match duration
+        const matchDurationSeconds = Math.floor((currentTimeEpoch - matchStartTime) / 1000);
+        
+        // Format final stats for database
+        const finalStats = formatFinalStatsFromGameState({
+          ownScore,
+          opponentScore,
+          allPlayers: updatedPlayersWithFinalStats
+        }, matchDurationSeconds);
+
+        // Update match to finished state in background (non-blocking)
+        updateMatchToFinished(currentMatchId, finalStats)
+          .then((result) => {
+            if (result.success) {
+              console.log('✅ Match record updated to finished');
+            } else {
+              console.warn('⚠️  Failed to update match to finished:', result.error);
+            }
+          })
+          .catch((error) => {
+            console.warn('⚠️  Exception during match completion:', error);
+          });
+      } else if (currentMatchId && !matchStartTime) {
+        console.warn('⚠️  Cannot complete match: missing match start time');
+      }
+      
       // Release wake lock when game ends
       clearAlertTimer();
       releaseWakeLock();
@@ -779,6 +894,10 @@ export function useGameState() {
       
       // Clear captain assignment
       setCaptainId(null);
+      
+      // Clear match lifecycle state to prevent ID reuse
+      setCurrentMatchId(null);
+      setMatchCreationAttempted(false);
     } else {
       console.warn('Failed to clear game events');
     }
@@ -1332,7 +1451,7 @@ export function useGameState() {
         
         // Determine new role and status based on position they're moving to
         let newRole = PLAYER_ROLES.DEFENDER; // Default
-        let newStatus = 'on_field'; // Default
+        let newStatus = PLAYER_STATUS.ON_FIELD; // Default
         
         if (teamConfig.substitutionType === 'pairs') {
           if (newGoaliePosition === 'leftPair' || newGoaliePosition === 'rightPair') {
@@ -1345,7 +1464,7 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'on_field';
+            newStatus = PLAYER_STATUS.ON_FIELD;
           } else if (newGoaliePosition === 'subPair') {
             // Substitute position
             const pairData = formation[newGoaliePosition];
@@ -1356,12 +1475,12 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'substitute';
+            newStatus = PLAYER_STATUS.SUBSTITUTE;
           }
         } else {
           // Individual formations - use centralized role determination
           newRole = getPositionRole(newGoaliePosition) || PLAYER_ROLES.DEFENDER; // Default to defender
-          newStatus = newGoaliePosition.includes('substitute') ? 'substitute' : 'on_field';
+          newStatus = newGoaliePosition.includes('substitute') ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
         }
         
         // Handle role change from goalie to new position
@@ -1390,7 +1509,7 @@ export function useGameState() {
         );
         
         // Update status and position
-        newStats.currentStatus = 'goalie';
+        newStats.currentStatus = PLAYER_STATUS.GOALIE;
         newStats.currentPairKey = 'goalie';
         
         return { ...p, stats: newStats };
@@ -1581,6 +1700,12 @@ export function useGameState() {
     setTotalMatchPausedDuration,
     captainId,
     setCaptainId,
+    
+    // Match lifecycle state
+    currentMatchId,
+    setCurrentMatchId,
+    matchCreationAttempted,
+    setMatchCreationAttempted,
     
     // Actions
     preparePeriod,

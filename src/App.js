@@ -394,7 +394,6 @@ function AppContent() {
     // Clear dismissed modals on user change (login/logout)
     // This ensures fresh modal behavior for each session
     clearDismissedModals();
-    console.log('Dismissed modals cleared due to user state change');
   }, [user?.id]); // Only trigger when user ID changes (not on every user object change)
 
   // Global navigation handler for when no modals are open
@@ -824,6 +823,9 @@ function AppContent() {
             resetScore={gameState.resetScore}
             setOpponentTeam={gameState.setOpponentTeam}
             navigateToMatchReport={gameState.navigateToMatchReport}
+            currentMatchId={gameState.currentMatchId}
+            matchEvents={gameState.matchEvents || []}
+            goalScorers={gameState.goalScorers || {}}
             authModal={authModal}
           />
         );

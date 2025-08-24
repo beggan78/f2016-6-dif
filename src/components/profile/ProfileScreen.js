@@ -244,14 +244,14 @@ export function ProfileScreen({ setView }) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-100">
+                    <span className={`text-slate-100 rounded-md ${profileName === 'Not set' ? 'animate-glow-and-fade' : ''}`}>
                       {profileName}
                     </span>
                     <Button
                       onClick={handleEdit}
                       variant="secondary"
                       size="sm"
-                    >
+                      className={`${profileName === 'Not set' ? 'animate-glow-and-fade' : ''}`}>
                       Edit
                     </Button>
                   </div>
