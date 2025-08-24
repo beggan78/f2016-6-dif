@@ -6,7 +6,7 @@ import { FeatureGate } from '../auth/FeatureGate';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
 import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
-import { updateMatchToConfirmed } from '../../services/matchStateManager';
+import { updateMatchToConfirmed, insertPlayerMatchStats } from '../../services/matchStateManager';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -34,6 +34,7 @@ export function StatsScreen({
   matchEvents,
   gameLog,
   currentMatchId,
+  goalScorers,
   authModal
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
@@ -42,8 +43,6 @@ export function StatsScreen({
   const [saving, setSaving] = useState(false);
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
-
-
 
   const copyStatsToClipboard = async () => {
     const statsText = generateStatsText(squadForStats, ownScore, opponentScore, opponentTeam);
@@ -67,18 +66,41 @@ export function StatsScreen({
         return;
       }
 
-      console.log('💾 Confirming match in database:', currentMatchId);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('💾 Confirming match in database:', currentMatchId);
+      }
       
       const result = await updateMatchToConfirmed(currentMatchId);
       
       if (result.success) {
-        setSaveSuccess(true);
-        console.log('✅ Match confirmed successfully');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Match confirmed successfully');
+        }
         
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
+        // Insert player match statistics
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 Inserting player match statistics...');
+        }
+        const playerStatsResult = await insertPlayerMatchStats(currentMatchId, allPlayers, goalScorers, matchEvents);
+        
+        if (playerStatsResult.success) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`✅ Player stats inserted: ${playerStatsResult.inserted} players`);
+          }
+          setSaveSuccess(true);
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            setSaveSuccess(false);
+          }, 3000);
+        } else {
+          console.warn('⚠️  Match confirmed but failed to save player stats:', playerStatsResult.error);
+          // Still show success since match was confirmed, but log the player stats issue
+          setSaveSuccess(true);
+          setTimeout(() => {
+            setSaveSuccess(false);
+          }, 3000);
+        }
       } else {
         setSaveError(result.error || 'Failed to confirm match');
         console.error('❌ Failed to confirm match:', result);
@@ -93,7 +115,9 @@ export function StatsScreen({
 
   const handleViewMatchHistory = () => {
     // TODO: Navigate to match history view
-    console.log('Navigating to match history...');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Navigating to match history...');
+    }
   };
 
 
@@ -151,7 +175,7 @@ export function StatsScreen({
                   <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{formatPlayerName(player)}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">
                     {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
-                        player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
+                        player.stats.startedMatchAs === PLAYER_ROLES.FIELD_PLAYER ? 'S' :
                             player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-'}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(goaliePoints)}</td>

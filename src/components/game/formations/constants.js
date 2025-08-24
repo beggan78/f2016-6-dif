@@ -59,6 +59,9 @@ export const ICON_STYLES = {
 
 // Position display name mappings
 export const POSITION_DISPLAY_NAMES = {
+  // Common positions
+  goalie: 'Goalie',
+  
   // 2-2 Formation positions
   leftDefender: 'Left Defender',
   rightDefender: 'Right Defender', 
@@ -70,6 +73,11 @@ export const POSITION_DISPLAY_NAMES = {
   left: 'Left Mid',
   right: 'Right Mid',
   attacker: 'Attacker',
+  
+  // Pairs Formation positions
+  leftPair: 'Left',
+  rightPair: 'Right',
+  subPair: 'Substitutes',
   
   // Substitute positions
   substitute_1: 'Substitute',

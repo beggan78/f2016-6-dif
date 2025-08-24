@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
-import { PLAYER_ROLES } from '../../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
@@ -246,7 +246,7 @@ export function GameScreen({
     
     // Calculate current stint time using time module
     let currentStintTime = 0;
-    if (stats.currentStatus === 'on_field') {
+    if (stats.currentStatus === PLAYER_STATUS.ON_FIELD) {
       currentStintTime = calculateCurrentStintDuration(stats.lastStintStartTimeEpoch, getCurrentTimestamp());
     }
     
@@ -257,7 +257,7 @@ export function GameScreen({
     let attackerTime = stats.timeAsAttackerSeconds || 0;
     let defenderTime = stats.timeAsDefenderSeconds || 0;
     
-    if (stats.currentStatus === 'on_field' && stats.currentRole) {
+    if (stats.currentStatus === PLAYER_STATUS.ON_FIELD && stats.currentRole) {
       if (stats.currentRole === PLAYER_ROLES.ATTACKER) {  // Use constant
         attackerTime += currentStintTime;
       } else if (stats.currentRole === PLAYER_ROLES.DEFENDER) {  // Use constant

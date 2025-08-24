@@ -44,7 +44,7 @@ export function useGameState() {
   
   // Initialize state from PersistenceManager
   const initialState = persistenceManager.loadState();
-  
+
   // Ensure allPlayers is initialized if not present
   if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
     initialState.allPlayers = initializePlayers(initialRoster);
@@ -335,11 +335,14 @@ export function useGameState() {
       timerPauseStartTime,
       totalMatchPausedDuration,
       captainId,
+      // Match lifecycle state management
+      currentMatchId,
+      matchCreationAttempted,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted]);
 
 
 
@@ -584,15 +587,19 @@ export function useGameState() {
         // SAFEGUARD: Clear any stale startedMatchAs values for new games
         if (currentPeriodNumber === 1) {
           initialStats.startedMatchAs = null;
+          initialStats.startedAtPosition = null; // Clear formation position too
         }
         
         if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
           let newStartedMatchAs = null;
           if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
-          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.ON_FIELD;
+          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
           else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
           
           initialStats.startedMatchAs = newStartedMatchAs;
+          
+          // Store the specific formation position for formation-aware role mapping
+          initialStats.startedAtPosition = currentPairKey;
         }
         
         return {
@@ -608,7 +615,6 @@ export function useGameState() {
       } else {
         // SAFEGUARD: Ensure non-selected players have null startedMatchAs
         if (p.stats?.startedMatchAs !== null) {
-          console.warn(`⚠️  [handleStartGame] Non-selected player ${p.name} (${p.id}) had startedMatchAs: ${p.stats.startedMatchAs}, clearing it`);
           return {
             ...p,
             stats: {
@@ -887,6 +893,10 @@ export function useGameState() {
       
       // Clear captain assignment
       setCaptainId(null);
+      
+      // Clear match lifecycle state to prevent ID reuse
+      setCurrentMatchId(null);
+      setMatchCreationAttempted(false);
     } else {
       console.warn('Failed to clear game events');
     }
@@ -1440,7 +1450,7 @@ export function useGameState() {
         
         // Determine new role and status based on position they're moving to
         let newRole = PLAYER_ROLES.DEFENDER; // Default
-        let newStatus = 'on_field'; // Default
+        let newStatus = PLAYER_STATUS.ON_FIELD; // Default
         
         if (teamConfig.substitutionType === 'pairs') {
           if (newGoaliePosition === 'leftPair' || newGoaliePosition === 'rightPair') {
@@ -1453,7 +1463,7 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'on_field';
+            newStatus = PLAYER_STATUS.ON_FIELD;
           } else if (newGoaliePosition === 'subPair') {
             // Substitute position
             const pairData = formation[newGoaliePosition];
@@ -1464,12 +1474,12 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'substitute';
+            newStatus = PLAYER_STATUS.SUBSTITUTE;
           }
         } else {
           // Individual formations - use centralized role determination
           newRole = getPositionRole(newGoaliePosition) || PLAYER_ROLES.DEFENDER; // Default to defender
-          newStatus = newGoaliePosition.includes('substitute') ? 'substitute' : 'on_field';
+          newStatus = newGoaliePosition.includes('substitute') ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
         }
         
         // Handle role change from goalie to new position
@@ -1498,7 +1508,7 @@ export function useGameState() {
         );
         
         // Update status and position
-        newStats.currentStatus = 'goalie';
+        newStats.currentStatus = PLAYER_STATUS.GOALIE;
         newStats.currentPairKey = 'goalie';
         
         return { ...p, stats: newStats };
