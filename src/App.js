@@ -3,6 +3,7 @@ import './App.css';
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
+import { useMatchAbandonmentGuard } from './hooks/useMatchAbandonmentGuard';
 import { formatTime } from './utils/formatUtils';
 import { formatPlayerName } from './utils/formatUtils';
 import { calculateUndoTimerTarget } from './game/time/timeCalculator';
@@ -18,6 +19,8 @@ import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
+import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
+import { MatchRecoveryModal } from './components/modals/MatchRecoveryModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -34,6 +37,7 @@ import { InvitationNotificationModal } from './components/team/InvitationNotific
 import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
 import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
+import { useMatchRecovery } from './hooks/useMatchRecovery';
 
 // Dismissed modals localStorage utilities
 const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
@@ -144,6 +148,7 @@ function AppContent() {
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+
 
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
@@ -396,6 +401,7 @@ function AppContent() {
     clearDismissedModals();
   }, [user?.id]); // Only trigger when user ID changes (not on every user object change)
 
+
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
     // Check current view and handle accordingly
@@ -418,6 +424,68 @@ function AppContent() {
   }, [gameState, handleNavigateFromTacticalBoard]);
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
+  
+  // Match abandonment guard for preventing accidental data loss
+  const { 
+    requestNewGame, 
+    showModal: showAbandonModal, 
+    handleAbandon, 
+    handleCancel: handleAbandonCancel, 
+    matchState 
+  } = useMatchAbandonmentGuard();
+
+  // Match recovery functionality
+  const {
+    showRecoveryModal,
+    recoveryMatch,
+    isProcessingRecovery,
+    handleSaveRecovery,
+    handleAbandonRecovery,
+    handleCloseRecovery
+  } = useMatchRecovery({
+    user,
+    currentTeam,
+    invitationParams,
+    needsProfileCompletion,
+    gameState,
+    setSuccessMessage
+  });
+  
+  // Add global helper for browser console debugging (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      window.debugMatchState = () => {
+        console.group('🔧 Debug Match State Helper');
+        console.log('Game State Values:', {
+          currentMatchId: gameState.currentMatchId,
+          matchState: gameState.matchState,
+          view: gameState.view,
+          matchStartTime: gameState.matchStartTime
+        });
+        
+        const matchStateHook = {
+          currentMatchId: gameState.currentMatchId,
+          matchState: gameState.matchState,
+          hasActiveMatch: Boolean(gameState.currentMatchId && (gameState.matchState === 'running' || gameState.matchState === 'finished')),
+          hasUnsavedMatch: Boolean(gameState.currentMatchId && gameState.matchState === 'finished'),
+          isMatchRunning: Boolean(gameState.currentMatchId && gameState.matchState === 'running')
+        };
+        
+        console.log('Calculated Match State:', matchStateHook);
+        console.log('Expected Modal Behavior:', {
+          'Should show abandonment modal': matchStateHook.hasActiveMatch ? '✅ YES' : '❌ NO',
+          'Reason': matchStateHook.hasActiveMatch 
+            ? `Active match detected (${matchStateHook.matchState})` 
+            : 'No active match or invalid state'
+        });
+        console.groupEnd();
+        
+        return matchStateHook;
+      };
+      
+      console.log('🔧 Global debug helper available: window.debugMatchState()');
+    }
+  }, [gameState.currentMatchId, gameState.matchState, gameState.view, gameState.matchStartTime]);
   
   // Store the pushNavigationState function in the ref
   useEffect(() => {
@@ -573,6 +641,14 @@ function AppContent() {
     gameState.clearStoredState();
   };
 
+  const handleNewGameFromMenu = () => {
+    console.log('🍔 New Game from Hamburger Menu - calling requestNewGame()');
+    requestNewGame(() => {
+      console.log('🍔 New Game from Menu - executing callback (handleRestartMatch)');
+      handleRestartMatch();
+    });
+  };
+
   const handleAddPlayer = () => {
     setShowAddPlayerModal(true);
     // Add modal to browser back button handling
@@ -594,9 +670,13 @@ function AppContent() {
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = () => {
-    setShowNewGameModal(false);
-    removeFromNavigationStack();
-    handleRestartMatch();
+    console.log('⏰ New Game Confirmation (Browser Back) - calling requestNewGame()');
+    requestNewGame(() => {
+      console.log('⏰ New Game Confirmation - executing callback');
+      setShowNewGameModal(false);
+      removeFromNavigationStack();
+      handleRestartMatch();
+    });
   };
 
   const handleCancelNewGame = () => {
@@ -605,6 +685,7 @@ function AppContent() {
     // Remove the modal from the browser back intercept stack without triggering navigation
     removeFromNavigationStack();
   };
+
 
   const handleLeaveSportWizard = () => {
     // Close the modal first
@@ -887,7 +968,7 @@ function AppContent() {
       <header className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl relative text-center mb-4">
         <div className="absolute top-0 right-0">
           <HamburgerMenu 
-            onRestartMatch={handleRestartMatch} 
+            onRestartMatch={handleNewGameFromMenu} 
             onAddPlayer={handleAddPlayer}
             onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
@@ -954,6 +1035,26 @@ function AppContent() {
         primaryVariant="accent"
         secondaryVariant="primary"
         tertiaryVariant="danger"
+      />
+
+      {/* Match Abandonment Warning Modal */}
+      <AbandonMatchModal
+        isOpen={showAbandonModal}
+        onAbandon={handleAbandon}
+        onCancel={handleAbandonCancel}
+        isMatchRunning={matchState.isMatchRunning}
+        hasUnsavedMatch={matchState.hasUnsavedMatch}
+      />
+
+      {/* Match Recovery Modal */}
+      <MatchRecoveryModal
+        isOpen={showRecoveryModal}
+        match={recoveryMatch}
+        onSave={handleSaveRecovery}
+        onDelete={handleAbandonRecovery}
+        onClose={handleCloseRecovery}
+        saving={isProcessingRecovery}
+        deleting={isProcessingRecovery}
       />
 
         {/* Session Expiry Warning Modal */}

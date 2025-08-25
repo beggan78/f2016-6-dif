@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getCachedUserProfile, cacheUserProfile, clearAllCache } from '../utils/cacheUtils';
+import { cleanupAbandonedMatches } from '../services/matchCleanupService';
 
 const AuthContext = createContext({
   // Core state
@@ -255,6 +256,14 @@ export function AuthProvider({ children }) {
           setUser(session.user);
           setupSessionMonitoring(session);
           currentUserIdRef.current = userId;
+          
+          // Run match cleanup in background (fire-and-forget)
+          cleanupAbandonedMatches().catch(error => {
+            // Log cleanup errors but don't disrupt login flow
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ Match cleanup failed during login:', error.message);
+            }
+          });
           
           // Cancel any existing profile fetch for different user
           if (currentFetchRef.current) {

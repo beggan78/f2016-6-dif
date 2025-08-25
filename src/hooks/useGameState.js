@@ -112,6 +112,7 @@ export function useGameState() {
   // Match state management - track database match record lifecycle
   const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
   const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
+  const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
 
   // Sync captain data in allPlayers whenever captainId changes
   useEffect(() => {
@@ -339,11 +340,12 @@ export function useGameState() {
       // Match lifecycle state management
       currentMatchId,
       matchCreationAttempted,
+      matchState,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState]);
 
 
 
@@ -484,6 +486,9 @@ export function useGameState() {
       return p;
     }));
 
+    // Reset match state for new game setup
+    console.log('🔄 Match State Transition: handleStartPeriodSetup() → setting matchState to NOT_STARTED');
+    setMatchState('not_started');
     setCurrentPeriodNumber(1);
     setGameLog([]); // Clear game log for new game
     preparePeriod(1);
@@ -714,6 +719,7 @@ export function useGameState() {
         .then((result) => {
           if (result.success) {
             console.log('✅ Match record created:', result.matchId);
+            console.log('📝 Match State Transition: Match created → setting currentMatchId');
             setCurrentMatchId(result.matchId);
           } else {
             console.warn('⚠️  Failed to create match record:', result.error);
@@ -726,6 +732,11 @@ export function useGameState() {
         });
     }
 
+    // Set match state to running when game starts
+    console.log('🎮 Match State Transition: handleStartGame() → setting matchState to RUNNING');
+    console.log('Current match ID:', currentMatchId);
+    setMatchState('running');
+    
     setView(VIEWS.GAME);
     
     // Sync match data after game starts (small delay to ensure events are logged)
@@ -859,6 +870,11 @@ export function useGameState() {
         console.warn('⚠️  Cannot complete match: missing match start time');
       }
       
+      // Set match state to finished when last period ends
+      console.log('🏁 Match State Transition: handleEndPeriod() → setting matchState to FINISHED');
+      console.log('Current match ID:', currentMatchId);
+      setMatchState('finished');
+      
       // Release wake lock when game ends
       clearAlertTimer();
       releaseWakeLock();
@@ -896,8 +912,11 @@ export function useGameState() {
       setCaptainId(null);
       
       // Clear match lifecycle state to prevent ID reuse
+      console.log('🗑️ Match State Transition: clearStoredState() → setting matchState to NOT_STARTED');
+      console.log('Clearing match ID:', currentMatchId);
       setCurrentMatchId(null);
       setMatchCreationAttempted(false);
+      setMatchState('not_started');
     } else {
       console.warn('Failed to clear game events');
     }
@@ -1706,6 +1725,8 @@ export function useGameState() {
     setCurrentMatchId,
     matchCreationAttempted,
     setMatchCreationAttempted,
+    matchState,
+    setMatchState,
     
     // Actions
     preparePeriod,
