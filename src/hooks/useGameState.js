@@ -16,6 +16,8 @@ import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
+import { audioAlertService } from '../services/audioAlertService';
+import { usePreferences } from '../contexts/PreferencesContext';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -41,6 +43,8 @@ const updateNextNextPlayerIfSupported = (teamConfig, playerList, setNextNextPlay
 export function useGameState() {
   // Get current team from context for database operations
   const { currentTeam } = useTeam();
+  // Get audio preferences for alert integration
+  const { audioPreferences } = usePreferences();
   
   // Initialize state from PersistenceManager
   const initialState = persistenceManager.loadState();
@@ -85,6 +89,7 @@ export function useGameState() {
   const [teamConfig, setTeamConfig] = useState(initialState.teamConfig); // New team configuration
   const [selectedFormation, setSelectedFormation] = useState(initialState.selectedFormation || FORMATIONS.FORMATION_2_2); // UI formation selection
   const [alertMinutes, setAlertMinutes] = useState(initialState.alertMinutes);
+  
   const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
   const [formation, setFormation] = useState(initialState.formation);
   const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
@@ -254,9 +259,8 @@ export function useGameState() {
     };
   }, [syncMatchDataFromEventLogger]);
 
-  // Wake lock and alert management
+  // Wake lock management
   const [wakeLock, setWakeLock] = useState(null);
-  const [alertTimer, setAlertTimer] = useState(null);
 
   // Wake lock helper functions
   const requestWakeLock = useCallback(async () => {
@@ -281,26 +285,42 @@ export function useGameState() {
     }
   }, [wakeLock]);
 
-  // Alert timer helper functions
-  const clearAlertTimer = useCallback(() => {
-    if (alertTimer) {
-      clearTimeout(alertTimer);
-      setAlertTimer(null);
-    }
-  }, [alertTimer]);
+  // Note: Alert timer functions removed - alerts now handled by visual timer logic in useTimers.js
 
-  const startAlertTimer = useCallback(() => {
-    if (alertMinutes > 0) {
-      clearAlertTimer();
-      const timeoutMs = alertMinutes * 60 * 1000;
-      const newTimer = setTimeout(() => {
-        if ('vibrate' in navigator) {
-          navigator.vibrate([1000, 200, 1000]);
-        }
-      }, timeoutMs);
-      setAlertTimer(newTimer);
+  /**
+   * Audio alert function - triggers substitution alerts (audio + vibration)
+   * Called by visual timer logic in useTimers.js when sub timer reaches alertMinutes threshold
+   * Replaces old setTimeout-based timer system for better synchronization
+   */
+  const playAlertSounds = useCallback(async () => {
+    console.log('⏰ ALERT TRIGGERED! Starting alerts...');
+    
+    // Existing vibration alert (unchanged)
+    if ('vibrate' in navigator) {
+      console.log('📳 Triggering vibration alert');
+      navigator.vibrate([1000, 200, 1000]);
+    } else {
+      console.log('📳 Vibration not supported');
     }
-  }, [alertMinutes, clearAlertTimer]);
+    
+    // Audio alert
+    console.log('🔊 Checking audio alert - enabled:', audioPreferences.enabled, 'sound:', audioPreferences.selectedSound, 'volume:', audioPreferences.volume);
+    if (audioPreferences.enabled) {
+      try {
+        console.log('🎵 Attempting to play audio alert...');
+        await audioAlertService.play(
+          audioPreferences.selectedSound, 
+          audioPreferences.volume
+        );
+        console.log('✅ Audio alert played successfully');
+      } catch (error) {
+        console.warn('❌ Audio alert failed, vibration only:', error);
+        // Graceful degradation - vibration already executed above
+      }
+    } else {
+      console.log('🔇 Audio alerts disabled by user');
+    }
+  }, [audioPreferences]);
 
   // Save state to localStorage whenever it changes - NOTE: Critical for refresh persistence
   useEffect(() => {
@@ -608,7 +628,6 @@ export function useGameState() {
       } else {
         // SAFEGUARD: Ensure non-selected players have null startedMatchAs
         if (p.stats?.startedMatchAs !== null) {
-          console.warn(`⚠️  [handleStartGame] Non-selected player ${p.name} (${p.id}) had startedMatchAs: ${p.stats.startedMatchAs}, clearing it`);
           return {
             ...p,
             stats: {
@@ -706,7 +725,6 @@ export function useGameState() {
       createMatch(matchData)
         .then((result) => {
           if (result.success) {
-            console.log('✅ Match record created:', result.matchId);
             setCurrentMatchId(result.matchId);
           } else {
             console.warn('⚠️  Failed to create match record:', result.error);
@@ -719,6 +737,9 @@ export function useGameState() {
         });
     }
 
+    // Request wake lock (alert timer now handled by visual timer logic)
+    requestWakeLock();
+    
     setView(VIEWS.GAME);
     
     // Sync match data after game starts (small delay to ensure events are logged)
@@ -731,9 +752,8 @@ export function useGameState() {
     const currentTimeEpoch = Date.now();
     setLastSubstitutionTimestamp(currentTimeEpoch);
 
-    // Request wake lock and start alert timer
+    // Request wake lock
     requestWakeLock();
-    startAlertTimer();
 
     const substitutionManager = createSubstitutionManager(teamConfig);
     
@@ -853,7 +873,6 @@ export function useGameState() {
       }
       
       // Release wake lock when game ends
-      clearAlertTimer();
       releaseWakeLock();
       setView(VIEWS.STATS);
     }
@@ -1690,6 +1709,9 @@ export function useGameState() {
     resetScore,
     navigateToMatchReport,
     setCaptain,
+    
+    // Audio alert function (called by visual timer logic)
+    playAlertSounds,
     
     // Team Configuration Management
     updateTeamConfig,

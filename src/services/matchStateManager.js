@@ -65,7 +65,6 @@ export async function createMatch(matchData) {
       };
     }
 
-    console.log('✅ Match created successfully:', data.id);
     return {
       success: true,
       matchId: data.id

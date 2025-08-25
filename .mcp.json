@@ -6,11 +6,11 @@
         "-y",
         "@supabase/mcp-server-supabase@latest",
         "--read-only",
-        "--project-ref=rhrcifsvmeanburvxzxy"
+        "--project-ref=cyjdmcdmdercyxoojkvl"
       ],
       "env": {
         "SUPABASE_ACCESS_TOKEN": "sbp_9933f469e0de728bd5b894b6f1f4689880d168a1",
-        "SUPABASE_URL": "https://rhrcifsvmeanburvxzxy.supabase.co"
+        "SUPABASE_URL": "https://cyjdmcdmdercyxoojkvl.supabase.co"
       }
     }
   }

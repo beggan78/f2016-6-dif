@@ -34,7 +34,7 @@ const calculateSubTimer = (lastSubstitutionTime, totalPausedDuration, pauseStart
   return Math.max(0, elapsedSeconds);
 };
 
-export function useTimers(periodDurationMinutes) {
+export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSounds = null) {
   // Initialize timer state from localStorage or defaults
   const initializeTimerState = () => {
     const saved = loadTimerState();
@@ -73,6 +73,10 @@ export function useTimers(periodDurationMinutes) {
   const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
   const updateIntervalRef = useRef(null);
   
+  // Audio alert state management to prevent duplicate plays
+  const lastAlertTimeRef = useRef(null);
+  const [hasPlayedAlert, setHasPlayedAlert] = useState(false);
+  
 
   // Calculate current timer values on-demand
   // forceUpdateCounter is intentionally included to trigger recalculation via setInterval for real-time timer updates
@@ -89,6 +93,30 @@ export function useTimers(periodDurationMinutes) {
   
   // Derived state
   const isSubTimerPaused = pauseStartTime !== null;
+  
+  // Audio alert logic - triggers when sub timer reaches alert threshold
+  useEffect(() => {
+    if (alertMinutes > 0 && playAlertSounds && subTimerSeconds >= alertMinutes * 60) {
+      const currentAlertTime = Math.floor(subTimerSeconds / 60); // Convert to minutes
+      
+      // Only play alert once when crossing the threshold, and prevent duplicate plays
+      if (lastAlertTimeRef.current !== currentAlertTime && !hasPlayedAlert) {
+        console.log('🚨 Visual timer alert threshold reached - subTimerSeconds:', subTimerSeconds, 'alertMinutes:', alertMinutes);
+        lastAlertTimeRef.current = currentAlertTime;
+        setHasPlayedAlert(true);
+        
+        // Trigger audio and vibration alerts
+        playAlertSounds();
+      }
+    } else if (subTimerSeconds < alertMinutes * 60) {
+      // Reset alert state when timer goes below threshold (after substitution)
+      if (hasPlayedAlert) {
+        console.log('🔄 Resetting audio alert state - timer below threshold');
+        setHasPlayedAlert(false);
+        lastAlertTimeRef.current = null;
+      }
+    }
+  }, [subTimerSeconds, alertMinutes, playAlertSounds, hasPlayedAlert]);
 
   // Timer display update effect - only triggers re-renders, doesn't save to localStorage
   useEffect(() => {
