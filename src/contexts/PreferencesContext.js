@@ -129,6 +129,7 @@ export function PreferencesProvider({ children }) {
     if (!preferencesLoading) {
       const saveSuccess = savePreferencesToStorage(preferences);
       if (!saveSuccess) {
+        console.warn('⚠️  Failed to save preferences to localStorage. Preferences may not persist between sessions.');
       }
     }
   }, [preferences, preferencesLoading]);
