@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
     }
 
     // Construct environment-aware redirect URL
-    const redirectUrl = p_redirect_url || `${siteUrl}/?invitation=true&team=${p_team_id}&role=${p_role}`;
+    const redirectUrl = p_redirect_url || `${siteUrl}/?invitation=true&team=${encodeURIComponent(p_team_id)}&role=${encodeURIComponent(p_role)}`;
     console.log('🔗 Using redirect URL:', redirectUrl);
 
     console.log('🎯 Step 1: Calling database function for validation and record creation...');
