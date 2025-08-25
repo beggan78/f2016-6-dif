@@ -25,7 +25,13 @@ jest.mock('../../../services/audioAlertService', () => ({
       { value: 'bells-echo', label: 'Bells Echo', isDefault: true },
       { value: 'quick-chime', label: 'Quick Chime' },
       { value: 'flute', label: 'Uplifting Flute' }
-    ])
+    ]),
+    // New lazy loading methods
+    triggerFullPreload: jest.fn(),
+    isLoaded: jest.fn(() => false), // Default to false so loadSound gets called
+    isLoading: jest.fn(() => false),
+    loadSound: jest.fn(() => Promise.resolve()), // Returns a proper resolved promise
+    updateSelectedSound: jest.fn()
   }
 }));
 

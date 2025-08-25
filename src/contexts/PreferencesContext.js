@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { DEFAULT_PREFERENCES, PREFERENCE_STORAGE_KEY } from '../constants/audioAlerts';
+import { audioAlertService } from '../services/audioAlertService';
 
 const PreferencesContext = createContext({
   // All preferences state
@@ -173,6 +174,11 @@ export function PreferencesProvider({ children }) {
       if (typeof newAudioPrefs.selectedSound !== 'string' || 
           !newAudioPrefs.selectedSound.trim()) {
         newAudioPrefs.selectedSound = prev.audio.selectedSound;
+      }
+      
+      // Notify audio service if selected sound changed
+      if (updates.selectedSound && updates.selectedSound !== prev.audio.selectedSound) {
+        audioAlertService.updateSelectedSound(updates.selectedSound);
       }
       
       const newPreferences = { ...prev, audio: newAudioPrefs };

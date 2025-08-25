@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Settings, Volume2, Play, Globe, Palette } from 'lucide-react';
+import { Settings, Volume2, Play, Globe, Palette, Loader } from 'lucide-react';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { AUDIO_ALERT_OPTIONS, LANGUAGE_OPTIONS, THEME_OPTIONS } from '../../constants/audioAlerts';
 import { audioAlertService } from '../../services/audioAlertService';
@@ -17,12 +17,26 @@ export function PreferencesModal({ isOpen, onClose }) {
   const [tempPreferences, setTempPreferences] = useState(preferences);
   const [isTestingSound, setIsTestingSound] = useState(false);
   const [testError, setTestError] = useState(null);
+  const [soundLoadingStates, setSoundLoadingStates] = useState({});
 
   // Sync temp preferences when modal opens or preferences change
   useEffect(() => {
     if (isOpen && !preferencesLoading) {
       setTempPreferences(preferences);
       setTestError(null);
+      
+      // Trigger background preloading of all sounds when modal opens
+      audioAlertService.triggerFullPreload();
+      
+      // Initialize loading states
+      const initialStates = {};
+      AUDIO_ALERT_OPTIONS.forEach(option => {
+        initialStates[option.value] = {
+          loaded: audioAlertService.isLoaded(option.value),
+          loading: audioAlertService.isLoading(option.value)
+        };
+      });
+      setSoundLoadingStates(initialStates);
     }
   }, [preferences, isOpen, preferencesLoading]);
 
@@ -46,19 +60,47 @@ export function PreferencesModal({ isOpen, onClose }) {
   }, [preferences, onClose]);
 
   /**
-   * Handle testing sound preview
+   * Handle testing sound preview with loading state management
    */
   const handleTestSound = useCallback(async () => {
     if (isTestingSound || !tempPreferences.audio.enabled) return;
     
+    const selectedSound = tempPreferences.audio.selectedSound;
     setIsTestingSound(true);
     setTestError(null);
     
+    // Update loading state for this specific sound
+    setSoundLoadingStates(prev => ({
+      ...prev,
+      [selectedSound]: {
+        ...prev[selectedSound],
+        loading: !audioAlertService.isLoaded(selectedSound)
+      }
+    }));
+    
     try {
-      await audioAlertService.play(tempPreferences.audio.selectedSound, tempPreferences.audio.volume);
+      await audioAlertService.play(selectedSound, tempPreferences.audio.volume);
+      
+      // Update state to reflect sound is now loaded
+      setSoundLoadingStates(prev => ({
+        ...prev,
+        [selectedSound]: {
+          loaded: true,
+          loading: false
+        }
+      }));
     } catch (error) {
       console.error('Failed to test sound:', error);
       setTestError(error.message);
+      
+      // Update loading state on error
+      setSoundLoadingStates(prev => ({
+        ...prev,
+        [selectedSound]: {
+          loaded: false,
+          loading: false
+        }
+      }));
     } finally {
       // Keep the testing state for a brief moment to provide visual feedback
       setTimeout(() => setIsTestingSound(false), 1000);
@@ -66,14 +108,53 @@ export function PreferencesModal({ isOpen, onClose }) {
   }, [tempPreferences.audio, isTestingSound]);
 
   /**
-   * Handle updating temp audio preferences
+   * Handle updating temp audio preferences with sound change optimization
    */
   const updateTempAudioPreferences = useCallback((updates) => {
     setTempPreferences(prev => ({ 
       ...prev, 
       audio: { ...prev.audio, ...updates }
     }));
-  }, []);
+    
+    // If selected sound changed, update loading states and preload new sound
+    if (updates.selectedSound && updates.selectedSound !== tempPreferences.audio.selectedSound) {
+      const newSound = updates.selectedSound;
+      
+      // Update loading state
+      setSoundLoadingStates(prev => ({
+        ...prev,
+        [newSound]: {
+          loaded: audioAlertService.isLoaded(newSound),
+          loading: !audioAlertService.isLoaded(newSound)
+        }
+      }));
+      
+      // Preload the new sound if not already loaded
+      if (!audioAlertService.isLoaded(newSound)) {
+        const loadPromise = audioAlertService.loadSound(newSound, true);
+        // Ensure loadSound returns a promise in all cases
+        if (loadPromise && typeof loadPromise.then === 'function') {
+          loadPromise.then(() => {
+            setSoundLoadingStates(prev => ({
+              ...prev,
+              [newSound]: {
+                loaded: true,
+                loading: false
+              }
+            }));
+          }).catch(() => {
+            setSoundLoadingStates(prev => ({
+              ...prev,
+              [newSound]: {
+                loaded: false,
+                loading: false
+              }
+            }));
+          });
+        }
+      }
+    }
+  }, [tempPreferences.audio]);
 
   /**
    * Handle updating temp language preference
@@ -177,9 +258,14 @@ export function PreferencesModal({ isOpen, onClose }) {
                     variant="secondary"
                     size="md"
                     className="px-3"
-                    title="Preview selected sound"
+                    title={soundLoadingStates[tempPreferences.audio.selectedSound]?.loading ? 
+                           "Loading sound..." : "Preview selected sound"}
                   >
-                    <Play className="h-4 w-4" />
+                    {soundLoadingStates[tempPreferences.audio.selectedSound]?.loading && !isTestingSound ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 

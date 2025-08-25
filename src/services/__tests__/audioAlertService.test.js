@@ -136,18 +136,28 @@ describe('AudioAlertService', () => {
       expect(typeof audioAlertService.stopAll).toBe('function');
     });
 
-    test('should preload all audio files on initialization', () => {
+    test('should lazy load audio files on initialization', () => {
       // Since service is a singleton and was loaded before our mocks,
       // we test that it has the required methods and options
       const availableSounds = audioAlertService.getAvailableSounds();
       expect(availableSounds).toEqual(AUDIO_ALERT_OPTIONS);
       expect(availableSounds.length).toBe(AUDIO_ALERT_OPTIONS.length);
+      
+      // Service should have lazy loading methods
+      expect(typeof audioAlertService.isLoaded).toBe('function');
+      expect(typeof audioAlertService.isLoading).toBe('function');
+      expect(typeof audioAlertService.loadSound).toBe('function');
     });
 
-    test('should handle initialization without throwing', () => {
+    test('should handle lazy loading initialization without throwing', () => {
       // Test that service initialization completed successfully
       expect(audioAlertService).toBeDefined();
       expect(audioAlertService.getAvailableSounds()).toBeDefined();
+      
+      // Test lazy loading specific methods
+      expect(typeof audioAlertService.triggerFullPreload).toBe('function');
+      expect(typeof audioAlertService.updateSelectedSound).toBe('function');
+      expect(typeof audioAlertService.getLoadingStatus).toBe('function');
     });
   });
 
@@ -209,6 +219,19 @@ describe('AudioAlertService', () => {
       expect(availableSounds).toEqual(AUDIO_ALERT_OPTIONS);
       expect(Array.isArray(availableSounds)).toBe(true);
       expect(availableSounds.length).toBe(AUDIO_ALERT_OPTIONS.length);
+    });
+  });
+
+  describe('Lazy Loading Integration', () => {
+    test('should handle lazy loading trigger', () => {
+      // Test that triggerFullPreload doesn't throw
+      expect(() => audioAlertService.triggerFullPreload()).not.toThrow();
+    });
+    
+    test('should handle selected sound updates', () => {
+      // Test that updateSelectedSound doesn't throw
+      expect(() => audioAlertService.updateSelectedSound('quick-chime')).not.toThrow();
+      expect(() => audioAlertService.updateSelectedSound('bells-echo')).not.toThrow();
     });
   });
 
