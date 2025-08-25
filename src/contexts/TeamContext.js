@@ -154,13 +154,10 @@ export const TeamProvider = ({ children }) => {
         return null;
       }
 
-      console.log('Club created successfully:', data.message);
-      
       // Refresh user club memberships to reflect the new admin membership
       const updatedClubs = await getClubMemberships();
       setUserClubs(updatedClubs);
-      console.log('Updated club memberships after creation:', updatedClubs.length, 'clubs');
-      
+
       return data.club;
     } catch (err) {
       console.error('Exception in createClub:', err);
@@ -230,8 +227,6 @@ export const TeamProvider = ({ children }) => {
         }
         return null;
       }
-
-      console.log('Team created successfully:', data.message);
 
       // Refresh user teams
       await getUserTeams();
@@ -410,27 +405,22 @@ export const TeamProvider = ({ children }) => {
         
         if (cachedData.userTeams) {
           setUserTeams(cachedData.userTeams);
-          console.log('✅ Cached teams loaded:', cachedData.userTeams.length);
         }
         
         if (cachedData.userClubs) {
           setUserClubs(cachedData.userClubs);
-          console.log('✅ Cached clubs loaded:', cachedData.userClubs.length);
         }
         
         if (cachedData.currentTeam) {
           setCurrentTeam(cachedData.currentTeam);
-          console.log('✅ Cached current team loaded:', cachedData.currentTeam.name);
         }
         
         if (cachedData.teamPlayers) {
           setTeamPlayers(cachedData.teamPlayers);
-          console.log('✅ Cached team players loaded:', cachedData.teamPlayers.length);
         }
         
         if (cachedData.pendingRequests) {
           setPendingRequests(cachedData.pendingRequests);
-          console.log('✅ Cached pending requests loaded:', cachedData.pendingRequests.length);
         }
         
         // Background refresh to update cache
@@ -444,16 +434,11 @@ export const TeamProvider = ({ children }) => {
         });
       } else {
         // Normal loading (fresh sign-in or no valid cache)
-        if (isPageRefresh) {
-          console.log('⚠️ Page refresh detected but no valid cache found - proceeding with normal data loading');
-        }
-        
+
         Promise.all([
           getUserTeams(),
           getClubMemberships()
         ]).then(([teams, clubs]) => {
-          console.log('Teams loaded:', teams.length);
-          console.log('Clubs loaded:', clubs.length);
           setUserClubs(clubs);
         }).catch((error) => {
           console.error('Error initializing user data:', error);
@@ -629,7 +614,6 @@ export const TeamProvider = ({ children }) => {
       }
 
       if (existingMembership) {
-        console.log('User is already a member of this club:', existingMembership);
         setError('You are already a member of this club');
         return null;
       }
@@ -819,8 +803,6 @@ export const TeamProvider = ({ children }) => {
         return { success: false, error: data?.error };
       }
 
-      console.log('Edge Function response:', data);
-      
       // Handle both success and warning cases (warning means database worked but email failed)
       if (data.warning) {
         console.warn('Invitation created with warning:', data.warning);
@@ -922,8 +904,6 @@ export const TeamProvider = ({ children }) => {
         return { success: false, error: errorMessage };
       }
 
-      console.log('Invitation accepted successfully:', data);
-
       // Refresh user teams to include the new team
       await getUserTeams();
 
@@ -1008,7 +988,6 @@ export const TeamProvider = ({ children }) => {
         }
       })) || [];
 
-      console.log('Pending invitations loaded:', invitations.length);
       return invitations;
     } catch (err) {
       console.error('Exception in getUserPendingInvitations:', err);
@@ -1043,9 +1022,7 @@ export const TeamProvider = ({ children }) => {
         return { success: false, error: errorMessage };
       }
 
-      console.log('Invitation declined successfully:', data);
-
-      return { 
+      return {
         success: true, 
         data,
         message: data?.message || 'Invitation declined successfully'
@@ -1156,7 +1133,11 @@ export const TeamProvider = ({ children }) => {
         }])
         .select(`
           id, created_at, requested_role, message, status,
-          team:team_id (id, name, club_id),
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          ),
           user:user_id (id, name)
         `)
         .single();
@@ -1197,7 +1178,11 @@ export const TeamProvider = ({ children }) => {
         .from('team_access_request')
         .select(`
           id, created_at, requested_role, message, status, reviewed_at, review_notes,
-          team:team_id (id, name, club_id)
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -1260,7 +1245,11 @@ export const TeamProvider = ({ children }) => {
         .select(`
           id, status, reviewed_at,
           user:user_id (id, name),
-          team:team_id (id, name)
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          )
         `)
         .single();
 
@@ -1303,7 +1292,11 @@ export const TeamProvider = ({ children }) => {
         .select(`
           id, status, reviewed_at, review_notes,
           user:user_id (id, name),
-          team:team_id (id, name)
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          )
         `)
         .single();
 

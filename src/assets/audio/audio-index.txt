@@ -1,0 +1,9 @@
+Bells Echo (@src/assets/audio/mixkit-alert-bells-echo-765.wav) - Default
+Quick Chime (@src/assets/audio/mixkit-alert-quick-chime-766.wav)
+Flute (@src/assets/audio/mixkit-uplifting-flute-notification-2317.wav)
+Arabian Harp (@src/assets/audio/mixkit-arabian-mystery-harp-notification-2489.wav)
+Announcement Tones (@src/assets/audio/mixkit-clear-announce-tones-2861.wav)
+Happy Bells (@src/assets/audio/mixkit-happy-bells-notification-937.wav)
+Magic Marimba (@src/assets/audio/mixkit-magic-marimba-2820.wav)
+Magic Ring (@src/assets/audio/mixkit-magic-notification-ring-2344.wav)
+Positive Note (@src/assets/audio/mixkit-positive-notification-951.wav)
