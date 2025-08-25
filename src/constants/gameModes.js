@@ -1,5 +1,6 @@
 import { PLAYER_ROLES, PLAYER_STATUS } from './playerConstants.js';
 import { SUBSTITUTION_TYPES, GAME_CONSTANTS } from './teamConfiguration.js';
+import { normalizeRole, validateRoleInDev } from './roleConstants.js';
 
 /**
  * Game Modes and Formation System
@@ -452,7 +453,7 @@ export function getBottomSubstitutePosition(teamConfig) {
 export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
   const definition = getModeDefinition(teamConfig);
   if (!definition) {
-    return { currentRole: PLAYER_ROLES.SUBSTITUTE, currentStatus: PLAYER_ROLES.SUBSTITUTE };
+    return { currentRole: PLAYER_ROLES.SUBSTITUTE, currentStatus: PLAYER_STATUS.SUBSTITUTE };
   }
 
   const isPairs = teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS;
@@ -472,6 +473,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
         if (pairData.defender === playerId) {
           const currentStatus = position === 'subPair' ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
           const currentRole = position === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.DEFENDER;
+          validateRoleInDev(currentRole, `initializePlayerRoleAndStatus pairs defender for position ${position}`);
           return {
             currentRole: currentRole,
             currentStatus: currentStatus,
@@ -482,6 +484,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
         if (pairData.attacker === playerId) {
           const currentStatus = position === 'subPair' ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
           const currentRole = position === 'subPair' ? PLAYER_ROLES.SUBSTITUTE : PLAYER_ROLES.ATTACKER;
+          validateRoleInDev(currentRole, `initializePlayerRoleAndStatus pairs attacker for position ${position}`);
           return {
             currentRole: currentRole,
             currentStatus: currentStatus,
@@ -496,7 +499,8 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
       if (assignedPlayerId === playerId) {
         const positionInfo = definition.positions[position];
         if (positionInfo) {
-          const role = positionInfo.role;
+          const role = normalizeRole(positionInfo.role);
+          validateRoleInDev(role, `initializePlayerRoleAndStatus for position ${position}`);
           // Map position types to proper status values for timer calculations
           let currentStatus;
           if (position === 'goalie') {
@@ -522,7 +526,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
   // Default to substitute if not found in formation
   return {
     currentRole: PLAYER_ROLES.SUBSTITUTE,
-    currentStatus: PLAYER_ROLES.SUBSTITUTE,
+    currentStatus: PLAYER_STATUS.SUBSTITUTE,
     currentPairKey: isPairs ? 'subPair' : 'substitute_1'
   };
 }

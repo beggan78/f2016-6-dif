@@ -61,7 +61,7 @@ export function PlayerStatsTable({
         const role = player.stats?.startedMatchAs;
         if (role === PLAYER_ROLES.GOALIE) return 'Goalie';
         if (role === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-        if (role === PLAYER_ROLES.ON_FIELD) return 'Field';
+        if (role === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
         return '--'; // Player didn't start the match
       }
     },

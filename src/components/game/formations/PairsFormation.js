@@ -4,7 +4,7 @@ import { getPositionEvents } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
-import { FORMATION_STYLES, ICON_STYLES } from './constants';
+import { FORMATION_STYLES, ICON_STYLES, POSITION_DISPLAY_NAMES } from './constants';
 
 export function PairsFormation({ 
   formation,
@@ -121,7 +121,7 @@ export function PairsFormation({
         style={styleProps}
         {...longPressEvents}
       >
-        <h3 className="text-sm font-semibold mb-1">Goalie</h3>
+        <h3 className="text-sm font-semibold mb-1">{POSITION_DISPLAY_NAMES.goalie}</h3>
         <div className="flex items-center justify-between">
           <div><Hand className={ICON_STYLES.small} /> {getPlayerNameById ? getPlayerNameById(goalieId) : goalieId}</div>
           <PlayerStatsDisplay playerId={goalieId} getPlayerTimeStats={getPlayerTimeStats} />
@@ -133,9 +133,9 @@ export function PairsFormation({
   return (
     <div className="space-y-2" {...domProps}>
       {renderGoalie()}
-      {renderPair('leftPair', 'Left', 0)}
-      {renderPair('rightPair', 'Right', 1)}
-      {renderPair('subPair', 'Substitutes', 2)}
+      {renderPair('leftPair', POSITION_DISPLAY_NAMES.leftPair, 0)}
+      {renderPair('rightPair', POSITION_DISPLAY_NAMES.rightPair, 1)}
+      {renderPair('subPair', POSITION_DISPLAY_NAMES.subPair, 2)}
     </div>
   );
 }

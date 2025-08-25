@@ -52,6 +52,8 @@ const GoalScorerModal = ({
         return ArrowDownUp;
       case PLAYER_ROLES.GOALIE:
         return Hand;
+      case PLAYER_ROLES.SUBSTITUTE:
+        return RotateCcw;
       default:
         return RotateCcw;
     }
@@ -72,6 +74,8 @@ const GoalScorerModal = ({
         return 'text-yellow-500';
       case PLAYER_ROLES.GOALIE:
         return 'text-green-500';
+      case PLAYER_ROLES.SUBSTITUTE:
+        return 'text-gray-400';
       default:
         return 'text-gray-400';
     }

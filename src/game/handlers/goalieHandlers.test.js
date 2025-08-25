@@ -8,6 +8,7 @@ import {
   createMockDependencies
 } from '../testUtils';
 import { TEAM_CONFIGS } from '../testUtils';
+import { PLAYER_STATUS } from '../../constants/playerConstants';
 
 jest.mock('../animation/animationSupport');
 jest.mock('../logic/gameStateLogic');
@@ -48,7 +49,7 @@ describe('createGoalieHandlers', () => {
       formation: { ...gameState.formation, goalie: newGoalieId },
       allPlayers: gameState.allPlayers.map(p => 
         p.id === newGoalieId 
-          ? { ...p, stats: { ...p.stats, currentStatus: 'GOALIE' }}
+          ? { ...p, stats: { ...p.stats, currentStatus: PLAYER_STATUS.GOALIE }}
           : p
       )
     }));
@@ -118,7 +119,7 @@ describe('createGoalieHandlers', () => {
 
     it('should filter out non-outfield players from available options', () => {
       const playersWithGoalie = mockPlayers.map(p => 
-        p.id === '7' ? { ...p, stats: { ...p.stats, currentStatus: 'GOALIE' }} : p
+        p.id === '7' ? { ...p, stats: { ...p.stats, currentStatus: PLAYER_STATUS.GOALIE } } : p
       );
 
       getOutfieldPlayers.mockReturnValue(playersWithGoalie.slice(0, 6));

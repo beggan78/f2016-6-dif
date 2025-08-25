@@ -51,10 +51,18 @@ export function ConfigurationScreen({
   debugMode = false,
   authModal,
   setView,
-  setViewWithData
+  setViewWithData,
+  syncPlayersFromTeamRoster
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
+  const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
+  
+  // Auth and Team hooks (must be before useEffect that use these values)
+  const { isAuthenticated, user } = useAuth();
+  const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
+  const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
+  const [showMigration, setShowMigration] = useState(false);
   
   // Formation voting hook
   const { 
@@ -90,6 +98,63 @@ export function ConfigurationScreen({
       }
     }
   }, [selectedSquadIds.length, selectedFormation, teamConfig?.substitutionType, handleSubstitutionModeChange]);
+
+  // Sync team roster to game state on mount and when team/players change
+  React.useEffect(() => {
+    console.log('🔄 Sync useEffect triggered:', { 
+      currentTeamId: currentTeam?.id, 
+      teamPlayersCount: teamPlayers.length 
+    });
+    
+    // Check sync requirements with descriptive variables
+    const hasCurrentTeam = !!currentTeam;
+    const hasTeamPlayers = teamPlayers && teamPlayers.length > 0;
+    const hasSyncFunction = !!syncPlayersFromTeamRoster;
+    
+    if (!hasCurrentTeam || !hasTeamPlayers || !hasSyncFunction) {
+      console.log('🚫 Sync skipped - missing requirements:', {
+        hasCurrentTeam,
+        hasTeamPlayers,
+        hasSyncFunction
+      });
+      return; // No team selected or no sync function available
+    }
+
+    const performSync = async () => {
+      setPlayerSyncStatus({ loading: true, message: 'Syncing team roster...' });
+      
+      try {
+        const result = syncPlayersFromTeamRoster(teamPlayers);
+        
+        if (result.success) {
+          setPlayerSyncStatus({ 
+            loading: false, 
+            message: result.message === 'No sync needed' ? '' : `✅ ${result.message}` 
+          });
+          
+          // Clear success message after 3 seconds
+          if (result.message !== 'No sync needed') {
+            setTimeout(() => {
+              setPlayerSyncStatus(prev => ({ ...prev, message: '' }));
+            }, 3000);
+          }
+        } else {
+          setPlayerSyncStatus({ 
+            loading: false, 
+            message: `⚠️ Sync failed: ${result.error}` 
+          });
+        }
+      } catch (error) {
+        console.error('ConfigurationScreen sync error:', error);
+        setPlayerSyncStatus({ 
+          loading: false, 
+          message: `⚠️ Sync error: ${error.message}` 
+        });
+      }
+    };
+
+    performSync();
+  }, [currentTeam, currentTeam?.id, teamPlayers, syncPlayersFromTeamRoster]);
 
   const handleFormationChange = (newFormation) => {
     const definition = FORMATION_DEFINITIONS[newFormation];
@@ -127,10 +192,6 @@ export function ConfigurationScreen({
     }
     // On error, keep modal open to show error message
   };
-  const { isAuthenticated, user } = useAuth();
-  const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
-  const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
-  const [showMigration, setShowMigration] = useState(false);
 
   // Update DataSyncManager when user changes
   useEffect(() => {
@@ -155,6 +216,15 @@ export function ConfigurationScreen({
         jerseyNumber: player.jersey_number
       }))
     : allPlayers;
+  
+  console.log('🔍 ConfigurationScreen render:', {
+    isAuthenticated,
+    currentTeam: currentTeam?.name,
+    teamPlayersCount: teamPlayers.length,
+    allPlayersCount: allPlayers.length,
+    playersToShowCount: playersToShow.length,
+    playersToShowSource: (isAuthenticated && currentTeam && teamPlayers.length > 0) ? 'teamPlayers' : 'allPlayers'
+  });
 
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
   React.useEffect(() => {
@@ -317,6 +387,16 @@ export function ConfigurationScreen({
       {isAuthenticated && currentTeam && (
         <div className="p-3 bg-sky-600/20 border border-sky-500 rounded-lg">
           <div className="text-sky-200 font-medium">Team: {currentTeam.club?.name} {currentTeam.name}</div>
+          {playerSyncStatus.loading && (
+            <div className="text-sky-300 text-sm mt-1">
+              🔄 {playerSyncStatus.message}
+            </div>
+          )}
+          {!playerSyncStatus.loading && playerSyncStatus.message && (
+            <div className="text-sky-300 text-sm mt-1">
+              {playerSyncStatus.message}
+            </div>
+          )}
         </div>
       )}
 

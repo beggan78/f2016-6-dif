@@ -142,7 +142,7 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
         timeAsDefenderSeconds: role === PLAYER_ROLES.DEFENDER ? i * 15 : 0,
         timeAsSubSeconds: status === PLAYER_STATUS.SUBSTITUTE ? i * 10 : 0,
         timeAsGoalieSeconds: status === PLAYER_STATUS.GOALIE ? i * 30 : 0,
-        startedMatchAs: status === PLAYER_STATUS.ON_FIELD ? PLAYER_ROLES.ON_FIELD :
+        startedMatchAs: status === PLAYER_STATUS.ON_FIELD ? PLAYER_ROLES.FIELD_PLAYER :
                        status === PLAYER_STATUS.GOALIE ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
         periodsAsGoalie: status === PLAYER_STATUS.GOALIE ? 1 : 0,
         periodsAsDefender: role === PLAYER_ROLES.DEFENDER ? 1 : 0,

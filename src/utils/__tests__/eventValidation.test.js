@@ -19,7 +19,7 @@ jest.mock('../gameEventLogger', () => ({
     MATCH_END: 'match_end',
     SUBSTITUTION: 'substitution',
     GOALIE_SWITCH: 'goalie_switch',
-    GOAL_SCORED: 'goal_home',
+    GOAL_SCORED: 'goal_scored',
     GOAL_CONCEDED: 'goal_conceded',
     TIMER_PAUSED: 'timer_paused',
     TIMER_RESUMED: 'timer_resumed',

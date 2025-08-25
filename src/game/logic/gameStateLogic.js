@@ -8,6 +8,7 @@ import { createSubstitutionManager } from './substitutionManager';
 import { findPlayerById } from '../../utils/playerUtils';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { normalizeRole } from '../../constants/roleConstants';
 import { POSITION_KEYS } from '../../constants/positionConstants';
 import { handleRoleChange } from './substitutionManager';
 import { updatePlayerTimeStats } from '../time/stintManager';
@@ -531,14 +532,15 @@ export const calculateUndo = (gameState, lastSubstitution) => {
       currentStats.timeOnFieldSeconds += timeSinceSubstitution;
       
       // Add bench time to their role-specific counter based on what role they had when substituted
-      if (currentStats.currentRole === 'Attacker') {
+      const normalizedRole = normalizeRole(currentStats.currentRole);
+      if (normalizedRole === PLAYER_ROLES.ATTACKER) {
         currentStats.timeAsAttackerSeconds += timeSinceSubstitution;
-      } else if (currentStats.currentRole === 'Defender') {
+      } else if (normalizedRole === PLAYER_ROLES.DEFENDER) {
         currentStats.timeAsDefenderSeconds += timeSinceSubstitution;
       }
 
       // Update their status back to 'on_field' and reset stint timer
-      currentStats.currentStatus = 'on_field';
+      currentStats.currentStatus = PLAYER_STATUS.ON_FIELD;
       currentStats.lastStintStartTimeEpoch = currentTime;
       
       // Restore their field position from the before-substitution formation

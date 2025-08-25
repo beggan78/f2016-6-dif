@@ -102,7 +102,7 @@ export const generateStatsText = (squadForStats, ownScore, opponentScore, oppone
   squadForStats.forEach(player => {
     const { goaliePoints, defenderPoints, midfielderPoints, attackerPoints } = calculateRolePoints(player);
     const startedAs = player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
-                     player.stats.startedMatchAs === PLAYER_ROLES.ON_FIELD ? 'S' :
+                     player.stats.startedMatchAs === PLAYER_ROLES.FIELD_PLAYER ? 'S' :
                      player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-';
     
     const playerNameWithCaptain = formatPlayerName(player);

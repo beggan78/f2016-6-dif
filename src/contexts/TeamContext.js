@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { getCachedTeamData, cacheTeamData } from '../utils/cacheUtils';
 import { sanitizeSearchInput } from '../utils/inputSanitization';
+import { syncTeamRosterToGameState } from '../utils/playerSyncUtils';
 
 const TeamContext = createContext({});
 
@@ -266,6 +267,7 @@ export const TeamProvider = ({ children }) => {
 
   // Create a new player for current team
   const createPlayer = useCallback(async (playerData) => {
+    console.log('🔍 BEFORE createPlayer - teamPlayers count:', teamPlayers.length);
     if (!currentTeam) {
       setError('No team selected');
       return null;
@@ -294,6 +296,19 @@ export const TeamProvider = ({ children }) => {
       // Refresh team players
       const updatedPlayers = await getTeamPlayers(currentTeam.id);
       setTeamPlayers(updatedPlayers);
+      console.log('✅ AFTER createPlayer - updated teamPlayers count:', updatedPlayers.length);
+
+      // Sync new player to game state localStorage
+      try {
+        const syncResult = syncTeamRosterToGameState(updatedPlayers, []);
+        if (syncResult.success) {
+          console.log('✅ New player synced to game state:', data.name);
+        } else {
+          console.warn('⚠️ Failed to sync new player to game state:', syncResult.error);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Player sync error (non-blocking):', syncError);
+      }
 
       return data;
     } catch (err) {
@@ -303,7 +318,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [currentTeam, clearError, getTeamPlayers]);
+  }, [currentTeam, clearError, getTeamPlayers, teamPlayers.length]);
 
   // Switch current team
   const switchCurrentTeam = useCallback(async (teamId) => {
@@ -318,6 +333,18 @@ export const TeamProvider = ({ children }) => {
     // Load players for this team
     const players = await getTeamPlayers(teamId);
     setTeamPlayers(players);
+
+    // Sync team roster to game state localStorage
+    try {
+      const syncResult = syncTeamRosterToGameState(players, []);
+      if (syncResult.success) {
+        console.log('✅ Team roster synced to game state:', syncResult.message);
+      } else {
+        console.warn('⚠️ Failed to sync team roster to game state:', syncResult.error);
+      }
+    } catch (syncError) {
+      console.warn('⚠️ Team roster sync error (non-blocking):', syncError);
+    }
 
     // Cache the current team and players
     cacheTeamData({ 
@@ -1353,6 +1380,7 @@ export const TeamProvider = ({ children }) => {
 
   // Add player to team roster
   const addRosterPlayer = useCallback(async (teamId, playerData) => {
+    console.log('🔍 BEFORE addRosterPlayer - teamPlayers count:', teamPlayers.length);
     if (!teamId || !playerData?.name) return null;
 
     try {
@@ -1388,12 +1416,31 @@ export const TeamProvider = ({ children }) => {
         throw new Error('Failed to add player to roster');
       }
 
+      // Update teamPlayers state if this is for the current team
+      if (currentTeam?.id === teamId) {
+        const updatedPlayers = await getTeamPlayers(teamId);
+        setTeamPlayers(updatedPlayers);
+        console.log('✅ AFTER addRosterPlayer - updated teamPlayers count:', updatedPlayers.length);
+        
+        // Sync new player to game state localStorage for consistency
+        try {
+          const syncResult = syncTeamRosterToGameState(updatedPlayers, []);
+          if (syncResult.success) {
+            console.log('✅ New roster player synced to game state:', data.name);
+          } else {
+            console.warn('⚠️ Failed to sync new roster player to game state:', syncResult.error);
+          }
+        } catch (syncError) {
+          console.warn('⚠️ Roster player sync error (non-blocking):', syncError);
+        }
+      }
+
       return data;
     } catch (err) {
       console.error('Exception in addRosterPlayer:', err);
       throw err;
     }
-  }, [user]);
+  }, [user, currentTeam, getTeamPlayers, teamPlayers.length]);
 
   // Update roster player
   const updateRosterPlayer = useCallback(async (playerId, updates) => {

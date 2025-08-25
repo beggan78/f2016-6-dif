@@ -16,6 +16,7 @@ import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
+import { syncTeamRosterToGameState, analyzePlayerSync } from '../utils/playerSyncUtils';
 import { audioAlertService } from '../services/audioAlertService';
 import { usePreferences } from '../contexts/PreferencesContext';
 
@@ -45,10 +46,10 @@ export function useGameState() {
   const { currentTeam } = useTeam();
   // Get audio preferences for alert integration
   const { audioPreferences } = usePreferences();
-  
+
   // Initialize state from PersistenceManager
   const initialState = persistenceManager.loadState();
-  
+
   // Ensure allPlayers is initialized if not present
   if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
     initialState.allPlayers = initializePlayers(initialRoster);
@@ -89,7 +90,7 @@ export function useGameState() {
   const [teamConfig, setTeamConfig] = useState(initialState.teamConfig); // New team configuration
   const [selectedFormation, setSelectedFormation] = useState(initialState.selectedFormation || FORMATIONS.FORMATION_2_2); // UI formation selection
   const [alertMinutes, setAlertMinutes] = useState(initialState.alertMinutes);
-  
+
   const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
   const [formation, setFormation] = useState(initialState.formation);
   const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
@@ -294,7 +295,7 @@ export function useGameState() {
    */
   const playAlertSounds = useCallback(async () => {
     console.log('⏰ ALERT TRIGGERED! Starting alerts...');
-    
+
     // Existing vibration alert (unchanged)
     if ('vibrate' in navigator) {
       console.log('📳 Triggering vibration alert');
@@ -302,14 +303,14 @@ export function useGameState() {
     } else {
       console.log('📳 Vibration not supported');
     }
-    
+
     // Audio alert
     console.log('🔊 Checking audio alert - enabled:', audioPreferences.enabled, 'sound:', audioPreferences.selectedSound, 'volume:', audioPreferences.volume);
     if (audioPreferences.enabled) {
       try {
         console.log('🎵 Attempting to play audio alert...');
         await audioAlertService.play(
-          audioPreferences.selectedSound, 
+          audioPreferences.selectedSound,
           audioPreferences.volume
         );
         console.log('✅ Audio alert played successfully');
@@ -355,11 +356,14 @@ export function useGameState() {
       timerPauseStartTime,
       totalMatchPausedDuration,
       captainId,
+      // Match lifecycle state management
+      currentMatchId,
+      matchCreationAttempted,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted]);
 
 
 
@@ -604,15 +608,19 @@ export function useGameState() {
         // SAFEGUARD: Clear any stale startedMatchAs values for new games
         if (currentPeriodNumber === 1) {
           initialStats.startedMatchAs = null;
+          initialStats.startedAtPosition = null; // Clear formation position too
         }
         
         if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
           let newStartedMatchAs = null;
           if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
-          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.ON_FIELD;
+          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
           else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
           
           initialStats.startedMatchAs = newStartedMatchAs;
+
+          // Store the specific formation position for formation-aware role mapping
+          initialStats.startedAtPosition = currentPairKey;
         }
         
         return {
@@ -739,7 +747,7 @@ export function useGameState() {
 
     // Request wake lock (alert timer now handled by visual timer logic)
     requestWakeLock();
-    
+
     setView(VIEWS.GAME);
     
     // Sync match data after game starts (small delay to ensure events are logged)
@@ -906,6 +914,10 @@ export function useGameState() {
       
       // Clear captain assignment
       setCaptainId(null);
+
+      // Clear match lifecycle state to prevent ID reuse
+      setCurrentMatchId(null);
+      setMatchCreationAttempted(false);
     } else {
       console.warn('Failed to clear game events');
     }
@@ -1459,7 +1471,7 @@ export function useGameState() {
         
         // Determine new role and status based on position they're moving to
         let newRole = PLAYER_ROLES.DEFENDER; // Default
-        let newStatus = 'on_field'; // Default
+        let newStatus = PLAYER_STATUS.ON_FIELD; // Default
         
         if (teamConfig.substitutionType === 'pairs') {
           if (newGoaliePosition === 'leftPair' || newGoaliePosition === 'rightPair') {
@@ -1472,7 +1484,7 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'on_field';
+            newStatus = PLAYER_STATUS.ON_FIELD;
           } else if (newGoaliePosition === 'subPair') {
             // Substitute position
             const pairData = formation[newGoaliePosition];
@@ -1483,12 +1495,12 @@ export function useGameState() {
                 newRole = PLAYER_ROLES.ATTACKER;
               }
             }
-            newStatus = 'substitute';
+            newStatus = PLAYER_STATUS.SUBSTITUTE;
           }
         } else {
           // Individual formations - use centralized role determination
           newRole = getPositionRole(newGoaliePosition) || PLAYER_ROLES.DEFENDER; // Default to defender
-          newStatus = newGoaliePosition.includes('substitute') ? 'substitute' : 'on_field';
+          newStatus = newGoaliePosition.includes('substitute') ? PLAYER_STATUS.SUBSTITUTE : PLAYER_STATUS.ON_FIELD;
         }
         
         // Handle role change from goalie to new position
@@ -1517,7 +1529,7 @@ export function useGameState() {
         );
         
         // Update status and position
-        newStats.currentStatus = 'goalie';
+        newStats.currentStatus = PLAYER_STATUS.GOALIE;
         newStats.currentPairKey = 'goalie';
         
         return { ...p, stats: newStats };
@@ -1620,6 +1632,34 @@ export function useGameState() {
     return newConfig;
   }, [selectedFormation, updateTeamConfig]);
 
+  // Sync team roster players to game state
+  const syncPlayersFromTeamRoster = useCallback((teamPlayers) => {
+    try {
+      const analysis = analyzePlayerSync(teamPlayers, allPlayers);
+      console.log('📊 Player sync analysis:', analysis.summary);
+
+      if (analysis.needsSync) {
+        console.log('🔄 Syncing missing players to game state...');
+        const syncResult = syncTeamRosterToGameState(teamPlayers, allPlayers);
+
+        if (syncResult.success) {
+          setAllPlayers(syncResult.players);
+          console.log('✅ Players synced successfully:', syncResult.message);
+          return { success: true, message: syncResult.message };
+        } else {
+          console.warn('⚠️ Player sync failed:', syncResult.error);
+          return { success: false, error: syncResult.error };
+        }
+      } else {
+        console.log('✅ All team players already available in game state');
+        return { success: true, message: 'No sync needed' };
+      }
+    } catch (error) {
+      console.error('❌ Player sync error:', error);
+      return { success: false, error: error.message };
+    }
+  }, [allPlayers]);
+
   return {
     // State
     allPlayers,
@@ -1712,12 +1752,15 @@ export function useGameState() {
     
     // Audio alert function (called by visual timer logic)
     playAlertSounds,
-    
+
     // Team Configuration Management
     updateTeamConfig,
     updateFormationSelection,
     createTeamConfigFromSquadSize,
     
+    // Player Synchronization
+    syncPlayersFromTeamRoster,
+
     // Enhanced persistence actions
     createManualBackup,
     listAvailableBackups,
