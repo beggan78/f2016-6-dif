@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Users, UserPen, Dice5 } from 'lucide-react';
+import { Users, UserPen, Dice5, Settings } from 'lucide-react';
 import { hasInactivePlayersInSquad } from '../../utils/playerUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onSignOut }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile } = useAuth();
   const { hasTeams, canManageTeam, hasPendingRequests, pendingRequestsCount } = useTeam();
@@ -82,6 +82,13 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     setIsOpen(false);
     // TODO: Open create team modal
     console.log('Create team clicked');
+  };
+
+  const handlePreferences = () => {
+    setIsOpen(false);
+    if (onOpenPreferencesModal) {
+      onOpenPreferencesModal();
+    }
   };
 
   const isConfigScreen = currentView === 'config';
@@ -176,6 +183,17 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                     <div className="flex items-center space-x-2">
                       <UserPen className="w-4 h-4" />
                       <span>Profile</span>
+                    </div>
+                  </button>
+
+                  {/* Preferences Button */}
+                  <button
+                    onClick={handlePreferences}
+                    className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Settings className="w-4 h-4" />
+                      <span>Preferences</span>
                     </div>
                   </button>
 

@@ -218,9 +218,7 @@ export function AuthProvider({ children }) {
     // Listen for auth changes - this will handle initial session too
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        debugLog(`Auth event: ${event}`, session?.user ? { userId: session.user.id, email: session.user.email } : null);
-        
-        
+
         // Handle sign out
         if (event === 'SIGNED_OUT' || !session?.user) {
           setUser(null);
@@ -237,7 +235,6 @@ export function AuthProvider({ children }) {
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && initializedRef.current && session?.user) {
           // Extra check: are we processing the same user?
           if (currentUserIdRef.current === session.user.id) {
-            debugLog(`Ignoring duplicate ${event} event for same user ${session.user.id}`);
             return;
           }
         }

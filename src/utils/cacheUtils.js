@@ -201,7 +201,6 @@ export const clearAllCache = () => {
       localStorage.removeItem(getCacheKey(key));
     });
     
-    console.log('All cache cleared');
   } catch (error) {
     console.warn('Error clearing all cache:', error);
   }
@@ -216,18 +215,17 @@ export const clearExpiredCache = () => {
   const meta = getCacheMeta();
   if (!meta) return;
   
-  let clearedCount = 0;
+  // let clearedCount = 0;
   
   Object.keys(meta).forEach(key => {
     if (key === 'lastUpdated') return; // Skip meta fields
     
     if (!isCacheValid(key)) {
       removeFromCache(key);
-      clearedCount++;
+      // clearedCount++;
     }
   });
   
-  console.log(`Cleared ${clearedCount} expired cache entries`);
 };
 
 /**

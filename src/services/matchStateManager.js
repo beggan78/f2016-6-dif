@@ -69,9 +69,6 @@ export async function createMatch(matchData) {
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Match created successfully:', data.id);
-    }
     return {
       success: true,
       matchId: data.id
@@ -120,9 +117,6 @@ export async function updateMatchToFinished(matchId, finalStats) {
       fair_play_award: finalStats.fairPlayAwardId || null
     };
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🏁 Updating match to finished:', matchId, updateData);
-    }
 
     const { error } = await supabase
       .from('match')
@@ -138,9 +132,6 @@ export async function updateMatchToFinished(matchId, finalStats) {
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Match updated to finished successfully');
-    }
     return { success: true };
 
   } catch (error) {
@@ -159,9 +150,6 @@ export async function updateMatchToFinished(matchId, finalStats) {
  */
 export async function updateMatchToConfirmed(matchId) {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Updating match to confirmed:', matchId);
-    }
 
     const { error } = await supabase
       .from('match')
@@ -177,9 +165,6 @@ export async function updateMatchToConfirmed(matchId) {
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Match confirmed successfully');
-    }
     return { success: true };
 
   } catch (error) {
@@ -357,24 +342,24 @@ export function mapFormationPositionToRole(position, currentRole = null) {
     // Goalie position
     case 'goalie':
       return roleToDatabase(PLAYER_ROLES.GOALIE);
-    
+
     // Defender positions (2-2 and 1-2-1 formations)
     case 'leftDefender':
     case 'rightDefender':
     case 'defender':        // 1-2-1 center back
       return roleToDatabase(PLAYER_ROLES.DEFENDER);
-    
+
     // Midfielder positions (1-2-1 formation)
     case 'left':            // Left midfielder in 1-2-1
     case 'right':           // Right midfielder in 1-2-1
       return roleToDatabase(PLAYER_ROLES.MIDFIELDER);
-    
-    // Attacker positions (2-2 and 1-2-1 formations)  
+
+    // Attacker positions (2-2 and 1-2-1 formations)
     case 'leftAttacker':
     case 'rightAttacker':
     case 'attacker':        // 1-2-1 center forward
       return roleToDatabase(PLAYER_ROLES.ATTACKER);
-    
+
     // Substitute positions
     case 'substitute':
     case 'substitute_1':
@@ -383,7 +368,7 @@ export function mapFormationPositionToRole(position, currentRole = null) {
     case 'substitute_4':
     case 'substitute_5':
       return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
-    
+
     default:
       console.warn('⚠️  Unexpected position value:', position);
       return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
@@ -403,12 +388,12 @@ export function mapStartingRoleToDBRole(gameStateRole) {
 
   // Normalize any role format to PLAYER_ROLES constant, then convert to database format
   const normalizedRole = normalizeRole(gameStateRole);
-  
+
   // For 'FIELD_PLAYER', default to 'defender' since we track actual time in specific roles
   if (normalizedRole === PLAYER_ROLES.FIELD_PLAYER) {
     return roleToDatabase(PLAYER_ROLES.DEFENDER);
   }
-  
+
   return roleToDatabase(normalizedRole);
 }
 
@@ -425,10 +410,10 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
     GOAL_SCORED: 'goal_scored',
     GOAL_CONCEDED: 'goal_conceded'
   };
-  
+
   let goalCount = 0;
-  
-  
+
+
   // Count goals from match events (same logic as PlayerStatsTable)
   if (matchEvents && Array.isArray(matchEvents)) {
     matchEvents.forEach(event => {
@@ -441,12 +426,12 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
       }
     });
   }
-  
+
   // Fallback to goalScorers object if no matchEvents (backward compatibility)
   if (goalCount === 0 && goalScorers && typeof goalScorers === 'object') {
     goalCount = Object.values(goalScorers).filter(scorerId => scorerId === playerId).length;
   }
-  
+
   return goalCount;
 }
 
@@ -466,7 +451,7 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
 
   // Calculate total field time excluding goalie time
   const totalFieldTime = Math.max(0, (player.stats.timeOnFieldSeconds || 0) - (player.stats.timeAsGoalieSeconds || 0));
-  
+
   // Count goals scored by this player
   const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 
@@ -492,7 +477,7 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
     // Total outfield time (excluding goalie time)
     total_field_time_seconds: totalFieldTime,
     // Match participation details
-    started_as: player.stats.startedAtPosition 
+    started_as: player.stats.startedAtPosition
       ? mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole)
       : mapStartingRoleToDBRole(player.stats.startedMatchAs), // Fallback for backward compatibility
     was_captain: player.stats.isCaptain || false,

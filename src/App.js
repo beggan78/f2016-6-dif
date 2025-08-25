@@ -25,9 +25,11 @@ import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
+import { PreferencesModal } from './components/shared/PreferencesModal';
 import { isDebugMode } from './utils/debugUtils';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TeamProvider, useTeam } from './contexts/TeamContext';
+import { PreferencesProvider } from './contexts/PreferencesContext';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
@@ -83,7 +85,7 @@ const clearDismissedModals = () => {
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
   const gameState = useGameState();
-  const timers = useTimers(gameState.periodDurationMinutes);
+  const timers = useTimers(gameState.periodDurationMinutes, gameState.alertMinutes, gameState.playAlertSounds);
   const {
     showSessionWarning,
     sessionExpiry,
@@ -144,6 +146,7 @@ function AppContent() {
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [fromView, setFromView] = useState(null);
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
@@ -727,6 +730,19 @@ function AppContent() {
     });
   }, [pushNavigationState]);
 
+  // Preferences modal handlers
+  const handleOpenPreferencesModal = useCallback(() => {
+    setShowPreferencesModal(true);
+    // Add modal to browser back button handling
+    pushNavigationState(() => {
+      setShowPreferencesModal(false);
+    });
+  }, [pushNavigationState]);
+
+  const handleClosePreferencesModal = useCallback(() => {
+    setShowPreferencesModal(false);
+  }, []);
+
   const handleCloseTeamAdminModal = useCallback(() => {
     // Mark this team's access modal as dismissed for this session
     if (selectedTeamForAdmin) {
@@ -980,6 +996,7 @@ function AppContent() {
             setView={gameState.setView}
             authModal={authModal}
             onOpenTeamAdminModal={handleOpenTeamAdminModal}
+            onOpenPreferencesModal={handleOpenPreferencesModal}
             onSignOut={handleSignOut}
           />
         </div>
@@ -1111,16 +1128,24 @@ function AppContent() {
           onClose={() => setShowInvitationNotifications(false)}
           onInvitationProcessed={handleInvitationNotificationProcessed}
         />
+
+        {/* Preferences Modal */}
+        <PreferencesModal
+          isOpen={showPreferencesModal}
+          onClose={handleClosePreferencesModal}
+        />
       </div>
   );
 }
 
-// Main App Component with AuthProvider and TeamProvider
+// Main App Component with AuthProvider, TeamProvider, and PreferencesProvider
 function App() {
   return (
     <AuthProvider>
       <TeamProvider>
-        <AppContent />
+        <PreferencesProvider>
+          <AppContent />
+        </PreferencesProvider>
       </TeamProvider>
     </AuthProvider>
   );
