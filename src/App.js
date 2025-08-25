@@ -37,8 +37,7 @@ import { InvitationNotificationModal } from './components/team/InvitationNotific
 import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
 import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
-import { checkForRecoverableMatch, deleteAbandonedMatch, getRecoveryMatchData, validateRecoveryData } from './services/matchRecoveryService';
-import { updateMatchToConfirmed, insertPlayerMatchStats } from './services/matchStateManager';
+import { useMatchRecovery } from './hooks/useMatchRecovery';
 
 // Dismissed modals localStorage utilities
 const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
@@ -150,10 +149,6 @@ function AppContent() {
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Match recovery state
-  const [recoveryMatch, setRecoveryMatch] = useState(null);
-  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
-  const [isProcessingRecovery, setIsProcessingRecovery] = useState(false);
 
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
@@ -406,53 +401,6 @@ function AppContent() {
     clearDismissedModals();
   }, [user?.id]); // Only trigger when user ID changes (not on every user object change)
 
-  // Check for recoverable match on login
-  useEffect(() => {
-    if (user && currentTeam && !invitationParams && !needsProfileCompletion) {
-      // Small delay to allow other authentication flows to complete
-      const timer = setTimeout(async () => {
-        try {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 Checking for recoverable match...');
-          }
-          
-          const result = await checkForRecoverableMatch();
-          
-          if (result.success && result.match) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('✅ Found recoverable match:', result.match.id);
-            }
-            
-            // Validate localStorage data against database match
-            const localData = getRecoveryMatchData();
-            if (validateRecoveryData(result.match, localData)) {
-              setRecoveryMatch(result.match);
-              setShowRecoveryModal(true);
-            } else {
-              if (process.env.NODE_ENV === 'development') {
-                console.warn('⚠️ Recovery data validation failed, cleaning up orphaned match');
-              }
-              // Clean up orphaned match and localStorage
-              await deleteAbandonedMatch(result.match.id);
-              gameState.clearStoredState();
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error checking for recoverable match:', error);
-        }
-      }, 1500); // Slightly longer delay to avoid conflicts with other systems
-
-      return () => clearTimeout(timer);
-    }
-
-    // Reset recovery state when user changes
-    if (!user) {
-      setRecoveryMatch(null);
-      setShowRecoveryModal(false);
-      setIsProcessingRecovery(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentTeam, invitationParams, needsProfileCompletion]);
 
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
@@ -485,6 +433,59 @@ function AppContent() {
     handleCancel: handleAbandonCancel, 
     matchState 
   } = useMatchAbandonmentGuard();
+
+  // Match recovery functionality
+  const {
+    showRecoveryModal,
+    recoveryMatch,
+    isProcessingRecovery,
+    handleSaveRecovery,
+    handleAbandonRecovery,
+    handleCloseRecovery
+  } = useMatchRecovery({
+    user,
+    currentTeam,
+    invitationParams,
+    needsProfileCompletion,
+    gameState,
+    setSuccessMessage
+  });
+  
+  // Add global helper for browser console debugging (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      window.debugMatchState = () => {
+        console.group('🔧 Debug Match State Helper');
+        console.log('Game State Values:', {
+          currentMatchId: gameState.currentMatchId,
+          matchState: gameState.matchState,
+          view: gameState.view,
+          matchStartTime: gameState.matchStartTime
+        });
+        
+        const matchStateHook = {
+          currentMatchId: gameState.currentMatchId,
+          matchState: gameState.matchState,
+          hasActiveMatch: Boolean(gameState.currentMatchId && (gameState.matchState === 'running' || gameState.matchState === 'finished')),
+          hasUnsavedMatch: Boolean(gameState.currentMatchId && gameState.matchState === 'finished'),
+          isMatchRunning: Boolean(gameState.currentMatchId && gameState.matchState === 'running')
+        };
+        
+        console.log('Calculated Match State:', matchStateHook);
+        console.log('Expected Modal Behavior:', {
+          'Should show abandonment modal': matchStateHook.hasActiveMatch ? '✅ YES' : '❌ NO',
+          'Reason': matchStateHook.hasActiveMatch 
+            ? `Active match detected (${matchStateHook.matchState})` 
+            : 'No active match or invalid state'
+        });
+        console.groupEnd();
+        
+        return matchStateHook;
+      };
+      
+      console.log('🔧 Global debug helper available: window.debugMatchState()');
+    }
+  }, [gameState.currentMatchId, gameState.matchState, gameState.view, gameState.matchStartTime]);
   
   // Store the pushNavigationState function in the ref
   useEffect(() => {
@@ -641,7 +642,9 @@ function AppContent() {
   };
 
   const handleNewGameFromMenu = () => {
+    console.log('🍔 New Game from Hamburger Menu - calling requestNewGame()');
     requestNewGame(() => {
+      console.log('🍔 New Game from Menu - executing callback (handleRestartMatch)');
       handleRestartMatch();
     });
   };
@@ -667,7 +670,9 @@ function AppContent() {
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = () => {
+    console.log('⏰ New Game Confirmation (Browser Back) - calling requestNewGame()');
     requestNewGame(() => {
+      console.log('⏰ New Game Confirmation - executing callback');
       setShowNewGameModal(false);
       removeFromNavigationStack();
       handleRestartMatch();
@@ -681,109 +686,6 @@ function AppContent() {
     removeFromNavigationStack();
   };
 
-  // Match recovery handlers
-  const handleSaveRecovery = async () => {
-    if (!recoveryMatch || isProcessingRecovery) return;
-
-    setIsProcessingRecovery(true);
-    try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Saving recovered match to history:', recoveryMatch.id);
-      }
-
-      // Get match data from localStorage
-      const localData = getRecoveryMatchData();
-      if (!localData) {
-        throw new Error('No recovery data found in localStorage');
-      }
-
-      // Update match to confirmed state
-      const updateResult = await updateMatchToConfirmed(recoveryMatch.id);
-      if (!updateResult.success) {
-        throw new Error(updateResult.error);
-      }
-
-      // Insert player statistics
-      const statsResult = await insertPlayerMatchStats(
-        recoveryMatch.id,
-        localData.allPlayers || [],
-        localData.matchEvents || [],
-        localData.goalScorers || {}
-      );
-      if (!statsResult.success) {
-        console.warn('⚠️ Failed to save player statistics:', statsResult.error);
-        // Continue even if stats fail - match is already saved
-      }
-
-      // Clear localStorage data
-      gameState.clearStoredState();
-
-      // Show success message
-      setSuccessMessage('Match successfully saved to history!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-
-      // Close modal
-      setShowRecoveryModal(false);
-      setRecoveryMatch(null);
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Match recovery completed successfully');
-      }
-
-    } catch (error) {
-      console.error('❌ Failed to save recovered match:', error);
-      setSuccessMessage('Failed to save match. Please try again.');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } finally {
-      setIsProcessingRecovery(false);
-    }
-  };
-
-  const handleAbandonRecovery = async () => {
-    if (!recoveryMatch || isProcessingRecovery) return;
-
-    setIsProcessingRecovery(true);
-    try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🗑️ Deleting abandoned recovered match:', recoveryMatch.id);
-      }
-
-      // Delete match from database
-      const deleteResult = await deleteAbandonedMatch(recoveryMatch.id);
-      if (!deleteResult.success) {
-        throw new Error(deleteResult.error);
-      }
-
-      // Clear localStorage data
-      gameState.clearStoredState();
-
-      // Show success message
-      setSuccessMessage('Match deleted successfully');
-      setTimeout(() => setSuccessMessage(''), 3000);
-
-      // Close modal
-      setShowRecoveryModal(false);
-      setRecoveryMatch(null);
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Abandoned match deleted successfully');
-      }
-
-    } catch (error) {
-      console.error('❌ Failed to delete abandoned match:', error);
-      setSuccessMessage('Failed to delete match. Please try again.');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } finally {
-      setIsProcessingRecovery(false);
-    }
-  };
-
-  const handleCloseRecovery = () => {
-    if (!isProcessingRecovery) {
-      setShowRecoveryModal(false);
-      setRecoveryMatch(null);
-    }
-  };
 
   const handleLeaveSportWizard = () => {
     // Close the modal first

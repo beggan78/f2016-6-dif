@@ -28,19 +28,36 @@ export function useMatchAbandonmentGuard() {
    * @param {function} callback - Function to execute if user confirms or no active match
    */
   const requestNewGame = useCallback((callback) => {
+    console.group('🚨 Match Abandonment Guard - requestNewGame()');
+    console.log('Callback type:', typeof callback);
+    console.log('Raw match state from useMatchState:', matchState);
+    console.log('Key values:', {
+      currentMatchId: matchState.currentMatchId,
+      matchState: matchState.matchState,
+      hasActiveMatch: matchState.hasActiveMatch,
+      hasUnsavedMatch: matchState.hasUnsavedMatch,
+      isMatchRunning: matchState.isMatchRunning
+    });
+
     if (typeof callback !== 'function') {
       console.warn('useMatchAbandonmentGuard: requestNewGame requires a callback function');
+      console.groupEnd();
       return;
     }
 
     if (matchState.hasActiveMatch) {
+      console.log('✅ Active match detected - showing abandonment modal');
+      console.log('Modal will be shown:', true);
       // Store the callback to execute after user confirms abandonment
       setPendingAction(() => callback);
       setShowModal(true);
     } else {
+      console.log('❌ No active match - executing callback immediately');
+      console.log('Modal will be shown:', false);
       // No active match, execute immediately
       callback();
     }
+    console.groupEnd();
   }, [matchState.hasActiveMatch]);
 
   /**

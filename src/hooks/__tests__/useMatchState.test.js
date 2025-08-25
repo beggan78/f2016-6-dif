@@ -14,8 +14,7 @@ describe('useMatchState', () => {
   it('returns no active match when currentMatchId is null', () => {
     mockUseGameState.mockReturnValue({
       currentMatchId: null,
-      matchStartTime: null,
-      view: 'config'
+      matchState: 'not_started'
     });
 
     const { result } = renderHook(() => useMatchState());
@@ -24,15 +23,15 @@ describe('useMatchState', () => {
       hasActiveMatch: false,
       hasUnsavedMatch: false,
       isMatchRunning: false,
-      currentMatchId: null
+      currentMatchId: null,
+      matchState: 'not_started'
     });
   });
 
-  it('returns active match when currentMatchId exists', () => {
+  it('returns active running match when currentMatchId exists and state is running', () => {
     mockUseGameState.mockReturnValue({
       currentMatchId: 'match-123',
-      matchStartTime: Date.now(),
-      view: 'game'
+      matchState: 'running'
     });
 
     const { result } = renderHook(() => useMatchState());
@@ -41,15 +40,15 @@ describe('useMatchState', () => {
       hasActiveMatch: true,
       hasUnsavedMatch: false,
       isMatchRunning: true,
-      currentMatchId: 'match-123'
+      currentMatchId: 'match-123',
+      matchState: 'running'
     });
   });
 
-  it('returns unsaved match when in stats view with match ID', () => {
+  it('returns unsaved match when matchState is finished', () => {
     mockUseGameState.mockReturnValue({
       currentMatchId: 'match-123',
-      matchStartTime: Date.now(),
-      view: 'stats'
+      matchState: 'finished'
     });
 
     const { result } = renderHook(() => useMatchState());
@@ -58,24 +57,25 @@ describe('useMatchState', () => {
       hasActiveMatch: true,
       hasUnsavedMatch: true,
       isMatchRunning: false,
-      currentMatchId: 'match-123'
+      currentMatchId: 'match-123',
+      matchState: 'finished'
     });
   });
 
-  it('returns finished match when match ID exists but no start time', () => {
+  it('returns no active match when match ID exists but state is not_started', () => {
     mockUseGameState.mockReturnValue({
       currentMatchId: 'match-123',
-      matchStartTime: null,
-      view: 'stats'
+      matchState: 'not_started'
     });
 
     const { result } = renderHook(() => useMatchState());
 
     expect(result.current).toEqual({
-      hasActiveMatch: true,
-      hasUnsavedMatch: true,
+      hasActiveMatch: false,
+      hasUnsavedMatch: false,
       isMatchRunning: false,
-      currentMatchId: 'match-123'
+      currentMatchId: 'match-123',
+      matchState: 'not_started'
     });
   });
 });

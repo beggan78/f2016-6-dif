@@ -133,7 +133,9 @@ export function StatsScreen({
 
 
   const handleNewGame = () => {
+    console.log('📊 New Game from Stats Screen - calling requestNewGame()');
     requestNewGame(() => {
+      console.log('📊 New Game from Stats - executing callback (full reset)');
       // Reset global state for a new game configuration and clear localStorage
       clearStoredState(); // Clear localStorage state
       clearTimerState(); // Clear timer localStorage state
