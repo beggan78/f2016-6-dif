@@ -294,32 +294,21 @@ export function useGameState() {
    * Replaces old setTimeout-based timer system for better synchronization
    */
   const playAlertSounds = useCallback(async () => {
-    console.log('⏰ ALERT TRIGGERED! Starting alerts...');
-
-    // Existing vibration alert (unchanged)
+    // Vibration alert
     if ('vibrate' in navigator) {
-      console.log('📳 Triggering vibration alert');
       navigator.vibrate([1000, 200, 1000]);
-    } else {
-      console.log('📳 Vibration not supported');
     }
 
     // Audio alert
-    console.log('🔊 Checking audio alert - enabled:', audioPreferences.enabled, 'sound:', audioPreferences.selectedSound, 'volume:', audioPreferences.volume);
     if (audioPreferences.enabled) {
       try {
-        console.log('🎵 Attempting to play audio alert...');
         await audioAlertService.play(
           audioPreferences.selectedSound,
           audioPreferences.volume
         );
-        console.log('✅ Audio alert played successfully');
       } catch (error) {
-        console.warn('❌ Audio alert failed, vibration only:', error);
         // Graceful degradation - vibration already executed above
       }
-    } else {
-      console.log('🔇 Audio alerts disabled by user');
     }
   }, [audioPreferences]);
 

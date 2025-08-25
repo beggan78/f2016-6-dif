@@ -31,17 +31,17 @@ class AudioAlertService {
         
         // Add error handling for individual audio files
         audio.addEventListener('error', (e) => {
-          console.warn(`Failed to load audio file: ${option.value}`, e);
+          // Audio file failed to load - silently handle
         });
         
-        // Add loaded event for debugging
+        // Audio file loaded successfully
         audio.addEventListener('canplaythrough', () => {
-          console.debug(`Audio file loaded: ${option.value}`);
+          // Audio file ready for playback
         });
         
         this.audioElements.set(option.value, audio);
       } catch (error) {
-        console.warn(`Failed to preload audio for ${option.value}:`, error);
+        // Failed to preload audio - silently handle
       }
     });
   }

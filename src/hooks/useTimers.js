@@ -101,7 +101,6 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
       
       // Only play alert once when crossing the threshold, and prevent duplicate plays
       if (lastAlertTimeRef.current !== currentAlertTime && !hasPlayedAlert) {
-        console.log('🚨 Visual timer alert threshold reached - subTimerSeconds:', subTimerSeconds, 'alertMinutes:', alertMinutes);
         lastAlertTimeRef.current = currentAlertTime;
         setHasPlayedAlert(true);
         
@@ -111,7 +110,6 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
     } else if (subTimerSeconds < alertMinutes * 60) {
       // Reset alert state when timer goes below threshold (after substitution)
       if (hasPlayedAlert) {
-        console.log('🔄 Resetting audio alert state - timer below threshold');
         setHasPlayedAlert(false);
         lastAlertTimeRef.current = null;
       }

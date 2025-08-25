@@ -39,16 +39,6 @@ export const usePreferences = () => {
   return context;
 };
 
-/**
- * Simple debug logging for development
- */
-const debugLog = (message, data = null, isError = false) => {
-  if (process.env.NODE_ENV === 'development') {
-    const timestamp = new Date().toISOString();
-    const prefix = isError ? '❌' : '✅';
-    console.log(`${prefix} [PreferencesContext ${timestamp}] ${message}`, data || '');
-  }
-};
 
 /**
  * Load preferences from localStorage with backward compatibility
@@ -66,7 +56,6 @@ const loadPreferencesFromStorage = () => {
           language: parsed.language || DEFAULT_PREFERENCES.language,
           theme: parsed.theme || DEFAULT_PREFERENCES.theme
         };
-        debugLog('New format preferences loaded from localStorage', preferences);
         return preferences;
       }
     }
@@ -83,7 +72,6 @@ const loadPreferencesFromStorage = () => {
           language: DEFAULT_PREFERENCES.language,
           theme: DEFAULT_PREFERENCES.theme
         };
-        debugLog('Migrated old format preferences to new structure', migratedPreferences);
         
         // Save in new format and remove old key
         localStorage.setItem(PREFERENCE_STORAGE_KEY, JSON.stringify(migratedPreferences));
@@ -93,10 +81,8 @@ const loadPreferencesFromStorage = () => {
       }
     }
 
-    debugLog('No stored preferences found, using defaults');
     return DEFAULT_PREFERENCES;
   } catch (error) {
-    debugLog('Failed to load preferences from localStorage', error.message, true);
     return DEFAULT_PREFERENCES;
   }
 };
@@ -107,10 +93,8 @@ const loadPreferencesFromStorage = () => {
 const savePreferencesToStorage = (preferences) => {
   try {
     localStorage.setItem(PREFERENCE_STORAGE_KEY, JSON.stringify(preferences));
-    debugLog('Preferences saved to localStorage', preferences);
     return true;
   } catch (error) {
-    debugLog('Failed to save preferences to localStorage', error.message, true);
     return false;
   }
 };
@@ -130,7 +114,6 @@ export function PreferencesProvider({ children }) {
         const storedPreferences = loadPreferencesFromStorage();
         setPreferences(storedPreferences);
       } catch (error) {
-        debugLog('Error during preferences loading', error.message, true);
         // Keep default preferences on error
       } finally {
         setPreferencesLoading(false);
@@ -145,7 +128,6 @@ export function PreferencesProvider({ children }) {
     if (!preferencesLoading) {
       const saveSuccess = savePreferencesToStorage(preferences);
       if (!saveSuccess) {
-        debugLog('Failed to persist preferences changes', null, true);
       }
     }
   }, [preferences, preferencesLoading]);
@@ -156,13 +138,11 @@ export function PreferencesProvider({ children }) {
    */
   const updatePreferences = useCallback((updates) => {
     if (typeof updates !== 'object' || updates === null) {
-      debugLog('Invalid preferences update format', updates, true);
       return;
     }
 
     setPreferences(prev => {
       const newPreferences = { ...prev, ...updates };
-      debugLog('Preferences updated', newPreferences);
       return newPreferences;
     });
   }, []);
@@ -173,7 +153,6 @@ export function PreferencesProvider({ children }) {
    */
   const updateAudioPreferences = useCallback((updates) => {
     if (typeof updates !== 'object' || updates === null) {
-      debugLog('Invalid audio preferences update format', updates, true);
       return;
     }
 
@@ -182,25 +161,21 @@ export function PreferencesProvider({ children }) {
       
       // Validate specific preference values
       if (typeof newAudioPrefs.enabled !== 'boolean') {
-        debugLog('Invalid enabled value, keeping previous', newAudioPrefs.enabled, true);
         newAudioPrefs.enabled = prev.audio.enabled;
       }
       
       if (typeof newAudioPrefs.volume !== 'number' || 
           newAudioPrefs.volume < 0 || 
           newAudioPrefs.volume > 1) {
-        debugLog('Invalid volume value, keeping previous', newAudioPrefs.volume, true);
         newAudioPrefs.volume = prev.audio.volume;
       }
       
       if (typeof newAudioPrefs.selectedSound !== 'string' || 
           !newAudioPrefs.selectedSound.trim()) {
-        debugLog('Invalid selectedSound value, keeping previous', newAudioPrefs.selectedSound, true);
         newAudioPrefs.selectedSound = prev.audio.selectedSound;
       }
       
       const newPreferences = { ...prev, audio: newAudioPrefs };
-      debugLog('Audio preferences updated', newAudioPrefs);
       return newPreferences;
     });
   }, []);
@@ -211,7 +186,6 @@ export function PreferencesProvider({ children }) {
    */
   const updateLanguagePreference = useCallback((language) => {
     if (typeof language !== 'string') {
-      debugLog('Invalid language value', language, true);
       return;
     }
     
@@ -219,7 +193,6 @@ export function PreferencesProvider({ children }) {
       ...prev,
       language
     }));
-    debugLog('Language preference updated', language);
   }, []);
 
   /**
@@ -228,7 +201,6 @@ export function PreferencesProvider({ children }) {
    */
   const updateThemePreference = useCallback((theme) => {
     if (typeof theme !== 'string') {
-      debugLog('Invalid theme value', theme, true);
       return;
     }
     
@@ -236,14 +208,12 @@ export function PreferencesProvider({ children }) {
       ...prev,
       theme
     }));
-    debugLog('Theme preference updated', theme);
   }, []);
 
   /**
    * Reset all preferences to defaults
    */
   const resetPreferences = useCallback(() => {
-    debugLog('Resetting all preferences to defaults');
     setPreferences(DEFAULT_PREFERENCES);
   }, []);
 
@@ -251,7 +221,6 @@ export function PreferencesProvider({ children }) {
    * Reset audio preferences to defaults (backward compatibility)
    */
   const resetAudioPreferences = useCallback(() => {
-    debugLog('Resetting audio preferences to defaults');
     setPreferences(prev => ({
       ...prev,
       audio: DEFAULT_PREFERENCES.audio
