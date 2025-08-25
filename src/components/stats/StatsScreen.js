@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ListChecks, PlusCircle, Copy, FileText, Save, History } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
+import { useMatchAbandonmentGuard } from '../../hooks/useMatchAbandonmentGuard';
+import { AbandonMatchModal } from '../modals/AbandonMatchModal';
 import { FeatureGate } from '../auth/FeatureGate';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
@@ -43,6 +45,15 @@ export function StatsScreen({
   const [saving, setSaving] = useState(false);
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
+  
+  // Match abandonment guard for preventing accidental data loss
+  const { 
+    requestNewGame, 
+    showModal: showAbandonModal, 
+    handleAbandon, 
+    handleCancel: handleAbandonCancel, 
+    matchState 
+  } = useMatchAbandonmentGuard();
 
   const copyStatsToClipboard = async () => {
     const statsText = generateStatsText(squadForStats, ownScore, opponentScore, opponentTeam);
@@ -122,16 +133,18 @@ export function StatsScreen({
 
 
   const handleNewGame = () => {
-    // Reset global state for a new game configuration and clear localStorage
-    clearStoredState(); // Clear localStorage state
-    clearTimerState(); // Clear timer localStorage state
-    setAllPlayers(initializePlayers(initialRoster)); // Full reset of all player stats
-    setSelectedSquadIds([]);
-    setPeriodGoalieIds({});
-    setGameLog([]);
-    resetScore(); // Clear score
-    setOpponentTeam(''); // Clear opponent team name
-    setView('config');
+    requestNewGame(() => {
+      // Reset global state for a new game configuration and clear localStorage
+      clearStoredState(); // Clear localStorage state
+      clearTimerState(); // Clear timer localStorage state
+      setAllPlayers(initializePlayers(initialRoster)); // Full reset of all player stats
+      setSelectedSquadIds([]);
+      setPeriodGoalieIds({});
+      setGameLog([]);
+      resetScore(); // Clear score
+      setOpponentTeam(''); // Clear opponent team name
+      setView('config');
+    });
   };
 
   return (
@@ -281,6 +294,15 @@ export function StatsScreen({
       <Button onClick={handleNewGame} Icon={PlusCircle}>
         Start New Game Configuration
       </Button>
+
+      {/* Match Abandonment Warning Modal */}
+      <AbandonMatchModal
+        isOpen={showAbandonModal}
+        onAbandon={handleAbandon}
+        onCancel={handleAbandonCancel}
+        isMatchRunning={matchState.isMatchRunning}
+        hasUnsavedMatch={matchState.hasUnsavedMatch}
+      />
     </div>
   );
 }
