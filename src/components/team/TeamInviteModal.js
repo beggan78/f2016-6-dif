@@ -64,10 +64,6 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     }
   };
 
-  // Check if invitation is expired
-  const isInvitationExpired = (expiresAt) => {
-    return new Date(expiresAt) <= new Date();
-  };
 
   // Fetch all invitations for the current team and separate by status
   const fetchPendingInvitations = useCallback(async () => {
