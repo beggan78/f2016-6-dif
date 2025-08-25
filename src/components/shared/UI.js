@@ -633,3 +633,71 @@ export function ScoreManagerModal({
     </div>
   );
 }
+
+export function Slider({ value, onChange, min = 0, max = 1, step = 0.1, className = '', disabled = false, id }) {
+  const percentage = ((value - min) / (max - min)) * 100;
+  
+  return (
+    <div className={`relative ${className}`}>
+      <input
+        type="range"
+        id={id}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        disabled={disabled}
+        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800"
+        style={{
+          background: `linear-gradient(to right, #0ea5e9 0%, #0ea5e9 ${percentage}%, #475569 ${percentage}%, #475569 100%)`
+        }}
+      />
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+          }
+          input[type="range"]::-webkit-slider-thumb:hover {
+            background: #0284c7;
+          }
+          input[type="range"]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            appearance: none;
+            transition: background-color 0.15s ease-in-out;
+          }
+          input[type="range"]::-moz-range-thumb:hover {
+            background: #0284c7;
+          }
+          input[type="range"]:disabled::-webkit-slider-thumb {
+            background: #64748b;
+            cursor: not-allowed;
+          }
+          input[type="range"]:disabled::-moz-range-thumb {
+            background: #64748b;
+            cursor: not-allowed;
+          }
+          input[type="range"]::-moz-range-track {
+            height: 8px;
+            background: transparent;
+            border: none;
+          }
+        `
+      }} />
+    </div>
+  );
+}

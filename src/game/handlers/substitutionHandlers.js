@@ -402,7 +402,6 @@ export const createSubstitutionHandlers = (
 
   const handleSubstitutionWithHighlight = () => {
     const gameState = gameStateFactory();
-    
 
     // Check if substitution is possible (at least one active substitute)
     if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamConfig)) {
