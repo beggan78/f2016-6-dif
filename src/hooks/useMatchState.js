@@ -1,4 +1,5 @@
 import { useGameState } from './useGameState';
+import { useRef } from 'react';
 
 /**
  * Centralized hook for detecting current match state
@@ -22,21 +23,22 @@ export function useMatchState() {
   const hasUnsavedMatch = Boolean(currentMatchId && matchState === 'finished');
   const isMatchRunning = Boolean(currentMatchId && matchState === 'running');
   
-  // Debug logging for match state calculations
-  console.group('🔍 useMatchState - State Calculation');
-  console.log('Raw values from useGameState:', { currentMatchId, matchState });
-  console.log('Match state conditions:', {
-    'currentMatchId exists': Boolean(currentMatchId),
-    'matchState === running': matchState === 'running',
-    'matchState === finished': matchState === 'finished',
-    'matchState in [running,finished]': matchState === 'running' || matchState === 'finished'
-  });
-  console.log('Calculated boolean values:', {
-    hasActiveMatch,
-    hasUnsavedMatch,
-    isMatchRunning
-  });
-  console.groupEnd();
+  // Debug: Only log when match state becomes ready for abandonment guard
+  const renderCount = useRef(0);
+  const wasActiveMatch = useRef(false);
+  renderCount.current++;
+  
+  // Log only when match state transitions to active (focused debugging)
+  if (hasActiveMatch && !wasActiveMatch.current) {
+    console.log('✅ MATCH STATE READY FOR ABANDONMENT GUARD', {
+      currentMatchId,
+      matchState,
+      hasActiveMatch,
+      hasUnsavedMatch,
+      isMatchRunning
+    });
+  }
+  wasActiveMatch.current = hasActiveMatch;
   
   return {
     hasActiveMatch,

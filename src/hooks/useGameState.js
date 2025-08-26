@@ -119,6 +119,45 @@ export function useGameState() {
   const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
 
+  // Debug: Track state initialization (only once per session)
+  if (process.env.NODE_ENV === 'development' && !window.gameStateInitialized) {
+    console.log('🔄 useGameState initialized with match state:', {
+      currentMatchId: initialState.currentMatchId,
+      matchState: initialState.matchState,
+      matchCreationAttempted: initialState.matchCreationAttempted
+    });
+    window.gameStateInitialized = true;
+  }
+
+  // Debug: Monitor React state changes for match state variables (only log meaningful changes)
+  useEffect(() => {
+    if (currentMatchId) {
+      console.log('⚡ currentMatchId STATE CHANGED:', currentMatchId);
+    } else {
+      console.log('⚡ currentMatchId CLEARED');
+    }
+  }, [currentMatchId]);
+
+  useEffect(() => {
+    if (matchState === 'running' || matchState === 'finished') {
+      console.log('⚡ matchState STATE CHANGED:', matchState);
+    } else if (matchState === 'not_started') {
+      console.log('⚡ matchState RESET to not_started');
+    }
+  }, [matchState]);
+
+  // Debug: Alert when match state is ready for abandonment guard
+  useEffect(() => {
+    if (currentMatchId && (matchState === 'running' || matchState === 'finished')) {
+      console.log('✅ MATCH STATE READY FOR ABANDONMENT GUARD:', {
+        currentMatchId,
+        matchState,
+        shouldShowModal: true
+      });
+    }
+  }, [currentMatchId, matchState]);
+
+
   // Sync captain data in allPlayers whenever captainId changes
   useEffect(() => {
     if (captainId) {
@@ -496,7 +535,8 @@ export function useGameState() {
     }));
 
     // Reset match state for new game setup
-    console.log('🔄 Match State Transition: handleStartPeriodSetup() → setting matchState to NOT_STARTED');
+    console.log('🔄 handleStartPeriodSetup: Resetting match state');
+    console.log('📝 CALLING setMatchState(\'not_started\')');
     setMatchState('not_started');
     setCurrentPeriodNumber(1);
     setGameLog([]); // Clear game log for new game
@@ -709,6 +749,9 @@ export function useGameState() {
 
     // CREATE MATCH RECORD when starting first period
     if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
+      console.log('🚀 handleStartGame: About to create match record at', new Date().toISOString());
+      console.log('🚀 State before match creation:', { currentMatchId, matchState, matchCreationAttempted });
+      
       setMatchCreationAttempted(true); // Prevent duplicate attempts
       
       // Format match data from current game state
@@ -723,12 +766,13 @@ export function useGameState() {
         captainId
       }, currentTeam.id);
 
+      console.log('🚀 handleStartGame: Starting createMatch async call at', new Date().toISOString());
       // Create match record in background (non-blocking)
       createMatch(matchData)
         .then((result) => {
           if (result.success) {
             console.log('✅ Match record created:', result.matchId);
-            console.log('📝 Match State Transition: Match created → setting currentMatchId');
+            console.log('📝 CALLING setCurrentMatchId:', result.matchId);
             setCurrentMatchId(result.matchId);
           } else {
             console.warn('⚠️  Failed to create match record:', result.error);
@@ -742,8 +786,8 @@ export function useGameState() {
     }
 
     // Set match state to running when game starts
-    console.log('🎮 Match State Transition: handleStartGame() → setting matchState to RUNNING');
-    console.log('Current match ID:', currentMatchId);
+    console.log('🎮 handleStartGame: Setting match state to RUNNING');
+    console.log('📝 CALLING setMatchState(\'running\')');
     setMatchState('running');
 
     // Request wake lock (alert timer now handled by visual timer logic)
@@ -755,6 +799,8 @@ export function useGameState() {
     setTimeout(() => {
       syncMatchDataFromEventLogger();
     }, 100);
+    
+    console.log('🏁 handleStartGame: Function completed');
   };
 
   const handleSubstitution = (isSubTimerPaused = false) => {
@@ -882,8 +928,8 @@ export function useGameState() {
       }
       
       // Set match state to finished when last period ends
-      console.log('🏁 Match State Transition: handleEndPeriod() → setting matchState to FINISHED');
-      console.log('Current match ID:', currentMatchId);
+      console.log('🏁 handleEndPeriod: Setting match state to FINISHED');
+      console.log('📝 CALLING setMatchState(\'finished\')');
       setMatchState('finished');
 
       // Release wake lock when game ends
@@ -922,11 +968,12 @@ export function useGameState() {
       setCaptainId(null);
 
       // Clear match lifecycle state to prevent ID reuse
-      console.log('🗑️ Match State Transition: clearStoredState() → setting matchState to NOT_STARTED');
-      console.log('Clearing match ID:', currentMatchId);
+      console.log('🗑️ clearStoredState: Clearing all match state');
+      console.log('📝 CALLING setCurrentMatchId(null)');
       setCurrentMatchId(null);
-      setMatchCreationAttempted(false);
+      console.log('📝 CALLING setMatchState(\'not_started\')');
       setMatchState('not_started');
+      setMatchCreationAttempted(false);
     } else {
       console.warn('Failed to clear game events');
     }
