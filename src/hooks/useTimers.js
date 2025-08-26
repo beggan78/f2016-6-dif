@@ -34,7 +34,7 @@ const calculateSubTimer = (lastSubstitutionTime, totalPausedDuration, pauseStart
   return Math.max(0, elapsedSeconds);
 };
 
-export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSounds = null) {
+export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSounds = null, currentPeriodNumber = 1) {
   // Initialize timer state from localStorage or defaults
   const initializeTimerState = () => {
     const saved = loadTimerState();
@@ -215,6 +215,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         logEvent(EVENT_TYPES.TIMER_PAUSED, {
           pauseType: 'substitution',
           currentMatchTime: calculateMatchTime(now),
+          periodNumber: currentPeriodNumber || 1,
           subTimerSeconds: calculateSubTimer(lastSubstitutionTime, totalPausedDuration, null),
           matchTimerSeconds: calculateMatchTimer(periodStartTime, periodDurationMinutes),
           pauseReason: 'substitution_pause',
@@ -243,7 +244,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         pauseStartTime: now
       });
     }
-  }, [isSubTimerPaused, lastSubstitutionTime, saveTimerStateWithOverrides, totalPausedDuration, periodStartTime, periodDurationMinutes]);
+  }, [isSubTimerPaused, lastSubstitutionTime, saveTimerStateWithOverrides, totalPausedDuration, periodStartTime, periodDurationMinutes, currentPeriodNumber]);
 
   const resumeSubTimer = useCallback((updatePlayerStats) => {
     if (isSubTimerPaused && pauseStartTime) {
@@ -259,6 +260,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         logEvent(EVENT_TYPES.TIMER_RESUMED, {
           pauseType: 'substitution',
           currentMatchTime: calculateMatchTime(now),
+          periodNumber: currentPeriodNumber || 1,
           pauseDurationMs: pauseDuration,
           pauseDurationSeconds: Math.floor(pauseDuration / 1000),
           subTimerSeconds: calculateSubTimer(lastSubstitutionTime, newTotalPausedDuration, null),
@@ -297,7 +299,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         pauseStartTime: null
       });
     }
-  }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides, lastSubstitutionTime, periodStartTime, periodDurationMinutes]);
+  }, [isSubTimerPaused, pauseStartTime, totalPausedDuration, saveTimerStateWithOverrides, lastSubstitutionTime, periodStartTime, periodDurationMinutes, currentPeriodNumber]);
 
   const startTimers = useCallback((periodNumber = 1, teamConfig = null, ownTeamName = null, opponentTeam = null, startingFormation = null, numPeriods = null, allPlayers = null) => {
     const now = Date.now();
