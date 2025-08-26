@@ -228,48 +228,42 @@ export function StatsScreen({
       </div>
 
       {/* Fair Play Award Selection */}
-      <div className="bg-slate-700 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-sky-200 mb-3 flex items-center">
-          🏆 Fair Play Award
-        </h3>
-        <p className="text-sm text-slate-300 mb-4">
-          Select a player to award the Fair Play Award, or choose "No award"
-        </p>
+      <div className="bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 border border-emerald-500/40 shadow-emerald-500/20 shadow-lg rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-emerald-200 flex items-center">
+            🏆 Fair Play Award
+          </h3>
+        </div>
         
-        <div className="space-y-2">
-          {/* No award option */}
-          <label className="flex items-center space-x-3 cursor-pointer hover:bg-slate-600 p-2 rounded">
-            <input
-              type="radio"
-              name="fairPlayAward"
-              value=""
-              checked={fairPlayAwardPlayerId === null}
-              onChange={() => setFairPlayAwardPlayerId(null)}
-              className="text-sky-500 focus:ring-sky-400 focus:ring-2"
-            />
-            <span className="text-slate-200 font-medium">No award</span>
-          </label>
-          
-          {/* Player options - only show players who participated */}
-          {squadForStats.map(player => (
-            <label key={player.id} className="flex items-center space-x-3 cursor-pointer hover:bg-slate-600 p-2 rounded">
-              <input
-                type="radio"
-                name="fairPlayAward"
-                value={player.id}
-                checked={fairPlayAwardPlayerId === player.id}
-                onChange={() => setFairPlayAwardPlayerId(player.id)}
-                className="text-sky-500 focus:ring-sky-400 focus:ring-2"
-              />
-              <span className="text-slate-200">{formatPlayerName(player)}</span>
-            </label>
-          ))}
+        <div className="relative">
+          <select
+            value={fairPlayAwardPlayerId || ''}
+            onChange={(e) => setFairPlayAwardPlayerId(e.target.value || null)}
+            className="w-full appearance-none bg-emerald-900/20 border border-emerald-500/60 text-emerald-100 py-2 px-3 pr-8 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 focus:shadow-emerald-300/50 focus:shadow-lg transition-colors"
+          >
+            <option value="" className="bg-slate-800">Not awarded</option>
+            {squadForStats.map(player => (
+              <option key={player.id} value={player.id} className="bg-slate-800">
+                {formatPlayerName(player)}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-emerald-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
         
         {/* Selection confirmation */}
         {fairPlayAwardPlayerId && (
-          <div className="mt-3 p-2 bg-sky-900/30 border border-sky-600 rounded text-sky-200 text-sm">
-            ✓ Award selected: {formatPlayerName(squadForStats.find(p => p.id === fairPlayAwardPlayerId))}
+          <div className="mt-3 p-3 bg-gradient-to-r from-emerald-900/40 to-emerald-800/40 border border-emerald-400/50 shadow-emerald-400/30 shadow-lg rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-emerald-200 font-medium flex items-center">
+                ✨ {formatPlayerName(squadForStats.find(p => p.id === fairPlayAwardPlayerId))}
+              </span>
+              <span className="text-xs text-emerald-300/90 font-semibold">FAIR PLAY WINNER</span>
+            </div>
           </div>
         )}
       </div>
