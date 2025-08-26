@@ -41,6 +41,7 @@ export function StatsScreen({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
 
@@ -66,22 +67,44 @@ export function StatsScreen({
         return;
       }
 
+      // Update player state with fair play award selection before saving
+      if (fairPlayAwardPlayerId) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🏆 Setting fair play award for player:', fairPlayAwardPlayerId);
+        }
+        
+        setAllPlayers(prevPlayers => 
+          prevPlayers.map(player => ({
+            ...player,
+            hasFairPlayAward: player.id === fairPlayAwardPlayerId
+          }))
+        );
+      }
+
       if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Confirming match in database:', currentMatchId);
+        console.log('💾 Confirming match in database:', currentMatchId, fairPlayAwardPlayerId ? 'with fair play award' : 'without fair play award');
       }
       
-      const result = await updateMatchToConfirmed(currentMatchId);
+      const result = await updateMatchToConfirmed(currentMatchId, fairPlayAwardPlayerId);
       
       if (result.success) {
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Match confirmed successfully');
         }
         
-        // Insert player match statistics
+        // Insert player match statistics (with updated fair play award status)
         if (process.env.NODE_ENV === 'development') {
           console.log('📊 Inserting player match statistics...');
         }
-        const playerStatsResult = await insertPlayerMatchStats(currentMatchId, allPlayers, goalScorers, matchEvents);
+        
+        // Use the updated allPlayers state that includes the fair play award
+        const updatedPlayers = fairPlayAwardPlayerId ? 
+          allPlayers.map(player => ({
+            ...player,
+            hasFairPlayAward: player.id === fairPlayAwardPlayerId
+          })) : allPlayers;
+          
+        const playerStatsResult = await insertPlayerMatchStats(currentMatchId, updatedPlayers, goalScorers, matchEvents);
         
         if (playerStatsResult.success) {
           if (process.env.NODE_ENV === 'development') {
@@ -202,6 +225,53 @@ export function StatsScreen({
           <li>• Remaining points split between defender (B), midfielder (Mit), and attacker (A) based on time played</li>
           <li>• Points awarded in 0.5 increments</li>
         </ul>
+      </div>
+
+      {/* Fair Play Award Selection */}
+      <div className="bg-slate-700 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-sky-200 mb-3 flex items-center">
+          🏆 Fair Play Award
+        </h3>
+        <p className="text-sm text-slate-300 mb-4">
+          Select a player to award the Fair Play Award, or choose "No award"
+        </p>
+        
+        <div className="space-y-2">
+          {/* No award option */}
+          <label className="flex items-center space-x-3 cursor-pointer hover:bg-slate-600 p-2 rounded">
+            <input
+              type="radio"
+              name="fairPlayAward"
+              value=""
+              checked={fairPlayAwardPlayerId === null}
+              onChange={() => setFairPlayAwardPlayerId(null)}
+              className="text-sky-500 focus:ring-sky-400 focus:ring-2"
+            />
+            <span className="text-slate-200 font-medium">No award</span>
+          </label>
+          
+          {/* Player options - only show players who participated */}
+          {squadForStats.map(player => (
+            <label key={player.id} className="flex items-center space-x-3 cursor-pointer hover:bg-slate-600 p-2 rounded">
+              <input
+                type="radio"
+                name="fairPlayAward"
+                value={player.id}
+                checked={fairPlayAwardPlayerId === player.id}
+                onChange={() => setFairPlayAwardPlayerId(player.id)}
+                className="text-sky-500 focus:ring-sky-400 focus:ring-2"
+              />
+              <span className="text-slate-200">{formatPlayerName(player)}</span>
+            </label>
+          ))}
+        </div>
+        
+        {/* Selection confirmation */}
+        {fairPlayAwardPlayerId && (
+          <div className="mt-3 p-2 bg-sky-900/30 border border-sky-600 rounded text-sky-200 text-sm">
+            ✓ Award selected: {formatPlayerName(squadForStats.find(p => p.id === fairPlayAwardPlayerId))}
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 items-center">
