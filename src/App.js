@@ -85,7 +85,7 @@ const clearDismissedModals = () => {
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
   const gameState = useGameState();
-  const timers = useTimers(gameState.periodDurationMinutes, gameState.alertMinutes, gameState.playAlertSounds);
+  const timers = useTimers(gameState.periodDurationMinutes, gameState.alertMinutes, gameState.playAlertSounds, gameState.currentPeriodNumber);
   const {
     showSessionWarning,
     sessionExpiry,

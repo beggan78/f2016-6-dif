@@ -900,6 +900,10 @@ function TeamPreferences({ team, onRefresh }) {
 
   return (
     <div className="space-y-6">
+      <div className="bg-yellow-800/20 border border-yellow-700 text-yellow-200 text-sm rounded-lg p-4">
+        <p className="font-bold">Not Yet Implemented</p>
+        <p>This section is a preview of upcoming features. Changes made here will not be saved.</p>
+      </div>
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-slate-200">Team Preferences</h3>
         <Button onClick={handleSave} variant="primary" size="sm">
@@ -923,7 +927,7 @@ function TeamPreferences({ team, onRefresh }) {
               value={preferences.matchFormat}
               onChange={(value) => setPreferences(prev => ({ ...prev, matchFormat: value }))}
               options={[
-                { value: '5v5', label: '5v5 (Current)' },
+                { value: '5v5', label: '5v5' },
                 { value: '7v7', label: '7v7 (Coming Soon)' },
                 { value: '9v9', label: '9v9 (Coming Soon)' },
                 { value: '11v11', label: '11v11 (Coming Soon)' }
@@ -940,8 +944,10 @@ function TeamPreferences({ team, onRefresh }) {
               value={preferences.formation}
               onChange={(value) => setPreferences(prev => ({ ...prev, formation: value }))}
               options={[
-                { value: '2-2', label: '2-2 (Balanced)' },
-                { value: '1-2-1', label: '1-2-1 (Diamond)' }
+                { value: '2-2', label: '2-2' },
+                { value: '1-2-1', label: '1-2-1' },
+                { value: '1-3', label: '1-3 (Coming Soon)' },
+                { value: '1-1-2', label: '1-1-2  (Coming Soon)' }
               ]}
             />
           </div>

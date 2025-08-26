@@ -1059,7 +1059,11 @@ export const TeamProvider = ({ children }) => {
         }])
         .select(`
           id, created_at, requested_role, message, status,
-          team:team_id (id, name, club_id),
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          ),
           user:user_id (id, name)
         `)
         .single();
@@ -1100,7 +1104,11 @@ export const TeamProvider = ({ children }) => {
         .from('team_access_request')
         .select(`
           id, created_at, requested_role, message, status, reviewed_at, review_notes,
-          team:team_id (id, name, club_id)
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -1163,7 +1171,11 @@ export const TeamProvider = ({ children }) => {
         .select(`
           id, status, reviewed_at,
           user:user_id (id, name),
-          team:team_id (id, name)
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          )
         `)
         .single();
 
@@ -1206,7 +1218,11 @@ export const TeamProvider = ({ children }) => {
         .select(`
           id, status, reviewed_at, review_notes,
           user:user_id (id, name),
-          team:team_id (id, name)
+          team:team_id (
+            id,
+            name,
+            club:club_id (id, name, short_name, long_name)
+          )
         `)
         .single();
 

@@ -146,7 +146,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
         <Users className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-sky-300">Request Team Access</h3>
         <p className="text-slate-400 text-sm mt-2">
-          Request to join <strong>{team?.name}</strong>
+          Request to join <strong>{team?.club?.long_name ? `${team.club.long_name} ${team.name}` : team?.name}</strong>
         </p>
       </div>
 
