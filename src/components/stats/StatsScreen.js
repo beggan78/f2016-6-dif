@@ -42,9 +42,41 @@ export function StatsScreen({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
   
+
+  // Fair Play Award styling constants
+  const FAIR_PLAY_AWARD_STYLES = {
+    container: "bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 border border-emerald-500/40 shadow-emerald-500/20 shadow-lg rounded-lg p-4",
+    header: "text-lg font-semibold text-emerald-200 flex items-center",
+    dropdown: "w-full appearance-none bg-emerald-900/20 border border-emerald-500/60 text-emerald-100 py-2 px-3 pr-8 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 focus:shadow-emerald-300/50 focus:shadow-lg transition-colors",
+    dropdownArrow: "pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-emerald-400",
+    confirmation: "mt-3 p-3 bg-gradient-to-r from-emerald-900/40 to-emerald-800/40 border border-emerald-400/50 shadow-emerald-400/30 shadow-lg rounded-lg",
+    confirmationText: "text-emerald-200 font-medium flex items-center",
+    confirmationBadge: "text-xs text-emerald-300/90 font-semibold"
+  };
+
+  // Helper functions
+  const getSelectedPlayerName = (playerId, players) => {
+    const player = players.find(p => p.id === playerId);
+    return player ? formatPlayerName(player) : '';
+  };
+
+  const updatePlayersWithFairPlayAward = (players, awardPlayerId) => {
+    if (!awardPlayerId) return players;
+    
+    return players.map(player => ({
+      ...player,
+      hasFairPlayAward: player.id === awardPlayerId
+    }));
+  };
+
+  const handleFairPlayAwardChange = (event) => {
+    const selectedPlayerId = event.target.value || null;
+    setFairPlayAwardPlayerId(selectedPlayerId);
+  };
 
   const copyStatsToClipboard = async () => {
     const statsText = generateStatsText(squadForStats, ownScore, opponentScore, opponentTeam);
@@ -68,22 +100,35 @@ export function StatsScreen({
         return;
       }
 
+      // Update player state with fair play award selection before saving
+      if (fairPlayAwardPlayerId) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🏆 Setting fair play award for player:', fairPlayAwardPlayerId);
+        }
+        
+        setAllPlayers(prevPlayers => updatePlayersWithFairPlayAward(prevPlayers, fairPlayAwardPlayerId));
+      }
+
       if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Confirming match in database:', currentMatchId);
+        console.log('💾 Confirming match in database:', currentMatchId, fairPlayAwardPlayerId ? 'with fair play award' : 'without fair play award');
       }
       
-      const result = await updateMatchToConfirmed(currentMatchId);
+      const result = await updateMatchToConfirmed(currentMatchId, fairPlayAwardPlayerId);
       
       if (result.success) {
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Match confirmed successfully');
         }
         
-        // Insert player match statistics
+        // Insert player match statistics (with updated fair play award status)
         if (process.env.NODE_ENV === 'development') {
           console.log('📊 Inserting player match statistics...');
         }
-        const playerStatsResult = await insertPlayerMatchStats(currentMatchId, allPlayers, goalScorers, matchEvents);
+        
+        // Use the updated allPlayers state that includes the fair play award
+        const updatedPlayers = updatePlayersWithFairPlayAward(allPlayers, fairPlayAwardPlayerId);
+          
+        const playerStatsResult = await insertPlayerMatchStats(currentMatchId, updatedPlayers, goalScorers, matchEvents);
         
         if (playerStatsResult.success) {
           if (process.env.NODE_ENV === 'development') {
@@ -208,6 +253,48 @@ export function StatsScreen({
           <li>• Remaining points split between defender (B), midfielder (Mit), and attacker (A) based on time played</li>
           <li>• Points awarded in 0.5 increments</li>
         </ul>
+      </div>
+
+      {/* Fair Play Award Selection */}
+      <div className={FAIR_PLAY_AWARD_STYLES.container} data-testid="fair-play-award-section">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className={FAIR_PLAY_AWARD_STYLES.header}>
+            🏆 Fair Play Award
+          </h3>
+        </div>
+        
+        <div className="relative">
+          <select
+            value={fairPlayAwardPlayerId || ''}
+            onChange={handleFairPlayAwardChange}
+            className={FAIR_PLAY_AWARD_STYLES.dropdown}
+            data-testid="fair-play-award-dropdown"
+          >
+            <option value="" className="bg-slate-800">Not awarded</option>
+            {squadForStats.map(player => (
+              <option key={player.id} value={player.id} className="bg-slate-800">
+                {formatPlayerName(player)}
+              </option>
+            ))}
+          </select>
+          <div className={FAIR_PLAY_AWARD_STYLES.dropdownArrow}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+        
+        {/* Selection confirmation */}
+        {fairPlayAwardPlayerId && (
+          <div className={FAIR_PLAY_AWARD_STYLES.confirmation} data-testid="fair-play-confirmation">
+            <div className="flex items-center justify-between">
+              <span className={FAIR_PLAY_AWARD_STYLES.confirmationText}>
+                ✨ {getSelectedPlayerName(fairPlayAwardPlayerId, squadForStats)}
+              </span>
+              <span className={FAIR_PLAY_AWARD_STYLES.confirmationBadge}>FAIR PLAY WINNER</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 items-center">
