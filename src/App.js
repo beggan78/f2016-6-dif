@@ -3,7 +3,6 @@ import './App.css';
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
-import { useMatchAbandonmentGuard } from './hooks/useMatchAbandonmentGuard';
 import { formatTime } from './utils/formatUtils';
 import { formatPlayerName } from './utils/formatUtils';
 import { calculateUndoTimerTarget } from './game/time/timeCalculator';
@@ -428,14 +427,130 @@ function AppContent() {
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
   
-  // Match abandonment guard for preventing accidental data loss
-  const { 
-    requestNewGame, 
-    showModal: showAbandonModal, 
-    handleAbandon, 
-    handleCancel: handleAbandonCancel, 
-    matchState 
-  } = useMatchAbandonmentGuard();
+  // Database-based match abandonment state for preventing accidental data loss
+  const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [pendingNewGameCallback, setPendingNewGameCallback] = useState(null);
+
+  // Database-based abandonment check - uses database as source of truth
+  const checkForActiveMatch = useCallback(async (callback) => {
+    console.group('🚨 Database Match Abandonment Check');
+    console.log('Current match ID:', gameState.currentMatchId);
+    console.log('Callback type:', typeof callback);
+
+    if (typeof callback !== 'function') {
+      console.warn('checkForActiveMatch: requires a callback function');
+      console.groupEnd();
+      return;
+    }
+
+    // If no currentMatchId, proceed immediately
+    if (!gameState.currentMatchId) {
+      console.log('❌ No currentMatchId - executing callback immediately');
+      console.groupEnd();
+      callback();
+      return;
+    }
+
+    try {
+      // Query database to check if match exists and is running
+      const { data: match, error } = await supabase
+        .from('match')
+        .select('id, state')
+        .eq('id', gameState.currentMatchId)
+        .eq('state', 'running')
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No match found - safe to proceed
+          console.log('❌ No active match found in database - executing callback immediately');
+          console.groupEnd();
+          callback();
+          return;
+        }
+        
+        console.error('Database error checking match:', error);
+        // On error, err on side of caution and show modal
+        console.log('⚠️ Database error - showing abandonment modal as precaution');
+        setPendingNewGameCallback(() => callback);
+        setShowAbandonModal(true);
+        console.groupEnd();
+        return;
+      }
+
+      if (match) {
+        console.log('✅ Active match found in database - showing abandonment modal');
+        console.log('Match details:', match);
+        setPendingNewGameCallback(() => callback);
+        setShowAbandonModal(true);
+      } else {
+        console.log('❌ No active match in database - executing callback immediately');
+        callback();
+      }
+    } catch (err) {
+      console.error('Unexpected error checking active match:', err);
+      // On unexpected error, show modal as precaution
+      console.log('⚠️ Unexpected error - showing abandonment modal as precaution');
+      setPendingNewGameCallback(() => callback);
+      setShowAbandonModal(true);
+    }
+    
+    console.groupEnd();
+  }, [gameState.currentMatchId]);
+
+  // Handle abandonment confirmation - delete match record and proceed
+  const handleAbandonMatch = useCallback(async () => {
+    console.group('🗑️ Abandoning match - deleting database record');
+    
+    try {
+      if (gameState.currentMatchId) {
+        console.log('Deleting match record:', gameState.currentMatchId);
+        
+        const { error } = await supabase
+          .from('match')
+          .delete()
+          .eq('id', gameState.currentMatchId);
+          
+        if (error) {
+          console.error('Error deleting match record:', error);
+          // Continue anyway - don't block user if deletion fails
+        } else {
+          console.log('✅ Match record deleted successfully');
+        }
+      }
+      
+      // Execute pending callback
+      if (pendingNewGameCallback) {
+        console.log('Executing pending new game callback');
+        pendingNewGameCallback();
+      }
+      
+      // Clean up modal state
+      setShowAbandonModal(false);
+      setPendingNewGameCallback(null);
+      
+    } catch (err) {
+      console.error('Unexpected error during match abandonment:', err);
+      
+      // Even if deletion fails, proceed with callback to avoid blocking user
+      if (pendingNewGameCallback) {
+        console.log('Executing callback despite deletion error');
+        pendingNewGameCallback();
+      }
+      
+      setShowAbandonModal(false);
+      setPendingNewGameCallback(null);
+    }
+    
+    console.groupEnd();
+  }, [gameState.currentMatchId, pendingNewGameCallback]);
+
+  // Handle abandonment cancellation - close modal without action
+  const handleCancelAbandon = useCallback(() => {
+    console.log('🚫 User cancelled match abandonment');
+    setShowAbandonModal(false);
+    setPendingNewGameCallback(null);
+  }, []);
 
   // Match recovery functionality
   const {
@@ -644,9 +759,9 @@ function AppContent() {
     gameState.clearStoredState();
   };
 
-  const handleNewGameFromMenu = () => {
-    console.log('🍔 New Game from Hamburger Menu - calling requestNewGame()');
-    requestNewGame(() => {
+  const handleNewGameFromMenu = async () => {
+    console.log('🍔 New Game from Hamburger Menu - calling checkForActiveMatch()');
+    await checkForActiveMatch(() => {
       console.log('🍔 New Game from Menu - executing callback (handleRestartMatch)');
       handleRestartMatch();
     });
@@ -672,9 +787,9 @@ function AppContent() {
   };
 
   // Handle new game confirmation modal
-  const handleConfirmNewGame = () => {
-    console.log('⏰ New Game Confirmation (Browser Back) - calling requestNewGame()');
-    requestNewGame(() => {
+  const handleConfirmNewGame = async () => {
+    console.log('⏰ New Game Confirmation (Browser Back) - calling checkForActiveMatch()');
+    await checkForActiveMatch(() => {
       console.log('⏰ New Game Confirmation - executing callback');
       setShowNewGameModal(false);
       removeFromNavigationStack();
@@ -1057,10 +1172,10 @@ function AppContent() {
       {/* Match Abandonment Warning Modal */}
       <AbandonMatchModal
         isOpen={showAbandonModal}
-        onAbandon={handleAbandon}
-        onCancel={handleAbandonCancel}
-        isMatchRunning={matchState.isMatchRunning}
-        hasUnsavedMatch={matchState.hasUnsavedMatch}
+        onAbandon={handleAbandonMatch}
+        onCancel={handleCancelAbandon}
+        isMatchRunning={gameState.currentMatchId && gameState.matchState === 'running'}
+        hasUnsavedMatch={gameState.currentMatchId && gameState.matchState === 'finished'}
       />
 
       {/* Match Recovery Modal */}
