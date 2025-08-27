@@ -146,14 +146,21 @@ export async function updateMatchToFinished(matchId, finalStats) {
 /**
  * Update match to confirmed state when user saves to history
  * @param {string} matchId - Match ID
+ * @param {string} fairPlayAwardId - Fair play award player ID (optional)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function updateMatchToConfirmed(matchId) {
+export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
   try {
+    const updateData = { state: 'confirmed' };
+    
+    // Include fair play award if provided
+    if (fairPlayAwardId !== null) {
+      updateData.fair_play_award = fairPlayAwardId;
+    }
 
     const { error } = await supabase
       .from('match')
-      .update({ state: 'confirmed' })
+      .update(updateData)
       .eq('id', matchId)
       .eq('state', 'finished'); // Only update if currently finished
 
