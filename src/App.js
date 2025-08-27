@@ -152,6 +152,13 @@ function AppContent() {
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Enhanced success message function with built-in auto-dismiss (defined early to prevent initialization errors)
+  const showSuccessMessage = useCallback((message) => {
+    setSuccessMessage(message);
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000); // 3 second auto-dismiss
+  }, []);
 
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
@@ -209,7 +216,7 @@ function AppContent() {
         setInvitationParams(null);
 
         // Show welcome message
-        setSuccessMessage(result.message || 'Welcome to the team!');
+        showSuccessMessage(result.message || 'Welcome to the team!');
 
         // Navigate to team management view
         gameState.setView(VIEWS.TEAM_MANAGEMENT);
@@ -232,7 +239,7 @@ function AppContent() {
       setInvitationParams(null);
 
       // Show welcome message
-      setSuccessMessage(result.message || 'Welcome to the team!');
+      showSuccessMessage(result.message || 'Welcome to the team!');
 
       // Navigate to team management view
       gameState.setView(VIEWS.TEAM_MANAGEMENT);
@@ -291,20 +298,15 @@ function AppContent() {
 
     // Show success message
     if (action === 'accepted') {
-      setSuccessMessage(`Successfully joined ${processedInvitation.team.name}!`);
+      showSuccessMessage(`Successfully joined ${processedInvitation.team.name}!`);
       // Navigate to team management view after a longer delay to ensure context is fully updated
       setTimeout(() => {
         gameState.setView(VIEWS.TEAM_MANAGEMENT);
       }, 1000);
     } else if (action === 'declined') {
-      setSuccessMessage('Invitation declined');
+      showSuccessMessage('Invitation declined');
     }
-
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
-  }, [gameState]);
+  }, [gameState, showSuccessMessage]);
 
 
   // Check for invitation parameters in URL on app load (only run once)
@@ -371,7 +373,7 @@ function AppContent() {
         const teamContext = pendingInvitation.teamName ?
           ` Welcome to ${pendingInvitation.teamName}!` :
           ' Welcome to the team!';
-        setSuccessMessage(`Successfully joined as ${pendingInvitation.role || 'member'}.${teamContext}`);
+        showSuccessMessage(`Successfully joined as ${pendingInvitation.role || 'member'}.${teamContext}`);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -555,27 +557,13 @@ function AppContent() {
     }
     
     console.groupEnd();
-  }, [gameState.currentMatchId, pendingNewGameCallback]);
+  }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
 
   // Handle abandonment cancellation - close modal without action
   const handleCancelAbandon = useCallback(() => {
     console.log('🚫 User cancelled match abandonment');
     setShowAbandonModal(false);
     setPendingNewGameCallback(null);
-  }, []);
-
-  // Banner notification state
-  const [bannerMessage, setBannerMessage] = useState('');
-  const [showBanner, setShowBanner] = useState(false);
-
-  // Show banner with auto-dismiss
-  const showNotificationBanner = useCallback((message) => {
-    setBannerMessage(message);
-    setShowBanner(true);
-    setTimeout(() => {
-      setShowBanner(false);
-      setBannerMessage('');
-    }, 3000); // 3 second auto-dismiss
   }, []);
 
   // Three-option modal handlers for finished matches
@@ -592,10 +580,10 @@ function AppContent() {
         
         if (result.success) {
           console.log('✅ Match saved to history successfully');
-          showNotificationBanner('Match saved successfully!');
+          showSuccessMessage('Match saved successfully!');
         } else {
           console.error('Failed to save match:', result.error);
-          showNotificationBanner('Error saving match. Please try again.');
+          showSuccessMessage('Error saving match. Please try again.');
         }
       }
       
@@ -612,7 +600,7 @@ function AppContent() {
       
     } catch (err) {
       console.error('Unexpected error saving match:', err);
-      showNotificationBanner('Error saving match. Please try again.');
+      showSuccessMessage('Error saving match. Please try again.');
       
       // Don't proceed with new game if save failed - keep user on current screen
       setShowFinishedMatchModal(false);
@@ -621,7 +609,7 @@ function AppContent() {
     }
     
     console.groupEnd();
-  }, [gameState.currentMatchId, pendingNewGameCallback, showNotificationBanner]);
+  }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
 
   // Handle "Delete Match" option - delete database record and proceed
   const handleDeleteFinishedMatch = useCallback(async () => {
@@ -638,10 +626,10 @@ function AppContent() {
           
         if (error) {
           console.error('Error deleting match record:', error);
-          showNotificationBanner('Error deleting match. Please try again.');
+          showSuccessMessage('Error deleting match. Please try again.');
         } else {
           console.log('✅ Match record deleted successfully');
-          showNotificationBanner('Match deleted successfully!');
+          showSuccessMessage('Match deleted successfully!');
         }
       }
       
@@ -658,7 +646,7 @@ function AppContent() {
       
     } catch (err) {
       console.error('Unexpected error during match deletion:', err);
-      showNotificationBanner('Error deleting match. Please try again.');
+      showSuccessMessage('Error deleting match. Please try again.');
       
       // Even if deletion fails, proceed with callback to avoid blocking user
       if (pendingNewGameCallback) {
@@ -672,7 +660,7 @@ function AppContent() {
     }
     
     console.groupEnd();
-  }, [gameState.currentMatchId, pendingNewGameCallback, showNotificationBanner]);
+  }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
 
   // Handle "Cancel" option for finished match modal
   const handleCancelFinishedMatch = useCallback(() => {
@@ -1002,13 +990,9 @@ function AppContent() {
 
   const handleTeamAdminSuccess = useCallback((message) => {
     // Show success message banner
-    setSuccessMessage(message);
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+    showSuccessMessage(message);
     // Keep modal open for continued management
-  }, []);
+  }, [showSuccessMessage]);
 
   // Automatic pending request modal for team admins
   useEffect(() => {
@@ -1228,12 +1212,6 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
       
-      {/* Notification Banner */}
-      {showBanner && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 bg-emerald-600 text-white rounded-lg shadow-lg border border-emerald-500 font-medium">
-          ✓ {bannerMessage}
-        </div>
-      )}
       <header className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl relative text-center mb-4">
         <div className="absolute top-0 right-0">
           <HamburgerMenu 
@@ -1256,12 +1234,10 @@ function AppContent() {
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
       </header>
 
-      {/* Success Message Banner */}
+      {/* Success Message Banner - Floating Overlay */}
       {successMessage && (
-        <div className="w-full max-w-2xl mb-4">
-          <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-            <p className="text-emerald-200 text-sm">{successMessage}</p>
-          </div>
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 bg-emerald-900/80 backdrop-blur-sm border border-emerald-600 rounded-lg shadow-2xl shadow-emerald-500/50">
+          <p className="text-emerald-200 text-sm font-medium">✓ {successMessage}</p>
         </div>
       )}
 
