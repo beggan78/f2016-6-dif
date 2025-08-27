@@ -39,6 +39,7 @@ import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTo
 import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
 import { useMatchRecovery } from './hooks/useMatchRecovery';
+import { updateMatchToConfirmed } from './services/matchStateManager';
 
 // Dismissed modals localStorage utilities
 const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
@@ -429,7 +430,9 @@ function AppContent() {
   
   // Database-based match abandonment state for preventing accidental data loss
   const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [showFinishedMatchModal, setShowFinishedMatchModal] = useState(false);
   const [pendingNewGameCallback, setPendingNewGameCallback] = useState(null);
+  const [foundMatchState, setFoundMatchState] = useState(null);
 
   // Database-based abandonment check - uses database as source of truth
   const checkForActiveMatch = useCallback(async (callback) => {
@@ -452,12 +455,12 @@ function AppContent() {
     }
 
     try {
-      // Query database to check if match exists and is running
+      // Query database to check if match exists and is running or finished
       const { data: match, error } = await supabase
         .from('match')
         .select('id, state')
         .eq('id', gameState.currentMatchId)
-        .eq('state', 'running')
+        .in('state', ['running', 'finished'])
         .single();
 
       if (error) {
@@ -470,8 +473,9 @@ function AppContent() {
         }
         
         console.error('Database error checking match:', error);
-        // On error, err on side of caution and show modal
+        // On error, err on side of caution and show abandon modal (safest default)
         console.log('⚠️ Database error - showing abandonment modal as precaution');
+        setFoundMatchState('running'); // Default to running for safety
         setPendingNewGameCallback(() => callback);
         setShowAbandonModal(true);
         console.groupEnd();
@@ -479,18 +483,26 @@ function AppContent() {
       }
 
       if (match) {
-        console.log('✅ Active match found in database - showing abandonment modal');
-        console.log('Match details:', match);
+        console.log('✅ Match found in database:', match);
+        setFoundMatchState(match.state);
         setPendingNewGameCallback(() => callback);
-        setShowAbandonModal(true);
+        
+        if (match.state === 'running') {
+          console.log('🏃 Running match - showing abandon modal');
+          setShowAbandonModal(true);
+        } else if (match.state === 'finished') {
+          console.log('🏁 Finished match - showing three-option modal');
+          setShowFinishedMatchModal(true);
+        }
       } else {
         console.log('❌ No active match in database - executing callback immediately');
         callback();
       }
     } catch (err) {
       console.error('Unexpected error checking active match:', err);
-      // On unexpected error, show modal as precaution
+      // On unexpected error, show abandon modal as precaution (safest default)
       console.log('⚠️ Unexpected error - showing abandonment modal as precaution');
+      setFoundMatchState('running'); // Default to running for safety
       setPendingNewGameCallback(() => callback);
       setShowAbandonModal(true);
     }
@@ -550,6 +562,124 @@ function AppContent() {
     console.log('🚫 User cancelled match abandonment');
     setShowAbandonModal(false);
     setPendingNewGameCallback(null);
+  }, []);
+
+  // Banner notification state
+  const [bannerMessage, setBannerMessage] = useState('');
+  const [showBanner, setShowBanner] = useState(false);
+
+  // Show banner with auto-dismiss
+  const showNotificationBanner = useCallback((message) => {
+    setBannerMessage(message);
+    setShowBanner(true);
+    setTimeout(() => {
+      setShowBanner(false);
+      setBannerMessage('');
+    }, 3000); // 3 second auto-dismiss
+  }, []);
+
+  // Three-option modal handlers for finished matches
+  
+  // Handle "Save Match" option - save to history and proceed
+  const handleSaveFinishedMatch = useCallback(async () => {
+    console.group('💾 Saving finished match to history');
+    
+    try {
+      if (gameState.currentMatchId) {
+        console.log('Saving match to history:', gameState.currentMatchId);
+        
+        const result = await updateMatchToConfirmed(gameState.currentMatchId);
+        
+        if (result.success) {
+          console.log('✅ Match saved to history successfully');
+          showNotificationBanner('Match saved successfully!');
+        } else {
+          console.error('Failed to save match:', result.error);
+          showNotificationBanner('Error saving match. Please try again.');
+        }
+      }
+      
+      // Execute pending callback (proceed to new game)
+      if (pendingNewGameCallback) {
+        console.log('Executing pending new game callback after save');
+        pendingNewGameCallback();
+      }
+      
+      // Clean up modal state
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+      
+    } catch (err) {
+      console.error('Unexpected error saving match:', err);
+      showNotificationBanner('Error saving match. Please try again.');
+      
+      // Don't proceed with new game if save failed - keep user on current screen
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+    }
+    
+    console.groupEnd();
+  }, [gameState.currentMatchId, pendingNewGameCallback, showNotificationBanner]);
+
+  // Handle "Delete Match" option - delete database record and proceed
+  const handleDeleteFinishedMatch = useCallback(async () => {
+    console.group('🗑️ Deleting finished match');
+    
+    try {
+      if (gameState.currentMatchId) {
+        console.log('Deleting match record:', gameState.currentMatchId);
+        
+        const { error } = await supabase
+          .from('match')
+          .delete()
+          .eq('id', gameState.currentMatchId);
+          
+        if (error) {
+          console.error('Error deleting match record:', error);
+          showNotificationBanner('Error deleting match. Please try again.');
+        } else {
+          console.log('✅ Match record deleted successfully');
+          showNotificationBanner('Match deleted successfully!');
+        }
+      }
+      
+      // Execute pending callback (proceed to new game)
+      if (pendingNewGameCallback) {
+        console.log('Executing pending new game callback after deletion');
+        pendingNewGameCallback();
+      }
+      
+      // Clean up modal state
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+      
+    } catch (err) {
+      console.error('Unexpected error during match deletion:', err);
+      showNotificationBanner('Error deleting match. Please try again.');
+      
+      // Even if deletion fails, proceed with callback to avoid blocking user
+      if (pendingNewGameCallback) {
+        console.log('Executing callback despite deletion error');
+        pendingNewGameCallback();
+      }
+      
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+    }
+    
+    console.groupEnd();
+  }, [gameState.currentMatchId, pendingNewGameCallback, showNotificationBanner]);
+
+  // Handle "Cancel" option for finished match modal
+  const handleCancelFinishedMatch = useCallback(() => {
+    console.log('🚫 User cancelled finished match action');
+    setShowFinishedMatchModal(false);
+    setPendingNewGameCallback(null);
+    setFoundMatchState(null);
   }, []);
 
   // Match recovery functionality
@@ -1039,6 +1169,7 @@ function AppContent() {
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
             authModal={authModal}
+            checkForActiveMatch={checkForActiveMatch}
           />
         );
       case VIEWS.MATCH_REPORT:
@@ -1096,6 +1227,13 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
+      
+      {/* Notification Banner */}
+      {showBanner && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 bg-emerald-600 text-white rounded-lg shadow-lg border border-emerald-500 font-medium">
+          ✓ {bannerMessage}
+        </div>
+      )}
       <header className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl relative text-center mb-4">
         <div className="absolute top-0 right-0">
           <HamburgerMenu 
@@ -1169,13 +1307,29 @@ function AppContent() {
         tertiaryVariant="danger"
       />
 
-      {/* Match Abandonment Warning Modal */}
+      {/* Match Abandonment Warning Modal (for running matches) */}
       <AbandonMatchModal
         isOpen={showAbandonModal}
         onAbandon={handleAbandonMatch}
         onCancel={handleCancelAbandon}
-        isMatchRunning={gameState.currentMatchId && gameState.matchState === 'running'}
-        hasUnsavedMatch={gameState.currentMatchId && gameState.matchState === 'finished'}
+        isMatchRunning={foundMatchState === 'running'}
+        hasUnsavedMatch={foundMatchState === 'finished'}
+      />
+
+      {/* Finished Match Three-Option Modal */}
+      <ThreeOptionModal
+        isOpen={showFinishedMatchModal}
+        onPrimary={handleSaveFinishedMatch}
+        onSecondary={handleDeleteFinishedMatch}
+        onTertiary={handleCancelFinishedMatch}
+        title="Finished match found"
+        message="You have a finished match that hasn't been saved to history yet. What would you like to do?"
+        primaryText="Save Match"
+        secondaryText="Delete Match"
+        tertiaryText="Cancel"
+        primaryVariant="primary"
+        secondaryVariant="danger"
+        tertiaryVariant="accent"
       />
 
       {/* Match Recovery Modal */}
