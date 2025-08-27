@@ -45,6 +45,37 @@ export function StatsScreen({
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
 
+  // Fair Play Award styling constants
+  const FAIR_PLAY_AWARD_STYLES = {
+    container: "bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 border border-emerald-500/40 shadow-emerald-500/20 shadow-lg rounded-lg p-4",
+    header: "text-lg font-semibold text-emerald-200 flex items-center",
+    dropdown: "w-full appearance-none bg-emerald-900/20 border border-emerald-500/60 text-emerald-100 py-2 px-3 pr-8 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 focus:shadow-emerald-300/50 focus:shadow-lg transition-colors",
+    dropdownArrow: "pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-emerald-400",
+    confirmation: "mt-3 p-3 bg-gradient-to-r from-emerald-900/40 to-emerald-800/40 border border-emerald-400/50 shadow-emerald-400/30 shadow-lg rounded-lg",
+    confirmationText: "text-emerald-200 font-medium flex items-center",
+    confirmationBadge: "text-xs text-emerald-300/90 font-semibold"
+  };
+
+  // Helper functions
+  const getSelectedPlayerName = (playerId, players) => {
+    const player = players.find(p => p.id === playerId);
+    return player ? formatPlayerName(player) : '';
+  };
+
+  const updatePlayersWithFairPlayAward = (players, awardPlayerId) => {
+    if (!awardPlayerId) return players;
+    
+    return players.map(player => ({
+      ...player,
+      hasFairPlayAward: player.id === awardPlayerId
+    }));
+  };
+
+  const handleFairPlayAwardChange = (event) => {
+    const selectedPlayerId = event.target.value || null;
+    setFairPlayAwardPlayerId(selectedPlayerId);
+  };
+
   const copyStatsToClipboard = async () => {
     const statsText = generateStatsText(squadForStats, ownScore, opponentScore, opponentTeam);
     try {
@@ -73,12 +104,7 @@ export function StatsScreen({
           console.log('🏆 Setting fair play award for player:', fairPlayAwardPlayerId);
         }
         
-        setAllPlayers(prevPlayers => 
-          prevPlayers.map(player => ({
-            ...player,
-            hasFairPlayAward: player.id === fairPlayAwardPlayerId
-          }))
-        );
+        setAllPlayers(prevPlayers => updatePlayersWithFairPlayAward(prevPlayers, fairPlayAwardPlayerId));
       }
 
       if (process.env.NODE_ENV === 'development') {
@@ -98,11 +124,7 @@ export function StatsScreen({
         }
         
         // Use the updated allPlayers state that includes the fair play award
-        const updatedPlayers = fairPlayAwardPlayerId ? 
-          allPlayers.map(player => ({
-            ...player,
-            hasFairPlayAward: player.id === fairPlayAwardPlayerId
-          })) : allPlayers;
+        const updatedPlayers = updatePlayersWithFairPlayAward(allPlayers, fairPlayAwardPlayerId);
           
         const playerStatsResult = await insertPlayerMatchStats(currentMatchId, updatedPlayers, goalScorers, matchEvents);
         
@@ -228,9 +250,9 @@ export function StatsScreen({
       </div>
 
       {/* Fair Play Award Selection */}
-      <div className="bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 border border-emerald-500/40 shadow-emerald-500/20 shadow-lg rounded-lg p-4">
+      <div className={FAIR_PLAY_AWARD_STYLES.container} data-testid="fair-play-award-section">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-emerald-200 flex items-center">
+          <h3 className={FAIR_PLAY_AWARD_STYLES.header}>
             🏆 Fair Play Award
           </h3>
         </div>
@@ -238,8 +260,9 @@ export function StatsScreen({
         <div className="relative">
           <select
             value={fairPlayAwardPlayerId || ''}
-            onChange={(e) => setFairPlayAwardPlayerId(e.target.value || null)}
-            className="w-full appearance-none bg-emerald-900/20 border border-emerald-500/60 text-emerald-100 py-2 px-3 pr-8 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 focus:shadow-emerald-300/50 focus:shadow-lg transition-colors"
+            onChange={handleFairPlayAwardChange}
+            className={FAIR_PLAY_AWARD_STYLES.dropdown}
+            data-testid="fair-play-award-dropdown"
           >
             <option value="" className="bg-slate-800">Not awarded</option>
             {squadForStats.map(player => (
@@ -248,7 +271,7 @@ export function StatsScreen({
               </option>
             ))}
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-emerald-400">
+          <div className={FAIR_PLAY_AWARD_STYLES.dropdownArrow}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -257,12 +280,12 @@ export function StatsScreen({
         
         {/* Selection confirmation */}
         {fairPlayAwardPlayerId && (
-          <div className="mt-3 p-3 bg-gradient-to-r from-emerald-900/40 to-emerald-800/40 border border-emerald-400/50 shadow-emerald-400/30 shadow-lg rounded-lg">
+          <div className={FAIR_PLAY_AWARD_STYLES.confirmation} data-testid="fair-play-confirmation">
             <div className="flex items-center justify-between">
-              <span className="text-emerald-200 font-medium flex items-center">
-                ✨ {formatPlayerName(squadForStats.find(p => p.id === fairPlayAwardPlayerId))}
+              <span className={FAIR_PLAY_AWARD_STYLES.confirmationText}>
+                ✨ {getSelectedPlayerName(fairPlayAwardPlayerId, squadForStats)}
               </span>
-              <span className="text-xs text-emerald-300/90 font-semibold">FAIR PLAY WINNER</span>
+              <span className={FAIR_PLAY_AWARD_STYLES.confirmationBadge}>FAIR PLAY WINNER</span>
             </div>
           </div>
         )}
