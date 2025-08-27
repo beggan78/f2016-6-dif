@@ -18,6 +18,8 @@ import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
+import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
+import { MatchRecoveryModal } from './components/modals/MatchRecoveryModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -34,8 +36,11 @@ import { InvitationWelcome } from './components/auth/InvitationWelcome';
 import { TeamAccessRequestModal } from './components/team/TeamAccessRequestModal';
 import { InvitationNotificationModal } from './components/team/InvitationNotificationModal';
 import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
-import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
+import { getInvitationStatus } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
+import { useMatchRecovery } from './hooks/useMatchRecovery';
+import { useTeamInvitationManager } from './hooks/useTeamInvitationManager';
+import { updateMatchToConfirmed } from './services/matchStateManager';
 
 // Dismissed modals localStorage utilities
 const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
@@ -98,9 +103,7 @@ function AppContent() {
     teamPlayers,
     hasPendingRequests,
     pendingRequestsCount,
-    canManageTeam,
-    acceptTeamInvitation,
-    getUserPendingInvitations
+    canManageTeam
   } = useTeam();
 
   // Authentication modal
@@ -148,6 +151,14 @@ function AppContent() {
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Enhanced success message function with built-in auto-dismiss (defined early to prevent initialization errors)
+  const showSuccessMessage = useCallback((message) => {
+    setSuccessMessage(message);
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000); // 3 second auto-dismiss
+  }, []);
+
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
 
@@ -157,14 +168,12 @@ function AppContent() {
       gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
     }
   }, [gameState, fromView]);
-  // Invitation state
-  const [invitationParams, setInvitationParams] = useState(null);
-  const [isProcessingInvitation, setIsProcessingInvitation] = useState(false);
-
-  // Pending invitation notifications
-  const [showInvitationNotifications, setShowInvitationNotifications] = useState(false);
-  const [pendingInvitations, setPendingInvitations] = useState([]);
-  const [hasCheckedInvitations, setHasCheckedInvitations] = useState(false);
+  // Team invitation management
+  const invitationManager = useTeamInvitationManager({
+    gameState,
+    authModal,
+    showSuccessMessage
+  });
   const [navigationData, setNavigationData] = useState(null);
 
   // Enhanced setView function that can accept navigation data
@@ -180,217 +189,15 @@ function AppContent() {
     }
   }, [gameState.view, navigationData]);
 
-  // Handle invitation acceptance
-  const handleInvitationAcceptance = useCallback(async (params) => {
-    if (!params.invitationId) {
-      console.error('No invitation ID provided');
-      return;
-    }
-
-    if (isProcessingInvitation) {
-      console.log('Invitation already being processed, skipping');
-      return;
-    }
-
-    try {
-      setIsProcessingInvitation(true);
-      console.log('Processing invitation:', params.invitationId);
-
-      const result = await acceptTeamInvitation(params.invitationId);
-
-      if (result.success) {
-        // Clear URL parameters
-        clearInvitationParamsFromUrl();
-        setInvitationParams(null);
-
-        // Show welcome message
-        setSuccessMessage(result.message || 'Welcome to the team!');
-
-        // Navigate to team management view
-        gameState.setView(VIEWS.TEAM_MANAGEMENT);
-      } else {
-        console.error('Failed to accept invitation:', result.error);
-        // Could show error modal here
-      }
-    } catch (error) {
-      console.error('Error processing invitation:', error);
-    } finally {
-      setIsProcessingInvitation(false);
-    }
-  }, [acceptTeamInvitation, gameState, isProcessingInvitation]);
-
-  // Handle invitation processed callback from InvitationWelcome
-  const handleInvitationProcessed = useCallback((result) => {
-    if (result?.success) {
-      // Clear URL parameters
-      clearInvitationParamsFromUrl();
-      setInvitationParams(null);
-
-      // Show welcome message
-      setSuccessMessage(result.message || 'Welcome to the team!');
-
-      // Navigate to team management view
-      gameState.setView(VIEWS.TEAM_MANAGEMENT);
-    }
-  }, [gameState]);
-
-  // Handle request to show sign-in modal after password setup
-  const handleRequestSignIn = useCallback(() => {
-    console.log('Handling sign-in request after password setup');
-
-    // Clear invitation parameters to close InvitationWelcome modal
-    clearInvitationParamsFromUrl();
-    setInvitationParams(null);
-
-    // Open the AuthModal in sign-in mode
-    authModal.openLogin();
-  }, [authModal]);
-
-  // Check for pending invitation notifications
-  const checkPendingInvitationNotifications = useCallback(async () => {
-    if (!user || hasCheckedInvitations) return;
-
-    try {
-      console.log('Checking for pending invitation notifications...');
-      const invitations = await getUserPendingInvitations();
-
-      if (invitations && invitations.length > 0) {
-        console.log(`Found ${invitations.length} pending invitation(s)`);
-        setPendingInvitations(invitations);
-        setShowInvitationNotifications(true);
-      } else {
-        console.log('No pending invitations found');
-      }
-
-      setHasCheckedInvitations(true);
-    } catch (error) {
-      console.error('Error checking pending invitations:', error);
-      setHasCheckedInvitations(true);
-    }
-  }, [user, getUserPendingInvitations, hasCheckedInvitations]);
-
-  // Handle invitation notification processed
-  const handleInvitationNotificationProcessed = useCallback((processedInvitation, action) => {
-    // Remove processed invitation from the list
-    setPendingInvitations(prev =>
-      prev.filter(inv => inv.id !== processedInvitation.id)
-    );
-
-    // Close modal if no more invitations
-    setPendingInvitations(prev => {
-      if (prev.length <= 1) {
-        setShowInvitationNotifications(false);
-      }
-      return prev.filter(inv => inv.id !== processedInvitation.id);
-    });
-
-    // Show success message
-    if (action === 'accepted') {
-      setSuccessMessage(`Successfully joined ${processedInvitation.team.name}!`);
-      // Navigate to team management view after a longer delay to ensure context is fully updated
-      setTimeout(() => {
-        gameState.setView(VIEWS.TEAM_MANAGEMENT);
-      }, 1000);
-    } else if (action === 'declined') {
-      setSuccessMessage('Invitation declined');
-    }
-
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
-  }, [gameState]);
 
 
-  // Check for invitation parameters in URL on app load (only run once)
-  useEffect(() => {
-    const handleInvitationAndSession = async () => {
-      const params = detectInvitationParams();
 
-      if (params.hasInvitation) {
-        console.log('Invitation detected:', params);
-        setInvitationParams(params);
 
-        // If we have Supabase tokens in the URL hash, set the session
-        if (params.isSupabaseInvitation && params.accessToken && params.refreshToken) {
-          try {
-            console.log('Setting Supabase session with invitation tokens...');
-            const { data, error } = await supabase.auth.setSession({
-              access_token: params.accessToken,
-              refresh_token: params.refreshToken
-            });
 
-            if (error) {
-              console.error('Error setting session:', error);
-            } else {
-              console.log('Session set successfully:', data);
-            }
-          } catch (error) {
-            console.error('Exception setting session:', error);
-          }
-        }
-      }
-    };
 
-    handleInvitationAndSession();
-  }, []); // Run only once on mount
 
-  // Process invitation when user becomes authenticated (but only if they don't need password setup)
-  useEffect(() => {
-    if (user && invitationParams && shouldProcessInvitation(user, invitationParams)) {
-      // Check if user still needs to complete account setup (password)
-      if (needsAccountCompletion(invitationParams, user)) {
-        console.log('User needs to complete account setup before processing invitation');
-        return; // Don't process invitation yet, user needs to set password first
-      }
 
-      console.log('User is ready to process invitation');
-      handleInvitationAcceptance(invitationParams);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, invitationParams]); // Remove handleInvitationAcceptance from dependencies
 
-  // Check for pending invitation after user signs in (for users who completed password setup)
-  useEffect(() => {
-    if (user && !invitationParams && hasPendingInvitation()) {
-      console.log('User signed in, checking for pending invitation...');
-      const pendingInvitation = retrievePendingInvitation();
-
-      if (pendingInvitation && pendingInvitation.invitationId) {
-        console.log('Processing pending invitation:', pendingInvitation);
-
-        // Process the stored invitation
-        handleInvitationAcceptance({ invitationId: pendingInvitation.invitationId });
-
-        // Show success message with team context
-        const teamContext = pendingInvitation.teamName ?
-          ` Welcome to ${pendingInvitation.teamName}!` :
-          ' Welcome to the team!';
-        setSuccessMessage(`Successfully joined as ${pendingInvitation.role || 'member'}.${teamContext}`);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // Only run when user changes
-
-  // Check for pending invitation notifications after user login
-  useEffect(() => {
-    if (user && !invitationParams && !needsProfileCompletion) {
-      // Small delay to allow other authentication flows to complete
-      const timer = setTimeout(() => {
-        checkPendingInvitationNotifications();
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-
-    // Reset check flag when user changes
-    if (!user) {
-      setHasCheckedInvitations(false);
-      setPendingInvitations([]);
-      setShowInvitationNotifications(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, invitationParams, needsProfileCompletion]); // Check when user state changes
 
   // Clear dismissed modals when user authentication state changes
   useEffect(() => {
@@ -398,6 +205,7 @@ function AppContent() {
     // This ensures fresh modal behavior for each session
     clearDismissedModals();
   }, [user?.id]); // Only trigger when user ID changes (not on every user object change)
+
 
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
@@ -421,6 +229,300 @@ function AppContent() {
   }, [gameState, handleNavigateFromTacticalBoard]);
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
+  
+  // Database-based match abandonment state for preventing accidental data loss
+  const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [showFinishedMatchModal, setShowFinishedMatchModal] = useState(false);
+  const [pendingNewGameCallback, setPendingNewGameCallback] = useState(null);
+  const [foundMatchState, setFoundMatchState] = useState(null);
+
+  // Database-based abandonment check - uses database as source of truth
+  const checkForActiveMatch = useCallback(async (callback) => {
+    console.group('🚨 Database Match Abandonment Check');
+    console.log('Current match ID:', gameState.currentMatchId);
+    console.log('Callback type:', typeof callback);
+
+    if (typeof callback !== 'function') {
+      console.warn('checkForActiveMatch: requires a callback function');
+      console.groupEnd();
+      return;
+    }
+
+    // If no currentMatchId, proceed immediately
+    if (!gameState.currentMatchId) {
+      console.log('❌ No currentMatchId - executing callback immediately');
+      console.groupEnd();
+      callback();
+      return;
+    }
+
+    try {
+      // Query database to check if match exists and is running or finished
+      const { data: match, error } = await supabase
+        .from('match')
+        .select('id, state')
+        .eq('id', gameState.currentMatchId)
+        .in('state', ['running', 'finished'])
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No match found - safe to proceed
+          console.log('❌ No active match found in database - executing callback immediately');
+          console.groupEnd();
+          callback();
+          return;
+        }
+        
+        console.error('Database error checking match:', error);
+        // On error, err on side of caution and show abandon modal (safest default)
+        console.log('⚠️ Database error - showing abandonment modal as precaution');
+        setFoundMatchState('running'); // Default to running for safety
+        setPendingNewGameCallback(() => callback);
+        setShowAbandonModal(true);
+        console.groupEnd();
+        return;
+      }
+
+      if (match) {
+        console.log('✅ Match found in database:', match);
+        setFoundMatchState(match.state);
+        setPendingNewGameCallback(() => callback);
+        
+        if (match.state === 'running') {
+          console.log('🏃 Running match - showing abandon modal');
+          setShowAbandonModal(true);
+        } else if (match.state === 'finished') {
+          console.log('🏁 Finished match - showing three-option modal');
+          setShowFinishedMatchModal(true);
+        }
+      } else {
+        console.log('❌ No active match in database - executing callback immediately');
+        callback();
+      }
+    } catch (err) {
+      console.error('Unexpected error checking active match:', err);
+      // On unexpected error, show abandon modal as precaution (safest default)
+      console.log('⚠️ Unexpected error - showing abandonment modal as precaution');
+      setFoundMatchState('running'); // Default to running for safety
+      setPendingNewGameCallback(() => callback);
+      setShowAbandonModal(true);
+    }
+    
+    console.groupEnd();
+  }, [gameState.currentMatchId]);
+
+  // Handle abandonment confirmation - delete match record and proceed
+  const handleAbandonMatch = useCallback(async () => {
+    console.group('🗑️ Abandoning match - deleting database record');
+    
+    try {
+      if (gameState.currentMatchId) {
+        console.log('Deleting match record:', gameState.currentMatchId);
+        
+        const { error } = await supabase
+          .from('match')
+          .delete()
+          .eq('id', gameState.currentMatchId);
+          
+        if (error) {
+          console.error('Error deleting match record:', error);
+          // Continue anyway - don't block user if deletion fails
+        } else {
+          console.log('✅ Match record deleted successfully');
+        }
+      }
+      
+      // Execute pending callback
+      if (pendingNewGameCallback) {
+        console.log('Executing pending new game callback');
+        pendingNewGameCallback();
+      }
+      
+      // Clean up modal state
+      setShowAbandonModal(false);
+      setPendingNewGameCallback(null);
+      
+    } catch (err) {
+      console.error('Unexpected error during match abandonment:', err);
+      
+      // Even if deletion fails, proceed with callback to avoid blocking user
+      if (pendingNewGameCallback) {
+        console.log('Executing callback despite deletion error');
+        pendingNewGameCallback();
+      }
+      
+      setShowAbandonModal(false);
+      setPendingNewGameCallback(null);
+    }
+    
+    console.groupEnd();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.currentMatchId, pendingNewGameCallback]);
+
+  // Handle abandonment cancellation - close modal without action
+  const handleCancelAbandon = useCallback(() => {
+    console.log('🚫 User cancelled match abandonment');
+    setShowAbandonModal(false);
+    setPendingNewGameCallback(null);
+  }, []);
+
+  // Three-option modal handlers for finished matches
+  
+  // Handle "Save Match" option - save to history and proceed
+  const handleSaveFinishedMatch = useCallback(async () => {
+    console.group('💾 Saving finished match to history');
+    
+    try {
+      if (gameState.currentMatchId) {
+        console.log('Saving match to history:', gameState.currentMatchId);
+        
+        const result = await updateMatchToConfirmed(gameState.currentMatchId);
+        
+        if (result.success) {
+          console.log('✅ Match saved to history successfully');
+          showSuccessMessage('Match saved successfully!');
+        } else {
+          console.error('Failed to save match:', result.error);
+          showSuccessMessage('Error saving match. Please try again.');
+        }
+      }
+      
+      // Execute pending callback (proceed to new game)
+      if (pendingNewGameCallback) {
+        console.log('Executing pending new game callback after save');
+        pendingNewGameCallback();
+      }
+      
+      // Clean up modal state
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+      
+    } catch (err) {
+      console.error('Unexpected error saving match:', err);
+      showSuccessMessage('Error saving match. Please try again.');
+      
+      // Don't proceed with new game if save failed - keep user on current screen
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+    }
+    
+    console.groupEnd();
+  }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
+
+  // Handle "Delete Match" option - delete database record and proceed
+  const handleDeleteFinishedMatch = useCallback(async () => {
+    console.group('🗑️ Deleting finished match');
+    
+    try {
+      if (gameState.currentMatchId) {
+        console.log('Deleting match record:', gameState.currentMatchId);
+        
+        const { error } = await supabase
+          .from('match')
+          .delete()
+          .eq('id', gameState.currentMatchId);
+          
+        if (error) {
+          console.error('Error deleting match record:', error);
+          showSuccessMessage('Error deleting match. Please try again.');
+        } else {
+          console.log('✅ Match record deleted successfully');
+          showSuccessMessage('Match deleted successfully!');
+        }
+      }
+      
+      // Execute pending callback (proceed to new game)
+      if (pendingNewGameCallback) {
+        console.log('Executing pending new game callback after deletion');
+        pendingNewGameCallback();
+      }
+      
+      // Clean up modal state
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+      
+    } catch (err) {
+      console.error('Unexpected error during match deletion:', err);
+      showSuccessMessage('Error deleting match. Please try again.');
+      
+      // Even if deletion fails, proceed with callback to avoid blocking user
+      if (pendingNewGameCallback) {
+        console.log('Executing callback despite deletion error');
+        pendingNewGameCallback();
+      }
+      
+      setShowFinishedMatchModal(false);
+      setPendingNewGameCallback(null);
+      setFoundMatchState(null);
+    }
+    
+    console.groupEnd();
+  }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
+
+  // Handle "Cancel" option for finished match modal
+  const handleCancelFinishedMatch = useCallback(() => {
+    console.log('🚫 User cancelled finished match action');
+    setShowFinishedMatchModal(false);
+    setPendingNewGameCallback(null);
+    setFoundMatchState(null);
+  }, []);
+
+  // Match recovery functionality
+  const {
+    showRecoveryModal,
+    recoveryMatch,
+    isProcessingRecovery,
+    handleSaveRecovery,
+    handleAbandonRecovery,
+    handleCloseRecovery
+  } = useMatchRecovery({
+    user,
+    currentTeam,
+    invitationParams: invitationManager.invitationParams,
+    needsProfileCompletion,
+    gameState,
+    setSuccessMessage
+  });
+  
+  // Add global helper for browser console debugging (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      window.debugMatchState = () => {
+        console.group('🔧 Debug Match State Helper');
+        console.log('Game State Values:', {
+          currentMatchId: gameState.currentMatchId,
+          matchState: gameState.matchState,
+          view: gameState.view,
+          matchStartTime: gameState.matchStartTime
+        });
+        
+        const matchStateHook = {
+          currentMatchId: gameState.currentMatchId,
+          matchState: gameState.matchState,
+          hasActiveMatch: Boolean(gameState.currentMatchId && (gameState.matchState === 'running' || gameState.matchState === 'finished')),
+          hasUnsavedMatch: Boolean(gameState.currentMatchId && gameState.matchState === 'finished'),
+          isMatchRunning: Boolean(gameState.currentMatchId && gameState.matchState === 'running')
+        };
+        
+        console.log('Calculated Match State:', matchStateHook);
+        console.log('Expected Modal Behavior:', {
+          'Should show abandonment modal': matchStateHook.hasActiveMatch ? '✅ YES' : '❌ NO',
+          'Reason': matchStateHook.hasActiveMatch 
+            ? `Active match detected (${matchStateHook.matchState})` 
+            : 'No active match or invalid state'
+        });
+        console.groupEnd();
+        
+        return matchStateHook;
+      };
+      
+      console.log('🔧 Global debug helper available: window.debugMatchState()');
+    }
+  }, [gameState.currentMatchId, gameState.matchState, gameState.view, gameState.matchStartTime]);
   
   // Store the pushNavigationState function in the ref
   useEffect(() => {
@@ -576,6 +678,14 @@ function AppContent() {
     gameState.clearStoredState();
   };
 
+  const handleNewGameFromMenu = async () => {
+    console.log('🍔 New Game from Hamburger Menu - calling checkForActiveMatch()');
+    await checkForActiveMatch(() => {
+      console.log('🍔 New Game from Menu - executing callback (handleRestartMatch)');
+      handleRestartMatch();
+    });
+  };
+
   const handleAddPlayer = () => {
     setShowAddPlayerModal(true);
     // Add modal to browser back button handling
@@ -596,10 +706,14 @@ function AppContent() {
   };
 
   // Handle new game confirmation modal
-  const handleConfirmNewGame = () => {
-    setShowNewGameModal(false);
-    removeFromNavigationStack();
-    handleRestartMatch();
+  const handleConfirmNewGame = async () => {
+    console.log('⏰ New Game Confirmation (Browser Back) - calling checkForActiveMatch()');
+    await checkForActiveMatch(() => {
+      console.log('⏰ New Game Confirmation - executing callback');
+      setShowNewGameModal(false);
+      removeFromNavigationStack();
+      handleRestartMatch();
+    });
   };
 
   const handleCancelNewGame = () => {
@@ -608,6 +722,7 @@ function AppContent() {
     // Remove the modal from the browser back intercept stack without triggering navigation
     removeFromNavigationStack();
   };
+
 
   const handleLeaveSportWizard = () => {
     // Close the modal first
@@ -676,13 +791,9 @@ function AppContent() {
 
   const handleTeamAdminSuccess = useCallback((message) => {
     // Show success message banner
-    setSuccessMessage(message);
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+    showSuccessMessage(message);
     // Keep modal open for continued management
-  }, []);
+  }, [showSuccessMessage]);
 
   // Automatic pending request modal for team admins
   useEffect(() => {
@@ -843,6 +954,7 @@ function AppContent() {
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
             authModal={authModal}
+            checkForActiveMatch={checkForActiveMatch}
           />
         );
       case VIEWS.MATCH_REPORT:
@@ -900,10 +1012,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-2 sm:p-4 font-sans">
+      
       <header className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl relative text-center mb-4">
         <div className="absolute top-0 right-0">
           <HamburgerMenu 
-            onRestartMatch={handleRestartMatch} 
+            onRestartMatch={handleNewGameFromMenu} 
             onAddPlayer={handleAddPlayer}
             onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
@@ -922,12 +1035,10 @@ function AppContent() {
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>
       </header>
 
-      {/* Success Message Banner */}
+      {/* Success Message Banner - Floating Overlay */}
       {successMessage && (
-        <div className="w-full max-w-2xl mb-4">
-          <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-            <p className="text-emerald-200 text-sm">{successMessage}</p>
-          </div>
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 bg-emerald-900/80 backdrop-blur-sm border border-emerald-600 rounded-lg shadow-2xl shadow-emerald-500/50">
+          <p className="text-emerald-200 text-sm font-medium">✓ {successMessage}</p>
         </div>
       )}
 
@@ -973,6 +1084,42 @@ function AppContent() {
         tertiaryVariant="danger"
       />
 
+      {/* Match Abandonment Warning Modal (for running matches) */}
+      <AbandonMatchModal
+        isOpen={showAbandonModal}
+        onAbandon={handleAbandonMatch}
+        onCancel={handleCancelAbandon}
+        isMatchRunning={foundMatchState === 'running'}
+        hasUnsavedMatch={foundMatchState === 'finished'}
+      />
+
+      {/* Finished Match Three-Option Modal */}
+      <ThreeOptionModal
+        isOpen={showFinishedMatchModal}
+        onPrimary={handleSaveFinishedMatch}
+        onSecondary={handleDeleteFinishedMatch}
+        onTertiary={handleCancelFinishedMatch}
+        title="Finished match found"
+        message="You have a finished match that hasn't been saved to history yet. What would you like to do?"
+        primaryText="Save Match"
+        secondaryText="Delete Match"
+        tertiaryText="Cancel"
+        primaryVariant="primary"
+        secondaryVariant="danger"
+        tertiaryVariant="accent"
+      />
+
+      {/* Match Recovery Modal */}
+      <MatchRecoveryModal
+        isOpen={showRecoveryModal}
+        match={recoveryMatch}
+        onSave={handleSaveRecovery}
+        onDelete={handleAbandonRecovery}
+        onClose={handleCloseRecovery}
+        saving={isProcessingRecovery}
+        deleting={isProcessingRecovery}
+      />
+
         {/* Session Expiry Warning Modal */}
         <SessionExpiryModal
           isOpen={showSessionWarning}
@@ -1008,24 +1155,24 @@ function AppContent() {
         )}
 
         {/* Invitation Welcome Modal */}
-        {invitationParams && invitationParams.hasInvitation && (() => {
-          const invitationStatus = getInvitationStatus(user, invitationParams);
+        {invitationManager.invitationParams && invitationManager.invitationParams.hasInvitation && (() => {
+          const invitationStatus = getInvitationStatus(user, invitationManager.invitationParams);
           // Show invitation welcome modal for account setup or sign-in required states
           return invitationStatus.type === 'account_setup' || invitationStatus.type === 'sign_in_required' ? (
             <InvitationWelcome
-              invitationParams={invitationParams}
-              onInvitationProcessed={handleInvitationProcessed}
-              onRequestSignIn={handleRequestSignIn}
+              invitationParams={invitationManager.invitationParams}
+              onInvitationProcessed={invitationManager.handleInvitationProcessed}
+              onRequestSignIn={invitationManager.handleRequestSignIn}
             />
           ) : null;
         })()}
 
         {/* Invitation Notification Modal */}
         <InvitationNotificationModal
-          isOpen={showInvitationNotifications}
-          invitations={pendingInvitations}
-          onClose={() => setShowInvitationNotifications(false)}
-          onInvitationProcessed={handleInvitationNotificationProcessed}
+          isOpen={invitationManager.showInvitationNotifications}
+          invitations={invitationManager.pendingInvitations}
+          onClose={() => {}}
+          onInvitationProcessed={invitationManager.handleInvitationNotificationProcessed}
         />
 
         {/* Preferences Modal */}
