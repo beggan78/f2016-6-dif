@@ -244,13 +244,13 @@ BEGIN
         updated_at = NOW(),
         status = 'pending',  -- **NEW**: Reset expired invitations back to pending
         message = COALESCE(p_message, message),  -- Update message if provided
-        invited_by_user_id = v_inviting_user_id,  -- Update who sent the latest invitation
-        role = role  -- **SECURITY**: Always preserve original role during refresh to prevent privilege escalation
+        invited_by_user_id = v_inviting_user_id  -- Update who sent the latest invitation
+        -- **SECURITY**: role field intentionally omitted to preserve original value and prevent privilege escalation
     WHERE id = v_existing_invitation_id
     RETURNING * INTO v_invitation_record;
     
     -- **SECURITY LOGGING**: Log role preservation during refresh to prevent privilege escalation
-    RAISE NOTICE 'SECURITY: Role preserved during invitation refresh - invitation_id: %, original_role: %, requested_role: %, preserved_role: %', 
+    RAISE NOTICE 'SECURITY: Role preserved during invitation refresh - invitation_id: %, original_role: %, requested_role: % (ignored), preserved_role: %', 
       v_existing_invitation_id, v_invitation_record.role, p_role, v_invitation_record.role;
     
     v_invitation_id := v_existing_invitation_id;
@@ -444,7 +444,7 @@ GRANT EXECUTE ON FUNCTION delete_team_invitation TO authenticated;
 
 COMMENT ON FUNCTION expire_old_team_invitations IS 'Automatically marks expired invitations as expired and cleans up old records. Returns count of processed invitations.';
 COMMENT ON FUNCTION check_invitation_expiry_status IS 'Returns statistics about invitation expiry status for monitoring purposes.';
-COMMENT ON FUNCTION invite_user_to_team IS 'Invites a user to join a team via email. Can refresh both pending and expired invitations. Invitations expire in 24 hours. SECURITY: Role is always preserved during refresh operations to prevent privilege escalation - the original invitation role cannot be changed during refresh.';
+COMMENT ON FUNCTION invite_user_to_team IS 'Invites a user to join a team via email. Can refresh both pending and expired invitations. Invitations expire in 24 hours. SECURITY: Role is always preserved during refresh operations to prevent privilege escalation - the role field is intentionally omitted from the UPDATE statement during refresh to ensure the original invitation role cannot be changed.';
 COMMENT ON FUNCTION delete_team_invitation IS 'Permanently deletes team invitations. Only allows deletion of non-accepted invitations by team admins/coaches.';
 
 -- ========================================
