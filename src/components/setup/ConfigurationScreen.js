@@ -15,6 +15,7 @@ import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
 import { VIEWS } from '../../constants/viewConstants';
+import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 
 // Import TAB_VIEWS for team management navigation
 const TAB_VIEWS = {
@@ -46,6 +47,8 @@ export function ConfigurationScreen({
   selectedSquadPlayers,
   opponentTeam,
   setOpponentTeam,
+  matchType,
+  setMatchType,
   captainId,
   setCaptain,
   debugMode = false,
@@ -517,6 +520,23 @@ export function ConfigurationScreen({
             ))}
           </div>
         )}
+      </div>
+
+      {/* Match Type Selection */}
+      <div className="p-3 bg-slate-700 rounded-md">
+        <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
+        <Select
+          id="matchType"
+          value={matchType}
+          onChange={value => setMatchType(value)}
+          options={MATCH_TYPE_OPTIONS.map(option => ({
+            value: option.value,
+            label: option.label
+          }))}
+        />
+        <p className="text-xs text-slate-400 mt-1">
+          {MATCH_TYPE_OPTIONS.find(opt => opt.value === matchType)?.description || 'Select the type of match'}
+        </p>
       </div>
 
       {/* Opponent Team Name */}
