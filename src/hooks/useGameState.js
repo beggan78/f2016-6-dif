@@ -19,6 +19,7 @@ import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../consta
 import { syncTeamRosterToGameState, analyzePlayerSync } from '../utils/playerSyncUtils';
 import { audioAlertService } from '../services/audioAlertService';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -100,6 +101,7 @@ export function useGameState() {
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
   const [opponentTeam, setOpponentTeam] = useState(initialState.opponentTeam || '');
+  const [matchType, setMatchType] = useState(initialState.matchType || DEFAULT_MATCH_TYPE);
   const [ownScore, setOwnScore] = useState(initialState.ownScore || 0); // Djurgården score
   const [opponentScore, setOpponentScore] = useState(initialState.opponentScore || 0); // Opponent score
   const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
@@ -373,6 +375,7 @@ export function useGameState() {
       rotationQueue,
       gameLog,
       opponentTeam,
+      matchType,
       ownScore,
       opponentScore,
       lastSubstitutionTimestamp,
@@ -393,7 +396,7 @@ export function useGameState() {
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState]);
 
 
 
@@ -763,7 +766,8 @@ export function useGameState() {
         selectedSquadIds,
         allPlayers,
         opponentTeam,
-        captainId
+        captainId,
+        matchType
       }, currentTeam.id);
 
       console.log('🚀 handleStartGame: Starting createMatch async call at', new Date().toISOString());
@@ -1754,6 +1758,8 @@ export function useGameState() {
     setGameLog,
     opponentTeam,
     setOpponentTeam,
+    matchType,
+    setMatchType,
     ownScore,
     opponentScore,
     lastSubstitutionTimestamp,

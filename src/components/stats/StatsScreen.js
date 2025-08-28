@@ -372,7 +372,7 @@ export function StatsScreen({
       </Button>
 
       <Button onClick={handleNewGame} Icon={PlusCircle}>
-        Start New Game Configuration
+        Start New Game
       </Button>
 
     </div>
