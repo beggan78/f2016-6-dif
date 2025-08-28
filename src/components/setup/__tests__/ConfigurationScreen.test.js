@@ -4,10 +4,11 @@
  * Comprehensive testing suite for the game configuration screen - the critical entry point
  * for setting up games. This component handles squad selection, game settings, and validation.
  * 
- * Test Coverage: 30+ tests covering:
+ * Test Coverage: 38+ tests covering:
  * - Squad selection and player management (checkbox interactions, limits)
  * - Team mode auto-selection based on squad size
  * - Game configuration (periods, duration, alerts)
+ * - Match type selection dropdown (League/Friendly/Cup/Tournament/Internal)
  * - Opponent team name input with sanitization
  * - Goalie assignment for multiple periods
  * - Form validation and submission requirements
@@ -21,6 +22,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../../constants/gameConfig';
 import { FORMATIONS } from '../../../constants/teamConfiguration';
+import { MATCH_TYPES, MATCH_TYPE_OPTIONS } from '../../../constants/matchTypes';
 import {
   createMockPlayers,
   userInteractions
@@ -150,6 +152,7 @@ describe('ConfigurationScreen', () => {
       setAlertMinutes: jest.fn(),
       handleStartPeriodSetup: jest.fn(),
       setOpponentTeam: jest.fn(),
+      setMatchType: jest.fn(),
       updateFormationSelection: jest.fn(),
       createTeamConfigFromSquadSize: jest.fn(),
       setCaptain: jest.fn()
@@ -172,6 +175,7 @@ describe('ConfigurationScreen', () => {
       alertMinutes: 2,
       selectedSquadPlayers: [],
       opponentTeam: '',
+      matchType: MATCH_TYPES.LEAGUE,
       captainId: null,
       setViewWithData: jest.fn(),
       ...mockSetters
@@ -518,6 +522,88 @@ describe('ConfigurationScreen', () => {
       
       const input = screen.getByTestId('opponentTeam');
       expect(input).toHaveAttribute('maxLength', '50');
+    });
+  });
+
+  describe('Match Type Selection', () => {
+    it('should always show match type dropdown', () => {
+      render(<ConfigurationScreen {...defaultProps} />);
+      
+      expect(screen.getByText('Match Type')).toBeInTheDocument();
+      expect(screen.getByTestId('matchType')).toBeInTheDocument();
+    });
+
+    it('should display all match type options in dropdown', () => {
+      render(<ConfigurationScreen {...defaultProps} />);
+      
+      const select = screen.getByTestId('matchType');
+      
+      // Check that all match type options are present in the select element
+      MATCH_TYPE_OPTIONS.forEach(option => {
+        const optionElement = screen.getByRole('option', { name: option.label });
+        expect(optionElement).toBeInTheDocument();
+        expect(optionElement.value).toBe(option.value);
+      });
+    });
+
+    it('should handle match type selection changes', () => {
+      render(<ConfigurationScreen {...defaultProps} />);
+      
+      const select = screen.getByTestId('matchType');
+      fireEvent.change(select, { target: { value: MATCH_TYPES.FRIENDLY } });
+      
+      expect(mockSetters.setMatchType).toHaveBeenCalledWith(MATCH_TYPES.FRIENDLY);
+    });
+
+    it('should display current match type value', () => {
+      const props = {
+        ...defaultProps,
+        matchType: MATCH_TYPES.CUP
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      const select = screen.getByTestId('matchType');
+      expect(select.value).toBe(MATCH_TYPES.CUP);
+    });
+
+    it('should show match type description for selected type', () => {
+      const props = {
+        ...defaultProps,
+        matchType: MATCH_TYPES.TOURNAMENT
+      };
+      
+      render(<ConfigurationScreen {...props} />);
+      
+      const tournamentOption = MATCH_TYPE_OPTIONS.find(opt => opt.value === MATCH_TYPES.TOURNAMENT);
+      expect(screen.getByText(tournamentOption.description)).toBeInTheDocument();
+    });
+
+    it('should default to league match type', () => {
+      render(<ConfigurationScreen {...defaultProps} />);
+      
+      const select = screen.getByTestId('matchType');
+      expect(select.value).toBe(MATCH_TYPES.LEAGUE);
+      
+      const leagueOption = MATCH_TYPE_OPTIONS.find(opt => opt.value === MATCH_TYPES.LEAGUE);
+      expect(screen.getByText(leagueOption.description)).toBeInTheDocument();
+    });
+
+    it('should place match type dropdown between squad selection and opponent team', () => {
+      render(<ConfigurationScreen {...defaultProps} />);
+      
+      const matchTypeSection = screen.getByText('Match Type').closest('.p-3');
+      const opponentSection = screen.getByText('Opponent Team Name').closest('.p-3');
+      
+      expect(matchTypeSection).toBeInTheDocument();
+      expect(opponentSection).toBeInTheDocument();
+      
+      // Check positioning by DOM order
+      const parent = matchTypeSection.parentNode;
+      const matchTypeIndex = Array.from(parent.children).indexOf(matchTypeSection);
+      const opponentIndex = Array.from(parent.children).indexOf(opponentSection);
+      
+      expect(matchTypeIndex).toBeLessThan(opponentIndex);
     });
   });
 

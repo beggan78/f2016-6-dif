@@ -5,7 +5,7 @@
 ALTER TABLE public.match 
   ALTER COLUMN format DROP DEFAULT,
   ALTER COLUMN formation DROP DEFAULT,
-ALTER COLUMN periods DROP DEFAULT,
+  ALTER COLUMN periods DROP DEFAULT,
   ALTER COLUMN period_duration_minutes DROP DEFAULT,
   ALTER COLUMN match_duration_seconds DROP DEFAULT,
   ALTER COLUMN type DROP DEFAULT;

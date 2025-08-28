@@ -26,7 +26,7 @@ The application uses a unique points system to ensure fair role distribution. `S
 It uses `formatTime` and `formatPoints` from `src/utils/formatUtils.js` to ensure that time and point values are displayed in a user-friendly and consistent format.
 
 ### d. State Reset
-The "Start New Game Configuration" button triggers a comprehensive reset of the application's state, including clearing `localStorage` for both game state and timers. This ensures a clean slate for a new game.
+The "Start New Game" button triggers a comprehensive reset of the application's state, including clearing `localStorage` for both game state and timers. This ensures a clean slate for a new game.
 
 ### e. Clipboard Integration
 It leverages the browser's `navigator.clipboard.writeText` API to allow users to easily copy the generated statistics for external use.
