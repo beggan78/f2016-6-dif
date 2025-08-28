@@ -48,13 +48,11 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
     }
 
     if (isProcessingInvitation) {
-      console.log('Invitation already being processed, skipping');
       return;
     }
 
     try {
       setIsProcessingInvitation(true);
-      console.log('Processing invitation:', params.invitationId);
 
       const result = await acceptTeamInvitation(params.invitationId);
 
@@ -99,7 +97,6 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
    * Handle request to show sign-in modal after password setup
    */
   const handleRequestSignIn = useCallback(() => {
-    console.log('Handling sign-in request after password setup');
 
     // Clear invitation parameters to close InvitationWelcome modal
     clearInvitationParamsFromUrl();
@@ -116,15 +113,12 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
     if (!user || hasCheckedInvitations) return;
 
     try {
-      console.log('Checking for pending invitation notifications...');
       const invitations = await getUserPendingInvitations();
 
       if (invitations && invitations.length > 0) {
-        console.log(`Found ${invitations.length} pending invitation(s)`);
         setPendingInvitations(invitations);
         setShowInvitationNotifications(true);
       } else {
-        console.log('No pending invitations found');
       }
 
       setHasCheckedInvitations(true);
@@ -169,14 +163,12 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
       const params = detectInvitationParams();
 
       if (params.hasInvitation) {
-        console.log('Invitation detected:', params);
         setInvitationParams(params);
 
         // If we have Supabase tokens in the URL hash, set the session
         if (params.isSupabaseInvitation && params.accessToken && params.refreshToken) {
           try {
-            console.log('Setting Supabase session with invitation tokens...');
-            const { data, error } = await supabase.auth.setSession({
+            const { error } = await supabase.auth.setSession({
               access_token: params.accessToken,
               refresh_token: params.refreshToken
             });
@@ -184,7 +176,6 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
             if (error) {
               console.error('Error setting session:', error);
             } else {
-              console.log('Session set successfully:', data);
             }
           } catch (error) {
             console.error('Exception setting session:', error);
@@ -201,11 +192,9 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
     if (user && invitationParams && shouldProcessInvitation(user, invitationParams)) {
       // Check if user still needs to complete account setup (password)
       if (needsAccountCompletion(invitationParams, user)) {
-        console.log('User needs to complete account setup before processing invitation');
         return; // Don't process invitation yet, user needs to set password first
       }
 
-      console.log('User is ready to process invitation');
       handleInvitationAcceptance(invitationParams);
     }
   }, [user, invitationParams, handleInvitationAcceptance]);
@@ -213,11 +202,9 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
   // Check for pending invitation after user signs in (for users who completed password setup)
   useEffect(() => {
     if (user && !invitationParams && hasPendingInvitation()) {
-      console.log('User signed in, checking for pending invitation...');
       const pendingInvitation = retrievePendingInvitation();
 
       if (pendingInvitation && pendingInvitation.invitationId) {
-        console.log('Processing pending invitation:', pendingInvitation);
 
         // Process the stored invitation
         handleInvitationAcceptance({ invitationId: pendingInvitation.invitationId });

@@ -238,20 +238,13 @@ function AppContent() {
 
   // Database-based abandonment check - uses database as source of truth
   const checkForActiveMatch = useCallback(async (callback) => {
-    console.group('🚨 Database Match Abandonment Check');
-    console.log('Current match ID:', gameState.currentMatchId);
-    console.log('Callback type:', typeof callback);
-
     if (typeof callback !== 'function') {
       console.warn('checkForActiveMatch: requires a callback function');
-      console.groupEnd();
       return;
     }
 
     // If no currentMatchId, proceed immediately
     if (!gameState.currentMatchId) {
-      console.log('❌ No currentMatchId - executing callback immediately');
-      console.groupEnd();
       callback();
       return;
     }
@@ -268,58 +261,43 @@ function AppContent() {
       if (error) {
         if (error.code === 'PGRST116') {
           // No match found - safe to proceed
-          console.log('❌ No active match found in database - executing callback immediately');
-          console.groupEnd();
           callback();
           return;
         }
         
         console.error('Database error checking match:', error);
         // On error, err on side of caution and show abandon modal (safest default)
-        console.log('⚠️ Database error - showing abandonment modal as precaution');
         setFoundMatchState('running'); // Default to running for safety
         setPendingNewGameCallback(() => callback);
         setShowAbandonModal(true);
-        console.groupEnd();
         return;
       }
 
       if (match) {
-        console.log('✅ Match found in database:', match);
         setFoundMatchState(match.state);
         setPendingNewGameCallback(() => callback);
         
         if (match.state === 'running') {
-          console.log('🏃 Running match - showing abandon modal');
           setShowAbandonModal(true);
         } else if (match.state === 'finished') {
-          console.log('🏁 Finished match - showing three-option modal');
           setShowFinishedMatchModal(true);
         }
       } else {
-        console.log('❌ No active match in database - executing callback immediately');
         callback();
       }
     } catch (err) {
       console.error('Unexpected error checking active match:', err);
       // On unexpected error, show abandon modal as precaution (safest default)
-      console.log('⚠️ Unexpected error - showing abandonment modal as precaution');
       setFoundMatchState('running'); // Default to running for safety
       setPendingNewGameCallback(() => callback);
       setShowAbandonModal(true);
     }
-    
-    console.groupEnd();
   }, [gameState.currentMatchId]);
 
   // Handle abandonment confirmation - delete match record and proceed
   const handleAbandonMatch = useCallback(async () => {
-    console.group('🗑️ Abandoning match - deleting database record');
-    
     try {
       if (gameState.currentMatchId) {
-        console.log('Deleting match record:', gameState.currentMatchId);
-        
         const { error } = await supabase
           .from('match')
           .delete()
@@ -328,14 +306,11 @@ function AppContent() {
         if (error) {
           console.error('Error deleting match record:', error);
           // Continue anyway - don't block user if deletion fails
-        } else {
-          console.log('✅ Match record deleted successfully');
         }
       }
       
       // Execute pending callback
       if (pendingNewGameCallback) {
-        console.log('Executing pending new game callback');
         pendingNewGameCallback();
       }
       
@@ -348,39 +323,32 @@ function AppContent() {
       
       // Even if deletion fails, proceed with callback to avoid blocking user
       if (pendingNewGameCallback) {
-        console.log('Executing callback despite deletion error');
         pendingNewGameCallback();
       }
       
       setShowAbandonModal(false);
       setPendingNewGameCallback(null);
     }
-    
-    console.groupEnd();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.currentMatchId, pendingNewGameCallback]);
 
   // Handle abandonment cancellation - close modal without action
   const handleCancelAbandon = useCallback(() => {
-    console.log('🚫 User cancelled match abandonment');
     setShowAbandonModal(false);
     setPendingNewGameCallback(null);
-  }, []);
+  }, []); 
 
   // Three-option modal handlers for finished matches
   
   // Handle "Save Match" option - save to history and proceed
   const handleSaveFinishedMatch = useCallback(async () => {
-    console.group('💾 Saving finished match to history');
     
     try {
       if (gameState.currentMatchId) {
-        console.log('Saving match to history:', gameState.currentMatchId);
         
         const result = await updateMatchToConfirmed(gameState.currentMatchId);
         
         if (result.success) {
-          console.log('✅ Match saved to history successfully');
           showSuccessMessage('Match saved successfully!');
         } else {
           console.error('Failed to save match:', result.error);
@@ -390,7 +358,6 @@ function AppContent() {
       
       // Execute pending callback (proceed to new game)
       if (pendingNewGameCallback) {
-        console.log('Executing pending new game callback after save');
         pendingNewGameCallback();
       }
       
@@ -409,17 +376,12 @@ function AppContent() {
       setFoundMatchState(null);
     }
     
-    console.groupEnd();
   }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
 
   // Handle "Delete Match" option - delete database record and proceed
   const handleDeleteFinishedMatch = useCallback(async () => {
-    console.group('🗑️ Deleting finished match');
-    
     try {
       if (gameState.currentMatchId) {
-        console.log('Deleting match record:', gameState.currentMatchId);
-        
         const { error } = await supabase
           .from('match')
           .delete()
@@ -429,14 +391,12 @@ function AppContent() {
           console.error('Error deleting match record:', error);
           showSuccessMessage('Error deleting match. Please try again.');
         } else {
-          console.log('✅ Match record deleted successfully');
           showSuccessMessage('Match deleted successfully!');
         }
       }
       
       // Execute pending callback (proceed to new game)
       if (pendingNewGameCallback) {
-        console.log('Executing pending new game callback after deletion');
         pendingNewGameCallback();
       }
       
@@ -451,7 +411,6 @@ function AppContent() {
       
       // Even if deletion fails, proceed with callback to avoid blocking user
       if (pendingNewGameCallback) {
-        console.log('Executing callback despite deletion error');
         pendingNewGameCallback();
       }
       
@@ -460,12 +419,10 @@ function AppContent() {
       setFoundMatchState(null);
     }
     
-    console.groupEnd();
   }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
 
   // Handle "Cancel" option for finished match modal
   const handleCancelFinishedMatch = useCallback(() => {
-    console.log('🚫 User cancelled finished match action');
     setShowFinishedMatchModal(false);
     setPendingNewGameCallback(null);
     setFoundMatchState(null);
@@ -488,41 +445,6 @@ function AppContent() {
     setSuccessMessage
   });
   
-  // Add global helper for browser console debugging (development only)
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      window.debugMatchState = () => {
-        console.group('🔧 Debug Match State Helper');
-        console.log('Game State Values:', {
-          currentMatchId: gameState.currentMatchId,
-          matchState: gameState.matchState,
-          view: gameState.view,
-          matchStartTime: gameState.matchStartTime
-        });
-        
-        const matchStateHook = {
-          currentMatchId: gameState.currentMatchId,
-          matchState: gameState.matchState,
-          hasActiveMatch: Boolean(gameState.currentMatchId && (gameState.matchState === 'running' || gameState.matchState === 'finished')),
-          hasUnsavedMatch: Boolean(gameState.currentMatchId && gameState.matchState === 'finished'),
-          isMatchRunning: Boolean(gameState.currentMatchId && gameState.matchState === 'running')
-        };
-        
-        console.log('Calculated Match State:', matchStateHook);
-        console.log('Expected Modal Behavior:', {
-          'Should show abandonment modal': matchStateHook.hasActiveMatch ? '✅ YES' : '❌ NO',
-          'Reason': matchStateHook.hasActiveMatch 
-            ? `Active match detected (${matchStateHook.matchState})` 
-            : 'No active match or invalid state'
-        });
-        console.groupEnd();
-        
-        return matchStateHook;
-      };
-      
-      console.log('🔧 Global debug helper available: window.debugMatchState()');
-    }
-  }, [gameState.currentMatchId, gameState.matchState, gameState.view, gameState.matchStartTime]);
   
   // Store the pushNavigationState function in the ref
   useEffect(() => {
@@ -624,10 +546,6 @@ function AppContent() {
   };
 
   const handleRestartMatch = () => {
-    console.log('🎮 New Game clicked - current state:', {
-      currentTeam: currentTeam?.name,
-      teamPlayersCount: teamPlayers.length
-    });
     
     // Clear all game events from previous games
     clearAllEvents();
@@ -642,11 +560,9 @@ function AppContent() {
     
     // Sync team roster if available, otherwise use initial roster
     if (currentTeam && teamPlayers && teamPlayers.length > 0 && gameState.syncPlayersFromTeamRoster) {
-      console.log('🔄 New Game: Syncing team roster players...');
       try {
         const result = gameState.syncPlayersFromTeamRoster(teamPlayers);
         if (result.success) {
-          console.log('✅ New Game: Team players synced successfully');
         } else {
           console.warn('⚠️ New Game: Team sync failed, using initial roster');
           gameState.setAllPlayers(initializePlayers(initialRoster));
@@ -656,7 +572,6 @@ function AppContent() {
         gameState.setAllPlayers(initializePlayers(initialRoster));
       }
     } else {
-      console.log('🔄 New Game: No team selected, using initial roster');
       gameState.setAllPlayers(initializePlayers(initialRoster));
     }
     gameState.setSelectedSquadIds([]);
@@ -679,9 +594,7 @@ function AppContent() {
   };
 
   const handleNewGameFromMenu = async () => {
-    console.log('🍔 New Game from Hamburger Menu - calling checkForActiveMatch()');
     await checkForActiveMatch(() => {
-      console.log('🍔 New Game from Menu - executing callback (handleRestartMatch)');
       handleRestartMatch();
     });
   };
@@ -707,9 +620,7 @@ function AppContent() {
 
   // Handle new game confirmation modal
   const handleConfirmNewGame = async () => {
-    console.log('⏰ New Game Confirmation (Browser Back) - calling checkForActiveMatch()');
     await checkForActiveMatch(() => {
-      console.log('⏰ New Game Confirmation - executing callback');
       setShowNewGameModal(false);
       removeFromNavigationStack();
       handleRestartMatch();
@@ -781,7 +692,6 @@ function AppContent() {
     // Mark this team's access modal as dismissed for this session
     if (selectedTeamForAdmin) {
       markModalDismissed('team_access', selectedTeamForAdmin.id);
-      console.log(`Team access modal dismissed for team: ${selectedTeamForAdmin.name}`);
     }
     
     setShowTeamAdminModal(false);
@@ -806,10 +716,8 @@ function AppContent() {
     if (canManageTeam && hasPendingRequests && currentTeam && !showTeamAdminModal && !needsProfileCompletion) {
       // Check if user has dismissed this team's access modal
       if (!isModalDismissed('team_access', currentTeam.id)) {
-        console.log(`Auto-opening admin modal for ${pendingRequestsCount} pending request(s) on team:`, currentTeam.name);
         handleOpenTeamAdminModal(currentTeam);
       } else {
-        console.log(`Team access modal dismissed by user for team: ${currentTeam.name}`);
       }
     }
   }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal]);

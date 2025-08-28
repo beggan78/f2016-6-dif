@@ -24,6 +24,7 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 - **Match Reports**: Comprehensive event logging and post-game analysis with exportable statistics
 - **Formation Voting**: Collaborative team formation decisions with voting system
 - **Goal Tracking**: Real-time goal scoring with player attribution and event logging
+- **Match Abandonment Protection**: Database-backed safeguards prevent accidental loss of match data
 
 #### User Experience
 - **Advanced Visual Indicators**: Dual-layer substitution indicators with opacity differentiation
@@ -132,6 +133,15 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 - **Collaborative Decisions**: Team-based voting for formation selections
 - **Democratic Process**: Weighted voting based on team member roles
 - **Formation Recommendations**: AI-suggested formations based on historical data
+
+#### Match Abandonment Protection
+- **Database-Backed Safeguards**: Prevents accidental loss of active match data
+- **Intelligent Detection**: Automatically detects running or finished matches before allowing new game creation
+- **Flexible Recovery Options**: 
+  - **Running Matches**: Choose to abandon (delete) or cancel and continue
+  - **Finished Matches**: Save to history, delete, or cancel with three-option modal
+- **Data Integrity**: Uses database as authoritative source rather than UI state for reliable detection
+- **Error Handling**: Graceful fallback behavior when database queries fail (defaults to showing protection modal)
 
 ## 7-Player Individual Mode (Detailed)
 
