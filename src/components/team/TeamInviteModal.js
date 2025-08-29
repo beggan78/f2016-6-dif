@@ -285,7 +285,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     >
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-600">
         {/* Modal Header */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center">
+        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center z-10">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center">
               <Mail className="w-5 h-5 text-white" />
