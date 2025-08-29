@@ -8,7 +8,7 @@ export function FormationRenderer({ teamConfig, selectedFormation, ...props }) {
   }
 
   if (teamConfig.substitutionType === 'pairs') {
-    return <PairsFormation data-testid="formation-renderer" {...props} />;
+    return <PairsFormation data-testid="formation-renderer" teamConfig={teamConfig} selectedFormation={selectedFormation} {...props} />;
   } else if (teamConfig.substitutionType === 'individual') {
     return <IndividualFormation data-testid="formation-renderer" teamConfig={teamConfig} selectedFormation={selectedFormation} {...props} />;
   }

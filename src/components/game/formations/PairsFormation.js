@@ -5,6 +5,7 @@ import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES, POSITION_DISPLAY_NAMES } from './constants';
+import { getCompleteRoleInfo } from '../../../game/logic/rolePreviewUtils';
 
 export function PairsFormation({ 
   formation,
@@ -17,6 +18,7 @@ export function PairsFormation({
   goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
+  teamConfig,
   ...domProps
 }) {
   // Handle null/undefined formation
@@ -30,10 +32,31 @@ export function PairsFormation({
     );
   }
 
+  // Helper function to render individual player role with preview
+  const renderPlayerRole = (playerId, pairData, pairKey, isDefender) => {
+    const roleInfo = getCompleteRoleInfo(playerId, pairData, pairKey, teamConfig);
+    const RoleIcon = isDefender ? Shield : Sword;
+    const playerName = getPlayerNameById ? getPlayerNameById(playerId) : playerId;
+    
+    return (
+      <div className="flex items-center justify-between" data-testid={`player-${playerId}`}>
+        <div className="flex items-center space-x-1">
+          <RoleIcon className={ICON_STYLES.small} />
+          <span>{roleInfo.currentText}: {playerName}</span>
+          {roleInfo.hasPreview && (
+            <span className="text-xs text-slate-400 ml-1 transition-colors duration-200">
+              → {roleInfo.previewText}
+            </span>
+          )}
+        </div>
+        <PlayerStatsDisplay playerId={playerId} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
+      </div>
+    );
+  };
+
   const renderPair = (pairKey, pairDisplayName, renderIndex) => {
     const pairData = formation[pairKey];
     if (!pairData) return null;
-
 
     const isNextOff = pairKey === nextPhysicalPairToSubOut;
     const isNextOn = pairKey === 'subPair';
@@ -79,14 +102,8 @@ export function PairsFormation({
           </div>
         </h3>
         <div className="space-y-0.5">
-          <div className="flex items-center justify-between" data-testid={`player-${pairData.defender}`}>
-            <div><Shield className={ICON_STYLES.small} /> D: {getPlayerNameById ? getPlayerNameById(pairData.defender) : pairData.defender}</div>
-            <PlayerStatsDisplay playerId={pairData.defender} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
-          </div>
-          <div className="flex items-center justify-between" data-testid={`player-${pairData.attacker}`}>
-            <div><Sword className={ICON_STYLES.small} /> A: {getPlayerNameById ? getPlayerNameById(pairData.attacker) : pairData.attacker}</div>
-            <PlayerStatsDisplay playerId={pairData.attacker} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
-          </div>
+          {renderPlayerRole(pairData.defender, pairData, pairKey, true)}
+          {renderPlayerRole(pairData.attacker, pairData, pairKey, false)}
         </div>
       </div>
     );
