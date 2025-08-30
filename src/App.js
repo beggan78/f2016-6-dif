@@ -235,6 +235,8 @@ function AppContent() {
     }
   }, [gameState.view, navigationData]);
 
+  // Timer display is now handled directly in GameScreen component
+
 
 
 
@@ -609,7 +611,7 @@ function AppContent() {
     clearHistory();
     
     // Reset all timer state and clear localStorage
-    timers.resetAllTimers();
+    timers.clearAllTimersForNewGame();
     
     // Reset all game state
     gameState.setView('config');
@@ -894,6 +896,7 @@ function AppContent() {
             matchStartTime={gameState.matchStartTime}
             matchState={gameState.matchState}
             handleActualMatchStart={handleActualMatchStartWithTimers}
+            periodDurationMinutes={gameState.periodDurationMinutes}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
               return player ? formatPlayerName(player) : 'Unknown Player';

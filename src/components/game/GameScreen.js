@@ -74,6 +74,7 @@ export function GameScreen({
   matchStartTime,
   matchState,
   handleActualMatchStart,
+  periodDurationMinutes,
   getPlayerName
 }) {
   // Use new modular hooks
@@ -310,6 +311,10 @@ export function GameScreen({
     }, 2000);
   };
 
+  // Calculate display values for timers - show initial values when match is pending
+  const displayMatchTimerSeconds = matchState === 'pending' ? periodDurationMinutes * 60 : matchTimerSeconds;
+  const displaySubTimerSeconds = matchState === 'pending' ? 0 : subTimerSeconds;
+
   return (
     <div className="relative space-y-4">
       {/* Start Match Overlay - shown when match is pending */}
@@ -377,15 +382,15 @@ export function GameScreen({
       <div className="grid grid-cols-2 gap-4 text-center">
         <div className="p-2 bg-slate-700 rounded-lg">
           <p className="text-xs text-sky-200 mb-0.5">Match Clock</p>
-          <p className={`text-2xl font-mono ${matchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
-            {matchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(matchTimerSeconds))}
+          <p className={`text-2xl font-mono ${displayMatchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
+            {displayMatchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(displayMatchTimerSeconds))}
           </p>
         </div>
         <div className="p-2 bg-slate-700 rounded-lg relative">
           <p className="text-xs text-sky-200 mb-0.5">Substitution Timer</p>
           <div className="relative flex items-center justify-center">
-            <p className={`text-2xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
-              {formatTime(subTimerSeconds)}
+            <p className={`text-2xl font-mono ${alertMinutes > 0 && displaySubTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
+              {formatTime(displaySubTimerSeconds)}
             </p>
             <button
               onClick={isSubTimerPaused ? timerHandlers.handleResumeTimer : timerHandlers.handlePauseTimer}
