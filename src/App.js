@@ -522,6 +522,15 @@ function AppContent() {
   // Enhanced game handlers that integrate with timers
   const handleStartGame = () => {
     gameState.handleStartGame();
+    // Note: Timers are now started when user clicks Start Match button
+  };
+
+  // New handler for when user actually starts the match
+  const handleActualMatchStartWithTimers = () => {
+    // First call the game state handler to update match state
+    gameState.handleActualMatchStart();
+    
+    // Then start the timers
     timers.startTimers(
       gameState.currentPeriodNumber,
       gameState.teamConfig,
@@ -883,6 +892,8 @@ function AppContent() {
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
             matchStartTime={gameState.matchStartTime}
+            matchState={gameState.matchState}
+            handleActualMatchStart={handleActualMatchStartWithTimers}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
               return player ? formatPlayerName(player) : 'Unknown Player';

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
+import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
@@ -65,6 +65,8 @@ export function GameScreen({
   matchEvents,
   goalScorers,
   matchStartTime,
+  matchState,
+  handleActualMatchStart,
   getPlayerName
 }) {
   // Use new modular hooks
@@ -291,7 +293,57 @@ export function GameScreen({
 
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      {/* Start Match Overlay - shown when match is pending */}
+      {matchState === 'pending' && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-8">
+          {/* Subtle Glass effect backdrop - less blurry so GameScreen is visible */}
+          <div className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-900/10 to-slate-900/15" />
+          
+          {/* Cool Clickable Icon */}
+          <div className="relative z-10 text-center">
+            {/* Main Clickable Icon */}
+            <div
+              onClick={handleActualMatchStart}
+              className="group relative inline-block cursor-pointer select-none"
+            >
+              {/* Multi-layer Glow Effects */}
+              <div className="absolute inset-0 animate-pulse">
+                <div className="absolute inset-0 bg-sky-400 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-sky-300 rounded-full blur-2xl opacity-30 group-hover:opacity-60 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-white rounded-full blur-xl opacity-10 group-hover:opacity-30 transition-opacity duration-200" />
+              </div>
+              
+              {/* Icon with Effects */}
+              <SquarePlay 
+                size={160} 
+                className="relative text-sky-400 hover:text-sky-300 active:text-sky-500 
+                          drop-shadow-2xl 
+                          transform group-hover:scale-110 group-active:scale-95 
+                          transition-all duration-300 ease-out
+                          filter group-hover:brightness-110 group-active:brightness-90
+                          group-hover:drop-shadow-[0_0_30px_rgba(56,189,248,0.8)]
+                          group-active:drop-shadow-[0_0_50px_rgba(56,189,248,1)]" 
+              />
+              
+              {/* Ripple Effect on Click */}
+              <div className="absolute inset-0 rounded-full opacity-0 group-active:opacity-100 group-active:animate-ping bg-sky-400/20 transition-opacity duration-75" />
+            </div>
+            
+            {/* Descriptive Text */}
+            <div className="mt-8 space-y-2">
+              <p className="text-3xl font-bold text-white drop-shadow-lg tracking-wide">
+                Start Match
+              </p>
+              <p className="text-center text-sky-100/70 text-lg font-medium tracking-wide drop-shadow-sm">
+                Click to begin the match and start timers
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber}</h2>
 
       

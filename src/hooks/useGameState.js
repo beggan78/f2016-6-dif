@@ -9,7 +9,7 @@ import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPos
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
-import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, formatFinalStatsFromGameState } from '../services/matchStateManager';
+import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState } from '../services/matchStateManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
@@ -794,13 +794,10 @@ export function useGameState(navigateToView = null) {
         });
     }
 
-    // Set match state to running when game starts
-    console.log('🎮 handleStartGame: Setting match state to RUNNING');
-    console.log('📝 CALLING setMatchState(\'running\')');
-    setMatchState('running');
-
-    // Request wake lock (alert timer now handled by visual timer logic)
-    requestWakeLock();
+    // Set match state to pending (not running yet - user needs to click Start Match)
+    console.log('🎮 handleStartGame: Setting match state to PENDING');
+    console.log('📝 CALLING setMatchState(\'pending\')');
+    setMatchState('pending');
 
     setView(VIEWS.GAME);
     
@@ -810,6 +807,34 @@ export function useGameState(navigateToView = null) {
     }, 100);
     
     console.log('🏁 handleStartGame: Function completed');
+  };
+
+  // New function to actually start the match when user clicks Start Match button
+  const handleActualMatchStart = async () => {
+    console.log('🚀 handleActualMatchStart: User clicked Start Match button');
+    
+    // Update match state to running in database
+    if (currentMatchId) {
+      try {
+        const result = await updateMatchToRunning(currentMatchId);
+        if (!result.success) {
+          console.warn('⚠️  Failed to update match to running:', result.error);
+          // Continue anyway - local state is more important
+        }
+      } catch (error) {
+        console.warn('⚠️  Exception while updating match to running:', error);
+        // Continue anyway - local state is more important
+      }
+    }
+
+    // Set local match state to running
+    console.log('🎮 handleActualMatchStart: Setting match state to RUNNING');
+    setMatchState('running');
+
+    // Request wake lock (alert timer now handled by visual timer logic)
+    requestWakeLock();
+    
+    console.log('🏁 handleActualMatchStart: Match actually started');
   };
 
   const handleSubstitution = (isSubTimerPaused = false) => {
@@ -1826,6 +1851,7 @@ export function useGameState(navigateToView = null) {
     preparePeriodWithGameLog,
     handleStartPeriodSetup,
     handleStartGame,
+    handleActualMatchStart,
     handleSubstitution,
     handleEndPeriod,
     addTemporaryPlayer,
