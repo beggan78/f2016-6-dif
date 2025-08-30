@@ -5,7 +5,8 @@ import { ReportNavigation } from '../ReportNavigation';
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
-  BarChart3: ({ className }) => <div data-testid="bar-chart3-icon" className={className} />
+  BarChart3: ({ className }) => <div data-testid="bar-chart3-icon" className={className} />,
+  ArrowLeft: ({ className }) => <div data-testid="arrow-left-icon" className={className} />
 }));
 
 // Mock the shared UI components
@@ -31,7 +32,7 @@ describe('ReportNavigation', () => {
     // Mock handlers
     mockHandlers = {
       onNavigateToStats: jest.fn(),
-      onBackToGame: jest.fn()
+      onNavigateBack: jest.fn()
     };
 
     jest.clearAllMocks();
@@ -51,7 +52,7 @@ describe('ReportNavigation', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={null}
-          onBackToGame={null}
+          onNavigateBack={null}
         />
       );
       expect(container.firstChild).toBeNull();
@@ -61,7 +62,7 @@ describe('ReportNavigation', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={undefined}
-          onBackToGame={undefined}
+          onNavigateBack={undefined}
         />
       );
       expect(container.firstChild).toBeNull();
@@ -81,7 +82,26 @@ describe('ReportNavigation', () => {
       render(<ReportNavigation onNavigateToStats={mockHandlers.onNavigateToStats} />);
 
       expect(screen.getByTestId('button-quick-stats')).toBeInTheDocument();
-      expect(screen.queryByTestId('button-back-to-game')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('button-back')).not.toBeInTheDocument();
+    });
+
+    it('shows only Back button when only onNavigateBack provided', () => {
+      render(<ReportNavigation onNavigateBack={mockHandlers.onNavigateBack} />);
+
+      expect(screen.getByTestId('button-back')).toBeInTheDocument();
+      expect(screen.queryByTestId('button-quick-stats')).not.toBeInTheDocument();
+    });
+
+    it('shows both buttons when both callbacks provided', () => {
+      render(
+        <ReportNavigation 
+          onNavigateToStats={mockHandlers.onNavigateToStats}
+          onNavigateBack={mockHandlers.onNavigateBack}
+        />
+      );
+
+      expect(screen.getByTestId('button-back')).toBeInTheDocument();
+      expect(screen.getByTestId('button-quick-stats')).toBeInTheDocument();
     });
 
     
@@ -110,6 +130,30 @@ describe('ReportNavigation', () => {
       fireEvent.click(statsButton);
 
       expect(mockHandlers.onNavigateToStats).toHaveBeenCalledTimes(3);
+    });
+
+    it('Back button calls onNavigateBack without parameters when clicked', () => {
+      render(<ReportNavigation onNavigateBack={mockHandlers.onNavigateBack} />);
+
+      const backButton = screen.getByTestId('button-back');
+      fireEvent.click(backButton);
+
+      // The critical test: onNavigateBack should be called with no arguments (not with the event object)
+      expect(mockHandlers.onNavigateBack).toHaveBeenCalledTimes(1);
+      expect(mockHandlers.onNavigateBack).toHaveBeenCalledWith();
+    });
+
+    it('handles multiple clicks properly on Back button', () => {
+      render(<ReportNavigation onNavigateBack={mockHandlers.onNavigateBack} />);
+
+      const backButton = screen.getByTestId('button-back');
+      fireEvent.click(backButton);
+      fireEvent.click(backButton);
+
+      expect(mockHandlers.onNavigateBack).toHaveBeenCalledTimes(2);
+      // Each call should be made without arguments
+      expect(mockHandlers.onNavigateBack).toHaveBeenNthCalledWith(1);
+      expect(mockHandlers.onNavigateBack).toHaveBeenNthCalledWith(2);
     });
 
     
@@ -168,6 +212,27 @@ describe('ReportNavigation', () => {
       expect(screen.getByTestId('bar-chart3-icon')).toBeInTheDocument();
     });
 
+    it('Back button has correct variant and size', () => {
+      render(<ReportNavigation onNavigateBack={mockHandlers.onNavigateBack} />);
+
+      const backButton = screen.getByTestId('button-back');
+      expect(backButton).toHaveAttribute('data-variant', 'secondary');
+      expect(backButton).toHaveAttribute('data-size', 'sm');
+    });
+
+    it('Back button renders ArrowLeft icon', () => {
+      render(<ReportNavigation onNavigateBack={mockHandlers.onNavigateBack} />);
+
+      expect(screen.getByTestId('arrow-left-icon')).toBeInTheDocument();
+    });
+
+    it('Back button has correct text content', () => {
+      render(<ReportNavigation onNavigateBack={mockHandlers.onNavigateBack} />);
+
+      const backButton = screen.getByTestId('button-back');
+      expect(backButton).toHaveTextContent('Back');
+    });
+
     
   });
 
@@ -176,7 +241,7 @@ describe('ReportNavigation', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={undefined}
-          onBackToGame={undefined}
+          onNavigateBack={undefined}
         />
       );
 
@@ -187,7 +252,7 @@ describe('ReportNavigation', () => {
       const { container } = render(
         <ReportNavigation 
           onNavigateToStats={null}
-          onBackToGame={null}
+          onNavigateBack={null}
         />
       );
 
@@ -245,6 +310,25 @@ describe('ReportNavigation', () => {
       
       expect(buttons).toHaveLength(1);
       expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2', 'mb-4');
+    });
+
+    it('maintains layout integrity with both buttons', () => {
+      render(
+        <ReportNavigation 
+          onNavigateToStats={mockHandlers.onNavigateToStats}
+          onNavigateBack={mockHandlers.onNavigateBack}
+        />
+      );
+
+      const container = screen.getByTestId('button-back').closest('div');
+      const buttons = container.querySelectorAll('button');
+      
+      expect(buttons).toHaveLength(2);
+      expect(container).toHaveClass('flex', 'flex-wrap', 'gap-2', 'mb-4');
+      
+      // Verify both buttons are present
+      expect(screen.getByTestId('button-back')).toBeInTheDocument();
+      expect(screen.getByTestId('button-quick-stats')).toBeInTheDocument();
     });
 
     

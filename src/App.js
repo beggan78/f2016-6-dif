@@ -3,6 +3,8 @@ import './App.css';
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
+import { useScreenNavigation } from './hooks/useNavigationHistory';
+import { useNavigationHistoryContext } from './contexts/NavigationHistoryContext';
 import { formatTime } from './utils/formatUtils';
 import { formatPlayerName } from './utils/formatUtils';
 import { calculateUndoTimerTarget } from './game/time/timeCalculator';
@@ -27,6 +29,7 @@ import { isDebugMode } from './utils/debugUtils';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TeamProvider, useTeam } from './contexts/TeamContext';
 import { PreferencesProvider } from './contexts/PreferencesContext';
+import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
@@ -80,7 +83,41 @@ const clearDismissedModals = () => {
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
-  const gameState = useGameState();
+  // Create refs to store the navigation functions to avoid circular dependencies
+  const navigateToViewRef = useRef(null);
+  
+  // Create the main gameState instance with a ref-based navigation function
+  const gameState = useGameState((view, data) => {
+    if (navigateToViewRef.current) {
+      return navigateToViewRef.current(view, data);
+    } else {
+      // Fallback to direct setView if navigation system isn't ready yet
+      return gameState.setView(view);
+    }
+  });
+  
+  // Set up navigation system using the actual gameState.setView
+  const navigationHistory = useScreenNavigation(gameState.setView, {
+    enableBrowserBack: false, // We'll handle browser back through useBrowserBackIntercept
+    fallbackView: VIEWS.CONFIG
+  });
+  
+  // Enhanced navigation functions that track history
+  const navigateToView = useCallback((view, data = null) => {
+    return navigationHistory.navigateTo(view, data);
+  }, [navigationHistory]);
+  
+  // Store the navigateToView function in the ref for gameState to use
+  navigateToViewRef.current = navigateToView;
+  
+  const navigateBack = useCallback((fallback = null) => {
+    return navigationHistory.navigateBack(fallback);
+  }, [navigationHistory]);
+
+  // Enhanced setViewWithData that tracks navigation history
+  const setViewWithData = useCallback((view, data = null) => {
+    return navigateToView(view, data);
+  }, [navigateToView]);
   const timers = useTimers(gameState.periodDurationMinutes, gameState.alertMinutes, gameState.playAlertSounds, gameState.currentPeriodNumber);
   const {
     showSessionWarning,
@@ -128,15 +165,28 @@ function AppContent() {
   // Debug mode detection
   const debugMode = isDebugMode();
   
+  // Access navigation history context for lifecycle management
+  const { clearHistory, syncCurrentView } = useNavigationHistoryContext();
+
+  // Sync navigation history currentView with gameState.view
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('App.js sync useEffect: gameState.view changed to:', gameState.view, 'calling syncCurrentView');
+    }
+    syncCurrentView(gameState.view);
+  }, [gameState.view, syncCurrentView]);
+  
   // Custom sign out handler that resets view to ConfigurationScreen
   const handleSignOut = useCallback(async () => {
     // Clear dismissed modals state for new session
     clearDismissedModals();
+    // Clear navigation history for new session
+    clearHistory();
     // Reset view to ConfigurationScreen first
     gameState.setView(VIEWS.CONFIG);
     // Then perform the actual sign out
     return await signOut();
-  }, [gameState, signOut]);
+  }, [gameState, signOut, clearHistory]);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
@@ -167,11 +217,7 @@ function AppContent() {
   const [hasCheckedInvitations, setHasCheckedInvitations] = useState(false);
   const [navigationData, setNavigationData] = useState(null);
 
-  // Enhanced setView function that can accept navigation data
-  const setViewWithData = useCallback((view, data = null) => {
-    setNavigationData(data);
-    gameState.setView(view);
-  }, [gameState]);
+  // setViewWithData is now defined above with navigation history integration
 
   // Clear navigation data when view changes (except for TEAM_MANAGEMENT)
   useEffect(() => {
@@ -530,6 +576,9 @@ function AppContent() {
     // Clear all game events from previous games
     clearAllEvents();
     
+    // Clear navigation history for new game
+    clearHistory();
+    
     // Reset all timer state and clear localStorage
     timers.resetAllTimers();
     
@@ -635,7 +684,7 @@ function AppContent() {
 
   const handleNavigateToTacticalBoard = () => {
     setFromView(gameState.view);
-    gameState.setView(VIEWS.TACTICAL_BOARD);
+    navigateToView(VIEWS.TACTICAL_BOARD, { fromView: gameState.view });
   };
 
   // Team admin modal handlers
@@ -734,7 +783,7 @@ function AppContent() {
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}
             authModal={authModal}
-            setView={gameState.setView}
+            setView={navigateToView}
             setViewWithData={setViewWithData}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
           />
@@ -756,7 +805,7 @@ function AppContent() {
             numPeriods={gameState.numPeriods}
             teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
-            setView={gameState.setView}
+            setView={navigateToView}
             ownScore={gameState.ownScore}
             opponentScore={gameState.opponentScore}
             opponentTeam={gameState.opponentTeam}
@@ -824,7 +873,8 @@ function AppContent() {
           <StatsScreen 
             allPlayers={gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
             formatTime={formatTime}
-            setView={gameState.setView}
+            setView={navigateToView}
+            onNavigateBack={navigateBack}
             setAllPlayers={gameState.setAllPlayers}
             setSelectedSquadIds={gameState.setSelectedSquadIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
@@ -858,8 +908,7 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             ownTeamName={selectedSquadPlayers ? 'Djurgården' : 'Own'}
             opponentTeam={gameState.opponentTeam || 'Opponent'}
-            onNavigateToStats={() => gameState.setView(VIEWS.STATS)}
-            onBackToGame={() => gameState.setView(VIEWS.GAME)}
+            onNavigateBack={navigateBack}
             goalScorers={gameState.goalScorers || {}}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
@@ -874,7 +923,10 @@ function AppContent() {
       case VIEWS.PROFILE:
         return (
           <ProfileScreen
-            setView={gameState.setView}
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       case VIEWS.TACTICAL_BOARD:
@@ -889,7 +941,9 @@ function AppContent() {
       case VIEWS.TEAM_MANAGEMENT:
         return (
           <TeamManagement
-            setView={gameState.setView}
+            onNavigateBack={navigateBack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
           />
         );
@@ -912,7 +966,7 @@ function AppContent() {
             onFormPairs={gameState.formPairs}
             allPlayers={gameState.allPlayers}
             selectedSquadIds={gameState.selectedSquadIds}
-            setView={gameState.setView}
+            setView={navigateToView}
             authModal={authModal}
             onOpenTeamAdminModal={handleOpenTeamAdminModal}
             onOpenPreferencesModal={handleOpenPreferencesModal}
@@ -1003,7 +1057,7 @@ function AppContent() {
         {/* Profile Completion Prompt */}
         {needsProfileCompletion && (
           <ProfileCompletionPrompt
-            setView={gameState.setView}
+            setView={navigateToView}
           />
         )}
 
@@ -1037,13 +1091,15 @@ function AppContent() {
   );
 }
 
-// Main App Component with AuthProvider, TeamProvider, and PreferencesProvider
+// Main App Component with AuthProvider, TeamProvider, PreferencesProvider, and NavigationHistoryProvider
 function App() {
   return (
     <AuthProvider>
       <TeamProvider>
         <PreferencesProvider>
-          <AppContent />
+          <NavigationHistoryProvider>
+            <AppContent />
+          </NavigationHistoryProvider>
         </PreferencesProvider>
       </TeamProvider>
     </AuthProvider>

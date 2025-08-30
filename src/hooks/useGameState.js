@@ -41,7 +41,7 @@ const updateNextNextPlayerIfSupported = (teamConfig, playerList, setNextNextPlay
   }
 };
 
-export function useGameState() {
+export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
   const { currentTeam } = useTeam();
   // Get audio preferences for alert integration
@@ -1569,10 +1569,35 @@ export function useGameState() {
 
   // Navigation to match report
   const navigateToMatchReport = useCallback(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('navigateToMatchReport: Starting navigation to MATCH_REPORT view');
+    }
+    
     // Sync match data before showing report
     syncMatchDataFromEventLogger();
-    setView(VIEWS.MATCH_REPORT);
-  }, [syncMatchDataFromEventLogger]);
+    
+    // Use navigation system if available, otherwise fall back to direct setView
+    if (navigateToView) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('navigateToMatchReport: Using navigateToView function');
+      }
+      
+      const success = navigateToView(VIEWS.MATCH_REPORT);
+      
+      // If navigation system failed or returned false, use direct setView as fallback
+      if (!success) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('navigateToMatchReport: Navigation system failed, using direct setView fallback');
+        }
+        setView(VIEWS.MATCH_REPORT);
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('navigateToMatchReport: Using direct setView (no navigateToView available)');
+      }
+      setView(VIEWS.MATCH_REPORT);
+    }
+  }, [syncMatchDataFromEventLogger, navigateToView]);
 
   // Captain management functions
   const setCaptain = useCallback((newCaptainId) => {

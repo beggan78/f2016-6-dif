@@ -28,7 +28,6 @@ import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
-import { VIEWS } from '../../constants/viewConstants';
 
 const TAB_VIEWS = {
   OVERVIEW: 'overview',
@@ -37,7 +36,7 @@ const TAB_VIEWS = {
   PREFERENCES: 'preferences'
 };
 
-export function TeamManagement({ setView, openToTab }) {
+export function TeamManagement({ onNavigateBack, openToTab }) {
   const { user } = useAuth();
   const { 
     hasTeams, 
@@ -183,7 +182,7 @@ export function TeamManagement({ setView, openToTab }) {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-sky-300">Team Management</h1>
           <Button
-            onClick={() => setView(VIEWS.CONFIG)}
+            onClick={onNavigateBack}
             variant="secondary"
             size="sm"
           >
@@ -212,7 +211,7 @@ export function TeamManagement({ setView, openToTab }) {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-sky-300">Team Setup</h1>
           <Button
-            onClick={() => setView(VIEWS.CONFIG)}
+            onClick={onNavigateBack}
             variant="secondary"
             size="sm"
           >
@@ -235,7 +234,7 @@ export function TeamManagement({ setView, openToTab }) {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-sky-300">Team Management</h1>
           <Button
-            onClick={() => setView(VIEWS.CONFIG)}
+            onClick={onNavigateBack}
             variant="secondary"
             size="sm"
           >
@@ -277,7 +276,7 @@ export function TeamManagement({ setView, openToTab }) {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-sky-300">Team Management</h1>
         <Button
-          onClick={() => setView(VIEWS.CONFIG)}
+          onClick={onNavigateBack}
           variant="secondary"
           size="sm"
         >

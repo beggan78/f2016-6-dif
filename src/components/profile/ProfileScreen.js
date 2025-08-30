@@ -6,7 +6,7 @@ import { VIEWS } from '../../constants/viewConstants';
 import { ChangePassword } from '../auth/ChangePassword';
 import { sanitizeNameInput, isValidNameInput } from '../../utils/inputSanitization';
 
-export function ProfileScreen({ setView }) {
+export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
   const { currentTeam, userTeams, loading: teamLoading } = useTeam();
   const [isEditing, setIsEditing] = useState(false);
@@ -139,7 +139,7 @@ export function ProfileScreen({ setView }) {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-sky-300">Profile</h1>
         <Button
-          onClick={() => setView(VIEWS.CONFIG)}
+          onClick={onNavigateBack}
           variant="secondary"
           size="sm"
         >
@@ -368,7 +368,7 @@ export function ProfileScreen({ setView }) {
                 {/* Current Active Team */}
                 {currentTeam && (
                   <button
-                    onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
+                    onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
                     className="w-full bg-sky-900/30 border border-sky-600 rounded-lg p-4 hover:bg-sky-900/40 transition-colors"
                   >
                     <div className="flex items-center justify-between">
@@ -429,7 +429,7 @@ export function ProfileScreen({ setView }) {
                 {/* Quick Actions */}
                 <div className="pt-2">
                   <Button
-                    onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
+                    onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
                     variant="secondary"
                     size="sm"
                     className="w-full"
@@ -450,7 +450,7 @@ export function ProfileScreen({ setView }) {
                   You haven't joined any teams yet. Create your first team or ask a coach to invite you.
                 </p>
                 <Button
-                  onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
+                  onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
                   variant="primary"
                   size="sm"
                   className="mx-auto"
