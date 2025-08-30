@@ -1,5 +1,6 @@
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
+import { PAIR_ROLE_ROTATION_TYPES } from '../../constants/teamConfiguration';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { findPlayerById, createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
@@ -78,6 +79,10 @@ export class SubstitutionManager {
    * - Normal substitution (timer not paused): Accumulates time using updatePlayerTimeStats()
    * - Pause substitution (timer paused): Preserves time using resetPlayerStintTimer()
    * 
+   * Supports pair role rotation:
+   * - Keep throughout period: Players maintain their roles (defender/attacker) during substitution
+   * - Swap every rotation: Players swap roles each time they are substituted
+   * 
    * @param {Object} context - Substitution context
    * @param {Object} context.formation - Current formation
    * @param {string} context.nextPhysicalPairToSubOut - Pair to substitute out
@@ -104,14 +109,29 @@ export class SubstitutionManager {
     const playersGoingOffIds = [pairGettingSubbed.defender, pairGettingSubbed.attacker].filter(Boolean);
     const playersComingOnIds = [pairComingIn.defender, pairComingIn.attacker].filter(Boolean);
 
-    // Calculate new formation
-    const newFormation = JSON.parse(JSON.stringify(formation));
-    newFormation[pairToSubOutKey].defender = pairComingIn.defender;
-    newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
-    newFormation[pairToSubInKey].defender = pairGettingSubbed.defender;
-    newFormation[pairToSubInKey].attacker = pairGettingSubbed.attacker;
+    // Determine role rotation behavior from team configuration
+    const shouldSwapRoles = this.teamConfig?.pairRoleRotation === PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION;
 
-    // Calculate updated players
+    // Calculate new formation with role rotation support
+    const newFormation = JSON.parse(JSON.stringify(formation));
+    
+    if (shouldSwapRoles) {
+      // Keep incoming pair roles (they already have the swapped roles from when they went out)
+      newFormation[pairToSubOutKey].defender = pairComingIn.defender;
+      newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
+      
+      // Swap roles ONLY for outgoing pair (they become substitutes with swapped roles)
+      newFormation[pairToSubInKey].defender = pairGettingSubbed.attacker;
+      newFormation[pairToSubInKey].attacker = pairGettingSubbed.defender;
+    } else {
+      // Keep roles (current behavior)
+      newFormation[pairToSubOutKey].defender = pairComingIn.defender;
+      newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
+      newFormation[pairToSubInKey].defender = pairGettingSubbed.defender;
+      newFormation[pairToSubInKey].attacker = pairGettingSubbed.attacker;
+    }
+
+    // Calculate updated players with role rotation support
     const updatedPlayers = allPlayers.map(p => {
       if (playersGoingOffIds.includes(p.id)) {
         // Use conditional time tracking based on timer pause state
@@ -119,12 +139,16 @@ export class SubstitutionManager {
           ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
           : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
         
+        // Note: Players going to substitutes always have SUBSTITUTE role when off field
+        // The role rotation is reflected in their position within the substitute pair formation
+        
         return {
           ...p,
           stats: {
             ...timeResult.stats,
             currentStatus: 'substitute',
-            currentPairKey: pairToSubInKey
+            currentPairKey: pairToSubInKey,
+            currentRole: PLAYER_ROLES.SUBSTITUTE // Always substitute when off field
           }
         };
       }
@@ -134,12 +158,18 @@ export class SubstitutionManager {
           ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
           : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
         
+        // Determine new role based on position in new formation
+        // Since we don't swap incoming pair roles in formation, they keep their substitute roles
+        const isDefender = pairComingIn.defender === p.id;
+        const newRole = isDefender ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
+        
         return {
           ...p,
           stats: {
             ...timeResult.stats,
             currentStatus: 'on_field',
-            currentPairKey: pairToSubOutKey
+            currentPairKey: pairToSubOutKey,
+            currentRole: newRole
           }
         };
       }
