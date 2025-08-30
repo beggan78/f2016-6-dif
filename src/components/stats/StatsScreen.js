@@ -187,9 +187,12 @@ export function StatsScreen({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-sky-300 flex items-center">
-        <ListChecks className="mr-2 h-6 w-6" />Game Finished - Statistics
-      </h2>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold text-sky-300 flex items-center">
+          <ListChecks className="mr-2 h-6 w-6" />Game Finished - Statistics
+        </h2>
+      </div>
 
       {/* Final Score Display */}
       <div className="p-4 bg-slate-700 rounded-lg text-center">

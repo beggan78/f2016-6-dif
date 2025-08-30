@@ -25,7 +25,7 @@ import { ReportNavigation } from './ReportNavigation';
  * @param {string} props.ownTeamName - Own team name (defaults to "Djurgården")
  * @param {string} props.opponentTeam - Opponent team name
  * @param {Function} props.onNavigateToStats - Navigation callback to stats screen
- * @param {Function} props.onBackToGame - Navigation callback to game screen
+ * @param {Function} props.onNavigateBack - Navigation callback for general back navigation
  * @param {Function} props.navigateToMatchReport - Internal navigation callback
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
  * @param {Function} props.onGoalClick - Callback for when goal events are clicked for editing
@@ -44,7 +44,7 @@ export function MatchReportScreen({
   opponentTeam = "Opponent",
   goalScorers = {},
   onNavigateToStats,
-  onBackToGame,
+  onNavigateBack,
   navigateToMatchReport,
   onGoalClick,
   formation = {},
@@ -126,7 +126,7 @@ export function MatchReportScreen({
               <p className="text-slate-400 mb-4">No match data available</p>
               <ReportNavigation 
                 onNavigateToStats={onNavigateToStats}
-                onBackToGame={onBackToGame}
+                onNavigateBack={onNavigateBack}
                 className="justify-center"
               />
             </div>
@@ -150,7 +150,7 @@ export function MatchReportScreen({
           {/* Navigation Controls */}
           <ReportNavigation 
             onNavigateToStats={onNavigateToStats}
-            onBackToGame={onBackToGame}
+            onNavigateBack={onNavigateBack}
           />
         </div>
 
