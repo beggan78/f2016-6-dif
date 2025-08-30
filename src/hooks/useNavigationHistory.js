@@ -48,23 +48,12 @@ export function useNavigationHistory(options = {}) {
 
   // Enhanced navigateTo that optionally calls external setView function
   const navigateTo = useCallback((view, data = null, navigationOptions = {}) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('useNavigationHistory: navigateTo called with view:', view, 'data:', data);
-    }
-    
     const success = navigationContext.navigateTo(view, data, navigationOptions);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('useNavigationHistory: navigationContext.navigateTo returned:', success);
-    }
     
     if (success && onNavigate) {
       // Call external navigation function (like gameState.setView)
       try {
         if (typeof onNavigate === 'function') {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('useNavigationHistory: calling external onNavigate function with view:', view);
-          }
           onNavigate(view, data);
         }
       } catch (error) {

@@ -131,14 +131,7 @@ export function NavigationHistoryProvider({ children }) {
     try {
       // Don't navigate if already at the same view
       if (currentView === view) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('NavigationHistoryContext: Skipping navigation - already at view:', view, 'currentView:', currentView);
-        }
         return true;
-      }
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('NavigationHistoryContext: Navigating from', currentView, 'to', view);
       }
 
       // Don't track certain automatic transitions
@@ -152,9 +145,6 @@ export function NavigationHistoryProvider({ children }) {
           // Avoid duplicate consecutive entries
           if (newHistory.length === 0 || newHistory[newHistory.length - 1] !== currentView) {
             newHistory.push(currentView);
-            if (process.env.NODE_ENV === 'development') {
-              console.log('NavigationHistoryContext: Added to history:', currentView, 'New history:', [...newHistory, view]);
-            }
           }
           
           // Limit history size to prevent memory issues
@@ -162,16 +152,8 @@ export function NavigationHistoryProvider({ children }) {
             return newHistory.slice(-MAX_HISTORY_ENTRIES);
           }
           
-          // Limit history size to prevent memory issues
-          const MAX_HISTORY_SIZE = 20;
-          if (newHistory.length > MAX_HISTORY_SIZE) {
-            newHistory.shift(); // Remove oldest entry
-          }
-          
           return newHistory;
         });
-      } else if (process.env.NODE_ENV === 'development') {
-        console.log('NavigationHistoryContext: NOT adding to history - currentView:', currentView, 'shouldTrack:', shouldTrack, 'target view:', view);
       }
 
       // Update current view - ensure it's a clean string
@@ -201,17 +183,9 @@ export function NavigationHistoryProvider({ children }) {
     isNavigating.current = true;
 
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('NavigationHistoryContext: navigateBack called, current history:', navigationHistory, 'currentView:', currentView);
-      }
-      
       if (navigationHistory.length > 0) {
         // Get the most recent view from history
         const targetView = navigationHistory[navigationHistory.length - 1];
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('NavigationHistoryContext: Found target view in history:', targetView);
-        }
         
         // Validate target view is a clean string
         if (!targetView || typeof targetView !== 'string' || !VALID_VIEWS.includes(targetView)) {
@@ -224,14 +198,8 @@ export function NavigationHistoryProvider({ children }) {
           // Navigate to the target view - ensure it's a clean string
           setCurrentView(String(targetView));
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log('NavigationHistoryContext: Successfully navigated back to:', targetView);
-          }
-          
           return String(targetView);
         }
-      } else if (process.env.NODE_ENV === 'development') {
-        console.log('NavigationHistoryContext: No history available, using fallback');
       }
       
       // No history available or invalid history entry, use context-aware fallback
@@ -250,7 +218,6 @@ export function NavigationHistoryProvider({ children }) {
     } catch (error) {
       console.error('Error during back navigation:', error);
       // Fallback to CONFIG on any error
-      console.log('NavigationHistory: Error fallback to CONFIG');
       setCurrentView(VIEWS.CONFIG);
       return VIEWS.CONFIG;
     } finally {
@@ -277,17 +244,7 @@ export function NavigationHistoryProvider({ children }) {
       
       if (timeSinceLastNavigation < recentNavigationThreshold && 
           lastProgrammaticNavigation.current.view !== externalView) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('NavigationHistoryContext: Skipping sync to prevent conflict - recent programmatic navigation to', 
-                      lastProgrammaticNavigation.current.view, 'but external trying to sync to', externalView, 
-                      'timeSince:', timeSinceLastNavigation + 'ms');
-        }
         return; // Skip this sync to prevent conflict
-      }
-      
-      if (process.env.NODE_ENV === 'development' && currentView !== externalView) {
-        console.log('NavigationHistoryContext: Syncing currentView from', currentView, 'to', externalView, 
-                    'timeSinceLastNav:', timeSinceLastNavigation + 'ms');
       }
       setCurrentView(String(externalView));
     }
