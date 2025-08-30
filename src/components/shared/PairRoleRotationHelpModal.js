@@ -26,75 +26,15 @@ export default function PairRoleRotationHelpModal({ isOpen, onClose }) {
                   Keep Roles Throughout Period
                 </h3>
                 <div className="text-sm text-slate-300 mb-4">
-                  Players maintain their defender/attacker roles for the entire period
-                </div>
-              </div>
-
-              <div className="bg-slate-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-sky-100 mb-3">Timeline Example</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Time →</span>
-                    <div className="flex space-x-2 text-slate-400">
-                      <span>0-5min</span>
-                      <span>5-10min</span>
-                      <span>10-15min</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-slate-300 text-xs w-12">P1:</span>
-                    <div className="flex space-x-1">
-                      <div className="flex items-center bg-blue-600 px-2 py-1 rounded text-xs">
-                        <Shield className="h-3 w-3 mr-1" />
-                        D
-                      </div>
-                      <div className="flex items-center bg-blue-600 px-2 py-1 rounded text-xs">
-                        <Shield className="h-3 w-3 mr-1" />
-                        D
-                      </div>
-                      <div className="flex items-center bg-blue-600 px-2 py-1 rounded text-xs">
-                        <Shield className="h-3 w-3 mr-1" />
-                        D
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-slate-300 text-xs w-12">P2:</span>
-                    <div className="flex space-x-1">
-                      <div className="flex items-center bg-red-600 px-2 py-1 rounded text-xs">
-                        <Sword className="h-3 w-3 mr-1" />
-                        A
-                      </div>
-                      <div className="flex items-center bg-red-600 px-2 py-1 rounded text-xs">
-                        <Sword className="h-3 w-3 mr-1" />
-                        A
-                      </div>
-                      <div className="flex items-center bg-red-600 px-2 py-1 rounded text-xs">
-                        <Sword className="h-3 w-3 mr-1" />
-                        A
-                      </div>
-                    </div>
-                  </div>
+                  Players keep the same role throughout each period, but roles within a pair swap between periods
                 </div>
               </div>
 
               <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-green-200 mb-2">Benefits</h4>
                 <ul className="text-xs text-green-100 space-y-1">
-                  <li>• Role consistency builds confidence</li>
-                  <li>• Easier for young players to focus</li>
-                  <li>• Players master one position</li>
-                  <li>• Simpler tactical communication</li>
-                </ul>
-              </div>
-
-              <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-amber-200 mb-2">Best For</h4>
-                <ul className="text-xs text-amber-100 space-y-1">
-                  <li>• Younger players (U8-U10)</li>
-                  <li>• Teams learning formations</li>
-                  <li>• Players with clear preferences</li>
-                  <li>• Tournament situations</li>
+                  <li>• Players can focus on one role throughout each period and easier learn to master that role</li>
+                  <li>• Simpler for players to remember what their current responsibilities are</li>
                 </ul>
               </div>
             </div>
@@ -110,83 +50,13 @@ export default function PairRoleRotationHelpModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <div className="bg-slate-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-sky-100 mb-3">Timeline Example</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Time →</span>
-                    <div className="flex space-x-2 text-slate-400">
-                      <span>0-5min</span>
-                      <span>5-10min</span>
-                      <span>10-15min</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-slate-300 text-xs w-12">P1:</span>
-                    <div className="flex space-x-1">
-                      <div className="flex items-center bg-blue-600 px-2 py-1 rounded text-xs">
-                        <Shield className="h-3 w-3 mr-1" />
-                        D
-                      </div>
-                      <div className="flex items-center bg-red-600 px-2 py-1 rounded text-xs">
-                        <Sword className="h-3 w-3 mr-1" />
-                        A
-                      </div>
-                      <div className="flex items-center bg-blue-600 px-2 py-1 rounded text-xs">
-                        <Shield className="h-3 w-3 mr-1" />
-                        D
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-slate-300 text-xs w-12">P2:</span>
-                    <div className="flex space-x-1">
-                      <div className="flex items-center bg-red-600 px-2 py-1 rounded text-xs">
-                        <Sword className="h-3 w-3 mr-1" />
-                        A
-                      </div>
-                      <div className="flex items-center bg-blue-600 px-2 py-1 rounded text-xs">
-                        <Shield className="h-3 w-3 mr-1" />
-                        D
-                      </div>
-                      <div className="flex items-center bg-red-600 px-2 py-1 rounded text-xs">
-                        <Sword className="h-3 w-3 mr-1" />
-                        A
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-green-200 mb-2">Benefits</h4>
                 <ul className="text-xs text-green-100 space-y-1">
-                  <li>• Develops both attacking & defending skills</li>
-                  <li>• Keeps players more engaged</li>
-                  <li>• Better tactical understanding</li>
-                  <li>• More balanced skill development</li>
+                  <li>• Immediate fairness. Players spend an equal amount of time in each field role during the match</li>
+                  <li>• Prevents players from feeling "stuck" in one role for an entire period</li>
                 </ul>
               </div>
-
-              <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-amber-200 mb-2">Best For</h4>
-                <ul className="text-xs text-amber-100 space-y-1">
-                  <li>• Older players (U12+)</li>
-                  <li>• Skill development focus</li>
-                  <li>• Well-rounded players</li>
-                  <li>• Practice sessions</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-slate-700">
-            <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-sky-100 mb-2">💡 Coaching Tip</h4>
-              <p className="text-xs text-slate-300">
-                You can change this setting between periods! Try "Keep roles" for the first period to 
-                let players get comfortable, then switch to "Swap roles" in later periods for more variety.
-              </p>
             </div>
           </div>
 
