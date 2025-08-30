@@ -98,7 +98,7 @@ function AppContent() {
   
   // Set up navigation system using the actual gameState.setView
   const navigationHistory = useScreenNavigation(gameState.setView, {
-    enableBrowserBack: false, // We'll handle browser back through useBrowserBackIntercept
+    enableBrowserBack: true, // Enable browser back button integration with navigation history
     fallbackView: VIEWS.CONFIG
   });
   
