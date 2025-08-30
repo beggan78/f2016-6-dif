@@ -5,7 +5,6 @@ import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES, POSITION_DISPLAY_NAMES } from './constants';
-import { getCompleteRoleInfo } from '../../../game/logic/rolePreviewUtils';
 
 export function PairsFormation({ 
   formation,
@@ -32,22 +31,17 @@ export function PairsFormation({
     );
   }
 
-  // Helper function to render individual player role with preview
+  // Helper function to render individual player role
   const renderPlayerRole = (playerId, pairData, pairKey, isDefender) => {
-    const roleInfo = getCompleteRoleInfo(playerId, pairData, pairKey, teamConfig);
     const RoleIcon = isDefender ? Shield : Sword;
     const playerName = getPlayerNameById ? getPlayerNameById(playerId) : playerId;
+    const roleLabel = isDefender ? 'D' : 'A';
     
     return (
       <div className="flex items-center justify-between" data-testid={`player-${playerId}`}>
         <div className="flex items-center space-x-1">
           <RoleIcon className={ICON_STYLES.small} />
-          <span>{roleInfo.currentText}: {playerName}</span>
-          {roleInfo.hasPreview && (
-            <span className="text-xs text-slate-400 ml-1 transition-colors duration-200">
-              → {roleInfo.previewText}
-            </span>
-          )}
+          <span>{roleLabel}: {playerName}</span>
         </div>
         <PlayerStatsDisplay playerId={playerId} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
       </div>

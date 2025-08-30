@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Shield, Sword } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export default function PairRoleRotationHelpModal({ isOpen, onClose }) {
   if (!isOpen) return null;

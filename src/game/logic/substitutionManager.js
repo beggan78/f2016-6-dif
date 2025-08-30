@@ -116,11 +116,11 @@ export class SubstitutionManager {
     const newFormation = JSON.parse(JSON.stringify(formation));
     
     if (shouldSwapRoles) {
-      // Swap roles for incoming pair
-      newFormation[pairToSubOutKey].defender = pairComingIn.attacker;
-      newFormation[pairToSubOutKey].attacker = pairComingIn.defender;
+      // Keep incoming pair roles (they already have the swapped roles from when they went out)
+      newFormation[pairToSubOutKey].defender = pairComingIn.defender;
+      newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
       
-      // Also swap roles for outgoing pair (they become substitutes with swapped roles)
+      // Swap roles ONLY for outgoing pair (they become substitutes with swapped roles)
       newFormation[pairToSubInKey].defender = pairGettingSubbed.attacker;
       newFormation[pairToSubInKey].attacker = pairGettingSubbed.defender;
     } else {
@@ -159,16 +159,9 @@ export class SubstitutionManager {
           : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
         
         // Determine new role based on position in new formation
-        let newRole;
-        if (shouldSwapRoles) {
-          // Player is taking swapped role
-          const wasDefender = pairComingIn.defender === p.id;
-          newRole = wasDefender ? PLAYER_ROLES.ATTACKER : PLAYER_ROLES.DEFENDER;
-        } else {
-          // Player keeps their original role
-          const isDefender = pairComingIn.defender === p.id;
-          newRole = isDefender ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        }
+        // Since we don't swap incoming pair roles in formation, they keep their substitute roles
+        const isDefender = pairComingIn.defender === p.id;
+        const newRole = isDefender ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
         
         return {
           ...p,
