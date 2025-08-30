@@ -17,6 +17,7 @@ export function PairsFormation({
   goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
+  teamConfig,
   ...domProps
 }) {
   // Handle null/undefined formation
@@ -30,10 +31,26 @@ export function PairsFormation({
     );
   }
 
+  // Helper function to render individual player role
+  const renderPlayerRole = (playerId, pairData, pairKey, isDefender) => {
+    const RoleIcon = isDefender ? Shield : Sword;
+    const playerName = getPlayerNameById ? getPlayerNameById(playerId) : playerId;
+    const roleLabel = isDefender ? 'D' : 'A';
+    
+    return (
+      <div className="flex items-center justify-between" data-testid={`player-${playerId}`}>
+        <div className="flex items-center space-x-1">
+          <RoleIcon className={ICON_STYLES.small} />
+          <span>{roleLabel}: {playerName}</span>
+        </div>
+        <PlayerStatsDisplay playerId={playerId} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
+      </div>
+    );
+  };
+
   const renderPair = (pairKey, pairDisplayName, renderIndex) => {
     const pairData = formation[pairKey];
     if (!pairData) return null;
-
 
     const isNextOff = pairKey === nextPhysicalPairToSubOut;
     const isNextOn = pairKey === 'subPair';
@@ -79,14 +96,8 @@ export function PairsFormation({
           </div>
         </h3>
         <div className="space-y-0.5">
-          <div className="flex items-center justify-between" data-testid={`player-${pairData.defender}`}>
-            <div><Shield className={ICON_STYLES.small} /> D: {getPlayerNameById ? getPlayerNameById(pairData.defender) : pairData.defender}</div>
-            <PlayerStatsDisplay playerId={pairData.defender} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
-          </div>
-          <div className="flex items-center justify-between" data-testid={`player-${pairData.attacker}`}>
-            <div><Sword className={ICON_STYLES.small} /> A: {getPlayerNameById ? getPlayerNameById(pairData.attacker) : pairData.attacker}</div>
-            <PlayerStatsDisplay playerId={pairData.attacker} getPlayerTimeStats={getPlayerTimeStats} className="ml-4" />
-          </div>
+          {renderPlayerRole(pairData.defender, pairData, pairKey, true)}
+          {renderPlayerRole(pairData.attacker, pairData, pairKey, false)}
         </div>
       </div>
     );

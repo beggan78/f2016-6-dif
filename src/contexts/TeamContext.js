@@ -267,7 +267,6 @@ export const TeamProvider = ({ children }) => {
 
   // Create a new player for current team
   const createPlayer = useCallback(async (playerData) => {
-    console.log('🔍 BEFORE createPlayer - teamPlayers count:', teamPlayers.length);
     if (!currentTeam) {
       setError('No team selected');
       return null;
@@ -296,13 +295,11 @@ export const TeamProvider = ({ children }) => {
       // Refresh team players
       const updatedPlayers = await getTeamPlayers(currentTeam.id);
       setTeamPlayers(updatedPlayers);
-      console.log('✅ AFTER createPlayer - updated teamPlayers count:', updatedPlayers.length);
 
       // Sync new player to game state localStorage
       try {
         const syncResult = syncTeamRosterToGameState(updatedPlayers, []);
         if (syncResult.success) {
-          console.log('✅ New player synced to game state:', data.name);
         } else {
           console.warn('⚠️ Failed to sync new player to game state:', syncResult.error);
         }
@@ -318,7 +315,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [currentTeam, clearError, getTeamPlayers, teamPlayers.length]);
+  }, [currentTeam, clearError, getTeamPlayers]);
 
   // Switch current team
   const switchCurrentTeam = useCallback(async (teamId) => {
@@ -338,7 +335,6 @@ export const TeamProvider = ({ children }) => {
     try {
       const syncResult = syncTeamRosterToGameState(players, []);
       if (syncResult.success) {
-        console.log('✅ Team roster synced to game state:', syncResult.message);
       } else {
         console.warn('⚠️ Failed to sync team roster to game state:', syncResult.error);
       }
@@ -787,7 +783,7 @@ export const TeamProvider = ({ children }) => {
           p_email: email.toLowerCase(),
           p_role: role,
           p_message: message,
-          p_redirect_url: `${window.location.origin}/?invitation=true&team=${teamId}&role=${role}`
+          p_redirect_url: `${window.location.origin}/?invitation=true&team=${encodeURIComponent(teamId)}&role=${encodeURIComponent(role)}`
         }
       });
 
@@ -830,7 +826,7 @@ export const TeamProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('team_invitation')
-        .select('id, email, role, message, status, created_at, invited_by_user_id')
+        .select('id, email, role, message, status, created_at, invited_by_user_id, expires_at')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false });
 
@@ -839,6 +835,7 @@ export const TeamProvider = ({ children }) => {
         return [];
       }
 
+      // Return all invitations - UI will handle display of expired vs pending
       return data || [];
     } catch (err) {
       console.error('Exception in getTeamInvitations:', err);
@@ -1029,6 +1026,79 @@ export const TeamProvider = ({ children }) => {
     } catch (err) {
       console.error('Exception in declineTeamInvitation:', err);
       const errorMessage = 'Failed to decline invitation';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError]);
+
+  // Refresh an existing invitation (pending or expired)
+  const refreshInvitation = useCallback(async ({ invitationId, teamId, email, role, message = '' }) => {
+    try {
+      if (!user) {
+        setError('Must be authenticated to refresh invitations');
+        return { success: false, error: 'Authentication required' };
+      }
+
+      setLoading(true);
+      clearError();
+
+      // Use the existing inviteUserToTeam function which now handles expired invitations
+      const result = await inviteUserToTeam({ teamId, email, role, message });
+
+      if (result.success) {
+        return {
+          success: true,
+          message: result.message,
+          was_expired: result.was_expired
+        };
+      } else {
+        setError(result.error || 'Failed to refresh invitation');
+        return { success: false, error: result.error };
+      }
+
+    } catch (err) {
+      console.error('Exception in refreshInvitation:', err);
+      const errorMessage = err.message || 'Failed to refresh invitation';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [user, inviteUserToTeam, clearError]);
+
+  // Delete a team invitation permanently
+  const deleteInvitation = useCallback(async (invitationId) => {
+    try {
+      if (!user) {
+        setError('Must be authenticated to delete invitations');
+        return { success: false, error: 'Authentication required' };
+      }
+
+      setLoading(true);
+      clearError();
+
+      // Call the new delete function
+      const { data, error } = await supabase.rpc('delete_team_invitation', {
+        p_invitation_id: invitationId
+      });
+
+      if (error) {
+        console.error('Error deleting invitation:', error);
+        const errorMessage = error.message || 'Failed to delete invitation';
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+
+      return {
+        success: data.success || true,
+        message: data.message || 'Invitation deleted successfully'
+      };
+
+    } catch (err) {
+      console.error('Exception in deleteInvitation:', err);
+      const errorMessage = err.message || 'Failed to delete invitation';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -1396,7 +1466,6 @@ export const TeamProvider = ({ children }) => {
 
   // Add player to team roster
   const addRosterPlayer = useCallback(async (teamId, playerData) => {
-    console.log('🔍 BEFORE addRosterPlayer - teamPlayers count:', teamPlayers.length);
     if (!teamId || !playerData?.name) return null;
 
     try {
@@ -1436,13 +1505,11 @@ export const TeamProvider = ({ children }) => {
       if (currentTeam?.id === teamId) {
         const updatedPlayers = await getTeamPlayers(teamId);
         setTeamPlayers(updatedPlayers);
-        console.log('✅ AFTER addRosterPlayer - updated teamPlayers count:', updatedPlayers.length);
         
         // Sync new player to game state localStorage for consistency
         try {
           const syncResult = syncTeamRosterToGameState(updatedPlayers, []);
           if (syncResult.success) {
-            console.log('✅ New roster player synced to game state:', data.name);
           } else {
             console.warn('⚠️ Failed to sync new roster player to game state:', syncResult.error);
           }
@@ -1456,7 +1523,7 @@ export const TeamProvider = ({ children }) => {
       console.error('Exception in addRosterPlayer:', err);
       throw err;
     }
-  }, [user, currentTeam, getTeamPlayers, teamPlayers.length]);
+  }, [user, currentTeam, getTeamPlayers]);
 
   // Update roster player
   const updateRosterPlayer = useCallback(async (playerId, updates) => {
@@ -1677,6 +1744,8 @@ export const TeamProvider = ({ children }) => {
     acceptTeamInvitation,
     getUserPendingInvitations,
     declineTeamInvitation,
+    refreshInvitation,
+    deleteInvitation,
     
     // Team access request actions
     requestTeamAccess,

@@ -19,6 +19,7 @@ import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../consta
 import { syncTeamRosterToGameState, analyzePlayerSync } from '../utils/playerSyncUtils';
 import { audioAlertService } from '../services/audioAlertService';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -100,6 +101,7 @@ export function useGameState(navigateToView = null) {
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
   const [opponentTeam, setOpponentTeam] = useState(initialState.opponentTeam || '');
+  const [matchType, setMatchType] = useState(initialState.matchType || DEFAULT_MATCH_TYPE);
   const [ownScore, setOwnScore] = useState(initialState.ownScore || 0); // Djurgården score
   const [opponentScore, setOpponentScore] = useState(initialState.opponentScore || 0); // Opponent score
   const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
@@ -117,6 +119,46 @@ export function useGameState(navigateToView = null) {
   // Match state management - track database match record lifecycle
   const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
   const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
+  const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
+
+  // Debug: Track state initialization (only once per session)
+  if (process.env.NODE_ENV === 'development' && !window.gameStateInitialized) {
+    console.log('🔄 useGameState initialized with match state:', {
+      currentMatchId: initialState.currentMatchId,
+      matchState: initialState.matchState,
+      matchCreationAttempted: initialState.matchCreationAttempted
+    });
+    window.gameStateInitialized = true;
+  }
+
+  // Debug: Monitor React state changes for match state variables (only log meaningful changes)
+  useEffect(() => {
+    if (currentMatchId) {
+      console.log('⚡ currentMatchId STATE CHANGED:', currentMatchId);
+    } else {
+      console.log('⚡ currentMatchId CLEARED');
+    }
+  }, [currentMatchId]);
+
+  useEffect(() => {
+    if (matchState === 'running' || matchState === 'finished') {
+      console.log('⚡ matchState STATE CHANGED:', matchState);
+    } else if (matchState === 'not_started') {
+      console.log('⚡ matchState RESET to not_started');
+    }
+  }, [matchState]);
+
+  // Debug: Alert when match state is ready for abandonment guard
+  useEffect(() => {
+    if (currentMatchId && (matchState === 'running' || matchState === 'finished')) {
+      console.log('✅ MATCH STATE READY FOR ABANDONMENT GUARD:', {
+        currentMatchId,
+        matchState,
+        shouldShowModal: true
+      });
+    }
+  }, [currentMatchId, matchState]);
+
 
   // Sync captain data in allPlayers whenever captainId changes
   useEffect(() => {
@@ -333,6 +375,7 @@ export function useGameState(navigateToView = null) {
       rotationQueue,
       gameLog,
       opponentTeam,
+      matchType,
       ownScore,
       opponentScore,
       lastSubstitutionTimestamp,
@@ -348,11 +391,12 @@ export function useGameState(navigateToView = null) {
       // Match lifecycle state management
       currentMatchId,
       matchCreationAttempted,
+      matchState,
     };
     
     // Use the persistence manager's saveGameState method
     persistenceManager.saveGameState(currentState);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted]);
+  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState]);
 
 
 
@@ -493,6 +537,10 @@ export function useGameState(navigateToView = null) {
       return p;
     }));
 
+    // Reset match state for new game setup
+    console.log('🔄 handleStartPeriodSetup: Resetting match state');
+    console.log('📝 CALLING setMatchState(\'not_started\')');
+    setMatchState('not_started');
     setCurrentPeriodNumber(1);
     setGameLog([]); // Clear game log for new game
     preparePeriod(1);
@@ -704,6 +752,9 @@ export function useGameState(navigateToView = null) {
 
     // CREATE MATCH RECORD when starting first period
     if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
+      console.log('🚀 handleStartGame: About to create match record at', new Date().toISOString());
+      console.log('🚀 State before match creation:', { currentMatchId, matchState, matchCreationAttempted });
+      
       setMatchCreationAttempted(true); // Prevent duplicate attempts
       
       // Format match data from current game state
@@ -715,13 +766,17 @@ export function useGameState(navigateToView = null) {
         selectedSquadIds,
         allPlayers,
         opponentTeam,
-        captainId
+        captainId,
+        matchType
       }, currentTeam.id);
 
+      console.log('🚀 handleStartGame: Starting createMatch async call at', new Date().toISOString());
       // Create match record in background (non-blocking)
       createMatch(matchData)
         .then((result) => {
           if (result.success) {
+            console.log('✅ Match record created:', result.matchId);
+            console.log('📝 CALLING setCurrentMatchId:', result.matchId);
             setCurrentMatchId(result.matchId);
           } else {
             console.warn('⚠️  Failed to create match record:', result.error);
@@ -734,6 +789,11 @@ export function useGameState(navigateToView = null) {
         });
     }
 
+    // Set match state to running when game starts
+    console.log('🎮 handleStartGame: Setting match state to RUNNING');
+    console.log('📝 CALLING setMatchState(\'running\')');
+    setMatchState('running');
+
     // Request wake lock (alert timer now handled by visual timer logic)
     requestWakeLock();
 
@@ -743,6 +803,8 @@ export function useGameState(navigateToView = null) {
     setTimeout(() => {
       syncMatchDataFromEventLogger();
     }, 100);
+    
+    console.log('🏁 handleStartGame: Function completed');
   };
 
   const handleSubstitution = (isSubTimerPaused = false) => {
@@ -869,6 +931,11 @@ export function useGameState(navigateToView = null) {
         console.warn('⚠️  Cannot complete match: missing match start time');
       }
       
+      // Set match state to finished when last period ends
+      console.log('🏁 handleEndPeriod: Setting match state to FINISHED');
+      console.log('📝 CALLING setMatchState(\'finished\')');
+      setMatchState('finished');
+
       // Release wake lock when game ends
       releaseWakeLock();
       setView(VIEWS.STATS);
@@ -905,7 +972,11 @@ export function useGameState(navigateToView = null) {
       setCaptainId(null);
 
       // Clear match lifecycle state to prevent ID reuse
+      console.log('🗑️ clearStoredState: Clearing all match state');
+      console.log('📝 CALLING setCurrentMatchId(null)');
       setCurrentMatchId(null);
+      console.log('📝 CALLING setMatchState(\'not_started\')');
+      setMatchState('not_started');
       setMatchCreationAttempted(false);
     } else {
       console.warn('Failed to clear game events');
@@ -1712,6 +1783,8 @@ export function useGameState(navigateToView = null) {
     setGameLog,
     opponentTeam,
     setOpponentTeam,
+    matchType,
+    setMatchType,
     ownScore,
     opponentScore,
     lastSubstitutionTimestamp,
@@ -1740,7 +1813,9 @@ export function useGameState(navigateToView = null) {
     setCurrentMatchId,
     matchCreationAttempted,
     setMatchCreationAttempted,
-    
+    matchState,
+    setMatchState,
+
     // Actions
     preparePeriod,
     preparePeriodWithGameLog,

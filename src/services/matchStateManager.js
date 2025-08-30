@@ -283,7 +283,8 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     periods = 3,
     periodDurationMinutes = 15,
     opponentTeam,
-    captainId
+    captainId,
+    matchType = 'league' // Default to league if not provided
   } = gameState;
 
   return {
@@ -292,7 +293,7 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     formation: selectedFormation || teamConfig?.formation || '2-2',
     periods,
     periodDurationMinutes,
-    type: 'friendly', // Default for now, could be configurable
+    type: matchType,
     opponent: opponentTeam || null,
     captainId: captainId || null
   };

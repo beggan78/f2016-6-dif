@@ -10,11 +10,13 @@ import {
   AlertTriangle,
   X,
   Clock,
-  UserCheck
+  UserCheck,
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 
 export function TeamInviteModal({ isOpen, onClose, team }) {
-  const { inviteUserToTeam, getTeamInvitations, loading, error } = useTeam();
+  const { inviteUserToTeam, getTeamInvitations, refreshInvitation, deleteInvitation, loading, error } = useTeam();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -24,6 +26,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessageOriginal] = useState('');
   const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [expiredInvitations, setExpiredInvitations] = useState([]);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
   
   // Simplified setSuccessMessage wrapper for basic logging
@@ -41,18 +44,58 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     });
   };
 
-  // Fetch pending invitations for the current team
+  // Format time remaining until expiry
+  const formatTimeRemaining = (expiresAt) => {
+    const now = new Date();
+    const expiry = new Date(expiresAt);
+    const diffMs = expiry.getTime() - now.getTime();
+    
+    if (diffMs <= 0) {
+      return 'Expired';
+    }
+    
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m remaining`;
+    } else {
+      return `${minutes}m remaining`;
+    }
+  };
+
+
+  // Fetch all invitations for the current team and separate by status
   const fetchPendingInvitations = useCallback(async () => {
     if (!team?.id) return;
     
     setLoadingInvitations(true);
     try {
       const invitations = await getTeamInvitations(team.id);
-      // Filter for only pending invitations
-      const pending = invitations.filter(invitation => invitation.status === 'pending');
+      
+      // Separate invitations by status, checking expiry for pending ones
+      const currentTime = new Date().toISOString();
+      const pending = [];
+      const expired = [];
+      
+      invitations.forEach(invitation => {
+        if (invitation.status === 'pending') {
+          // Check if actually expired despite status
+          if (invitation.expires_at && invitation.expires_at <= currentTime) {
+            expired.push(invitation);
+          } else {
+            pending.push(invitation);
+          }
+        } else if (invitation.status === 'expired') {
+          expired.push(invitation);
+        }
+        // Skip accepted and cancelled invitations
+      });
+      
       setPendingInvitations(pending);
+      setExpiredInvitations(expired);
     } catch (error) {
-      console.error('Error fetching pending invitations:', error);
+      console.error('Error fetching invitations:', error);
     } finally {
       setLoadingInvitations(false);
     }
@@ -168,6 +211,46 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     }
   };
 
+  const handleRefreshInvitation = async (invitation) => {
+    try {
+      const result = await refreshInvitation({
+        invitationId: invitation.id,
+        teamId: team.id,
+        email: invitation.email,
+        role: invitation.role,
+        message: invitation.message || ''
+      });
+
+      if (result.success) {
+        setSuccessMessage(result.message || 'Invitation refreshed successfully!');
+        // Refresh the invitations list
+        fetchPendingInvitations();
+      } else {
+        setErrors({ general: result.error || 'Failed to refresh invitation. Please try again.' });
+      }
+    } catch (error) {
+      console.error('Error refreshing invitation:', error);
+      setErrors({ general: 'Failed to refresh invitation. Please try again.' });
+    }
+  };
+
+  const handleDeleteInvitation = async (invitation) => {
+    try {
+      const result = await deleteInvitation(invitation.id);
+
+      if (result.success) {
+        setSuccessMessage(result.message || 'Invitation deleted successfully!');
+        // Refresh the invitations list
+        fetchPendingInvitations();
+      } else {
+        setErrors({ general: result.error || 'Failed to delete invitation. Please try again.' });
+      }
+    } catch (error) {
+      console.error('Error deleting invitation:', error);
+      setErrors({ general: 'Failed to delete invitation. Please try again.' });
+    }
+  };
+
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -202,7 +285,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     >
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-600">
         {/* Modal Header */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center">
+        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center z-10">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center">
               <Mail className="w-5 h-5 text-white" />
@@ -338,61 +421,136 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
               </Button>
             </form>
 
-            {/* Pending Invitations Section */}
-            <div className="border-t border-slate-600 pt-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <Clock className="w-5 h-5 text-amber-400" />
-                <h4 className="text-slate-300 font-medium">
-                  Pending Invitations
-                  {pendingInvitations.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-slate-400">
-                      ({pendingInvitations.length})
-                    </span>
-                  )}
-                </h4>
+            {/* Invitations Section */}
+            <div className="border-t border-slate-600 pt-6 space-y-6">
+              
+              {/* Pending Invitations */}
+              <div>
+                <div className="flex items-center space-x-2 mb-4">
+                  <Clock className="w-5 h-5 text-amber-400" />
+                  <h4 className="text-slate-300 font-medium">
+                    Pending Invitations
+                    {pendingInvitations.length > 0 && (
+                      <span className="ml-2 text-sm font-normal text-slate-400">
+                        ({pendingInvitations.length})
+                      </span>
+                    )}
+                  </h4>
+                </div>
+
+                {loadingInvitations ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-400"></div>
+                    <span className="ml-2 text-slate-400 text-sm">Loading invitations...</span>
+                  </div>
+                ) : pendingInvitations.length === 0 ? (
+                  <div className="text-center py-4 text-slate-400">
+                    <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No pending invitations</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingInvitations.map((invitation) => (
+                      <div
+                        key={invitation.id}
+                        className="bg-slate-700/50 border border-slate-600 rounded-lg p-3"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="text-slate-300 font-medium text-sm">
+                                {invitation.email}
+                              </span>
+                              <div className="flex items-center space-x-1">
+                                <UserCheck className="w-3 h-3 text-emerald-400" />
+                                <span className="text-emerald-400 text-xs font-medium">
+                                  {invitation.role}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-4 text-xs text-slate-400">
+                              <span>Sent: {formatDate(invitation.created_at)}</span>
+                              {invitation.expires_at && (
+                                <span className="font-medium text-amber-400">
+                                  {formatTimeRemaining(invitation.expires_at)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                            <span className="text-amber-400 text-xs font-medium">Pending</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {loadingInvitations ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-400"></div>
-                  <span className="ml-2 text-slate-400 text-sm">Loading invitations...</span>
-                </div>
-              ) : pendingInvitations.length === 0 ? (
-                <div className="text-center py-4 text-slate-400">
-                  <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No pending invitations</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pendingInvitations.map((invitation) => (
-                    <div
-                      key={invitation.id}
-                      className="bg-slate-700/50 border border-slate-600 rounded-lg p-3"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="text-slate-300 font-medium text-sm">
-                              {invitation.email}
-                            </span>
-                            <div className="flex items-center space-x-1">
-                              <UserCheck className="w-3 h-3 text-emerald-400" />
-                              <span className="text-emerald-400 text-xs font-medium">
-                                {invitation.role}
+              {/* Expired Invitations */}
+              {expiredInvitations.length > 0 && (
+                <div>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <AlertTriangle className="w-5 h-5 text-rose-400" />
+                    <h4 className="text-slate-300 font-medium">
+                      Expired Invitations
+                      <span className="ml-2 text-sm font-normal text-slate-400">
+                        ({expiredInvitations.length})
+                      </span>
+                    </h4>
+                  </div>
+
+                  <div className="space-y-3">
+                    {expiredInvitations.map((invitation) => (
+                      <div
+                        key={invitation.id}
+                        className="bg-slate-700/50 border border-rose-600/30 rounded-lg p-3"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="text-slate-300 font-medium text-sm">
+                                {invitation.email}
+                              </span>
+                              <div className="flex items-center space-x-1">
+                                <UserCheck className="w-3 h-3 text-emerald-400" />
+                                <span className="text-emerald-400 text-xs font-medium">
+                                  {invitation.role}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-4 text-xs text-slate-400">
+                              <span>Sent: {formatDate(invitation.created_at)}</span>
+                              <span className="font-medium text-rose-400">
+                                Expired
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-4 text-xs text-slate-400">
-                            <span>Sent: {formatDate(invitation.created_at)}</span>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleRefreshInvitation(invitation)}
+                              disabled={loading}
+                              className="flex items-center space-x-1 px-2 py-1 text-xs font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Refresh invitation"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <span>Refresh</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteInvitation(invitation)}
+                              disabled={loading}
+                              className="flex items-center space-x-1 px-2 py-1 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-400/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete invitation"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Delete</span>
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                          <span className="text-amber-400 text-xs font-medium">Pending</span>
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

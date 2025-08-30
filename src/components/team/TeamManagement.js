@@ -532,7 +532,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
             onClick={onShowInviteModal}
             Icon={UserPlus}
           >
-            Send Invitations
+            Invitations
           </Button>
         </div>
 

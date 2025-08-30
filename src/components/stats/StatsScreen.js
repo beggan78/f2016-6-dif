@@ -35,7 +35,8 @@ export function StatsScreen({
   gameLog,
   currentMatchId,
   goalScorers,
-  authModal
+  authModal,
+  checkForActiveMatch
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -44,6 +45,7 @@ export function StatsScreen({
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const { isAuthenticated } = useAuth();
   const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
+  
 
   // Fair Play Award styling constants
   const FAIR_PLAY_AWARD_STYLES = {
@@ -166,17 +168,21 @@ export function StatsScreen({
   };
 
 
-  const handleNewGame = () => {
-    // Reset global state for a new game configuration and clear localStorage
-    clearStoredState(); // Clear localStorage state
-    clearTimerState(); // Clear timer localStorage state
-    setAllPlayers(initializePlayers(initialRoster)); // Full reset of all player stats
-    setSelectedSquadIds([]);
-    setPeriodGoalieIds({});
-    setGameLog([]);
-    resetScore(); // Clear score
-    setOpponentTeam(''); // Clear opponent team name
-    setView('config');
+  const handleNewGame = async () => {
+    console.log('📊 New Game from Stats Screen - calling checkForActiveMatch()');
+    await checkForActiveMatch(() => {
+      console.log('📊 New Game from Stats - executing callback (full reset)');
+      // Reset global state for a new game configuration and clear localStorage
+      clearStoredState(); // Clear localStorage state
+      clearTimerState(); // Clear timer localStorage state
+      setAllPlayers(initializePlayers(initialRoster)); // Full reset of all player stats
+      setSelectedSquadIds([]);
+      setPeriodGoalieIds({});
+      setGameLog([]);
+      resetScore(); // Clear score
+      setOpponentTeam(''); // Clear opponent team name
+      setView('config');
+    });
   };
 
   return (
@@ -369,8 +375,9 @@ export function StatsScreen({
       </Button>
 
       <Button onClick={handleNewGame} Icon={PlusCircle}>
-        Start New Game Configuration
+        Start New Game
       </Button>
+
     </div>
   );
 }
