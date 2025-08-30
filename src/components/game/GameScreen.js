@@ -337,7 +337,7 @@ export function GameScreen({
                 Start Match
               </p>
               <p className="text-center text-sky-100/70 text-lg font-medium tracking-wide drop-shadow-sm">
-                Click to begin the match and start timers
+                Tap to begin the match and start timers
               </p>
             </div>
           </div>
