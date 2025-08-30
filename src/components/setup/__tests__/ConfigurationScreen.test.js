@@ -367,7 +367,7 @@ describe('ConfigurationScreen', () => {
       
       expect(screen.getByText('Substitution Mode')).toBeInTheDocument();
       expect(screen.getByText('Pairs')).toBeInTheDocument();
-      expect(screen.getByText('Individual (7-player)')).toBeInTheDocument();
+      expect(screen.getByText('Individual')).toBeInTheDocument();
     });
 
     it('should not show team mode selection when fewer than 7 players', () => {

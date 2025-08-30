@@ -1,8 +1,8 @@
     import React, { useState, useEffect } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus } from 'lucide-react';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES } from '../../constants/teamConfiguration';
+import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS } from '../../constants/teamConfiguration';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
@@ -14,6 +14,7 @@ import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
+import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 
@@ -60,6 +61,7 @@ export function ConfigurationScreen({
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
+  const [isPairRoleHelpModalOpen, setIsPairRoleHelpModalOpen] = React.useState(false);
   
   // Auth and Team hooks (must be before useEffect that use these values)
   const { isAuthenticated, user } = useAuth();
@@ -87,6 +89,21 @@ export function ConfigurationScreen({
       teamConfig.squadSize || selectedSquadIds.length,
       teamConfig.formation || selectedFormation,
       newSubstitutionType
+    );
+
+    updateTeamConfig(newTeamConfig);
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
+
+  // Handle pair role rotation changes
+  const handlePairRoleRotationChange = React.useCallback((newPairRoleRotation) => {
+    if (!teamConfig || teamConfig.substitutionType !== SUBSTITUTION_TYPES.PAIRS) return;
+
+    const newTeamConfig = createTeamConfig(
+      teamConfig.format || '5v5',
+      teamConfig.squadSize || selectedSquadIds.length,
+      teamConfig.formation || selectedFormation,
+      teamConfig.substitutionType,
+      newPairRoleRotation
     );
 
     updateTeamConfig(newTeamConfig);
@@ -601,25 +618,12 @@ export function ConfigurationScreen({
         </div>
       )}
 
-      {/* Team Mode Selection - Only show for 7 players with 2-2 formation */}
+      {/* Substitution Mode Selection - Only show for 7 players with 2-2 formation */}
       {selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2 && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="substitutionMode"
-                value={SUBSTITUTION_TYPES.PAIRS}
-                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS}
-                onChange={e => handleSubstitutionModeChange(e.target.value)}
-                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
-              />
-              <div>
-                <span className="text-sky-100 font-medium">Pairs</span>
-                <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
-              </div>
-            </label>
+          <div className="space-y-3">
+            {/* Individual Option */}
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="radio"
@@ -630,14 +634,64 @@ export function ConfigurationScreen({
                 className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
               />
               <div>
-                <span className="text-sky-100 font-medium">Individual (7-player)</span>
+                <span className="text-sky-100 font-medium">Individual</span>
                 <p className="text-xs text-slate-400">Individual positions with 2 substitutes. Dual next/next-next visual indicators.</p>
               </div>
             </label>
+
+            {/* Pairs Option */}
+            <div>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="substitutionMode"
+                  value={SUBSTITUTION_TYPES.PAIRS}
+                  checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS}
+                  onChange={e => handleSubstitutionModeChange(e.target.value)}
+                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+                />
+                <div>
+                  <span className="text-sky-100 font-medium">Pairs</span>
+                  <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
+                </div>
+              </label>
+
+              {/* Pair Role Rotation Sub-options - Only show when Pairs is selected */}
+              {teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS && (
+                <div className="ml-6 mt-3 space-y-2">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="text-sm font-medium text-sky-100">Role Rotation:</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsPairRoleHelpModalOpen(true)}
+                      className="text-slate-400 hover:text-sky-300 transition-colors"
+                      title="Learn about pair role rotation options"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {Object.entries(PAIR_ROLE_ROTATION_DEFINITIONS).map(([value, definition]) => (
+                    <label key={value} className="flex items-start space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pairRoleRotation"
+                        value={value}
+                        checked={teamConfig?.pairRoleRotation === value}
+                        onChange={e => handlePairRoleRotationChange(e.target.value)}
+                        className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400 mt-0.5"
+                      />
+                      <div>
+                        <span className="text-sky-50 text-sm font-medium">{definition.label}</span>
+                        <p className="text-xs text-slate-300">{definition.shortDescription}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
-
 
       {/* Goalie Assignment */}
       {(selectedSquadIds.length >= 5 && selectedSquadIds.length <= 10) && (
@@ -718,6 +772,11 @@ export function ConfigurationScreen({
       >
         <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
       </FeatureVoteModal>
+
+      <PairRoleRotationHelpModal
+        isOpen={isPairRoleHelpModalOpen}
+        onClose={() => setIsPairRoleHelpModalOpen(false)}
+      />
     </div>
   );
 }

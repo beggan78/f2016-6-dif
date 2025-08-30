@@ -71,20 +71,50 @@ export const SUBSTITUTION_TYPES = {
   PAIRS: 'pairs'
 };
 
+// Pair role rotation styles (for pairs substitution mode)
+export const PAIR_ROLE_ROTATION_TYPES = {
+  KEEP_THROUGHOUT_PERIOD: 'keep_throughout_period',
+  SWAP_EVERY_ROTATION: 'swap_every_rotation'
+};
+
+// Detailed pair role rotation definitions
+export const PAIR_ROLE_ROTATION_DEFINITIONS = {
+  [PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD]: {
+    label: 'Keep roles throughout period',
+    description: 'Players maintain their defender/attacker roles for the entire period',
+    shortDescription: 'Consistent roles all period'
+  },
+  [PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION]: {
+    label: 'Swap roles every rotation',
+    description: 'Players swap defender/attacker roles each time the pair is substituted',
+    shortDescription: 'Roles swap each substitution'
+  }
+};
+
 /**
  * Creates a composite team configuration object
  * @param {string} format - Field format (5v5, 7v7, etc.)
  * @param {number} squadSize - Total number of players (5-15)
  * @param {string} formation - Tactical formation (2-2, 1-2-1, etc.)
  * @param {string} substitutionType - Substitution style (individual, pairs)
+ * @param {string} [pairRoleRotation] - Pair role rotation style (only for pairs mode)
  * @returns {Object} Team configuration object
  */
-export const createTeamConfig = (format, squadSize, formation, substitutionType) => ({
-  format,
-  squadSize,
-  formation,
-  substitutionType
-});
+export const createTeamConfig = (format, squadSize, formation, substitutionType, pairRoleRotation = null) => {
+  const config = {
+    format,
+    squadSize,
+    formation,
+    substitutionType
+  };
+
+  // Only add pairRoleRotation if substitutionType is pairs
+  if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+    config.pairRoleRotation = pairRoleRotation || PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD;
+  }
+
+  return config;
+};
 
 /**
  * Gets valid formation options for a given format and squad size
@@ -114,7 +144,7 @@ export const getValidFormations = (format, squadSize) => {
  * @returns {boolean} True if valid
  */
 export const validateTeamConfig = (teamConfig) => {
-  const { format, squadSize, formation, substitutionType } = teamConfig;
+  const { format, squadSize, formation, substitutionType, pairRoleRotation } = teamConfig;
   
   // Validate format
   if (!Object.values(FORMATS).includes(format)) {
@@ -137,6 +167,19 @@ export const validateTeamConfig = (teamConfig) => {
     throw new Error(`Invalid substitution type: ${substitutionType}. Must be one of: ${Object.values(SUBSTITUTION_TYPES).join(', ')}`);
   }
   
+  // Validate pair role rotation (only for pairs mode)
+  if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+    // If pairRoleRotation is provided, it must be valid
+    if (pairRoleRotation !== undefined && pairRoleRotation !== null && !Object.values(PAIR_ROLE_ROTATION_TYPES).includes(pairRoleRotation)) {
+      throw new Error(`Invalid pair role rotation: ${pairRoleRotation}. Must be one of: ${Object.values(PAIR_ROLE_ROTATION_TYPES).join(', ')}`);
+    }
+  } else {
+    // For non-pairs modes, pairRoleRotation should not be set
+    if (pairRoleRotation !== undefined && pairRoleRotation !== null) {
+      throw new Error(`pairRoleRotation can only be set when substitutionType is '${SUBSTITUTION_TYPES.PAIRS}'`);
+    }
+  }
+  
   return true;
 };
 
@@ -152,10 +195,16 @@ export const createDefaultTeamConfig = (squadSize) => {
     ? SUBSTITUTION_TYPES.PAIRS 
     : SUBSTITUTION_TYPES.INDIVIDUAL;
   
+  // For pairs mode, default to keeping roles throughout period for backwards compatibility
+  const defaultPairRoleRotation = defaultSubstitutionType === SUBSTITUTION_TYPES.PAIRS 
+    ? PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD 
+    : null;
+  
   return createTeamConfig(
     FORMATS.FORMAT_5V5,           // Default to 5v5
     squadSize,                    // Use provided squad size
     FORMATIONS.FORMATION_2_2,     // Default to 2-2 formation
-    defaultSubstitutionType       // Individual or pairs based on squad size
+    defaultSubstitutionType,      // Individual or pairs based on squad size
+    defaultPairRoleRotation       // Role rotation for pairs mode
   );
 };
