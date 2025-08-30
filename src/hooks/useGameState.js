@@ -338,7 +338,11 @@ export function useGameState() {
   const playAlertSounds = useCallback(async () => {
     // Vibration alert
     if ('vibrate' in navigator) {
-      navigator.vibrate([1000, 200, 1000]);
+      try {
+        navigator.vibrate([1000, 200, 1000]);
+      } catch (error) {
+        // Silently handle vibration errors
+      }
     }
 
     // Audio alert
@@ -348,8 +352,9 @@ export function useGameState() {
           audioPreferences.selectedSound,
           audioPreferences.volume
         );
+        console.log('[AUDIO_ALERT] ✅ Audio played successfully');
       } catch (error) {
-        // Graceful degradation - vibration already executed above
+        console.log('[AUDIO_ALERT] ❌ Audio playback failed:', error.message);
       }
     }
   }, [audioPreferences]);

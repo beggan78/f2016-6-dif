@@ -96,7 +96,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
   
   // Audio alert logic - triggers when sub timer reaches alert threshold
   useEffect(() => {
-    if (alertMinutes > 0 && playAlertSounds && subTimerSeconds >= alertMinutes * 60) {
+    if (alertMinutes > 0 && playAlertSounds && subTimerSeconds >= alertMinutes * 60 && isPeriodActive) {
       const currentAlertTime = Math.floor(subTimerSeconds / 60); // Convert to minutes
       
       // Only play alert once when crossing the threshold, and prevent duplicate plays
@@ -114,7 +114,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         lastAlertTimeRef.current = null;
       }
     }
-  }, [subTimerSeconds, alertMinutes, playAlertSounds, hasPlayedAlert]);
+  }, [subTimerSeconds, alertMinutes, playAlertSounds, hasPlayedAlert, isPeriodActive, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, periodStartTime, lastSubstitutionTime, totalPausedDuration, pauseStartTime]);
 
   // Timer display update effect - only triggers re-renders, doesn't save to localStorage
   useEffect(() => {
