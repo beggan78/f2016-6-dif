@@ -84,7 +84,7 @@ export async function createMatch(matchData) {
 }
 
 /**
- * Update match to finished state when the last period ends
+ * Update match to finished state when the last period ends and save player stats
  * @param {string} matchId - Match ID
  * @param {Object} finalStats - Final match statistics
  * @param {number} finalStats.matchDurationSeconds - Total match duration
@@ -92,9 +92,12 @@ export async function createMatch(matchData) {
  * @param {number} finalStats.goalsConceded - Goals conceded by team
  * @param {string} finalStats.outcome - Match outcome ('win', 'loss', 'draw')
  * @param {string} finalStats.fairPlayAwardId - Fair play award player ID (optional)
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @param {Array} allPlayers - Array of all players from game state (optional)
+ * @param {Object} goalScorers - Goal scorers data { eventId: playerId } (optional)
+ * @param {Array} matchEvents - Array of match events for goal counting (optional)
+ * @returns {Promise<{success: boolean, playerStatsInserted?: number, error?: string}>}
  */
-export async function updateMatchToFinished(matchId, finalStats) {
+export async function updateMatchToFinished(matchId, finalStats, allPlayers = [], goalScorers = {}, matchEvents = []) {
   try {
     // Validate required fields
     const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
@@ -132,7 +135,30 @@ export async function updateMatchToFinished(matchId, finalStats) {
       };
     }
 
-    return { success: true };
+    // Save player match statistics immediately when match finishes
+    let playerStatsInserted = 0;
+    if (allPlayers && allPlayers.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📊 Saving player match stats on match finish...');
+      }
+      
+      const playerStatsResult = await insertPlayerMatchStats(matchId, allPlayers, goalScorers, matchEvents);
+      
+      if (playerStatsResult.success) {
+        playerStatsInserted = playerStatsResult.inserted;
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Player stats saved: ${playerStatsInserted} players`);
+        }
+      } else {
+        console.warn('⚠️  Match finished but failed to save player stats:', playerStatsResult.error);
+        // Don't fail the entire operation if player stats fail - the match state update was successful
+      }
+    }
+
+    return { 
+      success: true, 
+      playerStatsInserted 
+    };
 
   } catch (error) {
     console.error('❌ Exception while updating match to finished:', error);
@@ -172,10 +198,66 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
       };
     }
 
+    // If fair play award was provided, also update player_match_stats
+    if (fairPlayAwardId !== null) {
+      const statsResult = await updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAwardId);
+      if (!statsResult.success) {
+        console.warn('⚠️  Match confirmed but failed to update fair play award in player stats:', statsResult.error);
+        // Don't fail the entire operation - the match confirmation was successful
+      } else if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Fair play award updated in player stats');
+      }
+    }
+
     return { success: true };
 
   } catch (error) {
     console.error('❌ Exception while confirming match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Update the got_fair_play_award field in player_match_stats for a specific match
+ * @param {string} matchId - Match ID
+ * @param {string} fairPlayAwardPlayerId - Player ID who gets the fair play award
+ * @returns {Promise<{success: boolean, updated: number, error?: string}>}
+ */
+export async function updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAwardPlayerId) {
+  try {
+    // First, clear any existing fair play awards for this match
+    await supabase
+      .from('player_match_stats')
+      .update({ got_fair_play_award: false })
+      .eq('match_id', matchId)
+      .eq('got_fair_play_award', true);
+
+    // Then set the fair play award for the selected player
+    const { data, error } = await supabase
+      .from('player_match_stats')
+      .update({ got_fair_play_award: true })
+      .eq('match_id', matchId)
+      .eq('player_id', fairPlayAwardPlayerId)
+      .select('id');
+
+    if (error) {
+      console.error('❌ Failed to update fair play award in player stats:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return {
+      success: true,
+      updated: data?.length || 0
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while updating fair play award in player stats:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`

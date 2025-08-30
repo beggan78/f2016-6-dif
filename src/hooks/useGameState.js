@@ -920,11 +920,14 @@ export function useGameState(navigateToView = null) {
           allPlayers: updatedPlayersWithFinalStats
         }, matchDurationSeconds);
 
-        // Update match to finished state in background (non-blocking)
-        updateMatchToFinished(currentMatchId, finalStats)
+        // Update match to finished state and save player stats in background (non-blocking)
+        updateMatchToFinished(currentMatchId, finalStats, updatedPlayersWithFinalStats, goalScorers, matchEvents)
           .then((result) => {
             if (result.success) {
               console.log('✅ Match record updated to finished');
+              if (result.playerStatsInserted) {
+                console.log(`📊 Player stats saved: ${result.playerStatsInserted} players`);
+              }
             } else {
               console.warn('⚠️  Failed to update match to finished:', result.error);
             }
