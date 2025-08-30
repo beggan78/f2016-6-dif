@@ -305,20 +305,31 @@ export function GameScreen({
   // Handle animated match start with 2-second transition
   const handleAnimatedMatchStart = () => {
     if (isStartAnimating) return; // Prevent multiple clicks during animation
+    
+    // Start match immediately - timers begin counting
+    handleActualMatchStart();
+    
+    // Start visual animation
     setIsStartAnimating(true);
+    
+    // After animation completes, clean up animation state
     setTimeout(() => {
-      handleActualMatchStart();
+      setIsStartAnimating(false);
     }, 2000);
   };
 
-  // Calculate display values for timers - show initial values when match is pending
-  const displayMatchTimerSeconds = matchState === 'pending' ? periodDurationMinutes * 60 : matchTimerSeconds;
-  const displaySubTimerSeconds = matchState === 'pending' ? 0 : subTimerSeconds;
+  // Calculate display values for timers - show initial values when match is pending or during animation
+  const displayMatchTimerSeconds = (matchState === 'pending' || isStartAnimating) 
+    ? periodDurationMinutes * 60 
+    : matchTimerSeconds;
+  const displaySubTimerSeconds = (matchState === 'pending' || isStartAnimating) 
+    ? 0 
+    : subTimerSeconds;
 
   return (
     <div className="relative space-y-4">
-      {/* Start Match Overlay - shown when match is pending */}
-      {matchState === 'pending' && (
+      {/* Start Match Overlay - shown when match is pending or during animation */}
+      {(matchState === 'pending' || isStartAnimating) && (
         <div className={`absolute inset-0 z-50 flex items-center justify-center p-8 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
           {/* Subtle Glass effect backdrop - less blurry so GameScreen is visible */}
           <div className={`absolute inset-0 bg-black transition-all duration-[2000ms] ${isStartAnimating ? 'bg-opacity-0 backdrop-blur-none' : 'bg-opacity-30 backdrop-blur-sm'}`} />
