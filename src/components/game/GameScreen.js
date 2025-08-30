@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw } from 'lucide-react';
+import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw, ArrowLeft } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
+import { VIEWS } from '../../constants/viewConstants';
 import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
@@ -75,7 +76,8 @@ export function GameScreen({
   matchState,
   handleActualMatchStart,
   periodDurationMinutes,
-  getPlayerName
+  getPlayerName,
+  setView
 }) {
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
@@ -318,6 +320,25 @@ export function GameScreen({
     }, 2000);
   };
 
+  // Handle back navigation to setup screen
+  const handleBackToSetup = React.useCallback(() => {
+    setView(VIEWS.PERIOD_SETUP);
+  }, [setView]);
+
+  // Set up browser back button interception when match is pending
+  React.useEffect(() => {
+    if (matchState === 'pending' && pushNavigationState) {
+      pushNavigationState(handleBackToSetup);
+      
+      // Clean up navigation state when component unmounts or match starts
+      return () => {
+        if (removeFromNavigationStack) {
+          removeFromNavigationStack();
+        }
+      };
+    }
+  }, [matchState, pushNavigationState, removeFromNavigationStack, handleBackToSetup]);
+
   // Calculate display values for timers - show initial values when match is pending or during animation
   const displayMatchTimerSeconds = (matchState === 'pending' || isStartAnimating) 
     ? periodDurationMinutes * 60 
@@ -380,6 +401,18 @@ export function GameScreen({
               <p className="text-center text-sky-100/70 text-lg font-medium tracking-wide drop-shadow-sm">
                 Tap to begin the period and start timers
               </p>
+            </div>
+            
+            {/* Back to Setup Button */}
+            <div className={`mt-6 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
+              <Button 
+                onClick={handleBackToSetup}
+                Icon={ArrowLeft}
+                variant="secondary"
+                className="bg-slate-600 hover:bg-slate-500 text-slate-100"
+              >
+                Back to Setup
+              </Button>
             </div>
           </div>
         </div>

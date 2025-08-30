@@ -901,6 +901,7 @@ function AppContent() {
               const player = gameState.allPlayers.find(p => p.id === playerId);
               return player ? formatPlayerName(player) : 'Unknown Player';
             }}
+            setView={gameState.setView}
           />
         );
       case VIEWS.STATS:
