@@ -25,6 +25,13 @@ import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtil
 
 // Animation timing constants are now imported from animationSupport
 
+const getOrdinalSuffix = (number) => {
+  if (number % 10 === 1 && number % 100 !== 11) return `${number}st`;
+  if (number % 10 === 2 && number % 100 !== 12) return `${number}nd`;
+  if (number % 10 === 3 && number % 100 !== 13) return `${number}rd`;
+  return `${number}th`;
+};
+
 export function GameScreen({ 
   currentPeriodNumber, 
   formation,
@@ -334,10 +341,10 @@ export function GameScreen({
             {/* Descriptive Text */}
             <div className="mt-8 space-y-2">
               <p className="text-3xl font-bold text-white drop-shadow-lg tracking-wide">
-                Start Match
+                Start {currentPeriodNumber === 1 ? 'Match' : `${getOrdinalSuffix(currentPeriodNumber)} Period`}
               </p>
               <p className="text-center text-sky-100/70 text-lg font-medium tracking-wide drop-shadow-sm">
-                Tap to begin the match and start timers
+                Tap to begin the period and start timers
               </p>
             </div>
           </div>
