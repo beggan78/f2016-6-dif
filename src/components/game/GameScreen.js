@@ -87,6 +87,9 @@ export function GameScreen({
     ownTeamName, opponentTeamName, ownScore, opponentScore
   );
 
+  // Animation state for start button
+  const [isStartAnimating, setIsStartAnimating] = React.useState(false);
+
   // Helper functions  
   const getPlayerNameById = React.useCallback((id) => getPlayerName(id), [getPlayerName]);
   
@@ -298,22 +301,30 @@ export function GameScreen({
     }
   };
 
+  // Handle animated match start with 2-second transition
+  const handleAnimatedMatchStart = () => {
+    if (isStartAnimating) return; // Prevent multiple clicks during animation
+    setIsStartAnimating(true);
+    setTimeout(() => {
+      handleActualMatchStart();
+    }, 2000);
+  };
 
   return (
     <div className="relative space-y-4">
       {/* Start Match Overlay - shown when match is pending */}
       {matchState === 'pending' && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-8">
+        <div className={`absolute inset-0 z-50 flex items-center justify-center p-8 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
           {/* Subtle Glass effect backdrop - less blurry so GameScreen is visible */}
-          <div className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm" />
-          <div className="absolute inset-0 bg-gradient-to-br from-sky-900/10 to-slate-900/15" />
+          <div className={`absolute inset-0 bg-black transition-all duration-[2000ms] ${isStartAnimating ? 'bg-opacity-0 backdrop-blur-none' : 'bg-opacity-30 backdrop-blur-sm'}`} />
+          <div className={`absolute inset-0 bg-gradient-to-br from-sky-900/10 to-slate-900/15 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`} />
           
           {/* Cool Clickable Icon */}
-          <div className="relative z-10 text-center">
+          <div className={`relative z-10 text-center transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
             {/* Main Clickable Icon */}
             <div
-              onClick={handleActualMatchStart}
-              className="group relative inline-block cursor-pointer select-none"
+              onClick={handleAnimatedMatchStart}
+              className={`group relative inline-block select-none transition-opacity duration-[2000ms] ${isStartAnimating ? 'cursor-default opacity-0' : 'cursor-pointer opacity-100'}`}
             >
               {/* Multi-layer Glow Effects */}
               <div className="absolute inset-0 animate-pulse">
@@ -335,11 +346,18 @@ export function GameScreen({
               />
               
               {/* Ripple Effect on Click */}
-              <div className="absolute inset-0 rounded-full opacity-0 group-active:opacity-100 group-active:animate-ping bg-sky-400/20 transition-opacity duration-75" />
+              <div className={`absolute inset-0 rounded-full transition-opacity ${isStartAnimating ? 'opacity-100 animate-ping duration-[2000ms]' : 'opacity-0 group-active:opacity-100 group-active:animate-ping duration-75'} bg-sky-400/20`} />
+              {/* Extended ripple effects during animation */}
+              {isStartAnimating && (
+                <>
+                  <div className="absolute inset-0 rounded-full opacity-60 animate-ping bg-sky-300/15 animation-delay-300" style={{animationDuration: '2000ms'}} />
+                  <div className="absolute inset-0 rounded-full opacity-40 animate-ping bg-sky-200/10 animation-delay-600" style={{animationDuration: '2000ms'}} />
+                </>
+              )}
             </div>
             
             {/* Descriptive Text */}
-            <div className="mt-8 space-y-2">
+            <div className={`mt-8 space-y-2 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
               <p className="text-3xl font-bold text-white drop-shadow-lg tracking-wide">
                 Start {currentPeriodNumber === 1 ? 'Match' : `${getOrdinalSuffix(currentPeriodNumber)} Period`}
               </p>
