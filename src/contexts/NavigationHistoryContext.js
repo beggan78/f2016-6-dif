@@ -248,7 +248,7 @@ export function NavigationHistoryProvider({ children }) {
       }
       setCurrentView(String(externalView));
     }
-  }, [currentView]);
+  }, []);
 
   // Provide context-aware fallback based on current application state
   const getContextAwareFallbackView = useCallback(() => {
