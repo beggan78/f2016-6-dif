@@ -405,14 +405,18 @@ export function GameScreen({
             
             {/* Back to Setup Button */}
             <div className={`mt-6 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
-              <Button 
+              <div
                 onClick={handleBackToSetup}
-                Icon={ArrowLeft}
-                variant="secondary"
-                className="bg-slate-600 hover:bg-slate-500 text-slate-100"
+                className="group relative inline-flex items-center justify-center space-x-2 px-4 py-2 cursor-pointer select-none
+                          text-sky-100/60 hover:text-sky-100/90 
+                          hover:bg-white/5 rounded-md
+                          transform hover:scale-105 active:scale-95
+                          transition-all duration-200 ease-out
+                          drop-shadow-sm hover:drop-shadow-md"
               >
-                Back to Setup
-              </Button>
+                <ArrowLeft className="h-5 w-5" />
+                <span className="text-sm font-medium tracking-wide">Back to Setup</span>
+              </div>
             </div>
           </div>
         </div>
