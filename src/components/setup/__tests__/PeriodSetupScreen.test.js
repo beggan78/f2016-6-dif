@@ -237,7 +237,7 @@ describe('PeriodSetupScreen', () => {
       const props = { ...mockProps, formation: completeFormation };
       render(<PeriodSetupScreen {...props} />);
 
-      const startButton = screen.getByText('Start Period 1');
+      const startButton = screen.getByText('Enter Game');
       expect(startButton).not.toBeDisabled();
     });
 
@@ -249,7 +249,7 @@ describe('PeriodSetupScreen', () => {
       expect(screen.getByText('Period 1 Team Selection')).toBeInTheDocument();
       
       // Start button should be enabled
-      const startButton = screen.getByText('Start Period 1');
+      const startButton = screen.getByText('Enter Game');
       expect(startButton).not.toBeDisabled();
     });
 
@@ -425,7 +425,7 @@ describe('PeriodSetupScreen', () => {
       const props = { ...mockProps, formation: completeFormation };
       render(<PeriodSetupScreen {...props} />);
 
-      const startButton = screen.getByText('Start Period 1');
+      const startButton = screen.getByText('Enter Game');
       expect(startButton).not.toBeDisabled();
     });
 
@@ -440,7 +440,7 @@ describe('PeriodSetupScreen', () => {
       const props = { ...mockProps, formation: incompleteFormation };
       render(<PeriodSetupScreen {...props} />);
 
-      const startButton = screen.getByText('Start Period 1');
+      const startButton = screen.getByText('Enter Game');
       expect(startButton).toBeDisabled();
     });
 
@@ -455,7 +455,7 @@ describe('PeriodSetupScreen', () => {
       const props = { ...mockProps, formation: completeFormation };
       render(<PeriodSetupScreen {...props} />);
 
-      const startButton = screen.getByText('Start Period 1');
+      const startButton = screen.getByText('Enter Game');
       fireEvent.click(startButton);
 
       expect(mockProps.handleStartGame).toHaveBeenCalled();
