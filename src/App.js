@@ -102,8 +102,12 @@ function AppContent() {
   });
   
   // Set up navigation system using the actual gameState.setView
+  // Disable global browser back when GameScreen is active with pending or running match to avoid handler conflicts
+  const shouldDisableGlobalBrowserBack = gameState.view === VIEWS.GAME && 
+    (gameState.matchState === 'pending' || gameState.matchState === 'running');
+
   const navigationHistory = useScreenNavigation(gameState.setView, {
-    enableBrowserBack: true, // Enable browser back button integration with navigation history
+    enableBrowserBack: !shouldDisableGlobalBrowserBack, // Disable when GameScreen handles it
     fallbackView: VIEWS.CONFIG
   });
   
@@ -235,6 +239,8 @@ function AppContent() {
     }
   }, [gameState.view, navigationData]);
 
+  // Timer display is now handled directly in GameScreen component
+
 
 
 
@@ -255,15 +261,37 @@ function AppContent() {
 
   // Global navigation handler for when no modals are open
   const handleGlobalNavigation = useCallback(() => {
+    console.log('🌐 App: handleGlobalNavigation called', {
+      currentView: gameState.view,
+      currentPeriodNumber: gameState.currentPeriodNumber,
+      matchState: gameState.matchState,
+      canNavigateWithHistory: navigationHistory.canNavigateBack,
+      navigationHistoryLength: navigationHistory.navigationHistory?.length || 0,
+      previousView: navigationHistory.previousView
+    });
+
     // Check current view and handle accordingly
-    if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1) {
-      // Exception: PeriodSetupScreen -> ConfigurationScreen
-      gameState.setView(VIEWS.CONFIG);
-    } else if (gameState.view === VIEWS.TACTICAL_BOARD) {
+    
+    // Try to use navigation history first for most views
+    const canNavigateWithHistory = navigationHistory.canNavigateBack;
+    
+    if (gameState.view === VIEWS.TACTICAL_BOARD) {
       // Navigate back from Tactical Board - same as clicking Back button
+      console.log('🌐 App: Handling Tactical Board back navigation');
       handleNavigateFromTacticalBoard();
+    } else if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1 && !canNavigateWithHistory) {
+      // Exception: PeriodSetupScreen -> ConfigurationScreen (only when no history available)
+      console.log('🌐 App: PERIOD_SETUP -> CONFIG (no history available)');
+      gameState.setView(VIEWS.CONFIG);
+    } else if (canNavigateWithHistory) {
+      // Use navigation history when available
+      console.log('🌐 App: Using navigation history to go back', {
+        targetView: navigationHistory.previousView
+      });
+      navigateBack();
     } else {
-      // Default: Show "Start a new game?" confirmation modal
+      // Default fallback: Show "Start a new game?" confirmation modal
+      console.log('🌐 App: Showing new game modal (default fallback)');
       setShowNewGameModal(true);
       // Register this modal with the browser back intercept system
       if (pushNavigationStateRef.current) {
@@ -272,7 +300,7 @@ function AppContent() {
         });
       }
     }
-  }, [gameState, handleNavigateFromTacticalBoard]);
+  }, [gameState, handleNavigateFromTacticalBoard, navigationHistory.canNavigateBack, navigationHistory.navigationHistory, navigationHistory.previousView, navigateBack]);
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
   
@@ -522,6 +550,15 @@ function AppContent() {
   // Enhanced game handlers that integrate with timers
   const handleStartGame = () => {
     gameState.handleStartGame();
+    // Note: Timers are now started when user clicks Start Match button
+  };
+
+  // New handler for when user actually starts the match
+  const handleActualMatchStartWithTimers = () => {
+    // First call the game state handler to update match state
+    gameState.handleActualMatchStart();
+    
+    // Then start the timers
     timers.startTimers(
       gameState.currentPeriodNumber,
       gameState.teamConfig,
@@ -600,7 +637,7 @@ function AppContent() {
     clearHistory();
     
     // Reset all timer state and clear localStorage
-    timers.resetAllTimers();
+    timers.clearAllTimersForNewGame();
     
     // Reset all game state
     gameState.setView('config');
@@ -849,6 +886,7 @@ function AppContent() {
             isSubTimerPaused={timers.isSubTimerPaused}
             pauseSubTimer={timers.pauseSubTimer}
             resumeSubTimer={timers.resumeSubTimer}
+            setShowNewGameModal={setShowNewGameModal}
             formatTime={formatTime}
             resetSubTimer={timers.resetSubTimer}
             handleUndoSubstitution={handleUndoSubstitution}
@@ -883,10 +921,14 @@ function AppContent() {
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
             matchStartTime={gameState.matchStartTime}
+            matchState={gameState.matchState}
+            handleActualMatchStart={handleActualMatchStartWithTimers}
+            periodDurationMinutes={gameState.periodDurationMinutes}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
               return player ? formatPlayerName(player) : 'Unknown Player';
             }}
+            setView={gameState.setView}
           />
         );
       case VIEWS.STATS:

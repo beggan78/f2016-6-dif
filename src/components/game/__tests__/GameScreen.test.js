@@ -17,7 +17,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameScreen } from '../GameScreen';
 import {
@@ -654,6 +654,92 @@ describe('GameScreen', () => {
       };
       
       expect(() => render(<GameScreen {...props} />)).not.toThrow();
+    });
+  });
+
+  describe('Browser Back Integration', () => {
+    it('should pass browser back navigation props correctly', () => {
+      const mockPushNavigationState = jest.fn();
+      const mockRemoveFromNavigationStack = jest.fn();
+      const props = {
+        ...defaultProps,
+        pushNavigationState: mockPushNavigationState,
+        removeFromNavigationStack: mockRemoveFromNavigationStack,
+        matchState: 'running'
+      };
+      
+      render(<GameScreen {...props} />);
+      
+      // Should use the provided browser back functions
+      expect(mockPushNavigationState).toHaveBeenCalled();
+    });
+
+    it('should pass setShowNewGameModal prop correctly', () => {
+      const mockSetShowNewGameModal = jest.fn();
+      const mockPushNavigationState = jest.fn();
+      const props = {
+        ...defaultProps,
+        setShowNewGameModal: mockSetShowNewGameModal,
+        pushNavigationState: mockPushNavigationState,
+        matchState: 'running'
+      };
+      
+      render(<GameScreen {...props} />);
+      
+      // Should register back handler that uses the modal function
+      expect(mockPushNavigationState).toHaveBeenCalled();
+      
+      // Simulate back navigation to verify modal function is called
+      const backHandler = mockPushNavigationState.mock.calls[0][0];
+      act(() => {
+        backHandler();
+      });
+      
+      expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
+    });
+
+    it('should handle missing browser back integration gracefully', () => {
+      const props = {
+        ...defaultProps,
+        pushNavigationState: null,
+        removeFromNavigationStack: null,
+        setShowNewGameModal: null,
+        matchState: 'running'
+      };
+      
+      // Should not crash even without browser back integration
+      expect(() => render(<GameScreen {...props} />)).not.toThrow();
+    });
+
+    it('should support different match states for back navigation', () => {
+      const mockPushNavigationState = jest.fn();
+      const mockSetView = jest.fn();
+      
+      const pendingProps = {
+        ...defaultProps,
+        pushNavigationState: mockPushNavigationState,
+        setView: mockSetView,
+        matchState: 'pending'
+      };
+      
+      const { rerender } = render(<GameScreen {...pendingProps} />);
+      
+      // Should register handler for pending state
+      expect(mockPushNavigationState).toHaveBeenCalledWith(
+        expect.any(Function),
+        'GameScreen-BackToSetup'
+      );
+      
+      mockPushNavigationState.mockClear();
+      
+      // Switch to running state
+      rerender(<GameScreen {...pendingProps} matchState="running" />);
+      
+      // Should register different handler for running state
+      expect(mockPushNavigationState).toHaveBeenCalledWith(
+        expect.any(Function),
+        'GameScreen-MatchAbandonment'
+      );
     });
   });
 

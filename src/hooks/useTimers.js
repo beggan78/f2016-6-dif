@@ -476,8 +476,8 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
     }
   }, []);
 
-  // Reset all timer state to initial values
-  const resetAllTimers = useCallback(() => {
+  // Clear all timer state and reset system for new game
+  const clearAllTimersForNewGame = useCallback(() => {
     setIsPeriodActive(false);
     setPeriodStartTime(null);
     setLastSubstitutionTime(null);
@@ -515,7 +515,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
     startTimers,
     stopTimers,
     clearTimerState,
-    resetAllTimers,
+    clearAllTimersForNewGame,
     setIsPeriodActive,
   };
 }
