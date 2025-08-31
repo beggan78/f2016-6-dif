@@ -56,9 +56,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.PAT }}
-          # Replace with your public repository's name and branch
-          # Example: <your-username>/<your-username>.github.io
+          PERSONAL_TOKEN: ${{ secrets.PAT }}
           external_repository: beggan78/sportwizard
           publish_branch: main
           publish_dir: ./build
