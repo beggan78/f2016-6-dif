@@ -102,8 +102,9 @@ function AppContent() {
   });
   
   // Set up navigation system using the actual gameState.setView
-  // Disable global browser back when GameScreen is active with pending match to avoid handler conflicts
-  const shouldDisableGlobalBrowserBack = gameState.view === VIEWS.GAME && gameState.matchState === 'pending';
+  // Disable global browser back when GameScreen is active with pending or running match to avoid handler conflicts
+  const shouldDisableGlobalBrowserBack = gameState.view === VIEWS.GAME && 
+    (gameState.matchState === 'pending' || gameState.matchState === 'running');
   
   console.log('🌐 App: Global browser back handler decision', {
     currentView: gameState.view,
@@ -892,6 +893,7 @@ function AppContent() {
             isSubTimerPaused={timers.isSubTimerPaused}
             pauseSubTimer={timers.pauseSubTimer}
             resumeSubTimer={timers.resumeSubTimer}
+            setShowNewGameModal={setShowNewGameModal}
             formatTime={formatTime}
             resetSubTimer={timers.resetSubTimer}
             handleUndoSubstitution={handleUndoSubstitution}

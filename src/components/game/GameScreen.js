@@ -77,7 +77,8 @@ export function GameScreen({
   handleActualMatchStart,
   periodDurationMinutes,
   getPlayerName,
-  setView
+  setView,
+  setShowNewGameModal
 }) {
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
@@ -329,7 +330,26 @@ export function GameScreen({
     setView(VIEWS.PERIOD_SETUP);
   }, [setView]);
 
-  // Set up browser back button interception when match is pending - only re-run when matchState changes
+  // Handle back navigation during running match - show match abandonment warning
+  const handleMatchAbandonmentWarning = React.useCallback(() => {
+    console.log('🎮 GameScreen: handleMatchAbandonmentWarning called', {
+      currentView: 'GAME',
+      matchState,
+      action: 'showing match abandonment modal'
+    });
+    // Use the existing "Start a new game?" modal from App.js
+    setShowNewGameModal(true);
+    
+    // Register the modal close handler with browser back system
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        console.log('🎮 GameScreen: Closing match abandonment modal via browser back');
+        setShowNewGameModal(false);
+      }, 'GameScreen-CloseAbandonmentModal');
+    }
+  }, [matchState, setShowNewGameModal, pushNavigationState]);
+
+  // Set up browser back button interception for both pending and running matches
   React.useEffect(() => {
     console.log('🎮 GameScreen: Browser back setup effect', {
       matchState,
@@ -341,19 +361,31 @@ export function GameScreen({
       console.log('🎮 GameScreen: Registering browser back handler for pending match');
       pushNavigationState(handleBackToSetup, 'GameScreen-BackToSetup');
       
-      // Clean up navigation state when component unmounts or match starts
+      // Clean up navigation state when component unmounts or match state changes
       return () => {
-        console.log('🎮 GameScreen: Cleaning up browser back handler');
+        console.log('🎮 GameScreen: Cleaning up pending match browser back handler');
+        if (removeFromNavigationStack) {
+          removeFromNavigationStack();
+        }
+      };
+    } else if (matchState === 'running' && pushNavigationState) {
+      console.log('🎮 GameScreen: Registering browser back handler for running match');
+      pushNavigationState(handleMatchAbandonmentWarning, 'GameScreen-MatchAbandonment');
+      
+      // Clean up navigation state when component unmounts or match state changes
+      return () => {
+        console.log('🎮 GameScreen: Cleaning up running match browser back handler');
         if (removeFromNavigationStack) {
           removeFromNavigationStack();
         }
       };
     } else {
       console.log('🎮 GameScreen: NOT registering browser back handler', {
-        reason: matchState !== 'pending' ? 'matchState not pending' : 'pushNavigationState not available'
+        matchState,
+        reason: !pushNavigationState ? 'pushNavigationState not available' : 'matchState not pending or running'
       });
     }
-  }, [matchState, pushNavigationState, removeFromNavigationStack, handleBackToSetup]);
+  }, [matchState, pushNavigationState, removeFromNavigationStack, handleBackToSetup, handleMatchAbandonmentWarning]);
 
   // Calculate display values for timers - show initial values when match is pending or during animation
   const displayMatchTimerSeconds = (matchState === 'pending' || isStartAnimating) 
