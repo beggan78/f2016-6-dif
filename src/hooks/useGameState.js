@@ -123,11 +123,6 @@ export function useGameState(navigateToView = null) {
 
   // Debug: Track state initialization (only once per session)
   if (process.env.NODE_ENV === 'development' && !window.gameStateInitialized) {
-    console.log('🔄 useGameState initialized with match state:', {
-      currentMatchId: initialState.currentMatchId,
-      matchState: initialState.matchState,
-      matchCreationAttempted: initialState.matchCreationAttempted
-    });
     window.gameStateInitialized = true;
   }
 
@@ -352,7 +347,6 @@ export function useGameState(navigateToView = null) {
           audioPreferences.selectedSound,
           audioPreferences.volume
         );
-        console.log('[AUDIO_ALERT] ✅ Audio played successfully');
       } catch (error) {
         console.log('[AUDIO_ALERT] ❌ Audio playback failed:', error.message);
       }
@@ -543,8 +537,6 @@ export function useGameState(navigateToView = null) {
     }));
 
     // Reset match state for new game setup
-    console.log('🔄 handleStartPeriodSetup: Resetting match state');
-    console.log('📝 CALLING setMatchState(\'not_started\')');
     setMatchState('not_started');
     setCurrentPeriodNumber(1);
     setGameLog([]); // Clear game log for new game
@@ -757,9 +749,7 @@ export function useGameState(navigateToView = null) {
 
     // CREATE MATCH RECORD when starting first period
     if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
-      console.log('🚀 handleStartGame: About to create match record at', new Date().toISOString());
-      console.log('🚀 State before match creation:', { currentMatchId, matchState, matchCreationAttempted });
-      
+
       setMatchCreationAttempted(true); // Prevent duplicate attempts
       
       // Format match data from current game state
@@ -775,13 +765,10 @@ export function useGameState(navigateToView = null) {
         matchType
       }, currentTeam.id);
 
-      console.log('🚀 handleStartGame: Starting createMatch async call at', new Date().toISOString());
       // Create match record in background (non-blocking)
       createMatch(matchData)
         .then((result) => {
           if (result.success) {
-            console.log('✅ Match record created:', result.matchId);
-            console.log('📝 CALLING setCurrentMatchId:', result.matchId);
             setCurrentMatchId(result.matchId);
           } else {
             console.warn('⚠️  Failed to create match record:', result.error);
@@ -795,8 +782,6 @@ export function useGameState(navigateToView = null) {
     }
 
     // Set match state to pending (not running yet - user needs to click Start Match)
-    console.log('🎮 handleStartGame: Setting match state to PENDING');
-    console.log('📝 CALLING setMatchState(\'pending\')');
     setMatchState('pending');
 
     setView(VIEWS.GAME);
@@ -805,14 +790,10 @@ export function useGameState(navigateToView = null) {
     setTimeout(() => {
       syncMatchDataFromEventLogger();
     }, 100);
-    
-    console.log('🏁 handleStartGame: Function completed');
   };
 
   // New function to actually start the match when user clicks Start Match button
   const handleActualMatchStart = async () => {
-    console.log('🚀 handleActualMatchStart: User clicked Start Match button');
-    
     // Update match state to running in database
     if (currentMatchId) {
       try {
@@ -828,13 +809,10 @@ export function useGameState(navigateToView = null) {
     }
 
     // Set local match state to running
-    console.log('🎮 handleActualMatchStart: Setting match state to RUNNING');
     setMatchState('running');
 
     // Request wake lock (alert timer now handled by visual timer logic)
     requestWakeLock();
-    
-    console.log('🏁 handleActualMatchStart: Match actually started');
   };
 
   const handleSubstitution = (isSubTimerPaused = false) => {
@@ -962,8 +940,6 @@ export function useGameState(navigateToView = null) {
       }
       
       // Set match state to finished when last period ends
-      console.log('🏁 handleEndPeriod: Setting match state to FINISHED');
-      console.log('📝 CALLING setMatchState(\'finished\')');
       setMatchState('finished');
 
       // Release wake lock when game ends
@@ -1670,32 +1646,18 @@ export function useGameState(navigateToView = null) {
 
   // Navigation to match report
   const navigateToMatchReport = useCallback(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('navigateToMatchReport: Starting navigation to MATCH_REPORT view');
-    }
-    
     // Sync match data before showing report
     syncMatchDataFromEventLogger();
     
     // Use navigation system if available, otherwise fall back to direct setView
     if (navigateToView) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('navigateToMatchReport: Using navigateToView function');
-      }
-      
       const success = navigateToView(VIEWS.MATCH_REPORT);
       
       // If navigation system failed or returned false, use direct setView as fallback
       if (!success) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('navigateToMatchReport: Navigation system failed, using direct setView fallback');
-        }
         setView(VIEWS.MATCH_REPORT);
       }
     } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('navigateToMatchReport: Using direct setView (no navigateToView available)');
-      }
       setView(VIEWS.MATCH_REPORT);
     }
   }, [syncMatchDataFromEventLogger, navigateToView]);
@@ -1751,22 +1713,17 @@ export function useGameState(navigateToView = null) {
   const syncPlayersFromTeamRoster = useCallback((teamPlayers) => {
     try {
       const analysis = analyzePlayerSync(teamPlayers, allPlayers);
-      console.log('📊 Player sync analysis:', analysis.summary);
 
       if (analysis.needsSync) {
-        console.log('🔄 Syncing missing players to game state...');
         const syncResult = syncTeamRosterToGameState(teamPlayers, allPlayers);
 
         if (syncResult.success) {
           setAllPlayers(syncResult.players);
-          console.log('✅ Players synced successfully:', syncResult.message);
           return { success: true, message: syncResult.message };
         } else {
-          console.warn('⚠️ Player sync failed:', syncResult.error);
           return { success: false, error: syncResult.error };
         }
       } else {
-        console.log('✅ All team players already available in game state');
         return { success: true, message: 'No sync needed' };
       }
     } catch (error) {

@@ -121,11 +121,6 @@ export function ConfigurationScreen({
 
   // Sync team roster to game state on mount and when team/players change
   React.useEffect(() => {
-    console.log('🔄 Sync useEffect triggered:', { 
-      currentTeamId: currentTeam?.id, 
-      teamPlayersCount: teamPlayers.length 
-    });
-    
     // Check sync requirements with descriptive variables
     const hasCurrentTeam = !!currentTeam;
     const hasTeamPlayers = teamPlayers && teamPlayers.length > 0;
@@ -237,15 +232,6 @@ export function ConfigurationScreen({
       }))
     : allPlayers;
   
-  console.log('🔍 ConfigurationScreen render:', {
-    isAuthenticated,
-    currentTeam: currentTeam?.name,
-    teamPlayersCount: teamPlayers.length,
-    allPlayersCount: allPlayers.length,
-    playersToShowCount: playersToShow.length,
-    playersToShowSource: (isAuthenticated && currentTeam && teamPlayers.length > 0) ? 'teamPlayers' : 'allPlayers'
-  });
-
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
   React.useEffect(() => {
     if (hasNoTeamPlayers && selectedSquadIds.length > 0) {

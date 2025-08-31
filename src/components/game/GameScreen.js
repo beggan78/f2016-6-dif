@@ -323,27 +323,17 @@ export function GameScreen({
 
   // Handle back navigation to setup screen - useCallback to prevent re-registration on timer re-renders
   const handleBackToSetup = React.useCallback(() => {
-    console.log('🎮 GameScreen: handleBackToSetup called', {
-      currentView: 'GAME',
-      targetView: VIEWS.PERIOD_SETUP
-    });
     setView(VIEWS.PERIOD_SETUP);
   }, [setView]);
 
   // Handle back navigation during running match - show match abandonment warning
   const handleMatchAbandonmentWarning = React.useCallback(() => {
-    console.log('🎮 GameScreen: handleMatchAbandonmentWarning called', {
-      currentView: 'GAME',
-      matchState,
-      action: 'showing match abandonment modal'
-    });
     // Use the existing "Start a new game?" modal from App.js
     setShowNewGameModal(true);
     
     // Register the modal close handler with browser back system
     if (pushNavigationState) {
       pushNavigationState(() => {
-        console.log('🎮 GameScreen: Closing match abandonment modal via browser back');
         setShowNewGameModal(false);
       }, 'GameScreen-CloseAbandonmentModal');
     }
@@ -351,39 +341,24 @@ export function GameScreen({
 
   // Set up browser back button interception for both pending and running matches
   React.useEffect(() => {
-    console.log('🎮 GameScreen: Browser back setup effect', {
-      matchState,
-      hasPushNavigationState: !!pushNavigationState,
-      hasRemoveFromNavigationStack: !!removeFromNavigationStack
-    });
-
     if (matchState === 'pending' && pushNavigationState) {
-      console.log('🎮 GameScreen: Registering browser back handler for pending match');
       pushNavigationState(handleBackToSetup, 'GameScreen-BackToSetup');
       
       // Clean up navigation state when component unmounts or match state changes
       return () => {
-        console.log('🎮 GameScreen: Cleaning up pending match browser back handler');
         if (removeFromNavigationStack) {
           removeFromNavigationStack();
         }
       };
     } else if (matchState === 'running' && pushNavigationState) {
-      console.log('🎮 GameScreen: Registering browser back handler for running match');
       pushNavigationState(handleMatchAbandonmentWarning, 'GameScreen-MatchAbandonment');
       
       // Clean up navigation state when component unmounts or match state changes
       return () => {
-        console.log('🎮 GameScreen: Cleaning up running match browser back handler');
         if (removeFromNavigationStack) {
           removeFromNavigationStack();
         }
       };
-    } else {
-      console.log('🎮 GameScreen: NOT registering browser back handler', {
-        matchState,
-        reason: !pushNavigationState ? 'pushNavigationState not available' : 'matchState not pending or running'
-      });
     }
   }, [matchState, pushNavigationState, removeFromNavigationStack, handleBackToSetup, handleMatchAbandonmentWarning]);
 

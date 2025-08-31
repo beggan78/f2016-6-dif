@@ -32,27 +32,11 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
     }
 
     const handlePopState = (event) => {
-      console.log('🔙 Browser Back: handlePopState triggered', {
-        navigationStackLength: navigationStack.current.length,
-        hasGlobalHandler: !!globalNavigationHandler,
-        currentUrl: window.location.href,
-        historyState: event.state,
-        allHandlers: navigationStack.current.map(h => h.handlerName)
-      });
 
       // If we have navigation handlers registered, execute the topmost handler instead of navigating
       if (navigationStack.current.length > 0) {
-        console.log('🔙 Browser Back: Using navigation stack handler');
         event.preventDefault();
         const topHandler = navigationStack.current.pop();
-        
-        console.log('🔙 Browser Back: Executing handler', {
-          handlerName: topHandler?.handlerName,
-          handlerExists: !!topHandler,
-          handlerType: typeof topHandler?.navigationHandler,
-          stackLengthAfterPop: navigationStack.current.length,
-          remainingHandlers: navigationStack.current.map(h => h.handlerName)
-        });
         
         // Call the navigation function for the topmost handler
         if (topHandler && typeof topHandler.navigationHandler === 'function') {
@@ -61,9 +45,6 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
         
         // If there are still handlers registered, push a new state
         if (navigationStack.current.length > 0) {
-          console.log('🔙 Browser Back: Pushing new state for remaining handlers', {
-            remainingHandlers: navigationStack.current.map(h => h.handlerName)
-          });
           window.history.pushState(
             { navigationLevel: navigationStack.current.length }, 
             '', 
@@ -72,10 +53,7 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
         }
       } else if (globalNavigationHandler && typeof globalNavigationHandler === 'function') {
         // No navigation handlers registered, call the global navigation handler
-        console.log('🔙 Browser Back: Using global navigation handler');
         globalNavigationHandler();
-      } else {
-        console.log('🔙 Browser Back: No handlers registered, letting browser handle normally');
       }
       // If no navigation handlers are registered and no global handler, let the browser handle the back navigation normally
     };
@@ -93,25 +71,11 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
       return;
     }
 
-    console.log('🔙 Browser Back: pushNavigationState called', {
-      handlerName,
-      stackLengthBefore: navigationStack.current.length,
-      callbackType: typeof navigationCallback,
-      currentUrl: window.location.href
-    });
-
     // Add the navigation handler to our stack with identification
     navigationStack.current.push({ 
       navigationHandler: navigationCallback,
       handlerName: handlerName,
       registeredAt: Date.now()
-    });
-    
-    console.log('🔙 Browser Back: Handler added to stack', {
-      handlerName,
-      stackLengthAfter: navigationStack.current.length,
-      navigationLevel: navigationStack.current.length,
-      allHandlers: navigationStack.current.map(h => h.handlerName)
     });
     
     // Push a new browser history state

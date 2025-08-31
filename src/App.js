@@ -105,14 +105,7 @@ function AppContent() {
   // Disable global browser back when GameScreen is active with pending or running match to avoid handler conflicts
   const shouldDisableGlobalBrowserBack = gameState.view === VIEWS.GAME && 
     (gameState.matchState === 'pending' || gameState.matchState === 'running');
-  
-  console.log('🌐 App: Global browser back handler decision', {
-    currentView: gameState.view,
-    matchState: gameState.matchState,
-    shouldDisableGlobalBrowserBack,
-    globalHandlerEnabled: !shouldDisableGlobalBrowserBack
-  });
-  
+
   const navigationHistory = useScreenNavigation(gameState.setView, {
     enableBrowserBack: !shouldDisableGlobalBrowserBack, // Disable when GameScreen handles it
     fallbackView: VIEWS.CONFIG
