@@ -96,7 +96,7 @@ export function useNavigationHistory(options = {}) {
     };
 
     // Register with browser back intercept system
-    pushNavigationState(backHandler);
+    pushNavigationState(backHandler, 'NavigationHistory-BackHandler');
     
     // Return cleanup function
     return () => {

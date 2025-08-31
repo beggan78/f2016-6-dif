@@ -320,22 +320,38 @@ export function GameScreen({
     }, 2000);
   };
 
-  // Handle back navigation to setup screen
+  // Handle back navigation to setup screen - useCallback to prevent re-registration on timer re-renders
   const handleBackToSetup = React.useCallback(() => {
+    console.log('🎮 GameScreen: handleBackToSetup called', {
+      currentView: 'GAME',
+      targetView: VIEWS.PERIOD_SETUP
+    });
     setView(VIEWS.PERIOD_SETUP);
   }, [setView]);
 
-  // Set up browser back button interception when match is pending
+  // Set up browser back button interception when match is pending - only re-run when matchState changes
   React.useEffect(() => {
+    console.log('🎮 GameScreen: Browser back setup effect', {
+      matchState,
+      hasPushNavigationState: !!pushNavigationState,
+      hasRemoveFromNavigationStack: !!removeFromNavigationStack
+    });
+
     if (matchState === 'pending' && pushNavigationState) {
-      pushNavigationState(handleBackToSetup);
+      console.log('🎮 GameScreen: Registering browser back handler for pending match');
+      pushNavigationState(handleBackToSetup, 'GameScreen-BackToSetup');
       
       // Clean up navigation state when component unmounts or match starts
       return () => {
+        console.log('🎮 GameScreen: Cleaning up browser back handler');
         if (removeFromNavigationStack) {
           removeFromNavigationStack();
         }
       };
+    } else {
+      console.log('🎮 GameScreen: NOT registering browser back handler', {
+        reason: matchState !== 'pending' ? 'matchState not pending' : 'pushNavigationState not available'
+      });
     }
   }, [matchState, pushNavigationState, removeFromNavigationStack, handleBackToSetup]);
 

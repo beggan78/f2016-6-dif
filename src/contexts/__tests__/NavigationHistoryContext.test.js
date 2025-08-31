@@ -527,4 +527,145 @@ describe('NavigationHistoryContext', () => {
       });
     });
   });
+
+  describe('Browser Back Navigation Fix - Real World Scenarios', () => {
+    it('should track PERIOD_SETUP for proper browser back navigation from GameScreen', () => {
+      const { result } = renderHook(() => useNavigationHistoryContext(), {
+        wrapper: TestWrapper
+      });
+
+      // Simulate user navigation flow: CONFIG -> PERIOD_SETUP -> GAME
+      act(() => {
+        result.current.navigateTo(VIEWS.CONFIG);
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.CONFIG);
+      expect(result.current.navigationHistory).toEqual([]);
+
+      // User clicks "Start Period Setup" -> navigates to PERIOD_SETUP
+      act(() => {
+        result.current.navigateTo(VIEWS.PERIOD_SETUP);
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.PERIOD_SETUP);
+      // PERIOD_SETUP should now be tracked (was previously UNTRACKED)
+      expect(result.current.navigationHistory).toEqual([VIEWS.CONFIG]);
+      expect(result.current.canNavigateBack).toBe(true);
+      expect(result.current.previousView).toBe(VIEWS.CONFIG);
+
+      // User clicks "Enter Game" -> navigates to GAME
+      act(() => {
+        result.current.navigateTo(VIEWS.GAME, null, { skipHistory: true }); // GAME is still untracked
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.GAME);
+      // History should still contain CONFIG since GAME is untracked
+      expect(result.current.navigationHistory).toEqual([VIEWS.CONFIG]);
+
+      // When browser back is pressed from GAME, it should go back to PERIOD_SETUP
+      act(() => {
+        const targetView = result.current.navigateBack();
+        expect(targetView).toBe(VIEWS.CONFIG); // This navigates back through history
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.CONFIG);
+      expect(result.current.navigationHistory).toEqual([]);
+    });
+
+    it('should support CONFIG -> PERIOD_SETUP -> GAME -> Back to PERIOD_SETUP flow', () => {
+      const { result } = renderHook(() => useNavigationHistoryContext(), {
+        wrapper: TestWrapper
+      });
+
+      // Step 1: Navigate CONFIG -> PERIOD_SETUP
+      act(() => {
+        result.current.navigateTo(VIEWS.CONFIG);
+      });
+      act(() => {
+        result.current.navigateTo(VIEWS.PERIOD_SETUP);
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.PERIOD_SETUP);
+      expect(result.current.navigationHistory).toEqual([VIEWS.CONFIG]);
+
+      // Step 2: Navigate PERIOD_SETUP -> GAME (GAME should be untracked)
+      act(() => {
+        result.current.navigateTo(VIEWS.GAME, null, { skipHistory: true });
+      });
+
+      // Step 3: Simulate direct navigation back to PERIOD_SETUP (as GameScreen would do)
+      act(() => {
+        result.current.navigateTo(VIEWS.PERIOD_SETUP);
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.PERIOD_SETUP);
+      // Should maintain the original history with CONFIG
+      expect(result.current.navigationHistory).toEqual([VIEWS.CONFIG, VIEWS.GAME]);
+    });
+
+    it('should handle browser back from different PERIOD_SETUP scenarios', () => {
+      const { result } = renderHook(() => useNavigationHistoryContext(), {
+        wrapper: TestWrapper
+      });
+
+      // Scenario 1: Direct navigation to PERIOD_SETUP (no history)
+      act(() => {
+        result.current.navigateTo(VIEWS.PERIOD_SETUP);
+      });
+
+      expect(result.current.canNavigateBack).toBe(false);
+      
+      act(() => {
+        const targetView = result.current.navigateBack();
+        expect(targetView).toBe(VIEWS.CONFIG); // Should use fallback
+      });
+
+      // Scenario 2: Navigation with history: CONFIG -> PERIOD_SETUP  
+      act(() => {
+        result.current.clearHistory();
+      });
+      
+      act(() => {
+        result.current.navigateTo(VIEWS.CONFIG);
+      });
+      act(() => {
+        result.current.navigateTo(VIEWS.PERIOD_SETUP);
+      });
+
+      expect(result.current.canNavigateBack).toBe(true);
+      expect(result.current.previousView).toBe(VIEWS.CONFIG);
+
+      act(() => {
+        const targetView = result.current.navigateBack();
+        expect(targetView).toBe(VIEWS.CONFIG);
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.CONFIG);
+    });
+
+    it('should verify GAME remains untracked for proper automatic transitions', () => {
+      const { result } = renderHook(() => useNavigationHistoryContext(), {
+        wrapper: TestWrapper
+      });
+
+      // GAME should still be untracked to preserve automatic transition behavior
+      act(() => {
+        result.current.navigateTo(VIEWS.CONFIG);
+      });
+      act(() => {
+        result.current.navigateTo(VIEWS.PERIOD_SETUP);
+      });
+      
+      expect(result.current.navigationHistory).toEqual([VIEWS.CONFIG]);
+
+      // Navigate to GAME - should not add PERIOD_SETUP to history (GAME is untracked)
+      act(() => {
+        result.current.navigateTo(VIEWS.GAME, null, { skipHistory: true });
+      });
+
+      expect(result.current.currentView).toBe(VIEWS.GAME);
+      // History should still just contain CONFIG (PERIOD_SETUP was not added because GAME is untracked)
+      expect(result.current.navigationHistory).toEqual([VIEWS.CONFIG]);
+    });
+  });
 });
