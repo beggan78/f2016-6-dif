@@ -337,7 +337,7 @@ export function GameScreen({
         setShowNewGameModal(false);
       }, 'GameScreen-CloseAbandonmentModal');
     }
-  }, [matchState, setShowNewGameModal, pushNavigationState]);
+  }, [setShowNewGameModal, pushNavigationState]);
 
   // Set up browser back button interception for both pending and running matches
   React.useEffect(() => {
