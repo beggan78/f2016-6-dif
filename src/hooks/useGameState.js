@@ -776,11 +776,14 @@ export function useGameState(navigateToView = null) {
       }, currentTeam.id);
 
       console.log('🚀 handleStartGame: Starting createMatch async call at', new Date().toISOString());
-      // Create match record in background (non-blocking)
-      createMatch(matchData)
+      // Create match record and initial player stats in background (non-blocking)
+      createMatch(matchData, allPlayers)
         .then((result) => {
           if (result.success) {
             console.log('✅ Match record created:', result.matchId);
+            if (result.playerStatsInserted) {
+              console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
+            }
             console.log('📝 CALLING setCurrentMatchId:', result.matchId);
             setCurrentMatchId(result.matchId);
           } else {

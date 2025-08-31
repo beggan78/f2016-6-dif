@@ -85,7 +85,8 @@ const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 - `formatPlayerMatchStats(player, matchId, goalScorers, matchEvents)` - Individual player stats for database
 
 #### Player Statistics Functions
-- `insertPlayerMatchStats(matchId, allPlayers, goalScorers, matchEvents)` - Bulk insert player statistics
+- `insertInitialPlayerMatchStats(matchId, allPlayers, captainId)` - Insert initial player stats when match starts
+- `updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalScorers, matchEvents)` - Update player performance stats when match finishes
 - `mapFormationPositionToRole(position, currentRole)` - Critical for accurate role mapping
 - `countPlayerGoals(goalScorers, matchEvents, playerId)` - Accurate goal counting across data sources
 
@@ -140,7 +141,7 @@ const handleSaveMatchHistory = async () => {
   
   // 2. Insert player statistics
   if (result.success) {
-    await insertPlayerMatchStats(currentMatchId, allPlayers, goalScorers, matchEvents);
+    await updatePlayerMatchStatsOnFinish(currentMatchId, allPlayers, goalScorers, matchEvents);
   }
 };
 ```
@@ -175,7 +176,7 @@ await updateMatchToFinished(currentMatchId, finalStats);
 ```javascript
 // When user clicks "Save Match to History"
 await updateMatchToConfirmed(currentMatchId);
-await insertPlayerMatchStats(currentMatchId, allPlayers, goalScorers, matchEvents);
+await updatePlayerMatchStatsOnFinish(currentMatchId, allPlayers, goalScorers, matchEvents);
 ```
 
 ### Error Handling Patterns

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { checkForRecoverableMatch, deleteAbandonedMatch, getRecoveryMatchData, validateRecoveryData } from '../services/matchRecoveryService';
-import { updateMatchToConfirmed, insertPlayerMatchStats } from '../services/matchStateManager';
+import { updateMatchToConfirmed, updatePlayerMatchStatsOnFinish } from '../services/matchStateManager';
 
 /**
  * Hook to manage match recovery functionality
@@ -109,15 +109,15 @@ export function useMatchRecovery({
         throw new Error(updateResult.error);
       }
 
-      // Insert player statistics
-      const statsResult = await insertPlayerMatchStats(
+      // Update player statistics with performance data (recovery scenario)
+      const statsResult = await updatePlayerMatchStatsOnFinish(
         recoveryMatch.id,
         localData.allPlayers || [],
-        localData.matchEvents || [],
-        localData.goalScorers || {}
+        localData.goalScorers || {},
+        localData.matchEvents || []
       );
       if (!statsResult.success) {
-        console.warn('⚠️ Failed to save player statistics:', statsResult.error);
+        console.warn('⚠️ Failed to update player statistics:', statsResult.error);
         // Continue even if stats fail - match is already saved
       }
 
