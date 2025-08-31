@@ -65,8 +65,7 @@ export function AuthProvider({ children }) {
   // Simple profile fetch function with timeout
   const fetchUserProfile = useCallback(async (userId, session = null) => {
     try {
-      debugLog(`Fetching profile for user: ${userId}`);
-      
+
       // Check cache first if this is a page refresh
       if (performance.navigation.type === 1) {
         const cachedProfile = getCachedUserProfile();
@@ -87,7 +86,6 @@ export function AuthProvider({ children }) {
       // Use provided session data to avoid auth deadlock
       if (!session) {
         // Fallback: only call auth methods if no session provided
-        debugLog('No session provided, fetching from auth client...');
         const sessionCheck = await supabase.auth.getSession();
         session = sessionCheck.data?.session;
       }
@@ -108,24 +106,18 @@ export function AuthProvider({ children }) {
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Profile fetch timeout')), 12000)
       );
-      
-      debugLog('Starting profile query with timeout...');
-      
+
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-      
-      debugLog('Profile query completed', { hasData: !!data, hasError: !!error });
-      
+
       if (error) {
         if (error.code === 'PGRST116') {
           // No profile found - this is OK, profile might not exist yet
-          debugLog('No profile found for user, continuing without profile');
           setUserProfile(null);
           return null;
         }
         throw error;
       }
       
-      debugLog('Profile fetched successfully', data);
       setUserProfile(data);
       
       // Cache the successful result
@@ -213,8 +205,6 @@ export function AuthProvider({ children }) {
 
   // Main auth state change handler
   useEffect(() => {
-    debugLog('Setting up auth state listener');
-    
     // Listen for auth changes - this will handle initial session too
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -297,13 +287,6 @@ export function AuthProvider({ children }) {
 
   // Auth functions
   const signUp = async (email, password, name) => {
-    console.log('=== SIGNUP DEBUG START ===');
-    console.log('signUp called with:', { 
-      email: email || 'undefined', 
-      password: password ? '[PROVIDED]' : 'undefined', 
-      name: name || 'undefined'
-    });
-    
     try {
       setLoading(true);
       setAuthError(null);
@@ -316,22 +299,8 @@ export function AuthProvider({ children }) {
         }
       };
       
-      console.log('signUp params:', {
-        email: signUpParams.email,
-        password: signUpParams.password ? '[PROVIDED]' : 'undefined',
-        options: signUpParams.options
-      });
-      
-      console.log('About to call supabase.auth.signUp...');
-      
       const { data, error } = await supabase.auth.signUp(signUpParams);
       
-      console.log('supabase.auth.signUp completed:', { 
-        hasData: !!data, 
-        hasError: !!error,
-        errorMessage: error?.message 
-      });
-
       if (error) throw error;
 
       // Check if email confirmation is required
@@ -345,7 +314,6 @@ export function AuthProvider({ children }) {
       }
 
       // User was created and signed in immediately
-      console.log('signUp success, returning user');
       return { user: data.user, error: null };
     } catch (error) {
       console.log('=== SIGNUP ERROR CAUGHT ===');

@@ -483,7 +483,7 @@ describe('useTimers', () => {
       });
 
       act(() => {
-        result.current.resetAllTimers();
+        result.current.clearAllTimersForNewGame();
       });
 
       expect(clearIntervalSpy).toHaveBeenCalled();

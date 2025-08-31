@@ -32,6 +32,7 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
     }
 
     const handlePopState = (event) => {
+
       // If we have navigation handlers registered, execute the topmost handler instead of navigating
       if (navigationStack.current.length > 0) {
         event.preventDefault();
@@ -64,14 +65,18 @@ export function useBrowserBackIntercept(globalNavigationHandler) {
     };
   }, [globalNavigationHandler]);
 
-  const pushNavigationState = (navigationCallback) => {
+  const pushNavigationState = (navigationCallback, handlerName = 'unnamed') => {
     if (typeof navigationCallback !== 'function') {
       console.warn('pushNavigationState requires a function to handle navigation');
       return;
     }
 
-    // Add the navigation handler to our stack
-    navigationStack.current.push({ navigationHandler: navigationCallback });
+    // Add the navigation handler to our stack with identification
+    navigationStack.current.push({ 
+      navigationHandler: navigationCallback,
+      handlerName: handlerName,
+      registeredAt: Date.now()
+    });
     
     // Push a new browser history state
     window.history.pushState(

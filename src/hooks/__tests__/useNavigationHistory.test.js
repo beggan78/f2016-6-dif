@@ -192,7 +192,7 @@ describe('useNavigationHistory Hook', () => {
         wrapper: TestWrapper
       });
 
-      expect(mockPushNavigationState).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockPushNavigationState).toHaveBeenCalledWith(expect.any(Function), 'NavigationHistory-BackHandler');
     });
 
     it('should cleanup browser back handler on unmount', () => {

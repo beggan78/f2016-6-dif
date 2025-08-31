@@ -849,7 +849,7 @@ export function PeriodSetupScreen({
       )}
 
       <Button onClick={handleStartGame} disabled={!isFormationComplete()} Icon={Play}>
-        Start Period {currentPeriodNumber}
+        Enter Game
       </Button>
 
       {/* Debug Mode Randomize Formation Button - Only for first period */}
