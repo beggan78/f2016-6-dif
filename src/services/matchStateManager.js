@@ -5,7 +5,7 @@
  * - running: Match is actively being played
  * - finished: Match completed but not yet saved to history  
  * - confirmed: Match saved to history by user
- * - pending: Unused state (reserved for future features)
+ * - pending: Match created but not yet started (user hasn't clicked Start Match button)
  */
 
 import { supabase } from '../lib/supabase';
@@ -48,7 +48,7 @@ export async function createMatch(matchData) {
       type: matchData.type,
       opponent: matchData.opponent || null,
       captain: matchData.captainId || null,
-      state: 'running' // Explicit state (though it's also the default)
+      state: 'pending' // Match created but not yet started
     };
 
     if (process.env.NODE_ENV === 'development') {
@@ -76,6 +76,52 @@ export async function createMatch(matchData) {
 
   } catch (error) {
     console.error('❌ Exception while creating match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Update match from pending to running state when user clicks Start Match
+ * @param {string} matchId - Match ID
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function updateMatchToRunning(matchId) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🏃 Starting match:', matchId);
+    }
+
+    const { error } = await supabase
+      .from('match')
+      .update({ 
+        state: 'running',
+        updated_at: 'now()'
+      })
+      .eq('id', matchId)
+      .eq('state', 'pending'); // Only update if currently pending
+
+    if (error) {
+      console.error('❌ Failed to start match:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Exception while starting match:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`

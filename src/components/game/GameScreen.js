@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Square, Pause, Play, Undo2, RefreshCcw } from 'lucide-react';
+import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw, ArrowLeft } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
+import { VIEWS } from '../../constants/viewConstants';
 import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
@@ -24,6 +25,13 @@ import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
 import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtils';
 
 // Animation timing constants are now imported from animationSupport
+
+const getOrdinalSuffix = (number) => {
+  if (number % 10 === 1 && number % 100 !== 11) return `${number}st`;
+  if (number % 10 === 2 && number % 100 !== 12) return `${number}nd`;
+  if (number % 10 === 3 && number % 100 !== 13) return `${number}rd`;
+  return `${number}th`;
+};
 
 export function GameScreen({ 
   currentPeriodNumber, 
@@ -65,7 +73,12 @@ export function GameScreen({
   matchEvents,
   goalScorers,
   matchStartTime,
-  getPlayerName
+  matchState,
+  handleActualMatchStart,
+  periodDurationMinutes,
+  getPlayerName,
+  setView,
+  setShowNewGameModal
 }) {
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
@@ -77,6 +90,9 @@ export function GameScreen({
   const { scoreRowRef, displayOwnTeam, displayOpponentTeam } = useTeamNameAbbreviation(
     ownTeamName, opponentTeamName, ownScore, opponentScore
   );
+
+  // Animation state for start button
+  const [isStartAnimating, setIsStartAnimating] = React.useState(false);
 
   // Helper functions  
   const getPlayerNameById = React.useCallback((id) => getPlayerName(id), [getPlayerName]);
@@ -289,9 +305,146 @@ export function GameScreen({
     }
   };
 
+  // Handle animated match start with 2-second transition
+  const handleAnimatedMatchStart = () => {
+    if (isStartAnimating) return; // Prevent multiple clicks during animation
+    
+    // Start match immediately - timers begin counting
+    handleActualMatchStart();
+    
+    // Start visual animation
+    setIsStartAnimating(true);
+    
+    // After animation completes, clean up animation state
+    setTimeout(() => {
+      setIsStartAnimating(false);
+    }, 2000);
+  };
+
+  // Handle back navigation to setup screen - useCallback to prevent re-registration on timer re-renders
+  const handleBackToSetup = React.useCallback(() => {
+    setView(VIEWS.PERIOD_SETUP);
+  }, [setView]);
+
+  // Handle back navigation during running match - show match abandonment warning
+  const handleMatchAbandonmentWarning = React.useCallback(() => {
+    // Use the existing "Start a new game?" modal from App.js
+    setShowNewGameModal(true);
+    
+    // Register the modal close handler with browser back system
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        setShowNewGameModal(false);
+      }, 'GameScreen-CloseAbandonmentModal');
+    }
+  }, [setShowNewGameModal, pushNavigationState]);
+
+  // Set up browser back button interception for both pending and running matches
+  React.useEffect(() => {
+    if (matchState === 'pending' && pushNavigationState) {
+      pushNavigationState(handleBackToSetup, 'GameScreen-BackToSetup');
+      
+      // Clean up navigation state when component unmounts or match state changes
+      return () => {
+        if (removeFromNavigationStack) {
+          removeFromNavigationStack();
+        }
+      };
+    } else if (matchState === 'running' && pushNavigationState) {
+      pushNavigationState(handleMatchAbandonmentWarning, 'GameScreen-MatchAbandonment');
+      
+      // Clean up navigation state when component unmounts or match state changes
+      return () => {
+        if (removeFromNavigationStack) {
+          removeFromNavigationStack();
+        }
+      };
+    }
+  }, [matchState, pushNavigationState, removeFromNavigationStack, handleBackToSetup, handleMatchAbandonmentWarning]);
+
+  // Calculate display values for timers - show initial values when match is pending or during animation
+  const displayMatchTimerSeconds = (matchState === 'pending' || isStartAnimating) 
+    ? periodDurationMinutes * 60 
+    : matchTimerSeconds;
+  const displaySubTimerSeconds = (matchState === 'pending' || isStartAnimating) 
+    ? 0 
+    : subTimerSeconds;
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      {/* Start Match Overlay - shown when match is pending or during animation */}
+      {(matchState === 'pending' || isStartAnimating) && (
+        <div className={`absolute inset-0 z-50 flex items-center justify-center p-8 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
+          {/* Subtle Glass effect backdrop - less blurry so GameScreen is visible */}
+          <div className={`absolute inset-0 bg-black transition-all duration-[2000ms] ${isStartAnimating ? 'bg-opacity-0 backdrop-blur-none' : 'bg-opacity-30 backdrop-blur-sm'}`} />
+          <div className={`absolute inset-0 bg-gradient-to-br from-sky-900/10 to-slate-900/15 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`} />
+          
+          {/* Cool Clickable Icon */}
+          <div className={`relative z-10 text-center transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
+            {/* Main Clickable Icon */}
+            <div
+              onClick={handleAnimatedMatchStart}
+              className={`group relative inline-block select-none transition-opacity duration-[2000ms] ${isStartAnimating ? 'cursor-default opacity-0' : 'cursor-pointer opacity-100'}`}
+            >
+              {/* Multi-layer Glow Effects */}
+              <div className="absolute inset-0 animate-pulse">
+                <div className="absolute inset-0 bg-sky-400 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-sky-300 rounded-full blur-2xl opacity-30 group-hover:opacity-60 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-white rounded-full blur-xl opacity-10 group-hover:opacity-30 transition-opacity duration-200" />
+              </div>
+              
+              {/* Icon with Effects */}
+              <SquarePlay 
+                size={160} 
+                className="relative text-sky-400 hover:text-sky-300 active:text-sky-500 
+                          drop-shadow-2xl 
+                          transform group-hover:scale-110 group-active:scale-95 
+                          transition-all duration-300 ease-out
+                          filter group-hover:brightness-110 group-active:brightness-90
+                          group-hover:drop-shadow-[0_0_30px_rgba(56,189,248,0.8)]
+                          group-active:drop-shadow-[0_0_50px_rgba(56,189,248,1)]" 
+              />
+              
+              {/* Ripple Effect on Click */}
+              <div className={`absolute inset-0 rounded-full transition-opacity ${isStartAnimating ? 'opacity-100 animate-ping duration-[2000ms]' : 'opacity-0 group-active:opacity-100 group-active:animate-ping duration-75'} bg-sky-400/20`} />
+              {/* Extended ripple effects during animation */}
+              {isStartAnimating && (
+                <>
+                  <div className="absolute inset-0 rounded-full opacity-60 animate-ping bg-sky-300/15 animation-delay-300" style={{animationDuration: '2000ms'}} />
+                  <div className="absolute inset-0 rounded-full opacity-40 animate-ping bg-sky-200/10 animation-delay-600" style={{animationDuration: '2000ms'}} />
+                </>
+              )}
+            </div>
+            
+            {/* Descriptive Text */}
+            <div className={`mt-8 space-y-2 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
+              <p className="text-3xl font-bold text-white drop-shadow-lg tracking-wide">
+                Start {currentPeriodNumber === 1 ? 'Match' : `${getOrdinalSuffix(currentPeriodNumber)} Period`}
+              </p>
+              <p className="text-center text-sky-100/70 text-lg font-medium tracking-wide drop-shadow-sm">
+                Tap to begin the period and start timers
+              </p>
+            </div>
+            
+            {/* Back to Setup Button */}
+            <div className={`mt-6 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
+              <div
+                onClick={handleBackToSetup}
+                className="group relative inline-flex items-center justify-center space-x-2 px-4 py-2 cursor-pointer select-none
+                          text-sky-100/60 hover:text-sky-100/90 
+                          bg-white/5 hover:bg-white/10 rounded-md
+                          transform hover:scale-105 active:scale-95
+                          transition-all duration-200 ease-out
+                          drop-shadow-sm hover:drop-shadow-md"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span className="text-sm font-medium tracking-wide">Back to Setup</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber}</h2>
 
       
@@ -300,15 +453,15 @@ export function GameScreen({
       <div className="grid grid-cols-2 gap-4 text-center">
         <div className="p-2 bg-slate-700 rounded-lg">
           <p className="text-xs text-sky-200 mb-0.5">Match Clock</p>
-          <p className={`text-2xl font-mono ${matchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
-            {matchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(matchTimerSeconds))}
+          <p className={`text-2xl font-mono ${displayMatchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
+            {displayMatchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(displayMatchTimerSeconds))}
           </p>
         </div>
         <div className="p-2 bg-slate-700 rounded-lg relative">
           <p className="text-xs text-sky-200 mb-0.5">Substitution Timer</p>
           <div className="relative flex items-center justify-center">
-            <p className={`text-2xl font-mono ${alertMinutes > 0 && subTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
-              {formatTime(subTimerSeconds)}
+            <p className={`text-2xl font-mono ${alertMinutes > 0 && displaySubTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
+              {formatTime(displaySubTimerSeconds)}
             </p>
             <button
               onClick={isSubTimerPaused ? timerHandlers.handleResumeTimer : timerHandlers.handlePauseTimer}
