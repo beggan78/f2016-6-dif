@@ -18,6 +18,9 @@
 # Supabase
 db-schema.sql
 
+# Claude
+.mcp.json
+
 # misc
 .DS_Store
 .env
