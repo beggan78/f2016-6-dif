@@ -632,55 +632,96 @@ export function useGameState(navigateToView = null) {
     } : teamConfig;
     
     // Initialize player statuses and roles for the period
-    setAllPlayers(prevPlayers => prevPlayers.map(p => {
-      // Use unified role initialization function
-      const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
+    setAllPlayers(prevPlayers => {
+      const updatedPlayers = prevPlayers.map(p => {
+        // Use unified role initialization function
+        const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
 
-      if (selectedSquadIds.includes(p.id)) {
-        const initialStats = { ...p.stats };
-        
-        // SAFEGUARD: Clear any stale startedMatchAs values for new games
-        if (currentPeriodNumber === 1) {
-          initialStats.startedMatchAs = null;
-          initialStats.startedAtPosition = null; // Clear formation position too
-        }
-        
-        if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
-          let newStartedMatchAs = null;
-          if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
-          else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
-          else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+        if (selectedSquadIds.includes(p.id)) {
+          const initialStats = { ...p.stats };
           
-          initialStats.startedMatchAs = newStartedMatchAs;
-
-          // Store the specific formation position for formation-aware role mapping
-          initialStats.startedAtPosition = currentPairKey;
-        }
-        
-        return {
-          ...p,
-          stats: {
-            ...initialStats,
-            currentRole: currentRole,
-            currentStatus: currentStatus,
-            lastStintStartTimeEpoch: currentTimeEpoch,
-            currentPairKey: currentPairKey,
+          // SAFEGUARD: Clear any stale startedMatchAs values for new games
+          if (currentPeriodNumber === 1) {
+            initialStats.startedMatchAs = null;
+            initialStats.startedAtPosition = null; // Clear formation position too
           }
-        };
-      } else {
-        // SAFEGUARD: Ensure non-selected players have null startedMatchAs
-        if (p.stats?.startedMatchAs !== null) {
+          
+          if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
+            let newStartedMatchAs = null;
+            if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
+            else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
+            else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+            
+            initialStats.startedMatchAs = newStartedMatchAs;
+
+            // Store the specific formation position for formation-aware role mapping
+            initialStats.startedAtPosition = currentPairKey;
+          }
+          
           return {
             ...p,
             stats: {
-              ...p.stats,
-              startedMatchAs: null
+              ...initialStats,
+              currentRole: currentRole,
+              currentStatus: currentStatus,
+              lastStintStartTimeEpoch: currentTimeEpoch,
+              currentPairKey: currentPairKey,
             }
           };
+        } else {
+          // SAFEGUARD: Ensure non-selected players have null startedMatchAs
+          if (p.stats?.startedMatchAs !== null) {
+            return {
+              ...p,
+              stats: {
+                ...p.stats,
+                startedMatchAs: null
+              }
+            };
+          }
         }
+        return p;
+      });
+
+      // CREATE MATCH RECORD when starting first period - use updated players data
+      if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
+        setMatchCreationAttempted(true); // Prevent duplicate attempts
+        
+        // Format match data from current game state
+        const matchData = formatMatchDataFromGameState({
+          teamConfig,
+          selectedFormation,
+          periods: numPeriods,
+          periodDurationMinutes,
+          selectedSquadIds,
+          allPlayers: updatedPlayers, // Use updated players with proper startedMatchAs values
+          opponentTeam,
+          captainId,
+          matchType
+        }, currentTeam.id);
+
+        // Create match record and initial player stats in background (non-blocking)
+        createMatch(matchData, updatedPlayers) // Use updated players data
+          .then((result) => {
+            if (result.success) {
+              console.log('✅ Match record created:', result.matchId);
+              if (result.playerStatsInserted) {
+                console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
+              }
+              setCurrentMatchId(result.matchId);
+            } else {
+              console.warn('⚠️  Failed to create match record:', result.error);
+              // Continue with game anyway - match creation is optional
+            }
+          })
+          .catch((error) => {
+            console.warn('⚠️  Exception during match creation:', error);
+            // Continue with game anyway - match creation is optional
+          });
       }
-      return p;
-    }));
+
+      return updatedPlayers;
+    });
 
     // Initialize rotation queue for individual modes only if not already set by formation generator
     // For Period 1 or when formation generator hasn't provided a queue
@@ -745,44 +786,6 @@ export function useGameState(navigateToView = null) {
       } else {
         console.warn('🔧 [handleStartGame] Could not initialize rotation queue - incomplete formation');
       }
-    }
-
-    // CREATE MATCH RECORD when starting first period
-    if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
-
-      setMatchCreationAttempted(true); // Prevent duplicate attempts
-      
-      // Format match data from current game state
-      const matchData = formatMatchDataFromGameState({
-        teamConfig,
-        selectedFormation,
-        periods: numPeriods,
-        periodDurationMinutes,
-        selectedSquadIds,
-        allPlayers,
-        opponentTeam,
-        captainId,
-        matchType
-      }, currentTeam.id);
-
-      // Create match record and initial player stats in background (non-blocking)
-      createMatch(matchData, allPlayers)
-        .then((result) => {
-          if (result.success) {
-            console.log('✅ Match record created:', result.matchId);
-            if (result.playerStatsInserted) {
-              console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
-            }
-            setCurrentMatchId(result.matchId);
-          } else {
-            console.warn('⚠️  Failed to create match record:', result.error);
-            // Continue with game anyway - match creation is optional
-          }
-        })
-        .catch((error) => {
-          console.warn('⚠️  Exception during match creation:', error);
-          // Continue with game anyway - match creation is optional
-        });
     }
 
     // Set match state to pending (not running yet - user needs to click Start Match)
