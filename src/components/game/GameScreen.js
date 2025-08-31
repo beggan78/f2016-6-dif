@@ -409,7 +409,7 @@ export function GameScreen({
                 onClick={handleBackToSetup}
                 className="group relative inline-flex items-center justify-center space-x-2 px-4 py-2 cursor-pointer select-none
                           text-sky-100/60 hover:text-sky-100/90 
-                          hover:bg-white/5 rounded-md
+                          bg-white/5 hover:bg-white/10 rounded-md
                           transform hover:scale-105 active:scale-95
                           transition-all duration-200 ease-out
                           drop-shadow-sm hover:drop-shadow-md"
