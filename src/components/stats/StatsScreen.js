@@ -6,7 +6,7 @@ import { FeatureGate } from '../auth/FeatureGate';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
 import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
-import { updateMatchToConfirmed, insertPlayerMatchStats } from '../../services/matchStateManager';
+import { updateMatchToConfirmed } from '../../services/matchStateManager';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -118,36 +118,17 @@ export function StatsScreen({
       if (result.success) {
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Match confirmed successfully');
-        }
-        
-        // Insert player match statistics (with updated fair play award status)
-        if (process.env.NODE_ENV === 'development') {
-          console.log('📊 Inserting player match statistics...');
-        }
-        
-        // Use the updated allPlayers state that includes the fair play award
-        const updatedPlayers = updatePlayersWithFairPlayAward(allPlayers, fairPlayAwardPlayerId);
-          
-        const playerStatsResult = await insertPlayerMatchStats(currentMatchId, updatedPlayers, goalScorers, matchEvents);
-        
-        if (playerStatsResult.success) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`✅ Player stats inserted: ${playerStatsResult.inserted} players`);
+          if (fairPlayAwardPlayerId) {
+            console.log('🏆 Fair play award updated in player stats');
           }
-          setSaveSuccess(true);
-          
-          // Clear success message after 3 seconds
-          setTimeout(() => {
-            setSaveSuccess(false);
-          }, 3000);
-        } else {
-          console.warn('⚠️  Match confirmed but failed to save player stats:', playerStatsResult.error);
-          // Still show success since match was confirmed, but log the player stats issue
-          setSaveSuccess(true);
-          setTimeout(() => {
-            setSaveSuccess(false);
-          }, 3000);
         }
+        
+        setSaveSuccess(true);
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 3000);
       } else {
         setSaveError(result.error || 'Failed to confirm match');
         console.error('❌ Failed to confirm match:', result);

@@ -21,7 +21,7 @@ import {
   createMockPlayers,
   userInteractions
 } from '../../__tests__/componentTestUtils';
-import { updateMatchToConfirmed, insertPlayerMatchStats } from '../../../services/matchStateManager';
+import { updateMatchToConfirmed } from '../../../services/matchStateManager';
 import { calculateRolePoints } from '../../../utils/rolePointUtils';
 
 // Mock utility functions
@@ -49,8 +49,7 @@ jest.mock('../../../utils/rolePointUtils', () => ({
 
 // Mock matchStateManager functions
 jest.mock('../../../services/matchStateManager', () => ({
-  updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true }),
-  insertPlayerMatchStats: jest.fn().mockResolvedValue({ success: true, inserted: 7 })
+  updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true })
 }));
 
 // Mock useAuth context
@@ -158,7 +157,6 @@ describe('StatsScreen', () => {
     jest.clearAllMocks();
     navigator.clipboard.writeText.mockResolvedValue();
     updateMatchToConfirmed.mockResolvedValue({ success: true });
-    insertPlayerMatchStats.mockResolvedValue({ success: true, inserted: 5 });
     
     // Set up rolePointUtils mock explicitly
     calculateRolePoints.mockImplementation(() => ({
@@ -354,7 +352,7 @@ describe('StatsScreen', () => {
       expect(updatedPlayers.find(p => p.id === secondPlayer.id).hasFairPlayAward).toBe(false);
     });
 
-    it('should pass correct player data with hasFairPlayAward flag to insertPlayerMatchStats', async () => {
+    it('should pass correct fair play award player ID to updateMatchToConfirmed', async () => {
       render(<StatsScreen {...defaultProps} />);
       
       const selectedPlayer = mockPlayers[1]; // Select second player
@@ -368,29 +366,14 @@ describe('StatsScreen', () => {
       
       // Wait for database calls to complete
       await waitFor(() => {
-        expect(insertPlayerMatchStats).toHaveBeenCalled();
+        expect(updateMatchToConfirmed).toHaveBeenCalled();
       });
       
-      // Verify insertPlayerMatchStats was called with correct parameters
-      expect(insertPlayerMatchStats).toHaveBeenCalledWith(
+      // Verify updateMatchToConfirmed was called with correct parameters
+      expect(updateMatchToConfirmed).toHaveBeenCalledWith(
         'test-match-123', // matchId
-        expect.any(Array), // updatedPlayers array
-        {}, // goalScorers
-        [] // matchEvents
+        selectedPlayer.id // fairPlayAwardPlayerId
       );
-      
-      // Get the player data that was passed to insertPlayerMatchStats
-      const playersPassedToInsert = insertPlayerMatchStats.mock.calls[0][1];
-      
-      // Verify the selected player has hasFairPlayAward: true
-      const awardedPlayerInInsert = playersPassedToInsert.find(p => p.id === selectedPlayer.id);
-      expect(awardedPlayerInInsert.hasFairPlayAward).toBe(true);
-      
-      // Verify other players have hasFairPlayAward: false
-      const otherPlayersInInsert = playersPassedToInsert.filter(p => p.id !== selectedPlayer.id);
-      otherPlayersInInsert.forEach(player => {
-        expect(player.hasFairPlayAward).toBe(false);
-      });
     });
   });
 });
