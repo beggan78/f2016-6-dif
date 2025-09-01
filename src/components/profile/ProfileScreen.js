@@ -455,7 +455,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
                   size="sm"
                   className="mx-auto"
                 >
-                  Create Your First Team
+                  Create or Join a Team
                 </Button>
               </div>
             )}

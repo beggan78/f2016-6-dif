@@ -54,14 +54,14 @@ describe('roleConstants', () => {
     });
 
     it('should handle null/undefined gracefully', () => {
-      expect(roleToDatabase(null)).toBe('substitute');
-      expect(roleToDatabase(undefined)).toBe('substitute');
-      expect(roleToDatabase('')).toBe('substitute');
+      expect(roleToDatabase(null)).toBe('unknown');
+      expect(roleToDatabase(undefined)).toBe('unknown');
+      expect(roleToDatabase('')).toBe('unknown');
     });
 
     it('should handle unknown roles gracefully', () => {
-      expect(roleToDatabase('UNKNOWN_ROLE')).toBe('substitute');
-      expect(roleToDatabase('invalid')).toBe('substitute');
+      expect(roleToDatabase('UNKNOWN_ROLE')).toBe('unknown');
+      expect(roleToDatabase('invalid')).toBe('unknown');
     });
   });
 
@@ -81,9 +81,9 @@ describe('roleConstants', () => {
     });
 
     it('should handle null/undefined gracefully', () => {
-      expect(roleFromDatabase(null)).toBe(PLAYER_ROLES.SUBSTITUTE);
-      expect(roleFromDatabase(undefined)).toBe(PLAYER_ROLES.SUBSTITUTE);
-      expect(roleFromDatabase('')).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(roleFromDatabase(null)).toBe(PLAYER_ROLES.UNKNOWN);
+      expect(roleFromDatabase(undefined)).toBe(PLAYER_ROLES.UNKNOWN);
+      expect(roleFromDatabase('')).toBe(PLAYER_ROLES.UNKNOWN);
     });
   });
 
@@ -98,8 +98,8 @@ describe('roleConstants', () => {
     });
 
     it('should handle null/undefined gracefully', () => {
-      expect(roleToDisplay(null)).toBe('Substitute');
-      expect(roleToDisplay(undefined)).toBe('Substitute');
+      expect(roleToDisplay(null)).toBe('Unknown');
+      expect(roleToDisplay(undefined)).toBe('Unknown');
     });
   });
 
@@ -129,14 +129,14 @@ describe('roleConstants', () => {
     });
 
     it('should handle null/undefined gracefully', () => {
-      expect(normalizeRole(null)).toBe(PLAYER_ROLES.SUBSTITUTE);
-      expect(normalizeRole(undefined)).toBe(PLAYER_ROLES.SUBSTITUTE);
-      expect(normalizeRole('')).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(normalizeRole(null)).toBe(PLAYER_ROLES.UNKNOWN);
+      expect(normalizeRole(undefined)).toBe(PLAYER_ROLES.UNKNOWN);
+      expect(normalizeRole('')).toBe(PLAYER_ROLES.UNKNOWN);
     });
 
     it('should handle unknown values gracefully', () => {
-      expect(normalizeRole('unknown')).toBe(PLAYER_ROLES.SUBSTITUTE);
-      expect(normalizeRole('invalid_role')).toBe(PLAYER_ROLES.SUBSTITUTE);
+      expect(normalizeRole('unknown')).toBe(PLAYER_ROLES.UNKNOWN);
+      expect(normalizeRole('invalid_role')).toBe(PLAYER_ROLES.UNKNOWN);
     });
   });
 

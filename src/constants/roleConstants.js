@@ -17,7 +17,8 @@ export const DB_ROLE_VALUES = {
   [PLAYER_ROLES.ATTACKER]: 'attacker',
   [PLAYER_ROLES.MIDFIELDER]: 'midfielder',
   [PLAYER_ROLES.SUBSTITUTE]: 'substitute',
-  [PLAYER_ROLES.FIELD_PLAYER]: 'defender' // Default mapping for generic field players
+  [PLAYER_ROLES.FIELD_PLAYER]: 'defender', // Default mapping for generic field players
+  [PLAYER_ROLES.UNKNOWN]: 'unknown' // Used when position mapping fails
 };
 
 /**
@@ -29,7 +30,8 @@ export const DISPLAY_ROLE_VALUES = {
   [PLAYER_ROLES.ATTACKER]: 'Attacker', 
   [PLAYER_ROLES.MIDFIELDER]: 'Midfielder',
   [PLAYER_ROLES.SUBSTITUTE]: 'Substitute',
-  [PLAYER_ROLES.FIELD_PLAYER]: 'Field'
+  [PLAYER_ROLES.FIELD_PLAYER]: 'Field',
+  [PLAYER_ROLES.UNKNOWN]: 'Unknown'
 };
 
 /**
@@ -40,7 +42,8 @@ export const DB_TO_ROLE_MAP = {
   'defender': PLAYER_ROLES.DEFENDER,
   'attacker': PLAYER_ROLES.ATTACKER,
   'midfielder': PLAYER_ROLES.MIDFIELDER,
-  'substitute': PLAYER_ROLES.SUBSTITUTE
+  'substitute': PLAYER_ROLES.SUBSTITUTE,
+  'unknown': PLAYER_ROLES.UNKNOWN
 };
 
 /**
@@ -52,7 +55,8 @@ export const DISPLAY_TO_ROLE_MAP = {
   'Attacker': PLAYER_ROLES.ATTACKER,
   'Midfielder': PLAYER_ROLES.MIDFIELDER,
   'Substitute': PLAYER_ROLES.SUBSTITUTE,
-  'Field': PLAYER_ROLES.FIELD_PLAYER
+  'Field': PLAYER_ROLES.FIELD_PLAYER,
+  'Unknown': PLAYER_ROLES.UNKNOWN
 };
 
 /**
@@ -64,7 +68,8 @@ export const GOAL_SCORING_PRIORITY = {
   [PLAYER_ROLES.MIDFIELDER]: 2,
   [PLAYER_ROLES.DEFENDER]: 3,
   [PLAYER_ROLES.GOALIE]: 4,
-  [PLAYER_ROLES.SUBSTITUTE]: 5
+  [PLAYER_ROLES.SUBSTITUTE]: 5,
+  [PLAYER_ROLES.UNKNOWN]: 5 // Same as substitute priority for unknown roles
 };
 
 /**
@@ -74,14 +79,14 @@ export const GOAL_SCORING_PRIORITY = {
  */
 export function roleToDatabase(role) {
   if (!role) {
-    console.warn('roleToDatabase: No role provided, defaulting to substitute');
-    return DB_ROLE_VALUES[PLAYER_ROLES.SUBSTITUTE];
+    console.warn('roleToDatabase: No role provided, defaulting to unknown');
+    return DB_ROLE_VALUES[PLAYER_ROLES.UNKNOWN];
   }
   
   const dbValue = DB_ROLE_VALUES[role];
   if (!dbValue) {
-    console.warn(`roleToDatabase: Unknown role "${role}", defaulting to substitute`);
-    return DB_ROLE_VALUES[PLAYER_ROLES.SUBSTITUTE];
+    console.warn(`roleToDatabase: Unknown role "${role}", defaulting to unknown`);
+    return DB_ROLE_VALUES[PLAYER_ROLES.UNKNOWN];
   }
   
   return dbValue;
@@ -94,14 +99,14 @@ export function roleToDatabase(role) {
  */
 export function roleFromDatabase(dbRole) {
   if (!dbRole) {
-    console.warn('roleFromDatabase: No role provided, defaulting to SUBSTITUTE');
-    return PLAYER_ROLES.SUBSTITUTE;
+    console.warn('roleFromDatabase: No role provided, defaulting to UNKNOWN');
+    return PLAYER_ROLES.UNKNOWN;
   }
   
   const role = DB_TO_ROLE_MAP[dbRole.toLowerCase()];
   if (!role) {
-    console.warn(`roleFromDatabase: Unknown database role "${dbRole}", defaulting to SUBSTITUTE`);
-    return PLAYER_ROLES.SUBSTITUTE;
+    console.warn(`roleFromDatabase: Unknown database role "${dbRole}", defaulting to UNKNOWN`);
+    return PLAYER_ROLES.UNKNOWN;
   }
   
   return role;
@@ -114,14 +119,14 @@ export function roleFromDatabase(dbRole) {
  */
 export function roleToDisplay(role) {
   if (!role) {
-    console.warn('roleToDisplay: No role provided, defaulting to Substitute');
-    return DISPLAY_ROLE_VALUES[PLAYER_ROLES.SUBSTITUTE];
+    console.warn('roleToDisplay: No role provided, defaulting to Unknown');
+    return DISPLAY_ROLE_VALUES[PLAYER_ROLES.UNKNOWN];
   }
   
   const displayValue = DISPLAY_ROLE_VALUES[role];
   if (!displayValue) {
-    console.warn(`roleToDisplay: Unknown role "${role}", defaulting to Substitute`);
-    return DISPLAY_ROLE_VALUES[PLAYER_ROLES.SUBSTITUTE];
+    console.warn(`roleToDisplay: Unknown role "${role}", defaulting to Unknown`);
+    return DISPLAY_ROLE_VALUES[PLAYER_ROLES.UNKNOWN];
   }
   
   return displayValue;
@@ -134,14 +139,14 @@ export function roleToDisplay(role) {
  */
 export function roleFromDisplay(displayRole) {
   if (!displayRole) {
-    console.warn('roleFromDisplay: No role provided, defaulting to SUBSTITUTE');
-    return PLAYER_ROLES.SUBSTITUTE;
+    console.warn('roleFromDisplay: No role provided, defaulting to UNKNOWN');
+    return PLAYER_ROLES.UNKNOWN;
   }
   
   const role = DISPLAY_TO_ROLE_MAP[displayRole];
   if (!role) {
-    console.warn(`roleFromDisplay: Unknown display role "${displayRole}", defaulting to SUBSTITUTE`);
-    return PLAYER_ROLES.SUBSTITUTE;
+    console.warn(`roleFromDisplay: Unknown display role "${displayRole}", defaulting to UNKNOWN`);
+    return PLAYER_ROLES.UNKNOWN;
   }
   
   return role;
@@ -155,7 +160,7 @@ export function roleFromDisplay(displayRole) {
  */
 export function normalizeRole(anyRole) {
   if (!anyRole) {
-    return PLAYER_ROLES.SUBSTITUTE;
+    return PLAYER_ROLES.UNKNOWN;
   }
   
   const roleStr = String(anyRole).trim();
@@ -183,8 +188,8 @@ export function normalizeRole(anyRole) {
     return upperRole;
   }
   
-  console.warn(`normalizeRole: Could not normalize role "${anyRole}", defaulting to SUBSTITUTE`);
-  return PLAYER_ROLES.SUBSTITUTE;
+  console.warn(`normalizeRole: Could not normalize role "${anyRole}", defaulting to UNKNOWN`);
+  return PLAYER_ROLES.UNKNOWN;
 }
 
 /**
@@ -205,7 +210,7 @@ export function getRolePriority(role) {
   const priority = GOAL_SCORING_PRIORITY[role];
   if (priority === undefined) {
     console.warn(`getRolePriority: Unknown role "${role}", returning lowest priority`);
-    return GOAL_SCORING_PRIORITY[PLAYER_ROLES.SUBSTITUTE];
+    return GOAL_SCORING_PRIORITY[PLAYER_ROLES.UNKNOWN];
   }
   return priority;
 }

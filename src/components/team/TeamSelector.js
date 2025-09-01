@@ -137,7 +137,7 @@ export function TeamSelector({ onCreateNew }) {
             variant="primary"
             Icon={Plus}
           >
-            Create Your First Team
+            Create or Join a Team
           </Button>
         </div>
       )}

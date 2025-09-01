@@ -13,7 +13,7 @@ import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 
 /**
- * Create a new match record when the first period starts
+ * Create a new match record when the first period starts and insert initial player stats
  * @param {Object} matchData - Match configuration and team data
  * @param {string} matchData.teamId - Team ID (required)
  * @param {string} matchData.format - Match format (required, e.g., '5v5')
@@ -23,9 +23,10 @@ import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
  * @param {string} matchData.type - Match type (required, e.g., 'friendly')
  * @param {string} matchData.opponent - Opponent team name (optional)
  * @param {string} matchData.captainId - Captain player ID (optional)
- * @returns {Promise<{success: boolean, matchId?: string, error?: string}>}
+ * @param {Array} allPlayers - Array of all players from game state (optional, for initial stats)
+ * @returns {Promise<{success: boolean, matchId?: string, playerStatsInserted?: number, error?: string}>}
  */
-export async function createMatch(matchData) {
+export async function createMatch(matchData, allPlayers = []) {
   try {
     // Validate required fields
     const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type'];
@@ -69,9 +70,30 @@ export async function createMatch(matchData) {
       };
     }
 
+    // Insert initial player match statistics immediately after match creation
+    let playerStatsInserted = 0;
+    if (allPlayers && allPlayers.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📊 Inserting initial player match stats on match start...');
+      }
+      
+      const playerStatsResult = await insertInitialPlayerMatchStats(data.id, allPlayers, matchData.captainId);
+      
+      if (playerStatsResult.success) {
+        playerStatsInserted = playerStatsResult.inserted;
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Initial player stats inserted: ${playerStatsInserted} players`);
+        }
+      } else {
+        console.warn('⚠️  Match created but failed to insert initial player stats:', playerStatsResult.error);
+        // Don't fail the entire operation if player stats fail - the match creation was successful
+      }
+    }
+
     return {
       success: true,
-      matchId: data.id
+      matchId: data.id,
+      playerStatsInserted
     };
 
   } catch (error) {
@@ -138,9 +160,12 @@ export async function updateMatchToRunning(matchId) {
  * @param {number} finalStats.goalsConceded - Goals conceded by team
  * @param {string} finalStats.outcome - Match outcome ('win', 'loss', 'draw')
  * @param {string} finalStats.fairPlayAwardId - Fair play award player ID (optional)
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @param {Array} allPlayers - Array of all players from game state (optional)
+ * @param {Object} goalScorers - Goal scorers data { eventId: playerId } (optional)
+ * @param {Array} matchEvents - Array of match events for goal counting (optional)
+ * @returns {Promise<{success: boolean, playerStatsUpdated?: number, error?: string}>}
  */
-export async function updateMatchToFinished(matchId, finalStats) {
+export async function updateMatchToFinished(matchId, finalStats, allPlayers = [], goalScorers = {}, matchEvents = []) {
   try {
     // Validate required fields
     const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
@@ -178,7 +203,30 @@ export async function updateMatchToFinished(matchId, finalStats) {
       };
     }
 
-    return { success: true };
+    // Update player match statistics with performance data when match finishes
+    let playerStatsUpdated = 0;
+    if (allPlayers && allPlayers.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📊 Updating player match stats on match finish...');
+      }
+      
+      const playerStatsResult = await updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalScorers, matchEvents);
+      
+      if (playerStatsResult.success) {
+        playerStatsUpdated = playerStatsResult.updated;
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Player stats updated: ${playerStatsUpdated} players`);
+        }
+      } else {
+        console.warn('⚠️  Match finished but failed to update player stats:', playerStatsResult.error);
+        // Don't fail the entire operation if player stats fail - the match state update was successful
+      }
+    }
+
+    return { 
+      success: true, 
+      playerStatsUpdated 
+    };
 
   } catch (error) {
     console.error('❌ Exception while updating match to finished:', error);
@@ -218,10 +266,66 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
       };
     }
 
+    // If fair play award was provided, also update player_match_stats
+    if (fairPlayAwardId !== null) {
+      const statsResult = await updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAwardId);
+      if (!statsResult.success) {
+        console.warn('⚠️  Match confirmed but failed to update fair play award in player stats:', statsResult.error);
+        // Don't fail the entire operation - the match confirmation was successful
+      } else if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Fair play award updated in player stats');
+      }
+    }
+
     return { success: true };
 
   } catch (error) {
     console.error('❌ Exception while confirming match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Update the got_fair_play_award field in player_match_stats for a specific match
+ * @param {string} matchId - Match ID
+ * @param {string} fairPlayAwardPlayerId - Player ID who gets the fair play award
+ * @returns {Promise<{success: boolean, updated: number, error?: string}>}
+ */
+export async function updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAwardPlayerId) {
+  try {
+    // First, clear any existing fair play awards for this match
+    await supabase
+      .from('player_match_stats')
+      .update({ got_fair_play_award: false })
+      .eq('match_id', matchId)
+      .eq('got_fair_play_award', true);
+
+    // Then set the fair play award for the selected player
+    const { data, error } = await supabase
+      .from('player_match_stats')
+      .update({ got_fair_play_award: true })
+      .eq('match_id', matchId)
+      .eq('player_id', fairPlayAwardPlayerId)
+      .select('id');
+
+    if (error) {
+      console.error('❌ Failed to update fair play award in player stats:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return {
+      success: true,
+      updated: data?.length || 0
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while updating fair play award in player stats:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`
@@ -375,7 +479,7 @@ export function formatFinalStatsFromGameState(gameState, matchDurationSeconds) {
 export function mapFormationPositionToRole(position, currentRole = null) {
   if (!position) {
     console.warn('⚠️  No position provided to mapFormationPositionToRole');
-    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
+    return roleToDatabase(PLAYER_ROLES.UNKNOWN);
   }
 
   // Handle pairs mode positions - normalize and convert currentRole
@@ -384,7 +488,7 @@ export function mapFormationPositionToRole(position, currentRole = null) {
       const normalizedRole = normalizeRole(currentRole);
       return roleToDatabase(normalizedRole);
     }
-    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
+    return roleToDatabase(PLAYER_ROLES.UNKNOWN);
   }
 
   // Handle substitute pair
@@ -425,7 +529,7 @@ export function mapFormationPositionToRole(position, currentRole = null) {
 
     default:
       console.warn('⚠️  Unexpected position value:', position);
-      return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
+      return roleToDatabase(PLAYER_ROLES.UNKNOWN);
   }
 }
 
@@ -436,8 +540,8 @@ export function mapFormationPositionToRole(position, currentRole = null) {
  */
 export function mapStartingRoleToDBRole(gameStateRole) {
   if (!gameStateRole) {
-    console.warn('⚠️  No starting role provided, defaulting to substitute');
-    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
+    console.warn('⚠️  No starting role provided, defaulting to unknown');
+    return roleToDatabase(PLAYER_ROLES.UNKNOWN);
   }
 
   // Normalize any role format to PLAYER_ROLES constant, then convert to database format
@@ -490,6 +594,39 @@ export function countPlayerGoals(goalScorers, matchEvents, playerId) {
 }
 
 /**
+ * Format initial player stats for database insertion when match starts
+ * @param {Object} player - Player object from game state
+ * @param {string} matchId - Match ID
+ * @param {string} captainId - Captain player ID for this match
+ * @returns {Object|null} Formatted initial player match stats for database, or null if player didn't participate
+ */
+export function formatInitialPlayerStats(player, matchId, captainId) {
+  // Only process players who are participating in the match (have startedMatchAs or startedAtPosition)
+  if (!player.stats?.startedMatchAs && !player.stats?.startedAtPosition) {
+    return null;
+  }
+
+  return {
+    player_id: player.id,
+    match_id: matchId,
+    // Match participation details - only data available at match start
+    started_as: player.stats.startedAtPosition
+      ? mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole)
+      : 'unknown', // Direct fallback when position data is missing
+    was_captain: player.id === captainId || player.stats?.isCaptain || false,
+    // Performance metrics default to 0/false - will be updated when match finishes
+    goals_scored: 0,
+    goalie_time_seconds: 0,
+    defender_time_seconds: 0,
+    midfielder_time_seconds: 0,
+    attacker_time_seconds: 0,
+    substitute_time_seconds: 0,
+    total_field_time_seconds: 0,
+    got_fair_play_award: false
+  };
+}
+
+/**
  * Format individual player stats for database insertion
  * @param {Object} player - Player object from game state
  * @param {string} matchId - Match ID
@@ -533,29 +670,28 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
     // Match participation details
     started_as: player.stats.startedAtPosition
       ? mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole)
-      : mapStartingRoleToDBRole(player.stats.startedMatchAs), // Fallback for backward compatibility
+      : 'unknown', // Direct fallback when position data is missing
     was_captain: player.stats.isCaptain || false,
     got_fair_play_award: player.hasFairPlayAward || false
   };
 }
 
 /**
- * Insert player match statistics for all players who participated
+ * Insert initial player match statistics when match starts
  * @param {string} matchId - Match ID
  * @param {Array} allPlayers - Array of all players from game state
- * @param {Object} goalScorers - Goal scorers data { eventId: playerId }
- * @param {Array} matchEvents - Array of match events for goal counting
+ * @param {string} captainId - Captain player ID for this match
  * @returns {Promise<{success: boolean, inserted: number, error?: string}>}
  */
-export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = {}, matchEvents = []) {
+export async function insertInitialPlayerMatchStats(matchId, allPlayers, captainId) {
   try {
-    // Filter and format player stats for players who participated
-    const playerStatsData = allPlayers
-      .map(player => formatPlayerMatchStats(player, matchId, goalScorers, matchEvents))
-      .filter(stats => stats !== null); // Remove players who didn't participate
+    // Filter and format initial player stats for players who are participating
+    const initialPlayerStatsData = allPlayers
+      .map(player => formatInitialPlayerStats(player, matchId, captainId))
+      .filter(stats => stats !== null); // Remove players who aren't participating
 
-    if (playerStatsData.length === 0) {
-      console.warn('⚠️  No player stats to insert - no players participated?');
+    if (initialPlayerStatsData.length === 0) {
+      console.warn('⚠️  No initial player stats to insert - no players participating?');
       return {
         success: true,
         inserted: 0
@@ -563,16 +699,16 @@ export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = 
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('📊 Inserting player match stats:', playerStatsData.length, 'players');
+      console.log('📊 Inserting initial player match stats:', initialPlayerStatsData.length, 'players');
     }
 
     const { data, error } = await supabase
       .from('player_match_stats')
-      .insert(playerStatsData)
+      .insert(initialPlayerStatsData)
       .select('id');
 
     if (error) {
-      console.error('❌ Failed to insert player match stats:', error);
+      console.error('❌ Failed to insert initial player match stats:', error);
       return {
         success: false,
         error: `Database error: ${error.message}`
@@ -580,7 +716,7 @@ export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = 
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Player match stats inserted successfully:', data?.length || 0, 'records');
+      console.log('✅ Initial player match stats inserted successfully:', data?.length || 0, 'records');
     }
     return {
       success: true,
@@ -588,7 +724,279 @@ export async function insertPlayerMatchStats(matchId, allPlayers, goalScorers = 
     };
 
   } catch (error) {
-    console.error('❌ Exception while inserting player match stats:', error);
+    console.error('❌ Exception while inserting initial player match stats:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Update existing match record with new configuration (for back-and-forth navigation)
+ * @param {string} matchId - Match ID to update
+ * @param {Object} matchData - Updated match configuration and team data
+ * @param {string} matchData.teamId - Team ID (required)
+ * @param {string} matchData.format - Match format (required, e.g., '5v5')
+ * @param {string} matchData.formation - Formation configuration (required)
+ * @param {number} matchData.periods - Number of periods (required)
+ * @param {number} matchData.periodDurationMinutes - Duration per period (required)
+ * @param {string} matchData.type - Match type (required, e.g., 'friendly')
+ * @param {string} matchData.opponent - Opponent team name (optional)
+ * @param {string} matchData.captainId - Captain player ID (optional)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function updateExistingMatch(matchId, matchData) {
+  try {
+    // Validate required fields
+    const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type'];
+    const missingFields = requiredFields.filter(field => !matchData[field]);
+    
+    if (missingFields.length > 0) {
+      return {
+        success: false,
+        error: `Missing required fields: ${missingFields.join(', ')}`
+      };
+    }
+
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    // Prepare update data (only updateable fields)
+    const updateData = {
+      format: matchData.format,
+      formation: matchData.formation,
+      periods: matchData.periods,
+      period_duration_minutes: matchData.periodDurationMinutes,
+      type: matchData.type,
+      opponent: matchData.opponent || null,
+      captain: matchData.captainId || null,
+      updated_at: new Date().toISOString()
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 Updating existing match record:', matchId, updateData);
+    }
+
+    const { error } = await supabase
+      .from('match')
+      .update(updateData)
+      .eq('id', matchId)
+      .eq('state', 'pending'); // Only update pending matches
+
+    if (error) {
+      console.warn('⚠️  Failed to update existing match:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Match record updated successfully');
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.warn('⚠️  Exception while updating existing match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Delete all player match statistics for a specific match (for squad changes)
+ * @param {string} matchId - Match ID
+ * @returns {Promise<{success: boolean, deleted: number, error?: string}>}
+ */
+export async function deletePlayerMatchStats(matchId) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🗑️  Deleting existing player match stats for match:', matchId);
+    }
+
+    const { data, error } = await supabase
+      .from('player_match_stats')
+      .delete()
+      .eq('match_id', matchId)
+      .select('id'); // Return deleted record IDs for counting
+
+    if (error) {
+      console.warn('⚠️  Failed to delete existing player match stats:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    const deletedCount = data?.length || 0;
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ Deleted ${deletedCount} existing player match stats`);
+    }
+
+    return {
+      success: true,
+      deleted: deletedCount
+    };
+
+  } catch (error) {
+    console.warn('⚠️  Exception while deleting player match stats:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Upsert player match statistics with updated squad/formation (delete + insert pattern)
+ * @param {string} matchId - Match ID
+ * @param {Array} allPlayers - Array of all players from game state
+ * @param {string} captainId - Captain player ID for this match
+ * @param {Array} selectedSquadIds - Array of currently selected player IDs (optional, for filtering)
+ * @returns {Promise<{success: boolean, inserted: number, deleted: number, error?: string}>}
+ */
+export async function upsertPlayerMatchStats(matchId, allPlayers, captainId, selectedSquadIds = null) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    // Step 1: Delete existing player stats
+    const deleteResult = await deletePlayerMatchStats(matchId);
+    let deletedCount = 0;
+    
+    if (deleteResult.success) {
+      deletedCount = deleteResult.deleted;
+    } else {
+      console.warn('⚠️  Delete phase failed, continuing with insert:', deleteResult.error);
+      // Don't fail the entire operation - try to insert anyway
+    }
+
+    // Step 2: Filter to only currently selected players (defensive approach)
+    let playersToInsert = allPlayers;
+    if (selectedSquadIds && Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0) {
+      playersToInsert = allPlayers.filter(player => selectedSquadIds.includes(player.id));
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🎯 Filtering players: ${allPlayers.length} total → ${playersToInsert.length} selected`);
+      }
+    }
+
+    // Step 3: Insert new player stats for selected players only
+    const insertResult = await insertInitialPlayerMatchStats(matchId, playersToInsert, captainId);
+    
+    if (!insertResult.success) {
+      return {
+        success: false,
+        error: `Failed to insert updated player stats: ${insertResult.error}`,
+        deleted: deletedCount
+      };
+    }
+
+    return {
+      success: true,
+      inserted: insertResult.inserted,
+      deleted: deletedCount
+    };
+
+  } catch (error) {
+    console.warn('⚠️  Exception while upserting player match stats:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Update player match statistics when match finishes
+ * @param {string} matchId - Match ID
+ * @param {Array} allPlayers - Array of all players from game state
+ * @param {Object} goalScorers - Goal scorers data { eventId: playerId }
+ * @param {Array} matchEvents - Array of match events for goal counting
+ * @returns {Promise<{success: boolean, updated: number, error?: string}>}
+ */
+export async function updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalScorers = {}, matchEvents = []) {
+  try {
+    // Filter players who participated in the match
+    const participatingPlayers = allPlayers.filter(player => 
+      player.stats?.startedMatchAs || player.stats?.startedAtPosition
+    );
+
+    if (participatingPlayers.length === 0) {
+      console.warn('⚠️  No player stats to update - no players participated?');
+      return {
+        success: true,
+        updated: 0
+      };
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Updating player match stats on finish:', participatingPlayers.length, 'players');
+    }
+
+    let updatedCount = 0;
+    
+    // Update each player's performance stats individually
+    for (const player of participatingPlayers) {
+      const playerStats = formatPlayerMatchStats(player, matchId, goalScorers, matchEvents);
+      if (!playerStats) continue;
+
+      // Extract only the fields that should be updated when match finishes
+      const updateData = {
+        goals_scored: playerStats.goals_scored,
+        goalie_time_seconds: playerStats.goalie_time_seconds,
+        defender_time_seconds: playerStats.defender_time_seconds,
+        midfielder_time_seconds: playerStats.midfielder_time_seconds,
+        attacker_time_seconds: playerStats.attacker_time_seconds,
+        substitute_time_seconds: playerStats.substitute_time_seconds,
+        total_field_time_seconds: playerStats.total_field_time_seconds,
+        got_fair_play_award: playerStats.got_fair_play_award,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('player_match_stats')
+        .update(updateData)
+        .eq('match_id', matchId)
+        .eq('player_id', player.id);
+
+      if (error) {
+        console.error(`❌ Failed to update player match stats for ${player.id}:`, error);
+        // Continue with other players instead of failing completely
+      } else {
+        updatedCount++;
+      }
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Player match stats updated successfully:', updatedCount, 'records');
+    }
+    
+    return {
+      success: true,
+      updated: updatedCount
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while updating player match stats:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`
