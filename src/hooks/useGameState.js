@@ -9,7 +9,7 @@ import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPos
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
-import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState } from '../services/matchStateManager';
+import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats } from '../services/matchStateManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
@@ -669,13 +669,14 @@ export function useGameState(navigateToView = null) {
             }
           };
         } else {
-          // SAFEGUARD: Ensure non-selected players have null startedMatchAs
-          if (p.stats?.startedMatchAs !== null) {
+          // SAFEGUARD: Clear ALL participation markers for non-selected players
+          if (p.stats?.startedMatchAs !== null || p.stats?.startedAtPosition !== null) {
             return {
               ...p,
               stats: {
                 ...p.stats,
-                startedMatchAs: null
+                startedMatchAs: null,
+                startedAtPosition: null
               }
             };
           }
@@ -683,10 +684,8 @@ export function useGameState(navigateToView = null) {
         return p;
       });
 
-      // CREATE MATCH RECORD when starting first period - use updated players data
-      if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
-        setMatchCreationAttempted(true); // Prevent duplicate attempts
-        
+      // MATCH DATABASE RECORD MANAGEMENT when starting first period
+      if (currentPeriodNumber === 1 && currentTeam?.id) {
         // Format match data from current game state
         const matchData = formatMatchDataFromGameState({
           teamConfig,
@@ -700,24 +699,66 @@ export function useGameState(navigateToView = null) {
           matchType
         }, currentTeam.id);
 
-        // Create match record and initial player stats in background (non-blocking)
-        createMatch(matchData, updatedPlayers) // Use updated players data
-          .then((result) => {
-            if (result.success) {
-              console.log('✅ Match record created:', result.matchId);
-              if (result.playerStatsInserted) {
-                console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
+        if (currentMatchId && matchCreationAttempted) {
+          // UPDATE FLOW: Match already exists, user made changes after navigating back
+          console.log('🔄 Updating existing match due to navigation back-and-forth:', currentMatchId);
+          
+          // Update existing match record with potentially new configuration
+          updateExistingMatch(currentMatchId, matchData)
+            .then((updateResult) => {
+              if (updateResult.success) {
+                console.log('✅ Match record updated successfully');
+              } else {
+                console.warn('⚠️  Failed to update match record:', updateResult.error);
+                // Continue with game anyway - database sync is optional
               }
-              setCurrentMatchId(result.matchId);
-            } else {
-              console.warn('⚠️  Failed to create match record:', result.error);
+            })
+            .catch((error) => {
+              console.warn('⚠️  Exception during match update:', error);
+              // Continue with game anyway - database sync is optional
+            });
+
+          // Upsert player match stats with updated squad/formation
+          upsertPlayerMatchStats(currentMatchId, updatedPlayers, captainId, selectedSquadIds)
+            .then((upsertResult) => {
+              if (upsertResult.success) {
+                console.log('📊 Player stats updated:', 
+                  `deleted ${upsertResult.deleted}, inserted ${upsertResult.inserted} players`);
+              } else {
+                console.warn('⚠️  Failed to update player match stats:', upsertResult.error);
+                // Continue with game anyway - database sync is optional
+              }
+            })
+            .catch((error) => {
+              console.warn('⚠️  Exception during player stats update:', error);
+              // Continue with game anyway - database sync is optional
+            });
+            
+        } else if (!matchCreationAttempted) {
+          // CREATE FLOW: First time entering game
+          setMatchCreationAttempted(true); // Prevent duplicate attempts
+          
+          // Create match record and initial player stats in background (non-blocking)
+          createMatch(matchData, updatedPlayers) // Use updated players data
+            .then((result) => {
+              if (result.success) {
+                console.log('✅ Match record created:', result.matchId);
+                if (result.playerStatsInserted) {
+                  console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
+                }
+                setCurrentMatchId(result.matchId);
+              } else {
+                console.warn('⚠️  Failed to create match record:', result.error);
+                // Continue with game anyway - match creation is optional
+              }
+            })
+            .catch((error) => {
+              console.warn('⚠️  Exception during match creation:', error);
               // Continue with game anyway - match creation is optional
-            }
-          })
-          .catch((error) => {
-            console.warn('⚠️  Exception during match creation:', error);
-            // Continue with game anyway - match creation is optional
-          });
+            });
+        }
+        // If currentMatchId exists but matchCreationAttempted is false, something is inconsistent
+        // This shouldn't happen normally, but we'll just continue with the game
       }
 
       return updatedPlayers;

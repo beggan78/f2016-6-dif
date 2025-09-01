@@ -58,8 +58,9 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 
 **Formation Positions vs Database Roles**:
 - Formation positions: `leftDefender`, `rightAttacker`, `left`, `right` (UI-specific)  
-- Database roles: `goalie`, `defender`, `midfielder`, `attacker`, `substitute` (standardized enums)
+- Database roles: `goalie`, `defender`, `midfielder`, `attacker`, `substitute`, `unknown` (standardized enums)
 - Always use `mapFormationPositionToRole()` for conversion
+- `unknown` is used when position mapping fails (no fallback to other roles)
 
 ### Code Organization
 - **Game logic**: `/src/game/` - Pure functions, no side effects

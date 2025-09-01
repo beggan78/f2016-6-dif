@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from '../lib/supabase';
 import { getCachedUserProfile, cacheUserProfile, clearAllCache } from '../utils/cacheUtils';
 import { cleanupAbandonedMatches } from '../services/matchCleanupService';
+import { cleanupPreviousSession } from '../utils/sessionCleanupUtils';
 
 const AuthContext = createContext({
   // Core state
@@ -243,6 +244,9 @@ export function AuthProvider({ children }) {
           setUser(session.user);
           setupSessionMonitoring(session);
           currentUserIdRef.current = userId;
+          
+          // Clean up localStorage from previous sessions (fire-and-forget)
+          cleanupPreviousSession();
           
           // Run match cleanup in background (fire-and-forget)
           cleanupAbandonedMatches().catch(error => {

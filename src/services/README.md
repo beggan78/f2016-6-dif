@@ -35,7 +35,7 @@ if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
 **Critical Distinction**: The system separates formation positions from database player roles.
 
 - **Formation Positions**: UI-specific (e.g., `leftDefender`, `rightAttacker`, `left`, `right`)
-- **Database Roles**: Standardized enums (`goalie`, `defender`, `midfielder`, `attacker`, `substitute`)
+- **Database Roles**: Standardized enums (`goalie`, `defender`, `midfielder`, `attacker`, `substitute`, `unknown`)
 
 Use `mapFormationPositionToRole(position, currentRole)` for accurate mapping:
 ```javascript

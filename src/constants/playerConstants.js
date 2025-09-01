@@ -4,7 +4,8 @@ export const PLAYER_ROLES = {
   ATTACKER: 'ATTACKER',
   MIDFIELDER: 'MIDFIELDER', // Used for 1-2-1 formation and future tactical formations
   SUBSTITUTE: 'SUBSTITUTE', // Used for initial status
-  FIELD_PLAYER: 'FIELD_PLAYER' // Used when specific field role is unknown
+  FIELD_PLAYER: 'FIELD_PLAYER', // Used when specific field role is unknown
+  UNKNOWN: 'UNKNOWN' // Used when position mapping fails
 };
 
 
