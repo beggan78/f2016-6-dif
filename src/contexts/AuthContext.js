@@ -245,8 +245,17 @@ export function AuthProvider({ children }) {
           setupSessionMonitoring(session);
           currentUserIdRef.current = userId;
           
-          // Clean up localStorage from previous sessions (fire-and-forget)
-          cleanupPreviousSession();
+          // Only clean up localStorage on actual logins, not page refreshes
+          const isPageRefresh = performance.navigation && performance.navigation.type === 1;
+          const isActualLogin = !sessionStorage.getItem('auth_session_initialized');
+          
+          if (!isPageRefresh && isActualLogin) {
+            debugLog('🧹 Cleaning up localStorage from previous session (actual login)');
+            cleanupPreviousSession();
+            sessionStorage.setItem('auth_session_initialized', 'true');
+          } else {
+            debugLog('🔄 Skipping localStorage cleanup (page refresh or session restore)');
+          }
           
           // Run match cleanup in background (fire-and-forget)
           cleanupAbandonedMatches().catch(error => {
