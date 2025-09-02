@@ -135,6 +135,7 @@ export async function deleteAbandonedMatch(matchId) {
 /**
  * Get match statistics from localStorage for recovery
  * 
+ * @deprecated This function is no longer needed as player_match_stats are stored in database when match is created
  * @returns {Object|null} Match statistics or null if not available
  */
 export function getRecoveryMatchData() {
@@ -161,6 +162,7 @@ export function getRecoveryMatchData() {
 /**
  * Validate that localStorage data matches the database match
  * 
+ * @deprecated This function is no longer needed as player_match_stats are stored in database when match is created
  * @param {Object} match - Match from database
  * @param {Object} localData - Data from localStorage
  * @returns {boolean} True if data appears consistent

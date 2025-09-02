@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { checkForRecoverableMatch, deleteAbandonedMatch, getRecoveryMatchData, validateRecoveryData } from '../services/matchRecoveryService';
-import { updateMatchToConfirmed, updatePlayerMatchStatsOnFinish } from '../services/matchStateManager';
+import { checkForRecoverableMatch, deleteAbandonedMatch } from '../services/matchRecoveryService';
+import { updateMatchToConfirmed } from '../services/matchStateManager';
 
 /**
  * Hook to manage match recovery functionality
@@ -53,19 +53,9 @@ export function useMatchRecovery({
               console.log('✅ Found recoverable match:', result.match.id);
             }
             
-            // Validate localStorage data against database match
-            const localData = getRecoveryMatchData();
-            if (validateRecoveryData(result.match, localData)) {
-              setRecoveryMatch(result.match);
-              setShowRecoveryModal(true);
-            } else {
-              if (process.env.NODE_ENV === 'development') {
-                console.warn('⚠️ Recovery data validation failed, cleaning up orphaned match');
-              }
-              // Clean up orphaned match and localStorage
-              await deleteAbandonedMatch(result.match.id);
-              gameState.clearStoredState();
-            }
+            // Show recovery modal immediately - all data is already in database
+            setRecoveryMatch(result.match);
+            setShowRecoveryModal(true);
           }
         } catch (error) {
           console.error('❌ Error checking for recoverable match:', error);
@@ -86,7 +76,7 @@ export function useMatchRecovery({
 
   /**
    * Handle saving recovered match to history
-   * Updates match to confirmed state and inserts player statistics
+   * Updates match to confirmed state - player statistics are already in database
    */
   const handleSaveRecovery = useCallback(async () => {
     if (!recoveryMatch || isProcessingRecovery) return;
@@ -97,28 +87,10 @@ export function useMatchRecovery({
         console.log('💾 Saving recovered match to history:', recoveryMatch.id);
       }
 
-      // Get match data from localStorage
-      const localData = getRecoveryMatchData();
-      if (!localData) {
-        throw new Error('No recovery data found in localStorage');
-      }
-
-      // Update match to confirmed state
+      // Update match to confirmed state - all player stats are already in database
       const updateResult = await updateMatchToConfirmed(recoveryMatch.id);
       if (!updateResult.success) {
         throw new Error(updateResult.error);
-      }
-
-      // Update player statistics with performance data (recovery scenario)
-      const statsResult = await updatePlayerMatchStatsOnFinish(
-        recoveryMatch.id,
-        localData.allPlayers || [],
-        localData.goalScorers || {},
-        localData.matchEvents || []
-      );
-      if (!statsResult.success) {
-        console.warn('⚠️ Failed to update player statistics:', statsResult.error);
-        // Continue even if stats fail - match is already saved
       }
 
       // Clear localStorage data
