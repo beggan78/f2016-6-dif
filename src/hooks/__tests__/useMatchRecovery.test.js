@@ -17,8 +17,7 @@ jest.mock('../../services/matchRecoveryService', () => ({
 }));
 
 jest.mock('../../services/matchStateManager', () => ({
-  updateMatchToConfirmed: jest.fn(),
-  updatePlayerMatchStatsOnFinish: jest.fn()
+  updateMatchToConfirmed: jest.fn()
 }));
 
 describe('useMatchRecovery', () => {
@@ -59,10 +58,6 @@ describe('useMatchRecovery', () => {
     });
     matchRecoveryService.deleteAbandonedMatch.mockResolvedValue({ success: true });
     matchStateManager.updateMatchToConfirmed.mockResolvedValue({ success: true });
-    matchStateManager.updatePlayerMatchStatsOnFinish.mockResolvedValue({ 
-      success: true, 
-      updated: 1 
-    });
   });
 
   afterEach(() => {
