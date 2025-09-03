@@ -375,15 +375,28 @@ export function PeriodSetupScreen({
         // Get the player currently in the target position
         const currentPlayerInTargetPosition = formation[pairKey]?.[role];
         
-        // Swap the players
-        setFormation(prev => ({
-          ...prev,
-          [pairKey]: { ...prev[pairKey], [role]: playerId },
-          [currentPlayerPosition.pairKey]: { 
-            ...prev[currentPlayerPosition.pairKey], 
-            [currentPlayerPosition.role]: currentPlayerInTargetPosition 
-          }
-        }));
+        // Check if both players are in the same pair
+        if (currentPlayerPosition.pairKey === pairKey) {
+          // Same pair swap - update both roles in a single object to avoid overwrite
+          setFormation(prev => ({
+            ...prev,
+            [pairKey]: { 
+              ...prev[pairKey], 
+              [role]: playerId,
+              [currentPlayerPosition.role]: currentPlayerInTargetPosition 
+            }
+          }));
+        } else {
+          // Different pairs - original logic works fine
+          setFormation(prev => ({
+            ...prev,
+            [pairKey]: { ...prev[pairKey], [role]: playerId },
+            [currentPlayerPosition.pairKey]: { 
+              ...prev[currentPlayerPosition.pairKey], 
+              [currentPlayerPosition.role]: currentPlayerInTargetPosition 
+            }
+          }));
+        }
         return;
       }
     }
