@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button, Input } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -15,6 +15,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccountInfo, setShowAccountInfo] = useState(false);
+  const nameInputRef = useRef(null);
 
   // Clear messages when user starts editing
   React.useEffect(() => {
@@ -32,6 +33,13 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
     setErrors({});
     setSuccessMessage('');
   };
+
+  // Auto-focus name input when editing starts
+  useEffect(() => {
+    if (isEditing && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [isEditing]);
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -208,6 +216,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
                 {isEditing ? (
                   <div className="space-y-2">
                     <Input
+                      ref={nameInputRef}
                       value={editedName}
                       onChange={(e) => {
                         setEditedName(e.target.value);
@@ -244,7 +253,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className={`text-slate-100 rounded-md ${profileName === 'Not set' ? 'animate-glow-and-fade' : ''}`}>
+                    <span className="text-slate-100 rounded-md">
                       {profileName}
                     </span>
                     <Button
