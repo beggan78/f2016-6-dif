@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Settings, Volume2, Play, Globe, Palette, Loader } from 'lucide-react';
+import { Settings, Volume2, Play, Globe, Palette, Loader, X } from 'lucide-react';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { AUDIO_ALERT_OPTIONS, LANGUAGE_OPTIONS, THEME_OPTIONS } from '../../constants/audioAlerts';
 import { audioAlertService } from '../../services/audioAlertService';
@@ -207,9 +207,17 @@ export function PreferencesModal({ isOpen, onClose }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div role="dialog" aria-labelledby="preferences-title" className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto border border-slate-600">
         {/* Modal Header */}
-        <div className="flex items-center space-x-3 mb-6">
-          <Settings className="h-6 w-6 text-sky-400" />
-          <h2 id="preferences-title" className="text-xl font-semibold text-sky-300">Preferences</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <Settings className="h-6 w-6 text-sky-400" />
+            <h2 id="preferences-title" className="text-xl font-semibold text-sky-300">Preferences</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
         <div className="space-y-8">
