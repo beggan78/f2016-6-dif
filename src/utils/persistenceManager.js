@@ -47,7 +47,19 @@ export class PersistenceManager {
       }
 
       // Merge with default state to ensure all required fields exist
-      return this._mergeWithDefaults(parsedState);
+      const mergedState = this._mergeWithDefaults(parsedState);
+      
+      // Debug: Track selectedSquadIds loading
+      if (process.env.NODE_ENV === 'development' && this.storageKey.includes('game-state')) {
+        console.log('📂 PERSISTENCE: Loading selectedSquadIds:', {
+          selectedSquadIds: mergedState.selectedSquadIds,
+          count: mergedState.selectedSquadIds?.length || 0,
+          isEmpty: !mergedState.selectedSquadIds || mergedState.selectedSquadIds.length === 0,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      return mergedState;
     } catch (error) {
       console.warn('Failed to load state from localStorage:', error);
       return this.defaultState;
@@ -329,6 +341,16 @@ export class GamePersistenceManager extends PersistenceManager {
    * Save only specific game state fields
    */
   saveGameState(gameState) {
+    // Debug: Track selectedSquadIds persistence
+    if (process.env.NODE_ENV === 'development') {
+      console.log('💾 PERSISTENCE: Saving selectedSquadIds:', {
+        selectedSquadIds: gameState.selectedSquadIds,
+        count: gameState.selectedSquadIds?.length || 0,
+        isEmpty: !gameState.selectedSquadIds || gameState.selectedSquadIds.length === 0,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     // Only save serializable game state, exclude React-specific fields
     const stateToSave = {
       allPlayers: gameState.allPlayers,

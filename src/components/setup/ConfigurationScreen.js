@@ -65,7 +65,19 @@ export function ConfigurationScreen({
   
   // Auth and Team hooks (must be before useEffect that use these values)
   const { isAuthenticated, user } = useAuth();
-  const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
+  const { currentTeam, teamPlayers, hasTeams, hasClubs, loading: teamLoading } = useTeam();
+
+  // Debug: Track selectedSquadIds in ConfigurationScreen (development only)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 ConfigurationScreen: selectedSquadIds received as prop:', {
+        selectedSquadIds,
+        count: selectedSquadIds.length,
+        isEmpty: selectedSquadIds.length === 0,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [selectedSquadIds]);
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
   
@@ -256,11 +268,40 @@ export function ConfigurationScreen({
     : allPlayers;
   
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
+  // BUT ONLY if we're confident that team data loading is complete and team is truly empty
   React.useEffect(() => {
-    if (hasNoTeamPlayers && selectedSquadIds.length > 0) {
+    // Add defensive conditions to prevent clearing during loading/transition states
+    const shouldClear = hasNoTeamPlayers && 
+                       selectedSquadIds.length > 0 && 
+                       // CRITICAL: Never clear while team data is loading
+                       !teamLoading &&
+                       // Only clear if sync operations are also complete
+                       syncStatus.loading === false &&
+                       // Additional safety: Only clear if we're confident the user truly has no teams
+                       (!hasTeams);
+    
+    if (shouldClear) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🧹 ConfigurationScreen: Clearing selectedSquadIds due to no team players', {
+          hasNoTeamPlayers,
+          hasTeams,
+          teamLoading,
+          syncStatusLoading: syncStatus.loading,
+          selectedSquadIdsLength: selectedSquadIds.length
+        });
+      }
       setSelectedSquadIds([]);
+    } else if (process.env.NODE_ENV === 'development' && hasNoTeamPlayers && selectedSquadIds.length > 0) {
+      console.log('🛡️ ConfigurationScreen: NOT clearing selectedSquadIds - waiting for data loading to complete', {
+        hasNoTeamPlayers,
+        hasTeams,
+        teamLoading,
+        syncStatusLoading: syncStatus.loading,
+        selectedSquadIdsLength: selectedSquadIds.length,
+        reason: teamLoading ? 'team loading' : syncStatus.loading ? 'sync loading' : hasTeams ? 'user has teams' : 'unknown'
+      });
     }
-  }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds]);
+  }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds, hasTeams, syncStatus.loading, teamLoading]);
 
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data

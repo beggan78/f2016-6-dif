@@ -148,6 +148,12 @@ export function useGameState(navigateToView = null) {
   // Debug: Track state initialization (only once per session)
   if (process.env.NODE_ENV === 'development' && !window.gameStateInitialized) {
     window.gameStateInitialized = true;
+    console.log('🔧 GAME STATE INITIALIZED:', {
+      selectedSquadIds: initialState.selectedSquadIds,
+      selectedSquadIdsLength: initialState.selectedSquadIds?.length || 0,
+      hasSelectedSquadIds: !!(initialState.selectedSquadIds && initialState.selectedSquadIds.length > 0),
+      timestamp: new Date().toISOString()
+    });
   }
 
   // Debug: Monitor React state changes for match state variables (only log meaningful changes)
@@ -178,6 +184,17 @@ export function useGameState(navigateToView = null) {
     }
   }, [currentMatchId, matchState]);
 
+  // Debug: Monitor selectedSquadIds changes (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 selectedSquadIds CHANGED:', {
+        selectedSquadIds,
+        count: selectedSquadIds.length,
+        isEmpty: selectedSquadIds.length === 0,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [selectedSquadIds]);
 
   // Sync captain data in allPlayers whenever captainId changes
   useEffect(() => {
