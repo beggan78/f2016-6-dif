@@ -6,6 +6,9 @@ import { VIEWS } from '../../constants/viewConstants';
 import { ChangePassword } from '../auth/ChangePassword';
 import { sanitizeNameInput, isValidNameInput } from '../../utils/inputSanitization';
 
+// Constants
+const SUCCESS_MESSAGE_DURATION = 3000; // 3 seconds
+
 export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
   const { currentTeam, userTeams, loading: teamLoading } = useTeam();
@@ -16,9 +19,10 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const nameInputRef = useRef(null);
+  const successTimeoutRef = useRef(null);
 
   // Clear messages when user starts editing
-  React.useEffect(() => {
+  useEffect(() => {
     if (isEditing) {
       setSuccessMessage('');
       if (authError) {
@@ -31,7 +35,6 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
     setIsEditing(true);
     setEditedName(userProfile?.name || '');
     setErrors({});
-    setSuccessMessage('');
   };
 
   // Auto-focus name input when editing starts
@@ -40,6 +43,22 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
       nameInputRef.current.focus();
     }
   }, [isEditing]);
+
+  // Handle success message timeout with cleanup
+  useEffect(() => {
+    if (successMessage) {
+      successTimeoutRef.current = setTimeout(() => {
+        setSuccessMessage('');
+      }, SUCCESS_MESSAGE_DURATION);
+    }
+    
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = null;
+      }
+    };
+  }, [successMessage]);
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -86,10 +105,6 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
         if (profile.name && profile.name.trim()) {
           markProfileCompleted();
         }
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccessMessage('');
-        }, 3000);
       }
     } catch (error) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' });
@@ -253,14 +268,15 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-100 rounded-md">
+                    <span className="text-slate-100">
                       {profileName}
                     </span>
                     <Button
                       onClick={handleEdit}
                       variant="secondary"
                       size="sm"
-                      className={`${profileName === 'Not set' ? 'animate-glow-and-fade' : ''}`}>
+                      className={profileName === 'Not set' ? 'animate-glow-and-fade' : ''}
+                    >
                       Edit
                     </Button>
                   </div>
