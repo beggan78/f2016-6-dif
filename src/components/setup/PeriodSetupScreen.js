@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Users, Play, ArrowLeft, Shuffle } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
+import { VIEWS } from '../../constants/viewConstants';
 
 
 // Position configuration map for individual modes
@@ -92,6 +93,9 @@ export function PeriodSetupScreen({
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
   
+  // Track original team config to detect changes
+  const [originalTeamConfig, setOriginalTeamConfig] = useState(null);
+  
   // Confirmation modal state for inactive player selection
   const [confirmationModal, setConfirmationModal] = useState({
     isOpen: false,
@@ -111,6 +115,109 @@ export function PeriodSetupScreen({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Debug: Track formation prop changes
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 FORMATION DEBUG - PeriodSetupScreen props:', {
+        hasFormation: !!formation,
+        formationKeys: Object.keys(formation || {}),
+        formationData: formation,
+        currentPeriodNumber,
+        teamConfigSubstitutionType: teamConfig?.substitutionType,
+        isPairsMode
+      });
+    }
+  }, [formation, currentPeriodNumber, teamConfig?.substitutionType, isPairsMode]);
+
+  // Formation Restoration: Fix corrupted formation data during match resumption
+  useEffect(() => {
+    if (!isPairsMode || !formation) return;
+    
+    // Detect corruption: has structure but null assignments
+    const hasStructure = formation.leftPair && formation.rightPair && formation.subPair;
+    const hasNullAssignments = hasStructure && 
+      formation.leftPair.defender === null && formation.leftPair.attacker === null &&
+      formation.rightPair.defender === null && formation.rightPair.attacker === null &&
+      formation.subPair.defender === null && formation.subPair.attacker === null;
+    
+    if (hasStructure && hasNullAssignments && formation.goalie) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 FORMATION CORRUPTION DETECTED - attempting restoration from localStorage');
+      }
+      
+      try {
+        // Try to restore from formationBackup first (most recent)
+        const backupData = localStorage.getItem('formationBackup');
+        if (backupData) {
+          const backup = JSON.parse(backupData);
+          const backupFormation = backup.formation;
+          
+          if (backupFormation && backupFormation.leftPair && backupFormation.rightPair && backupFormation.subPair) {
+            const hasValidBackupData = 
+              backupFormation.leftPair.defender || backupFormation.leftPair.attacker ||
+              backupFormation.rightPair.defender || backupFormation.rightPair.attacker ||
+              backupFormation.subPair.defender || backupFormation.subPair.attacker;
+            
+            if (hasValidBackupData) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('✅ RESTORING formation from backup:', backupFormation);
+              }
+              
+              setFormation(prev => ({
+                ...prev,
+                leftPair: backupFormation.leftPair,
+                rightPair: backupFormation.rightPair, 
+                subPair: backupFormation.subPair
+              }));
+              
+              return; // Exit early after successful restoration
+            }
+          }
+        }
+        
+        // Fallback: Try to restore from main localStorage gameState
+        const storedGameState = localStorage.getItem('gameState');
+        if (storedGameState) {
+          const parsedState = JSON.parse(storedGameState);
+          const storedFormation = parsedState.formation;
+          
+          if (storedFormation && storedFormation.leftPair && storedFormation.rightPair && storedFormation.subPair) {
+            // Check if localStorage has valid assignments
+            const hasValidStoredData = 
+              storedFormation.leftPair.defender || storedFormation.leftPair.attacker ||
+              storedFormation.rightPair.defender || storedFormation.rightPair.attacker ||
+              storedFormation.subPair.defender || storedFormation.subPair.attacker;
+            
+            if (hasValidStoredData) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('✅ RESTORING formation from main localStorage:', storedFormation);
+              }
+              
+              // Restore the formation with correct assignments
+              setFormation(prev => ({
+                ...prev,
+                leftPair: storedFormation.leftPair,
+                rightPair: storedFormation.rightPair, 
+                subPair: storedFormation.subPair
+              }));
+              
+              return; // Exit early after successful restoration
+            }
+          }
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Could not restore formation - no valid data found in backup or localStorage');
+        }
+        
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('❌ Error restoring formation from localStorage:', error);
+        }
+      }
+    }
+  }, [formation, isPairsMode, setFormation]);
 
   // Detect if pre-selected goalie is inactive (for periods 2+)
   useEffect(() => {
@@ -132,11 +239,131 @@ export function PeriodSetupScreen({
     }
   }, [formation.goalie, allPlayers, currentPeriodNumber, isReplacingInactiveGoalie]);
 
+  // State to show formation change warning
+  const [showFormationChangeWarning, setShowFormationChangeWarning] = useState(false);
+  
+
+  // Track team configuration changes and clear positions if formation changed
+  useEffect(() => {
+    if (!teamConfig) return;
+
+    // Set initial config on first render
+    if (!originalTeamConfig) {
+      setOriginalTeamConfig({
+        formation: teamConfig.formation,
+        substitutionType: teamConfig.substitutionType,
+        squadSize: teamConfig.squadSize
+      });
+      return;
+    }
+
+    // Check if formation or substitution type changed (these affect position layout)
+    const formationChanged = originalTeamConfig.formation !== teamConfig.formation;
+    const substitutionTypeChanged = originalTeamConfig.substitutionType !== teamConfig.substitutionType;
+
+    if (formationChanged || substitutionTypeChanged) {
+      // Check if formation already has valid player assignments (e.g., from match resumption)
+      const hasValidFormationData = isPairsMode 
+        ? formation.leftPair?.defender || formation.leftPair?.attacker ||
+          formation.rightPair?.defender || formation.rightPair?.attacker ||
+          formation.subPair?.defender || formation.subPair?.attacker
+        : formation.leftDefender || formation.rightDefender || 
+          formation.leftAttacker || formation.rightAttacker ||
+          formation.defender || formation.left || formation.right || formation.attacker;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⚠️ Team configuration changed:', {
+          formationChanged,
+          substitutionTypeChanged,
+          old: originalTeamConfig,
+          new: teamConfig,
+          hasValidFormationData,
+          willClearPositions: !hasValidFormationData
+        });
+        
+      }
+
+      // Only clear positions if we don't already have valid formation data
+      // This preserves formation data from match resumption while still clearing
+      // positions when users genuinely change their team configuration
+      if (!hasValidFormationData) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🧹 Clearing formation positions due to team config change');
+        }
+
+        // Clear all positions except goalie (let user keep their goalie selection)
+        if (isPairsMode) {
+          setFormation(prev => ({
+            ...prev,
+            leftPair: { defender: null, attacker: null },
+            rightPair: { defender: null, attacker: null },
+            subPair: { defender: null, attacker: null }
+          }));
+        } else {
+        // Individual mode - clear all outfield positions
+        setFormation(prev => {
+          const clearedFormation = {
+            ...prev,
+            leftDefender: null,
+            rightDefender: null,
+            leftAttacker: null,
+            rightAttacker: null,
+            defender: null,
+            left: null,
+            right: null,
+            attacker: null
+          };
+          
+          // Clear substitute positions
+          for (let i = 1; i <= 5; i++) {
+            clearedFormation[`substitute_${i}`] = null;
+          }
+          
+          return clearedFormation;
+        });
+        }
+      } else if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Preserving existing formation data during team config change');
+      }
+
+      // Update the tracked config
+      setOriginalTeamConfig({
+        formation: teamConfig.formation,
+        substitutionType: teamConfig.substitutionType,
+        squadSize: teamConfig.squadSize
+      });
+
+
+      // Show warning message
+      setShowFormationChangeWarning(true);
+      setTimeout(() => setShowFormationChangeWarning(false), 5000); // Auto-hide after 5 seconds
+    }
+  }, [teamConfig, originalTeamConfig, isPairsMode, setFormation]);
+
   // Helper function to check if a player is inactive
   const isPlayerInactive = (playerId) => {
     const player = allPlayers.find(p => p.id === playerId);
     return player?.stats?.isInactive || false;
   };
+
+  // Helper function to check if formation already has valid player assignments
+  // This prevents clearing formation data during match resumption
+  const hasValidFormationAssignments = useCallback(() => {
+    if (!formation) return false;
+    
+    if (isPairsMode) {
+      // Check if any pairs have player assignments
+      return (formation.leftPair?.defender || formation.leftPair?.attacker ||
+              formation.rightPair?.defender || formation.rightPair?.attacker ||
+              formation.subPair?.defender || formation.subPair?.attacker);
+    } else {
+      // Check if any individual positions have player assignments  
+      return (formation.leftDefender || formation.rightDefender || 
+              formation.leftAttacker || formation.rightAttacker ||
+              formation.defender || formation.left || formation.right || formation.attacker ||
+              formation.substitute_1 || formation.substitute_2 || formation.substitute_3);
+    }
+  }, [formation, isPairsMode]);
 
   // Helper function to check if a position is a field position (not substitute)
   const isFieldPosition = (position, role = null) => {
@@ -287,17 +514,27 @@ export function PeriodSetupScreen({
       
       // Then re-run recommendations with the new goalie
       if (preparePeriodWithGameLog && gameLog.length > 0) {
-        // Update the period goalie IDs first so recommendations use the new goalie
-        setPeriodGoalieIds(prev => {
-          const updatedIds = { ...prev, [currentPeriodNumber]: newGoalieId };
-          
-          // Use setTimeout to ensure state update is applied before re-running recommendations
-          setTimeout(() => {
-            preparePeriodWithGameLog(currentPeriodNumber, gameLog, newGoalieId);
-          }, 10);
-          
-          return updatedIds;
-        });
+        // Check if formation already has valid assignments from match resumption
+        if (hasValidFormationAssignments()) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🛡️ PREVENTED preparePeriodWithGameLog call - formation already has valid data from match resumption');
+          }
+          // Just update goalie without clearing formation positions
+          setFormation(prev => ({ ...prev, goalie: newGoalieId }));
+          setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: newGoalieId }));
+        } else {
+          // Update the period goalie IDs first so recommendations use the new goalie
+          setPeriodGoalieIds(prev => {
+            const updatedIds = { ...prev, [currentPeriodNumber]: newGoalieId };
+            
+            // Use setTimeout to ensure state update is applied before re-running recommendations
+            setTimeout(() => {
+              preparePeriodWithGameLog(currentPeriodNumber, gameLog, newGoalieId);
+            }, 10);
+            
+            return updatedIds;
+          });
+        }
       }
     }
     
@@ -568,16 +805,27 @@ export function PeriodSetupScreen({
       // Reset the replacement flag first
       setIsReplacingInactiveGoalie(false);
       
-      // First update periodGoalieIds so preparePeriodWithGameLog uses the new goalie
-      setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
-      
-      // Perform goalie change (formerGoalieId will be null since we cleared it)
-      performGoalieChange(playerId, formerGoalieId);
-      
-      // Auto-run recommendations with new goalie
-      setTimeout(() => {
-        preparePeriodWithGameLog(currentPeriodNumber, gameLog, playerId);
-      }, 10);
+      // Check if formation already has valid assignments from match resumption
+      if (hasValidFormationAssignments()) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🛡️ PREVENTED preparePeriodWithGameLog call for inactive goalie - formation already has valid data from match resumption');
+        }
+        // Just update goalie without clearing formation positions
+        setFormation(prev => ({ ...prev, goalie: playerId }));
+        setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
+        performGoalieChange(playerId, formerGoalieId);
+      } else {
+        // First update periodGoalieIds so preparePeriodWithGameLog uses the new goalie
+        setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: playerId }));
+        
+        // Perform goalie change (formerGoalieId will be null since we cleared it)
+        performGoalieChange(playerId, formerGoalieId);
+        
+        // Auto-run recommendations with new goalie
+        setTimeout(() => {
+          preparePeriodWithGameLog(currentPeriodNumber, gameLog, playerId);
+        }, 10);
+      }
       return;
     }
     
@@ -751,6 +999,19 @@ export function PeriodSetupScreen({
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
         <Users className="mr-2 h-6 w-6" />Period {currentPeriodNumber} Team Selection
       </h2>
+
+      {/* Formation Change Warning */}
+      {showFormationChangeWarning && (
+        <div className="p-3 bg-amber-800/50 border border-amber-600 rounded-lg">
+          <div className="flex items-center">
+            <div className="text-amber-300 mr-2">⚠️</div>
+            <div>
+              <p className="text-amber-200 font-medium">Formation settings changed</p>
+              <p className="text-amber-200 text-sm">Position selections have been cleared. Please re-assign players to positions.</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Current Score Display */}
       <div className="p-2 bg-slate-700 rounded-lg text-center">
@@ -852,7 +1113,7 @@ export function PeriodSetupScreen({
       )}
       
       {currentPeriodNumber === 1 && (
-        <Button onClick={() => setView('config')} Icon={ArrowLeft}>
+        <Button onClick={() => setView(VIEWS.CONFIG)} Icon={ArrowLeft}>
           Back to Configuration
         </Button>
       )}

@@ -24,9 +24,10 @@ import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
  * @param {string} matchData.opponent - Opponent team name (optional)
  * @param {string} matchData.captainId - Captain player ID (optional)
  * @param {Array} allPlayers - Array of all players from game state (optional, for initial stats)
+ * @param {Object} gameState - Full game state for initial_config generation (optional)
  * @returns {Promise<{success: boolean, matchId?: string, playerStatsInserted?: number, error?: string}>}
  */
-export async function createMatch(matchData, allPlayers = []) {
+export async function createMatch(matchData, allPlayers = [], gameState = null) {
   try {
     // Validate required fields
     const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type'];
@@ -39,6 +40,9 @@ export async function createMatch(matchData, allPlayers = []) {
       };
     }
 
+    // Prepare complete initial configuration from game state (if available)
+    const initialConfig = gameState ? formatInitialConfigFromGameState(gameState) : {};
+
     // Prepare match record
     const matchRecord = {
       team_id: matchData.teamId,
@@ -49,6 +53,7 @@ export async function createMatch(matchData, allPlayers = []) {
       type: matchData.type,
       opponent: matchData.opponent || null,
       captain: matchData.captainId || null,
+      initial_config: initialConfig,
       state: 'pending' // Match created but not yet started
     };
 
@@ -445,8 +450,91 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     periodDurationMinutes,
     type: matchType,
     opponent: opponentTeam || null,
-    captainId: captainId || null
+    captainId: captainId || null,
+    substitutionType: teamConfig?.substitutionType || null,
+    pairRoleRotation: teamConfig?.pairRoleRotation || null
   };
+}
+
+/**
+ * Format substitution configuration from game state for database storage
+ * @param {Object} gameState - Current game state
+ * @returns {Object} Substitution configuration in JSON format
+ */
+export function formatSubstitutionConfigFromGameState(gameState) {
+  const { teamConfig } = gameState;
+  
+  // Always return an object, even if minimal
+  if (!teamConfig?.substitutionType) {
+    return {}; // Empty object for backward compatibility
+  }
+  
+  const config = {
+    type: teamConfig.substitutionType
+  };
+  
+  // Add mode-specific options
+  if (teamConfig.substitutionType === 'pairs' && teamConfig.pairRoleRotation) {
+    config.pairRoleRotation = teamConfig.pairRoleRotation;
+  }
+  
+  return config;
+}
+
+/**
+ * Format complete initial configuration from game state for database storage
+ * @param {Object} gameState - Current game state containing all setup information
+ * @returns {Object} Complete initial configuration in JSON format for database storage
+ */
+export function formatInitialConfigFromGameState(gameState) {
+  const {
+    teamConfig,
+    selectedFormation,
+    selectedSquadIds = [],
+    formation = {},
+    periodGoalieIds = {},
+    periods = 3,
+    periodDurationMinutes = 15,
+    matchType = 'league',
+    opponentTeam = '',
+    captainId = null
+  } = gameState;
+
+  // Build complete initial configuration
+  const initialConfig = {
+    // Team configuration
+    teamConfig: {
+      format: teamConfig?.format || '5v5',
+      squadSize: teamConfig?.squadSize || selectedSquadIds.length,
+      formation: selectedFormation || teamConfig?.formation || '2-2',
+      substitutionType: teamConfig?.substitutionType || 'individual',
+      ...(teamConfig?.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
+    },
+    
+    // Match configuration
+    matchConfig: {
+      periods,
+      periodDurationMinutes,
+      matchType,
+      opponentTeam,
+      ...(captainId && { captainId })
+    },
+    
+    // Squad selection
+    squadSelection: [...selectedSquadIds],
+    
+    // Formation positions (exact positions, not derived roles)
+    formation: { ...formation },
+    
+    // Period-specific goalie assignments
+    periodGoalies: { ...periodGoalieIds }
+  };
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📋 Created initial config for database storage:', initialConfig);
+  }
+
+  return initialConfig;
 }
 
 /**
@@ -744,9 +832,10 @@ export async function insertInitialPlayerMatchStats(matchId, allPlayers, captain
  * @param {string} matchData.type - Match type (required, e.g., 'friendly')
  * @param {string} matchData.opponent - Opponent team name (optional)
  * @param {string} matchData.captainId - Captain player ID (optional)
+ * @param {Object} gameState - Full game state for initial_config generation (optional)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function updateExistingMatch(matchId, matchData) {
+export async function updateExistingMatch(matchId, matchData, gameState = null) {
   try {
     // Validate required fields
     const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type'];
@@ -766,6 +855,9 @@ export async function updateExistingMatch(matchId, matchData) {
       };
     }
 
+    // Prepare complete initial configuration from game state (if available)
+    const initialConfig = gameState ? formatInitialConfigFromGameState(gameState) : {};
+
     // Prepare update data (only updateable fields)
     const updateData = {
       format: matchData.format,
@@ -775,6 +867,7 @@ export async function updateExistingMatch(matchId, matchData) {
       type: matchData.type,
       opponent: matchData.opponent || null,
       captain: matchData.captainId || null,
+      initial_config: initialConfig,
       updated_at: new Date().toISOString()
     };
 

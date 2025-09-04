@@ -80,6 +80,20 @@ export function ConfigurationScreen({
     isAuthenticated: isVoteAuthenticated
   } = useFormationVotes();
 
+  // Helper function to clear stored formation data when configuration changes
+  const clearStoredFormationData = React.useCallback(() => {
+    try {
+      localStorage.removeItem('periodSetup_formation');
+      localStorage.removeItem('periodSetup_teamConfig');
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🗑️ Cleared stored formation data due to configuration change');
+      }
+    } catch (error) {
+      console.warn('Failed to clear stored formation data:', error);
+    }
+  }, []);
+
   // Handle substitution mode changes
   const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
     if (!teamConfig) return;
@@ -92,7 +106,10 @@ export function ConfigurationScreen({
     );
 
     updateTeamConfig(newTeamConfig);
-  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
+    
+    // Clear stored formation data since substitution mode changed
+    clearStoredFormationData();
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, clearStoredFormationData]);
 
   // Handle pair role rotation changes
   const handlePairRoleRotationChange = React.useCallback((newPairRoleRotation) => {
@@ -107,7 +124,10 @@ export function ConfigurationScreen({
     );
 
     updateTeamConfig(newTeamConfig);
-  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
+    
+    // Clear stored formation data since pair role rotation changed
+    clearStoredFormationData();
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, clearStoredFormationData]);
 
   // Auto-select "Pairs" substitution mode when 7 players + 2-2 formation is selected
   React.useEffect(() => {
@@ -178,6 +198,9 @@ export function ConfigurationScreen({
       setIsVoteModalOpen(true);
     } else {
       updateFormationSelection(newFormation);
+      
+      // Clear stored formation data since formation changed
+      clearStoredFormationData();
     }
   };
 
@@ -279,6 +302,9 @@ export function ConfigurationScreen({
         // Default to pairs for 7-player mode, individual for others
         const defaultSubstitutionType = (newIds.length === 7) ? 'pairs' : 'individual';
         createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType);
+        
+        // Clear stored formation data since squad selection changed team config
+        clearStoredFormationData();
       }
       
       // Clear captain if the captain is being deselected
@@ -325,6 +351,9 @@ export function ConfigurationScreen({
     // Always select 2-2 formation to avoid debug mode bug with 1-2-1
     const randomFormation = FORMATIONS.FORMATION_2_2;
     updateFormationSelection(randomFormation);
+    
+    // Clear stored formation data since we're randomizing everything
+    clearStoredFormationData();
 
     // Create team config for 7 players with pairs substitution
     createTeamConfigFromSquadSize(7, 'pairs');

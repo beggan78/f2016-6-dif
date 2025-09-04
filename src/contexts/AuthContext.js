@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
   const [skipProfileFetch, setSkipProfileFetch] = useState(false);
+  const [lastAuthEvent, setLastAuthEvent] = useState(null);
 
   // Clear any auth errors when user changes
   useEffect(() => {
@@ -209,6 +210,9 @@ export function AuthProvider({ children }) {
     // Listen for auth changes - this will handle initial session too
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+
+        // Track the auth event for external usage
+        setLastAuthEvent({ event, timestamp: Date.now() });
 
         // Handle sign out
         if (event === 'SIGNED_OUT' || !session?.user) {
@@ -556,6 +560,7 @@ export function AuthProvider({ children }) {
     loading,
     authError,
     sessionExpiry,
+    lastAuthEvent,
     
     // Computed properties
     isAuthenticated,

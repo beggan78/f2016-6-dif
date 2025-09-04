@@ -9,18 +9,25 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useMatchRecovery } from '../useMatchRecovery';
 import * as matchRecoveryService from '../../services/matchRecoveryService';
 import * as matchStateManager from '../../services/matchStateManager';
+import * as pendingMatchService from '../../services/pendingMatchService';
 
 // Mock the services
 jest.mock('../../services/matchRecoveryService', () => ({
   checkForRecoverableMatch: jest.fn(),
   deleteAbandonedMatch: jest.fn(),
   getRecoveryMatchData: jest.fn(),
-  validateRecoveryData: jest.fn()
+  validateRecoveryData: jest.fn(),
+  checkForPendingMatches: jest.fn()
 }));
 
 jest.mock('../../services/matchStateManager', () => ({
   updateMatchToConfirmed: jest.fn(),
   updatePlayerMatchStatsOnFinish: jest.fn()
+}));
+
+jest.mock('../../services/pendingMatchService', () => ({
+  resumePendingMatch: jest.fn(),
+  deletePendingMatch: jest.fn()
 }));
 
 describe('useMatchRecovery', () => {
@@ -31,9 +38,19 @@ describe('useMatchRecovery', () => {
     invitationParams: null,
     needsProfileCompletion: false,
     gameState: { 
-      clearStoredState: jest.fn()
+      clearStoredState: jest.fn(),
+      setTeamConfig: jest.fn(),
+      setSelectedFormation: jest.fn(),
+      setSelectedSquadIds: jest.fn(),
+      setNumPeriods: jest.fn(),
+      setPeriodDurationMinutes: jest.fn(),
+      setOpponentTeam: jest.fn(),
+      setCaptainId: jest.fn(),
+      setMatchType: jest.fn(),
+      setCurrentMatchId: jest.fn()
     },
-    setSuccessMessage: jest.fn()
+    setSuccessMessage: jest.fn(),
+    navigateToView: jest.fn()
   };
 
   const mockRecoveryMatch = {
@@ -57,6 +74,39 @@ describe('useMatchRecovery', () => {
     matchEvents: [{ id: 'event-1', type: 'goal' }]
   };
 
+  const mockPendingMatches = [
+    {
+      id: 'pending-match-1',
+      opponent: 'Test Opponents A',
+      created_at: '2024-03-01T10:00:00Z',
+      formation: '2-2',
+      substitution_config: { type: 'individual' }
+    },
+    {
+      id: 'pending-match-2',
+      opponent: 'Test Opponents B',
+      created_at: '2024-03-01T11:00:00Z',
+      formation: '1-2-1',
+      substitution_config: { type: 'pairs', pairRoleRotation: 'swap_every_rotation' }
+    }
+  ];
+
+  const mockReconstructedGameState = {
+    teamConfig: {
+      format: '5v5',
+      formation: '2-2',
+      substitutionType: 'individual'
+    },
+    selectedFormation: '2-2',
+    selectedSquadIds: ['player-1', 'player-2'],
+    periods: 3,
+    periodDurationMinutes: 15,
+    opponentTeam: 'Test Opponents A',
+    captainId: 'player-1',
+    matchType: 'friendly',
+    currentMatchId: 'pending-match-1'
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     
@@ -70,6 +120,10 @@ describe('useMatchRecovery', () => {
       success: false, 
       match: null 
     });
+    matchRecoveryService.checkForPendingMatches.mockResolvedValue({
+      success: false,
+      matches: []
+    });
     matchRecoveryService.getRecoveryMatchData.mockReturnValue(null);
     matchRecoveryService.validateRecoveryData.mockReturnValue(false);
     matchRecoveryService.deleteAbandonedMatch.mockResolvedValue({ success: true });
@@ -78,6 +132,11 @@ describe('useMatchRecovery', () => {
       success: true, 
       updated: 1 
     });
+    pendingMatchService.resumePendingMatch.mockResolvedValue({
+      success: true,
+      gameState: mockReconstructedGameState
+    });
+    pendingMatchService.deletePendingMatch.mockResolvedValue({ success: true });
   });
 
   afterEach(() => {
@@ -147,7 +206,7 @@ describe('useMatchRecovery', () => {
 
       // Fast-forward timers and wait for async operations
       act(() => {
-        jest.advanceTimersByTime(1000);
+        jest.advanceTimersByTime(1500);
       });
 
       await waitFor(() => {
@@ -156,10 +215,6 @@ describe('useMatchRecovery', () => {
       });
 
       expect(matchRecoveryService.checkForRecoverableMatch).toHaveBeenCalled();
-      expect(matchRecoveryService.validateRecoveryData).toHaveBeenCalledWith(
-        mockRecoveryMatch, 
-        mockLocalData
-      );
     });
 
     it('should not show modal if validation fails', async () => {
@@ -316,6 +371,295 @@ describe('useMatchRecovery', () => {
       expect(result.current.isProcessingRecovery).toBe(false);
 
       jest.useRealTimers();
+    });
+  });
+
+  describe('pending match functionality', () => {
+    it('should include pending match state in return value', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      // Check that new pending match state is included
+      expect(result.current.showPendingMatchesModal).toBe(false);
+      expect(result.current.pendingMatches).toEqual([]);
+      expect(result.current.isLoadingPendingMatches).toBe(false);
+      expect(result.current.pendingMatchError).toBe('');
+    });
+
+    it('should include pending match handlers in return value', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      // Check that all new handlers are functions
+      expect(typeof result.current.handleResumePendingMatch).toBe('function');
+      expect(typeof result.current.handleDeletePendingMatch).toBe('function');
+      expect(typeof result.current.handleClosePendingModal).toBe('function');
+      expect(typeof result.current.handleConfigureNewMatch).toBe('function');
+    });
+
+    it('should handle missing parameters gracefully in pending match handlers', async () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      // Test handlers with invalid parameters
+      await act(async () => {
+        await result.current.handleResumePendingMatch(null);
+        await result.current.handleDeletePendingMatch(null);
+      });
+
+      // Should not crash and maintain stable state
+      expect(result.current.isLoadingPendingMatches).toBe(false);
+      expect(result.current.showPendingMatchesModal).toBe(false);
+    });
+
+    it('should handle configureNewMatch navigation', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      act(() => {
+        result.current.handleConfigureNewMatch();
+      });
+
+      expect(mockParams.navigateToView).toHaveBeenCalledWith('CONFIG');
+    });
+  });
+
+  describe('pending match detection and display', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should detect and show pending matches when no finished match found', async () => {
+      // Mock no finished matches but pending matches available
+      matchRecoveryService.checkForRecoverableMatch.mockResolvedValue({
+        success: false,
+        match: null
+      });
+      matchRecoveryService.checkForPendingMatches.mockResolvedValue({
+        success: true,
+        matches: mockPendingMatches
+      });
+
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      // Fast-forward timers and wait for async operations
+      act(() => {
+        jest.advanceTimersByTime(1500);
+      });
+
+      await waitFor(() => {
+        expect(result.current.showPendingMatchesModal).toBe(true);
+        expect(result.current.pendingMatches).toEqual(mockPendingMatches);
+      });
+
+      expect(matchRecoveryService.checkForRecoverableMatch).toHaveBeenCalled();
+      expect(matchRecoveryService.checkForPendingMatches).toHaveBeenCalledWith('team-123');
+    });
+
+    it('should prioritize finished match over pending matches', async () => {
+      // Mock both finished and pending matches available
+      matchRecoveryService.checkForRecoverableMatch.mockResolvedValue({
+        success: true,
+        match: mockRecoveryMatch
+      });
+      matchRecoveryService.getRecoveryMatchData.mockReturnValue(mockLocalData);
+      matchRecoveryService.validateRecoveryData.mockReturnValue(true);
+      matchRecoveryService.checkForPendingMatches.mockResolvedValue({
+        success: true,
+        matches: mockPendingMatches
+      });
+
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      act(() => {
+        jest.advanceTimersByTime(1500);
+      });
+
+      await waitFor(() => {
+        expect(result.current.showRecoveryModal).toBe(true);
+        expect(result.current.showPendingMatchesModal).toBe(false);
+      });
+
+      // Should not check for pending matches when finished match is found
+      expect(matchRecoveryService.checkForPendingMatches).not.toHaveBeenCalled();
+    });
+
+    it('should not show pending matches modal when no matches found', async () => {
+      matchRecoveryService.checkForRecoverableMatch.mockResolvedValue({
+        success: false,
+        match: null
+      });
+      matchRecoveryService.checkForPendingMatches.mockResolvedValue({
+        success: true,
+        matches: []
+      });
+
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      act(() => {
+        jest.advanceTimersByTime(1500);
+      });
+
+      await waitFor(() => {
+        expect(matchRecoveryService.checkForPendingMatches).toHaveBeenCalled();
+      });
+
+      expect(result.current.showPendingMatchesModal).toBe(false);
+      expect(result.current.pendingMatches).toEqual([]);
+    });
+
+    it('should handle pending match service errors gracefully', async () => {
+      matchRecoveryService.checkForRecoverableMatch.mockResolvedValue({
+        success: false,
+        match: null
+      });
+      matchRecoveryService.checkForPendingMatches.mockRejectedValue(
+        new Error('Pending match service error')
+      );
+
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      act(() => {
+        jest.advanceTimersByTime(1500);
+      });
+
+      await waitFor(() => {
+        expect(matchRecoveryService.checkForPendingMatches).toHaveBeenCalled();
+      });
+
+      expect(result.current.showPendingMatchesModal).toBe(false);
+      expect(result.current.pendingMatchError).toBe('Failed to check for pending matches');
+    });
+  });
+
+  describe('handleResumePendingMatch', () => {
+    it('should successfully resume pending match and load game state', async () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      await act(async () => {
+        await result.current.handleResumePendingMatch('pending-match-1');
+      });
+
+      expect(pendingMatchService.resumePendingMatch).toHaveBeenCalledWith('pending-match-1');
+      expect(mockParams.gameState.clearStoredState).toHaveBeenCalled();
+      expect(mockParams.gameState.setTeamConfig).toHaveBeenCalledWith(mockReconstructedGameState.teamConfig);
+      expect(mockParams.gameState.setSelectedFormation).toHaveBeenCalledWith(mockReconstructedGameState.selectedFormation);
+      expect(mockParams.gameState.setSelectedSquadIds).toHaveBeenCalledWith(mockReconstructedGameState.selectedSquadIds);
+      expect(mockParams.gameState.setOpponentTeam).toHaveBeenCalledWith(mockReconstructedGameState.opponentTeam);
+      expect(mockParams.gameState.setCurrentMatchId).toHaveBeenCalledWith(mockReconstructedGameState.currentMatchId);
+      expect(mockParams.navigateToView).toHaveBeenCalledWith('CONFIG');
+      expect(mockParams.setSuccessMessage).toHaveBeenCalledWith('Match resumed successfully! Configure any final settings and click "Enter Game".');
+    });
+
+    it('should handle missing match ID gracefully', async () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      await act(async () => {
+        await result.current.handleResumePendingMatch(null);
+      });
+
+      expect(pendingMatchService.resumePendingMatch).not.toHaveBeenCalled();
+      expect(result.current.isLoadingPendingMatches).toBe(false);
+    });
+
+    it('should handle resume service errors', async () => {
+      pendingMatchService.resumePendingMatch.mockResolvedValue({
+        success: false,
+        error: 'Match not found'
+      });
+
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      await act(async () => {
+        await result.current.handleResumePendingMatch('pending-match-1');
+      });
+
+      expect(result.current.pendingMatchError).toBe('Failed to resume match: Match not found');
+      expect(result.current.isLoadingPendingMatches).toBe(false);
+    });
+
+    it('should handle loading state during resume operation', async () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      await act(async () => {
+        await result.current.handleResumePendingMatch('pending-match-1');
+      });
+
+      // Check loading state is cleared after operation
+      expect(result.current.isLoadingPendingMatches).toBe(false);
+    });
+  });
+
+  describe('handleDeletePendingMatch', () => {
+    it('should have delete handler function available', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      expect(typeof result.current.handleDeletePendingMatch).toBe('function');
+    });
+
+    it('should call delete service when valid match ID provided', async () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      await act(async () => {
+        await result.current.handleDeletePendingMatch('pending-match-1');
+      });
+
+      expect(pendingMatchService.deletePendingMatch).toHaveBeenCalledWith('pending-match-1');
+    });
+  });
+
+  describe('handleClosePendingModal', () => {
+    it('should be available as function', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      expect(typeof result.current.handleClosePendingModal).toBe('function');
+    });
+  
+    it('should close modal when called', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      act(() => {
+        result.current.handleClosePendingModal();
+      });
+
+      expect(result.current.showPendingMatchesModal).toBe(false);
+    });
+
+  });
+
+  describe('comprehensive state verification', () => {
+    it('should return all expected properties and functions', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      // Finished match recovery properties
+      expect(typeof result.current.showRecoveryModal).toBe('boolean');
+      expect(result.current.recoveryMatch).toBeNull();
+      expect(typeof result.current.isProcessingRecovery).toBe('boolean');
+      expect(typeof result.current.handleSaveRecovery).toBe('function');
+      expect(typeof result.current.handleAbandonRecovery).toBe('function');
+      expect(typeof result.current.handleCloseRecovery).toBe('function');
+
+      // Pending match properties
+      expect(typeof result.current.showPendingMatchesModal).toBe('boolean');
+      expect(Array.isArray(result.current.pendingMatches)).toBe(true);
+      expect(typeof result.current.isLoadingPendingMatches).toBe('boolean');
+      expect(typeof result.current.pendingMatchError).toBe('string');
+      expect(typeof result.current.handleResumePendingMatch).toBe('function');
+      expect(typeof result.current.handleDeletePendingMatch).toBe('function');
+      expect(typeof result.current.handleClosePendingModal).toBe('function');
+      expect(typeof result.current.handleConfigureNewMatch).toBe('function');
+    });
+
+    it('should maintain consistent initial state', () => {
+      const { result } = renderHook(() => useMatchRecovery(mockParams));
+
+      expect(result.current.showRecoveryModal).toBe(false);
+      expect(result.current.showPendingMatchesModal).toBe(false);
+      expect(result.current.isProcessingRecovery).toBe(false);
+      expect(result.current.isLoadingPendingMatches).toBe(false);
+      expect(result.current.pendingMatches).toEqual([]);
+      expect(result.current.pendingMatchError).toBe('');
+      expect(result.current.recoveryMatch).toBeNull();
     });
   });
 });

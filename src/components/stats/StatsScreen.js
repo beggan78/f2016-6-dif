@@ -7,6 +7,7 @@ import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
 import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
 import { updateMatchToConfirmed } from '../../services/matchStateManager';
+import { VIEWS } from '../../constants/viewConstants';
 
 export function StatsScreen({ 
   allPlayers, 
@@ -162,7 +163,7 @@ export function StatsScreen({
       setGameLog([]);
       resetScore(); // Clear score
       setOpponentTeam(''); // Clear opponent team name
-      setView('config');
+      setView(VIEWS.CONFIG);
     });
   };
 

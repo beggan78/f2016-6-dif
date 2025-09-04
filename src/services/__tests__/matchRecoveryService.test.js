@@ -2,7 +2,9 @@ import {
   checkForRecoverableMatch, 
   deleteAbandonedMatch, 
   getRecoveryMatchData, 
-  validateRecoveryData 
+  validateRecoveryData,
+  checkForPendingMatches,
+  validatePendingMatchData
 } from '../matchRecoveryService';
 import { supabase } from '../../lib/supabase';
 
@@ -533,6 +535,172 @@ describe('matchRecoveryService', () => {
       } finally {
         process.env.NODE_ENV = originalEnv;
       }
+    });
+  });
+
+  describe('checkForPendingMatches', () => {
+    it('should successfully return pending matches', async () => {
+      const mockMatches = [
+        { 
+          id: 'match-1', 
+          opponent: 'Team A', 
+          created_at: '2023-01-01T10:00:00Z',
+          formation: '2-2',
+          initial_config: { teamConfig: { substitutionType: 'individual' } }
+        },
+        { 
+          id: 'match-2', 
+          opponent: 'Team B', 
+          created_at: '2023-01-01T11:00:00Z',
+          formation: '1-2-1',
+          initial_config: { teamConfig: { substitutionType: 'pairs', pairRoleRotation: 'swap_every_rotation' } }
+        }
+      ];
+
+      const mockOrder = jest.fn().mockResolvedValue({ data: mockMatches, error: null });
+      const mockEq2 = jest.fn().mockReturnValue({ order: mockOrder });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq1 });
+
+      supabase.from.mockReturnValue({ select: mockSelect });
+
+      const result = await checkForPendingMatches('team-123');
+
+      expect(result.success).toBe(true);
+      expect(result.matches).toEqual(mockMatches);
+      expect(supabase.from).toHaveBeenCalledWith('match');
+      expect(mockSelect).toHaveBeenCalledWith('id, opponent, created_at, formation, initial_config');
+      expect(mockEq1).toHaveBeenCalledWith('team_id', 'team-123');
+      expect(mockEq2).toHaveBeenCalledWith('state', 'pending');
+      expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
+    });
+
+    it('should handle missing team ID', async () => {
+      const result = await checkForPendingMatches();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Team ID is required');
+    });
+
+    it('should handle database errors', async () => {
+      const mockError = { message: 'Database connection failed' };
+      const mockOrder = jest.fn().mockResolvedValue({ data: null, error: mockError });
+      const mockEq2 = jest.fn().mockReturnValue({ order: mockOrder });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq1 });
+
+      supabase.from.mockReturnValue({ select: mockSelect });
+
+      const result = await checkForPendingMatches('team-123');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error: Database connection failed');
+      expect(console.error).toHaveBeenCalledWith('❌ Error querying pending matches:', mockError);
+    });
+
+    it('should return empty array when no pending matches found', async () => {
+      const mockOrder = jest.fn().mockResolvedValue({ data: [], error: null });
+      const mockEq2 = jest.fn().mockReturnValue({ order: mockOrder });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq1 });
+
+      supabase.from.mockReturnValue({ select: mockSelect });
+
+      const result = await checkForPendingMatches('team-123');
+
+      expect(result.success).toBe(true);
+      expect(result.matches).toEqual([]);
+    });
+  });
+
+  describe('validatePendingMatchData', () => {
+    it('should successfully validate pending match with player stats', async () => {
+      const mockMatch = {
+        id: 'match-1',
+        formation: '2-2',
+        opponent: 'Test Team'
+      };
+
+      const mockPlayerStats = [
+        { player_id: 'player-1', started_as: 'defender' },
+        { player_id: 'player-2', started_as: 'attacker' }
+      ];
+
+      // Mock match query
+      const mockSingle = jest.fn().mockResolvedValue({ data: mockMatch, error: null });
+      const mockEq2 = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      const mockSelect1 = jest.fn().mockReturnValue({ eq: mockEq1 });
+
+      // Mock player stats query
+      const mockEq3 = jest.fn().mockResolvedValue({ data: mockPlayerStats, error: null });
+      const mockSelect2 = jest.fn().mockReturnValue({ eq: mockEq3 });
+
+      supabase.from
+        .mockReturnValueOnce({ select: mockSelect1 }) // Match query
+        .mockReturnValueOnce({ select: mockSelect2 }); // Player stats query
+
+      const result = await validatePendingMatchData('match-1');
+
+      expect(result.success).toBe(true);
+      expect(result.issues).toEqual([]);
+      expect(result.playerCount).toBe(2);
+      expect(result.hasValidStats).toBe(true);
+      expect(result.match).toEqual(mockMatch);
+    });
+
+    it('should handle missing match ID', async () => {
+      const result = await validatePendingMatchData();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Match ID is required');
+    });
+
+    it('should handle match not found', async () => {
+      const mockError = { code: 'PGRST116', message: 'No rows found' };
+      const mockSingle = jest.fn().mockResolvedValue({ data: null, error: mockError });
+      const mockEq2 = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq1 });
+
+      supabase.from.mockReturnValue({ select: mockSelect });
+
+      const result = await validatePendingMatchData('match-1');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Pending match not found or not accessible');
+    });
+
+    it('should identify validation issues', async () => {
+      const mockMatch = {
+        id: 'match-1',
+        formation: null, // Missing formation
+        opponent: 'Test Team'
+      };
+
+      const mockPlayerStats = []; // No player stats
+
+      // Mock match query
+      const mockSingle = jest.fn().mockResolvedValue({ data: mockMatch, error: null });
+      const mockEq2 = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      const mockSelect1 = jest.fn().mockReturnValue({ eq: mockEq1 });
+
+      // Mock player stats query
+      const mockEq3 = jest.fn().mockResolvedValue({ data: mockPlayerStats, error: null });
+      const mockSelect2 = jest.fn().mockReturnValue({ eq: mockEq3 });
+
+      supabase.from
+        .mockReturnValueOnce({ select: mockSelect1 })
+        .mockReturnValueOnce({ select: mockSelect2 });
+
+      const result = await validatePendingMatchData('match-1');
+
+      expect(result.success).toBe(true);
+      expect(result.issues).toContain('No player statistics found for this match');
+      expect(result.issues).toContain('Missing formation configuration');
+      expect(result.playerCount).toBe(0);
+      expect(result.hasValidStats).toBe(false);
     });
   });
 });

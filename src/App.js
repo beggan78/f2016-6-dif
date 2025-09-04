@@ -22,6 +22,7 @@ import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
 import { MatchRecoveryModal } from './components/modals/MatchRecoveryModal';
+import { PendingMatchesModal } from './components/modals/PendingMatchesModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -136,7 +137,8 @@ function AppContent() {
     signOut,
     loading: authLoading,
     needsProfileCompletion,
-    user
+    user,
+    lastAuthEvent
   } = useAuth();
 
   const {
@@ -179,9 +181,22 @@ function AppContent() {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log('App.js sync useEffect: gameState.view changed to:', gameState.view, 'calling syncCurrentView');
+      
+      // Extra debug for PERIOD_SETUP to track formation data flow
+      if (gameState.view === VIEWS.PERIOD_SETUP) {
+        console.log('🔍 FORMATION DEBUG - App.js switching to PERIOD_SETUP:', {
+          hasFormation: !!gameState.formation,
+          formationKeys: Object.keys(gameState.formation || {}),
+          formationData: gameState.formation,
+          hasPeriodGoalieIds: !!gameState.periodGoalieIds,
+          periodGoalieIds: gameState.periodGoalieIds,
+          currentPeriodNumber: gameState.currentPeriodNumber,
+          teamConfig: gameState.teamConfig
+        });
+      }
     }
     syncCurrentView(gameState.view);
-  }, [gameState.view, syncCurrentView]);
+  }, [gameState.view, gameState.formation, gameState.periodGoalieIds, syncCurrentView]);
   
   // Custom sign out handler that resets view to ConfigurationScreen
   const handleSignOut = useCallback(async () => {
@@ -509,14 +524,24 @@ function AppContent() {
     isProcessingRecovery,
     handleSaveRecovery,
     handleAbandonRecovery,
-    handleCloseRecovery
+    handleCloseRecovery,
+    showPendingMatchesModal,
+    pendingMatches,
+    isLoadingPendingMatches,
+    pendingMatchError,
+    handleResumePendingMatch,
+    handleDeletePendingMatch,
+    handleClosePendingModal,
+    handleConfigureNewMatch
   } = useMatchRecovery({
     user,
     currentTeam,
     invitationParams: invitationManager.invitationParams,
     needsProfileCompletion,
     gameState,
-    setSuccessMessage
+    setSuccessMessage,
+    navigateToView,
+    lastAuthEvent
   });
   
   
@@ -640,7 +665,7 @@ function AppContent() {
     timers.clearAllTimersForNewGame();
     
     // Reset all game state
-    gameState.setView('config');
+    gameState.setView(VIEWS.CONFIG);
     gameState.setCurrentPeriodNumber(1);
     gameState.setGameLog([]);
     
@@ -1124,6 +1149,18 @@ function AppContent() {
         onClose={handleCloseRecovery}
         saving={isProcessingRecovery}
         deleting={isProcessingRecovery}
+      />
+
+      {/* Pending Matches Modal */}
+      <PendingMatchesModal
+        isOpen={showPendingMatchesModal}
+        pendingMatches={pendingMatches}
+        isLoading={isLoadingPendingMatches}
+        error={pendingMatchError}
+        onResume={handleResumePendingMatch}
+        onDelete={handleDeletePendingMatch}
+        onClose={handleClosePendingModal}
+        onConfigureNew={handleConfigureNewMatch}
       />
 
         {/* Session Expiry Warning Modal */}

@@ -93,7 +93,31 @@ export function useGameState(navigateToView = null) {
   const [alertMinutes, setAlertMinutes] = useState(initialState.alertMinutes);
 
   const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
-  const [formation, setFormation] = useState(initialState.formation);
+  const [formation, setFormationInternal] = useState(initialState.formation);
+  
+  // Tracked setFormation to catch all calls that modify formation
+  const setFormation = useCallback((newValue) => {
+    if (process.env.NODE_ENV === 'development') {
+      const hasNewData = newValue && Object.values(newValue).some(v => v !== null && v !== '');
+      const hasCurrentData = formation && Object.values(formation).some(v => v !== null && v !== '');
+      
+      // Only log significant changes - new data being set or data being cleared
+      if (hasNewData || hasCurrentData) {
+        const stack = new Error().stack.split('\n').slice(2, 8).join('\n'); // Get 6 levels of stack trace
+        console.log('🔥 setFormation CALLED:', {
+          newHasData: hasNewData,
+          currentHasData: hasCurrentData,
+          isClearing: hasCurrentData && !hasNewData,
+          isRestoring: !hasCurrentData && hasNewData,
+          newFormationKeys: newValue ? Object.keys(newValue) : [],
+          timestamp: new Date().toISOString(),
+          stackTrace: stack
+        });
+      }
+    }
+    
+    return setFormationInternal(newValue);
+  }, [formation]);
   const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
   const [nextPlayerToSubOut, setNextPlayerToSubOut] = useState(initialState.nextPlayerToSubOut);
   const [nextPlayerIdToSubOut, setNextPlayerIdToSubOut] = useState(initialState.nextPlayerIdToSubOut);
@@ -185,7 +209,15 @@ export function useGameState(navigateToView = null) {
   // Sync player roles with formation changes (fixes PAIRS_7 Goal Scorer modal sorting)
   useEffect(() => {
     // Only update roles if we have a formation and selected squad players
-    if (!formation || !selectedSquadIds.length) return;
+    if (!formation || !selectedSquadIds.length) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 PLAYER ROLE SYNC: Skipped - no formation or squad', {
+          hasFormation: !!formation,
+          squadCount: selectedSquadIds.length
+        });
+      }
+      return;
+    }
     
     // Skip if formation is empty (all positions null)
     const hasAnyAssignedPositions = Object.values(formation).some(pos => {
@@ -194,7 +226,23 @@ export function useGameState(navigateToView = null) {
       return false;
     });
     
-    if (!hasAnyAssignedPositions) return;
+    if (!hasAnyAssignedPositions) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 PLAYER ROLE SYNC: Skipped - empty formation', {
+          formationKeys: Object.keys(formation),
+          formationValues: formation
+        });
+      }
+      return;
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 PLAYER ROLE SYNC: Running with valid formation', {
+        formationKeys: Object.keys(formation),
+        hasAssignedPositions: hasAnyAssignedPositions,
+        squadCount: selectedSquadIds.length
+      });
+    }
     
     // Create formation-aware team config for role initialization
     // Use selectedFormation if available to override the teamConfig formation
@@ -202,6 +250,15 @@ export function useGameState(navigateToView = null) {
       ...teamConfig,
       formation: selectedFormation
     } : teamConfig;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 PLAYER ROLE SYNC: About to update player roles', {
+        formationBefore: formation,
+        formationHasData: Object.values(formation).some(v => v !== null && v !== ''),
+        teamConfig: formationAwareTeamConfig,
+        squadCount: selectedSquadIds.length
+      });
+    }
     
     // Update player roles based on current formation
     setAllPlayers(prev => {
@@ -228,8 +285,28 @@ export function useGameState(navigateToView = null) {
         return player;
       });
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 PLAYER ROLE SYNC: Player roles updated', {
+          playersUpdated: updated.filter((p, i) => p !== prev[i]).length,
+          formationAfterUpdate: formation,
+          formationStillHasData: Object.values(formation).some(v => v !== null && v !== '')
+        });
+      }
+
       return updated;
     });
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 PLAYER ROLE SYNC: Completed - checking formation state');
+      // Use setTimeout to check formation after React has processed the update
+      setTimeout(() => {
+        console.log('🔄 PLAYER ROLE SYNC: Formation state after 10ms', {
+          stillHasFormation: !!formation,
+          formationKeys: formation ? Object.keys(formation) : [],
+          hasValidData: formation ? Object.values(formation).some(v => v !== null && v !== '') : false
+        });
+      }, 10);
+    }
   }, [formation, teamConfig, selectedFormation, selectedSquadIds]);
 
   // Function to sync match data from gameEventLogger
@@ -704,7 +781,18 @@ export function useGameState(navigateToView = null) {
           console.log('🔄 Updating existing match due to navigation back-and-forth:', currentMatchId);
           
           // Update existing match record with potentially new configuration
-          updateExistingMatch(currentMatchId, matchData)
+          updateExistingMatch(currentMatchId, matchData, {
+            teamConfig,
+            selectedFormation,
+            selectedSquadIds,
+            formation,
+            periodGoalieIds,
+            periods: numPeriods,
+            periodDurationMinutes,
+            matchType,
+            opponentTeam,
+            captainId
+          })
             .then((updateResult) => {
               if (updateResult.success) {
                 console.log('✅ Match record updated successfully');
@@ -739,7 +827,18 @@ export function useGameState(navigateToView = null) {
           setMatchCreationAttempted(true); // Prevent duplicate attempts
           
           // Create match record and initial player stats in background (non-blocking)
-          createMatch(matchData, updatedPlayers) // Use updated players data
+          createMatch(matchData, updatedPlayers, {
+            teamConfig,
+            selectedFormation,
+            selectedSquadIds,
+            formation,
+            periodGoalieIds,
+            periods: numPeriods,
+            periodDurationMinutes,
+            matchType,
+            opponentTeam,
+            captainId
+          }) // Use updated players data and game state
             .then((result) => {
               if (result.success) {
                 console.log('✅ Match record created:', result.matchId);
