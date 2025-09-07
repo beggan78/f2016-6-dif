@@ -926,6 +926,155 @@ export async function upsertPlayerMatchStats(matchId, allPlayers, captainId, sel
 }
 
 /**
+ * Save initial match configuration when user clicks "Enter Game"
+ * @param {string} matchId - Match ID
+ * @param {Object} initialConfig - Complete initial configuration
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function saveInitialMatchConfig(matchId, initialConfig) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    if (!initialConfig || typeof initialConfig !== 'object') {
+      return {
+        success: false,
+        error: 'Initial configuration is required'
+      };
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('💾 Saving initial match config:', matchId);
+    }
+
+    const { error } = await supabase
+      .from('match')
+      .update({ 
+        initial_config: initialConfig,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', matchId)
+      .eq('state', 'pending'); // Only update pending matches
+
+    if (error) {
+      console.error('❌ Failed to save initial match config:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Exception while saving initial match config:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Get pending match with initial configuration for a team
+ * @param {string} teamId - Team ID
+ * @returns {Promise<{success: boolean, match?: Object, error?: string}>}
+ */
+export async function getPendingMatchForTeam(teamId) {
+  try {
+    if (!teamId) {
+      return {
+        success: false,
+        error: 'Team ID is required'
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('match')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('state', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('❌ Failed to get pending match:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return {
+      success: true,
+      match: data || null
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while getting pending match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Delete pending match and clear local state
+ * @param {string} matchId - Match ID
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function discardPendingMatch(matchId) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🗑️ Discarding pending match:', matchId);
+    }
+
+    // First delete any associated player match stats
+    await supabase
+      .from('player_match_stats')
+      .delete()
+      .eq('match_id', matchId);
+
+    // Then delete the match itself
+    const { error } = await supabase
+      .from('match')
+      .delete()
+      .eq('id', matchId)
+      .eq('state', 'pending'); // Only delete pending matches
+
+    if (error) {
+      console.error('❌ Failed to discard pending match:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Exception while discarding pending match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
  * Update player match statistics when match finishes
  * @param {string} matchId - Match ID
  * @param {Array} allPlayers - Array of all players from game state

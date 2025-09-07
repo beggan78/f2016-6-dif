@@ -84,7 +84,8 @@ export function PeriodSetupScreen({
   rotationQueue,
   setRotationQueue,
   preparePeriodWithGameLog,
-  debugMode = false
+  debugMode = false,
+  resumeFormationData = null
 }) {
   // Determine formation mode
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
@@ -111,6 +112,16 @@ export function PeriodSetupScreen({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Handle resume formation data from pending match
+  useEffect(() => {
+    if (resumeFormationData) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Populating formation from pending match resume data');
+      }
+      setFormation(resumeFormationData);
+    }
+  }, [resumeFormationData, setFormation]);
 
   // Detect if pre-selected goalie is inactive (for periods 2+)
   useEffect(() => {

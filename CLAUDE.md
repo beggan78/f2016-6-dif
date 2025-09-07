@@ -20,7 +20,8 @@ Mobile-first web application for coaching youth soccer teams with Supabase backe
 - **Testing guidelines**: Read `.claude/testing-guidelines.md` for testing patterns and best practices
 - **Services documentation**: Read `/src/services/README.md` for database and match lifecycle patterns
 - **Architecture principles**: DRY, KISS, Separation of Concerns, Single Responsibility
-- **IMPORTANT: SUPABASE DEPLOYMENT POLICY**: NEVER deploy Edge Functions or migrations directly to remote Supabase. ALL testing and development is done against local Supabase only. The user handles remote deployments.
+- **CRITICAL: SUPABASE DEPLOYMENT POLICY**: NEVER deploy Edge Functions or migrations directly to remote Supabase. ALL testing and development is done against local Supabase only. The user handles remote deployments.
+- **CRITICAL: DATABASE MIGRATIONS**: Migrations are ONLY applied from GitHub Actions workflow, NEVER manually from local machine. Test new functionality against local Supabase. Apply local schema changes with `npm run db:reset` to apply local migrations.
 
 ### CRITICAL: Database User ID References
 **Understanding auth.users.id vs public.user_profile.id**:

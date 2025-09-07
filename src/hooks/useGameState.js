@@ -9,7 +9,7 @@ import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPos
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
-import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats } from '../services/matchStateManager';
+import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig } from '../services/matchStateManager';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
@@ -506,7 +506,7 @@ export function useGameState(navigateToView = null) {
     preparePeriodWithGameLog(periodNum, gameLog);
   }, [preparePeriodWithGameLog, gameLog]);
 
-  const handleStartPeriodSetup = useCallback(() => {
+  const handleStartPeriodSetup = useCallback(async () => {
     if (selectedSquadIds.length < 5 || selectedSquadIds.length > 10) {
       alert("Please select 5-8 players for the squad."); // Replace with modal
       return;
@@ -521,7 +521,7 @@ export function useGameState(navigateToView = null) {
     persistenceManager.autoBackup();
 
     // Reset player stats for the new game for the selected squad
-    setAllPlayers(prev => prev.map(p => {
+    const updatedPlayers = allPlayers.map(p => {
       if (selectedSquadIds.includes(p.id)) {
         const freshStats = initializePlayers([p.name])[0].stats;
         return {
@@ -534,7 +534,96 @@ export function useGameState(navigateToView = null) {
         };
       }
       return p;
-    }));
+    });
+
+    setAllPlayers(updatedPlayers);
+
+    // Manage pending match in database if we have team context
+    if (currentTeam?.id) {
+      try {
+        // Prepare match data for database
+        const matchData = formatMatchDataFromGameState({
+          teamConfig,
+          selectedFormation,
+          periods: numPeriods,
+          periodDurationMinutes,
+          opponentTeam,
+          captainId,
+          matchType
+        }, currentTeam.id);
+
+        if (currentMatchId && matchCreationAttempted) {
+          // UPDATE FLOW: Match already exists, update it with new configuration
+          const updateResult = await updateExistingMatch(currentMatchId, matchData);
+          
+          if (updateResult.success) {
+            // Update initial configuration for resuming
+            const initialConfig = {
+              formation: formation, // Will be populated in PeriodSetupScreen
+              teamConfig: teamConfig,
+              matchConfig: {
+                format: matchData.format,
+                matchType: matchType,
+                opponentTeam: opponentTeam,
+                periods: numPeriods,
+                periodDurationMinutes: periodDurationMinutes,
+                captainId: captainId
+              },
+              periodGoalies: periodGoalieIds,
+              squadSelection: selectedSquadIds
+            };
+            
+            // Save updated configuration (non-blocking)
+            saveInitialMatchConfig(currentMatchId, initialConfig).catch(error => {
+              console.warn('⚠️ Failed to update initial match config:', error);
+            });
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Pending match updated:', currentMatchId);
+            }
+          } else {
+            console.warn('⚠️ Failed to update pending match:', updateResult.error);
+          }
+        } else {
+          // CREATE FLOW: No existing match, create new one
+          const createResult = await createMatch(matchData, updatedPlayers);
+          
+          if (createResult.success) {
+            setCurrentMatchId(createResult.matchId);
+            setMatchCreationAttempted(true); // Prevent duplicate match creation
+            
+            // Save complete initial configuration for resuming
+            const initialConfig = {
+              formation: formation, // Will be populated in PeriodSetupScreen
+              teamConfig: teamConfig,
+              matchConfig: {
+                format: matchData.format,
+                matchType: matchType,
+                opponentTeam: opponentTeam,
+                periods: numPeriods,
+                periodDurationMinutes: periodDurationMinutes,
+                captainId: captainId
+              },
+              periodGoalies: periodGoalieIds,
+              squadSelection: selectedSquadIds
+            };
+            
+            // Save initial configuration (non-blocking)
+            saveInitialMatchConfig(createResult.matchId, initialConfig).catch(error => {
+              console.warn('⚠️ Failed to save initial match config:', error);
+            });
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Pending match created:', createResult.matchId);
+            }
+          } else {
+            console.warn('⚠️ Failed to create pending match:', createResult.error);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error managing pending match:', error);
+      }
+    }
 
     // Reset match state for new game setup
     setMatchState('not_started');
@@ -542,7 +631,10 @@ export function useGameState(navigateToView = null) {
     setGameLog([]); // Clear game log for new game
     preparePeriod(1);
     setView(VIEWS.PERIOD_SETUP);
-  }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod]);
+  }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam?.id, 
+      teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, 
+      formation, periodGoalieIds, setCurrentMatchId, setAllPlayers, setMatchState, 
+      setCurrentPeriodNumber, setGameLog, setView]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
@@ -700,14 +792,11 @@ export function useGameState(navigateToView = null) {
         }, currentTeam.id);
 
         if (currentMatchId && matchCreationAttempted) {
-          // UPDATE FLOW: Match already exists, user made changes after navigating back
-          console.log('🔄 Updating existing match due to navigation back-and-forth:', currentMatchId);
-          
-          // Update existing match record with potentially new configuration
+          // UPDATE FLOW: Match already exists, update it with formation data
           updateExistingMatch(currentMatchId, matchData)
             .then((updateResult) => {
               if (updateResult.success) {
-                console.log('✅ Match record updated successfully');
+                console.log('✅ Match record updated with formation data');
               } else {
                 console.warn('⚠️  Failed to update match record:', updateResult.error);
                 // Continue with game anyway - database sync is optional
@@ -734,8 +823,8 @@ export function useGameState(navigateToView = null) {
               // Continue with game anyway - database sync is optional
             });
             
-        } else if (!matchCreationAttempted) {
-          // CREATE FLOW: First time entering game
+        } else {
+          // CREATE FLOW: No existing match, create new one
           setMatchCreationAttempted(true); // Prevent duplicate attempts
           
           // Create match record and initial player stats in background (non-blocking)
@@ -757,8 +846,6 @@ export function useGameState(navigateToView = null) {
               // Continue with game anyway - match creation is optional
             });
         }
-        // If currentMatchId exists but matchCreationAttempted is false, something is inconsistent
-        // This shouldn't happen normally, but we'll just continue with the game
       }
 
       return updatedPlayers;

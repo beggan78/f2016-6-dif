@@ -43,7 +43,11 @@ import { getInvitationStatus } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
 import { useMatchRecovery } from './hooks/useMatchRecovery';
 import { useTeamInvitationManager } from './hooks/useTeamInvitationManager';
-import { updateMatchToConfirmed } from './services/matchStateManager';
+import { updateMatchToConfirmed, discardPendingMatch } from './services/matchStateManager';
+import { checkForPendingMatch, createResumeDataForConfiguration, extractFormationFromConfig } from './services/pendingMatchService';
+import { PendingMatchResumeModal } from './components/match/PendingMatchResumeModal';
+import { DETECTION_TYPES } from './services/sessionDetectionService';
+import { useSessionDetection } from './hooks/useSessionDetection';
 
 // Dismissed modals localStorage utilities
 const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
@@ -150,6 +154,15 @@ function AppContent() {
   // Authentication modal
   const authModal = useAuthModal();
 
+  // Session detection for pending match handling
+  const { detectionResult } = useSessionDetection();
+
+  // Pending match resume state (must be declared before useEffect that uses them)
+  const [pendingMatchData, setPendingMatchData] = useState(null);
+  const [showPendingMatchModal, setShowPendingMatchModal] = useState(false);
+  const [pendingMatchLoading, setPendingMatchLoading] = useState(false);
+  const [resumeData, setResumeData] = useState(null);
+
   // Check for password reset tokens or codes in URL on app load
   useEffect(() => {
     const { hasTokens } = detectResetTokens();
@@ -166,6 +179,20 @@ function AppContent() {
       authModal.openReset();
     }
   }, [user, authModal]);
+
+  // Session detection effect for pending match handling
+  useEffect(() => {
+    if (detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && currentTeam?.id && !showPendingMatchModal) {
+      checkForPendingMatch(currentTeam.id).then(result => {
+        if (result.shouldShow && result.pendingMatch) {
+          setPendingMatchData(result.pendingMatch);
+          setShowPendingMatchModal(true);
+        }
+      }).catch(error => {
+        console.error('❌ Failed to check for pending match:', error);
+      });
+    }
+  }, [detectionResult, currentTeam?.id, showPendingMatchModal]);
 
 
 
@@ -211,6 +238,62 @@ function AppContent() {
     setTimeout(() => {
       setSuccessMessage('');
     }, 3000); // 3 second auto-dismiss
+  }, []);
+
+  // Pending match modal handlers
+  const handleResumePendingMatch = useCallback(async () => {
+    if (!pendingMatchData?.initial_config) return;
+
+    setPendingMatchLoading(true);
+    try {
+      // Create resume data for ConfigurationScreen
+      const resumeDataForConfig = createResumeDataForConfiguration(pendingMatchData.initial_config);
+      
+      if (resumeDataForConfig) {
+        setResumeData(resumeDataForConfig);
+        setShowPendingMatchModal(false);
+        
+        // Navigate to ConfigurationScreen with resume data
+        gameState.setViewWithData(VIEWS.CONFIG, { 
+          resumePendingMatchData: resumeDataForConfig,
+          resumeFormationData: extractFormationFromConfig(pendingMatchData.initial_config)
+        });
+      } else {
+        console.error('❌ Failed to create resume data from pending match');
+        setShowPendingMatchModal(false);
+      }
+    } catch (error) {
+      console.error('❌ Error resuming pending match:', error);
+      setShowPendingMatchModal(false);
+    } finally {
+      setPendingMatchLoading(false);
+    }
+  }, [pendingMatchData, gameState]);
+
+  const handleDiscardPendingMatch = useCallback(async () => {
+    if (!pendingMatchData?.id) return;
+
+    setPendingMatchLoading(true);
+    try {
+      await discardPendingMatch(pendingMatchData.id);
+      setShowPendingMatchModal(false);
+      setPendingMatchData(null);
+      setResumeData(null);
+      
+      // Clear any stored match state
+      if (gameState.clearStoredState) {
+        gameState.clearStoredState();
+      }
+    } catch (error) {
+      console.error('❌ Error discarding pending match:', error);
+      setShowPendingMatchModal(false);
+    } finally {
+      setPendingMatchLoading(false);
+    }
+  }, [pendingMatchData, gameState]);
+
+  const handleClosePendingMatchModal = useCallback(() => {
+    setShowPendingMatchModal(false);
   }, []);
 
   // Create a ref to store the pushNavigationState function to avoid circular dependency
@@ -1124,6 +1207,16 @@ function AppContent() {
         onClose={handleCloseRecovery}
         saving={isProcessingRecovery}
         deleting={isProcessingRecovery}
+      />
+
+      {/* Pending Match Resume Modal */}
+      <PendingMatchResumeModal
+        isOpen={showPendingMatchModal}
+        onResume={handleResumePendingMatch}
+        onDiscard={handleDiscardPendingMatch}
+        onClose={handleClosePendingMatchModal}
+        pendingMatch={pendingMatchData}
+        isLoading={pendingMatchLoading}
       />
 
         {/* Session Expiry Warning Modal */}

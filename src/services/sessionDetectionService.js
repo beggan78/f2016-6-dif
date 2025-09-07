@@ -182,6 +182,7 @@ export function detectSessionType() {
     const result = {
       type: detectedType,
       confidence,
+      scores: {}, // Required by validation - empty for now, can be populated later if needed
       signals: {
         navigation: navSignals,
         session: sessionSignals

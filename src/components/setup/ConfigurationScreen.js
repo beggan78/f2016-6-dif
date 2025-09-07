@@ -56,7 +56,9 @@ export function ConfigurationScreen({
   authModal,
   setView,
   setViewWithData,
-  syncPlayersFromTeamRoster
+  syncPlayersFromTeamRoster,
+  resumePendingMatchData = null,
+  clearResumeData
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -269,6 +271,60 @@ export function ConfigurationScreen({
       }
     }
   }, [isAuthenticated, currentTeam, teamPlayers, allPlayers, setAllPlayers]);
+
+  // Handle resume data from pending match
+  React.useEffect(() => {
+    if (resumePendingMatchData) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Populating configuration from pending match resume data');
+      }
+
+      // Pre-populate all configuration from saved data
+      if (resumePendingMatchData.squadSelection) {
+        setSelectedSquadIds(resumePendingMatchData.squadSelection);
+      }
+      
+      if (resumePendingMatchData.periods) {
+        setNumPeriods(resumePendingMatchData.periods);
+      }
+      
+      if (resumePendingMatchData.periodDurationMinutes) {
+        setPeriodDurationMinutes(resumePendingMatchData.periodDurationMinutes);
+      }
+      
+      if (resumePendingMatchData.opponentTeam !== undefined) {
+        setOpponentTeam(resumePendingMatchData.opponentTeam);
+      }
+      
+      if (resumePendingMatchData.matchType) {
+        setMatchType(resumePendingMatchData.matchType);
+      }
+      
+      if (resumePendingMatchData.captainId) {
+        setCaptain(resumePendingMatchData.captainId);
+      }
+      
+      // Update team config including substitution configuration
+      if (resumePendingMatchData.teamConfig) {
+        updateTeamConfig(resumePendingMatchData.teamConfig);
+      }
+      
+      if (resumePendingMatchData.formation) {
+        updateFormationSelection(resumePendingMatchData.formation);
+      }
+      
+      if (resumePendingMatchData.periodGoalies) {
+        setPeriodGoalieIds(resumePendingMatchData.periodGoalies);
+      }
+      
+      // Clear the resume data after population
+      if (clearResumeData) {
+        clearResumeData();
+      }
+    }
+  }, [resumePendingMatchData, setSelectedSquadIds, setNumPeriods, setPeriodDurationMinutes, 
+      setOpponentTeam, setMatchType, setCaptain, updateTeamConfig, updateFormationSelection, 
+      setPeriodGoalieIds, clearResumeData]);
 
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {
