@@ -6,6 +6,53 @@
  */
 
 import { getPendingMatchForTeam } from './matchStateManager';
+import { supabase } from '../lib/supabase';
+
+/**
+ * Get ALL pending matches for a team (for multi-match modal)
+ * @param {string} teamId - Current team ID
+ * @returns {Promise<{shouldShow: boolean, pendingMatches: Array}>}
+ */
+export async function checkForPendingMatches(teamId) {
+  try {
+    if (!teamId) {
+      return { shouldShow: false, pendingMatches: [] };
+    }
+
+    const { data, error } = await supabase
+      .from('match')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('state', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('⚠️ Failed to check for pending matches:', error);
+      return { shouldShow: false, pendingMatches: [] };
+    }
+
+    // Filter matches that have valid initial config
+    const validMatches = data?.filter(match => 
+      match.initial_config && 
+      Object.keys(match.initial_config).length > 0
+    ) || [];
+
+    const shouldShow = validMatches.length > 0;
+
+    if (process.env.NODE_ENV === 'development' && shouldShow) {
+      console.log(`🔄 ${validMatches.length} pending match(es) found for team:`, teamId);
+    }
+
+    return {
+      shouldShow,
+      pendingMatches: validMatches
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while checking for pending matches:', error);
+    return { shouldShow: false, pendingMatches: [] };
+  }
+}
 
 /**
  * Check if user has pending match and should show resume modal

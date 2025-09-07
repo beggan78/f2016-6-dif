@@ -44,7 +44,7 @@ import { supabase } from './lib/supabase';
 import { useMatchRecovery } from './hooks/useMatchRecovery';
 import { useTeamInvitationManager } from './hooks/useTeamInvitationManager';
 import { updateMatchToConfirmed, discardPendingMatch } from './services/matchStateManager';
-import { checkForPendingMatch, createResumeDataForConfiguration, extractFormationFromConfig } from './services/pendingMatchService';
+import { checkForPendingMatches, createResumeDataForConfiguration, extractFormationFromConfig } from './services/pendingMatchService';
 import { PendingMatchResumeModal } from './components/match/PendingMatchResumeModal';
 import { DETECTION_TYPES } from './services/sessionDetectionService';
 import { useSessionDetection } from './hooks/useSessionDetection';
@@ -148,7 +148,8 @@ function AppContent() {
     teamPlayers,
     hasPendingRequests,
     pendingRequestsCount,
-    canManageTeam
+    canManageTeam,
+    loading: teamLoading
   } = useTeam();
 
   // Authentication modal
@@ -158,7 +159,7 @@ function AppContent() {
   const { detectionResult } = useSessionDetection();
 
   // Pending match resume state (must be declared before useEffect that uses them)
-  const [pendingMatchData, setPendingMatchData] = useState(null);
+  const [pendingMatches, setPendingMatches] = useState([]);
   const [showPendingMatchModal, setShowPendingMatchModal] = useState(false);
   const [pendingMatchLoading, setPendingMatchLoading] = useState(false);
   const [resumeData, setResumeData] = useState(null);
@@ -182,17 +183,21 @@ function AppContent() {
 
   // Session detection effect for pending match handling
   useEffect(() => {
-    if (detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && currentTeam?.id && !showPendingMatchModal) {
-      checkForPendingMatch(currentTeam.id).then(result => {
-        if (result.shouldShow && result.pendingMatch) {
-          setPendingMatchData(result.pendingMatch);
+
+    if (detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
+        currentTeam?.id && 
+        !teamLoading && 
+        !showPendingMatchModal) {
+      checkForPendingMatches(currentTeam.id).then(result => {
+        if (result.shouldShow && result.pendingMatches.length > 0) {
+          setPendingMatches(result.pendingMatches);
           setShowPendingMatchModal(true);
         }
       }).catch(error => {
-        console.error('❌ Failed to check for pending match:', error);
+        console.error('❌ Failed to check for pending matches:', error);
       });
     }
-  }, [detectionResult, currentTeam?.id, showPendingMatchModal]);
+  }, [detectionResult, currentTeam?.id, teamLoading, showPendingMatchModal]);
 
 
 
@@ -241,13 +246,14 @@ function AppContent() {
   }, []);
 
   // Pending match modal handlers
-  const handleResumePendingMatch = useCallback(async () => {
-    if (!pendingMatchData?.initial_config) return;
+  const handleResumePendingMatch = useCallback(async (matchId) => {
+    const selectedMatch = pendingMatches.find(match => match.id === matchId);
+    if (!selectedMatch?.initial_config) return;
 
     setPendingMatchLoading(true);
     try {
       // Create resume data for ConfigurationScreen
-      const resumeDataForConfig = createResumeDataForConfiguration(pendingMatchData.initial_config);
+      const resumeDataForConfig = createResumeDataForConfiguration(selectedMatch.initial_config);
       
       if (resumeDataForConfig) {
         setResumeData(resumeDataForConfig);
@@ -256,7 +262,7 @@ function AppContent() {
         // Navigate to ConfigurationScreen with resume data
         gameState.setViewWithData(VIEWS.CONFIG, { 
           resumePendingMatchData: resumeDataForConfig,
-          resumeFormationData: extractFormationFromConfig(pendingMatchData.initial_config)
+          resumeFormationData: extractFormationFromConfig(selectedMatch.initial_config)
         });
       } else {
         console.error('❌ Failed to create resume data from pending match');
@@ -268,17 +274,23 @@ function AppContent() {
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatchData, gameState]);
+  }, [pendingMatches, gameState]);
 
-  const handleDiscardPendingMatch = useCallback(async () => {
-    if (!pendingMatchData?.id) return;
+  const handleDiscardPendingMatch = useCallback(async (matchId) => {
+    if (!matchId) return;
 
     setPendingMatchLoading(true);
     try {
-      await discardPendingMatch(pendingMatchData.id);
-      setShowPendingMatchModal(false);
-      setPendingMatchData(null);
-      setResumeData(null);
+      await discardPendingMatch(matchId);
+      
+      // Remove the discarded match from the array
+      setPendingMatches(prev => prev.filter(match => match.id !== matchId));
+      
+      // If no matches remain, close the modal
+      if (pendingMatches.length <= 1) {
+        setShowPendingMatchModal(false);
+        setResumeData(null);
+      }
       
       // Clear any stored match state
       if (gameState.clearStoredState) {
@@ -290,7 +302,7 @@ function AppContent() {
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatchData, gameState]);
+  }, [pendingMatches, gameState]);
 
   const handleClosePendingMatchModal = useCallback(() => {
     setShowPendingMatchModal(false);
@@ -1215,7 +1227,7 @@ function AppContent() {
         onResume={handleResumePendingMatch}
         onDiscard={handleDiscardPendingMatch}
         onClose={handleClosePendingMatchModal}
-        pendingMatch={pendingMatchData}
+        pendingMatches={pendingMatches}
         isLoading={pendingMatchLoading}
       />
 
