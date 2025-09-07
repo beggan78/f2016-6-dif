@@ -285,12 +285,12 @@ export function TeamRoleManagementModal({
                               {member.user?.name || member.user?.email?.split('@')[0] || 'Unknown User'}
                             </p>
                             {isCurrentUserMember && (
-                              <span className="text-xs px-2 py-0.5 bg-blue-600 text-blue-100 rounded-full">
+                              <span className="hidden sm:inline-block text-xs px-2 py-0.5 bg-blue-600 text-blue-100 rounded-full">
                                 You
                               </span>
                             )}
                             {isLastAdmin && (
-                              <span className="text-xs px-2 py-0.5 bg-amber-600 text-amber-100 rounded-full flex items-center">
+                              <span className="hidden sm:flex text-xs px-2 py-0.5 bg-amber-600 text-amber-100 rounded-full items-center">
                                 <Lock className="w-3 h-3 mr-1" />
                                 Last Admin
                               </span>
@@ -312,7 +312,7 @@ export function TeamRoleManagementModal({
 
                     <div className="flex items-center space-x-3">
                       {/* Role Selector */}
-                      <div className="min-w-[140px]">
+                      <div className="min-w-[100px] sm:min-w-[140px]">
                         {!canModifyRole ? (
                           <div className="px-3 py-2 bg-slate-600 border border-slate-500 rounded text-slate-300 text-sm flex items-center">
                             <Lock className="w-3 h-3 mr-2" />

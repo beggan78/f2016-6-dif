@@ -21,13 +21,20 @@ jest.mock('../../services/matchRecoveryService', () => ({
 }));
 
 jest.mock('../../services/matchStateManager', () => ({
-  updateMatchToConfirmed: jest.fn(),
-  updatePlayerMatchStatsOnFinish: jest.fn()
+  updateMatchToConfirmed: jest.fn()
 }));
 
 jest.mock('../../services/pendingMatchService', () => ({
   resumePendingMatch: jest.fn(),
   deletePendingMatch: jest.fn()
+}));
+
+jest.mock('../useSessionDetection', () => ({
+  useSessionDetection: jest.fn(() => ({
+    isNewSignIn: true,
+    isPageRefresh: false,
+    detectionResult: { type: 'NEW_SIGN_IN', confidence: 85 }
+  }))
 }));
 
 describe('useMatchRecovery', () => {
@@ -62,17 +69,6 @@ describe('useMatchRecovery', () => {
     formation: '2-2'
   };
 
-  const mockLocalData = {
-    allPlayers: [
-      { 
-        id: 'player-1',
-        name: 'Player One',
-        stats: { timeOnFieldSeconds: 1200 }
-      }
-    ],
-    goalScorers: { 'event-1': 'player-1' },
-    matchEvents: [{ id: 'event-1', type: 'goal' }]
-  };
 
   const mockPendingMatches = [
     {
@@ -107,6 +103,18 @@ describe('useMatchRecovery', () => {
     currentMatchId: 'pending-match-1'
   };
 
+  const mockLocalData = {
+    playersOnField: [
+      { id: 'player-1', name: 'Player 1', currentRole: 'attacker' },
+      { id: 'player-2', name: 'Player 2', currentRole: 'defender' }
+    ],
+    playersSubstituted: [],
+    gameTimerRunning: false,
+    currentPeriod: 1,
+    substitutionQueue: [],
+    formation: { attacker1: 'player-1', defender1: 'player-2' }
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     
@@ -128,10 +136,6 @@ describe('useMatchRecovery', () => {
     matchRecoveryService.validateRecoveryData.mockReturnValue(false);
     matchRecoveryService.deleteAbandonedMatch.mockResolvedValue({ success: true });
     matchStateManager.updateMatchToConfirmed.mockResolvedValue({ success: true });
-    matchStateManager.updatePlayerMatchStatsOnFinish.mockResolvedValue({ 
-      success: true, 
-      updated: 1 
-    });
     pendingMatchService.resumePendingMatch.mockResolvedValue({
       success: true,
       gameState: mockReconstructedGameState
@@ -199,8 +203,6 @@ describe('useMatchRecovery', () => {
         success: true,
         match: mockRecoveryMatch
       });
-      matchRecoveryService.getRecoveryMatchData.mockReturnValue(mockLocalData);
-      matchRecoveryService.validateRecoveryData.mockReturnValue(true);
 
       const { result } = renderHook(() => useMatchRecovery(mockParams));
 
@@ -217,19 +219,17 @@ describe('useMatchRecovery', () => {
       expect(matchRecoveryService.checkForRecoverableMatch).toHaveBeenCalled();
     });
 
-    it('should not show modal if validation fails', async () => {
-      // Mock detection but validation failure
+    it('should not show modal if no match found', async () => {
+      // Mock no match found
       matchRecoveryService.checkForRecoverableMatch.mockResolvedValue({
         success: true,
-        match: mockRecoveryMatch
+        match: null
       });
-      matchRecoveryService.getRecoveryMatchData.mockReturnValue(mockLocalData);
-      matchRecoveryService.validateRecoveryData.mockReturnValue(false);
 
       const { result } = renderHook(() => useMatchRecovery(mockParams));
 
       act(() => {
-        jest.advanceTimersByTime(1000);
+        jest.advanceTimersByTime(1500);
       });
 
       await waitFor(() => {
@@ -248,7 +248,7 @@ describe('useMatchRecovery', () => {
       const { result } = renderHook(() => useMatchRecovery(mockParams));
 
       act(() => {
-        jest.advanceTimersByTime(1000);
+        jest.advanceTimersByTime(1500);
       });
 
       await waitFor(() => {
@@ -289,9 +289,6 @@ describe('useMatchRecovery', () => {
 
     it('should handle save recovery function call without errors', async () => {
       const { result } = renderHook(() => useMatchRecovery(mockParams));
-      
-      // Mock data retrieval
-      matchRecoveryService.getRecoveryMatchData.mockReturnValue(mockLocalData);
 
       await act(async () => {
         // This tests that the function exists and doesn't throw
@@ -324,7 +321,7 @@ describe('useMatchRecovery', () => {
 
       // Advance timer to trigger the setTimeout
       act(() => {
-        jest.advanceTimersByTime(1000);
+        jest.advanceTimersByTime(1500);
       });
 
       // Wait for async operations
@@ -358,7 +355,7 @@ describe('useMatchRecovery', () => {
       const { result } = renderHook(() => useMatchRecovery(mockParams));
 
       act(() => {
-        jest.advanceTimersByTime(1000);
+        jest.advanceTimersByTime(1500);
       });
 
       await waitFor(() => {

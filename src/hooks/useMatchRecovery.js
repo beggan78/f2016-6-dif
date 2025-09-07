@@ -12,6 +12,7 @@ import {
   applyReconstructedGameState, 
   createGameStateSetters
 } from '../utils/gameStateHelpers';
+import { useSessionDetection } from './useSessionDetection';
 
 /**
  * Hook to manage match recovery functionality
@@ -28,7 +29,6 @@ import {
  * @param {Object} params.gameState - Game state object with clearStoredState method
  * @param {function} params.setSuccessMessage - Function to set success message
  * @param {function} params.navigateToView - Function to navigate to different views
- * @param {Object} params.lastAuthEvent - Latest auth event from Supabase (for sign-in detection)
  * @returns {Object} Recovery interface
  * @returns {boolean} showRecoveryModal - Whether the finished match recovery modal should be shown
  * @returns {Object} recoveryMatch - The finished match data for recovery
@@ -52,8 +52,7 @@ export function useMatchRecovery({
   needsProfileCompletion,
   gameState,
   setSuccessMessage,
-  navigateToView,
-  lastAuthEvent
+  navigateToView
 }) {
   // Finished match recovery state
   const [recoveryMatch, setRecoveryMatch] = useState(null);
@@ -66,29 +65,33 @@ export function useMatchRecovery({
   const [isLoadingPendingMatches, setIsLoadingPendingMatches] = useState(false);
   const [pendingMatchError, setPendingMatchError] = useState('');
 
+  // Session detection to distinguish between sign-in and page refresh
+  const { isNewSignIn, isPageRefresh } = useSessionDetection();
+
   // Check for recoverable and pending matches on actual sign-in (not page refresh)
   useEffect(() => {
     if (user && currentTeam && !invitationParams && !needsProfileCompletion) {
       
-      // Detect if this is a page refresh vs actual sign-in
-      const isPageRefresh = performance.navigation.type === 1;
-      const isActualSignIn = lastAuthEvent?.event === 'SIGNED_IN' && 
-        lastAuthEvent?.timestamp && 
-        (Date.now() - lastAuthEvent.timestamp) < 5000; // Within last 5 seconds
-      
       if (process.env.NODE_ENV === 'development') {
         console.log('🔍 Match recovery check conditions:', {
+          isNewSignIn,
           isPageRefresh,
-          isActualSignIn,
-          lastAuthEvent,
-          shouldShowModal: !isPageRefresh || isActualSignIn
+          shouldShowModal: isNewSignIn
         });
       }
       
       // Only show modals on actual sign-in, not on page refresh
-      if (isPageRefresh && !isActualSignIn) {
+      if (isPageRefresh) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('⏭️ Skipping match recovery check: page refresh detected without recent sign-in');
+          console.log('⏭️ Skipping match recovery check: page refresh detected');
+        }
+        return;
+      }
+      
+      // Wait for session detection to complete before checking
+      if (!isNewSignIn && !isPageRefresh) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⏳ Waiting for session detection to complete...');
         }
         return;
       }
@@ -156,7 +159,7 @@ export function useMatchRecovery({
       setPendingMatchError('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentTeam, invitationParams, needsProfileCompletion, lastAuthEvent]);
+  }, [user, currentTeam, invitationParams, needsProfileCompletion, isNewSignIn, isPageRefresh]);
 
   /**
    * Handle saving recovered match to history

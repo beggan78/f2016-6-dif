@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getCachedUserProfile, cacheUserProfile, clearAllCache } from '../utils/cacheUtils';
 import { cleanupAbandonedMatches } from '../services/matchCleanupService';
 import { cleanupPreviousSession } from '../utils/sessionCleanupUtils';
+import { detectSessionType, shouldCleanupSession, clearAllSessionData, DETECTION_TYPES } from '../services/sessionDetectionService';
 
 const AuthContext = createContext({
   // Core state
@@ -65,14 +66,14 @@ export function AuthProvider({ children }) {
   }, [user, authError]);
 
   // Simple profile fetch function with timeout
-  const fetchUserProfile = useCallback(async (userId, session = null) => {
+  const fetchUserProfile = useCallback(async (userId, session = null, detectionResult = null) => {
     try {
 
-      // Check cache first if this is a page refresh
-      if (performance.navigation.type === 1) {
+      // Check cache first if session detection indicates page refresh
+      if (detectionResult?.type === DETECTION_TYPES.PAGE_REFRESH) {
         const cachedProfile = getCachedUserProfile();
         if (cachedProfile && cachedProfile.id === userId) {
-          debugLog('✅ Page refresh detected - loading cached profile immediately');
+          debugLog('✅ PAGE REFRESH DETECTED - loading cached profile immediately');
           setUserProfile(cachedProfile);
           const needsCompletion = !cachedProfile.name || cachedProfile.name.trim().length === 0;
           setNeedsProfileCompletion(needsCompletion);
@@ -81,8 +82,10 @@ export function AuthProvider({ children }) {
           debugLog('📝 Using cached profile, skipping database query to avoid overwrite');
           return cachedProfile;
         } else {
-          debugLog('⚠️ Navigation type 1 detected but no valid cache found - proceeding with database query');
+          debugLog('⚠️ Page refresh detected but no valid cache found - proceeding with database query');
         }
+      } else if (detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
+        debugLog('🔍 NEW SIGN-IN DETECTED - skipping cache, fetching fresh profile from database');
       }
       
       // Use provided session data to avoid auth deadlock
@@ -249,8 +252,20 @@ export function AuthProvider({ children }) {
           setupSessionMonitoring(session);
           currentUserIdRef.current = userId;
           
-          // Clean up localStorage from previous sessions (fire-and-forget)
-          cleanupPreviousSession();
+          // Use advanced session detection to determine cleanup strategy
+          const detectionResult = detectSessionType();
+          debugLog(`🔍 Session detection result:`, detectionResult);
+          
+          // Set session flag immediately after detection to prevent false positives on subsequent runs
+          sessionStorage.setItem('auth_session_initialized', 'true');
+          
+          // Only clean up localStorage based on reliable detection
+          if (shouldCleanupSession(detectionResult)) {
+            debugLog('🧹 Session cleanup required - performing localStorage cleanup');
+            cleanupPreviousSession();
+          } else {
+            debugLog(`📋 No cleanup required - detected ${detectionResult.type}`);
+          }
           
           // Run match cleanup in background (fire-and-forget)
           cleanupAbandonedMatches().catch(error => {
@@ -271,8 +286,8 @@ export function AuthProvider({ children }) {
             initializedRef.current = true;
             setLoading(false);
           } else {
-            // Fetch profile with proper tracking
-            const fetchPromise = fetchUserProfile(userId, session);
+            // Fetch profile with proper tracking and detection result
+            const fetchPromise = fetchUserProfile(userId, session, detectionResult);
             currentFetchRef.current = fetchPromise;
             
             try {
@@ -376,6 +391,9 @@ export function AuthProvider({ children }) {
       
       // Clear all cached data on sign out
       clearAllCache();
+      
+      // Clear session detection state to ensure fresh detection on next sign-in
+      clearAllSessionData();
       
       // Reset refs to prevent stale state
       initializedRef.current = false;

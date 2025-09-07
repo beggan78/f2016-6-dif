@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Input, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput } from '../../utils/inputSanitization';
+import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput, isValidMessageInput } from '../../utils/inputSanitization';
 import { 
   Mail, 
   Users, 
@@ -331,8 +331,11 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   type="email"
                   value={formData.email}
                   onChange={(e) => {
-                    setFormData(prev => ({ ...prev, email: e.target.value }));
-                    if (errors.email) {
+                    const newEmail = e.target.value;
+                    setFormData(prev => ({ ...prev, email: newEmail }));
+                    
+                    // Only clear email error if the input is now valid
+                    if (errors.email && newEmail && isValidEmailInput(sanitizeEmailInput(newEmail))) {
                       setErrors(prev => ({ ...prev, email: null }));
                     }
                   }}
@@ -355,7 +358,9 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   value={formData.role}
                   onChange={(value) => {
                     setFormData(prev => ({ ...prev, role: value }));
-                    if (errors.role) {
+                    
+                    // Only clear role error if a valid role is selected
+                    if (errors.role && value) {
                       setErrors(prev => ({ ...prev, role: null }));
                     }
                   }}
@@ -387,8 +392,11 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   id="invite-message"
                   value={formData.message}
                   onChange={(e) => {
-                    setFormData(prev => ({ ...prev, message: e.target.value }));
-                    if (errors.message) {
+                    const newMessage = e.target.value;
+                    setFormData(prev => ({ ...prev, message: newMessage }));
+                    
+                    // Only clear message error if the input is now valid
+                    if (errors.message && isValidMessageInput(newMessage)) {
                       setErrors(prev => ({ ...prev, message: null }));
                     }
                   }}
