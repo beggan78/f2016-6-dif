@@ -8,7 +8,7 @@ import {
   shouldProcessInvitation, 
   needsAccountCompletion, 
   retrievePendingInvitation, 
-  hasPendingInvitation 
+  hasPendingInvitation
 } from '../utils/invitationUtils';
 import { supabase } from '../lib/supabase';
 
@@ -23,9 +23,10 @@ import { supabase } from '../lib/supabase';
  * @param {Object} params.gameState - Game state object with view methods
  * @param {Object} params.authModal - Auth modal interface
  * @param {function} params.showSuccessMessage - Function to show success messages
+ * @param {boolean} params.needsProfileCompletion - Whether user needs to complete profile setup
  * @returns {Object} Invitation management interface
  */
-export function useTeamInvitationManager({ gameState, authModal, showSuccessMessage }) {
+export function useTeamInvitationManager({ gameState, authModal, showSuccessMessage, needsProfileCompletion }) {
   const { user } = useAuth();
   const { acceptTeamInvitation, getUserPendingInvitations } = useTeam();
 
@@ -176,6 +177,9 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
             if (error) {
               console.error('Error setting session:', error);
             } else {
+              // Reset view to CONFIG to ensure invitation modal can show properly
+              // This prevents users from staying on TEAM_MANAGEMENT view which shows loading spinner
+              gameState.setView(VIEWS.CONFIG);
             }
           } catch (error) {
             console.error('Exception setting session:', error);
@@ -185,7 +189,7 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
     };
 
     handleInvitationAndSession();
-  }, []); // Run only once on mount
+  }, [gameState]); // Include gameState as dependency
 
   // Process invitation when user becomes authenticated (but only if they don't need password setup)
   useEffect(() => {
@@ -220,7 +224,7 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
 
   // Check for pending invitation notifications after user login
   useEffect(() => {
-    if (user && !invitationParams) {
+    if (user && !invitationParams && !needsProfileCompletion) {
       // Small delay to allow other authentication flows to complete
       const timer = setTimeout(() => {
         checkPendingInvitationNotifications();
@@ -228,14 +232,18 @@ export function useTeamInvitationManager({ gameState, authModal, showSuccessMess
 
       return () => clearTimeout(timer);
     }
-  }, [user, invitationParams, checkPendingInvitationNotifications]);
 
-  // Clear checked invitations flag when user changes
-  useEffect(() => {
+    // Reset check flag when user changes
     if (!user) {
       setHasCheckedInvitations(false);
       setPendingInvitations([]);
       setShowInvitationNotifications(false);
+    }
+  }, [user, invitationParams, needsProfileCompletion, checkPendingInvitationNotifications]);
+
+  // Clear invitation state when user changes
+  useEffect(() => {
+    if (!user) {
       setInvitationParams(null);
       setIsProcessingInvitation(false);
     }

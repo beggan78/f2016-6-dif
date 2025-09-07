@@ -226,7 +226,8 @@ function AppContent() {
   const invitationManager = useTeamInvitationManager({
     gameState,
     authModal,
-    showSuccessMessage
+    showSuccessMessage,
+    needsProfileCompletion
   });
   const [navigationData, setNavigationData] = useState(null);
 
