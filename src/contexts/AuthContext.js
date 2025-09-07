@@ -85,16 +85,6 @@ export function AuthProvider({ children }) {
         }
       } else if (detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
         debugLog('🔍 NEW SIGN-IN DETECTED - skipping cache, fetching fresh profile from database');
-      } else if (detectionResult?.type === DETECTION_TYPES.TAB_SWITCH) {
-        debugLog('👁️ TAB SWITCH DETECTED - checking cache first');
-        const cachedProfile = getCachedUserProfile();
-        if (cachedProfile && cachedProfile.id === userId) {
-          debugLog('📝 Using cached profile for tab switch');
-          setUserProfile(cachedProfile);
-          const needsCompletion = !cachedProfile.name || cachedProfile.name.trim().length === 0;
-          setNeedsProfileCompletion(needsCompletion);
-          return cachedProfile;
-        }
       }
       
       // Use provided session data to avoid auth deadlock

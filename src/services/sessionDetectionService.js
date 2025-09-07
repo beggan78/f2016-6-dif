@@ -4,13 +4,20 @@
  * Analyzes multiple browser signals to distinguish between:
  * - NEW_SIGN_IN: User actively signed into the application
  * - PAGE_REFRESH: User refreshed the browser page
- * - TAB_SWITCH: User switched back to the application tab
  */
 
 // Detection result types - simplified to binary decision
 export const DETECTION_TYPES = {
   NEW_SIGN_IN: 'NEW_SIGN_IN',
   PAGE_REFRESH: 'PAGE_REFRESH'
+};
+
+// Timing constants for session detection
+export const TIMING_CONSTANTS = {
+  FRESH_AUTH_WINDOW_MS: 10000,        // 10 seconds - max age for "fresh" auth
+  API_READY_DELAY_MS: 100,            // Small delay for browser APIs
+  DOM_READY_DELAY_MS: 200,            // Delay for DOM readiness
+  RELIABLE_CONFIDENCE_THRESHOLD: 60   // Min confidence for "reliable" detection
 };
 
 // Essential session storage keys
@@ -92,7 +99,7 @@ function isNewSignIn(pageLoadCount, hasActivity, navType, authTimestamp) {
   // Fresh auth override: Very recent authentication
   if (authTimestamp) {
     const authAge = Date.now() - parseInt(authTimestamp);
-    if (authAge < 10000) { // Less than 10 seconds
+    if (authAge < TIMING_CONSTANTS.FRESH_AUTH_WINDOW_MS) {
       return true;
     }
   }

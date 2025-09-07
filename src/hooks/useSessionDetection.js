@@ -10,7 +10,8 @@ import {
   detectSessionType, 
   shouldCleanupSession, 
   shouldShowRecoveryModal,
-  DETECTION_TYPES 
+  DETECTION_TYPES,
+  TIMING_CONSTANTS
 } from '../services/sessionDetectionService';
 import { validateDetectionResult } from '../utils/sessionDetectionUtils';
 
@@ -40,7 +41,7 @@ export function useSessionDetection() {
 
     try {
       // Small delay to ensure all browser APIs are ready
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.API_READY_DELAY_MS));
       
       const result = detectSessionType();
       
@@ -117,7 +118,7 @@ export function useSessionDetection() {
       shouldCleanup: shouldCleanup(),
       shouldShowRecovery: shouldShowRecovery(),
       timestamp: detectionResult.timestamp,
-      isReliable: detectionResult.confidence > 60
+      isReliable: detectionResult.confidence > TIMING_CONSTANTS.RELIABLE_CONFIDENCE_THRESHOLD
     };
   }, [detectionResult, shouldCleanup, shouldShowRecovery]);
 
@@ -131,7 +132,7 @@ export function useSessionDetection() {
     // Delay detection slightly to ensure DOM is fully ready
     detectionTimeoutRef.current = setTimeout(() => {
       performDetection();
-    }, 200);
+    }, TIMING_CONSTANTS.DOM_READY_DELAY_MS);
 
     return () => {
       if (detectionTimeoutRef.current) {
@@ -170,8 +171,6 @@ export function useSessionDetection() {
     // Detection type checks
     isNewSignIn: detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN,
     isPageRefresh: detectionResult?.type === DETECTION_TYPES.PAGE_REFRESH,
-    isTabSwitch: detectionResult?.type === DETECTION_TYPES.TAB_SWITCH,
-    isUncertain: detectionResult?.type === DETECTION_TYPES.UNCERTAIN,
     
     // Summary
     summary: getDetectionSummary()
@@ -182,14 +181,13 @@ export function useSessionDetection() {
  * Simplified hook for basic detection needs
  */
 export function useSimpleSessionDetection() {
-  const { detectionResult, isDetecting, isNewSignIn, isPageRefresh, isTabSwitch } = useSessionDetection();
+  const { detectionResult, isDetecting, isNewSignIn, isPageRefresh } = useSessionDetection();
   
   return {
     detectionType: detectionResult?.type || null,
     isDetecting,
     isNewSignIn,
     isPageRefresh,
-    isTabSwitch,
     confidence: detectionResult?.confidence || 0
   };
 }
