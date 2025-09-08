@@ -116,6 +116,10 @@ function AppContent() {
   
   // Enhanced navigation functions that track history
   const navigateToView = useCallback((view, data = null) => {
+    // Set navigation data for view-specific data passing
+    if (data) {
+      setNavigationData(data);
+    }
     return navigationHistory.navigateTo(view, data);
   }, [navigationHistory]);
   
@@ -269,7 +273,7 @@ function AppContent() {
         setShowPendingMatchModal(false);
         
         // Navigate to ConfigurationScreen with resume data
-        gameState.setViewWithData(VIEWS.CONFIG, { 
+        navigateToView(VIEWS.CONFIG, { 
           resumePendingMatchData: resumeDataForConfig,
           resumeFormationData: extractFormationFromConfig(selectedMatch.initial_config)
         });
@@ -283,7 +287,7 @@ function AppContent() {
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatches, gameState]);
+  }, [pendingMatches, navigateToView]);
 
   const handleDiscardPendingMatch = useCallback(async (matchId) => {
     if (!matchId) return;
@@ -337,9 +341,11 @@ function AppContent() {
 
   // setViewWithData is now defined above with navigation history integration
 
-  // Clear navigation data when view changes (except for TEAM_MANAGEMENT)
+  // Clear navigation data when view changes (except for TEAM_MANAGEMENT and CONFIG which need persistent data)
   useEffect(() => {
-    if (gameState.view !== VIEWS.TEAM_MANAGEMENT && navigationData) {
+    if (gameState.view !== VIEWS.TEAM_MANAGEMENT && 
+        gameState.view !== VIEWS.CONFIG && 
+        navigationData) {
       setNavigationData(null);
     }
   }, [gameState.view, navigationData]);
@@ -949,6 +955,7 @@ function AppContent() {
             setView={navigateToView}
             setViewWithData={setViewWithData}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
+            resumePendingMatchData={navigationData?.resumePendingMatchData}
           />
         );
       case VIEWS.PERIOD_SETUP:

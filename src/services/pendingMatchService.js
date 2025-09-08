@@ -161,6 +161,17 @@ export function createResumeDataForConfiguration(initialConfig) {
       return null;
     }
 
+    // Convert database teamConfig format (nested) back to runtime format (flat)
+    const runtimeTeamConfig = {
+      format: initialConfig.teamConfig?.format,
+      formation: initialConfig.teamConfig?.formation,
+      squadSize: initialConfig.teamConfig?.squadSize,
+      substitutionType: initialConfig.teamConfig?.substitutionConfig?.type,
+      ...(initialConfig.teamConfig?.substitutionConfig?.pairRoleRotation && {
+        pairRoleRotation: initialConfig.teamConfig.substitutionConfig.pairRoleRotation
+      })
+    };
+
     return {
       squadSelection: initialConfig.squadSelection || [],
       periods: initialConfig.matchConfig?.periods || 3,
@@ -168,7 +179,7 @@ export function createResumeDataForConfiguration(initialConfig) {
       opponentTeam: initialConfig.matchConfig?.opponentTeam || '',
       matchType: initialConfig.matchConfig?.matchType || 'league',
       captainId: initialConfig.matchConfig?.captainId || null,
-      teamConfig: initialConfig.teamConfig,
+      teamConfig: runtimeTeamConfig,
       formation: initialConfig.teamConfig?.formation || '2-2',
       periodGoalies: initialConfig.periodGoalies || {},
       formationData: initialConfig.formation || null
@@ -200,7 +211,7 @@ export function matchesCurrentConfiguration(currentConfig, pendingMatch) {
     
     const teamConfigMatches = currentConfig.teamConfig?.formation === initial_config.teamConfig?.formation &&
                              currentConfig.teamConfig?.squadSize === initial_config.teamConfig?.squadSize &&
-                             currentConfig.teamConfig?.substitutionType === initial_config.teamConfig?.substitutionType;
+                             currentConfig.teamConfig?.substitutionType === initial_config.teamConfig?.substitutionConfig?.type;
     
     const matchConfigMatches = currentConfig.periods === initial_config.matchConfig?.periods &&
                               currentConfig.periodDurationMinutes === initial_config.matchConfig?.periodDurationMinutes &&
