@@ -5,6 +5,9 @@ import { cleanupAbandonedMatches } from '../services/matchCleanupService';
 import { cleanupPreviousSession } from '../utils/sessionCleanupUtils';
 import { detectSessionType, shouldCleanupSession, clearAllSessionData, DETECTION_TYPES } from '../services/sessionDetectionService';
 
+// Feature flag to control session expiry warnings
+const ENABLE_SESSION_EXPIRY_WARNINGS = false;
+
 const AuthContext = createContext({
   // Core state
   user: null,
@@ -195,13 +198,15 @@ export function AuthProvider({ children }) {
     
     debugLog(`Session expires at: ${expiryTime.toLocaleTimeString()}`);
     
-    // Warn user 5 minutes before expiry
-    const warningTime = expiryTime.getTime() - Date.now() - (5 * 60 * 1000);
-    if (warningTime > 0) {
-      setTimeout(() => {
-        debugLog('⚠️ Session expiring soon!');
-        setShowSessionWarning(true);
-      }, warningTime);
+    // Warn user 5 minutes before expiry (disabled via feature flag)
+    if (ENABLE_SESSION_EXPIRY_WARNINGS) {
+      const warningTime = expiryTime.getTime() - Date.now() - (5 * 60 * 1000);
+      if (warningTime > 0) {
+        setTimeout(() => {
+          debugLog('⚠️ Session expiring soon!');
+          setShowSessionWarning(true);
+        }, warningTime);
+      }
     }
   }, []);
 
