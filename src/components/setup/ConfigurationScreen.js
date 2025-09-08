@@ -17,6 +17,7 @@ import FeatureVoteModal from '../shared/FeatureVoteModal';
 import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
+import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 
 // Import TAB_VIEWS for team management navigation
 const TAB_VIEWS = {
@@ -66,7 +67,7 @@ export function ConfigurationScreen({
   const [isPairRoleHelpModalOpen, setIsPairRoleHelpModalOpen] = React.useState(false);
   
   // Auth and Team hooks (must be before useEffect that use these values)
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, sessionDetectionResult } = useAuth();
   const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
@@ -235,11 +236,13 @@ export function ConfigurationScreen({
     : allPlayers;
   
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
+  // Only clear on NEW_SIGN_IN to preserve squad selection on page refresh
   React.useEffect(() => {
-    if (hasNoTeamPlayers && selectedSquadIds.length > 0) {
+    if (hasNoTeamPlayers && selectedSquadIds.length > 0 &&
+        sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
       setSelectedSquadIds([]);
     }
-  }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds]);
+  }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds, sessionDetectionResult]);
 
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
