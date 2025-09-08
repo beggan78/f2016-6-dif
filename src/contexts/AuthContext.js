@@ -13,6 +13,9 @@ const AuthContext = createContext({
   authError: null,
   sessionExpiry: null,
   
+  // Session detection
+  sessionDetectionResult: null,
+  
   // Computed properties
   isAuthenticated: false,
   isEmailConfirmed: false,
@@ -56,6 +59,7 @@ export function AuthProvider({ children }) {
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
   const [skipProfileFetch, setSkipProfileFetch] = useState(false);
+  const [sessionDetectionResult, setSessionDetectionResult] = useState(null);
 
   // Clear any auth errors when user changes
   useEffect(() => {
@@ -251,6 +255,9 @@ export function AuthProvider({ children }) {
           // Use advanced session detection to determine cleanup strategy
           const detectionResult = detectSessionType();
           debugLog(`🔍 Session detection result:`, detectionResult);
+          
+          // Store detection result for other components to access
+          setSessionDetectionResult(detectionResult);
           
           // Set session flag immediately after detection to prevent false positives on subsequent runs
           sessionStorage.setItem('auth_session_initialized', 'true');
@@ -574,6 +581,9 @@ export function AuthProvider({ children }) {
     loading,
     authError,
     sessionExpiry,
+    
+    // Session detection
+    sessionDetectionResult,
     
     // Computed properties
     isAuthenticated,

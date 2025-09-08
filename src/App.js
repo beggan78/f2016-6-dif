@@ -47,7 +47,6 @@ import { updateMatchToConfirmed, discardPendingMatch } from './services/matchSta
 import { checkForPendingMatches, createResumeDataForConfiguration, extractFormationFromConfig } from './services/pendingMatchService';
 import { PendingMatchResumeModal } from './components/match/PendingMatchResumeModal';
 import { DETECTION_TYPES } from './services/sessionDetectionService';
-import { useSessionDetection } from './hooks/useSessionDetection';
 
 // Dismissed modals localStorage utilities
 const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
@@ -155,14 +154,13 @@ function AppContent() {
   // Authentication modal
   const authModal = useAuthModal();
 
-  // Session detection for pending match handling
-  const { detectionResult } = useSessionDetection();
+  // Get session detection result from Auth context
+  const { sessionDetectionResult } = useAuth();
 
   // Pending match resume state (must be declared before useEffect that uses them)
   const [pendingMatches, setPendingMatches] = useState([]);
   const [showPendingMatchModal, setShowPendingMatchModal] = useState(false);
   const [pendingMatchLoading, setPendingMatchLoading] = useState(false);
-  const [resumeData, setResumeData] = useState(null);
 
   // Check for password reset tokens or codes in URL on app load
   useEffect(() => {
@@ -184,7 +182,7 @@ function AppContent() {
   // Session detection effect for pending match handling
   useEffect(() => {
 
-    if (detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
+    if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
         currentTeam?.id && 
         !teamLoading && 
         !showPendingMatchModal) {
@@ -197,7 +195,7 @@ function AppContent() {
         console.error('❌ Failed to check for pending matches:', error);
       });
     }
-  }, [detectionResult, currentTeam?.id, teamLoading, showPendingMatchModal]);
+  }, [sessionDetectionResult, currentTeam?.id, teamLoading, showPendingMatchModal]);
 
 
 
@@ -256,7 +254,6 @@ function AppContent() {
       const resumeDataForConfig = createResumeDataForConfiguration(selectedMatch.initial_config);
       
       if (resumeDataForConfig) {
-        setResumeData(resumeDataForConfig);
         setShowPendingMatchModal(false);
         
         // Navigate to ConfigurationScreen with resume data
@@ -289,7 +286,6 @@ function AppContent() {
       // If no matches remain, close the modal
       if (pendingMatches.length <= 1) {
         setShowPendingMatchModal(false);
-        setResumeData(null);
       }
       
       // Clear any stored match state
