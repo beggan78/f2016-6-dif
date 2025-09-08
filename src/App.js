@@ -161,6 +161,7 @@ function AppContent() {
   const [pendingMatches, setPendingMatches] = useState([]);
   const [showPendingMatchModal, setShowPendingMatchModal] = useState(false);
   const [pendingMatchLoading, setPendingMatchLoading] = useState(false);
+  const [pendingMatchModalDismissed, setPendingMatchModalDismissed] = useState(false);
 
   // Check for password reset tokens or codes in URL on app load
   useEffect(() => {
@@ -179,13 +180,24 @@ function AppContent() {
     }
   }, [user, authModal]);
 
+  // Reset pending match modal dismissal state when user changes (sign-out/sign-in)
+  useEffect(() => {
+    if (user?.id) {
+      // User signed in - reset dismissal state from sessionStorage
+      const dismissed = sessionStorage.getItem('sport-wizard-pending-modal-dismissed') === 'true';
+      setPendingMatchModalDismissed(dismissed);
+    } else {
+      // User signed out - reset dismissal state
+      setPendingMatchModalDismissed(false);
+    }
+  }, [user?.id]);
+
   // Session detection effect for pending match handling
   useEffect(() => {
-
     if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
         currentTeam?.id && 
         !teamLoading && 
-        !showPendingMatchModal) {
+        !pendingMatchModalDismissed) {
       checkForPendingMatches(currentTeam.id).then(result => {
         if (result.shouldShow && result.pendingMatches.length > 0) {
           setPendingMatches(result.pendingMatches);
@@ -195,7 +207,7 @@ function AppContent() {
         console.error('❌ Failed to check for pending matches:', error);
       });
     }
-  }, [sessionDetectionResult, currentTeam?.id, teamLoading, showPendingMatchModal]);
+  }, [sessionDetectionResult, currentTeam?.id, teamLoading, pendingMatchModalDismissed]);
 
 
 
@@ -302,6 +314,8 @@ function AppContent() {
 
   const handleClosePendingMatchModal = useCallback(() => {
     setShowPendingMatchModal(false);
+    setPendingMatchModalDismissed(true);
+    sessionStorage.setItem('sport-wizard-pending-modal-dismissed', 'true');
   }, []);
 
   // Create a ref to store the pushNavigationState function to avoid circular dependency

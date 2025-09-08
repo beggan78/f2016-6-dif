@@ -629,12 +629,40 @@ export function useGameState(navigateToView = null) {
     setMatchState('not_started');
     setCurrentPeriodNumber(1);
     setGameLog([]); // Clear game log for new game
+    
+    // Preserve existing formation assignments before period preparation
+    const currentFormationAssignments = { ...formation };
+    
     preparePeriod(1);
+    
+    // Restore position assignments after period preparation (but preserve the goalie set by preparePeriod)
+    // This ensures user's position assignments are retained when navigating between Configuration and Period Setup screens
+    if (currentFormationAssignments && Object.keys(currentFormationAssignments).length > 0) {
+      const goalieFromPreparePeriod = formation.goalie; // Preserve goalie set by preparePeriod
+      
+      setFormation(prev => {
+        const restoredFormation = {
+          ...prev, // Start with the formation from preparePeriod
+          ...currentFormationAssignments, // Restore user's position assignments
+          goalie: goalieFromPreparePeriod || currentFormationAssignments.goalie // Use goalie from preparePeriod or fallback to saved one
+        };
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Restored position assignments after period preparation:', {
+            previousAssignments: currentFormationAssignments,
+            finalFormation: restoredFormation
+          });
+        }
+        
+        return restoredFormation;
+      });
+    }
+    
     setView(VIEWS.PERIOD_SETUP);
   }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam?.id, 
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, 
-      formation, periodGoalieIds, setCurrentMatchId, setAllPlayers, setMatchState, 
-      setCurrentPeriodNumber, setGameLog, setView]);
+      formation, setCurrentMatchId, setAllPlayers, setMatchState, 
+      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreationAttempted]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
