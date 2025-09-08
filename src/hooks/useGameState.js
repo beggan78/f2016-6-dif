@@ -558,9 +558,20 @@ export function useGameState(navigateToView = null) {
           
           if (updateResult.success) {
             // Update initial configuration for resuming
+            // Transform teamConfig to expected database format with nested substitutionConfig
+            const transformedTeamConfig = {
+              format: teamConfig.format,
+              formation: teamConfig.formation,
+              squadSize: teamConfig.squadSize,
+              substitutionConfig: {
+                type: teamConfig.substitutionType,
+                ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
+              }
+            };
+            
             const initialConfig = {
               formation: formation, // Will be populated in PeriodSetupScreen
-              teamConfig: teamConfig,
+              teamConfig: transformedTeamConfig,
               matchConfig: {
                 format: matchData.format,
                 matchType: matchType,
@@ -593,9 +604,20 @@ export function useGameState(navigateToView = null) {
             setMatchCreationAttempted(true); // Prevent duplicate match creation
             
             // Save complete initial configuration for resuming
+            // Transform teamConfig to expected database format with nested substitutionConfig
+            const transformedTeamConfig = {
+              format: teamConfig.format,
+              formation: teamConfig.formation,
+              squadSize: teamConfig.squadSize,
+              substitutionConfig: {
+                type: teamConfig.substitutionType,
+                ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
+              }
+            };
+            
             const initialConfig = {
               formation: formation, // Will be populated in PeriodSetupScreen
-              teamConfig: teamConfig,
+              teamConfig: transformedTeamConfig,
               matchConfig: {
                 format: matchData.format,
                 matchType: matchType,
