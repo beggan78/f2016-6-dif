@@ -1,5 +1,5 @@
     import React, { useState, useEffect } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle } from 'lucide-react';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS } from '../../constants/teamConfiguration';
@@ -46,6 +46,7 @@ export function ConfigurationScreen({
   alertMinutes,
   setAlertMinutes,
   handleStartPeriodSetup, 
+  handleSaveConfiguration,
   selectedSquadPlayers,
   opponentTeam,
   setOpponentTeam,
@@ -65,6 +66,7 @@ export function ConfigurationScreen({
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
   const [isPairRoleHelpModalOpen, setIsPairRoleHelpModalOpen] = React.useState(false);
+  const [saveConfigStatus, setSaveConfigStatus] = React.useState({ loading: false, message: '', error: null });
   
   // Auth and Team hooks (must be before useEffect that use these values)
   const { isAuthenticated, user, sessionDetectionResult } = useAuth();
@@ -436,6 +438,45 @@ export function ConfigurationScreen({
     setShowMigration(false);
   };
 
+  const handleSaveConfigClick = async () => {
+    if (!handleSaveConfiguration) {
+      console.warn('handleSaveConfiguration is not provided');
+      return;
+    }
+
+    setSaveConfigStatus({ loading: true, message: 'Saving configuration...', error: null });
+
+    try {
+      const result = await handleSaveConfiguration();
+      
+      if (result.success) {
+        setSaveConfigStatus({
+          loading: false,
+          message: `✅ ${result.message || 'Configuration saved successfully'}`,
+          error: null
+        });
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSaveConfigStatus(prev => ({ ...prev, message: '' }));
+        }, 3000);
+      } else {
+        setSaveConfigStatus({
+          loading: false,
+          message: '',
+          error: result.error || 'Failed to save configuration'
+        });
+      }
+    } catch (error) {
+      console.error('Save configuration error:', error);
+      setSaveConfigStatus({
+        loading: false,
+        message: '',
+        error: 'Failed to save configuration: ' + error.message
+      });
+    }
+  };
+
   // Show team management for authenticated users who need to set up teams
   // If user has no clubs at all, they need to create/join a club first
   // If user has clubs but no teams, they need to create/join a team
@@ -514,6 +555,19 @@ export function ConfigurationScreen({
           {syncStatus.error && (
             <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
               <p className="text-rose-200 text-sm">❌ {syncStatus.error}</p>
+            </div>
+          )}
+
+          {/* Save Configuration Status Messages */}
+          {saveConfigStatus.message && (
+            <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
+              <p className="text-emerald-200 text-sm">{saveConfigStatus.message}</p>
+            </div>
+          )}
+
+          {saveConfigStatus.error && (
+            <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
+              <p className="text-rose-200 text-sm">❌ {saveConfigStatus.error}</p>
             </div>
           )}
         </div>
@@ -777,6 +831,18 @@ export function ConfigurationScreen({
             <p className="text-xs text-slate-400 mt-1">Optional - select a team captain for this game</p>
           </div>
         </div>
+      )}
+
+      {/* Save Configuration Button - Only show for authenticated users with team context */}
+      {isAuthenticated && currentTeam && handleSaveConfiguration && (
+        <Button 
+          onClick={handleSaveConfigClick}
+          disabled={saveConfigStatus.loading || (selectedSquadIds.length < 5 || selectedSquadIds.length > 10) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)}
+          variant="secondary"
+          Icon={Save}
+        >
+          {saveConfigStatus.loading ? 'Saving...' : 'Save Configuration'}
+        </Button>
       )}
 
       <Button 

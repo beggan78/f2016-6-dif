@@ -943,6 +943,7 @@ function AppContent() {
             alertMinutes={gameState.alertMinutes}
             setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
+            handleSaveConfiguration={gameState.handleSaveConfiguration}
             selectedSquadPlayers={selectedSquadPlayers}
             opponentTeam={gameState.opponentTeam}
             setOpponentTeam={gameState.setOpponentTeam}
@@ -982,6 +983,7 @@ function AppContent() {
             rotationQueue={gameState.rotationQueue}
             setRotationQueue={gameState.setRotationQueue}
             preparePeriodWithGameLog={gameState.preparePeriodWithGameLog}
+            handleSavePeriodConfiguration={gameState.handleSavePeriodConfiguration}
             debugMode={debugMode}
           />
         );
