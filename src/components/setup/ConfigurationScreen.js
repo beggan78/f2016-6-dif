@@ -1,4 +1,4 @@
-    import React, { useState, useEffect } from 'react';
+    import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
@@ -67,6 +67,9 @@ export function ConfigurationScreen({
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
   const [isPairRoleHelpModalOpen, setIsPairRoleHelpModalOpen] = React.useState(false);
   const [saveConfigStatus, setSaveConfigStatus] = React.useState({ loading: false, message: '', error: null });
+  
+  // Ref to track resume data processing to prevent infinite loops
+  const resumeDataProcessedRef = useRef(false);
   
   // Auth and Team hooks (must be before useEffect that use these values)
   const { isAuthenticated, user, sessionDetectionResult } = useAuth();
@@ -279,7 +282,7 @@ export function ConfigurationScreen({
 
   // Handle resume data from pending match
   React.useEffect(() => {
-    if (resumePendingMatchData) {
+    if (resumePendingMatchData && !resumeDataProcessedRef.current) {
       if (process.env.NODE_ENV === 'development') {
         console.log('🔄 Populating configuration from pending match resume data');
       }
@@ -322,14 +325,25 @@ export function ConfigurationScreen({
         setPeriodGoalieIds(resumePendingMatchData.periodGoalies);
       }
       
-      // Clear the resume data after population
+      // Mark resume data as processed
+      resumeDataProcessedRef.current = true;
+      
+      // Clear the resume data after population (if function exists)
       if (clearResumeData) {
         clearResumeData();
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumePendingMatchData, setSelectedSquadIds, setNumPeriods, setPeriodDurationMinutes, 
       setOpponentTeam, setMatchType, setCaptain, updateTeamConfig, updateFormationSelection, 
-      setPeriodGoalieIds, clearResumeData]);
+      setPeriodGoalieIds]);
+
+  // Reset the processed flag when resume data is cleared or changed
+  React.useEffect(() => {
+    if (!resumePendingMatchData) {
+      resumeDataProcessedRef.current = false;
+    }
+  }, [resumePendingMatchData]);
 
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {

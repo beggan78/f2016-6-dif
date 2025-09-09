@@ -792,8 +792,6 @@ export function useGameState(navigateToView = null) {
       }
     }
 
-    const currentTimeEpoch = Date.now();
-    
     // VALIDATION: Ensure formation contains only selected players
     const formationPlayerIds = [];
     Object.entries(formation).forEach(([position, value]) => {
@@ -811,139 +809,18 @@ export function useGameState(navigateToView = null) {
       console.warn('⚠️  [handleStartGame] Non-selected players found in formation:', nonSelectedInFormation);
     }
     
-    // Create formation-aware team config for role initialization
-    const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
-      ...teamConfig,
-      formation: selectedFormation
-    } : teamConfig;
-    
-    // Initialize player statuses and roles for the period
-    setAllPlayers(prevPlayers => {
-      const updatedPlayers = prevPlayers.map(p => {
-        // Use unified role initialization function
-        const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
-
-        if (selectedSquadIds.includes(p.id)) {
-          const initialStats = { ...p.stats };
-          
-          // SAFEGUARD: Clear any stale startedMatchAs values for new games
-          if (currentPeriodNumber === 1) {
-            initialStats.startedMatchAs = null;
-            initialStats.startedAtPosition = null; // Clear formation position too
-          }
-          
-          if (currentPeriodNumber === 1 && !initialStats.startedMatchAs) {
-            let newStartedMatchAs = null;
-            if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
-            else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
-            else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
-            
-            initialStats.startedMatchAs = newStartedMatchAs;
-
-            // Store the specific formation position for formation-aware role mapping
-            initialStats.startedAtPosition = currentPairKey;
-          }
-          
-          return {
-            ...p,
-            stats: {
-              ...initialStats,
-              currentRole: currentRole,
-              currentStatus: currentStatus,
-              lastStintStartTimeEpoch: currentTimeEpoch,
-              currentPairKey: currentPairKey,
-            }
-          };
-        } else {
-          // SAFEGUARD: Clear ALL participation markers for non-selected players
-          if (p.stats?.startedMatchAs !== null || p.stats?.startedAtPosition !== null) {
-            return {
-              ...p,
-              stats: {
-                ...p.stats,
-                startedMatchAs: null,
-                startedAtPosition: null
-              }
-            };
-          }
+    // Save match configuration using shared function
+    saveMatchConfiguration({ shouldNavigate: true })
+      .then((result) => {
+        if (!result.success) {
+          console.warn('⚠️  Failed to save match configuration:', result.error);
+          // Continue with game anyway - save is optional for navigation
         }
-        return p;
+      })
+      .catch((error) => {
+        console.warn('⚠️  Exception during match configuration save:', error);
+        // Continue with game anyway - save is optional for navigation
       });
-
-      // MATCH DATABASE RECORD MANAGEMENT when starting first period
-      if (currentPeriodNumber === 1 && currentTeam?.id) {
-        // Format match data from current game state
-        const matchData = formatMatchDataFromGameState({
-          teamConfig,
-          selectedFormation,
-          periods: numPeriods,
-          periodDurationMinutes,
-          selectedSquadIds,
-          allPlayers: updatedPlayers, // Use updated players with proper startedMatchAs values
-          opponentTeam,
-          captainId,
-          matchType
-        }, currentTeam.id);
-
-        if (currentMatchId && matchCreationAttempted) {
-          // UPDATE FLOW: Match already exists, update it with formation data
-          updateExistingMatch(currentMatchId, matchData)
-            .then((updateResult) => {
-              if (updateResult.success) {
-                console.log('✅ Match record updated with formation data');
-              } else {
-                console.warn('⚠️  Failed to update match record:', updateResult.error);
-                // Continue with game anyway - database sync is optional
-              }
-            })
-            .catch((error) => {
-              console.warn('⚠️  Exception during match update:', error);
-              // Continue with game anyway - database sync is optional
-            });
-
-          // Upsert player match stats with updated squad/formation
-          upsertPlayerMatchStats(currentMatchId, updatedPlayers, captainId, selectedSquadIds)
-            .then((upsertResult) => {
-              if (upsertResult.success) {
-                console.log('📊 Player stats updated:', 
-                  `deleted ${upsertResult.deleted}, inserted ${upsertResult.inserted} players`);
-              } else {
-                console.warn('⚠️  Failed to update player match stats:', upsertResult.error);
-                // Continue with game anyway - database sync is optional
-              }
-            })
-            .catch((error) => {
-              console.warn('⚠️  Exception during player stats update:', error);
-              // Continue with game anyway - database sync is optional
-            });
-            
-        } else {
-          // CREATE FLOW: No existing match, create new one
-          setMatchCreationAttempted(true); // Prevent duplicate attempts
-          
-          // Create match record and initial player stats in background (non-blocking)
-          createMatch(matchData, updatedPlayers) // Use updated players data
-            .then((result) => {
-              if (result.success) {
-                console.log('✅ Match record created:', result.matchId);
-                if (result.playerStatsInserted) {
-                  console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
-                }
-                setCurrentMatchId(result.matchId);
-              } else {
-                console.warn('⚠️  Failed to create match record:', result.error);
-                // Continue with game anyway - match creation is optional
-              }
-            })
-            .catch((error) => {
-              console.warn('⚠️  Exception during match creation:', error);
-              // Continue with game anyway - match creation is optional
-            });
-        }
-      }
-
-      return updatedPlayers;
-    });
 
     // Initialize rotation queue for individual modes only if not already set by formation generator
     // For Period 1 or when formation generator hasn't provided a queue
@@ -2099,7 +1976,10 @@ export function useGameState(navigateToView = null) {
       formation, allPlayers]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
-  const handleSavePeriodConfiguration = useCallback(async () => {
+  // Shared function for saving match configuration (used by both handleStartGame and handleSavePeriodConfiguration)
+  const saveMatchConfiguration = useCallback(async (options = {}) => {
+    const { shouldNavigate = false } = options;
+    
     // Validation based on team mode (same as handleStartGame)
     if (teamConfig.substitutionType === 'pairs') {
       const allOutfieldersInFormation = [
@@ -2108,7 +1988,12 @@ export function useGameState(navigateToView = null) {
         formation.subPair.defender, formation.subPair.attacker,
       ].filter(Boolean);
       if (new Set(allOutfieldersInFormation).size !== 6 || !formation.goalie) {
-        return { success: false, error: "Please complete the team formation with 1 goalie and 6 unique outfield players in pairs." };
+        const errorMessage = "Please complete the team formation with 1 goalie and 6 unique outfield players in pairs.";
+        if (shouldNavigate) {
+          alert(errorMessage);
+          return { success: false, error: errorMessage };
+        }
+        return { success: false, error: errorMessage };
       }
     } else if (teamConfig.substitutionType === 'individual') {
       const hasOneTwoOnePositions = formation.defender && formation.left && formation.right && formation.attacker;
@@ -2124,7 +2009,12 @@ export function useGameState(navigateToView = null) {
         : [formation.leftDefender, formation.rightDefender, formation.leftAttacker, formation.rightAttacker].filter(Boolean);
       
       if (actualFieldPlayers.length !== expectedFieldPlayers || !formation.goalie) {
-        return { success: false, error: "Please assign all positions including goalie." };
+        const errorMessage = "Please assign all positions including goalie.";
+        if (shouldNavigate) {
+          alert(errorMessage);
+          return { success: false, error: errorMessage };
+        }
+        return { success: false, error: errorMessage };
       }
     }
 
@@ -2134,12 +2024,15 @@ export function useGameState(navigateToView = null) {
     }
 
     try {
-      // Prepare formation data for database save (similar to handleStartGame)
+      const currentTimeEpoch = Date.now();
+      
+      // Create formation-aware team config for role initialization
       const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
         ...teamConfig,
         formation: selectedFormation
       } : teamConfig;
       
+      // Update player states (same logic as handleStartGame)
       const updatedPlayers = allPlayers.map(p => {
         if (selectedSquadIds.includes(p.id)) {
           const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
@@ -2163,33 +2056,116 @@ export function useGameState(navigateToView = null) {
               ...stats,
               currentRole,
               currentStatus,
-              currentPairKey: findPlayerPairKey(p.id, formation, teamConfig.substitutionType === 'pairs')
+              currentPairKey: findPlayerPairKey(p.id, formation, teamConfig.substitutionType === 'pairs'),
+              lastStintStartTimeEpoch: currentTimeEpoch
             }
           };
         }
         return p;
       });
 
-      // Update match with formation data (non-blocking, same as handleStartGame)
-      const matchUpdatePromise = updateExistingMatch(currentMatchId, formatMatchDataFromGameState({
-        teamConfig: formationAwareTeamConfig,
-        selectedFormation,
-        periods: numPeriods,
-        periodDurationMinutes,
-        opponentTeam,
-        captainId,
-        matchType
-      }, currentTeam?.id))
-        .then((updateResult) => {
-          if (!updateResult.success) {
-            console.warn('⚠️  Failed to update match record:', updateResult.error);
+      // Update players state
+      setAllPlayers(updatedPlayers);
+
+      // Prepare initial config for database save
+      const initialConfig = {
+        formation: formation,
+        teamConfig: {
+          format: formationAwareTeamConfig.format,
+          formation: formationAwareTeamConfig.formation,
+          squadSize: formationAwareTeamConfig.squadSize,
+          substitutionConfig: {
+            type: formationAwareTeamConfig.substitutionType,
+            pairRoleRotation: "keep_throughout_period"
           }
-          return updateResult;
-        })
-        .catch((error) => {
-          console.warn('⚠️  Exception during match update:', error);
-          return { success: false, error: error.message };
-        });
+        },
+        matchConfig: {
+          format: formationAwareTeamConfig.format,
+          periods: numPeriods,
+          captainId: captainId,
+          matchType: matchType,
+          opponentTeam: opponentTeam,
+          periodDurationMinutes: periodDurationMinutes
+        },
+        periodGoalies: periodGoalieIds,
+        squadSelection: selectedSquadIds
+      };
+
+      // Handle match creation or update (similar to handleStartGame)
+      let matchUpdatePromise;
+      
+      if (currentPeriodNumber === 1 && currentTeam?.id) {
+        // Format match data from current game state
+        const matchData = formatMatchDataFromGameState({
+          teamConfig: formationAwareTeamConfig,
+          selectedFormation,
+          periods: numPeriods,
+          periodDurationMinutes,
+          selectedSquadIds,
+          allPlayers: updatedPlayers,
+          opponentTeam,
+          captainId,
+          matchType
+        }, currentTeam.id);
+
+        if (currentMatchId && matchCreationAttempted) {
+          // UPDATE FLOW: Match already exists, update it with formation data
+          matchUpdatePromise = updateExistingMatch(currentMatchId, matchData)
+            .then((updateResult) => {
+              if (!updateResult.success) {
+                console.warn('⚠️  Failed to update match record:', updateResult.error);
+              }
+              return updateResult;
+            })
+            .catch((error) => {
+              console.warn('⚠️  Exception during match update:', error);
+              return { success: false, error: error.message };
+            });
+        } else {
+          // CREATE FLOW: No existing match, create new one
+          setMatchCreationAttempted(true); // Prevent duplicate attempts
+          
+          matchUpdatePromise = createMatch(matchData, updatedPlayers)
+            .then((result) => {
+              if (result.success) {
+                console.log('✅ Match record created:', result.matchId);
+                if (result.playerStatsInserted) {
+                  console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
+                }
+                setCurrentMatchId(result.matchId);
+                return { success: true };
+              } else {
+                console.warn('⚠️  Failed to create match record:', result.error);
+                return { success: false, error: result.error };
+              }
+            })
+            .catch((error) => {
+              console.warn('⚠️  Exception during match creation:', error);
+              return { success: false, error: error.message };
+            });
+        }
+      } else {
+        // For non-first period, just update existing match
+        matchUpdatePromise = updateExistingMatch(currentMatchId, formatMatchDataFromGameState({
+          teamConfig: formationAwareTeamConfig,
+          selectedFormation,
+          periods: numPeriods,
+          periodDurationMinutes,
+          opponentTeam,
+          captainId,
+          matchType
+        }, currentTeam?.id))
+          .then((updateResult) => {
+            if (!updateResult.success) {
+              console.warn('⚠️  Failed to update match record:', updateResult.error);
+            }
+            return updateResult;
+          })
+          .catch((error) => {
+            console.warn('⚠️  Exception during match update:', error);
+            return { success: false, error: error.message };
+          });
+      }
 
       // Upsert player match stats with updated formation (non-blocking, same as handleStartGame)
       const statsUpdatePromise = upsertPlayerMatchStats(currentMatchId, updatedPlayers, captainId, selectedSquadIds)
@@ -2204,29 +2180,47 @@ export function useGameState(navigateToView = null) {
           return { success: false, error: error.message };
         });
 
-      // Wait for both operations to complete
-      const [matchResult, statsResult] = await Promise.all([matchUpdatePromise, statsUpdatePromise]);
+      // Save initial configuration
+      const initialConfigPromise = saveInitialMatchConfig(currentMatchId, initialConfig)
+        .then((configResult) => {
+          if (!configResult.success) {
+            console.warn('⚠️  Failed to save initial config:', configResult.error);
+          }
+          return configResult;
+        })
+        .catch((error) => {
+          console.warn('⚠️  Exception during initial config save:', error);
+          return { success: false, error: error.message };
+        });
 
-      // Return success if either operation succeeded (following the original non-blocking pattern)
-      const hasSuccess = matchResult.success || statsResult.success;
+      // Wait for all operations to complete
+      const [matchResult, statsResult, configResult] = await Promise.all([matchUpdatePromise, statsUpdatePromise, initialConfigPromise]);
+      
+      // Return success if any operation succeeded (following the original non-blocking pattern)
+      const hasSuccess = matchResult.success || statsResult.success || configResult.success;
       const errors = [];
       if (!matchResult.success) errors.push('match update failed');
       if (!statsResult.success) errors.push('player stats update failed');
-
+      if (!configResult.success) errors.push('initial config save failed');
+      
       return {
         success: hasSuccess,
         message: hasSuccess 
-          ? `Period configuration saved${errors.length ? ' (with warnings)' : ''}`
-          : 'Failed to save period configuration',
+          ? `Configuration saved${errors.length ? ' (with warnings)' : ''}`
+          : 'Failed to save configuration',
         error: errors.length ? errors.join(', ') : undefined
       };
-
     } catch (error) {
-      console.error('❌ Error saving period configuration:', error);
-      return { success: false, error: 'Failed to save period configuration: ' + error.message };
+      console.error('❌ Error saving match configuration:', error);
+      return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
   }, [formation, teamConfig, selectedFormation, currentMatchId, allPlayers, selectedSquadIds, 
-      numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, currentTeam?.id]);
+      numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, currentTeam?.id, periodGoalieIds,
+      currentPeriodNumber, matchCreationAttempted, setMatchCreationAttempted, setCurrentMatchId, setAllPlayers]);
+
+  const handleSavePeriodConfiguration = useCallback(async () => {
+    return await saveMatchConfiguration({ shouldNavigate: false });
+  }, [saveMatchConfiguration]);
 
   // Helper function to find player's pair key for pairs mode
   const findPlayerPairKey = (playerId, formation, isPairsMode) => {

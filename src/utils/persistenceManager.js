@@ -276,6 +276,11 @@ export class PersistenceManager {
  */
 export class GamePersistenceManager extends PersistenceManager {
   constructor(storageKey = 'dif-coach-game-state') {
+    // Import here to avoid circular dependency
+    const { getInitialFormationTemplate } = require('../constants/gameModes');
+    
+    const defaultTeamConfig = { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' };
+    
     const defaultGameState = {
       allPlayers: [],
       view: 'config',
@@ -283,23 +288,12 @@ export class GamePersistenceManager extends PersistenceManager {
       numPeriods: 3,
       periodDurationMinutes: 15,
       periodGoalieIds: {},
-      teamConfig: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+      teamConfig: defaultTeamConfig,
       selectedFormation: '2-2',
       alertMinutes: 2,
       captainId: null,
       currentPeriodNumber: 1,
-      formation: {
-        goalie: null,
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null },
-        leftDefender: null,
-        rightDefender: null,
-        leftAttacker: null,
-        rightAttacker: null,
-        substitute_1: null,
-        substitute_2: null,
-      },
+      formation: getInitialFormationTemplate(defaultTeamConfig),
       nextPhysicalPairToSubOut: 'leftPair',
       nextPlayerToSubOut: 'leftDefender',
       nextPlayerIdToSubOut: null,
