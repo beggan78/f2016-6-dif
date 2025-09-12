@@ -65,7 +65,14 @@ export function ConfigurationScreen({
   const [pendingMatches, setPendingMatches] = useState([]);
   const [showPendingMatchModal, setShowPendingMatchModal] = useState(false);
   const [pendingMatchLoading, setPendingMatchLoading] = useState(false);
-  const [pendingMatchModalDismissed, setPendingMatchModalDismissed] = useState(false);
+  const [pendingMatchModalClosed, setPendingMatchModalClosed] = useState(() => {
+    // Initialize from sessionStorage if available to prevent race condition on mount
+    try {
+      return sessionStorage.getItem('sport-wizard-pending-modal-closed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [pendingMatchError, setPendingMatchError] = useState(null);
   const [resumeData, setResumeData] = useState(null);
   
@@ -117,15 +124,11 @@ export function ConfigurationScreen({
     }
   }, [sessionDetectionResult, isAuthenticated, currentTeam, teamPlayers]);
   
-  // Reset pending match modal dismissal state when user changes (sign-out/sign-in)
+  // Reset pending match modal closure state when user signs out
   React.useEffect(() => {
-    if (user?.id) {
-      // User signed in - reset dismissal state from sessionStorage
-      const dismissed = sessionStorage.getItem('sport-wizard-pending-modal-dismissed') === 'true';
-      setPendingMatchModalDismissed(dismissed);
-    } else {
-      // User signed out - reset dismissal state
-      setPendingMatchModalDismissed(false);
+    if (!user?.id) {
+      // User signed out - reset closure state (sign-in state is handled by initializer)
+      setPendingMatchModalClosed(false);
     }
   }, [user?.id]);
   
@@ -159,13 +162,13 @@ export function ConfigurationScreen({
     if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
         currentTeam?.id && 
         !teamLoading && 
-        !pendingMatchModalDismissed) {
+        !pendingMatchModalClosed) {
       // Add 1 second delay before showing the modal so user sees main UI first
       setTimeout(() => {
         loadPendingMatches(currentTeam.id, false);
       }, 1500); // 1.5 seconds delay
     }
-  }, [sessionDetectionResult, currentTeam?.id, teamLoading, pendingMatchModalDismissed, loadPendingMatches]);
+  }, [sessionDetectionResult, currentTeam?.id, teamLoading, pendingMatchModalClosed, loadPendingMatches]);
   
   // Retry handler for pending match loading
   const retryLoadPendingMatches = React.useCallback(() => {
@@ -173,6 +176,13 @@ export function ConfigurationScreen({
       loadPendingMatches(currentTeam.id, true);
     }
   }, [currentTeam?.id, loadPendingMatches]);
+  
+  // Modal closure handler - defined early so other handlers can use it
+  const handleClosePendingMatchModal = React.useCallback(() => {
+    setShowPendingMatchModal(false);
+    setPendingMatchModalClosed(true);
+    sessionStorage.setItem('sport-wizard-pending-modal-closed', 'true');
+  }, []);
   
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
@@ -829,7 +839,8 @@ export function ConfigurationScreen({
       }
       
       if (resumeDataForConfig) {
-        setShowPendingMatchModal(false);
+        // Use same closure logic as dismiss to ensure modal stays closed
+        handleClosePendingMatchModal();
         
         if (process.env.NODE_ENV === 'development') {
           console.log('🚀 RESUME: Processing pending match data on ConfigurationScreen');
@@ -839,15 +850,15 @@ export function ConfigurationScreen({
         setResumeData(resumeDataForConfig);
       } else {
         console.error('❌ Failed to create resume data from pending match');
-        setShowPendingMatchModal(false);
+        handleClosePendingMatchModal();
       }
     } catch (error) {
       console.error('❌ Error resuming pending match:', error);
-      setShowPendingMatchModal(false);
+      handleClosePendingMatchModal();
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatches]);
+  }, [pendingMatches, handleClosePendingMatchModal]);
 
   const handleDiscardPendingMatch = React.useCallback(async (matchId) => {
     if (!matchId) return;
@@ -859,23 +870,17 @@ export function ConfigurationScreen({
       // Remove the discarded match from the array
       setPendingMatches(prev => prev.filter(match => match.id !== matchId));
       
-      // If no matches remain, close the modal
+      // If no matches remain, close the modal using consistent closure logic
       if (pendingMatches.length <= 1) {
-        setShowPendingMatchModal(false);
+        handleClosePendingMatchModal();
       }
     } catch (error) {
       console.error('❌ Error discarding pending match:', error);
-      setShowPendingMatchModal(false);
+      handleClosePendingMatchModal();
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatches]);
-
-  const handleClosePendingMatchModal = React.useCallback(() => {
-    setShowPendingMatchModal(false);
-    setPendingMatchModalDismissed(true);
-    sessionStorage.setItem('sport-wizard-pending-modal-dismissed', 'true');
-  }, []);
+  }, [pendingMatches, handleClosePendingMatchModal]);
 
   const handleSaveConfigClick = async () => {
     if (!handleSaveConfiguration) {
