@@ -86,7 +86,7 @@ Current migrations:
 
 ### Making Schema Changes
 
-#### Option 1: Direct SQL (Recommended)
+#### Direct SQL
 1. Create a new migration file:
    ```bash
    # This creates a timestamped file
@@ -98,13 +98,6 @@ Current migrations:
 3. Apply the migration:
    ```bash
    npm run db:reset
-   ```
-
-#### Option 2: UI + Diff
-1. Make changes through Supabase Studio UI (localhost:54323)
-2. Generate migration from changes:
-   ```bash
-   npm run db:diff -f your_change_description
    ```
 
 ### Seed Data
@@ -145,24 +138,6 @@ npm run db:reset
 - Audit trail of all match activities
 - **Key fields**: `match_id`, `player_id`, `event_type`, `occurred_at_seconds`, `period`
 
-### Analytics Tables
-
-#### `player_stint`
-- Detailed time tracking for each role/position
-- **Key fields**: `match_id`, `player_id`, `role`, `position`, `started_at_seconds`, `ended_at_seconds`
-
-#### `season_stats`
-- Pre-calculated season statistics
-- **Key fields**: `player_id`, `season_year`, `matches_played`, `goals_scored`, `total_*_time_seconds`
-
-#### `match_formation`
-- Historical formation data for analysis
-- **Key fields**: `match_id`, `period`, `team_mode`, `formation_data` (jsonb)
-
-#### `goal_event`
-- Detailed goal tracking
-- **Key fields**: `match_id`, `scorer_id`, `period`, `goal_type`, `team_goal`
-
 ### User Management
 
 #### `user_profile`
@@ -173,35 +148,16 @@ npm run db:reset
 - Team access control
 - **Key fields**: `team_id`, `user_id`, `role` (parent/player/coach/admin)
 
-## Views
+#### `club_user`
+- Team access control
+- **Key fields**: `team_id`, `user_id`, `role` (parent/player/coach/admin)
 
-- `current_season_stats` - Current year statistics with player/team names
-- `match_summary` - Match data with calculated goals and participant names
 
 ## Production Deployment
 
-### Manual Deployment
-```bash
-# Deploy migrations to linked production database
-npm run db:deploy
-```
-
-### CI/CD (GitHub Actions)
-Set up these secrets in your GitHub repository:
-- `SUPABASE_ACCESS_TOKEN`
-- `SUPABASE_DB_PASSWORD` 
-- `SUPABASE_PROJECT_ID`
-
-Example workflow step:
-```yaml
-- name: Deploy to Supabase
-  run: |
-    npm run db:deploy
-  env:
-    SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-    SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-    SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-```
+SUPABASE DEPLOYMENT POLICY: NEVER deploy Edge Functions or migrations directly to remote Supabase. 
+ALL testing and development is done against local Supabase only.
+Remote deployments are handled with GitHub Actions.
 
 ## Security
 
@@ -263,19 +219,19 @@ npm run db:pull
 ## Development Workflow
 
 1. **Start local environment**: `npm run db:start`
-2. **Make schema changes**: Create migration files or use Studio UI
+2. **Make schema changes**: Create migration files
 3. **Generate migration** (if using UI): `npm run db:diff`
 4. **Test locally**: `npm run db:reset`
 5. **Generate types**: `npm run db:types`
 6. **Commit changes**: Git commit migration files
-7. **Deploy to production**: `npm run db:deploy` or via CI/CD
+7. **Deploy to production**: ONLY via CI/CD
 
 ## Best Practices
 
 1. **Always test migrations locally** before deploying
 2. **Use descriptive migration names** that explain the change
-3. **Keep migrations small and focused** - one logical change per migration
-4. **Never edit existing migrations** - create new ones for changes
+3. **Edit migrations that are NOT yet in main branch** - One migration per branch
+4. **Never edit migrations that ARE in main branch** - create new ones for each branch
 5. **Use transactions for complex migrations** to ensure atomicity
 6. **Back up production data** before major schema changes
 7. **Document breaking changes** in migration comments

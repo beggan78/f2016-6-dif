@@ -451,17 +451,6 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
                   </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="pt-2">
-                  <Button
-                    onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
-                    variant="secondary"
-                    size="sm"
-                    className="w-full"
-                  >
-                    Manage All Teams
-                  </Button>
-                </div>
               </div>
             ) : (
               <div className="bg-slate-800 rounded-lg p-6 border border-slate-600 text-center">
