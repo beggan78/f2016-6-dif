@@ -39,9 +39,12 @@ import { InvitationWelcome } from './components/auth/InvitationWelcome';
 import { TeamAccessRequestModal } from './components/team/TeamAccessRequestModal';
 import { InvitationNotificationModal } from './components/team/InvitationNotificationModal';
 import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
-import { detectInvitationParams, clearInvitationParamsFromUrl, shouldProcessInvitation, getInvitationStatus, needsAccountCompletion, retrievePendingInvitation, hasPendingInvitation } from './utils/invitationUtils';
+import { getInvitationStatus } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
 import { useMatchRecovery } from './hooks/useMatchRecovery';
+import { useInvitationDetection } from './hooks/useInvitationDetection';
+import { useInvitationProcessing } from './hooks/useInvitationProcessing';
+import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { updateMatchToConfirmed } from './services/matchStateManager';
 
 // Dismissed modals localStorage utilities
@@ -90,17 +93,12 @@ function AppContent() {
   // Create the main gameState instance without circular dependencies
   const gameState = useGameState();
   
-  // Create stable reference to setView to prevent navigation system instability
-  const setViewRef = useCallback((view, data) => {
-    return gameState.setView(view, data);
-  }, [gameState.setView]);
-  
-  // Set up navigation system using the stable setView reference
+  // Set up navigation system using gameState.setView directly
   // Disable global browser back when GameScreen is active with pending or running match to avoid handler conflicts
   const shouldDisableGlobalBrowserBack = gameState.view === VIEWS.GAME && 
     (gameState.matchState === 'pending' || gameState.matchState === 'running');
 
-  const navigationHistory = useScreenNavigation(setViewRef, {
+  const navigationHistory = useScreenNavigation(gameState.setView, {
     enableBrowserBack: !shouldDisableGlobalBrowserBack, // Disable when GameScreen handles it
     fallbackView: VIEWS.CONFIG
   });
@@ -135,9 +133,7 @@ function AppContent() {
     teamPlayers,
     hasPendingRequests,
     pendingRequestsCount,
-    canManageTeam,
-    acceptTeamInvitation,
-    getUserPendingInvitations
+    canManageTeam
   } = useTeam();
 
   // Authentication modal
@@ -215,15 +211,23 @@ function AppContent() {
       gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
     }
   }, [gameState, fromView]);
-  // Invitation state (restored inline from working revision)
-  const [invitationParams, setInvitationParams] = useState(null);
-  const [isProcessingInvitation, setIsProcessingInvitation] = useState(false);
 
-  // Pending invitation notifications
-  const [showInvitationNotifications, setShowInvitationNotifications] = useState(false);
-  const [pendingInvitations, setPendingInvitations] = useState([]);
-  const [hasCheckedInvitations, setHasCheckedInvitations] = useState(false);
+  // Navigation data state (for passing data between views)
   const [navigationData, setNavigationData] = useState(null);
+
+  // Invitation hooks - extracted for better separation of concerns and testability
+  const invitationDetection = useInvitationDetection();
+  
+  const invitationProcessing = useInvitationProcessing({
+    onSuccess: showSuccessMessage,
+    onNavigate: gameState.setView,
+    clearInvitationParams: invitationDetection.clearInvitationParams
+  });
+  
+  const invitationNotifications = useInvitationNotifications({
+    onSuccess: showSuccessMessage,
+    onNavigate: gameState.setView
+  });
 
   // setViewWithData is now defined above with navigation history integration
 
@@ -234,195 +238,38 @@ function AppContent() {
     }
   }, [gameState.view, navigationData]);
 
-  // Handle invitation acceptance (restored from working revision)
-  const handleInvitationAcceptance = useCallback(async (params) => {
-    if (!params.invitationId) {
-      console.error('No invitation ID provided');
-      return;
-    }
 
-    if (isProcessingInvitation) {
-      console.log('Invitation already being processed, skipping');
-      return;
-    }
-
-    try {
-      setIsProcessingInvitation(true);
-      console.log('Processing invitation:', params.invitationId);
-
-      const result = await acceptTeamInvitation(params.invitationId);
-
-      if (result.success) {
-        // Clear URL parameters
-        clearInvitationParamsFromUrl();
-        setInvitationParams(null);
-
-        // Show welcome message
-        showSuccessMessage(result.message || 'Welcome to the team!');
-
-        // Navigate to team management view
-        setViewRef(VIEWS.TEAM_MANAGEMENT);
-      } else {
-        console.error('Failed to accept invitation:', result.error);
-        // Could show error modal here
-      }
-    } catch (error) {
-      console.error('Error processing invitation:', error);
-    } finally {
-      setIsProcessingInvitation(false);
-    }
-  }, [acceptTeamInvitation, setViewRef, isProcessingInvitation, showSuccessMessage]);
-
-  // Handle invitation processed callback from InvitationWelcome
-  const handleInvitationProcessed = useCallback((result) => {
-    if (result?.success) {
-      // Clear URL parameters
-      clearInvitationParamsFromUrl();
-      setInvitationParams(null);
-
-      // Show welcome message
-      showSuccessMessage(result.message || 'Welcome to the team!');
-
-      // Navigate to team management view
-      setViewRef(VIEWS.TEAM_MANAGEMENT);
-    }
-  }, [setViewRef, showSuccessMessage]);
+  // Handle invitation processed callback from InvitationWelcome - now delegated to hook
+  const handleInvitationProcessed = invitationProcessing.handleInvitationProcessed;
 
   // Handle request to show sign-in modal after password setup
   const handleRequestSignIn = useCallback((email = '') => {
     console.log('Handling sign-in request after password setup', email);
 
     // Clear invitation parameters to close InvitationWelcome modal
-    clearInvitationParamsFromUrl();
-    setInvitationParams(null);
+    invitationDetection.clearInvitationParams();
 
     // Open the AuthModal in sign-in mode with prepopulated email
     authModal.openLogin(email);
-  }, [authModal]);
+  }, [authModal, invitationDetection]);
 
-  // Check for pending invitation notifications
-  const checkPendingInvitationNotifications = useCallback(async () => {
-    if (!user || hasCheckedInvitations) return;
+  // Invitation notification handlers - now delegated to hook
+  const checkPendingInvitationNotifications = invitationNotifications.checkPendingInvitationNotifications;
+  const handleInvitationNotificationProcessed = invitationNotifications.handleInvitationNotificationProcessed;
 
-    try {
-      console.log('Checking for pending invitation notifications...');
-      const invitations = await getUserPendingInvitations();
-
-      if (invitations && invitations.length > 0) {
-        console.log(`Found ${invitations.length} pending invitation(s)`);
-        setPendingInvitations(invitations);
-        setShowInvitationNotifications(true);
-      } else {
-        console.log('No pending invitations found');
-      }
-
-      setHasCheckedInvitations(true);
-    } catch (error) {
-      console.error('Error checking pending invitations:', error);
-      setHasCheckedInvitations(true);
-    }
-  }, [user, getUserPendingInvitations, hasCheckedInvitations]);
-
-  // Handle invitation notification processed
-  const handleInvitationNotificationProcessed = useCallback((processedInvitation, action) => {
-    // Remove processed invitation from the list
-    setPendingInvitations(prev =>
-      prev.filter(inv => inv.id !== processedInvitation.id)
-    );
-
-    // Close modal if no more invitations
-    setPendingInvitations(prev => {
-      if (prev.length <= 1) {
-        setShowInvitationNotifications(false);
-      }
-      return prev.filter(inv => inv.id !== processedInvitation.id);
-    });
-
-    // Show success message
-    if (action === 'accepted') {
-      showSuccessMessage(`Successfully joined ${processedInvitation.team.name}!`);
-      // Navigate to team management view after a longer delay to ensure context is fully updated
-      setTimeout(() => {
-        setViewRef(VIEWS.TEAM_MANAGEMENT);
-      }, 1000);
-    } else if (action === 'declined') {
-      showSuccessMessage('Invitation declined');
-    }
-  }, [setViewRef, showSuccessMessage]);
-
-  // Check for invitation parameters in URL on app load (restored from working revision)
+  // Process invitation when user becomes authenticated (now handled by hooks)
   useEffect(() => {
-    const handleInvitationAndSession = async () => {
-      const params = detectInvitationParams();
+    invitationProcessing.processInvitationForUser(invitationDetection.invitationParams);
+  }, [user, invitationDetection.invitationParams, invitationProcessing]);
 
-      if (params.hasInvitation) {
-        console.log('Invitation detected:', params);
-        setInvitationParams(params);
-
-        // If we have Supabase tokens in the URL hash, set the session
-        if (params.isSupabaseInvitation && params.accessToken && params.refreshToken) {
-          try {
-            console.log('Setting Supabase session with invitation tokens...');
-            const { data, error } = await supabase.auth.setSession({
-              access_token: params.accessToken,
-              refresh_token: params.refreshToken
-            });
-
-            if (error) {
-              console.error('Error setting session:', error);
-            } else {
-              console.log('Session set successfully:', data);
-            }
-          } catch (error) {
-            console.error('Exception setting session:', error);
-          }
-        }
-      }
-    };
-
-    handleInvitationAndSession();
-  }, []); // Run only once on mount
-
-  // Process invitation when user becomes authenticated (but only if they don't need password setup)
+  // Check for pending invitation after user signs in (now handled by hooks)
   useEffect(() => {
-    if (user && invitationParams && shouldProcessInvitation(user, invitationParams)) {
-      // Check if user still needs to complete account setup (password)
-      if (needsAccountCompletion(invitationParams, user)) {
-        console.log('User needs to complete account setup before processing invitation');
-        return; // Don't process invitation yet, user needs to set password first
-      }
+    invitationProcessing.processPendingInvitationForUser(invitationDetection.invitationParams);
+  }, [user, invitationDetection.invitationParams, invitationProcessing]);
 
-      console.log('User is ready to process invitation');
-      handleInvitationAcceptance(invitationParams);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, invitationParams]); // Remove handleInvitationAcceptance from dependencies
-
-  // Check for pending invitation after user signs in (for users who completed password setup)
+  // Check for pending invitation notifications after user login (now handled by hooks)
   useEffect(() => {
-    if (user && !invitationParams && hasPendingInvitation()) {
-      console.log('User signed in, checking for pending invitation...');
-      const pendingInvitation = retrievePendingInvitation();
-
-      if (pendingInvitation && pendingInvitation.invitationId) {
-        console.log('Processing pending invitation:', pendingInvitation);
-
-        // Process the stored invitation
-        handleInvitationAcceptance({ invitationId: pendingInvitation.invitationId });
-
-        // Show success message with team context
-        const teamContext = pendingInvitation.teamName ?
-          ` Welcome to ${pendingInvitation.teamName}!` :
-          ' Welcome to the team!';
-        showSuccessMessage(`Successfully joined as ${pendingInvitation.role || 'member'}.${teamContext}`);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // Only run when user changes
-
-  // Check for pending invitation notifications after user login
-  useEffect(() => {
-    if (user && !invitationParams && !needsProfileCompletion) {
+    if (user && !invitationDetection.invitationParams && !needsProfileCompletion) {
       // Small delay to allow other authentication flows to complete
       const timer = setTimeout(() => {
         checkPendingInvitationNotifications();
@@ -430,15 +277,7 @@ function AppContent() {
 
       return () => clearTimeout(timer);
     }
-
-    // Reset check flag when user changes
-    if (!user) {
-      setHasCheckedInvitations(false);
-      setPendingInvitations([]);
-      setShowInvitationNotifications(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, invitationParams, needsProfileCompletion]); // Check when user state changes
+  }, [user, invitationDetection.invitationParams, needsProfileCompletion, checkPendingInvitationNotifications]);
 
   // Timer display is now handled directly in GameScreen component
 
@@ -714,7 +553,7 @@ function AppContent() {
   } = useMatchRecovery({
     user,
     currentTeam,
-    invitationParams,
+    invitationParams: invitationDetection.invitationParams,
     needsProfileCompletion,
     gameState,
     setSuccessMessage
@@ -1363,12 +1202,12 @@ function AppContent() {
         )}
 
         {/* Invitation Welcome Modal */}
-        {invitationParams && invitationParams.hasInvitation && (() => {
-          const invitationStatus = getInvitationStatus(user, invitationParams);
+        {invitationDetection.invitationParams && invitationDetection.invitationParams.hasInvitation && (() => {
+          const invitationStatus = getInvitationStatus(user, invitationDetection.invitationParams);
           // Show invitation welcome modal for account setup or sign-in required states
           return invitationStatus.type === 'account_setup' || invitationStatus.type === 'sign_in_required' ? (
             <InvitationWelcome
-              invitationParams={invitationParams}
+              invitationParams={invitationDetection.invitationParams}
               onInvitationProcessed={handleInvitationProcessed}
               onRequestSignIn={handleRequestSignIn}
             />
@@ -1377,8 +1216,8 @@ function AppContent() {
 
         {/* Invitation Notification Modal */}
         <InvitationNotificationModal
-          isOpen={showInvitationNotifications}
-          invitations={pendingInvitations}
+          isOpen={invitationNotifications.showInvitationNotifications}
+          invitations={invitationNotifications.pendingInvitations}
           onClose={() => {}}
           onInvitationProcessed={handleInvitationNotificationProcessed}
         />
