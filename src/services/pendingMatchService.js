@@ -39,9 +39,6 @@ export async function checkForPendingMatches(teamId) {
 
     const shouldShow = validMatches.length > 0;
 
-    if (process.env.NODE_ENV === 'development' && shouldShow) {
-      console.log(`🔄 ${validMatches.length} pending match(es) found for team:`, teamId);
-    }
 
     return {
       shouldShow,
@@ -77,9 +74,6 @@ export async function checkForPendingMatch(teamId) {
                       result.match.initial_config && 
                       Object.keys(result.match.initial_config).length > 0;
 
-    if (process.env.NODE_ENV === 'development' && shouldShow) {
-      console.log('🔄 Pending match found for team:', teamId);
-    }
 
     return {
       shouldShow,

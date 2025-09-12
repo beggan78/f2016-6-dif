@@ -96,17 +96,6 @@ export function useGameState(navigateToView = null) {
   const [initialState] = useState(() => {
     const loadedState = persistenceManager.loadState();
     
-    // Debug: Log what selectedSquadIds are loaded from localStorage
-    if (process.env.NODE_ENV === 'development') {
-      console.log('💾 USEGAMESTATE INITIALIZATION: Loaded state from localStorage (ONCE):', {
-        selectedSquadIdsLength: loadedState.selectedSquadIds?.length || 0,
-        selectedSquadIds: loadedState.selectedSquadIds,
-        view: loadedState.view,
-        hasTeamConfig: !!loadedState.teamConfig,
-        hasAllPlayers: !!loadedState.allPlayers && loadedState.allPlayers.length > 0,
-        source: 'persistenceManager.loadState() - lazy initializer'
-      });
-    }
 
     // Ensure allPlayers is initialized if not present
     if (!loadedState.allPlayers || loadedState.allPlayers.length === 0) {
@@ -180,51 +169,6 @@ export function useGameState(navigateToView = null) {
   const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
   const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
-
-  // Debug: Track state initialization (only once per session)
-  if (process.env.NODE_ENV === 'development' && !window.gameStateInitialized) {
-    window.gameStateInitialized = true;
-  }
-
-  // Debug: Monitor React state changes for match state variables (only log meaningful changes)
-  useEffect(() => {
-    if (currentMatchId) {
-      console.log('⚡ currentMatchId STATE CHANGED:', currentMatchId);
-    } else {
-      console.log('⚡ currentMatchId CLEARED');
-    }
-  }, [currentMatchId]);
-
-  useEffect(() => {
-    if (matchState === 'running' || matchState === 'finished') {
-      console.log('⚡ matchState STATE CHANGED:', matchState);
-    } else if (matchState === 'not_started') {
-      console.log('⚡ matchState RESET to not_started');
-    }
-  }, [matchState]);
-
-  // Debug: Alert when match state is ready for abandonment guard
-  useEffect(() => {
-    if (currentMatchId && (matchState === 'running' || matchState === 'finished')) {
-      console.log('✅ MATCH STATE READY FOR ABANDONMENT GUARD:', {
-        currentMatchId,
-        matchState,
-        shouldShowModal: true
-      });
-    }
-  }, [currentMatchId, matchState]);
-  
-  // Debug: Track selectedSquadIds changes to identify race conditions
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🎯 selectedSquadIds changed in useGameState:', {
-        count: selectedSquadIds?.length || 0,
-        ids: selectedSquadIds,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, [selectedSquadIds]);
-
 
   // Sync captain data in allPlayers whenever captainId changes
   useEffect(() => {
@@ -419,7 +363,7 @@ export function useGameState(navigateToView = null) {
           audioPreferences.volume
         );
       } catch (error) {
-        console.log('[AUDIO_ALERT] ❌ Audio playback failed:', error.message);
+        console.error('[AUDIO_ALERT] Audio playback failed:', error.message);
       }
     }
   }, [audioPreferences]);
@@ -428,10 +372,6 @@ export function useGameState(navigateToView = null) {
   useEffect(() => {
     // Debounce auto-save to prevent infinite loops during rapid state changes
     const timeoutId = setTimeout(() => {
-      // Debug: Log selectedSquadIds changes to track potential interference
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Auto-saving game state to localStorage (debounced) - selectedSquadIds:', selectedSquadIds?.length || 0, selectedSquadIds);
-      }
       
       const currentState = {
         allPlayers,
@@ -671,9 +611,6 @@ export function useGameState(navigateToView = null) {
               console.warn('⚠️ Failed to update initial match config:', error);
             });
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log('✅ Pending match updated:', currentMatchId);
-            }
           } else {
             console.warn('⚠️ Failed to update pending match:', updateResult.error);
           }
@@ -717,9 +654,6 @@ export function useGameState(navigateToView = null) {
               console.warn('⚠️ Failed to save initial match config:', error);
             });
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log('✅ Pending match created:', createResult.matchId);
-            }
           } else {
             console.warn('⚠️ Failed to create pending match:', createResult.error);
           }
@@ -751,12 +685,6 @@ export function useGameState(navigateToView = null) {
           goalie: goalieFromPreparePeriod || currentFormationAssignments.goalie // Use goalie from preparePeriod or fallback to saved one
         };
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 Restored position assignments after period preparation:', {
-            previousAssignments: currentFormationAssignments,
-            finalFormation: restoredFormation
-          });
-        }
         
         return restoredFormation;
       });
@@ -1070,12 +998,7 @@ export function useGameState(navigateToView = null) {
         // Update match to finished state and save player stats in background (non-blocking)
         updateMatchToFinished(currentMatchId, finalStats, updatedPlayersWithFinalStats, goalScorers, matchEvents)
           .then((result) => {
-            if (result.success) {
-              console.log('✅ Match record updated to finished');
-              if (result.playerStatsUpdated) {
-                console.log(`📊 Player stats updated: ${result.playerStatsUpdated} players`);
-              }
-            } else {
+            if (!result.success) {
               console.warn('⚠️  Failed to update match to finished:', result.error);
             }
           })
@@ -1125,10 +1048,7 @@ export function useGameState(navigateToView = null) {
       setCaptainId(null);
 
       // Clear match lifecycle state to prevent ID reuse
-      console.log('🗑️ clearStoredState: Clearing all match state');
-      console.log('📝 CALLING setCurrentMatchId(null)');
       setCurrentMatchId(null);
-      console.log('📝 CALLING setMatchState(\'not_started\')');
       setMatchState('not_started');
       setMatchCreationAttempted(false);
     } else {
@@ -2166,10 +2086,6 @@ export function useGameState(navigateToView = null) {
           matchUpdatePromise = createMatch(matchData, updatedPlayers)
             .then((result) => {
               if (result.success) {
-                console.log('✅ Match record created:', result.matchId);
-                if (result.playerStatsInserted) {
-                  console.log('📊 Initial player stats inserted:', result.playerStatsInserted, 'players');
-                }
                 setCurrentMatchId(result.matchId);
                 return { success: true };
               } else {

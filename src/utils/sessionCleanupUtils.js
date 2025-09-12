@@ -82,33 +82,16 @@ export function cleanupPreviousSession() {
       }
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🧹 SESSION CLEANUP: Starting localStorage cleanup:', {
-        totalKeys: allKeys.length,
-        allKeys,
-        keysToRemove: keysToRemove.length,
-        preservedKeys: preservedKeys.length,
-        unknownKeys: unknownKeys.length,
-        gameStateFound: allKeys.includes('dif-coach-game-state'),
-        gameStateWillBeRemoved: keysToRemove.includes('dif-coach-game-state')
-      });
-    }
     
     // Remove the keys (done separately to avoid modifying during iteration)
     keysToRemove.forEach(key => {
       try {
         localStorage.removeItem(key);
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🧹 Cleaned up localStorage key: ${key}`);
-        }
       } catch (error) {
         console.warn(`Failed to remove localStorage key ${key}:`, error);
       }
     });
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ Session cleanup completed. Removed ${keysToRemove.length} keys, preserved ${PRESERVED_KEYS.length} preference keys`);
-    }
     
     return {
       success: true,
@@ -163,9 +146,6 @@ export function clearAllLocalStorage() {
     const keyCount = localStorage.length;
     localStorage.clear();
     
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`🚨 Emergency cleanup: cleared all ${keyCount} localStorage keys`);
-    }
     
     return { success: true, clearedKeys: keyCount };
   } catch (error) {

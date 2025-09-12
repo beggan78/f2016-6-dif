@@ -120,9 +120,6 @@ export function PeriodSetupScreen({
   // Handle resume formation data from pending match
   useEffect(() => {
     if (resumeFormationData) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Populating formation from pending match resume data');
-      }
       setFormation(resumeFormationData);
     }
   }, [resumeFormationData, setFormation]);

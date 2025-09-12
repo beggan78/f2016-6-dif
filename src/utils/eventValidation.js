@@ -391,7 +391,6 @@ export const recoverCorruptedEvents = (events) => {
     return [];
   }
   
-  console.log('Attempting to recover corrupted events...');
   
   let recoveredEvents = [];
   
@@ -409,10 +408,8 @@ export const recoverCorruptedEvents = (events) => {
         
         recoveredEvents.push(event);
       } else {
-        console.warn(`Removing corrupted event at index ${index}:`, event);
       }
     } catch (error) {
-      console.warn(`Error processing event at index ${index}:`, error);
     }
   });
   
@@ -435,7 +432,6 @@ export const recoverCorruptedEvents = (events) => {
     event.sequence = index + 1;
   });
   
-  console.log(`Recovery complete: ${events.length} → ${uniqueEvents.length} events`);
   
   return uniqueEvents;
 };
@@ -445,7 +441,6 @@ export const recoverCorruptedEvents = (events) => {
  */
 export const recoverFromCrash = () => {
   try {
-    console.log('Attempting crash recovery...');
     
     // Try primary storage first
     const primary = localStorage.getItem('dif-coach-match-events');
@@ -454,14 +449,12 @@ export const recoverFromCrash = () => {
       const validationErrors = validateMatchData(primaryData.events);
       
       if (validationErrors.length === 0) {
-        console.log('Primary storage is valid, no recovery needed');
         return primaryData;
       }
       
       // Try to recover primary data
       const recoveredEvents = recoverCorruptedEvents(primaryData.events);
       if (recoveredEvents.length > 0) {
-        console.log('Successfully recovered primary storage');
         return {
           ...primaryData,
           events: recoveredEvents,
@@ -479,7 +472,6 @@ export const recoverFromCrash = () => {
         const validationErrors = validateMatchData(backupData.primary.events);
         
         if (validationErrors.length === 0) {
-          console.log('Backup storage is valid, using backup');
           return {
             ...backupData.primary,
             recovered: true,
@@ -491,7 +483,6 @@ export const recoverFromCrash = () => {
         // Try to recover backup data
         const recoveredEvents = recoverCorruptedEvents(backupData.primary.events);
         if (recoveredEvents.length > 0) {
-          console.log('Successfully recovered backup storage');
           return {
             ...backupData.primary,
             events: recoveredEvents,
@@ -503,7 +494,6 @@ export const recoverFromCrash = () => {
       }
     }
     
-    console.warn('No valid storage found, starting fresh');
     return null;
     
   } catch (error) {

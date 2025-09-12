@@ -136,10 +136,9 @@ export const syncPlayersToLocalStorage = (updatedAllPlayers, manager = persisten
     // Save to localStorage
     manager.saveState(updatedState);
     
-    console.log('✅ Players synced to localStorage:', updatedAllPlayers.length, 'players');
     return true;
   } catch (error) {
-    console.error('❌ Failed to sync players to localStorage:', error);
+    console.error('Failed to sync players to localStorage:', error);
     return false;
   }
 };
@@ -159,7 +158,6 @@ export const syncTeamRosterToGameState = (teamPlayers, currentAllPlayers, manage
     const saveSuccess = syncPlayersToLocalStorage(syncedPlayers, manager);
     
     if (saveSuccess) {
-      console.log('✅ Team roster successfully synced to game state');
       return {
         success: true,
         players: syncedPlayers,
@@ -173,7 +171,7 @@ export const syncTeamRosterToGameState = (teamPlayers, currentAllPlayers, manage
       };
     }
   } catch (error) {
-    console.error('❌ Team roster sync failed:', error);
+    console.error('Team roster sync failed:', error);
     return {
       success: false,
       players: currentAllPlayers,

@@ -11,28 +11,6 @@ const isTestEnvironment = process.env.NODE_ENV === 'test';
 const testUrl = 'https://test.supabase.co';
 const testKey = 'test-anon-key';
 
-// Debug logging for production troubleshooting - WHITESPACE ANALYSIS
-if (process.env.NODE_ENV === 'production') {
-  console.log('=== SUPABASE CLIENT WHITESPACE ANALYSIS ===');
-  console.log('URL:', supabaseUrl);
-  console.log('Key (JSON stringified):', JSON.stringify(supabaseAnonKey));
-  console.log('Key length:', supabaseAnonKey?.length || 0);
-  console.log('Contains newline:', supabaseAnonKey?.includes('\n') || false);
-  console.log('Contains space:', supabaseAnonKey?.includes(' ') || false);
-  console.log('Contains tab:', supabaseAnonKey?.includes('\t') || false);
-  console.log('Contains carriage return:', supabaseAnonKey?.includes('\r') || false);
-  
-  // Show character codes around suspected break point (position 90-100)
-  if (supabaseAnonKey && supabaseAnonKey.length > 90) {
-    const suspectArea = supabaseAnonKey.substring(85, 105);
-    console.log('Suspect area (chars 85-105):', JSON.stringify(suspectArea));
-    console.log('Character codes in suspect area:', 
-      Array.from(suspectArea).map((char, i) => `${85+i}: ${char} (${char.charCodeAt(0)})`));
-  }
-  
-  console.log('Expected length: 211');
-  console.log('=== END WHITESPACE ANALYSIS ===');
-}
 
 // Only throw error in non-test environments
 if (!supabaseUrl || !supabaseAnonKey) {

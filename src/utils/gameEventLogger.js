@@ -250,7 +250,6 @@ const loadFromBackup = () => {
       const storage = backupData.primary;
       
       if (storage && storage.events) {
-        console.log('Successfully restored from backup');
         
         // Update global state
         currentEvents = storage.events;
@@ -346,8 +345,7 @@ export const removeEvent = (eventId) => {
     const saveSuccess = saveEvents(newEvents);
     
     if (saveSuccess) {
-      console.log(`Event removed: ${removedEvent.type} (${eventId})`);
-      notifyEventListeners('event_removed', { removedEvent });
+        notifyEventListeners('event_removed', { removedEvent });
       return true;
     }
     
@@ -581,9 +579,7 @@ export const initializeEventLogger = () => {
   const storage = loadEvents();
   
   if (storage) {
-    console.log(`Event logger initialized with ${storage.events.length} events`);
   } else {
-    console.log('Event logger initialized with empty state');
   }
   
   return storage;

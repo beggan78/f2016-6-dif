@@ -218,7 +218,6 @@ export const storePendingInvitation = (invitationDetails) => {
   
   try {
     localStorage.setItem('pendingInvitation', JSON.stringify(invitationDetails));
-    console.log('Stored pending invitation:', invitationDetails);
   } catch (error) {
     console.error('Failed to store pending invitation:', error);
   }
@@ -236,7 +235,6 @@ export const retrievePendingInvitation = () => {
     if (stored) {
       const invitation = JSON.parse(stored);
       localStorage.removeItem('pendingInvitation'); // Clear after retrieval
-      console.log('Retrieved pending invitation:', invitation);
       return invitation;
     }
   } catch (error) {

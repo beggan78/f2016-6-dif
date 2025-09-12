@@ -33,7 +33,6 @@ export class DataSyncManager {
       console.error('Error saving match data:', error);
       // Fallback to localStorage if cloud save fails
       if (this.isAuthenticated) {
-        console.log('Cloud save failed, falling back to localStorage');
         return this.saveMatchToLocal(matchData);
       }
       throw error;
@@ -214,7 +213,6 @@ export class DataSyncManager {
       console.error('Error getting match history:', error);
       // Fallback to localStorage if cloud fetch fails
       if (this.isAuthenticated) {
-        console.log('Cloud fetch failed, falling back to localStorage');
         return this.getLocalMatchHistory(limit);
       }
       return { success: false, matches: [], error: error.message };

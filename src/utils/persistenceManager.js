@@ -29,32 +29,17 @@ export class PersistenceManager {
    */
   loadState() {
     if (!this.isSupported) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 PERSISTENCE MANAGER: localStorage not supported, using default state');
-      }
       return this.defaultState;
     }
 
     try {
       const saved = localStorage.getItem(this.storageKey);
       if (!saved) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('💾 PERSISTENCE MANAGER: No saved state found, using default state');
-        }
         return this.defaultState;
       }
 
       const parsedState = JSON.parse(saved);
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 PERSISTENCE MANAGER: Loaded state from localStorage:', {
-          storageKey: this.storageKey,
-          selectedSquadIdsLength: parsedState.selectedSquadIds?.length || 0,
-          selectedSquadIds: parsedState.selectedSquadIds,
-          view: parsedState.view,
-          rawStateSize: saved.length
-        });
-      }
       
       // Validate that the loaded state is an object
       if (typeof parsedState !== 'object' || parsedState === null) {

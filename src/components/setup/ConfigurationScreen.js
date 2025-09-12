@@ -87,13 +87,6 @@ export function ConfigurationScreen({
   React.useEffect(() => {
     return () => {
       // Reset all resume processing refs on component unmount
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🧹 ConfigurationScreen unmounting - cleaning up resume refs:', {
-          resumeDataProcessed: resumeDataProcessedRef.current,
-          isProcessing: isProcessingResumeDataRef.current,
-          teamSyncCompleted: teamSyncCompletedRef.current
-        });
-      }
       
       resumeDataProcessedRef.current = false;
       isProcessingResumeDataRef.current = false;
@@ -111,18 +104,6 @@ export function ConfigurationScreen({
   const { isAuthenticated, user, sessionDetectionResult } = useAuth();
   const { currentTeam, teamPlayers, hasTeams, hasClubs, loading: teamLoading } = useTeam();
   
-  // Debug: Track session detection changes
-  React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && sessionDetectionResult) {
-      console.log('🔍 Session detection result in ConfigurationScreen:', {
-        type: sessionDetectionResult.type,
-        timestamp: new Date().toISOString(),
-        isAuthenticated,
-        hasCurrentTeam: !!currentTeam,
-        teamPlayersCount: teamPlayers?.length || 0
-      });
-    }
-  }, [sessionDetectionResult, isAuthenticated, currentTeam, teamPlayers]);
   
   // Reset pending match modal closure state when user signs out
   React.useEffect(() => {
@@ -241,9 +222,6 @@ export function ConfigurationScreen({
   React.useEffect(() => {
     // Guard: Skip team sync if resume processing is currently happening
     if (isProcessingResumeDataRef.current) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🚫 Team sync skipped - resume processing in progress');
-      }
       return;
     }
     
@@ -252,35 +230,14 @@ export function ConfigurationScreen({
     const hasTeamPlayers = teamPlayers && teamPlayers.length > 0;
     const hasSyncFunction = !!syncPlayersFromTeamRoster;
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 Team sync effect triggered:', {
-        hasCurrentTeam,
-        hasTeamPlayers,
-        hasSyncFunction,
-        teamPlayersCount: teamPlayers?.length || 0,
-        currentTeamId: currentTeam?.id
-      });
-    }
     
     if (!hasCurrentTeam || !hasTeamPlayers || !hasSyncFunction) {
-      console.log('🚫 Sync skipped - missing requirements:', {
-        hasCurrentTeam,
-        hasTeamPlayers,
-        hasSyncFunction
-      });
       // Mark sync as "completed" when skipped so resume processing doesn't wait indefinitely
       teamSyncCompletedRef.current = true;
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Team sync marked as completed (skipped)');
-      }
       return; // No team selected or no sync function available
     }
 
     const performSync = async () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Starting team roster sync...');
-      }
-      
       setPlayerSyncStatus({ loading: true, message: 'Syncing team roster...' });
       teamSyncCompletedRef.current = false;
       
@@ -296,10 +253,6 @@ export function ConfigurationScreen({
           // Mark team sync as completed
           teamSyncCompletedRef.current = true;
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log('✅ Team sync completed successfully:', result.message);
-          }
-          
           // Clear success message after 3 seconds
           if (result.message !== 'No sync needed') {
             setTimeout(() => {
@@ -312,10 +265,6 @@ export function ConfigurationScreen({
             message: `⚠️ Sync failed: ${result.error}` 
           });
           teamSyncCompletedRef.current = false;
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('⚠️ Team sync failed:', result.error);
-          }
         }
       } catch (error) {
         console.error('ConfigurationScreen sync error:', error);
@@ -397,21 +346,11 @@ export function ConfigurationScreen({
   React.useEffect(() => {
     // Skip cleanup if resume data is present or being processed
     if (isProcessingResumeDataRef.current) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🚫 Skipping orphaned selections cleanup - resume data present');
-      }
       return;
     }
     
     if (hasNoTeamPlayers && selectedSquadIds.length > 0 &&
         sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🧹 Clearing orphaned selectedSquadIds on NEW_SIGN_IN:', {
-          hasNoTeamPlayers,
-          selectedSquadIdsCount: selectedSquadIds.length,
-          sessionDetectionType: sessionDetectionResult?.type
-        });
-      }
       setSelectedSquadIds([]);
     }
   }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds, sessionDetectionResult]);
@@ -419,26 +358,7 @@ export function ConfigurationScreen({
   // Reset resume processing flags on NEW_SIGN_IN to ensure each sign-in can process resume data independently
   React.useEffect(() => {
     if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 NEW_SIGN_IN detected - resetting resume processing flags:', {
-          previousResumeProcessed: resumeDataProcessedRef.current,
-          previousProcessing: isProcessingResumeDataRef.current,
-          sessionDetectionType: sessionDetectionResult.type
-        });
-      }
-      
       // Reset flags to allow new resume data to be processed
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 RESUME FLAGS: Resetting flags due to NEW_SIGN_IN:', {
-          previousProcessedValue: resumeDataProcessedRef.current,
-          previousProcessingValue: isProcessingResumeDataRef.current,
-          newProcessedValue: false,
-          newProcessingValue: false,
-          reason: 'NEW_SIGN_IN detected',
-          timestamp: new Date().toISOString()
-        });
-      }
-      
       resumeDataProcessedRef.current = false;
       isProcessingResumeDataRef.current = false;
       
@@ -446,14 +366,6 @@ export function ConfigurationScreen({
       if (processingTimeoutRef.current) {
         clearTimeout(processingTimeoutRef.current);
         processingTimeoutRef.current = null;
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 Cleared processing timeout on NEW_SIGN_IN');
-        }
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Resume processing flags reset for new sign-in session');
       }
     }
   }, [sessionDetectionResult]);
@@ -494,49 +406,19 @@ export function ConfigurationScreen({
     
     // Guard: Skip if team sync is currently in progress (avoid interference)
     if (playerSyncStatus.loading) {
-      if (process.env.NODE_ENV === 'development' && resumeData) {
-        console.log('🚫 Resume processing deferred - team sync in progress');
-      }
       return;
     }
     
-    if (process.env.NODE_ENV === 'development' && resumeData) {
-      console.log('🔄 RESUME: Processing resume data:', {
-        source: 'direct',
-        squadLength: resumeData?.squadSelection?.length || 0
-      });
-    }
     
     // Process resume data from pending match modal selection
     if (resumeData && !isProcessingResumeDataRef.current) {
-      
       // Mark as processing to prevent concurrent execution
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 RESUME FLAGS: Starting resume processing:', {
-          previousProcessedValue: resumeDataProcessedRef.current,
-          previousProcessingValue: isProcessingResumeDataRef.current,
-          newProcessingValue: true,
-          reason: 'Beginning resume data processing',
-          timestamp: new Date().toISOString()
-        });
-      }
-      
       isProcessingResumeDataRef.current = true;
       
       // Set timeout protection to auto-reset stuck processing state
       processingTimeoutRef.current = setTimeout(() => {
         if (isProcessingResumeDataRef.current) {
           console.warn('⚠️ Resume processing timeout - auto-resetting stuck state after 10 seconds');
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔧 RESUME FLAGS: Timeout reset:', {
-              previousProcessingValue: isProcessingResumeDataRef.current,
-              newProcessingValue: false,
-              reason: 'Processing timeout after 10 seconds',
-              timestamp: new Date().toISOString()
-            });
-          }
-          
           isProcessingResumeDataRef.current = false;
           processingTimeoutRef.current = null;
         }
@@ -545,12 +427,6 @@ export function ConfigurationScreen({
       try {
         // Pre-populate all configuration from saved data
         if (resumeData.squadSelection) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('📋 RESUME: Applying squad selection:', {
-              squadIds: resumeData.squadSelection,
-              count: resumeData.squadSelection.length
-            });
-          }
           setSelectedSquadIds(resumeData.squadSelection);
         }
         
@@ -588,17 +464,6 @@ export function ConfigurationScreen({
         }
         
         // Mark resume data as processed
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 RESUME FLAGS: Setting resume data as processed:', {
-            previousProcessedValue: resumeDataProcessedRef.current,
-            previousProcessingValue: isProcessingResumeDataRef.current,
-            newProcessedValue: true,
-            newProcessingValue: false,
-            reason: 'Resume processing completed successfully',
-            timestamp: new Date().toISOString()
-          });
-        }
-        
         resumeDataProcessedRef.current = true;
         isProcessingResumeDataRef.current = false;
         
@@ -608,27 +473,11 @@ export function ConfigurationScreen({
           processingTimeoutRef.current = null;
         }
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Resume data processing completed successfully');
-        }
-        
         // Clear the resume data after population
         setResumeData(null);
       } catch (error) {
         // Error handling: Reset refs and log the error
         console.error('❌ Resume data processing failed:', error);
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 RESUME FLAGS: Resetting due to error:', {
-            error: error.message,
-            previousProcessedValue: resumeDataProcessedRef.current,
-            previousProcessingValue: isProcessingResumeDataRef.current,
-            newProcessedValue: false,
-            newProcessingValue: false,
-            reason: 'Error in resume processing',
-            timestamp: new Date().toISOString()
-          });
-        }
         
         // Reset refs to prevent stuck states
         resumeDataProcessedRef.current = false;
@@ -653,16 +502,6 @@ export function ConfigurationScreen({
   // Note: alreadyProcessed flag is kept for debugging but no longer blocks processing
   React.useEffect(() => {
     if (!resumeData) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 RESUME FLAGS: Resetting processing flag due to resume data cleared:', {
-          previousProcessingValue: isProcessingResumeDataRef.current,
-          newProcessingValue: false,
-          reason: 'Resume data became null/undefined',
-          note: 'alreadyProcessed flag kept for debugging but no longer blocks processing',
-          timestamp: new Date().toISOString()
-        });
-      }
-      
       // Only reset processing flag - alreadyProcessed is kept for debugging
       isProcessingResumeDataRef.current = false;
       
@@ -670,14 +509,6 @@ export function ConfigurationScreen({
       if (processingTimeoutRef.current) {
         clearTimeout(processingTimeoutRef.current);
         processingTimeoutRef.current = null;
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 Cleared processing timeout - resume data cleared');
-        }
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Resume data cleared - processing flag reset');
       }
     }
   }, [resumeData]);
@@ -794,57 +625,19 @@ export function ConfigurationScreen({
   const handleResumePendingMatch = React.useCallback(async (matchId) => {
     const selectedMatch = pendingMatches.find(match => match.id === matchId);
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🎯 MATCH SELECTION: User selected match to resume:', {
-        selectedMatchId: matchId,
-        foundMatch: !!selectedMatch,
-        hasInitialConfig: !!selectedMatch?.initial_config,
-        matchCreatedAt: selectedMatch?.created_at,
-        teamId: selectedMatch?.team_id,
-        matchState: selectedMatch?.state
-      });
-    }
-    
     if (!selectedMatch?.initial_config) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
-      }
+      console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
       return;
     }
 
     setPendingMatchLoading(true);
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 RESUME DATA CREATION: Creating resume data from match config:', {
-          squadSelectionLength: selectedMatch.initial_config.squadSelection?.length || 0,
-          squadSelection: selectedMatch.initial_config.squadSelection,
-          teamConfig: selectedMatch.initial_config.teamConfig,
-          matchConfig: selectedMatch.initial_config.matchConfig,
-          periodGoalies: selectedMatch.initial_config.periodGoalies
-        });
-      }
-      
       // Create resume data for direct processing
       const resumeDataForConfig = createResumeDataForConfiguration(selectedMatch.initial_config);
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📋 RESUME DATA RESULT:', {
-          success: !!resumeDataForConfig,
-          squadSelectionLength: resumeDataForConfig?.squadSelection?.length || 0,
-          squadSelection: resumeDataForConfig?.squadSelection,
-          periods: resumeDataForConfig?.periods,
-          formation: resumeDataForConfig?.formation,
-          teamConfig: resumeDataForConfig?.teamConfig
-        });
-      }
       
       if (resumeDataForConfig) {
         // Use same closure logic as dismiss to ensure modal stays closed
         handleClosePendingMatchModal();
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🚀 RESUME: Processing pending match data on ConfigurationScreen');
-        }
         
         // Set resume data directly - no navigation needed
         setResumeData(resumeDataForConfig);
