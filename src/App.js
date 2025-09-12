@@ -289,15 +289,15 @@ function AppContent() {
   }, [setViewRef, showSuccessMessage]);
 
   // Handle request to show sign-in modal after password setup
-  const handleRequestSignIn = useCallback(() => {
-    console.log('Handling sign-in request after password setup');
+  const handleRequestSignIn = useCallback((email = '') => {
+    console.log('Handling sign-in request after password setup', email);
 
     // Clear invitation parameters to close InvitationWelcome modal
     clearInvitationParamsFromUrl();
     setInvitationParams(null);
 
-    // Open the AuthModal in sign-in mode
-    authModal.openLogin();
+    // Open the AuthModal in sign-in mode with prepopulated email
+    authModal.openLogin(email);
   }, [authModal]);
 
   // Check for pending invitation notifications
@@ -1342,6 +1342,7 @@ function AppContent() {
           isOpen={authModal.isOpen}
           onClose={authModal.closeModal}
           initialMode={authModal.mode}
+          initialEmail={authModal.initialEmail}
         />
 
         {/* Team Admin Modal */}

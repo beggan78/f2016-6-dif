@@ -110,7 +110,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
       
       // Request that the parent component show the sign-in modal
       if (onRequestSignIn) {
-        onRequestSignIn();
+        onRequestSignIn(user?.email);
       }
     } catch (error) {
       console.error('Error signing out:', error);
