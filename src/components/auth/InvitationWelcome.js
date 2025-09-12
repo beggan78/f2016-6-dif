@@ -3,6 +3,7 @@ import { Button, Input } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { getInvitationContext, getInvitationStatus, needsAccountCompletion, storePendingInvitation } from '../../utils/invitationUtils';
+import { validatePassword, getPasswordRequirementsText } from '../../utils/authValidation';
 import { supabase } from '../../lib/supabase';
 import { 
   Mail, 
@@ -46,8 +47,9 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
       return;
     }
     
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.error);
       return;
     }
 
@@ -278,6 +280,9 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
                   placeholder="Enter your password"
                   disabled={isProcessing}
                 />
+                <p className="text-slate-500 text-xs mt-1">
+                  {getPasswordRequirementsText()}
+                </p>
               </div>
 
               <div>
