@@ -57,21 +57,41 @@ function shouldCleanupKey(key) {
 export function cleanupPreviousSession() {
   try {
     const keysToRemove = [];
+    const allKeys = [];
+    const preservedKeys = [];
+    const unknownKeys = [];
     
     // Iterate through all localStorage keys
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key) continue;
       
+      allKeys.push(key);
+      
       // Skip preserved keys (user preferences)
       if (shouldPreserveKey(key)) {
+        preservedKeys.push(key);
         continue;
       }
       
       // Mark session-specific keys for removal
       if (shouldCleanupKey(key)) {
         keysToRemove.push(key);
+      } else {
+        unknownKeys.push(key);
       }
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🧹 SESSION CLEANUP: Starting localStorage cleanup:', {
+        totalKeys: allKeys.length,
+        allKeys,
+        keysToRemove: keysToRemove.length,
+        preservedKeys: preservedKeys.length,
+        unknownKeys: unknownKeys.length,
+        gameStateFound: allKeys.includes('dif-coach-game-state'),
+        gameStateWillBeRemoved: keysToRemove.includes('dif-coach-game-state')
+      });
     }
     
     // Remove the keys (done separately to avoid modifying during iteration)

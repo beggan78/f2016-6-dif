@@ -43,10 +43,7 @@ import { getInvitationStatus } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
 import { useMatchRecovery } from './hooks/useMatchRecovery';
 import { useTeamInvitationManager } from './hooks/useTeamInvitationManager';
-import { updateMatchToConfirmed, discardPendingMatch } from './services/matchStateManager';
-import { checkForPendingMatches, createResumeDataForConfiguration, extractFormationFromConfig } from './services/pendingMatchService';
-import { PendingMatchResumeModal } from './components/match/PendingMatchResumeModal';
-import { DETECTION_TYPES } from './services/sessionDetectionService';
+import { updateMatchToConfirmed } from './services/matchStateManager';
 
 // Dismissed modals localStorage utilities
 const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
@@ -116,10 +113,6 @@ function AppContent() {
   
   // Enhanced navigation functions that track history
   const navigateToView = useCallback((view, data = null) => {
-    // Set navigation data for view-specific data passing
-    if (data) {
-      setNavigationData(data);
-    }
     return navigationHistory.navigateTo(view, data);
   }, [navigationHistory]);
   
@@ -130,10 +123,6 @@ function AppContent() {
     return navigationHistory.navigateBack(fallback);
   }, [navigationHistory]);
 
-  // Enhanced setViewWithData that tracks navigation history
-  const setViewWithData = useCallback((view, data = null) => {
-    return navigateToView(view, data);
-  }, [navigateToView]);
   const timers = useTimers(gameState.periodDurationMinutes, gameState.alertMinutes, gameState.playAlertSounds, gameState.currentPeriodNumber);
   const {
     showSessionWarning,
@@ -151,21 +140,13 @@ function AppContent() {
     teamPlayers,
     hasPendingRequests,
     pendingRequestsCount,
-    canManageTeam,
-    loading: teamLoading
+    canManageTeam
   } = useTeam();
 
   // Authentication modal
   const authModal = useAuthModal();
 
-  // Get session detection result from Auth context
-  const { sessionDetectionResult } = useAuth();
 
-  // Pending match resume state (must be declared before useEffect that uses them)
-  const [pendingMatches, setPendingMatches] = useState([]);
-  const [showPendingMatchModal, setShowPendingMatchModal] = useState(false);
-  const [pendingMatchLoading, setPendingMatchLoading] = useState(false);
-  const [pendingMatchModalDismissed, setPendingMatchModalDismissed] = useState(false);
 
   // Check for password reset tokens or codes in URL on app load
   useEffect(() => {
@@ -184,34 +165,7 @@ function AppContent() {
     }
   }, [user, authModal]);
 
-  // Reset pending match modal dismissal state when user changes (sign-out/sign-in)
-  useEffect(() => {
-    if (user?.id) {
-      // User signed in - reset dismissal state from sessionStorage
-      const dismissed = sessionStorage.getItem('sport-wizard-pending-modal-dismissed') === 'true';
-      setPendingMatchModalDismissed(dismissed);
-    } else {
-      // User signed out - reset dismissal state
-      setPendingMatchModalDismissed(false);
-    }
-  }, [user?.id]);
 
-  // Session detection effect for pending match handling
-  useEffect(() => {
-    if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
-        currentTeam?.id && 
-        !teamLoading && 
-        !pendingMatchModalDismissed) {
-      checkForPendingMatches(currentTeam.id).then(result => {
-        if (result.shouldShow && result.pendingMatches.length > 0) {
-          setPendingMatches(result.pendingMatches);
-          setShowPendingMatchModal(true);
-        }
-      }).catch(error => {
-        console.error('❌ Failed to check for pending matches:', error);
-      });
-    }
-  }, [sessionDetectionResult, currentTeam?.id, teamLoading, pendingMatchModalDismissed]);
 
 
 
@@ -228,6 +182,7 @@ function AppContent() {
     }
     syncCurrentView(gameState.view);
   }, [gameState.view, syncCurrentView]);
+  
   
   // Custom sign out handler that resets view to ConfigurationScreen
   const handleSignOut = useCallback(async () => {
@@ -259,68 +214,6 @@ function AppContent() {
     }, 3000); // 3 second auto-dismiss
   }, []);
 
-  // Pending match modal handlers
-  const handleResumePendingMatch = useCallback(async (matchId) => {
-    const selectedMatch = pendingMatches.find(match => match.id === matchId);
-    if (!selectedMatch?.initial_config) return;
-
-    setPendingMatchLoading(true);
-    try {
-      // Create resume data for ConfigurationScreen
-      const resumeDataForConfig = createResumeDataForConfiguration(selectedMatch.initial_config);
-      
-      if (resumeDataForConfig) {
-        setShowPendingMatchModal(false);
-        
-        // Navigate to ConfigurationScreen with resume data
-        navigateToView(VIEWS.CONFIG, { 
-          resumePendingMatchData: resumeDataForConfig,
-          resumeFormationData: extractFormationFromConfig(selectedMatch.initial_config)
-        });
-      } else {
-        console.error('❌ Failed to create resume data from pending match');
-        setShowPendingMatchModal(false);
-      }
-    } catch (error) {
-      console.error('❌ Error resuming pending match:', error);
-      setShowPendingMatchModal(false);
-    } finally {
-      setPendingMatchLoading(false);
-    }
-  }, [pendingMatches, navigateToView]);
-
-  const handleDiscardPendingMatch = useCallback(async (matchId) => {
-    if (!matchId) return;
-
-    setPendingMatchLoading(true);
-    try {
-      await discardPendingMatch(matchId);
-      
-      // Remove the discarded match from the array
-      setPendingMatches(prev => prev.filter(match => match.id !== matchId));
-      
-      // If no matches remain, close the modal
-      if (pendingMatches.length <= 1) {
-        setShowPendingMatchModal(false);
-      }
-      
-      // Clear any stored match state
-      if (gameState.clearStoredState) {
-        gameState.clearStoredState();
-      }
-    } catch (error) {
-      console.error('❌ Error discarding pending match:', error);
-      setShowPendingMatchModal(false);
-    } finally {
-      setPendingMatchLoading(false);
-    }
-  }, [pendingMatches, gameState]);
-
-  const handleClosePendingMatchModal = useCallback(() => {
-    setShowPendingMatchModal(false);
-    setPendingMatchModalDismissed(true);
-    sessionStorage.setItem('sport-wizard-pending-modal-dismissed', 'true');
-  }, []);
 
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
@@ -337,18 +230,9 @@ function AppContent() {
     authModal,
     showSuccessMessage
   });
-  const [navigationData, setNavigationData] = useState(null);
 
   // setViewWithData is now defined above with navigation history integration
 
-  // Clear navigation data when view changes (except for TEAM_MANAGEMENT and CONFIG which need persistent data)
-  useEffect(() => {
-    if (gameState.view !== VIEWS.TEAM_MANAGEMENT && 
-        gameState.view !== VIEWS.CONFIG && 
-        navigationData) {
-      setNavigationData(null);
-    }
-  }, [gameState.view, navigationData]);
 
   // Timer display is now handled directly in GameScreen component
 
@@ -954,9 +838,7 @@ function AppContent() {
             debugMode={debugMode}
             authModal={authModal}
             setView={navigateToView}
-            setViewWithData={setViewWithData}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
-            resumePendingMatchData={navigationData?.resumePendingMatchData}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -1122,7 +1004,6 @@ function AppContent() {
             onNavigateBack={navigateBack}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
-            openToTab={navigationData?.openToTab}
           />
         );
       default:
@@ -1240,15 +1121,6 @@ function AppContent() {
         deleting={isProcessingRecovery}
       />
 
-      {/* Pending Match Resume Modal */}
-      <PendingMatchResumeModal
-        isOpen={showPendingMatchModal}
-        onResume={handleResumePendingMatch}
-        onDiscard={handleDiscardPendingMatch}
-        onClose={handleClosePendingMatchModal}
-        pendingMatches={pendingMatches}
-        isLoading={pendingMatchLoading}
-      />
 
         {/* Session Expiry Warning Modal */}
         <SessionExpiryModal

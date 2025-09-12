@@ -18,14 +18,10 @@ import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
+import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
+import { discardPendingMatch } from '../../services/matchStateManager';
+import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
 
-// Import TAB_VIEWS for team management navigation
-const TAB_VIEWS = {
-  OVERVIEW: 'overview',
-  ACCESS: 'access',
-  ROSTER: 'roster',
-  PREFERENCES: 'preferences'
-};
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -57,10 +53,7 @@ export function ConfigurationScreen({
   debugMode = false,
   authModal,
   setView,
-  setViewWithData,
-  syncPlayersFromTeamRoster,
-  resumePendingMatchData = null,
-  clearResumeData
+  syncPlayersFromTeamRoster
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -68,12 +61,119 @@ export function ConfigurationScreen({
   const [isPairRoleHelpModalOpen, setIsPairRoleHelpModalOpen] = React.useState(false);
   const [saveConfigStatus, setSaveConfigStatus] = React.useState({ loading: false, message: '', error: null });
   
+  // Direct pending match state (no navigation complexity)
+  const [pendingMatches, setPendingMatches] = useState([]);
+  const [showPendingMatchModal, setShowPendingMatchModal] = useState(false);
+  const [pendingMatchLoading, setPendingMatchLoading] = useState(false);
+  const [pendingMatchModalDismissed, setPendingMatchModalDismissed] = useState(false);
+  const [pendingMatchError, setPendingMatchError] = useState(null);
+  const [resumeData, setResumeData] = useState(null);
+  
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
+  // Ref to track team sync completion to coordinate with resume data processing
+  const teamSyncCompletedRef = useRef(false);
+  const isProcessingResumeDataRef = useRef(false);
+  const processingTimeoutRef = useRef(null);
+  
+  // Component unmount cleanup to prevent memory leaks
+  React.useEffect(() => {
+    return () => {
+      // Reset all resume processing refs on component unmount
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🧹 ConfigurationScreen unmounting - cleaning up resume refs:', {
+          resumeDataProcessed: resumeDataProcessedRef.current,
+          isProcessing: isProcessingResumeDataRef.current,
+          teamSyncCompleted: teamSyncCompletedRef.current
+        });
+      }
+      
+      resumeDataProcessedRef.current = false;
+      isProcessingResumeDataRef.current = false;
+      teamSyncCompletedRef.current = false;
+      
+      // Clear any pending timeout
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array ensures this only runs on mount/unmount
   
   // Auth and Team hooks (must be before useEffect that use these values)
   const { isAuthenticated, user, sessionDetectionResult } = useAuth();
-  const { currentTeam, teamPlayers, hasTeams, hasClubs } = useTeam();
+  const { currentTeam, teamPlayers, hasTeams, hasClubs, loading: teamLoading } = useTeam();
+  
+  // Debug: Track session detection changes
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && sessionDetectionResult) {
+      console.log('🔍 Session detection result in ConfigurationScreen:', {
+        type: sessionDetectionResult.type,
+        timestamp: new Date().toISOString(),
+        isAuthenticated,
+        hasCurrentTeam: !!currentTeam,
+        teamPlayersCount: teamPlayers?.length || 0
+      });
+    }
+  }, [sessionDetectionResult, isAuthenticated, currentTeam, teamPlayers]);
+  
+  // Reset pending match modal dismissal state when user changes (sign-out/sign-in)
+  React.useEffect(() => {
+    if (user?.id) {
+      // User signed in - reset dismissal state from sessionStorage
+      const dismissed = sessionStorage.getItem('sport-wizard-pending-modal-dismissed') === 'true';
+      setPendingMatchModalDismissed(dismissed);
+    } else {
+      // User signed out - reset dismissal state
+      setPendingMatchModalDismissed(false);
+    }
+  }, [user?.id]);
+  
+  // Function to load pending matches with error handling
+  const loadPendingMatches = React.useCallback(async (teamId, showLoadingState = false) => {
+    try {
+      if (showLoadingState) {
+        setPendingMatchLoading(true);
+      }
+      setPendingMatchError(null);
+      
+      const result = await checkForPendingMatches(teamId);
+      if (result.shouldShow && result.pendingMatches.length > 0) {
+        setPendingMatches(result.pendingMatches);
+        setShowPendingMatchModal(true);
+      }
+    } catch (error) {
+      console.error('❌ Failed to check for pending matches:', error);
+      setPendingMatchError({
+        message: 'Failed to check for pending matches. Please check your internet connection and try again.',
+        detail: error.message,
+        canRetry: true
+      });
+    } finally {
+      setPendingMatchLoading(false);
+    }
+  }, []);
+  
+  // Direct pending match detection (no navigation complexity)
+  React.useEffect(() => {
+    if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
+        currentTeam?.id && 
+        !teamLoading && 
+        !pendingMatchModalDismissed) {
+      // Add 1 second delay before showing the modal so user sees main UI first
+      setTimeout(() => {
+        loadPendingMatches(currentTeam.id, false);
+      }, 1500); // 1.5 seconds delay
+    }
+  }, [sessionDetectionResult, currentTeam?.id, teamLoading, pendingMatchModalDismissed, loadPendingMatches]);
+  
+  // Retry handler for pending match loading
+  const retryLoadPendingMatches = React.useCallback(() => {
+    if (currentTeam?.id) {
+      loadPendingMatches(currentTeam.id, true);
+    }
+  }, [currentTeam?.id, loadPendingMatches]);
+  
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
   
@@ -129,10 +229,28 @@ export function ConfigurationScreen({
 
   // Sync team roster to game state on mount and when team/players change
   React.useEffect(() => {
+    // Guard: Skip team sync if resume processing is currently happening
+    if (isProcessingResumeDataRef.current) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🚫 Team sync skipped - resume processing in progress');
+      }
+      return;
+    }
+    
     // Check sync requirements with descriptive variables
     const hasCurrentTeam = !!currentTeam;
     const hasTeamPlayers = teamPlayers && teamPlayers.length > 0;
     const hasSyncFunction = !!syncPlayersFromTeamRoster;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 Team sync effect triggered:', {
+        hasCurrentTeam,
+        hasTeamPlayers,
+        hasSyncFunction,
+        teamPlayersCount: teamPlayers?.length || 0,
+        currentTeamId: currentTeam?.id
+      });
+    }
     
     if (!hasCurrentTeam || !hasTeamPlayers || !hasSyncFunction) {
       console.log('🚫 Sync skipped - missing requirements:', {
@@ -140,11 +258,21 @@ export function ConfigurationScreen({
         hasTeamPlayers,
         hasSyncFunction
       });
+      // Mark sync as "completed" when skipped so resume processing doesn't wait indefinitely
+      teamSyncCompletedRef.current = true;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Team sync marked as completed (skipped)');
+      }
       return; // No team selected or no sync function available
     }
 
     const performSync = async () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Starting team roster sync...');
+      }
+      
       setPlayerSyncStatus({ loading: true, message: 'Syncing team roster...' });
+      teamSyncCompletedRef.current = false;
       
       try {
         const result = syncPlayersFromTeamRoster(teamPlayers);
@@ -154,6 +282,13 @@ export function ConfigurationScreen({
             loading: false, 
             message: result.message === 'No sync needed' ? '' : `✅ ${result.message}` 
           });
+          
+          // Mark team sync as completed
+          teamSyncCompletedRef.current = true;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Team sync completed successfully:', result.message);
+          }
           
           // Clear success message after 3 seconds
           if (result.message !== 'No sync needed') {
@@ -166,6 +301,11 @@ export function ConfigurationScreen({
             loading: false, 
             message: `⚠️ Sync failed: ${result.error}` 
           });
+          teamSyncCompletedRef.current = false;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ Team sync failed:', result.error);
+          }
         }
       } catch (error) {
         console.error('ConfigurationScreen sync error:', error);
@@ -173,6 +313,7 @@ export function ConfigurationScreen({
           loading: false, 
           message: `⚠️ Sync error: ${error.message}` 
         });
+        teamSyncCompletedRef.current = false;
       }
     };
 
@@ -242,12 +383,70 @@ export function ConfigurationScreen({
   
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
   // Only clear on NEW_SIGN_IN to preserve squad selection on page refresh
+  // BUT: Skip this cleanup when resume data is being processed to avoid clearing resumed selections
   React.useEffect(() => {
+    // Skip cleanup if resume data is present or being processed
+    if (isProcessingResumeDataRef.current) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🚫 Skipping orphaned selections cleanup - resume data present');
+      }
+      return;
+    }
+    
     if (hasNoTeamPlayers && selectedSquadIds.length > 0 &&
         sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🧹 Clearing orphaned selectedSquadIds on NEW_SIGN_IN:', {
+          hasNoTeamPlayers,
+          selectedSquadIdsCount: selectedSquadIds.length,
+          sessionDetectionType: sessionDetectionResult?.type
+        });
+      }
       setSelectedSquadIds([]);
     }
   }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds, sessionDetectionResult]);
+
+  // Reset resume processing flags on NEW_SIGN_IN to ensure each sign-in can process resume data independently
+  React.useEffect(() => {
+    if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 NEW_SIGN_IN detected - resetting resume processing flags:', {
+          previousResumeProcessed: resumeDataProcessedRef.current,
+          previousProcessing: isProcessingResumeDataRef.current,
+          sessionDetectionType: sessionDetectionResult.type
+        });
+      }
+      
+      // Reset flags to allow new resume data to be processed
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 RESUME FLAGS: Resetting flags due to NEW_SIGN_IN:', {
+          previousProcessedValue: resumeDataProcessedRef.current,
+          previousProcessingValue: isProcessingResumeDataRef.current,
+          newProcessedValue: false,
+          newProcessingValue: false,
+          reason: 'NEW_SIGN_IN detected',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      resumeDataProcessedRef.current = false;
+      isProcessingResumeDataRef.current = false;
+      
+      // Clear any pending timeout on NEW_SIGN_IN
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 Cleared processing timeout on NEW_SIGN_IN');
+        }
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Resume processing flags reset for new sign-in session');
+      }
+    }
+  }, [sessionDetectionResult]);
 
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
@@ -282,68 +481,197 @@ export function ConfigurationScreen({
 
   // Handle resume data from pending match
   React.useEffect(() => {
-    if (resumePendingMatchData && !resumeDataProcessedRef.current) {
+    
+    // Guard: Skip if team sync is currently in progress (avoid interference)
+    if (playerSyncStatus.loading) {
+      if (process.env.NODE_ENV === 'development' && resumeData) {
+        console.log('🚫 Resume processing deferred - team sync in progress');
+      }
+      return;
+    }
+    
+    if (process.env.NODE_ENV === 'development' && resumeData) {
+      console.log('🔄 RESUME: Processing resume data:', {
+        source: 'direct',
+        squadLength: resumeData?.squadSelection?.length || 0
+      });
+    }
+    
+    // Process resume data from pending match modal selection
+    if (resumeData && !isProcessingResumeDataRef.current) {
+      
+      // Mark as processing to prevent concurrent execution
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Populating configuration from pending match resume data');
+        console.log('🔧 RESUME FLAGS: Starting resume processing:', {
+          previousProcessedValue: resumeDataProcessedRef.current,
+          previousProcessingValue: isProcessingResumeDataRef.current,
+          newProcessingValue: true,
+          reason: 'Beginning resume data processing',
+          timestamp: new Date().toISOString()
+        });
       }
+      
+      isProcessingResumeDataRef.current = true;
+      
+      // Set timeout protection to auto-reset stuck processing state
+      processingTimeoutRef.current = setTimeout(() => {
+        if (isProcessingResumeDataRef.current) {
+          console.warn('⚠️ Resume processing timeout - auto-resetting stuck state after 10 seconds');
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔧 RESUME FLAGS: Timeout reset:', {
+              previousProcessingValue: isProcessingResumeDataRef.current,
+              newProcessingValue: false,
+              reason: 'Processing timeout after 10 seconds',
+              timestamp: new Date().toISOString()
+            });
+          }
+          
+          isProcessingResumeDataRef.current = false;
+          processingTimeoutRef.current = null;
+        }
+      }, 10000); // 10-second timeout
 
-      // Pre-populate all configuration from saved data
-      if (resumePendingMatchData.squadSelection) {
-        setSelectedSquadIds(resumePendingMatchData.squadSelection);
-      }
-      
-      if (resumePendingMatchData.periods) {
-        setNumPeriods(resumePendingMatchData.periods);
-      }
-      
-      if (resumePendingMatchData.periodDurationMinutes) {
-        setPeriodDurationMinutes(resumePendingMatchData.periodDurationMinutes);
-      }
-      
-      if (resumePendingMatchData.opponentTeam !== undefined) {
-        setOpponentTeam(resumePendingMatchData.opponentTeam);
-      }
-      
-      if (resumePendingMatchData.matchType) {
-        setMatchType(resumePendingMatchData.matchType);
-      }
-      
-      if (resumePendingMatchData.captainId) {
-        setCaptain(resumePendingMatchData.captainId);
-      }
-      
-      // Update team config including substitution configuration
-      if (resumePendingMatchData.teamConfig) {
-        updateTeamConfig(resumePendingMatchData.teamConfig);
-      }
-      
-      if (resumePendingMatchData.formation) {
-        updateFormationSelection(resumePendingMatchData.formation);
-      }
-      
-      if (resumePendingMatchData.periodGoalies) {
-        setPeriodGoalieIds(resumePendingMatchData.periodGoalies);
-      }
-      
-      // Mark resume data as processed
-      resumeDataProcessedRef.current = true;
-      
-      // Clear the resume data after population (if function exists)
-      if (clearResumeData) {
-        clearResumeData();
+      try {
+        // Pre-populate all configuration from saved data
+        if (resumeData.squadSelection) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('📋 RESUME: Applying squad selection:', {
+              squadIds: resumeData.squadSelection,
+              count: resumeData.squadSelection.length
+            });
+          }
+          setSelectedSquadIds(resumeData.squadSelection);
+        }
+        
+        if (resumeData.periods) {
+          setNumPeriods(resumeData.periods);
+        }
+        
+        if (resumeData.periodDurationMinutes) {
+          setPeriodDurationMinutes(resumeData.periodDurationMinutes);
+        }
+        
+        if (resumeData.opponentTeam !== undefined) {
+          setOpponentTeam(resumeData.opponentTeam);
+        }
+        
+        if (resumeData.matchType) {
+          setMatchType(resumeData.matchType);
+        }
+        
+        if (resumeData.captainId) {
+          setCaptain(resumeData.captainId);
+        }
+        
+        // Update team config including substitution configuration
+        if (resumeData.teamConfig) {
+          updateTeamConfig(resumeData.teamConfig);
+        }
+        
+        if (resumeData.formation) {
+          updateFormationSelection(resumeData.formation);
+        }
+        
+        if (resumeData.periodGoalies) {
+          setPeriodGoalieIds(resumeData.periodGoalies);
+        }
+        
+        // Mark resume data as processed
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 RESUME FLAGS: Setting resume data as processed:', {
+            previousProcessedValue: resumeDataProcessedRef.current,
+            previousProcessingValue: isProcessingResumeDataRef.current,
+            newProcessedValue: true,
+            newProcessingValue: false,
+            reason: 'Resume processing completed successfully',
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        resumeDataProcessedRef.current = true;
+        isProcessingResumeDataRef.current = false;
+        
+        // Clear the timeout since processing completed successfully
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+          processingTimeoutRef.current = null;
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Resume data processing completed successfully');
+        }
+        
+        // Clear the resume data after population
+        setResumeData(null);
+      } catch (error) {
+        // Error handling: Reset refs and log the error
+        console.error('❌ Resume data processing failed:', error);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 RESUME FLAGS: Resetting due to error:', {
+            error: error.message,
+            previousProcessedValue: resumeDataProcessedRef.current,
+            previousProcessingValue: isProcessingResumeDataRef.current,
+            newProcessedValue: false,
+            newProcessingValue: false,
+            reason: 'Error in resume processing',
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        // Reset refs to prevent stuck states
+        resumeDataProcessedRef.current = false;
+        isProcessingResumeDataRef.current = false;
+        
+        // Clear the timeout since processing failed
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+          processingTimeoutRef.current = null;
+        }
+        
+        // Clear the resume data even on error to prevent retry loops
+        setResumeData(null);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumePendingMatchData, setSelectedSquadIds, setNumPeriods, setPeriodDurationMinutes, 
+  }, [resumeData, setSelectedSquadIds, setNumPeriods, setPeriodDurationMinutes, 
       setOpponentTeam, setMatchType, setCaptain, updateTeamConfig, updateFormationSelection, 
       setPeriodGoalieIds]);
 
-  // Reset the processed flag when resume data is cleared or changed
+  // Reset the processing flag when resume data is cleared (for cleanup)
+  // Note: alreadyProcessed flag is kept for debugging but no longer blocks processing
   React.useEffect(() => {
-    if (!resumePendingMatchData) {
-      resumeDataProcessedRef.current = false;
+    if (!resumeData) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 RESUME FLAGS: Resetting processing flag due to resume data cleared:', {
+          previousProcessingValue: isProcessingResumeDataRef.current,
+          newProcessingValue: false,
+          reason: 'Resume data became null/undefined',
+          note: 'alreadyProcessed flag kept for debugging but no longer blocks processing',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Only reset processing flag - alreadyProcessed is kept for debugging
+      isProcessingResumeDataRef.current = false;
+      
+      // Clear any pending timeout when resume data is cleared
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 Cleared processing timeout - resume data cleared');
+        }
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Resume data cleared - processing flag reset');
+      }
     }
-  }, [resumePendingMatchData]);
+  }, [resumeData]);
+  
 
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {
@@ -452,6 +780,103 @@ export function ConfigurationScreen({
     setShowMigration(false);
   };
 
+  // Direct pending match modal handlers (no navigation complexity)
+  const handleResumePendingMatch = React.useCallback(async (matchId) => {
+    const selectedMatch = pendingMatches.find(match => match.id === matchId);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 MATCH SELECTION: User selected match to resume:', {
+        selectedMatchId: matchId,
+        foundMatch: !!selectedMatch,
+        hasInitialConfig: !!selectedMatch?.initial_config,
+        matchCreatedAt: selectedMatch?.created_at,
+        teamId: selectedMatch?.team_id,
+        matchState: selectedMatch?.state
+      });
+    }
+    
+    if (!selectedMatch?.initial_config) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
+      }
+      return;
+    }
+
+    setPendingMatchLoading(true);
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 RESUME DATA CREATION: Creating resume data from match config:', {
+          squadSelectionLength: selectedMatch.initial_config.squadSelection?.length || 0,
+          squadSelection: selectedMatch.initial_config.squadSelection,
+          teamConfig: selectedMatch.initial_config.teamConfig,
+          matchConfig: selectedMatch.initial_config.matchConfig,
+          periodGoalies: selectedMatch.initial_config.periodGoalies
+        });
+      }
+      
+      // Create resume data for direct processing
+      const resumeDataForConfig = createResumeDataForConfiguration(selectedMatch.initial_config);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📋 RESUME DATA RESULT:', {
+          success: !!resumeDataForConfig,
+          squadSelectionLength: resumeDataForConfig?.squadSelection?.length || 0,
+          squadSelection: resumeDataForConfig?.squadSelection,
+          periods: resumeDataForConfig?.periods,
+          formation: resumeDataForConfig?.formation,
+          teamConfig: resumeDataForConfig?.teamConfig
+        });
+      }
+      
+      if (resumeDataForConfig) {
+        setShowPendingMatchModal(false);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🚀 RESUME: Processing pending match data on ConfigurationScreen');
+        }
+        
+        // Set resume data directly - no navigation needed
+        setResumeData(resumeDataForConfig);
+      } else {
+        console.error('❌ Failed to create resume data from pending match');
+        setShowPendingMatchModal(false);
+      }
+    } catch (error) {
+      console.error('❌ Error resuming pending match:', error);
+      setShowPendingMatchModal(false);
+    } finally {
+      setPendingMatchLoading(false);
+    }
+  }, [pendingMatches]);
+
+  const handleDiscardPendingMatch = React.useCallback(async (matchId) => {
+    if (!matchId) return;
+
+    setPendingMatchLoading(true);
+    try {
+      await discardPendingMatch(matchId);
+      
+      // Remove the discarded match from the array
+      setPendingMatches(prev => prev.filter(match => match.id !== matchId));
+      
+      // If no matches remain, close the modal
+      if (pendingMatches.length <= 1) {
+        setShowPendingMatchModal(false);
+      }
+    } catch (error) {
+      console.error('❌ Error discarding pending match:', error);
+      setShowPendingMatchModal(false);
+    } finally {
+      setPendingMatchLoading(false);
+    }
+  }, [pendingMatches]);
+
+  const handleClosePendingMatchModal = React.useCallback(() => {
+    setShowPendingMatchModal(false);
+    setPendingMatchModalDismissed(true);
+    sessionStorage.setItem('sport-wizard-pending-modal-dismissed', 'true');
+  }, []);
+
   const handleSaveConfigClick = async () => {
     if (!handleSaveConfiguration) {
       console.warn('handleSaveConfiguration is not provided');
@@ -517,6 +942,38 @@ export function ConfigurationScreen({
               {playerSyncStatus.message}
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Pending Match Error Display */}
+      {pendingMatchError && (
+        <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <div className="flex-1">
+              <div className="text-red-300 font-medium text-sm">Failed to Check Pending Matches</div>
+              <div className="text-red-200 text-sm mt-1">
+                {pendingMatchError.message}
+              </div>
+              {process.env.NODE_ENV === 'development' && pendingMatchError.detail && (
+                <div className="text-red-400 text-xs mt-1 font-mono">
+                  {pendingMatchError.detail}
+                </div>
+              )}
+              {pendingMatchError.canRetry && (
+                <div className="mt-2">
+                  <Button
+                    onClick={retryLoadPendingMatches}
+                    variant="outline"
+                    size="sm"
+                    disabled={pendingMatchLoading}
+                    className="text-red-300 border-red-500/50 hover:bg-red-500/20"
+                  >
+                    {pendingMatchLoading ? 'Retrying...' : 'Try Again'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -626,7 +1083,7 @@ export function ConfigurationScreen({
             </p>
             <div className="flex justify-center">
               <Button
-                onClick={() => setViewWithData(VIEWS.TEAM_MANAGEMENT, { openToTab: TAB_VIEWS.ROSTER })}
+                onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
                 variant="primary"
                 Icon={UserPlus}
               >
@@ -901,6 +1358,16 @@ export function ConfigurationScreen({
       <PairRoleRotationHelpModal
         isOpen={isPairRoleHelpModalOpen}
         onClose={() => setIsPairRoleHelpModalOpen(false)}
+      />
+      
+      {/* Direct Pending Match Resume Modal (no navigation complexity) */}
+      <PendingMatchResumeModal
+        isOpen={showPendingMatchModal}
+        onResume={handleResumePendingMatch}
+        onDiscard={handleDiscardPendingMatch}
+        onClose={handleClosePendingMatchModal}
+        pendingMatches={pendingMatches}
+        isLoading={pendingMatchLoading}
       />
     </div>
   );

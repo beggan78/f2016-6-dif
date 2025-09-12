@@ -92,23 +92,39 @@ export function useGameState(navigateToView = null) {
   // Get audio preferences for alert integration
   const { audioPreferences } = usePreferences();
 
-  // Initialize state from PersistenceManager
-  const initialState = persistenceManager.loadState();
+  // Initialize state from PersistenceManager ONLY ONCE using lazy initializer
+  const [initialState] = useState(() => {
+    const loadedState = persistenceManager.loadState();
+    
+    // Debug: Log what selectedSquadIds are loaded from localStorage
+    if (process.env.NODE_ENV === 'development') {
+      console.log('💾 USEGAMESTATE INITIALIZATION: Loaded state from localStorage (ONCE):', {
+        selectedSquadIdsLength: loadedState.selectedSquadIds?.length || 0,
+        selectedSquadIds: loadedState.selectedSquadIds,
+        view: loadedState.view,
+        hasTeamConfig: !!loadedState.teamConfig,
+        hasAllPlayers: !!loadedState.allPlayers && loadedState.allPlayers.length > 0,
+        source: 'persistenceManager.loadState() - lazy initializer'
+      });
+    }
 
-  // Ensure allPlayers is initialized if not present
-  if (!initialState.allPlayers || initialState.allPlayers.length === 0) {
-    initialState.allPlayers = initializePlayers(initialRoster);
-  }
-  
-  // Ensure teamConfig exists
-  if (!initialState.teamConfig) {
-    initialState.teamConfig = createDefaultTeamConfig(7); // Default to 7-player individual
-  }
-  
-  // Migration: Extract formation from teamConfig if not present
-  if (!initialState.selectedFormation && initialState.teamConfig) {
-    initialState.selectedFormation = initialState.teamConfig.formation || FORMATIONS.FORMATION_2_2;
-  }
+    // Ensure allPlayers is initialized if not present
+    if (!loadedState.allPlayers || loadedState.allPlayers.length === 0) {
+      loadedState.allPlayers = initializePlayers(initialRoster);
+    }
+    
+    // Ensure teamConfig exists
+    if (!loadedState.teamConfig) {
+      loadedState.teamConfig = createDefaultTeamConfig(7); // Default to 7-player individual
+    }
+    
+    // Migration: Extract formation from teamConfig if not present
+    if (!loadedState.selectedFormation && loadedState.teamConfig) {
+      loadedState.selectedFormation = loadedState.teamConfig.formation || FORMATIONS.FORMATION_2_2;
+    }
+    
+    return loadedState;
+  });
   
   // Sync captain data between captainId and allPlayers stats
   if (initialState.captainId && initialState.allPlayers) {
@@ -197,6 +213,17 @@ export function useGameState(navigateToView = null) {
       });
     }
   }, [currentMatchId, matchState]);
+  
+  // Debug: Track selectedSquadIds changes to identify race conditions
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 selectedSquadIds changed in useGameState:', {
+        count: selectedSquadIds?.length || 0,
+        ids: selectedSquadIds,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [selectedSquadIds]);
 
 
   // Sync captain data in allPlayers whenever captainId changes
@@ -399,46 +426,57 @@ export function useGameState(navigateToView = null) {
 
   // Save state to localStorage whenever it changes - NOTE: Critical for refresh persistence
   useEffect(() => {
-    const currentState = {
-      allPlayers,
-      view,
-      selectedSquadIds,
-      numPeriods,
-      periodDurationMinutes,
-      periodGoalieIds,
-      teamConfig, // Team configuration
-      selectedFormation, // Formation selection
-      alertMinutes,
-      currentPeriodNumber,
-      formation,
-      nextPhysicalPairToSubOut,
-      nextPlayerToSubOut,
-      nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut,
-      rotationQueue,
-      gameLog,
-      opponentTeam,
-      matchType,
-      ownScore,
-      opponentScore,
-      lastSubstitutionTimestamp,
-      // NEW: Match event tracking state
-      matchEvents,
-      matchStartTime,
-      goalScorers,
-      eventSequenceNumber,
-      lastEventBackup,
-      timerPauseStartTime,
-      totalMatchPausedDuration,
-      captainId,
-      // Match lifecycle state management
-      currentMatchId,
-      matchCreationAttempted,
-      matchState,
-    };
-    
-    // Use the persistence manager's saveGameState method
-    persistenceManager.saveGameState(currentState);
+    // Debounce auto-save to prevent infinite loops during rapid state changes
+    const timeoutId = setTimeout(() => {
+      // Debug: Log selectedSquadIds changes to track potential interference
+      if (process.env.NODE_ENV === 'development') {
+        console.log('💾 Auto-saving game state to localStorage (debounced) - selectedSquadIds:', selectedSquadIds?.length || 0, selectedSquadIds);
+      }
+      
+      const currentState = {
+        allPlayers,
+        view,
+        selectedSquadIds,
+        numPeriods,
+        periodDurationMinutes,
+        periodGoalieIds,
+        teamConfig, // Team configuration
+        selectedFormation, // Formation selection
+        alertMinutes,
+        currentPeriodNumber,
+        formation,
+        nextPhysicalPairToSubOut,
+        nextPlayerToSubOut,
+        nextPlayerIdToSubOut,
+        nextNextPlayerIdToSubOut,
+        rotationQueue,
+        gameLog,
+        opponentTeam,
+        matchType,
+        ownScore,
+        opponentScore,
+        lastSubstitutionTimestamp,
+        // NEW: Match event tracking state
+        matchEvents,
+        matchStartTime,
+        goalScorers,
+        eventSequenceNumber,
+        lastEventBackup,
+        timerPauseStartTime,
+        totalMatchPausedDuration,
+        captainId,
+        // Match lifecycle state management
+        currentMatchId,
+        matchCreationAttempted,
+        matchState,
+      };
+      
+      // Use the persistence manager's saveGameState method
+      persistenceManager.saveGameState(currentState);
+    }, 100); // 100ms debounce to prevent rapid successive saves
+
+    // Cleanup timeout on dependency change or unmount
+    return () => clearTimeout(timeoutId);
   }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState]);
 
 
@@ -2193,15 +2231,20 @@ export function useGameState(navigateToView = null) {
           return { success: false, error: error.message };
         });
 
-      // Wait for all operations to complete
-      const [matchResult, statsResult, configResult] = await Promise.all([matchUpdatePromise, statsUpdatePromise, initialConfigPromise]);
+      // Wait for all operations to complete using Promise.allSettled for better error isolation
+      const [matchResult, statsResult, configResult] = await Promise.allSettled([matchUpdatePromise, statsUpdatePromise, initialConfigPromise]);
+      
+      // Extract results from settled promises, treating rejected promises as failed operations
+      const matchRes = matchResult.status === 'fulfilled' ? matchResult.value : { success: false, error: matchResult.reason?.message || 'Match operation failed' };
+      const statsRes = statsResult.status === 'fulfilled' ? statsResult.value : { success: false, error: statsResult.reason?.message || 'Stats operation failed' };
+      const configRes = configResult.status === 'fulfilled' ? configResult.value : { success: false, error: configResult.reason?.message || 'Config operation failed' };
       
       // Return success if any operation succeeded (following the original non-blocking pattern)
-      const hasSuccess = matchResult.success || statsResult.success || configResult.success;
+      const hasSuccess = matchRes.success || statsRes.success || configRes.success;
       const errors = [];
-      if (!matchResult.success) errors.push('match update failed');
-      if (!statsResult.success) errors.push('player stats update failed');
-      if (!configResult.success) errors.push('initial config save failed');
+      if (!matchRes.success) errors.push('match update failed');
+      if (!statsRes.success) errors.push('player stats update failed');
+      if (!configRes.success) errors.push('initial config save failed');
       
       return {
         success: hasSuccess,

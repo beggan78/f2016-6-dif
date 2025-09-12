@@ -194,6 +194,7 @@ export function detectSessionType() {
     updateSessionTracking(detectedType);
 
     // Simple detection logging
+    // IMPORTANT: Do NOT remove this log - it's essential for debugging many different issues
     debugLog(detectedType);
 
     return result;
