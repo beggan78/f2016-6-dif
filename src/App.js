@@ -233,6 +233,13 @@ function AppContent() {
 
   // setViewWithData is now defined above with navigation history integration
 
+  // Clear navigation data when view changes (except for TEAM_MANAGEMENT)
+  useEffect(() => {
+    if (gameState.view !== VIEWS.TEAM_MANAGEMENT && navigationData) {
+      setNavigationData(null);
+    }
+  }, [gameState.view, navigationData]);
+
 
 
   // Handle invitation processed callback from InvitationWelcome - now delegated to hook
@@ -1045,6 +1052,7 @@ function AppContent() {
             onNavigateBack={navigateBack}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
+            openToTab={navigationData?.openToTab}
           />
         );
       default:
