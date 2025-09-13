@@ -4,11 +4,18 @@ import { useAuth } from '../../contexts/AuthContext';
 import { validateLoginForm } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
 
-export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose }) {
-  const [email, setEmail] = useState('');
+export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose, initialEmail = '' }) {
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const { signIn, loading, authError, clearAuthError } = useAuth();
+
+  // Update email if initialEmail prop changes
+  React.useEffect(() => {
+    if (initialEmail && initialEmail !== email) {
+      setEmail(initialEmail);
+    }
+  }, [initialEmail, email]);
 
   // Clear auth errors when component mounts or when user starts typing
   React.useEffect(() => {

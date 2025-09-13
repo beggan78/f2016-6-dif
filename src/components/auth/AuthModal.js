@@ -10,9 +10,9 @@ export const AUTH_MODES = {
   RESET: 'reset'
 };
 
-export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN }) {
+export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, initialEmail = '' }) {
   const [currentMode, setCurrentMode] = useState(initialMode);
-  const [emailContext, setEmailContext] = useState(''); // Email to carry between modes
+  const [emailContext, setEmailContext] = useState(initialEmail); // Email to carry between modes
 
   // Reset to initial mode when modal opens
   useEffect(() => {
@@ -20,6 +20,13 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN }) {
       setCurrentMode(initialMode);
     }
   }, [isOpen, initialMode]);
+
+  // Update email context when initialEmail changes
+  useEffect(() => {
+    if (initialEmail) {
+      setEmailContext(initialEmail);
+    }
+  }, [initialEmail]);
 
   // Clear email context when modal closes
   useEffect(() => {
@@ -79,6 +86,7 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN }) {
             onSwitchToSignup={handleSwitchToSignup}
             onSwitchToReset={handleSwitchToReset}
             onClose={onClose}
+            initialEmail={emailContext}
           />
         );
       case AUTH_MODES.SIGNUP:
@@ -138,14 +146,17 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN }) {
 export function useAuthModal(initialMode = AUTH_MODES.LOGIN) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState(initialMode);
+  const [initialEmail, setInitialEmail] = useState('');
 
-  const openModal = (authMode = initialMode) => {
+  const openModal = (authMode = initialMode, email = '') => {
     setMode(authMode);
+    setInitialEmail(email);
     setIsOpen(true);
   };
 
   const closeModal = () => {
     setIsOpen(false);
+    setInitialEmail(''); // Clear email when closing
   };
 
   const switchMode = (newMode) => {
@@ -155,11 +166,12 @@ export function useAuthModal(initialMode = AUTH_MODES.LOGIN) {
   return {
     isOpen,
     mode,
+    initialEmail,
     openModal,
     closeModal,
     switchMode,
     // Convenience methods
-    openLogin: () => openModal(AUTH_MODES.LOGIN),
+    openLogin: (email = '') => openModal(AUTH_MODES.LOGIN, email),
     openSignup: () => openModal(AUTH_MODES.SIGNUP),
     openReset: () => openModal(AUTH_MODES.RESET)
   };
