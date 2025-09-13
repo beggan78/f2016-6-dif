@@ -53,7 +53,8 @@ export function ConfigurationScreen({
   debugMode = false,
   authModal,
   setView,
-  syncPlayersFromTeamRoster
+  syncPlayersFromTeamRoster,
+  setCurrentMatchId
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -641,6 +642,10 @@ export function ConfigurationScreen({
         
         // Set resume data directly - no navigation needed
         setResumeData(resumeDataForConfig);
+        
+        // CRITICAL: Set currentMatchId to the resumed match
+        setCurrentMatchId(matchId);
+        console.log('✅ Resume match: Set currentMatchId to', matchId);
       } else {
         console.error('❌ Failed to create resume data from pending match');
         handleClosePendingMatchModal();
@@ -651,7 +656,7 @@ export function ConfigurationScreen({
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatches, handleClosePendingMatchModal]);
+  }, [pendingMatches, handleClosePendingMatchModal, setCurrentMatchId]);
 
   const handleDiscardPendingMatch = React.useCallback(async (matchId) => {
     if (!matchId) return;

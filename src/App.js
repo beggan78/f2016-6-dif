@@ -887,6 +887,7 @@ function AppContent() {
             authModal={authModal}
             setView={navigateToView}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
+            setCurrentMatchId={gameState.setCurrentMatchId}
           />
         );
       case VIEWS.PERIOD_SETUP:
