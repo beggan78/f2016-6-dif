@@ -698,6 +698,9 @@ export function ConfigurationScreen({
           error: null
         });
         
+        // Scroll to top to show success banner
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSaveConfigStatus(prev => ({ ...prev, message: '' }));
