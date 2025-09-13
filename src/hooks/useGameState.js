@@ -10,9 +10,11 @@ import { createSubstitutionManager, handleRoleChange } from '../game/logic/subst
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig } from '../services/matchStateManager';
+import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
+import { useMatchPersistence } from './useMatchPersistence';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
@@ -94,7 +96,7 @@ export function useGameState(navigateToView = null) {
 
   // Initialize state from PersistenceManager ONLY ONCE using lazy initializer
   const [initialState] = useState(() => {
-    const loadedState = persistenceManager.loadState();
+    const loadedState = persistenceManager.loadState(); // Keep direct call for initial load
     
 
     // Ensure allPlayers is initialized if not present
@@ -191,6 +193,22 @@ export function useGameState(navigateToView = null) {
       })));
     }
   }, [captainId]);
+
+  // Initialize match persistence hook
+  const gameState = {
+    allPlayers, selectedSquadIds, numPeriods, periodGoalieIds,
+    teamConfig, selectedFormation, periodDurationMinutes,
+    opponentTeam, captainId, matchType, formation,
+    currentMatchId, matchCreationAttempted
+  };
+  
+  const setters = {
+    setCurrentMatchId, setMatchCreationAttempted, setAllPlayers
+  };
+  
+  const teamContext = { currentTeam };
+  
+  const persistence = useMatchPersistence(gameState, setters, teamContext);
 
   // Team Configuration Management Functions
   const updateTeamConfig = useCallback((newTeamConfig) => {
@@ -540,7 +558,7 @@ export function useGameState(navigateToView = null) {
     }
 
     // Create auto-backup before starting game
-    persistenceManager.autoBackup();
+    persistence.autoBackup();
 
     // Reset player stats for the new game for the selected squad
     const updatedPlayers = allPlayers.map(p => {
@@ -560,107 +578,32 @@ export function useGameState(navigateToView = null) {
 
     setAllPlayers(updatedPlayers);
 
-    // Manage pending match in database if we have team context
-    if (currentTeam?.id) {
-      try {
-        // Prepare match data for database
-        const matchData = formatMatchDataFromGameState({
-          teamConfig,
-          selectedFormation,
-          periods: numPeriods,
-          periodDurationMinutes,
-          opponentTeam,
-          captainId,
-          matchType
-        }, currentTeam.id);
-
-        if (currentMatchId && matchCreationAttempted) {
-          // UPDATE FLOW: Match already exists, update it with new configuration
-          const updateResult = await updateExistingMatch(currentMatchId, matchData);
-          
-          if (updateResult.success) {
-            // Update initial configuration for resuming
-            // Transform teamConfig to expected database format with nested substitutionConfig
-            const transformedTeamConfig = {
-              format: teamConfig.format,
-              formation: teamConfig.formation,
-              squadSize: teamConfig.squadSize,
-              substitutionConfig: {
-                type: teamConfig.substitutionType,
-                ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
-              }
-            };
-            
-            const initialConfig = {
-              formation: formation, // Will be populated in PeriodSetupScreen
-              teamConfig: transformedTeamConfig,
-              matchConfig: {
-                format: matchData.format,
-                matchType: matchType,
-                opponentTeam: opponentTeam,
-                periods: numPeriods,
-                periodDurationMinutes: periodDurationMinutes,
-                captainId: captainId
-              },
-              periodGoalies: periodGoalieIds,
-              squadSelection: selectedSquadIds
-            };
-            
-            // Save updated configuration (non-blocking)
-            saveInitialMatchConfig(currentMatchId, initialConfig).catch(error => {
-              console.warn('⚠️ Failed to update initial match config:', error);
-            });
-            
-          } else {
-            console.warn('⚠️ Failed to update pending match:', updateResult.error);
-          }
-        } else {
-          // CREATE FLOW: No existing match, create new one
-          const createResult = await createMatch(matchData, updatedPlayers);
-          
-          if (createResult.success) {
-            setCurrentMatchId(createResult.matchId);
-            setMatchCreationAttempted(true); // Prevent duplicate match creation
-            
-            // Save complete initial configuration for resuming
-            // Transform teamConfig to expected database format with nested substitutionConfig
-            const transformedTeamConfig = {
-              format: teamConfig.format,
-              formation: teamConfig.formation,
-              squadSize: teamConfig.squadSize,
-              substitutionConfig: {
-                type: teamConfig.substitutionType,
-                ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
-              }
-            };
-            
-            const initialConfig = {
-              formation: formation, // Will be populated in PeriodSetupScreen
-              teamConfig: transformedTeamConfig,
-              matchConfig: {
-                format: matchData.format,
-                matchType: matchType,
-                opponentTeam: opponentTeam,
-                periods: numPeriods,
-                periodDurationMinutes: periodDurationMinutes,
-                captainId: captainId
-              },
-              periodGoalies: periodGoalieIds,
-              squadSelection: selectedSquadIds
-            };
-            
-            // Save initial configuration (non-blocking)
-            saveInitialMatchConfig(createResult.matchId, initialConfig).catch(error => {
-              console.warn('⚠️ Failed to save initial match config:', error);
-            });
-            
-          } else {
-            console.warn('⚠️ Failed to create pending match:', createResult.error);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error managing pending match:', error);
+    // Manage pending match in database using consolidated service
+    try {
+      const result = await saveMatchConfigurationService({
+        teamConfig,
+        selectedFormation,
+        numPeriods,
+        periodDurationMinutes,
+        opponentTeam,
+        captainId,
+        matchType,
+        formation,
+        periodGoalieIds,
+        selectedSquadIds,
+        allPlayers: updatedPlayers,
+        currentTeam,
+        currentMatchId,
+        matchCreationAttempted,
+        setCurrentMatchId,
+        setMatchCreationAttempted
+      });
+      
+      if (!result.success) {
+        console.warn('⚠️ Failed to save match configuration:', result.error);
       }
+    } catch (error) {
+      console.error('❌ Error managing pending match:', error);
     }
 
     // Reset match state for new game setup
@@ -691,10 +634,10 @@ export function useGameState(navigateToView = null) {
     }
     
     setView(VIEWS.PERIOD_SETUP);
-  }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam?.id, 
+  }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam, 
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, 
       formation, setCurrentMatchId, setAllPlayers, setMatchState, 
-      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreationAttempted]);
+      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreationAttempted, persistence]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
@@ -936,7 +879,7 @@ export function useGameState(navigateToView = null) {
 
   const handleEndPeriod = (isSubTimerPaused = false) => {
     // Create auto-backup before ending period
-    persistenceManager.autoBackup();
+    persistence.autoBackup();
     const currentTimeEpoch = Date.now();
     const selectedSquadPlayers = getSelectedSquadPlayers(allPlayers, selectedSquadIds);
     const playerIdsInPeriod = selectedSquadPlayers.map(p => p.id);
@@ -1056,42 +999,42 @@ export function useGameState(navigateToView = null) {
     }
     
     // Create backup before clearing
-    persistenceManager.createBackup();
+    persistence.createBackup();
     // Clear the state
-    const result = persistenceManager.clearState();
+    const result = persistence.clearPersistedState();
     if (!result) {
       console.warn('Failed to clear game state');
     }
     
     return result;
-  }, []);
+  }, [persistence]);
 
   // Enhanced backup management
   const createManualBackup = useCallback(() => {
-    const backupKey = persistenceManager.createBackup();
+    const backupKey = persistence.createBackup();
     if (backupKey) {
       // Clean up old backups, keep 5 most recent
-      persistenceManager.cleanupBackups(5);
+      persistence.cleanupBackups(5);
     }
     return backupKey;
-  }, []);
+  }, [persistence]);
 
   const listAvailableBackups = useCallback(() => {
-    return persistenceManager.listBackups();
-  }, []);
+    return persistence.getAvailableBackups();
+  }, [persistence]);
 
   const restoreFromBackup = useCallback((backupKey) => {
-    const result = persistenceManager.restoreFromBackup(backupKey);
+    const result = persistence.restoreFromBackup(backupKey);
     if (result) {
       // Reload the page to refresh all state
       window.location.reload();
     }
     return result;
-  }, []);
+  }, [persistence]);
 
   const getStorageInfo = useCallback(() => {
-    return persistenceManager.getStorageInfo();
-  }, []);
+    return persistence.getStorageInfo();
+  }, [persistence]);
 
   // Team mode switching functions
   const splitPairs = useCallback(() => {
@@ -1816,120 +1759,50 @@ export function useGameState(navigateToView = null) {
     }
 
     try {
-      // Prepare match data for database (same as handleStartPeriodSetup)
-      const matchData = formatMatchDataFromGameState({
+      // Prepare updated players for CREATE flow
+      const updatedPlayers = allPlayers.map(p => {
+        if (selectedSquadIds.includes(p.id)) {
+          const freshStats = initializePlayers([p.name])[0].stats;
+          return {
+            ...p,
+            stats: {
+              ...freshStats,
+              isCaptain: p.stats?.isCaptain || false
+            }
+          };
+        }
+        return p;
+      });
+
+      // Use consolidated service for database save logic
+      const result = await saveMatchConfigurationService({
         teamConfig,
         selectedFormation,
-        periods: numPeriods,
+        numPeriods,
         periodDurationMinutes,
         opponentTeam,
         captainId,
-        matchType
-      }, currentTeam.id);
-
-      let result;
-      if (currentMatchId && matchCreationAttempted) {
-        // UPDATE FLOW: Match already exists, update it with new configuration
-        result = await updateExistingMatch(currentMatchId, matchData);
-        
-        if (result.success) {
-          // Update initial configuration for resuming
-          const transformedTeamConfig = {
-            format: teamConfig.format,
-            formation: teamConfig.formation,
-            squadSize: teamConfig.squadSize,
-            substitutionConfig: {
-              type: teamConfig.substitutionType,
-              ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
-            }
-          };
-          
-          const initialConfig = {
-            formation: formation,
-            teamConfig: transformedTeamConfig,
-            matchConfig: {
-              format: matchData.format,
-              matchType: matchType,
-              opponentTeam: opponentTeam,
-              periods: numPeriods,
-              periodDurationMinutes: periodDurationMinutes,
-              captainId: captainId
-            },
-            periodGoalies: periodGoalieIds,
-            squadSelection: selectedSquadIds
-          };
-          
-          // Save updated configuration
-          const configResult = await saveInitialMatchConfig(currentMatchId, initialConfig);
-          if (!configResult.success) {
-            console.warn('⚠️ Failed to update initial match config:', configResult.error);
-          }
-        }
-      } else {
-        // CREATE FLOW: No existing match, create new one
-        const updatedPlayers = allPlayers.map(p => {
-          if (selectedSquadIds.includes(p.id)) {
-            const freshStats = initializePlayers([p.name])[0].stats;
-            return {
-              ...p,
-              stats: {
-                ...freshStats,
-                isCaptain: p.stats?.isCaptain || false
-              }
-            };
-          }
-          return p;
-        });
-        
-        result = await createMatch(matchData, updatedPlayers);
-        
-        if (result.success) {
-          setCurrentMatchId(result.matchId);
-          setMatchCreationAttempted(true);
-          
-          // Save complete initial configuration for resuming
-          const transformedTeamConfig = {
-            format: teamConfig.format,
-            formation: teamConfig.formation,
-            squadSize: teamConfig.squadSize,
-            substitutionConfig: {
-              type: teamConfig.substitutionType,
-              ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
-            }
-          };
-          
-          const initialConfig = {
-            formation: formation,
-            teamConfig: transformedTeamConfig,
-            matchConfig: {
-              format: matchData.format,
-              matchType: matchType,
-              opponentTeam: opponentTeam,
-              periods: numPeriods,
-              periodDurationMinutes: periodDurationMinutes,
-              captainId: captainId
-            },
-            periodGoalies: periodGoalieIds,
-            squadSelection: selectedSquadIds
-          };
-          
-          // Save initial configuration
-          const configResult = await saveInitialMatchConfig(result.matchId, initialConfig);
-          if (!configResult.success) {
-            console.warn('⚠️ Failed to save initial match config:', configResult.error);
-          }
-        }
-      }
+        matchType,
+        formation,
+        periodGoalieIds,
+        selectedSquadIds,
+        allPlayers: updatedPlayers,
+        currentTeam,
+        currentMatchId,
+        matchCreationAttempted,
+        setCurrentMatchId,
+        setMatchCreationAttempted
+      });
 
       return result.success 
-        ? { success: true, message: `Configuration ${currentMatchId ? 'updated' : 'saved'} successfully` }
-        : { success: false, error: result.error || 'Failed to save configuration' };
+        ? { success: true, message: result.message }
+        : { success: false, error: result.error };
         
     } catch (error) {
       console.error('❌ Error saving configuration:', error);
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
-  }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam?.id, teamConfig, selectedFormation, 
+  }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
       periodDurationMinutes, opponentTeam, captainId, matchType, currentMatchId, matchCreationAttempted, 
       formation, allPlayers]);
 
