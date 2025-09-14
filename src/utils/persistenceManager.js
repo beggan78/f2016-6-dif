@@ -233,7 +233,7 @@ export class GamePersistenceManager extends PersistenceManager {
       totalMatchPausedDuration: 0,
       // Match lifecycle state management
       currentMatchId: null,
-      matchCreationAttempted: false,
+      matchCreated: false,
     };
 
     super(storageKey, defaultGameState);
@@ -276,7 +276,7 @@ export class GamePersistenceManager extends PersistenceManager {
       totalMatchPausedDuration: gameState.totalMatchPausedDuration,
       // Match lifecycle state management
       currentMatchId: gameState.currentMatchId,
-      matchCreationAttempted: gameState.matchCreationAttempted,
+      matchCreated: gameState.matchCreated,
     };
 
     return this.saveState(stateToSave);

@@ -56,6 +56,7 @@ export function ConfigurationScreen({
   setView,
   syncPlayersFromTeamRoster,
   setCurrentMatchId,
+  setMatchCreated,
   hasActiveConfiguration,
   setHasActiveConfiguration,
   clearStoredState
@@ -729,7 +730,8 @@ export function ConfigurationScreen({
         
         // CRITICAL: Set currentMatchId to the resumed match
         setCurrentMatchId(matchId);
-        console.log('✅ Resume match: Set currentMatchId to', matchId);
+        setMatchCreated(true);
+        console.log('✅ Resume match: Set currentMatchId to', matchId, 'and matchCreated to true');
       } else {
         console.error('❌ Failed to create resume data from pending match');
         handleClosePendingMatchModal();
@@ -740,7 +742,7 @@ export function ConfigurationScreen({
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatches, handleClosePendingMatchModal, setCurrentMatchId]);
+  }, [pendingMatches, handleClosePendingMatchModal, setCurrentMatchId, setMatchCreated]);
 
   const handleDiscardPendingMatch = React.useCallback(async (matchId) => {
     if (!matchId) return;

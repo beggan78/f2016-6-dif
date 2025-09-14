@@ -175,7 +175,7 @@ export function useGameState(navigateToView = null) {
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
   // Match state management - track database match record lifecycle
   const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
-  const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
+  const [matchCreated, setMatchCreated] = useState(initialState.matchCreated || false);
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
   // Configuration activity tracking - prevents accidental clearing during active configuration
   const [hasActiveConfiguration, setHasActiveConfiguration] = useState(initialState.hasActiveConfiguration || false);
@@ -185,11 +185,11 @@ export function useGameState(navigateToView = null) {
     allPlayers, selectedSquadIds, numPeriods, periodGoalieIds,
     teamConfig, selectedFormation, periodDurationMinutes,
     opponentTeam, captainId, matchType, formation,
-    currentMatchId, matchCreationAttempted
+    currentMatchId, matchCreated
   };
   
   const setters = {
-    setCurrentMatchId, setMatchCreationAttempted, setAllPlayers
+    setCurrentMatchId, setMatchCreated, setAllPlayers
   };
   
   const teamContext = { currentTeam };
@@ -238,7 +238,7 @@ export function useGameState(navigateToView = null) {
         captainId,
         // Match lifecycle state management
         currentMatchId,
-        matchCreationAttempted,
+        matchCreated,
         matchState,
         hasActiveConfiguration,
       };
@@ -249,7 +249,7 @@ export function useGameState(navigateToView = null) {
 
     // Cleanup timeout on dependency change or unmount
     return () => clearTimeout(timeoutId);
-  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState, hasActiveConfiguration]);
+  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
 
 
 
@@ -404,9 +404,9 @@ export function useGameState(navigateToView = null) {
         allPlayers: updatedPlayers,
         currentTeam,
         currentMatchId,
-        matchCreationAttempted,
+        matchCreated,
         setCurrentMatchId,
-        setMatchCreationAttempted
+        setMatchCreated
       });
       
       if (!result.success) {
@@ -447,7 +447,7 @@ export function useGameState(navigateToView = null) {
   }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam,
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
-      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreationAttempted]);
+      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
@@ -781,7 +781,7 @@ export function useGameState(navigateToView = null) {
       // Clear match lifecycle state to prevent ID reuse
       setCurrentMatchId(null);
       setMatchState('not_started');
-      setMatchCreationAttempted(false);
+      setMatchCreated(false);
 
       // Reset configuration activity tracking
       setHasActiveConfiguration(false);
@@ -1352,9 +1352,9 @@ export function useGameState(navigateToView = null) {
         allPlayers: updatedPlayers,
         currentTeam,
         currentMatchId,
-        matchCreationAttempted,
+        matchCreated,
         setCurrentMatchId,
-        setMatchCreationAttempted
+        setMatchCreated
       });
 
       return result.success 
@@ -1366,7 +1366,7 @@ export function useGameState(navigateToView = null) {
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
   }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
-      periodDurationMinutes, opponentTeam, captainId, matchType, currentMatchId, matchCreationAttempted, 
+      periodDurationMinutes, opponentTeam, captainId, matchType, currentMatchId, matchCreated,
       formation, allPlayers]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
@@ -1497,7 +1497,7 @@ export function useGameState(navigateToView = null) {
           matchType
         }, currentTeam.id);
 
-        if (currentMatchId && matchCreationAttempted) {
+        if (currentMatchId && matchCreated) {
           // UPDATE FLOW: Match already exists, update it with formation data
           matchUpdatePromise = updateExistingMatch(currentMatchId, matchData)
             .then((updateResult) => {
@@ -1512,7 +1512,7 @@ export function useGameState(navigateToView = null) {
             });
         } else {
           // CREATE FLOW: No existing match, create new one
-          setMatchCreationAttempted(true); // Prevent duplicate attempts
+          setMatchCreated(true); // Prevent duplicate attempts
           
           matchUpdatePromise = createMatch(matchData, updatedPlayers)
             .then((result) => {
@@ -1606,7 +1606,7 @@ export function useGameState(navigateToView = null) {
     }
   }, [formation, teamConfig, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
       numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, currentTeam?.id, periodGoalieIds,
-      currentPeriodNumber, matchCreationAttempted, setMatchCreationAttempted, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
+      currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
 
   const handleSavePeriodConfiguration = useCallback(async () => {
     return await saveMatchConfiguration({ shouldNavigate: false });
@@ -1701,8 +1701,8 @@ export function useGameState(navigateToView = null) {
     // Match lifecycle state
     currentMatchId,
     setCurrentMatchId,
-    matchCreationAttempted,
-    setMatchCreationAttempted,
+    matchCreated,
+    setMatchCreated,
     matchState,
     setMatchState,
     hasActiveConfiguration,

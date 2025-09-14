@@ -18,14 +18,14 @@ The system implements a three-state lifecycle for matches:
 
 #### 1. Match Creation and ID Management
 - **When**: Match record created automatically when first period starts (`currentPeriodNumber === 1`)
-- **Prevention**: `matchCreationAttempted` flag prevents duplicate database inserts
+- **Prevention**: `matchCreated` flag prevents duplicate database inserts
 - **ID Persistence**: `currentMatchId` stored in localStorage and passed through game state
-- **Critical**: `clearStoredState()` MUST reset both `currentMatchId` and `matchCreationAttempted` for new matches
+- **Critical**: `clearStoredState()` MUST reset both `currentMatchId` and `matchCreated` for new matches
 
 ```javascript
 // Match creation triggered in useGameState.js
-if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
-  setMatchCreationAttempted(true); // Prevent duplicates
+if (currentPeriodNumber === 1 && !matchCreated && currentTeam?.id) {
+  setMatchCreated(true); // Prevent duplicates
   const result = await createMatch(matchData);
   setCurrentMatchId(result.matchId);
 }
@@ -150,7 +150,7 @@ const handleSaveMatchHistory = async () => {
 The service integrates with game state management through:
 
 - **Match ID Storage**: `currentMatchId` in localStorage and game state
-- **Creation Flag**: `matchCreationAttempted` prevents duplicate attempts
+- **Creation Flag**: `matchCreated` prevents duplicate attempts
 - **State Reset**: `clearStoredState()` properly cleans match lifecycle state
 
 ### Common Integration Patterns

@@ -24,7 +24,7 @@
 ### Critical Gotchas
 
 #### Match State Management
-- **CRITICAL**: `clearStoredState()` must reset both `currentMatchId` AND `matchCreationAttempted` flags
+- **CRITICAL**: `clearStoredState()` must reset both `currentMatchId` AND `matchCreated` flags
 - Always query database for match state - don't rely on localStorage or React state
 - Database schema requires `match.state` enum column
 

@@ -45,8 +45,8 @@ Mobile-first web application for coaching youth soccer teams with Supabase backe
 **Match State Management** (services/matchStateManager.js):
 - Three-state lifecycle: `running` → `finished` → `confirmed`
 - `currentMatchId` - persisted in localStorage and game state
-- `matchCreationAttempted` - prevents duplicate match creation
-- **clearStoredState() MUST reset both** `currentMatchId` and `matchCreationAttempted`
+- `matchCreated` - prevents duplicate match creation
+- **clearStoredState() MUST reset both** `currentMatchId` and `matchCreated`
 
 **Role Mapping for Database** - CRITICAL to prevent errors:
 ```javascript

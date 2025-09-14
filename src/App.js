@@ -889,6 +889,7 @@ function AppContent() {
             setView={navigateToView}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
             setCurrentMatchId={gameState.setCurrentMatchId}
+            setMatchCreated={gameState.setMatchCreated}
             hasActiveConfiguration={gameState.hasActiveConfiguration}
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
             clearStoredState={gameState.clearStoredState}

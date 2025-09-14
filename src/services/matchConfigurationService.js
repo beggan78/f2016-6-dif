@@ -84,7 +84,7 @@ export function createInitialConfiguration(params) {
  * @param {Array} params.allPlayers - All players array
  * @param {Object} params.initialConfig - Initial configuration object
  * @param {Function} params.setCurrentMatchId - Function to set current match ID
- * @param {Function} params.setMatchCreationAttempted - Function to set match creation attempted flag
+ * @param {Function} params.setMatchCreated - Function to set match creation attempted flag
  * @returns {Promise<{success: boolean, matchId?: string, error?: string}>}
  */
 export async function saveNewMatchConfiguration(params) {
@@ -93,7 +93,7 @@ export async function saveNewMatchConfiguration(params) {
     allPlayers,
     initialConfig,
     setCurrentMatchId,
-    setMatchCreationAttempted
+    setMatchCreated
   } = params;
 
   try {
@@ -102,7 +102,7 @@ export async function saveNewMatchConfiguration(params) {
     
     if (createResult.success) {
       setCurrentMatchId(createResult.matchId);
-      setMatchCreationAttempted(true); // Prevent duplicate match creation
+      setMatchCreated(true); // Prevent duplicate match creation
       
       // Save complete initial configuration for resuming (non-blocking)
       saveInitialMatchConfig(createResult.matchId, initialConfig).catch(error => {
@@ -186,9 +186,9 @@ export async function updateMatchConfiguration(params) {
  * @param {Array} params.allPlayers - All players array
  * @param {Object} params.currentTeam - Current team object
  * @param {string} params.currentMatchId - Current match ID (if exists)
- * @param {boolean} params.matchCreationAttempted - Whether match creation was attempted
+ * @param {boolean} params.matchCreated - Whether match creation was attempted
  * @param {Function} params.setCurrentMatchId - Function to set current match ID
- * @param {Function} params.setMatchCreationAttempted - Function to set match creation attempted flag
+ * @param {Function} params.setMatchCreated - Function to set match creation attempted flag
  * @returns {Promise<{success: boolean, matchId?: string, message?: string, error?: string}>}
  */
 export async function saveMatchConfiguration(params) {
@@ -206,9 +206,9 @@ export async function saveMatchConfiguration(params) {
     allPlayers,
     currentTeam,
     currentMatchId,
-    matchCreationAttempted,
+    matchCreated,
     setCurrentMatchId,
-    setMatchCreationAttempted
+    setMatchCreated
   } = params;
 
   // Skip save if no team context
@@ -247,7 +247,7 @@ export async function saveMatchConfiguration(params) {
 
     let result;
     
-    if (currentMatchId && matchCreationAttempted) {
+    if (currentMatchId && matchCreated) {
       // Update existing match
       result = await updateMatchConfiguration({
         matchId: currentMatchId,
@@ -261,7 +261,7 @@ export async function saveMatchConfiguration(params) {
         allPlayers,
         initialConfig,
         setCurrentMatchId,
-        setMatchCreationAttempted
+        setMatchCreated
       });
     }
 
@@ -322,25 +322,25 @@ export function validateConfiguration(params) {
  * This is a simplified version that extracts the common pattern without the complex async coordination
  * @param {Object} params - Flow parameters
  * @param {string} params.currentMatchId - Current match ID (if exists)
- * @param {boolean} params.matchCreationAttempted - Whether match creation was attempted
+ * @param {boolean} params.matchCreated - Whether match creation was attempted
  * @param {Object} params.matchData - Formatted match data
  * @param {Array} params.allPlayers - All players array
  * @param {Function} params.setCurrentMatchId - Function to set current match ID
- * @param {Function} params.setMatchCreationAttempted - Function to set match creation attempted flag
+ * @param {Function} params.setMatchCreated - Function to set match creation attempted flag
  * @returns {Promise<{success: boolean, matchId?: string, error?: string}>}
  */
 export async function handleMatchCreateOrUpdate(params) {
   const {
     currentMatchId,
-    matchCreationAttempted,
+    matchCreated,
     matchData,
     allPlayers,
     setCurrentMatchId,
-    setMatchCreationAttempted
+    setMatchCreated
   } = params;
 
   try {
-    if (currentMatchId && matchCreationAttempted) {
+    if (currentMatchId && matchCreated) {
       // UPDATE FLOW: Match already exists, update it
       const updateResult = await updateExistingMatch(currentMatchId, matchData);
       if (!updateResult.success) {
@@ -353,7 +353,7 @@ export async function handleMatchCreateOrUpdate(params) {
       };
     } else {
       // CREATE FLOW: No existing match, create new one
-      setMatchCreationAttempted(true); // Prevent duplicate attempts
+      setMatchCreated(true); // Prevent duplicate attempts
       
       const createResult = await createMatch(matchData, allPlayers);
       if (createResult.success) {

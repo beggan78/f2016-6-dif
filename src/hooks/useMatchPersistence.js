@@ -33,12 +33,12 @@ export function useMatchPersistence(gameState, setters, teamContext) {
     matchType,
     formation,
     currentMatchId,
-    matchCreationAttempted
+    matchCreated
   } = gameState;
 
   const {
     setCurrentMatchId,
-    setMatchCreationAttempted
+    setMatchCreated
   } = setters;
 
   const { currentTeam } = teamContext;
@@ -70,9 +70,9 @@ export function useMatchPersistence(gameState, setters, teamContext) {
         allPlayers,
         currentTeam,
         currentMatchId,
-        matchCreationAttempted,
+        matchCreated,
         setCurrentMatchId,
-        setMatchCreationAttempted
+        setMatchCreated
       });
       
       if (!result.success) {
@@ -88,7 +88,7 @@ export function useMatchPersistence(gameState, setters, teamContext) {
     teamConfig, selectedFormation, numPeriods, periodDurationMinutes,
     opponentTeam, captainId, matchType, formation, periodGoalieIds,
     selectedSquadIds, allPlayers, currentTeam, currentMatchId,
-    matchCreationAttempted, setCurrentMatchId, setMatchCreationAttempted
+    matchCreated, setCurrentMatchId, setMatchCreated
   ]);
 
   /**

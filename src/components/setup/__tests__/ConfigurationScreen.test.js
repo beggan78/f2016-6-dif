@@ -159,7 +159,8 @@ describe('ConfigurationScreen', () => {
       setCaptain: jest.fn(),
       setView: jest.fn(),
       syncPlayersFromTeamRoster: jest.fn(),
-      setCurrentMatchId: jest.fn()
+      setCurrentMatchId: jest.fn(),
+      setMatchCreated: jest.fn()
     };
 
     defaultProps = {
