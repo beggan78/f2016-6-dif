@@ -6,10 +6,10 @@ import { getPairAnimation, getPlayerAnimation } from '../../../game/ui/playerAni
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES, POSITION_DISPLAY_NAMES } from './constants';
 
-export function PairsFormation({ 
+export function PairsFormation({
   formation,
-  allPlayers, 
-  animationState, 
+  allPlayers,
+  animationState,
   recentlySubstitutedPlayers,
   hideNextOffIndicator,
   nextPhysicalPairToSubOut,
@@ -18,6 +18,7 @@ export function PairsFormation({
   getPlayerNameById,
   getPlayerTimeStats,
   teamConfig,
+  renderSection = 'all',
   ...domProps
 }) {
   // Handle null/undefined formation
@@ -141,12 +142,35 @@ export function PairsFormation({
     );
   };
 
-  return (
-    <div className="space-y-2" {...domProps}>
+  // Conditional rendering based on renderSection prop
+  const renderFieldSection = () => (
+    <>
+      {renderGoalie()}
+      {renderPair('leftPair', POSITION_DISPLAY_NAMES.leftPair, 0)}
+      {renderPair('rightPair', POSITION_DISPLAY_NAMES.rightPair, 1)}
+    </>
+  );
+
+  const renderSubstituteSection = () => (
+    <>
+      {renderPair('subPair', POSITION_DISPLAY_NAMES.subPair, 2)}
+    </>
+  );
+
+  const renderAllSections = () => (
+    <>
       {renderGoalie()}
       {renderPair('leftPair', POSITION_DISPLAY_NAMES.leftPair, 0)}
       {renderPair('rightPair', POSITION_DISPLAY_NAMES.rightPair, 1)}
       {renderPair('subPair', POSITION_DISPLAY_NAMES.subPair, 2)}
+    </>
+  );
+
+  return (
+    <div className="space-y-2" {...domProps}>
+      {renderSection === 'field' && renderFieldSection()}
+      {renderSection === 'substitutes' && renderSubstituteSection()}
+      {renderSection === 'all' && renderAllSections()}
     </div>
   );
 }
