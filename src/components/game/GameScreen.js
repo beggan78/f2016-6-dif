@@ -499,7 +499,7 @@ export function GameScreen({
         <p className="text-xs text-slate-400 mt-1">Tap team name to add goal • Hold score to edit</p>
       </div>
 
-      {/* Field & Subs Visualization */}
+      {/* Field Players Section */}
       <FormationRenderer
           teamConfig={teamConfig}
           selectedFormation={selectedFormation}
@@ -515,36 +515,56 @@ export function GameScreen({
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
           getPlayerTimeStats={getPlayerTimeStats}
+          renderSection="field"
+        />
+
+      {/* SUB NOW Button - positioned between field and substitute players */}
+      <div className="flex gap-2 mt-4">
+        <Button
+          onClick={substitutionHandlers.handleSubstitutionWithHighlight}
+          Icon={RefreshCcw}
+          className="flex-1"
+          disabled={!canSubstitute}
+          title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}
+        >
+          SUB NOW
+        </Button>
+        <button
+          onClick={handleUndoSubstitutionClick}
+          disabled={!uiState.lastSubstitution}
+          className={`w-12 h-12 rounded-md flex items-center justify-center transition-all duration-200 ${
+            uiState.lastSubstitution
+              ? 'bg-slate-600 hover:bg-slate-500 text-slate-100 shadow-md cursor-pointer'
+              : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-50'
+          }`}
+          title={uiState.lastSubstitution ? "Undo last substitution" : "No substitution to undo"}
+        >
+          <Undo2 className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Substitute Players Section */}
+      <FormationRenderer
+          teamConfig={teamConfig}
+          selectedFormation={selectedFormation}
+          formation={formation}
+          allPlayers={allPlayers}
+          animationState={uiState.animationState}
+          recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
+          nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
+          nextPlayerIdToSubOut={nextPlayerIdToSubOut}
+          nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
+          quickTapHandlers={quickTapHandlers}
+          goalieHandlers={goalieHandlers}
+          getPlayerNameById={getPlayerNameById}
+          getPlayerTimeStats={getPlayerTimeStats}
+          renderSection="substitutes"
         />
 
       {/* Action Buttons */}
       <div className="flex flex-col gap-3 mt-4">
-        {/* Top row: SUB NOW with undo button */}
-        <div className="flex gap-2">
-          <Button 
-            onClick={substitutionHandlers.handleSubstitutionWithHighlight} 
-            Icon={RefreshCcw} 
-            className="flex-1"
-            disabled={!canSubstitute}
-            title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}
-          >
-            SUB NOW
-          </Button>
-          <button
-            onClick={handleUndoSubstitutionClick}
-            disabled={!uiState.lastSubstitution}
-            className={`w-12 h-12 rounded-md flex items-center justify-center transition-all duration-200 ${
-              uiState.lastSubstitution 
-                ? 'bg-slate-600 hover:bg-slate-500 text-slate-100 shadow-md cursor-pointer' 
-                : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-50'
-            }`}
-            title={uiState.lastSubstitution ? "Undo last substitution" : "No substitution to undo"}
-          >
-            <Undo2 className="h-5 w-5" />
-          </button>
-        </div>
-        
-        {/* Bottom row: End Period */}
+        {/* End Period Button */}
         <Button onClick={handleEndPeriod} Icon={Square} variant="danger" className="w-full">
           End Period
         </Button>
