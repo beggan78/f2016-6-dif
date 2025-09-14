@@ -7,6 +7,7 @@
 
 import { getPendingMatchForTeam } from './matchStateManager';
 import { supabase } from '../lib/supabase';
+import { normalizeFormationStructure } from '../utils/formationUtils';
 
 /**
  * Get ALL pending matches for a team (for multi-match modal)
@@ -126,19 +127,37 @@ export function validatePendingMatchConfig(initialConfig) {
 }
 
 /**
- * Extract formation data from initial config for PeriodSetupScreen
+ * Extract and normalize formation data from initial config for PeriodSetupScreen
  * @param {Object} initialConfig - Initial configuration from database
- * @returns {Object|null} Formation object or null if not available
+ * @returns {Object|null} Clean formation object or null if not available
  */
 export function extractFormationFromConfig(initialConfig) {
   try {
-    if (!initialConfig || !initialConfig.formation) {
+    if (!initialConfig || !initialConfig.formation || !initialConfig.teamConfig) {
       return null;
     }
 
-    return initialConfig.formation;
+    // Convert database teamConfig format (nested) to runtime format (flat) for normalization
+    const runtimeTeamConfig = {
+      format: initialConfig.teamConfig?.format,
+      formation: initialConfig.teamConfig?.formation,
+      squadSize: initialConfig.teamConfig?.squadSize,
+      substitutionType: initialConfig.teamConfig?.substitutionConfig?.type || 'individual',
+      ...(initialConfig.teamConfig?.substitutionConfig?.pairRoleRotation && {
+        pairRoleRotation: initialConfig.teamConfig.substitutionConfig.pairRoleRotation
+      })
+    };
+
+    // Normalize the potentially messy formation structure
+    const cleanFormation = normalizeFormationStructure(
+      initialConfig.formation,
+      runtimeTeamConfig,
+      initialConfig.squadSelection || []
+    );
+
+    return cleanFormation;
   } catch (error) {
-    console.error('❌ Failed to extract formation from config:', error);
+    console.error('❌ Failed to extract and normalize formation from config:', error);
     return null;
   }
 }
@@ -166,6 +185,9 @@ export function createResumeDataForConfiguration(initialConfig) {
       })
     };
 
+    // Get clean, normalized formation data
+    const cleanFormationData = extractFormationFromConfig(initialConfig);
+
     return {
       squadSelection: initialConfig.squadSelection || [],
       periods: initialConfig.matchConfig?.periods || 3,
@@ -176,7 +198,7 @@ export function createResumeDataForConfiguration(initialConfig) {
       teamConfig: runtimeTeamConfig,
       formation: initialConfig.teamConfig?.formation || '2-2',
       periodGoalies: initialConfig.periodGoalies || {},
-      formationData: initialConfig.formation || null
+      formationData: cleanFormationData
     };
   } catch (error) {
     console.error('❌ Failed to create resume data:', error);

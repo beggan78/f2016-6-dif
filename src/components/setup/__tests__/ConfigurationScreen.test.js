@@ -155,7 +155,10 @@ describe('ConfigurationScreen', () => {
       setMatchType: jest.fn(),
       updateFormationSelection: jest.fn(),
       createTeamConfigFromSquadSize: jest.fn(),
-      setCaptain: jest.fn()
+      setCaptain: jest.fn(),
+      setView: jest.fn(),
+      syncPlayersFromTeamRoster: jest.fn(),
+      setCurrentMatchId: jest.fn()
     };
 
     defaultProps = {
@@ -177,6 +180,9 @@ describe('ConfigurationScreen', () => {
       opponentTeam: '',
       matchType: MATCH_TYPES.LEAGUE,
       captainId: null,
+      hasActiveConfiguration: false,
+      setHasActiveConfiguration: jest.fn(),
+      clearStoredState: jest.fn(),
       setViewWithData: jest.fn(),
       ...mockSetters
     };

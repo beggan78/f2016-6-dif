@@ -13,11 +13,11 @@ import { saveMatchConfiguration as saveMatchConfigurationService } from '../serv
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
 
 /**
- * Hook for handling database operations and backup management
+ * Hook for handling database operations and persistence
  * @param {Object} gameState - Current game state
  * @param {Object} setters - State setter functions
  * @param {Object} teamContext - Team context data
- * @returns {Object} Database and backup-related functions
+ * @returns {Object} Database and persistence functions
  */
 export function useMatchPersistence(gameState, setters, teamContext) {
   const {
@@ -92,54 +92,11 @@ export function useMatchPersistence(gameState, setters, teamContext) {
   ]);
 
   /**
-   * Create a backup of current state
-   */
-  const createBackup = useCallback(() => {
-    return persistenceManager.createBackup();
-  }, []);
-
-  /**
-   * Auto-backup functionality
-   */
-  const autoBackup = useCallback(() => {
-    persistenceManager.autoBackup();
-  }, []);
-
-  /**
    * Clear persisted state
    */
   const clearPersistedState = useCallback(() => {
     const result = persistenceManager.clearState();
     return result;
-  }, []);
-
-  /**
-   * Get available backups
-   */
-  const getAvailableBackups = useCallback(() => {
-    return persistenceManager.listBackups();
-  }, []);
-
-  /**
-   * Restore state from backup
-   */
-  const restoreFromBackup = useCallback((backupKey) => {
-    const result = persistenceManager.restoreFromBackup(backupKey);
-    return result;
-  }, []);
-
-  /**
-   * Get storage information
-   */
-  const getStorageInfo = useCallback(() => {
-    return persistenceManager.getStorageInfo();
-  }, []);
-
-  /**
-   * Clean up old backups
-   */
-  const cleanupBackups = useCallback((maxBackups = 5) => {
-    persistenceManager.cleanupBackups(maxBackups);
   }, []);
 
   return {
@@ -150,12 +107,5 @@ export function useMatchPersistence(gameState, setters, teamContext) {
     // Database operations
     saveMatchConfiguration,
 
-    // Backup management
-    createBackup,
-    autoBackup,
-    getAvailableBackups,
-    restoreFromBackup,
-    getStorageInfo,
-    cleanupBackups
   };
 }

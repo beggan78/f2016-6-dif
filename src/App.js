@@ -888,6 +888,9 @@ function AppContent() {
             setView={navigateToView}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
             setCurrentMatchId={gameState.setCurrentMatchId}
+            hasActiveConfiguration={gameState.hasActiveConfiguration}
+            setHasActiveConfiguration={gameState.setHasActiveConfiguration}
+            clearStoredState={gameState.clearStoredState}
           />
         );
       case VIEWS.PERIOD_SETUP:

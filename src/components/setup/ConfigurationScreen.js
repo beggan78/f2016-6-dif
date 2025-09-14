@@ -1,4 +1,4 @@
-    import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
@@ -54,7 +54,10 @@ export function ConfigurationScreen({
   authModal,
   setView,
   syncPlayersFromTeamRoster,
-  setCurrentMatchId
+  setCurrentMatchId,
+  hasActiveConfiguration,
+  setHasActiveConfiguration,
+  clearStoredState
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -371,6 +374,42 @@ export function ConfigurationScreen({
     }
   }, [sessionDetectionResult]);
 
+  // Add "already processed" guard flag to prevent infinite loops
+  const [newSignInProcessed, setNewSignInProcessed] = useState(false);
+
+  // Reset processing flag when session changes (to handle new sign-ins)
+  React.useEffect(() => {
+    if (sessionDetectionResult?.type !== DETECTION_TYPES.NEW_SIGN_IN) {
+      setNewSignInProcessed(false);
+    }
+  }, [sessionDetectionResult?.type]);
+
+  // Smart NEW_SIGN_IN state clearing - only clear if no active configuration is in progress
+  React.useEffect(() => {
+    if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN &&
+        !hasActiveConfiguration &&
+        !isProcessingResumeDataRef.current &&
+        !newSignInProcessed &&
+        clearStoredState) {
+
+      console.log('🔄 NEW_SIGN_IN detected with no active configuration - clearing previous user data');
+
+      // Mark as processed to prevent infinite loops
+      setNewSignInProcessed(true);
+
+      // Clear stored state and configuration data
+      clearStoredState();
+
+      // Explicitly clear configuration-specific state that might persist
+      setOpponentTeam('');
+      setPeriodGoalieIds({});
+      setCaptain(null);
+
+      // Note: selectedSquadIds will be cleared by the existing effect below when team has no players
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionDetectionResult, hasActiveConfiguration, newSignInProcessed, clearStoredState]);
+
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
   React.useEffect(() => {
@@ -518,24 +557,32 @@ export function ConfigurationScreen({
   const togglePlayerSelection = (playerId) => {
     setSelectedSquadIds(prev => {
       const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
-      
+
+      // Mark as active configuration when squad selection changes
+      if (newIds.length > 0) {
+        setHasActiveConfiguration(true);
+      }
+
       // Auto-create team configuration based on squad size
       if (newIds.length >= 5 && newIds.length <= 10) {
         // Default to pairs for 7-player mode, individual for others
         const defaultSubstitutionType = (newIds.length === 7) ? 'pairs' : 'individual';
         createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType);
       }
-      
+
       // Clear captain if the captain is being deselected
       if (captainId && !newIds.includes(captainId)) {
         setCaptain(null);
       }
-      
+
       return newIds;
     });
   };
 
   const handleGoalieChange = (period, playerId) => {
+    // Mark as active configuration when goalie assignments change
+    setHasActiveConfiguration(true);
+
     setPeriodGoalieIds(prev => {
       const newGoalieIds = { ...prev, [period]: playerId };
       if (period === 1) {
@@ -552,8 +599,24 @@ export function ConfigurationScreen({
   const handleCaptainChange = (playerId) => {
     // Empty string means no captain selected
     const captainId = playerId === "" ? null : playerId;
-    
+
+    // Mark as active configuration when captain changes (but allow clearing captain)
+    if (captainId) {
+      setHasActiveConfiguration(true);
+    }
+
     setCaptain(captainId);
+  };
+
+  const handleOpponentTeamChange = (value) => {
+    const sanitizedValue = sanitizeNameInput(value);
+
+    // Mark as active configuration when opponent name is set (non-empty)
+    if (sanitizedValue.trim()) {
+      setHasActiveConfiguration(true);
+    }
+
+    setOpponentTeam(sanitizedValue);
   };
 
   const randomizeConfiguration = () => {
@@ -938,7 +1001,7 @@ export function ConfigurationScreen({
         <Input
           id="opponentTeam"
           value={opponentTeam}
-          onChange={e => setOpponentTeam(sanitizeNameInput(e.target.value))}
+          onChange={e => handleOpponentTeamChange(e.target.value)}
           placeholder="Enter opponent team name (optional)"
           maxLength={50}
         />

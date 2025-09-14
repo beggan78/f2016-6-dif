@@ -11,6 +11,7 @@
 import { supabase } from '../lib/supabase';
 import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
+import { normalizeFormationStructure } from '../utils/formationUtils';
 
 /**
  * Create a new match record when the first period starts and insert initial player stats
@@ -897,11 +898,33 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
       };
     }
 
+    // Normalize the formation structure before saving to database
+    const cleanInitialConfig = { ...initialConfig };
+
+    if (initialConfig.formation && initialConfig.teamConfig && initialConfig.squadSelection) {
+      // Convert database teamConfig format (nested) to runtime format (flat) for normalization
+      const runtimeTeamConfig = {
+        format: initialConfig.teamConfig?.format,
+        formation: initialConfig.teamConfig?.formation,
+        squadSize: initialConfig.teamConfig?.squadSize,
+        substitutionType: initialConfig.teamConfig?.substitutionConfig?.type || 'individual',
+        ...(initialConfig.teamConfig?.substitutionConfig?.pairRoleRotation && {
+          pairRoleRotation: initialConfig.teamConfig.substitutionConfig.pairRoleRotation
+        })
+      };
+
+      // Normalize the formation structure
+      cleanInitialConfig.formation = normalizeFormationStructure(
+        initialConfig.formation,
+        runtimeTeamConfig,
+        initialConfig.squadSelection
+      );
+    }
 
     const { error } = await supabase
       .from('match')
-      .update({ 
-        initial_config: initialConfig,
+      .update({
+        initial_config: cleanInitialConfig,
         updated_at: new Date().toISOString()
       })
       .eq('id', matchId)

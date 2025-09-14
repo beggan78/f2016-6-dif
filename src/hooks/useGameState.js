@@ -1,13 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers } from '../utils/playerUtils';
-import { initialRoster } from '../constants/defaultData';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
 import { generateRecommendedFormation, generateIndividualFormationRecommendation } from '../utils/formationGenerator';
 import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
-import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig } from '../services/matchStateManager';
 import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
@@ -16,10 +14,11 @@ import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { useMatchPersistence } from './useMatchPersistence';
 import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
-import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
-import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
-import { syncTeamRosterToGameState, analyzePlayerSync } from '../utils/playerSyncUtils';
-import { audioAlertService } from '../services/audioAlertService';
+import { useMatchEvents } from './useMatchEvents';
+import { useTeamConfig } from './useTeamConfig';
+import { useMatchAudio } from './useMatchAudio';
+import { usePlayerState } from './usePlayerState';
+import { createTeamConfig } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 
@@ -91,56 +90,51 @@ const hasPlayerAssignments = (formation) => {
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
   const { currentTeam } = useTeam();
-  // Get audio preferences for alert integration
+  // Get preferences for various integrations
   const { audioPreferences } = usePreferences();
+
+  // Audio and wake lock management - extracted to useMatchAudio hook
+  const { requestWakeLock, releaseWakeLock, playAlertSounds } = useMatchAudio(audioPreferences);
 
   // Initialize state from PersistenceManager ONLY ONCE using lazy initializer
   const [initialState] = useState(() => {
     const loadedState = persistenceManager.loadState(); // Keep direct call for initial load
-    
-
-    // Ensure allPlayers is initialized if not present
-    if (!loadedState.allPlayers || loadedState.allPlayers.length === 0) {
-      loadedState.allPlayers = initializePlayers(initialRoster);
-    }
-    
-    // Ensure teamConfig exists
-    if (!loadedState.teamConfig) {
-      loadedState.teamConfig = createDefaultTeamConfig(7); // Default to 7-player individual
-    }
-    
-    // Migration: Extract formation from teamConfig if not present
-    if (!loadedState.selectedFormation && loadedState.teamConfig) {
-      loadedState.selectedFormation = loadedState.teamConfig.formation || FORMATIONS.FORMATION_2_2;
-    }
-    
     return loadedState;
   });
-  
-  // Sync captain data between captainId and allPlayers stats
-  if (initialState.captainId && initialState.allPlayers) {
-    initialState.allPlayers = initialState.allPlayers.map(player => ({
-      ...player,
-      stats: {
-        ...player.stats,
-        isCaptain: player.id === initialState.captainId
-      }
-    }));
-  }
-  
-  // Initialize event logger on hook initialization
-  useEffect(() => {
-    initializeEventLogger();
-  }, []);
-  
-  const [allPlayers, setAllPlayers] = useState(initialState.allPlayers);
+
+  // Player state management - extracted to usePlayerState hook
+  const playerStateHook = usePlayerState(initialState);
+  const {
+    allPlayers,
+    selectedSquadIds,
+    captainId,
+    setAllPlayers,
+    setSelectedSquadIds,
+    setCaptainId,
+    addTemporaryPlayer,
+    setCaptain,
+    clearCaptain,
+    togglePlayerInactive,
+    syncPlayersFromTeamRoster,
+    updatePlayerRolesFromFormation
+  } = playerStateHook;
+
   const [view, setView] = useState(initialState.view);
-  const [selectedSquadIds, setSelectedSquadIds] = useState(initialState.selectedSquadIds);
   const [numPeriods, setNumPeriods] = useState(initialState.numPeriods);
   const [periodDurationMinutes, setPeriodDurationMinutes] = useState(initialState.periodDurationMinutes);
   const [periodGoalieIds, setPeriodGoalieIds] = useState(initialState.periodGoalieIds);
-  const [teamConfig, setTeamConfig] = useState(initialState.teamConfig); // New team configuration
-  const [selectedFormation, setSelectedFormation] = useState(initialState.selectedFormation || FORMATIONS.FORMATION_2_2); // UI formation selection
+  // Team configuration - extracted to useTeamConfig hook
+  const teamConfigHook = useTeamConfig(initialState);
+  const {
+    teamConfig,
+    selectedFormation,
+    setTeamConfig,
+    setSelectedFormation,
+    updateTeamConfig,
+    updateFormationSelection,
+    createTeamConfigFromSquadSize,
+    getFormationAwareTeamConfig
+  } = teamConfigHook;
   const [alertMinutes, setAlertMinutes] = useState(initialState.alertMinutes);
 
   const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
@@ -153,46 +147,38 @@ export function useGameState(navigateToView = null) {
   const [gameLog, setGameLog] = useState(initialState.gameLog);
   const [opponentTeam, setOpponentTeam] = useState(initialState.opponentTeam || '');
   const [matchType, setMatchType] = useState(initialState.matchType || DEFAULT_MATCH_TYPE);
-  const [ownScore, setOwnScore] = useState(initialState.ownScore || 0); // Djurgården score
-  const [opponentScore, setOpponentScore] = useState(initialState.opponentScore || 0); // Opponent score
   const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
 
-  // Match event tracking state - NEW for match report feature
-  const [matchEvents, setMatchEvents] = useState(initialState.matchEvents || []);
-  const [matchStartTime, setMatchStartTime] = useState(initialState.matchStartTime || null);
-  const [goalScorers, setGoalScorers] = useState(initialState.goalScorers || {}); // { eventId: playerId }
-  const [eventSequenceNumber, setEventSequenceNumber] = useState(initialState.eventSequenceNumber || 0);
-  const [lastEventBackup, setLastEventBackup] = useState(initialState.lastEventBackup || null);
+  // Match events and scoring - extracted to useMatchEvents hook
+  const matchEventsHook = useMatchEvents(initialState);
+  const {
+    matchEvents,
+    matchStartTime,
+    goalScorers,
+    eventSequenceNumber,
+    lastEventBackup,
+    ownScore,
+    opponentScore,
+    setMatchEvents,
+    setMatchStartTime,
+    setGoalScorers,
+    setEventSequenceNumber,
+    setLastEventBackup,
+    addGoalScored,
+    addGoalConceded,
+    setScore,
+    resetScore,
+    clearAllMatchEvents,
+    syncMatchDataFromEventLogger
+  } = matchEventsHook;
   const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
-  const [captainId, setCaptainId] = useState(initialState.captainId || null);
-
   // Match state management - track database match record lifecycle
   const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
   const [matchCreationAttempted, setMatchCreationAttempted] = useState(initialState.matchCreationAttempted || false);
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
-
-  // Sync captain data in allPlayers whenever captainId changes
-  useEffect(() => {
-    if (captainId) {
-      setAllPlayers(prev => prev.map(player => ({
-        ...player,
-        stats: {
-          ...player.stats,
-          isCaptain: player.id === captainId
-        }
-      })));
-    } else {
-      // Clear all captain designations when captainId is null
-      setAllPlayers(prev => prev.map(player => ({
-        ...player,
-        stats: {
-          ...player.stats,
-          isCaptain: false
-        }
-      })));
-    }
-  }, [captainId]);
+  // Configuration activity tracking - prevents accidental clearing during active configuration
+  const [hasActiveConfiguration, setHasActiveConfiguration] = useState(initialState.hasActiveConfiguration || false);
 
   // Initialize match persistence hook
   const gameState = {
@@ -210,181 +196,14 @@ export function useGameState(navigateToView = null) {
   
   const persistence = useMatchPersistence(gameState, setters, teamContext);
 
-  // Team Configuration Management Functions
-  const updateTeamConfig = useCallback((newTeamConfig) => {
-    setTeamConfig(newTeamConfig);
-  }, []);
 
   // Sync player roles with formation changes (fixes PAIRS_7 Goal Scorer modal sorting)
   useEffect(() => {
-    // Only update roles if we have a formation and selected squad players
-    if (!formation || !selectedSquadIds.length) return;
-    
-    // Skip if formation is empty (all positions null)
-    const hasAnyAssignedPositions = Object.values(formation).some(pos => {
-      if (typeof pos === 'string') return pos; // Individual mode positions
-      if (typeof pos === 'object' && pos) return pos.defender || pos.attacker; // Pair positions
-      return false;
-    });
-    
-    if (!hasAnyAssignedPositions) return;
-    
-    // Create formation-aware team config for role initialization
-    // Use selectedFormation if available to override the teamConfig formation
-    const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
-      ...teamConfig,
-      formation: selectedFormation
-    } : teamConfig;
-    
-    // Update player roles based on current formation
-    setAllPlayers(prev => {
-      const updated = prev.map(player => {
-        if (!selectedSquadIds.includes(player.id)) return player;
-        
-        const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(player.id, formation, formationAwareTeamConfig);
-        
-        // Only update if the role/status actually changed to avoid unnecessary re-renders
-        if (player.stats.currentRole !== currentRole || 
-            player.stats.currentStatus !== currentStatus || 
-            player.stats.currentPairKey !== currentPairKey) {
-          return {
-            ...player,
-        stats: {
-              ...player.stats,
-              currentRole: currentRole,
-              currentStatus: currentStatus,
-              currentPairKey: currentPairKey
-            }
-          };
-        }
-        
-        return player;
-      });
+    const formationAwareTeamConfig = getFormationAwareTeamConfig();
+    updatePlayerRolesFromFormation(formation, selectedSquadIds, formationAwareTeamConfig);
+  }, [formation, teamConfig, selectedFormation, selectedSquadIds, getFormationAwareTeamConfig, updatePlayerRolesFromFormation]);
 
-      return updated;
-    });
-  }, [formation, teamConfig, selectedFormation, selectedSquadIds]);
 
-  // Function to sync match data from gameEventLogger
-  const syncMatchDataFromEventLogger = useCallback(() => {
-    const loggerStartTime = getMatchStartTime();
-    const loggerEvents = getAllEvents();
-    
-    // Special case: If logger has been cleared (no events and no start time), clear local state too
-    if (!loggerStartTime && loggerEvents.length === 0 && (matchStartTime || matchEvents.length > 0)) {
-      setMatchStartTime(null);
-      setMatchEvents([]);
-      setGoalScorers({});
-      return;
-    }
-    
-    if (loggerStartTime && loggerStartTime !== matchStartTime) {
-      setMatchStartTime(loggerStartTime);
-    }
-    
-    // Check if events need to be synced - compare content, not just length
-    const lengthChanged = loggerEvents.length !== matchEvents.length;
-    
-    let contentChanged = false;
-    if (!lengthChanged) {
-      // Only do expensive JSON comparison if lengths are the same
-      contentChanged = JSON.stringify(loggerEvents) !== JSON.stringify(matchEvents);
-    }
-    
-    const eventsNeedSync = lengthChanged || contentChanged;
-    
-    if (eventsNeedSync) {
-      setMatchEvents(loggerEvents);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matchStartTime, setMatchEvents, setMatchStartTime, setGoalScorers]);
-
-  // Immediate sync when dependencies suggest there might be new data
-  useEffect(() => {
-    syncMatchDataFromEventLogger();
-  }, [syncMatchDataFromEventLogger]);
-
-  // Periodic sync to ensure data consistency (backup mechanism)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      syncMatchDataFromEventLogger();
-    }, 5000); // Sync every 5 seconds
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [syncMatchDataFromEventLogger]);
-
-  // Event listener for immediate sync when gameEventLogger changes
-  useEffect(() => {
-    const handleEventLoggerChange = (eventType, data) => {
-      if (eventType === 'events_saved') {
-        syncMatchDataFromEventLogger();
-      }
-    };
-    
-    const unsubscribe = addEventListener(handleEventLoggerChange);
-    
-    return () => {
-      unsubscribe();
-    };
-  }, [syncMatchDataFromEventLogger]);
-
-  // Wake lock management
-  const [wakeLock, setWakeLock] = useState(null);
-
-  // Wake lock helper functions
-  const requestWakeLock = useCallback(async () => {
-    if ('wakeLock' in navigator && !wakeLock) {
-      try {
-        const newWakeLock = await navigator.wakeLock.request('screen');
-        setWakeLock(newWakeLock);
-      } catch (err) {
-        console.warn('Wake lock request failed:', err);
-      }
-    }
-  }, [wakeLock]);
-
-  const releaseWakeLock = useCallback(async () => {
-    if (wakeLock) {
-      try {
-        await wakeLock.release();
-        setWakeLock(null);
-      } catch (err) {
-        console.warn('Wake lock release failed:', err);
-      }
-    }
-  }, [wakeLock]);
-
-  // Note: Alert timer functions removed - alerts now handled by visual timer logic in useTimers.js
-
-  /**
-   * Audio alert function - triggers substitution alerts (audio + vibration)
-   * Called by visual timer logic in useTimers.js when sub timer reaches alertMinutes threshold
-   * Replaces old setTimeout-based timer system for better synchronization
-   */
-  const playAlertSounds = useCallback(async () => {
-    // Vibration alert
-    if ('vibrate' in navigator) {
-      try {
-        navigator.vibrate([1000, 200, 1000]);
-      } catch (error) {
-        // Silently handle vibration errors
-      }
-    }
-
-    // Audio alert
-    if (audioPreferences.enabled) {
-      try {
-        await audioAlertService.play(
-          audioPreferences.selectedSound,
-          audioPreferences.volume
-        );
-      } catch (error) {
-        console.error('[AUDIO_ALERT] Audio playback failed:', error.message);
-      }
-    }
-  }, [audioPreferences]);
 
   // Save state to localStorage whenever it changes - NOTE: Critical for refresh persistence
   useEffect(() => {
@@ -392,14 +211,14 @@ export function useGameState(navigateToView = null) {
     const timeoutId = setTimeout(() => {
       
       const currentState = {
-        allPlayers,
         view,
-        selectedSquadIds,
+        // Player state from hook
+        ...playerStateHook.getPlayerState(),
         numPeriods,
         periodDurationMinutes,
         periodGoalieIds,
-        teamConfig, // Team configuration
-        selectedFormation, // Formation selection
+        // Team configuration from hook
+        ...teamConfigHook.getTeamConfigState(),
         alertMinutes,
         currentPeriodNumber,
         formation,
@@ -411,15 +230,9 @@ export function useGameState(navigateToView = null) {
         gameLog,
         opponentTeam,
         matchType,
-        ownScore,
-        opponentScore,
         lastSubstitutionTimestamp,
-        // NEW: Match event tracking state
-        matchEvents,
-        matchStartTime,
-        goalScorers,
-        eventSequenceNumber,
-        lastEventBackup,
+        // Match event tracking state from hook
+        ...matchEventsHook.getEventState(),
         timerPauseStartTime,
         totalMatchPausedDuration,
         captainId,
@@ -427,6 +240,7 @@ export function useGameState(navigateToView = null) {
         currentMatchId,
         matchCreationAttempted,
         matchState,
+        hasActiveConfiguration,
       };
       
       // Use the persistence manager's saveGameState method
@@ -435,7 +249,7 @@ export function useGameState(navigateToView = null) {
 
     // Cleanup timeout on dependency change or unmount
     return () => clearTimeout(timeoutId);
-  }, [allPlayers, view, selectedSquadIds, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfig, selectedFormation, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, ownScore, opponentScore, lastSubstitutionTimestamp, matchEvents, matchStartTime, goalScorers, eventSequenceNumber, lastEventBackup, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState]);
+  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreationAttempted, matchState, hasActiveConfiguration]);
 
 
 
@@ -501,10 +315,7 @@ export function useGameState(navigateToView = null) {
         
         // Find the position of the next player to substitute using formation-aware field positions only
         // Create formation-aware team config for position utilities
-        const formationAwareTeamConfigForPos = selectedFormation && selectedFormation !== teamConfig.formation ? {
-          ...teamConfig,
-          formation: selectedFormation
-        } : teamConfig;
+        const formationAwareTeamConfigForPos = getFormationAwareTeamConfig();
         
         const definition = getModeDefinition(formationAwareTeamConfigForPos);
         const fieldPositions = definition?.fieldPositions || [];
@@ -540,7 +351,7 @@ export function useGameState(navigateToView = null) {
         setRotationQueue([]);
       }
     }
-  }, [periodGoalieIds, selectedSquadIds, allPlayers, teamConfig, selectedFormation]);
+  }, [periodGoalieIds, selectedSquadIds, allPlayers, teamConfig, selectedFormation, getFormationAwareTeamConfig]);
 
   const preparePeriod = useCallback((periodNum) => {
     preparePeriodWithGameLog(periodNum, gameLog);
@@ -557,8 +368,7 @@ export function useGameState(navigateToView = null) {
       return;
     }
 
-    // Create auto-backup before starting game
-    persistence.autoBackup();
+    // Auto-backup disabled to prevent localStorage quota issues
 
     // Reset player stats for the new game for the selected squad
     const updatedPlayers = allPlayers.map(p => {
@@ -634,10 +444,10 @@ export function useGameState(navigateToView = null) {
     }
     
     setView(VIEWS.PERIOD_SETUP);
-  }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam, 
-      teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, 
-      formation, setCurrentMatchId, setAllPlayers, setMatchState, 
-      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreationAttempted, persistence]);
+  }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam,
+      teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType,
+      formation, setCurrentMatchId, setAllPlayers, setMatchState,
+      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreationAttempted]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
@@ -736,10 +546,7 @@ export function useGameState(navigateToView = null) {
     if ((teamConfig.substitutionType === 'individual') && rotationQueue.length === 0) {
       
       // Get field positions with formation awareness
-      const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
-        ...teamConfig,
-        formation: selectedFormation
-      } : teamConfig;
+      const formationAwareTeamConfig = getFormationAwareTeamConfig();
       
       const definition = getModeDefinition(formationAwareTeamConfig);
       const fieldPositions = definition?.fieldPositions || [];
@@ -878,8 +685,7 @@ export function useGameState(navigateToView = null) {
   };
 
   const handleEndPeriod = (isSubTimerPaused = false) => {
-    // Create auto-backup before ending period
-    persistence.autoBackup();
+    // Auto-backup disabled to prevent localStorage quota issues
     const currentTimeEpoch = Date.now();
     const selectedSquadPlayers = getSelectedSquadPlayers(allPlayers, selectedSquadIds);
     const playerIdsInPeriod = selectedSquadPlayers.map(p => p.id);
@@ -962,79 +768,36 @@ export function useGameState(navigateToView = null) {
   };
 
   // Add temporary player
-  const addTemporaryPlayer = useCallback((playerName) => {
-    const newPlayerId = `temp_${Date.now()}`;
-    const newPlayer = {
-      id: newPlayerId,
-      name: playerName,
-      stats: initializePlayers([playerName])[0].stats
-    };
-    
-    setAllPlayers(prev => [...prev, newPlayer]);
-    setSelectedSquadIds(prev => [...prev, newPlayerId]);
-  }, []);
 
   // Enhanced clear stored state with backup
   const clearStoredState = useCallback(() => {
-    // Clear all game events from event logger
-    const eventsCleared = clearAllEvents();
+    // Clear all match events using the hook
+    const eventsCleared = clearAllMatchEvents();
     if (eventsCleared) {
-
-      // Reset local match state variables
-      setMatchEvents([]);
-      setMatchStartTime(null);
-      setGoalScorers({});
-      setEventSequenceNumber(0);
-      setLastEventBackup(null);
       
       // Clear captain assignment
-      setCaptainId(null);
+      clearCaptain();
 
       // Clear match lifecycle state to prevent ID reuse
       setCurrentMatchId(null);
       setMatchState('not_started');
       setMatchCreationAttempted(false);
+
+      // Reset configuration activity tracking
+      setHasActiveConfiguration(false);
     } else {
       console.warn('Failed to clear game events');
     }
     
-    // Create backup before clearing
-    persistence.createBackup();
     // Clear the state
     const result = persistence.clearPersistedState();
     if (!result) {
       console.warn('Failed to clear game state');
     }
-    
+
     return result;
-  }, [persistence]);
+  }, [persistence, clearAllMatchEvents, clearCaptain]);
 
-  // Enhanced backup management
-  const createManualBackup = useCallback(() => {
-    const backupKey = persistence.createBackup();
-    if (backupKey) {
-      // Clean up old backups, keep 5 most recent
-      persistence.cleanupBackups(5);
-    }
-    return backupKey;
-  }, [persistence]);
-
-  const listAvailableBackups = useCallback(() => {
-    return persistence.getAvailableBackups();
-  }, [persistence]);
-
-  const restoreFromBackup = useCallback((backupKey) => {
-    const result = persistence.restoreFromBackup(backupKey);
-    if (result) {
-      // Reload the page to refresh all state
-      window.location.reload();
-    }
-    return result;
-  }, [persistence]);
-
-  const getStorageInfo = useCallback(() => {
-    return persistence.getStorageInfo();
-  }, [persistence]);
 
   // Team mode switching functions
   const splitPairs = useCallback(() => {
@@ -1107,7 +870,7 @@ export function useGameState(navigateToView = null) {
     setNextPlayerIdToSubOut(individualQueue.nextPlayerId);
     setNextNextPlayerIdToSubOut(individualQueue.nextNextPlayerId);
     setNextPlayerToSubOut('leftDefender');
-  }, [teamConfig, selectedSquadIds, formation, nextPhysicalPairToSubOut, selectedFormation, updateTeamConfig]);
+  }, [teamConfig, selectedSquadIds, formation, nextPhysicalPairToSubOut, selectedFormation, updateTeamConfig, setAllPlayers]);
 
   const formPairs = useCallback(() => {
     if (teamConfig?.substitutionType !== 'individual' || teamConfig?.squadSize !== 7) return;
@@ -1177,7 +940,7 @@ export function useGameState(navigateToView = null) {
     setNextPlayerIdToSubOut(null);
     setNextNextPlayerIdToSubOut(null);
     setNextPlayerToSubOut(null);
-  }, [teamConfig, selectedSquadIds, allPlayers, rotationQueue, formation, selectedFormation, updateTeamConfig]);
+  }, [teamConfig, selectedSquadIds, allPlayers, rotationQueue, formation, selectedFormation, updateTeamConfig, setAllPlayers]);
 
   // Enhanced setters for manual selection - rotation logic already handles sequence correctly
   const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
@@ -1217,120 +980,6 @@ export function useGameState(navigateToView = null) {
     }
   }, [formation, teamConfig, nextPlayerIdToSubOut, allPlayers]);
 
-  // Player inactivation/activation functions for 7-player individual mode
-  const togglePlayerInactive = useCallback((playerId, animationCallback = null, delayMs = 0) => {
-    if (teamConfig.squadSize !== 7 || teamConfig.substitutionType !== 'individual') return;
-
-    const player = findPlayerById(allPlayers, playerId);
-    if (!player) return;
-
-    const currentlyInactive = player.stats.isInactive;
-    const isSubstitute = player.stats.currentPairKey === 'substitute_1' || player.stats.currentPairKey === 'substitute_2';
-    
-    // Only allow inactivating/activating substitute players
-    if (!isSubstitute) return;
-
-    // CRITICAL SAFETY CHECK: Prevent having both substitutes inactive
-    if (!currentlyInactive) { // Player is about to be inactivated
-      const substitute_1Id = formation.substitute_1;
-      const substitute_2Id = formation.substitute_2;
-      const otherSubstituteId = playerId === substitute_1Id ? substitute_2Id : substitute_1Id;
-      const otherSubstitute = findPlayerById(allPlayers, otherSubstituteId);
-      
-      if (otherSubstitute?.stats.isInactive) {
-        console.warn('Cannot inactivate player: would result in both substitutes being inactive');
-        return; // Prevent both substitutes from being inactive
-      }
-    }
-
-    // Call animation callback if provided (for UI animations)
-    if (animationCallback) {
-      animationCallback(!currentlyInactive, player.stats.currentPairKey);
-    }
-
-    // Function to perform the actual state changes
-    const performStateChanges = () => {
-      // Update rotation queue and positions
-      if (currentlyInactive) {
-        // Player is being reactivated - use logic layer to handle all cascading
-        const currentGameState = {
-          formation,
-          allPlayers,
-          teamConfig,
-          rotationQueue,
-          nextPlayerIdToSubOut,
-          nextNextPlayerIdToSubOut,
-          nextPlayerToSubOut,
-          nextPhysicalPairToSubOut
-        };
-        const newGameState = calculatePlayerToggleInactive(currentGameState, playerId);
-        
-        // Apply all state changes from logic layer
-        setFormation(newGameState.formation);
-        setAllPlayers(newGameState.allPlayers);
-        setRotationQueue(newGameState.rotationQueue);
-        setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-        if (newGameState.nextNextPlayerIdToSubOut !== undefined) {
-          setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
-        }
-      } else {
-        // Player is being inactivated - use queue manager
-        const queueManager = createRotationQueue(rotationQueue, createPlayerLookup(allPlayers));
-        queueManager.initialize(); // Separate active and inactive players
-        queueManager.deactivatePlayer(playerId);
-        setRotationQueue(queueManager.toArray());
-        
-        // Update next player tracking if the inactivated player was next
-        if (playerId === nextPlayerIdToSubOut && queueManager.activeSize() > 0) {
-          const nextActivePlayers = queueManager.getNextActivePlayer(2);
-          if (nextActivePlayers.length > 0) {
-            setNextPlayerIdToSubOut(nextActivePlayers[0]);
-            updateNextNextPlayerIfSupported(teamConfig, nextActivePlayers, setNextNextPlayerIdToSubOut);
-          }
-        } else if (playerId === nextNextPlayerIdToSubOut) {
-          const nextActivePlayers = queueManager.getNextActivePlayer(2);
-          updateNextNextPlayerIfSupported(teamConfig, nextActivePlayers, setNextNextPlayerIdToSubOut);
-        }
-        
-        // Move inactive player to substitute_2 position if they were substitute_1
-        if (player.stats.currentPairKey === 'substitute_1' && formation.substitute_2) {
-          // Swap positions - substitute_2 becomes substitute_1, inactive player goes to substitute_2
-          const otherSubId = formation.substitute_2;
-          
-          setFormation(prev => ({
-            ...prev,
-            substitute_1: otherSubId,
-            substitute_2: playerId
-          }));
-          
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2', isInactive: true } };
-            }
-            if (p.id === otherSubId) {
-              return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
-            }
-            return p;
-          }));
-        } else {
-          // Just mark player as inactive without changing position
-          setAllPlayers(prev => prev.map(p => {
-            if (p.id === playerId) {
-              return { ...p, stats: { ...p.stats, isInactive: true } };
-            }
-            return p;
-          }));
-        }
-      }
-    };
-    
-    // Execute state changes immediately or with delay
-    if (delayMs > 0) {
-      setTimeout(performStateChanges, delayMs);
-    } else {
-      performStateChanges();
-    }
-  }, [teamConfig, allPlayers, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, formation, nextPlayerToSubOut, nextPhysicalPairToSubOut]);
 
   // Helper function to get inactive players for animation purposes
   const getInactivePlayerPosition = useCallback((playerId) => {
@@ -1475,7 +1124,7 @@ export function useGameState(navigateToView = null) {
     // Players keep their position in the queue, just their on-field positions change
     
     return true;
-  }, [allPlayers, formation, teamConfig]);
+  }, [allPlayers, formation, teamConfig, setAllPlayers]);
 
   // Function to switch goalies
   const switchGoalie = useCallback((newGoalieId, isSubTimerPaused = false) => {
@@ -1635,24 +1284,6 @@ export function useGameState(navigateToView = null) {
     return getOutfieldPlayers(allPlayers, selectedSquadIds, formation.goalie);
   }, [allPlayers, selectedSquadIds, formation.goalie]);
 
-  // Score management functions
-  const addGoalScored = useCallback(() => {
-    setOwnScore(prev => prev + 1);
-  }, []);
-
-  const addGoalConceded = useCallback(() => {
-    setOpponentScore(prev => prev + 1);
-  }, []);
-
-  const setScore = useCallback((own, opponent) => {
-    setOwnScore(own);
-    setOpponentScore(opponent);
-  }, []);
-
-  const resetScore = useCallback(() => {
-    setOwnScore(0);
-    setOpponentScore(0);
-  }, []);
 
   // Navigation to match report
   const navigateToMatchReport = useCallback(() => {
@@ -1673,74 +1304,6 @@ export function useGameState(navigateToView = null) {
   }, [syncMatchDataFromEventLogger, navigateToView]);
 
   // Captain management functions
-  const setCaptain = useCallback((newCaptainId) => {
-    // Update captainId state
-    setCaptainId(newCaptainId);
-    
-    // Update player stats to reflect captain assignment
-    setAllPlayers(prev => prev.map(player => ({
-      ...player,
-      stats: {
-        ...player.stats,
-        isCaptain: player.id === newCaptainId
-      }
-    })));
-  }, []);
-
-  const updateFormationSelection = useCallback((newFormation) => {
-    setSelectedFormation(newFormation);
-    
-    // Automatically switch to individual mode when selecting 1-2-1 formation with 7 players
-    // Pairs mode is incompatible with 1-2-1 formation
-    if (newFormation === '1-2-1' && teamConfig?.squadSize === 7 && teamConfig?.substitutionType === 'pairs') {
-      const updatedConfig = createTeamConfig('5v5', 7, newFormation, 'individual');
-      updateTeamConfig(updatedConfig);
-      return;
-    }
-    
-    // Update team config with new formation
-    if (teamConfig) {
-      const updatedConfig = {
-        ...teamConfig,
-        formation: newFormation
-      };
-      updateTeamConfig(updatedConfig);
-    }
-  }, [teamConfig, updateTeamConfig]);
-
-  const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = 'individual') => {
-    const newConfig = createTeamConfig(
-      '5v5', // format
-      squadSize,
-      selectedFormation, // use current formation selection
-      substitutionType
-    );
-    updateTeamConfig(newConfig);
-    return newConfig;
-  }, [selectedFormation, updateTeamConfig]);
-
-  // Sync team roster players to game state
-  const syncPlayersFromTeamRoster = useCallback((teamPlayers) => {
-    try {
-      const analysis = analyzePlayerSync(teamPlayers, allPlayers);
-
-      if (analysis.needsSync) {
-        const syncResult = syncTeamRosterToGameState(teamPlayers, allPlayers);
-
-        if (syncResult.success) {
-          setAllPlayers(syncResult.players);
-          return { success: true, message: syncResult.message };
-        } else {
-          return { success: false, error: syncResult.error };
-        }
-      } else {
-        return { success: true, message: 'No sync needed' };
-      }
-    } catch (error) {
-      console.error('❌ Player sync error:', error);
-      return { success: false, error: error.message };
-    }
-  }, [allPlayers]);
 
   // Save Configuration handler for ConfigurationScreen - extracts database save logic without navigation
   const handleSaveConfiguration = useCallback(async () => {
@@ -1858,10 +1421,7 @@ export function useGameState(navigateToView = null) {
       const currentTimeEpoch = Date.now();
       
       // Create formation-aware team config for role initialization
-      const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
-        ...teamConfig,
-        formation: selectedFormation
-      } : teamConfig;
+      const formationAwareTeamConfig = getFormationAwareTeamConfig();
       
       // Update player states (same logic as handleStartGame)
       const updatedPlayers = allPlayers.map(p => {
@@ -2046,9 +1606,9 @@ export function useGameState(navigateToView = null) {
       console.error('❌ Error saving match configuration:', error);
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
-  }, [formation, teamConfig, selectedFormation, currentMatchId, allPlayers, selectedSquadIds, 
+  }, [formation, teamConfig, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
       numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, currentTeam?.id, periodGoalieIds,
-      currentPeriodNumber, matchCreationAttempted, setMatchCreationAttempted, setCurrentMatchId, setAllPlayers]);
+      currentPeriodNumber, matchCreationAttempted, setMatchCreationAttempted, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
 
   const handleSavePeriodConfiguration = useCallback(async () => {
     return await saveMatchConfiguration({ shouldNavigate: false });
@@ -2147,6 +1707,8 @@ export function useGameState(navigateToView = null) {
     setMatchCreationAttempted,
     matchState,
     setMatchState,
+    hasActiveConfiguration,
+    setHasActiveConfiguration,
 
     // Actions
     preparePeriod,
@@ -2187,10 +1749,5 @@ export function useGameState(navigateToView = null) {
     handleSaveConfiguration,
     handleSavePeriodConfiguration,
 
-    // Enhanced persistence actions
-    createManualBackup,
-    listAvailableBackups,
-    restoreFromBackup,
-    getStorageInfo,
   };
 }
