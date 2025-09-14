@@ -7,7 +7,6 @@
 
 import { getPendingMatchForTeam } from './matchStateManager';
 import { supabase } from '../lib/supabase';
-import { normalizeFormationStructure } from '../utils/formationUtils';
 
 /**
  * Get ALL pending matches for a team (for multi-match modal)
@@ -107,7 +106,7 @@ export function validatePendingMatchConfig(initialConfig) {
 
   // Validate team config
   const { teamConfig } = initialConfig;
-  if (!teamConfig.formation || !teamConfig.squadSize || !teamConfig.substitutionConfig) {
+  if (!teamConfig.formation || !teamConfig.squadSize || !teamConfig.substitutionType) {
     return false;
   }
 
@@ -126,41 +125,6 @@ export function validatePendingMatchConfig(initialConfig) {
   return true;
 }
 
-/**
- * Extract and normalize formation data from initial config for PeriodSetupScreen
- * @param {Object} initialConfig - Initial configuration from database
- * @returns {Object|null} Clean formation object or null if not available
- */
-export function extractFormationFromConfig(initialConfig) {
-  try {
-    if (!initialConfig || !initialConfig.formation || !initialConfig.teamConfig) {
-      return null;
-    }
-
-    // Convert database teamConfig format (nested) to runtime format (flat) for normalization
-    const runtimeTeamConfig = {
-      format: initialConfig.teamConfig?.format,
-      formation: initialConfig.teamConfig?.formation,
-      squadSize: initialConfig.teamConfig?.squadSize,
-      substitutionType: initialConfig.teamConfig?.substitutionConfig?.type || 'individual',
-      ...(initialConfig.teamConfig?.substitutionConfig?.pairRoleRotation && {
-        pairRoleRotation: initialConfig.teamConfig.substitutionConfig.pairRoleRotation
-      })
-    };
-
-    // Normalize the potentially messy formation structure
-    const cleanFormation = normalizeFormationStructure(
-      initialConfig.formation,
-      runtimeTeamConfig,
-      initialConfig.squadSelection || []
-    );
-
-    return cleanFormation;
-  } catch (error) {
-    console.error('❌ Failed to extract and normalize formation from config:', error);
-    return null;
-  }
-}
 
 /**
  * Create resume data object for ConfigurationScreen
@@ -174,19 +138,8 @@ export function createResumeDataForConfiguration(initialConfig) {
       return null;
     }
 
-    // Convert database teamConfig format (nested) back to runtime format (flat)
-    const runtimeTeamConfig = {
-      format: initialConfig.teamConfig?.format,
-      formation: initialConfig.teamConfig?.formation,
-      squadSize: initialConfig.teamConfig?.squadSize,
-      substitutionType: initialConfig.teamConfig?.substitutionConfig?.type,
-      ...(initialConfig.teamConfig?.substitutionConfig?.pairRoleRotation && {
-        pairRoleRotation: initialConfig.teamConfig.substitutionConfig.pairRoleRotation
-      })
-    };
-
-    // Get clean, normalized formation data
-    const cleanFormationData = extractFormationFromConfig(initialConfig);
+    // Direct assignment - no conversion needed since database now uses flat structure
+    const teamConfig = initialConfig.teamConfig || {};
 
     return {
       squadSelection: initialConfig.squadSelection || [],
@@ -195,10 +148,9 @@ export function createResumeDataForConfiguration(initialConfig) {
       opponentTeam: initialConfig.matchConfig?.opponentTeam || '',
       matchType: initialConfig.matchConfig?.matchType || 'league',
       captainId: initialConfig.matchConfig?.captainId || null,
-      teamConfig: runtimeTeamConfig,
-      formation: initialConfig.teamConfig?.formation || '2-2',
-      periodGoalies: initialConfig.periodGoalies || {},
-      formationData: cleanFormationData
+      teamConfig: teamConfig,
+      formation: teamConfig.formation || '2-2',
+      periodGoalies: initialConfig.periodGoalies || {}
     };
   } catch (error) {
     console.error('❌ Failed to create resume data:', error);
@@ -227,7 +179,7 @@ export function matchesCurrentConfiguration(currentConfig, pendingMatch) {
     
     const teamConfigMatches = currentConfig.teamConfig?.formation === initial_config.teamConfig?.formation &&
                              currentConfig.teamConfig?.squadSize === initial_config.teamConfig?.squadSize &&
-                             currentConfig.teamConfig?.substitutionType === initial_config.teamConfig?.substitutionConfig?.type;
+                             currentConfig.teamConfig?.substitutionType === initial_config.teamConfig?.substitutionType;
     
     const matchConfigMatches = currentConfig.periods === initial_config.matchConfig?.periods &&
                               currentConfig.periodDurationMinutes === initial_config.matchConfig?.periodDurationMinutes &&

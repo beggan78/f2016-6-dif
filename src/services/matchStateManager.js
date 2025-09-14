@@ -902,14 +902,14 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
     const cleanInitialConfig = { ...initialConfig };
 
     if (initialConfig.formation && initialConfig.teamConfig && initialConfig.squadSelection) {
-      // Convert database teamConfig format (nested) to runtime format (flat) for normalization
+      // Direct usage since database teamConfig now uses flat format
       const runtimeTeamConfig = {
         format: initialConfig.teamConfig?.format,
         formation: initialConfig.teamConfig?.formation,
         squadSize: initialConfig.teamConfig?.squadSize,
-        substitutionType: initialConfig.teamConfig?.substitutionConfig?.type || 'individual',
-        ...(initialConfig.teamConfig?.substitutionConfig?.pairRoleRotation && {
-          pairRoleRotation: initialConfig.teamConfig.substitutionConfig.pairRoleRotation
+        substitutionType: initialConfig.teamConfig?.substitutionType || 'individual',
+        ...(initialConfig.teamConfig?.pairRoleRotation && {
+          pairRoleRotation: initialConfig.teamConfig.pairRoleRotation
         })
       };
 

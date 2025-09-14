@@ -153,6 +153,7 @@ describe('ConfigurationScreen', () => {
       handleStartPeriodSetup: jest.fn(),
       setOpponentTeam: jest.fn(),
       setMatchType: jest.fn(),
+      setSelectedFormation: jest.fn(),
       updateFormationSelection: jest.fn(),
       createTeamConfigFromSquadSize: jest.fn(),
       setCaptain: jest.fn(),

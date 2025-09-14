@@ -16,19 +16,17 @@ import {
 } from './matchStateManager';
 
 /**
- * Transforms team configuration to the database format with nested substitutionConfig
+ * Transforms team configuration to the database format using flat structure
  * @param {Object} teamConfig - The team configuration object
- * @returns {Object} Transformed team config for database storage
+ * @returns {Object} Team config for database storage (same as runtime format)
  */
 export function formatTeamConfigForDatabase(teamConfig) {
   return {
     format: teamConfig.format,
     formation: teamConfig.formation,
     squadSize: teamConfig.squadSize,
-    substitutionConfig: {
-      type: teamConfig.substitutionType,
-      ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
-    }
+    substitutionType: teamConfig.substitutionType,
+    ...(teamConfig.pairRoleRotation && { pairRoleRotation: teamConfig.pairRoleRotation })
   };
 }
 

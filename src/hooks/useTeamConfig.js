@@ -39,16 +39,29 @@ export function useTeamConfig(initialState = {}) {
 
   // Team configuration update function
   const updateTeamConfig = useCallback((newTeamConfig) => {
+    console.log('📝 updateTeamConfig called:', {
+      'newTeamConfig.substitutionType': newTeamConfig?.substitutionType,
+      'newTeamConfig.pairRoleRotation': newTeamConfig?.pairRoleRotation,
+      fullNewConfig: newTeamConfig
+    });
     setTeamConfig(newTeamConfig);
   }, []);
 
   // Formation selection update with compatibility checks
   const updateFormationSelection = useCallback((newFormation) => {
+    console.log('🔄 updateFormationSelection called:', {
+      newFormation,
+      'teamConfig.substitutionType': teamConfig?.substitutionType,
+      'teamConfig.pairRoleRotation': teamConfig?.pairRoleRotation,
+      'teamConfig.squadSize': teamConfig?.squadSize
+    });
+
     setSelectedFormation(newFormation);
 
     // Automatically switch to individual mode when selecting 1-2-1 formation with 7 players
     // Pairs mode is incompatible with 1-2-1 formation
     if (newFormation === '1-2-1' && teamConfig?.squadSize === 7 && teamConfig?.substitutionType === 'pairs') {
+      console.log('⚠️ FORMATION COMPATIBILITY: Switching from pairs to individual for 1-2-1 formation');
       const updatedConfig = createTeamConfig('5v5', 7, newFormation, 'individual');
       updateTeamConfig(updatedConfig);
       return;
@@ -56,6 +69,7 @@ export function useTeamConfig(initialState = {}) {
 
     // Update team config with new formation
     if (teamConfig) {
+      console.log('🔄 updateFormationSelection: Updating team config with new formation');
       const updatedConfig = {
         ...teamConfig,
         formation: newFormation
@@ -66,15 +80,31 @@ export function useTeamConfig(initialState = {}) {
 
   // Create new team config from squad size
   const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = 'individual') => {
+    console.log('🔧 createTeamConfigFromSquadSize called:', {
+      squadSize,
+      substitutionType,
+      selectedFormation,
+      'currentTeamConfig.pairRoleRotation': teamConfig?.pairRoleRotation,
+      'currentTeamConfig.substitutionType': teamConfig?.substitutionType
+    });
+
     const newConfig = createTeamConfig(
       '5v5', // format
       squadSize,
       selectedFormation, // use current formation selection
-      substitutionType
+      substitutionType,
+      teamConfig?.pairRoleRotation // Preserve existing pairRoleRotation value
     );
+
+    console.log('🔧 createTeamConfigFromSquadSize result:', {
+      'newConfig.substitutionType': newConfig.substitutionType,
+      'newConfig.pairRoleRotation': newConfig.pairRoleRotation,
+      fullNewConfig: newConfig
+    });
+
     updateTeamConfig(newConfig);
     return newConfig;
-  }, [selectedFormation, updateTeamConfig]);
+  }, [selectedFormation, updateTeamConfig, teamConfig]);
 
   // Helper function to create formation-aware team config
   const getFormationAwareTeamConfig = useCallback(() => {

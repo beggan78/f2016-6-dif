@@ -1465,10 +1465,8 @@ export function useGameState(navigateToView = null) {
           format: formationAwareTeamConfig.format,
           formation: formationAwareTeamConfig.formation,
           squadSize: formationAwareTeamConfig.squadSize,
-          substitutionConfig: {
-            type: formationAwareTeamConfig.substitutionType,
-            pairRoleRotation: "keep_throughout_period"
-          }
+          substitutionType: formationAwareTeamConfig.substitutionType,
+          pairRoleRotation: formationAwareTeamConfig.pairRoleRotation || "keep_throughout_period"
         },
         matchConfig: {
           format: formationAwareTeamConfig.format,

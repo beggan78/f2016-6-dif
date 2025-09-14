@@ -870,6 +870,7 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             updateTeamConfig={gameState.updateTeamConfig}
             selectedFormation={gameState.selectedFormation}
+            setSelectedFormation={gameState.setSelectedFormation}
             updateFormationSelection={gameState.updateFormationSelection}
             createTeamConfigFromSquadSize={gameState.createTeamConfigFromSquadSize}
             alertMinutes={gameState.alertMinutes}

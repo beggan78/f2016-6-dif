@@ -37,6 +37,7 @@ export function ConfigurationScreen({
   teamConfig,
   updateTeamConfig,
   selectedFormation,
+  setSelectedFormation,
   updateFormationSelection,
   createTeamConfigFromSquadSize,
   alertMinutes,
@@ -191,7 +192,8 @@ export function ConfigurationScreen({
       teamConfig.format || '5v5',
       teamConfig.squadSize || selectedSquadIds.length,
       teamConfig.formation || selectedFormation,
-      newSubstitutionType
+      newSubstitutionType,
+      teamConfig.pairRoleRotation
     );
 
     updateTeamConfig(newTeamConfig);
@@ -465,38 +467,49 @@ export function ConfigurationScreen({
       }, 10000); // 10-second timeout
 
       try {
-        // Pre-populate all configuration from saved data
-        if (resumeData.squadSelection) {
-          setSelectedSquadIds(resumeData.squadSelection);
+        // CRITICAL: Set team config atomically with formation to prevent state timing issues
+        // This prevents formation compatibility checks from overriding the restored config
+        if (resumeData.teamConfig) {
+          console.log('🔄 RESUME: Restoring team config:', {
+            substitutionType: resumeData.teamConfig.substitutionType,
+            pairRoleRotation: resumeData.teamConfig.pairRoleRotation,
+            fullConfig: resumeData.teamConfig
+          });
+          updateTeamConfig(resumeData.teamConfig);
+
+          // Separately sync the formation UI state without triggering compatibility logic
+          if (resumeData.formation || resumeData.teamConfig.formation) {
+            const formationToSet = resumeData.formation || resumeData.teamConfig.formation;
+            console.log('🔄 RESUME: Syncing formation UI state:', formationToSet);
+            setSelectedFormation(formationToSet);
+          }
         }
-        
+
+        // Pre-populate match configuration
         if (resumeData.periods) {
           setNumPeriods(resumeData.periods);
         }
-        
+
         if (resumeData.periodDurationMinutes) {
           setPeriodDurationMinutes(resumeData.periodDurationMinutes);
         }
-        
+
         if (resumeData.opponentTeam !== undefined) {
           setOpponentTeam(resumeData.opponentTeam);
         }
-        
+
         if (resumeData.matchType) {
           setMatchType(resumeData.matchType);
         }
-        
+
         if (resumeData.captainId) {
           setCaptain(resumeData.captainId);
         }
-        
-        // Update team config including substitution configuration
-        if (resumeData.teamConfig) {
-          updateTeamConfig(resumeData.teamConfig);
-        }
-        
-        if (resumeData.formation) {
-          updateFormationSelection(resumeData.formation);
+
+        // CRITICAL: Set squad selection LAST to prevent auto-config from overriding team config
+        if (resumeData.squadSelection) {
+          console.log('🔄 RESUME: Restoring squad selection (final step):', resumeData.squadSelection);
+          setSelectedSquadIds(resumeData.squadSelection);
         }
         
         if (resumeData.periodGoalies) {
@@ -564,10 +577,18 @@ export function ConfigurationScreen({
       }
 
       // Auto-create team configuration based on squad size
-      if (newIds.length >= 5 && newIds.length <= 10) {
+      // GUARD: Skip auto-configuration during resume data processing to prevent override
+      if (newIds.length >= 5 && newIds.length <= 10 && !isProcessingResumeDataRef.current) {
         // Default to pairs for 7-player mode, individual for others
         const defaultSubstitutionType = (newIds.length === 7) ? 'pairs' : 'individual';
+        console.log('⚡ AUTO-CONFIG: Squad selection changed, triggering createTeamConfigFromSquadSize:', {
+          squadSize: newIds.length,
+          defaultSubstitutionType,
+          currentTeamConfig: teamConfig
+        });
         createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType);
+      } else if (isProcessingResumeDataRef.current) {
+        console.log('🛡️ AUTO-CONFIG: Skipped during resume processing to prevent override');
       }
 
       // Clear captain if the captain is being deselected
