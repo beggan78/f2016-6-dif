@@ -165,11 +165,18 @@ export function ConfigurationScreen({
   }, [currentTeam?.id, loadPendingMatches]);
   
   // Modal closure handler - defined early so other handlers can use it
+  // When "Configure New Match" is clicked, it should reset the same way as "New Game" from Hamburger Menu
   const handleClosePendingMatchModal = React.useCallback(() => {
     setShowPendingMatchModal(false);
     setPendingMatchModalClosed(true);
     sessionStorage.setItem('sport-wizard-pending-modal-closed', 'true');
-  }, []);
+
+    // Reset state to match "New Game" behavior from Hamburger Menu
+    setOpponentTeam('');  // Clear opponent team name
+    setMatchType('league');  // Reset to default match type
+    setCaptain(null);     // Clear captain selection
+    clearStoredState();   // Clear localStorage and match state
+  }, [setOpponentTeam, setMatchType, setCaptain, clearStoredState]);
   
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
