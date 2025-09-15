@@ -156,6 +156,7 @@
 // No longer using findPlayerById in this file
 import { POSITION_KEYS } from '../../constants/positionConstants';
 import { getFormationPositionsWithGoalie, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
+import { getFieldPositions, getSubstitutePositions } from '../logic/positionUtils';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -169,7 +170,10 @@ const MEASUREMENTS = {
   contentHeight: {
     pairs: 84,      // Content height for pair components
     individual: 56  // Content height for individual components
-  }
+  },
+  // SUB NOW button height including margins and spacing
+  // Button itself (~48px) + margins (~16px) + gap (~8px) = ~72px total
+  subButtonHeight: 72
 };
 
 /**
@@ -188,6 +192,47 @@ const MEASUREMENTS = {
 const getBoxHeight = (mode) => {
   const contentHeight = mode === 'pairs' ? MEASUREMENTS.contentHeight.pairs : MEASUREMENTS.contentHeight.individual;
   return MEASUREMENTS.padding + MEASUREMENTS.border + contentHeight + MEASUREMENTS.gap;
+};
+
+/**
+ * Check if a position is a field position (includes goalie)
+ * @param {string} position - Position key
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {boolean} True if position is field or goalie
+ */
+const isFieldOrGoaliePosition = (position, teamConfig) => {
+  if (position === 'goalie') return true;
+
+  const fieldPositions = getFieldPositions(teamConfig);
+  return fieldPositions.includes(position);
+};
+
+/**
+ * Check if a position is a substitute position
+ * @param {string} position - Position key
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {boolean} True if position is substitute
+ */
+const isSubstitutePosition = (position, teamConfig) => {
+  const substitutePositions = getSubstitutePositions(teamConfig);
+  return substitutePositions.includes(position);
+};
+
+/**
+ * Check if movement crosses the field/substitute boundary
+ * @param {string} fromPosition - Starting position key
+ * @param {string} toPosition - Ending position key
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {boolean} True if movement crosses field↔substitute boundary
+ */
+const crossesFieldSubstituteBoundary = (fromPosition, toPosition, teamConfig) => {
+  const fromIsField = isFieldOrGoaliePosition(fromPosition, teamConfig);
+  const toIsField = isFieldOrGoaliePosition(toPosition, teamConfig);
+  const fromIsSubstitute = isSubstitutePosition(fromPosition, teamConfig);
+  const toIsSubstitute = isSubstitutePosition(toPosition, teamConfig);
+
+  // Movement crosses boundary if going from field to substitute or vice versa
+  return (fromIsField && toIsSubstitute) || (fromIsSubstitute && toIsField);
 };
 
 /**
@@ -220,30 +265,40 @@ const getPositionIndex = (position, teamConfig, selectedFormation = null) => {
 };
 
 /**
- * Calculate pixel distance between two position indices
- * 
+ * Calculate pixel distance between two position indices with SUB NOW button gap adjustment
+ *
  * Determines the exact pixel distance for CSS transform animations based on
- * visual position differences. Positive values = downward movement,
- * negative values = upward movement.
- * 
+ * visual position differences. Accounts for the SUB NOW button gap when players
+ * move between field positions and substitute positions.
+ *
  * @param {number} fromIndex - Starting position index
- * @param {number} toIndex - Ending position index  
+ * @param {number} toIndex - Ending position index
  * @param {Object} teamConfig - Team configuration object for height calculations
+ * @param {string} fromPosition - Starting position key for boundary detection
+ * @param {string} toPosition - Ending position key for boundary detection
  * @returns {number} Signed pixel distance (+ = down, - = up, 0 = no movement)
- * 
+ *
  * @example
  * // Player moving from leftDefender(1) to substitute(5) in Individual 6-player
- * calculateDistance(1, 5, teamConfig); // Returns +416px (4 positions down)
- * 
- * // Player moving from substitute(5) to leftDefender(1) 
- * calculateDistance(5, 1, teamConfig); // Returns -416px (4 positions up)
+ * calculateDistance(1, 5, teamConfig, 'leftDefender', 'substitute_1');
+ * // Returns +416px (4 positions) + 72px (SUB NOW button gap) = +488px
+ *
+ * // Player moving from substitute(5) to leftDefender(1)
+ * calculateDistance(5, 1, teamConfig, 'substitute_1', 'leftDefender');
+ * // Returns -416px (4 positions) - 72px (SUB NOW button gap) = -488px
  */
-const calculateDistance = (fromIndex, toIndex, teamConfig) => {
+const calculateDistance = (fromIndex, toIndex, teamConfig, fromPosition = null, toPosition = null) => {
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return 0;
-  
+
   const mode = teamConfig?.substitutionType === 'pairs' ? 'pairs' : 'individual';
   const boxHeight = getBoxHeight(mode);
-  const distance = Math.abs(toIndex - fromIndex) * boxHeight * 0.9025;
+  let distance = Math.abs(toIndex - fromIndex) * boxHeight * 0.9025;
+
+  // Add SUB NOW button height if movement crosses field/substitute boundary
+  if (fromPosition && toPosition && crossesFieldSubstituteBoundary(fromPosition, toPosition, teamConfig)) {
+    distance += MEASUREMENTS.subButtonHeight;
+  }
+
   return toIndex > fromIndex ? distance : -distance;
 };
 
@@ -387,8 +442,14 @@ export const calculateAllPlayerAnimations = (beforePositions, afterPositions, te
       return;
     }
     
-    const distance = calculateDistance(before.positionIndex, after.positionIndex, teamConfig);
-    
+    const distance = calculateDistance(
+      before.positionIndex,
+      after.positionIndex,
+      teamConfig,
+      before.position,
+      after.position
+    );
+
     if (distance !== 0) {
       animations[playerId] = {
         playerId: playerId,

@@ -48,9 +48,12 @@ jest.mock('../../../utils/playerUtils', () => ({
 
 // Mock the FormationRenderer to avoid complex DOM structure
 jest.mock('../formations/FormationRenderer', () => ({
-  FormationRenderer: () => (
-    <div data-testid="formation-renderer">Mock Formation</div>
-  )
+  FormationRenderer: ({ renderSection = 'all', ...props }) => {
+    const testId = renderSection === 'all' ? 'formation-renderer' : `formation-renderer-${renderSection}`;
+    return (
+      <div data-testid={testId} {...props}>Mock Formation</div>
+    );
+  }
 }));
 
 // Note: GameScreen receives pushNavigationState and removeFromNavigationStack as props
@@ -576,7 +579,8 @@ describe('GameScreen Back Navigation Tests', () => {
       });
       
       // Match data should remain intact (component still mounted)
-      expect(screen.getByTestId('formation-renderer')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
       // Modal should be closed but match continues
       expect(mockSetShowNewGameModal).toHaveBeenCalledWith(false);
     });

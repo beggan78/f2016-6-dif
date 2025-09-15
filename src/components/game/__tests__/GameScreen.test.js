@@ -48,12 +48,12 @@ jest.mock('../../../utils/playerUtils', () => ({
   hasActiveSubstitutes: jest.fn()
 }));
 jest.mock('../formations/FormationRenderer', () => ({
-  FormationRenderer: ({ 
-    children, 
-    teamConfig, 
+  FormationRenderer: ({
+    children,
+    teamConfig,
     selectedFormation,
     formation,
-    allPlayers, 
+    allPlayers,
     quickTapHandlers,
     animationState,
     recentlySubstitutedPlayers,
@@ -63,12 +63,16 @@ jest.mock('../formations/FormationRenderer', () => ({
     nextNextPlayerIdToSubOut,
     getPlayerNameById,
     getPlayerTimeStats,
-    ...otherProps 
-  }) => (
-    <div data-testid="formation-renderer" data-team-config={JSON.stringify(teamConfig)}>
-      {children || 'Mock Formation'}
-    </div>
-  )
+    renderSection = 'all',
+    ...otherProps
+  }) => {
+    const testId = renderSection === 'all' ? 'formation-renderer' : `formation-renderer-${renderSection}`;
+    return (
+      <div data-testid={testId} data-team-config={JSON.stringify(teamConfig)}>
+        {children || 'Mock Formation'}
+      </div>
+    );
+  }
 }));
 
 describe('GameScreen', () => {
@@ -246,7 +250,8 @@ describe('GameScreen', () => {
     it('should render with default props', () => {
       render(<GameScreen {...defaultProps} />);
       
-      expect(screen.getByTestId('formation-renderer')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
       expect(screen.getByText('Djurgården')).toBeInTheDocument();
       expect(screen.getByText('Test Opponent')).toBeInTheDocument();
     });
@@ -277,7 +282,7 @@ describe('GameScreen', () => {
       
       render(<GameScreen {...props} />);
       
-      const formationRenderer = screen.getByTestId('formation-renderer');
+      const formationRenderer = screen.getByTestId('formation-renderer-field');
       expect(formationRenderer).toBeInTheDocument();
     });
 
@@ -295,7 +300,7 @@ describe('GameScreen', () => {
       
       render(<GameScreen {...props} />);
       
-      const formationRenderer = screen.getByTestId('formation-renderer');
+      const formationRenderer = screen.getByTestId('formation-renderer-field');
       expect(formationRenderer).toBeInTheDocument();
     });
 
@@ -394,7 +399,8 @@ describe('GameScreen', () => {
       render(<GameScreen {...defaultProps} />);
       
       // Component should render without throwing
-      expect(screen.getByTestId('formation-renderer')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
     });
 
     it('should display undo button and handle undo substitution', async () => {
@@ -439,7 +445,8 @@ describe('GameScreen', () => {
       render(<GameScreen {...props} />);
       
       // Component should render and handle next player info
-      expect(screen.getByTestId('formation-renderer')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
     });
 
     it('should apply glow effect to the player coming on after a normal substitution', async () => {
@@ -516,7 +523,7 @@ describe('GameScreen', () => {
       render(<GameScreen {...defaultProps} />);
       
       // The formation renderer should receive handlers
-      const formationRenderer = screen.getByTestId('formation-renderer');
+      const formationRenderer = screen.getByTestId('formation-renderer-field');
       expect(formationRenderer).toBeInTheDocument();
       
       // Verify handlers are available
@@ -544,7 +551,7 @@ describe('GameScreen', () => {
     it('should pass correct props to FormationRenderer', () => {
       render(<GameScreen {...defaultProps} />);
       
-      const formationRenderer = screen.getByTestId('formation-renderer');
+      const formationRenderer = screen.getByTestId('formation-renderer-field');
       expect(formationRenderer).toBeInTheDocument();
       
       // FormationRenderer should receive necessary props
@@ -602,7 +609,7 @@ describe('GameScreen', () => {
       // Test with different viewport constraints if needed
       render(<GameScreen {...defaultProps} />);
       
-      const formationRenderer = screen.getByTestId('formation-renderer');
+      const formationRenderer = screen.getByTestId('formation-renderer-field');
       expect(formationRenderer).toBeInTheDocument();
     });
   });
@@ -751,7 +758,7 @@ describe('GameScreen', () => {
       rerender(<GameScreen {...defaultProps} />);
       
       // Component should handle re-renders efficiently
-      const formationRenderer = screen.getByTestId('formation-renderer');
+      const formationRenderer = screen.getByTestId('formation-renderer-field');
       expect(formationRenderer).toBeInTheDocument();
     });
 

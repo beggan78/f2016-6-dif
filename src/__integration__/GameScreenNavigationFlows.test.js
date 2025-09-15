@@ -54,9 +54,12 @@ jest.mock('../utils/playerUtils', () => ({
 }));
 
 jest.mock('../components/game/formations/FormationRenderer', () => ({
-  FormationRenderer: () => (
-    <div data-testid="formation-renderer">Mock Formation</div>
-  )
+  FormationRenderer: ({ renderSection = 'all', ...props }) => {
+    const testId = renderSection === 'all' ? 'formation-renderer' : `formation-renderer-${renderSection}`;
+    return (
+      <div data-testid={testId} {...props}>Mock Formation</div>
+    );
+  }
 }));
 
 // Mock external dependencies that aren't part of the integration test
@@ -274,7 +277,8 @@ describe('GameScreen Navigation Integration Tests', () => {
         expect(mockSetView).not.toHaveBeenCalled(); // Still no navigation
 
         // Step 6: Game should continue normally
-        expect(screen.getByTestId('formation-renderer')).toBeInTheDocument();
+        expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
+        expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
         
         // Verify match data is preserved
         const scoreDisplay = screen.getByText('2 - 1');

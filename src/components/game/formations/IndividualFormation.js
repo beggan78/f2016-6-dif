@@ -15,11 +15,11 @@ import { getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES } from './constants';
 
-export function IndividualFormation({ 
+export function IndividualFormation({
   teamConfig,
   selectedFormation,
   formation,
-  allPlayers, 
+  allPlayers,
   animationState,
   recentlySubstitutedPlayers,
   hideNextOffIndicator,
@@ -30,6 +30,7 @@ export function IndividualFormation({
   nextPhysicalPairToSubOut, // Filter out React-specific props
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
+  renderSection = 'all',
   ...domProps
 }) {
   // Handle null/undefined formation
@@ -51,6 +52,19 @@ export function IndividualFormation({
   // Mode capabilities
   const modeSupportsInactive = supportsInactiveUsers(formationAwareTeamConfig);
   const modeSupportsNextNext = supportsNextNextIndicators(formationAwareTeamConfig);
+
+  // Determine which positions to render based on renderSection prop
+  let positionsToRender;
+  if (renderSection === 'field') {
+    // Render goalie and field positions only
+    positionsToRender = ['goalie', ...fieldPositions];
+  } else if (renderSection === 'substitutes') {
+    // Render substitute positions only
+    positionsToRender = substitutePositions;
+  } else {
+    // Render all positions (default behavior)
+    positionsToRender = allPositions;
+  }
 
   const renderIndividualPosition = (position, renderIndex) => {
     const playerId = formation[position];
@@ -127,7 +141,7 @@ export function IndividualFormation({
 
   return (
     <div className="space-y-2" {...domProps}>
-      {allPositions.map((position, index) => 
+      {positionsToRender.map((position, index) =>
         renderIndividualPosition(position, index)
       )}
     </div>

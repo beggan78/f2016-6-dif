@@ -330,6 +330,52 @@ describe('Formation Generator - Pair Mode', () => {
       const p4Pair = allPairs.find(pair => pair.defender === 'p4' || pair.attacker === 'p4');
       expect(p4Pair?.defender).toBe('p4');
     });
+
+    test('should swap roles for slightly imbalanced flexible players - realistic scenario', () => {
+      // Based on user's real scenario: playerA slightly needs defender time, playerB slightly needs attacker time
+      const prevFormation = {
+        leftPair: { defender: 'playerB', attacker: 'playerA' }, // Period 2 roles
+        rightPair: { defender: 'p3', attacker: 'p4' },
+        subPair: { defender: 'p5', attacker: 'p6' }
+      };
+
+      const playerStatsRealistic = [
+        createPlayer('playerA', 'Player A', 1810, 910, 900), // Played defender P1, attacker P2 - ratio = 910/900 = 1.01
+        createPlayer('playerB', 'Player B', 1810, 900, 910), // Played attacker P1, defender P2 - ratio = 900/910 = 0.99
+        createPlayer('p3', 'Player 3', 1800, 900, 900),       // Balanced
+        createPlayer('p4', 'Player 4', 1800, 900, 900),       // Balanced  
+        createPlayer('p5', 'Player 5', 1800, 900, 900),       // Balanced
+        createPlayer('p6', 'Player 6', 1800, 900, 900),       // Balanced
+        createPlayer('p7', 'Player 7', 0, 0, 0)               // Goalie
+      ];
+
+      const result = generateBalancedFormationForPeriod3(
+        'p7',
+        'p7', 
+        prevFormation,
+        playerStatsRealistic,
+        playerStatsRealistic
+      );
+
+      const allPairs = [result.recommendedLeft, result.recommendedRight, result.recommendedSubs];
+      
+      // Find pairs for playerA and playerB
+      const playerAPair = allPairs.find(pair => pair.defender === 'playerA' || pair.attacker === 'playerA');
+      const playerBPair = allPairs.find(pair => pair.defender === 'playerB' || pair.attacker === 'playerB');
+      
+      // Both players should be assigned to pairs
+      expect(playerAPair).toBeDefined();
+      expect(playerBPair).toBeDefined();
+      
+      // Expected role assignments based on time balance:
+      // playerA: 910 def / 900 att = 1.01 (slightly more defender time) → should play DEFENDER in period 3
+      // playerB: 900 def / 910 att = 0.99 (slightly more attacker time) → should play ATTACKER in period 3
+      expect(playerAPair?.defender).toBe('playerA');
+      expect(playerBPair?.attacker).toBe('playerB');
+      
+      console.log('Player A pair:', playerAPair);
+      console.log('Player B pair:', playerBPair);
+    });
   });
 
   describe('Substitute Recommendations', () => {
