@@ -28,7 +28,8 @@ jest.mock('lucide-react', () => ({
   Users: ({ className, ...props }) => <div data-testid="users-icon" className={className} {...props} />,
   Play: ({ className, ...props }) => <div data-testid="play-icon" className={className} {...props} />,
   ArrowLeft: ({ className, ...props }) => <div data-testid="arrow-left-icon" className={className} {...props} />,
-  Shuffle: ({ className, ...props }) => <div data-testid="shuffle-icon" className={className} {...props} />
+  Shuffle: ({ className, ...props }) => <div data-testid="shuffle-icon" className={className} {...props} />,
+  Save: ({ className, ...props }) => <div data-testid="save-icon" className={className} {...props} />
 }));
 
 // Mock UI components
@@ -175,6 +176,7 @@ describe('PeriodSetupScreen', () => {
       rotationQueue: ['1', '2', '3', '4', '5', '6'],
       setRotationQueue: jest.fn(),
       preparePeriodWithGameLog: jest.fn(),
+      matchState: 'not_started',
       debugMode: false
     };
   });
@@ -545,13 +547,78 @@ describe('PeriodSetupScreen', () => {
       const malformedFormation = {
         goalie: '7',
         leftPair: { defender: null, attacker: null },
-        rightPair: { defender: '3', attacker: null }, // Missing attacker 
+        rightPair: { defender: '3', attacker: null }, // Missing attacker
         subPair: { defender: '5', attacker: '6' }
       };
 
       const props = { ...mockProps, formation: malformedFormation };
-      
+
       expect(() => render(<PeriodSetupScreen {...props} />)).not.toThrow();
+    });
+  });
+
+  describe('Save Configuration Button Visibility', () => {
+    it('should show Save Configuration button when match state is not running', () => {
+      const completeFormation = {
+        goalie: '7',
+        leftPair: { defender: '1', attacker: '2' },
+        rightPair: { defender: '3', attacker: '4' },
+        subPair: { defender: '5', attacker: '6' }
+      };
+
+      const props = {
+        ...mockProps,
+        formation: completeFormation,
+        matchState: 'pending', // Not running
+        handleSavePeriodConfiguration: jest.fn()
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      // Save Configuration button should be visible
+      expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+    });
+
+    it('should hide Save Configuration button when match state is running', () => {
+      const completeFormation = {
+        goalie: '7',
+        leftPair: { defender: '1', attacker: '2' },
+        rightPair: { defender: '3', attacker: '4' },
+        subPair: { defender: '5', attacker: '6' }
+      };
+
+      const props = {
+        ...mockProps,
+        formation: completeFormation,
+        matchState: 'running', // Match has started
+        handleSavePeriodConfiguration: jest.fn()
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      // Save Configuration button should not be visible
+      expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
+    });
+
+    it('should hide Save Configuration button when handleSavePeriodConfiguration is not provided', () => {
+      const completeFormation = {
+        goalie: '7',
+        leftPair: { defender: '1', attacker: '2' },
+        rightPair: { defender: '3', attacker: '4' },
+        subPair: { defender: '5', attacker: '6' }
+      };
+
+      const props = {
+        ...mockProps,
+        formation: completeFormation,
+        matchState: 'pending',
+        handleSavePeriodConfiguration: null // No handler provided
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      // Save Configuration button should not be visible
+      expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
     });
   });
 });

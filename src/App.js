@@ -897,7 +897,7 @@ function AppContent() {
         );
       case VIEWS.PERIOD_SETUP:
         return (
-          <PeriodSetupScreen 
+          <PeriodSetupScreen
             currentPeriodNumber={gameState.currentPeriodNumber}
             formation={gameState.formation}
             setFormation={gameState.setFormation}
@@ -920,6 +920,7 @@ function AppContent() {
             setRotationQueue={gameState.setRotationQueue}
             preparePeriodWithGameLog={gameState.preparePeriodWithGameLog}
             handleSavePeriodConfiguration={gameState.handleSavePeriodConfiguration}
+            matchState={gameState.matchState}
             debugMode={debugMode}
           />
         );

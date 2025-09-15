@@ -62,18 +62,18 @@ function IndividualPositionCards({ teamConfig, formation, onPlayerAssign, getAva
   );
 }
 
-export function PeriodSetupScreen({ 
-  currentPeriodNumber, 
+export function PeriodSetupScreen({
+  currentPeriodNumber,
   formation,
   setFormation,
-  availableForPairing, 
-  allPlayers, 
+  availableForPairing,
+  allPlayers,
   setAllPlayers,
-  handleStartGame, 
-  gameLog, 
-  selectedSquadPlayers, 
-  periodGoalieIds, 
-  setPeriodGoalieIds, 
+  handleStartGame,
+  gameLog,
+  selectedSquadPlayers,
+  periodGoalieIds,
+  setPeriodGoalieIds,
   numPeriods,
   teamConfig,
   selectedFormation,
@@ -85,6 +85,7 @@ export function PeriodSetupScreen({
   setRotationQueue,
   preparePeriodWithGameLog,
   handleSavePeriodConfiguration,
+  matchState,
   debugMode = false,
   resumeFormationData = null
 }) {
@@ -915,9 +916,9 @@ export function PeriodSetupScreen({
         />
       )}
 
-      {/* Save Period Configuration Button - Only show when formation is complete */}
-      {handleSavePeriodConfiguration && (
-        <Button 
+      {/* Save Period Configuration Button - Only show when formation is complete and match hasn't started */}
+      {handleSavePeriodConfiguration && matchState !== 'running' && (
+        <Button
           onClick={handleSavePeriodConfigClick}
           disabled={savePeriodConfigStatus.loading || !isFormationComplete()}
           variant="secondary"
