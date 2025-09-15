@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createTeamConfig, createDefaultTeamConfig, FORMATIONS } from '../constants/teamConfiguration';
+import { createTeamConfig, createDefaultTeamConfig, FORMATIONS, validateAndCorrectTeamConfig } from '../constants/teamConfiguration';
 
 /**
  * Hook for managing team configuration and formation selection
@@ -37,17 +37,29 @@ export function useTeamConfig(initialState = {}) {
   const [teamConfig, setTeamConfig] = useState(initialTeamConfig);
   const [selectedFormation, setSelectedFormation] = useState(initialFormation || FORMATIONS.FORMATION_2_2);
 
-  // Team configuration update function
+  // Team configuration update function with validation
   const updateTeamConfig = useCallback((newTeamConfig) => {
     console.log('📝 updateTeamConfig called:', {
       'newTeamConfig.substitutionType': newTeamConfig?.substitutionType,
       'newTeamConfig.pairRoleRotation': newTeamConfig?.pairRoleRotation,
       fullNewConfig: newTeamConfig
     });
-    setTeamConfig(newTeamConfig);
+
+    // Validate and auto-correct the configuration
+    const { isValid, correctedConfig, corrections } = validateAndCorrectTeamConfig(newTeamConfig);
+
+    if (!isValid && corrections.length > 0) {
+      console.log('⚠️ TEAM CONFIG CORRECTED:', {
+        original: newTeamConfig,
+        corrected: correctedConfig,
+        corrections
+      });
+    }
+
+    setTeamConfig(correctedConfig);
   }, []);
 
-  // Formation selection update with compatibility checks
+  // Formation selection update with centralized validation
   const updateFormationSelection = useCallback((newFormation) => {
     console.log('🔄 updateFormationSelection called:', {
       newFormation,
@@ -58,16 +70,7 @@ export function useTeamConfig(initialState = {}) {
 
     setSelectedFormation(newFormation);
 
-    // Automatically switch to individual mode when selecting 1-2-1 formation with 7 players
-    // Pairs mode is incompatible with 1-2-1 formation
-    if (newFormation === '1-2-1' && teamConfig?.squadSize === 7 && teamConfig?.substitutionType === 'pairs') {
-      console.log('⚠️ FORMATION COMPATIBILITY: Switching from pairs to individual for 1-2-1 formation');
-      const updatedConfig = createTeamConfig('5v5', 7, newFormation, 'individual');
-      updateTeamConfig(updatedConfig);
-      return;
-    }
-
-    // Update team config with new formation
+    // Update team config with new formation - validation will auto-correct if needed
     if (teamConfig) {
       console.log('🔄 updateFormationSelection: Updating team config with new formation');
       const updatedConfig = {
@@ -78,7 +81,7 @@ export function useTeamConfig(initialState = {}) {
     }
   }, [teamConfig, updateTeamConfig]);
 
-  // Create new team config from squad size
+  // Create new team config from squad size with validation
   const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = 'individual') => {
     console.log('🔧 createTeamConfigFromSquadSize called:', {
       squadSize,
@@ -102,6 +105,7 @@ export function useTeamConfig(initialState = {}) {
       fullNewConfig: newConfig
     });
 
+    // updateTeamConfig will handle validation and auto-correction
     updateTeamConfig(newConfig);
     return newConfig;
   }, [selectedFormation, updateTeamConfig, teamConfig]);

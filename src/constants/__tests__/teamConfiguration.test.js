@@ -1,10 +1,12 @@
-import { 
-  createTeamConfig, 
-  validateTeamConfig, 
+import {
+  createTeamConfig,
+  validateTeamConfig,
+  validateAndCorrectTeamConfig,
   createDefaultTeamConfig,
   SUBSTITUTION_TYPES,
   PAIR_ROLE_ROTATION_TYPES,
-  PAIR_ROLE_ROTATION_DEFINITIONS
+  PAIR_ROLE_ROTATION_DEFINITIONS,
+  FORMATIONS
 } from '../teamConfiguration';
 
 describe('Team Configuration with Pair Role Rotation', () => {
@@ -150,6 +152,146 @@ describe('Team Configuration with Pair Role Rotation', () => {
       });
       
       expect(config).not.toHaveProperty('pairRoleRotation');
+    });
+  });
+
+  describe('Business Rule Validation - Pairs with Formation', () => {
+    test('should throw error for pairs with 1-2-1 formation', () => {
+      const config = {
+        format: '5v5',
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_1_2_1,
+        substitutionType: SUBSTITUTION_TYPES.PAIRS,
+        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+      };
+
+      expect(() => validateTeamConfig(config)).toThrow('Pairs substitution is only supported with 2-2 formation');
+    });
+
+    test('should throw error for pairs with non-7 squad size', () => {
+      const config = {
+        format: '5v5',
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.PAIRS,
+        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+      };
+
+      expect(() => validateTeamConfig(config)).toThrow('Pairs substitution is only supported with 7 players');
+    });
+
+    test('should validate valid pairs configuration', () => {
+      const config = {
+        format: '5v5',
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.PAIRS,
+        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+      };
+
+      expect(() => validateTeamConfig(config)).not.toThrow();
+    });
+  });
+
+  describe('validateAndCorrectTeamConfig', () => {
+    test('should return valid config unchanged', () => {
+      const validConfig = {
+        format: '5v5',
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.PAIRS,
+        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+      };
+
+      const result = validateAndCorrectTeamConfig(validConfig);
+
+      expect(result.isValid).toBe(true);
+      expect(result.correctedConfig).toEqual(validConfig);
+      expect(result.corrections).toEqual([]);
+    });
+
+    test('should auto-correct pairs with 1-2-1 formation', () => {
+      const invalidConfig = {
+        format: '5v5',
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_1_2_1,
+        substitutionType: SUBSTITUTION_TYPES.PAIRS,
+        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+      };
+
+      const result = validateAndCorrectTeamConfig(invalidConfig);
+
+      expect(result.isValid).toBe(false);
+      expect(result.correctedConfig).toEqual({
+        format: '5v5',
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_1_2_1,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
+        pairRoleRotation: null
+      });
+      expect(result.corrections).toHaveLength(1);
+      expect(result.corrections[0]).toContain('pairs to individual');
+    });
+
+    test('should auto-correct pairs with non-7 squad size', () => {
+      const invalidConfig = {
+        format: '5v5',
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.PAIRS,
+        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+      };
+
+      const result = validateAndCorrectTeamConfig(invalidConfig);
+
+      expect(result.isValid).toBe(false);
+      expect(result.correctedConfig).toEqual({
+        format: '5v5',
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
+        pairRoleRotation: null
+      });
+      expect(result.corrections).toHaveLength(1);
+      expect(result.corrections[0]).toContain('pairs to individual');
+    });
+
+    test('should auto-correct pairs with both invalid formation and squad size', () => {
+      const invalidConfig = {
+        format: '5v5',
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_1_2_1,
+        substitutionType: SUBSTITUTION_TYPES.PAIRS,
+        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION
+      };
+
+      const result = validateAndCorrectTeamConfig(invalidConfig);
+
+      expect(result.isValid).toBe(false);
+      expect(result.correctedConfig).toEqual({
+        format: '5v5',
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_1_2_1,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
+        pairRoleRotation: null
+      });
+      expect(result.corrections).toHaveLength(1);
+      expect(result.corrections[0]).toContain('pairs to individual');
+    });
+
+    test('should preserve individual mode configuration', () => {
+      const individualConfig = {
+        format: '5v5',
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_1_2_1,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      };
+
+      const result = validateAndCorrectTeamConfig(individualConfig);
+
+      expect(result.isValid).toBe(true);
+      expect(result.correctedConfig).toEqual(individualConfig);
+      expect(result.corrections).toEqual([]);
     });
   });
 });
