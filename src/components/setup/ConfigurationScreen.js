@@ -177,7 +177,15 @@ export function ConfigurationScreen({
     setCaptain(null);     // Clear captain selection
     clearStoredState();   // Clear localStorage and match state
   }, [setOpponentTeam, setMatchType, setCaptain, clearStoredState]);
-  
+
+  // Modal closure handler specifically for resume flow - does NOT clear stored state
+  const handleResumeMatchModalClose = React.useCallback(() => {
+    setShowPendingMatchModal(false);
+    setPendingMatchModalClosed(true);
+    sessionStorage.setItem('sport-wizard-pending-modal-closed', 'true');
+    // NOTE: No clearStoredState() call - preserve resumed match ID and state
+  }, []);
+
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
   
@@ -729,8 +737,8 @@ export function ConfigurationScreen({
       const resumeDataForConfig = createResumeDataForConfiguration(selectedMatch.initial_config);
       
       if (resumeDataForConfig) {
-        // Use same closure logic as dismiss to ensure modal stays closed
-        handleClosePendingMatchModal();
+        // Use resume-specific closure to avoid clearing stored state
+        handleResumeMatchModalClose();
         
         // Set resume data directly - no navigation needed
         setResumeData(resumeDataForConfig);
@@ -741,15 +749,15 @@ export function ConfigurationScreen({
         console.log('✅ Resume match: Set currentMatchId to', matchId, 'and matchCreated to true');
       } else {
         console.error('❌ Failed to create resume data from pending match');
-        handleClosePendingMatchModal();
+        handleResumeMatchModalClose();
       }
     } catch (error) {
       console.error('❌ Error resuming pending match:', error);
-      handleClosePendingMatchModal();
+      handleResumeMatchModalClose();
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [pendingMatches, handleClosePendingMatchModal, setCurrentMatchId, setMatchCreated]);
+  }, [pendingMatches, handleResumeMatchModalClose, setCurrentMatchId, setMatchCreated]);
 
   const handleDiscardPendingMatch = React.useCallback(async (matchId) => {
     if (!matchId) return;
