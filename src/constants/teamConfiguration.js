@@ -226,6 +226,18 @@ export const validateAndCorrectTeamConfig = (teamConfig) => {
       }
     }
 
+    // Auto-correct individual substitution with invalid pairRoleRotation
+    if (substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL && teamConfig.pairRoleRotation) {
+      correctedConfig.pairRoleRotation = null;
+      corrections.push(`Removed pairRoleRotation setting (only valid for pairs substitution mode)`);
+
+      console.log('⚠️ TEAM CONFIG AUTO-CORRECTION: Individual substitution with pairRoleRotation', {
+        originalPairRoleRotation: teamConfig.pairRoleRotation,
+        correctedPairRoleRotation: correctedConfig.pairRoleRotation,
+        substitutionType
+      });
+    }
+
     // Try validation again with corrected config
     try {
       validateTeamConfig(correctedConfig);
