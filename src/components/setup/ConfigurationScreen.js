@@ -81,9 +81,13 @@ export function ConfigurationScreen({
   });
   const [pendingMatchError, setPendingMatchError] = useState(null);
   const [resumeData, setResumeData] = useState(null);
-  
+  // Track if current match is a resumed match to prevent inappropriate state clearing
+  const [isResumedMatch, setIsResumedMatch] = useState(false);
+
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
+  // Ref to track if resume data has been applied to prevent reapplication
+  const resumeDataAppliedRef = useRef(false);
   // Ref to track team sync completion to coordinate with resume data processing
   const teamSyncCompletedRef = useRef(false);
   const isProcessingResumeDataRef = useRef(false);
@@ -93,8 +97,9 @@ export function ConfigurationScreen({
   React.useEffect(() => {
     return () => {
       // Reset all resume processing refs on component unmount
-      
+
       resumeDataProcessedRef.current = false;
+      resumeDataAppliedRef.current = false;
       isProcessingResumeDataRef.current = false;
       teamSyncCompletedRef.current = false;
       
@@ -175,6 +180,12 @@ export function ConfigurationScreen({
     setOpponentTeam('');  // Clear opponent team name
     setMatchType('league');  // Reset to default match type
     setCaptain(null);     // Clear captain selection
+
+    // Clear resumed match state and data
+    setIsResumedMatch(false);
+    setResumeData(null);
+    resumeDataAppliedRef.current = false;
+
     clearStoredState();   // Clear localStorage and match state
   }, [setOpponentTeam, setMatchType, setCaptain, clearStoredState]);
 
@@ -366,24 +377,25 @@ export function ConfigurationScreen({
   // Only clear on NEW_SIGN_IN to preserve squad selection on page refresh
   // BUT: Skip this cleanup when resume data is being processed to avoid clearing resumed selections
   React.useEffect(() => {
-    // Skip cleanup if resume data is present or being processed
-    if (isProcessingResumeDataRef.current) {
+    // Skip cleanup if resume data is present or being processed or this is a resumed match
+    if (isProcessingResumeDataRef.current || isResumedMatch) {
       return;
     }
-    
+
     if (hasNoTeamPlayers && selectedSquadIds.length > 0 &&
         sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
       setSelectedSquadIds([]);
     }
-  }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds, sessionDetectionResult]);
+  }, [hasNoTeamPlayers, selectedSquadIds.length, setSelectedSquadIds, sessionDetectionResult, isResumedMatch]);
 
   // Reset resume processing flags on NEW_SIGN_IN to ensure each sign-in can process resume data independently
   React.useEffect(() => {
     if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
       // Reset flags to allow new resume data to be processed
       resumeDataProcessedRef.current = false;
+      resumeDataAppliedRef.current = false;
       isProcessingResumeDataRef.current = false;
-      
+
       // Clear any pending timeout on NEW_SIGN_IN
       if (processingTimeoutRef.current) {
         clearTimeout(processingTimeoutRef.current);
@@ -406,6 +418,7 @@ export function ConfigurationScreen({
   React.useEffect(() => {
     if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN &&
         !hasActiveConfiguration &&
+        !isResumedMatch &&
         !isProcessingResumeDataRef.current &&
         !newSignInProcessed &&
         clearStoredState) {
@@ -426,7 +439,7 @@ export function ConfigurationScreen({
       // Note: selectedSquadIds will be cleared by the existing effect below when team has no players
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionDetectionResult, hasActiveConfiguration, newSignInProcessed, clearStoredState]);
+  }, [sessionDetectionResult, hasActiveConfiguration, isResumedMatch, newSignInProcessed, clearStoredState]);
 
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
@@ -468,8 +481,8 @@ export function ConfigurationScreen({
     }
     
     
-    // Process resume data from pending match modal selection
-    if (resumeData && !isProcessingResumeDataRef.current) {
+    // Process resume data from pending match modal selection (only apply once)
+    if (resumeData && !isProcessingResumeDataRef.current && !resumeDataAppliedRef.current) {
       // Mark as processing to prevent concurrent execution
       isProcessingResumeDataRef.current = true;
       
@@ -532,34 +545,40 @@ export function ConfigurationScreen({
           setPeriodGoalieIds(resumeData.periodGoalies);
         }
         
-        // Mark resume data as processed
+        // Mark resume data as processed and applied
         resumeDataProcessedRef.current = true;
+        resumeDataAppliedRef.current = true;
         isProcessingResumeDataRef.current = false;
-        
+
+        // Set flags for resumed match state
+        setIsResumedMatch(true);
+        setHasActiveConfiguration(true);
+
         // Clear the timeout since processing completed successfully
         if (processingTimeoutRef.current) {
           clearTimeout(processingTimeoutRef.current);
           processingTimeoutRef.current = null;
         }
-        
-        // Clear the resume data after population
-        setResumeData(null);
+
+        // DON'T clear resumeData - keep it for navigation persistence
+        // setResumeData(null); // Removed - preserve resume data until new match starts
       } catch (error) {
         // Error handling: Reset refs and log the error
         console.error('❌ Resume data processing failed:', error);
         
         // Reset refs to prevent stuck states
         resumeDataProcessedRef.current = false;
+        resumeDataAppliedRef.current = false;
         isProcessingResumeDataRef.current = false;
-        
+
         // Clear the timeout since processing failed
         if (processingTimeoutRef.current) {
           clearTimeout(processingTimeoutRef.current);
           processingTimeoutRef.current = null;
         }
-        
-        // Clear the resume data even on error to prevent retry loops
-        setResumeData(null);
+
+        // Don't clear resumeData on error - let user retry or manually clear
+        // setResumeData(null); // Removed - preserve resume data for retry
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
