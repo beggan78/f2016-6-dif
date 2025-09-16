@@ -441,17 +441,17 @@ export const recoverCorruptedEvents = (events) => {
  */
 export const recoverFromCrash = () => {
   try {
-    
+
     // Try primary storage first
     const primary = localStorage.getItem('dif-coach-match-events');
     if (primary) {
       const primaryData = JSON.parse(primary);
       const validationErrors = validateMatchData(primaryData.events);
-      
+
       if (validationErrors.length === 0) {
         return primaryData;
       }
-      
+
       // Try to recover primary data
       const recoveredEvents = recoverCorruptedEvents(primaryData.events);
       if (recoveredEvents.length > 0) {
@@ -463,39 +463,10 @@ export const recoverFromCrash = () => {
         };
       }
     }
-    
-    // Try backup storage
-    const backup = localStorage.getItem('dif-coach-match-events-backup');
-    if (backup) {
-      const backupData = JSON.parse(backup);
-      if (backupData.primary && backupData.primary.events) {
-        const validationErrors = validateMatchData(backupData.primary.events);
-        
-        if (validationErrors.length === 0) {
-          return {
-            ...backupData.primary,
-            recovered: true,
-            recoverySource: 'backup',
-            recoveryTimestamp: Date.now()
-          };
-        }
-        
-        // Try to recover backup data
-        const recoveredEvents = recoverCorruptedEvents(backupData.primary.events);
-        if (recoveredEvents.length > 0) {
-          return {
-            ...backupData.primary,
-            events: recoveredEvents,
-            recovered: true,
-            recoverySource: 'backup',
-            recoveryTimestamp: Date.now()
-          };
-        }
-      }
-    }
-    
+
+    console.warn('No valid primary storage found for crash recovery');
     return null;
-    
+
   } catch (error) {
     console.error('Crash recovery failed:', error);
     return null;

@@ -19,6 +19,7 @@ export function PairsFormation({
   getPlayerTimeStats,
   teamConfig,
   renderSection = 'all',
+  selectedFormation, // Extract this prop to prevent it from being passed to DOM
   ...domProps
 }) {
   // Handle null/undefined formation
