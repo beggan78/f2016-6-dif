@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Play, ArrowLeft, Shuffle } from 'lucide-react';
+import { Users, Play, ArrowLeft, Shuffle, Save } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
@@ -62,18 +62,18 @@ function IndividualPositionCards({ teamConfig, formation, onPlayerAssign, getAva
   );
 }
 
-export function PeriodSetupScreen({ 
-  currentPeriodNumber, 
+export function PeriodSetupScreen({
+  currentPeriodNumber,
   formation,
   setFormation,
-  availableForPairing, 
-  allPlayers, 
+  availableForPairing,
+  allPlayers,
   setAllPlayers,
-  handleStartGame, 
-  gameLog, 
-  selectedSquadPlayers, 
-  periodGoalieIds, 
-  setPeriodGoalieIds, 
+  handleStartGame,
+  gameLog,
+  selectedSquadPlayers,
+  periodGoalieIds,
+  setPeriodGoalieIds,
   numPeriods,
   teamConfig,
   selectedFormation,
@@ -84,13 +84,19 @@ export function PeriodSetupScreen({
   rotationQueue,
   setRotationQueue,
   preparePeriodWithGameLog,
-  debugMode = false
+  handleSavePeriodConfiguration,
+  matchState,
+  debugMode = false,
+  resumeFormationData = null
 }) {
   // Determine formation mode
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
   
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
+  
+  // Save period configuration status
+  const [savePeriodConfigStatus, setSavePeriodConfigStatus] = useState({ loading: false, message: '', error: null });
   
   // Confirmation modal state for inactive player selection
   const [confirmationModal, setConfirmationModal] = useState({
@@ -111,6 +117,13 @@ export function PeriodSetupScreen({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Handle resume formation data from pending match
+  useEffect(() => {
+    if (resumeFormationData) {
+      setFormation(resumeFormationData);
+    }
+  }, [resumeFormationData, setFormation]);
 
   // Detect if pre-selected goalie is inactive (for periods 2+)
   useEffect(() => {
@@ -759,6 +772,48 @@ export function PeriodSetupScreen({
     setFormation(newFormation);
   };
 
+  const handleSavePeriodConfigClick = async () => {
+    if (!handleSavePeriodConfiguration) {
+      console.warn('handleSavePeriodConfiguration is not provided');
+      return;
+    }
+
+    setSavePeriodConfigStatus({ loading: true, message: 'Saving period configuration...', error: null });
+
+    try {
+      const result = await handleSavePeriodConfiguration();
+      
+      if (result.success) {
+        setSavePeriodConfigStatus({
+          loading: false,
+          message: `✅ ${result.message || 'Period configuration saved successfully'}`,
+          error: null
+        });
+        
+        // Scroll to top to show success banner
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSavePeriodConfigStatus(prev => ({ ...prev, message: '' }));
+        }, 3000);
+      } else {
+        setSavePeriodConfigStatus({
+          loading: false,
+          message: '',
+          error: result.error || 'Failed to save period configuration'
+        });
+      }
+    } catch (error) {
+      console.error('Save period configuration error:', error);
+      setSavePeriodConfigStatus({
+        loading: false,
+        message: '',
+        error: 'Failed to save period configuration: ' + error.message
+      });
+    }
+  };
+
   return (
     <div className="space-y-3">
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
@@ -780,6 +835,19 @@ export function PeriodSetupScreen({
           </div>
         </div>
       </div>
+
+      {/* Save Period Configuration Status Messages */}
+      {savePeriodConfigStatus.message && (
+        <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
+          <p className="text-emerald-200 text-sm">{savePeriodConfigStatus.message}</p>
+        </div>
+      )}
+
+      {savePeriodConfigStatus.error && (
+        <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
+          <p className="text-rose-200 text-sm">❌ {savePeriodConfigStatus.error}</p>
+        </div>
+      )}
 
       {/* Enhanced goalie section with inactive player detection */}
       {(() => {
@@ -846,6 +914,18 @@ export function PeriodSetupScreen({
           getAvailableOptions={getAvailableForIndividualSelect}
           currentPeriodNumber={currentPeriodNumber}
         />
+      )}
+
+      {/* Save Period Configuration Button - Only show when formation is complete and match hasn't started */}
+      {handleSavePeriodConfiguration && matchState !== 'running' && (
+        <Button
+          onClick={handleSavePeriodConfigClick}
+          disabled={savePeriodConfigStatus.loading || !isFormationComplete()}
+          variant="secondary"
+          Icon={Save}
+        >
+          {savePeriodConfigStatus.loading ? 'Saving...' : 'Save Configuration'}
+        </Button>
       )}
 
       <Button onClick={handleStartGame} disabled={!isFormationComplete()} Icon={Play}>

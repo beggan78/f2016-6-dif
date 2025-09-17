@@ -54,4 +54,4 @@ When examining changes, pay special attention to:
 - API or interface modifications
 - Performance-related changes
 
-Format your response to be scannable and actionable, using clear headings and bullet points for easy consumption by both humans and other AI agents.
+Format your response to be scannable and actionable, using clear headings and buNNllet points for easy consumption by both humans and other AI agents.

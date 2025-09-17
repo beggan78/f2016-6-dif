@@ -40,6 +40,7 @@ export class PersistenceManager {
 
       const parsedState = JSON.parse(saved);
       
+      
       // Validate that the loaded state is an object
       if (typeof parsedState !== 'object' || parsedState === null) {
         console.warn('Invalid state format in localStorage, using default state');
@@ -188,87 +189,6 @@ export class PersistenceManager {
     return JSON.parse(JSON.stringify(state)); // Simple way to remove non-serializable data
   }
 
-  /**
-   * Create a backup of current state
-   */
-  createBackup(backupKey = null) {
-    const actualBackupKey = backupKey || `${this.storageKey}_backup_${Date.now()}`;
-    
-    try {
-      const currentState = this.loadState();
-      localStorage.setItem(actualBackupKey, JSON.stringify(currentState));
-      return actualBackupKey;
-    } catch (error) {
-      console.warn('Failed to create backup:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Restore from a backup
-   */
-  restoreFromBackup(backupKey) {
-    try {
-      const backupData = localStorage.getItem(backupKey);
-      if (!backupData) {
-        console.warn('No backup found with key:', backupKey);
-        return false;
-      }
-
-      const backupState = JSON.parse(backupData);
-      return this.saveState(backupState);
-    } catch (error) {
-      console.warn('Failed to restore from backup:', error);
-      return false;
-    }
-  }
-
-  /**
-   * List all backups for this storage key
-   */
-  listBackups() {
-    const backups = [];
-    const prefix = `${this.storageKey}_backup_`;
-    
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(prefix)) {
-          const timestamp = key.replace(prefix, '');
-          backups.push({
-            key,
-            timestamp: parseInt(timestamp),
-            date: new Date(parseInt(timestamp))
-          });
-        }
-      }
-      
-      return backups.sort((a, b) => b.timestamp - a.timestamp);
-    } catch (error) {
-      console.warn('Failed to list backups:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Clean up old backups (keep only the most recent N)
-   */
-  cleanupBackups(keepCount = 5) {
-    const backups = this.listBackups();
-    const toDelete = backups.slice(keepCount);
-    
-    let deletedCount = 0;
-    toDelete.forEach(backup => {
-      try {
-        localStorage.removeItem(backup.key);
-        deletedCount++;
-      } catch (error) {
-        console.warn('Failed to delete backup:', backup.key, error);
-      }
-    });
-    
-    return deletedCount;
-  }
 }
 
 /**
@@ -276,6 +196,11 @@ export class PersistenceManager {
  */
 export class GamePersistenceManager extends PersistenceManager {
   constructor(storageKey = 'dif-coach-game-state') {
+    // Import here to avoid circular dependency
+    const { getInitialFormationTemplate } = require('../constants/gameModes');
+    
+    const defaultTeamConfig = { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' };
+    
     const defaultGameState = {
       allPlayers: [],
       view: 'config',
@@ -283,23 +208,12 @@ export class GamePersistenceManager extends PersistenceManager {
       numPeriods: 3,
       periodDurationMinutes: 15,
       periodGoalieIds: {},
-      teamConfig: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+      teamConfig: defaultTeamConfig,
       selectedFormation: '2-2',
       alertMinutes: 2,
       captainId: null,
       currentPeriodNumber: 1,
-      formation: {
-        goalie: null,
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null },
-        leftDefender: null,
-        rightDefender: null,
-        leftAttacker: null,
-        rightAttacker: null,
-        substitute_1: null,
-        substitute_2: null,
-      },
+      formation: getInitialFormationTemplate(defaultTeamConfig),
       nextPhysicalPairToSubOut: 'leftPair',
       nextPlayerToSubOut: 'leftDefender',
       nextPlayerIdToSubOut: null,
@@ -319,7 +233,7 @@ export class GamePersistenceManager extends PersistenceManager {
       totalMatchPausedDuration: 0,
       // Match lifecycle state management
       currentMatchId: null,
-      matchCreationAttempted: false,
+      matchCreated: false,
     };
 
     super(storageKey, defaultGameState);
@@ -362,32 +276,12 @@ export class GamePersistenceManager extends PersistenceManager {
       totalMatchPausedDuration: gameState.totalMatchPausedDuration,
       // Match lifecycle state management
       currentMatchId: gameState.currentMatchId,
-      matchCreationAttempted: gameState.matchCreationAttempted,
+      matchCreated: gameState.matchCreated,
     };
 
     return this.saveState(stateToSave);
   }
 
-  /**
-   * Auto-backup before major operations
-   */
-  autoBackup() {
-    const backups = this.listBackups();
-    const lastBackup = backups[0];
-    const now = Date.now();
-    
-    // Only create backup if last one was more than 10 minutes ago
-    if (!lastBackup || (now - lastBackup.timestamp) > 10 * 60 * 1000) {
-      const backupKey = this.createBackup();
-      if (backupKey) {
-        // Clean up old backups, keep only 3 most recent
-        this.cleanupBackups(3);
-      }
-      return backupKey;
-    }
-    
-    return null;
-  }
 }
 
 /**

@@ -619,7 +619,6 @@ describe('invitationUtils', () => {
           'pendingInvitation',
           JSON.stringify(invitationDetails)
         );
-        expect(console.log).toHaveBeenCalledWith('Stored pending invitation:', invitationDetails);
       });
 
       it('should handle localStorage errors gracefully', () => {
@@ -666,7 +665,6 @@ describe('invitationUtils', () => {
         expect(mockLocalStorage.getItem).toHaveBeenCalledWith('pendingInvitation');
         expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('pendingInvitation');
         expect(result).toEqual(storedInvitation);
-        expect(console.log).toHaveBeenCalledWith('Retrieved pending invitation:', storedInvitation);
       });
 
       it('should return null when no stored invitation', () => {

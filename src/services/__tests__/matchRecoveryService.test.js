@@ -497,13 +497,6 @@ describe('matchRecoveryService', () => {
         const result = validateRecoveryData(validMatch, validLocalData);
 
         expect(result).toBe(true);
-        expect(console.log).toHaveBeenCalledWith('🔍 Recovery data validation:', {
-          isValid: true,
-          matchId: 'match-123',
-          localMatchId: 'match-123',
-          playersCount: 1,
-          scores: '2-1'
-        });
       } finally {
         process.env.NODE_ENV = originalEnv;
       }
@@ -523,13 +516,6 @@ describe('matchRecoveryService', () => {
         const result = validateRecoveryData(validMatch, invalidLocalData);
 
         expect(result).toBe(false);
-        expect(console.log).toHaveBeenCalledWith('🔍 Recovery data validation:', {
-          isValid: false,
-          matchId: 'match-123',
-          localMatchId: 'wrong-id',
-          playersCount: 1,
-          scores: '2-1'
-        });
       } finally {
         process.env.NODE_ENV = originalEnv;
       }

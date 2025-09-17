@@ -211,13 +211,18 @@ describe('sessionDetectionService', () => {
     it('should log detection result in development mode', () => {
       detectSessionType();
 
-      // Should log one of the detection types
+      // Should log one of the detection types with enhanced information
       const logCalls = mockConsoleLog.mock.calls;
       expect(logCalls.length).toBeGreaterThan(0);
-      
+
       const loggedMessage = logCalls[0][0];
-      const expectedMessages = ['🔍 NEW_SIGN_IN DETECTED', '🔄 PAGE_REFRESH DETECTED'];
-      expect(expectedMessages).toContain(loggedMessage);
+      // Enhanced logging now includes confidence and session info
+      expect(loggedMessage).toMatch(/🔍 NEW_SIGN_IN DETECTED|🔄 PAGE_REFRESH DETECTED/);
+
+      // Second parameter should contain confidence and session info if present
+      if (logCalls[0][1]) {
+        expect(logCalls[0][1]).toMatch(/confidence: \d+%, session: \w+/);
+      }
     });
 
     it('should not log in production environment', () => {
@@ -279,24 +284,49 @@ describe('sessionDetectionService', () => {
   });
 
   describe('confidence scoring', () => {
-    it('should return 85 confidence for NEW_SIGN_IN detection', () => {
+    it('should return appropriate confidence for NEW_SIGN_IN detection', () => {
       // This will typically detect as NEW_SIGN_IN in fresh test environment
       const result = detectSessionType();
-      
+
       if (result.type === DETECTION_TYPES.NEW_SIGN_IN) {
-        expect(result.confidence).toBe(85);
+        // Base confidence is 75%, can be higher (85-90%) with specific conditions
+        expect(result.confidence).toBeGreaterThanOrEqual(75);
+        expect(result.confidence).toBeLessThanOrEqual(90);
       }
     });
 
-    it('should return 75 confidence for PAGE_REFRESH detection', () => {
+    it('should have confidence scoring logic in place', () => {
+      // This test validates that confidence scoring is implemented
+      // The exact confidence value may depend on test environment conditions
+
+      const result = detectSessionType();
+
+      // Validate confidence is within expected range
+      expect(result.confidence).toBeGreaterThanOrEqual(75);
+      expect(result.confidence).toBeLessThanOrEqual(90);
+
+      // Validate the signals structure includes fields used for confidence scoring
+      expect(result.signals.session).toHaveProperty('authTimestamp');
+      expect(result.signals.session).toHaveProperty('hasSupabaseSession');
+      expect(result.signals.session).toHaveProperty('lastActivity');
+      expect(result.signals.session).toHaveProperty('pageLoadCount');
+
+      // Validate confidence is a reasonable number
+      expect(typeof result.confidence).toBe('number');
+      expect(result.confidence % 1).toBe(0); // Should be whole number
+    });
+
+    it('should return appropriate confidence for PAGE_REFRESH detection', () => {
       // Force a condition that might detect as PAGE_REFRESH
       mockSessionStorage.storage['sport-wizard-last-activity'] = Date.now().toString();
       mockSessionStorage.storage['sport-wizard-page-load-count'] = '10';
-      
+
       const result = detectSessionType();
-      
+
       if (result.type === DETECTION_TYPES.PAGE_REFRESH) {
-        expect(result.confidence).toBe(75);
+        // Base confidence is 75%, can be higher (85%) with established session
+        expect(result.confidence).toBeGreaterThanOrEqual(75);
+        expect(result.confidence).toBeLessThanOrEqual(85);
       }
     });
   });
@@ -318,6 +348,37 @@ describe('sessionDetectionService', () => {
       }
 
       process.env.NODE_ENV = originalNodeEnv;
+    });
+  });
+
+  describe('caching system', () => {
+    it('should cache detection results and return cached result on subsequent calls', () => {
+      // Clear storage to ensure clean state
+      mockSessionStorage.storage = {};
+
+      // First call should run detection
+      const result1 = detectSessionType();
+      expect(result1.type).toBeDefined();
+      expect(result1.confidence).toBeDefined();
+
+      // Second call should return cached result
+      const result2 = detectSessionType();
+      expect(result2.type).toBe(result1.type);
+      expect(result2.confidence).toBe(result1.confidence);
+      expect(result2.sessionId).toBe(result1.sessionId);
+
+      // Results should have same timestamp (indicating cache hit)
+      expect(result2.timestamp).toBe(result1.timestamp);
+    });
+
+    it('should generate unique session IDs', () => {
+      // Clear storage to ensure clean state
+      mockSessionStorage.storage = {};
+
+      const result = detectSessionType();
+      expect(result.sessionId).toBeDefined();
+      expect(typeof result.sessionId).toBe('string');
+      expect(result.sessionId).toMatch(/^det_\d+_[a-z0-9]+$/);
     });
   });
 

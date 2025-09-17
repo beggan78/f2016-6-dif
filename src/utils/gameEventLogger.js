@@ -40,9 +40,7 @@ export const EVENT_TYPES = {
 
 // localStorage keys
 const STORAGE_KEYS = {
-  PRIMARY: 'dif-coach-match-events',
-  BACKUP: 'dif-coach-match-events-backup',
-  EMERGENCY: 'dif-coach-match-events-emergency'
+  PRIMARY: 'dif-coach-match-events'
 };
 
 // Global state for event tracking
@@ -156,33 +154,22 @@ const createEventStorage = (events = [], metadata = {}) => {
 };
 
 /**
- * Save events to localStorage with backup
+ * Save events to localStorage
  */
 const saveEvents = (events, metadata = {}) => {
   try {
     const storage = createEventStorage(events, metadata);
     storage.checksum = calculateChecksum(storage);
-    
-    // Create backup before saving primary
-    const existing = localStorage.getItem(STORAGE_KEYS.PRIMARY);
-    if (existing) {
-      const backup = {
-        primary: JSON.parse(existing),
-        backupTimestamp: Date.now(),
-        reason: 'auto_backup'
-      };
-      localStorage.setItem(STORAGE_KEYS.BACKUP, JSON.stringify(backup));
-    }
-    
+
     // Save primary
     localStorage.setItem(STORAGE_KEYS.PRIMARY, JSON.stringify(storage));
-    
+
     // Update current state
     currentEvents = [...events];
-    
+
     // Notify listeners
     notifyEventListeners('events_saved', { events, metadata });
-    
+
     return true;
   } catch (error) {
     console.error('Failed to save events:', error);
@@ -196,77 +183,48 @@ const saveEvents = (events, metadata = {}) => {
 export const loadEvents = () => {
   try {
     const primary = localStorage.getItem(STORAGE_KEYS.PRIMARY);
-    
+
     if (primary) {
       const storage = JSON.parse(primary);
-      
+
       // Validate checksum
       const expectedChecksum = storage.checksum;
       const actualChecksum = calculateChecksum({
         ...storage,
         checksum: ''
       });
-      
+
       if (expectedChecksum !== actualChecksum) {
-        console.warn('Primary storage checksum mismatch, attempting backup recovery');
-        return loadFromBackup();
+        console.warn('Primary storage checksum mismatch, starting with empty events');
+        return createEventStorage();
       }
-      
+
       // Validate event sequence
       if (!validateEventSequence(storage.events)) {
-        console.warn('Event sequence validation failed, attempting backup recovery');
-        return loadFromBackup();
+        console.warn('Event sequence validation failed, starting with empty events');
+        return createEventStorage();
       }
-      
+
       // Update global state
       currentEvents = storage.events || [];
       eventSequenceNumber = storage.metadata?.lastSequence || 0;
-      
+
       // Find match start event to set global start time
       const matchStartEvent = currentEvents.find(e => e.type === EVENT_TYPES.MATCH_START);
       if (matchStartEvent) {
         matchStartTime = matchStartEvent.timestamp;
       }
-      
+
       return storage;
     }
-    
+
     return null;
   } catch (error) {
     console.error('Failed to load events:', error);
-    return loadFromBackup();
+    return createEventStorage();
   }
 };
 
-/**
- * Load from backup storage
- */
-const loadFromBackup = () => {
-  try {
-    const backup = localStorage.getItem(STORAGE_KEYS.BACKUP);
-    
-    if (backup) {
-      const backupData = JSON.parse(backup);
-      const storage = backupData.primary;
-      
-      if (storage && storage.events) {
-        console.log('Successfully restored from backup');
-        
-        // Update global state
-        currentEvents = storage.events;
-        eventSequenceNumber = storage.metadata?.lastSequence || 0;
-        
-        return storage;
-      }
-    }
-    
-    console.warn('No valid backup found, starting with empty events');
-    return createEventStorage();
-  } catch (error) {
-    console.error('Failed to load backup:', error);
-    return createEventStorage();
-  }
-};
 
 /**
  * Main event logging function
@@ -346,8 +304,7 @@ export const removeEvent = (eventId) => {
     const saveSuccess = saveEvents(newEvents);
     
     if (saveSuccess) {
-      console.log(`Event removed: ${removedEvent.type} (${eventId})`);
-      notifyEventListeners('event_removed', { removedEvent });
+        notifyEventListeners('event_removed', { removedEvent });
       return true;
     }
     
@@ -512,13 +469,14 @@ export const clearAllEvents = () => {
     currentEvents = [];
     eventSequenceNumber = 0;
     matchStartTime = null;
-    
+
     localStorage.removeItem(STORAGE_KEYS.PRIMARY);
-    localStorage.removeItem(STORAGE_KEYS.BACKUP);
-    localStorage.removeItem(STORAGE_KEYS.EMERGENCY);
-    
+    // Remove legacy backup keys if they exist
+    localStorage.removeItem('dif-coach-match-events-backup');
+    localStorage.removeItem('dif-coach-match-events-emergency');
+
     notifyEventListeners('events_cleared', {});
-    
+
     return true;
   } catch (error) {
     console.error('Failed to clear events:', error);
@@ -581,9 +539,7 @@ export const initializeEventLogger = () => {
   const storage = loadEvents();
   
   if (storage) {
-    console.log(`Event logger initialized with ${storage.events.length} events`);
   } else {
-    console.log('Event logger initialized with empty state');
   }
   
   return storage;

@@ -22,12 +22,6 @@ export async function cleanupAbandonedMatches() {
     const runningCutoff = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
     const finishedCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000); // 14 days ago
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🧹 Starting match cleanup:', {
-        runningCutoff: runningCutoff.toISOString(),
-        finishedCutoff: finishedCutoff.toISOString()
-      });
-    }
 
     // Clean up running matches older than 5 hours
     const { data: deletedRunning, error: runningError } = await supabase
@@ -69,13 +63,7 @@ export async function cleanupAbandonedMatches() {
     const cleanedFinished = deletedFinished?.length || 0;
     const totalCleaned = cleanedRunning + cleanedFinished;
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Match cleanup completed:', {
-        cleanedRunning,
-        cleanedFinished,
-        totalCleaned
-      });
-    } else if (totalCleaned > 0) {
+    if (totalCleaned > 0) {
       // Log in production only when cleanup actually occurred
       console.log(`🧹 Cleaned up ${totalCleaned} orphaned matches (${cleanedRunning} running, ${cleanedFinished} finished)`);
     }

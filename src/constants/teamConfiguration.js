@@ -145,28 +145,38 @@ export const getValidFormations = (format, squadSize) => {
  */
 export const validateTeamConfig = (teamConfig) => {
   const { format, squadSize, formation, substitutionType, pairRoleRotation } = teamConfig;
-  
+
   // Validate format
   if (!Object.values(FORMATS).includes(format)) {
     throw new Error(`Invalid format: ${format}. Must be one of: ${Object.values(FORMATS).join(', ')}`);
   }
-  
+
   // Validate squad size
   if (squadSize < GAME_CONSTANTS.MIN_SQUAD_SIZE || squadSize > GAME_CONSTANTS.MAX_SQUAD_SIZE) {
     throw new Error(`Invalid squad size: ${squadSize}. Must be between ${GAME_CONSTANTS.MIN_SQUAD_SIZE} and ${GAME_CONSTANTS.MAX_SQUAD_SIZE} players`);
   }
-  
+
   // Validate formation for the given format
   const validFormations = getValidFormations(format, squadSize);
   if (!validFormations.includes(formation)) {
     throw new Error(`Formation ${formation} not valid for ${format} with ${squadSize} players. Valid formations: ${validFormations.join(', ')}`);
   }
-  
+
   // Validate substitution type
   if (!Object.values(SUBSTITUTION_TYPES).includes(substitutionType)) {
     throw new Error(`Invalid substitution type: ${substitutionType}. Must be one of: ${Object.values(SUBSTITUTION_TYPES).join(', ')}`);
   }
-  
+
+  // Business rule: Pairs substitution only allowed with 2-2 formation and 7 players
+  if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+    if (formation !== FORMATIONS.FORMATION_2_2) {
+      throw new Error(`Pairs substitution is only supported with ${FORMATIONS.FORMATION_2_2} formation, not ${formation}`);
+    }
+    if (squadSize !== 7) {
+      throw new Error(`Pairs substitution is only supported with 7 players, not ${squadSize} players`);
+    }
+  }
+
   // Validate pair role rotation (only for pairs mode)
   if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
     // If pairRoleRotation is provided, it must be valid
@@ -179,8 +189,64 @@ export const validateTeamConfig = (teamConfig) => {
       throw new Error(`pairRoleRotation can only be set when substitutionType is '${SUBSTITUTION_TYPES.PAIRS}'`);
     }
   }
-  
+
   return true;
+};
+
+/**
+ * Validates and auto-corrects a team configuration object
+ * If the configuration is invalid, it returns a corrected version
+ * @param {Object} teamConfig - Team configuration to validate and potentially correct
+ * @returns {Object} { isValid: boolean, correctedConfig: Object, corrections: string[] }
+ */
+export const validateAndCorrectTeamConfig = (teamConfig) => {
+  const corrections = [];
+  let correctedConfig = { ...teamConfig };
+
+  try {
+    validateTeamConfig(teamConfig);
+    return { isValid: true, correctedConfig: teamConfig, corrections: [] };
+  } catch (error) {
+    // Handle specific business rule violations with auto-correction
+    const { squadSize, formation, substitutionType } = teamConfig;
+
+    // Auto-correct pairs substitution incompatibility
+    if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+      if (formation !== FORMATIONS.FORMATION_2_2 || squadSize !== 7) {
+        correctedConfig.substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL;
+        correctedConfig.pairRoleRotation = null;
+        corrections.push(`Changed substitution type from pairs to individual (pairs only supported with 2-2 formation and 7 players)`);
+
+        console.log('⚠️ TEAM CONFIG AUTO-CORRECTION: Pairs substitution incompatible with configuration', {
+          formation,
+          squadSize,
+          originalSubstitutionType: substitutionType,
+          correctedSubstitutionType: correctedConfig.substitutionType
+        });
+      }
+    }
+
+    // Auto-correct individual substitution with invalid pairRoleRotation
+    if (substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL && teamConfig.pairRoleRotation) {
+      correctedConfig.pairRoleRotation = null;
+      corrections.push(`Removed pairRoleRotation setting (only valid for pairs substitution mode)`);
+
+      console.log('⚠️ TEAM CONFIG AUTO-CORRECTION: Individual substitution with pairRoleRotation', {
+        originalPairRoleRotation: teamConfig.pairRoleRotation,
+        correctedPairRoleRotation: correctedConfig.pairRoleRotation,
+        substitutionType
+      });
+    }
+
+    // Try validation again with corrected config
+    try {
+      validateTeamConfig(correctedConfig);
+      return { isValid: false, correctedConfig, corrections };
+    } catch (validationError) {
+      // If still invalid, throw the original validation error
+      throw error;
+    }
+  }
 };
 
 /**
@@ -191,15 +257,15 @@ export const validateTeamConfig = (teamConfig) => {
 export const createDefaultTeamConfig = (squadSize) => {
   // Determine default substitution type based on squad size
   // 7-player squads can use pairs, others default to individual
-  const defaultSubstitutionType = squadSize === 7 
-    ? SUBSTITUTION_TYPES.PAIRS 
+  const defaultSubstitutionType = squadSize === 7
+    ? SUBSTITUTION_TYPES.PAIRS
     : SUBSTITUTION_TYPES.INDIVIDUAL;
-  
+
   // For pairs mode, default to keeping roles throughout period for backwards compatibility
-  const defaultPairRoleRotation = defaultSubstitutionType === SUBSTITUTION_TYPES.PAIRS 
-    ? PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD 
+  const defaultPairRoleRotation = defaultSubstitutionType === SUBSTITUTION_TYPES.PAIRS
+    ? PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
     : null;
-  
+
   return createTeamConfig(
     FORMATS.FORMAT_5V5,           // Default to 5v5
     squadSize,                    // Use provided squad size

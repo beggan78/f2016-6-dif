@@ -24,22 +24,91 @@ export const TIMING_CONSTANTS = {
 const SESSION_KEYS = {
   AUTH_TIMESTAMP: 'sport-wizard-auth-timestamp',
   LAST_ACTIVITY: 'sport-wizard-last-activity',
-  PAGE_LOAD_COUNT: 'sport-wizard-page-load-count'
+  PAGE_LOAD_COUNT: 'sport-wizard-page-load-count',
+  DETECTION_CACHE: 'sport-wizard-detection-cache',
+  DETECTION_SESSION_ID: 'sport-wizard-detection-session-id'
 };
 
 /**
- * Simple debug logging with just detection results
+ * Enhanced debug logging with detection state tracking
  */
-const debugLog = (type) => {
+const debugLog = (type, additionalInfo = '') => {
   if (process.env.NODE_ENV !== 'development') return;
-  
+
   const messages = {
     [DETECTION_TYPES.NEW_SIGN_IN]: '🔍 NEW_SIGN_IN DETECTED',
     [DETECTION_TYPES.PAGE_REFRESH]: '🔄 PAGE_REFRESH DETECTED'
   };
-  
-  console.log(messages[type] || '🔧 UNKNOWN DETECTION');
+
+  const message = messages[type] || '🔧 UNKNOWN DETECTION';
+  console.log(additionalInfo ? `${message} ${additionalInfo}` : message);
 };
+
+/**
+ * Generate a unique session ID for this browser session
+ */
+function generateDetectionSessionId() {
+  return `det_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Get or create detection session ID
+ */
+function getDetectionSessionId() {
+  let sessionId = sessionStorage.getItem(SESSION_KEYS.DETECTION_SESSION_ID);
+  if (!sessionId) {
+    sessionId = generateDetectionSessionId();
+    try {
+      sessionStorage.setItem(SESSION_KEYS.DETECTION_SESSION_ID, sessionId);
+    } catch (error) {
+      console.warn('Failed to store session ID (storage quota exceeded?):', error);
+      // Continue with generated ID even if storage fails
+    }
+  }
+  return sessionId;
+}
+
+/**
+ * Cache detection result to prevent repeated execution
+ */
+function cacheDetectionResult(result, sessionId) {
+  try {
+    const cacheData = {
+      result,
+      sessionId,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem(SESSION_KEYS.DETECTION_CACHE, JSON.stringify(cacheData));
+  } catch (error) {
+    console.warn('Failed to cache detection result (storage quota exceeded?):', error);
+    // Detection will work without caching, just with potential repeated execution
+  }
+}
+
+/**
+ * Get cached detection result if valid
+ */
+function getCachedDetectionResult() {
+  try {
+    const cached = sessionStorage.getItem(SESSION_KEYS.DETECTION_CACHE);
+    if (!cached) return null;
+
+    const cacheData = JSON.parse(cached);
+    const currentSessionId = getDetectionSessionId();
+
+    // Cache is valid if from same session and less than 30 seconds old
+    const age = Date.now() - cacheData.timestamp;
+    const isValid = cacheData.sessionId === currentSessionId && age < 30000;
+
+    if (isValid) {
+      debugLog(cacheData.result.type, '(CACHED)');
+      return cacheData.result;
+    }
+  } catch (error) {
+    // Invalid cache data - will regenerate
+  }
+  return null;
+}
 
 
 /**
@@ -49,7 +118,14 @@ function collectNavigationSignals() {
   // Page load count for this session (most important signal)
   const currentCount = parseInt(sessionStorage.getItem(SESSION_KEYS.PAGE_LOAD_COUNT) || '0');
   const pageLoadCount = currentCount + 1;
-  sessionStorage.setItem(SESSION_KEYS.PAGE_LOAD_COUNT, pageLoadCount.toString());
+
+  // Try to set page load count with error handling
+  try {
+    sessionStorage.setItem(SESSION_KEYS.PAGE_LOAD_COUNT, pageLoadCount.toString());
+  } catch (error) {
+    console.warn('Failed to update page load count (storage quota exceeded?):', error);
+    // Continue with detection even if storage fails
+  }
 
   // Get navigation type with fallback
   let navigationType = 0; // default: navigate
@@ -77,33 +153,46 @@ function collectNavigationSignals() {
 }
 
 /**
- * Collect essential session signals
+ * Collect essential session signals (READ-ONLY - no side effects)
+ * CRITICAL: Do not read auth_session_initialized here to avoid circular logic
  */
 function collectSessionSignals() {
   return {
     authTimestamp: sessionStorage.getItem(SESSION_KEYS.AUTH_TIMESTAMP),
     lastActivity: sessionStorage.getItem(SESSION_KEYS.LAST_ACTIVITY),
-    authSessionInitialized: sessionStorage.getItem('auth_session_initialized')
+    // REMOVED: authSessionInitialized - this creates circular dependency
+    // Detection should be based on independent signals only
+    hasSupabaseSession: !!sessionStorage.getItem('sb-localhost-auth-token'), // Alternative signal
+    pageLoadCount: parseInt(sessionStorage.getItem(SESSION_KEYS.PAGE_LOAD_COUNT) || '0')
   };
 }
 
 /**
  * Pure function to determine if this is a new sign-in
+ * Uses only independent signals to avoid circular logic
  */
-function isNewSignIn(pageLoadCount, hasActivity, navType, authTimestamp) {
-  // Primary indicators: Low page count + no activity history
-  if (pageLoadCount <= 2 && !hasActivity) {
+function isNewSignIn(navPageLoadCount, sessionPageLoadCount, hasActivity, navType, authTimestamp, hasSupabaseSession) {
+  // Use navigation page load count (incremented fresh) vs session page load count (persistent)
+  const actualPageLoadCount = Math.max(navPageLoadCount, sessionPageLoadCount);
+
+  // Primary indicators: Low page count + no previous activity
+  if (actualPageLoadCount <= 2 && !hasActivity) {
     return true;
   }
-  
-  // Fresh auth override: Very recent authentication
-  if (authTimestamp) {
+
+  // Fresh auth override: Very recent authentication with Supabase session present
+  if (authTimestamp && hasSupabaseSession) {
     const authAge = Date.now() - parseInt(authTimestamp);
     if (authAge < TIMING_CONSTANTS.FRESH_AUTH_WINDOW_MS) {
       return true;
     }
   }
-  
+
+  // First-time sign-in: Has Supabase session but no activity history
+  if (hasSupabaseSession && !hasActivity && actualPageLoadCount <= 3) {
+    return true;
+  }
+
   return false;
 }
 
@@ -126,22 +215,25 @@ function isPageRefresh(pageLoadCount, hasActivity, navType) {
 
 /**
  * Main detection logic using pure functions
+ * Uses independent signals to avoid circular dependencies
  */
 function determineSessionType(navSignals, sessionSignals) {
-  const pageLoadCount = navSignals.pageLoadCount;
+  const navPageLoadCount = navSignals.pageLoadCount;
+  const sessionPageLoadCount = sessionSignals.pageLoadCount;
   const hasActivity = !!sessionSignals.lastActivity;
-  const navType = navSignals.navigationTiming?.type || 
+  const navType = navSignals.navigationTiming?.type ||
                  (navSignals.navigationType === 1 ? 'reload' : 'navigate');
   const authTimestamp = sessionSignals.authTimestamp;
+  const hasSupabaseSession = sessionSignals.hasSupabaseSession;
 
-  if (isNewSignIn(pageLoadCount, hasActivity, navType, authTimestamp)) {
+  if (isNewSignIn(navPageLoadCount, sessionPageLoadCount, hasActivity, navType, authTimestamp, hasSupabaseSession)) {
     return DETECTION_TYPES.NEW_SIGN_IN;
   }
-  
-  if (isPageRefresh(pageLoadCount, hasActivity, navType)) {
+
+  if (isPageRefresh(Math.max(navPageLoadCount, sessionPageLoadCount), hasActivity, navType)) {
     return DETECTION_TYPES.PAGE_REFRESH;
   }
-  
+
   // Default to page refresh (safer fallback)
   return DETECTION_TYPES.PAGE_REFRESH;
 }
@@ -152,54 +244,90 @@ function determineSessionType(navSignals, sessionSignals) {
  */
 function updateSessionTracking(detectionType) {
   const now = Date.now().toString();
-  
-  // Update activity timestamp
-  sessionStorage.setItem(SESSION_KEYS.LAST_ACTIVITY, now);
 
-  // If new sign-in detected, update auth timestamp
-  if (detectionType === DETECTION_TYPES.NEW_SIGN_IN) {
-    sessionStorage.setItem(SESSION_KEYS.AUTH_TIMESTAMP, now);
+  try {
+    // Update activity timestamp
+    sessionStorage.setItem(SESSION_KEYS.LAST_ACTIVITY, now);
+
+    // If new sign-in detected, update auth timestamp
+    if (detectionType === DETECTION_TYPES.NEW_SIGN_IN) {
+      sessionStorage.setItem(SESSION_KEYS.AUTH_TIMESTAMP, now);
+    }
+  } catch (error) {
+    console.warn('Failed to update session tracking (storage quota exceeded?):', error);
+    // Detection still works without session tracking updates
   }
 }
 
 /**
- * Main detection function
+ * Main detection function with caching and race condition protection
  * Analyzes all available signals and returns detection result
  */
 export function detectSessionType() {
   try {
+    // FIRST: Check for cached result to prevent repeated execution
+    const cachedResult = getCachedDetectionResult();
+    if (cachedResult) {
+      return cachedResult; // Return cached result with (CACHED) debug log
+    }
+
+    // Get detection session ID for this session
+    const sessionId = getDetectionSessionId();
+
     // Collect all available signals
     const navSignals = collectNavigationSignals();
     const sessionSignals = collectSessionSignals();
 
     // Use pure function logic for detection
     const detectedType = determineSessionType(navSignals, sessionSignals);
-    
-    // Simple confidence based on detection clarity
-    const confidence = detectedType === DETECTION_TYPES.NEW_SIGN_IN ? 85 : 75;
 
-    // Create result object
+    // Enhanced confidence based on signal strength
+    let confidence = 75; // Base confidence
+    if (detectedType === DETECTION_TYPES.NEW_SIGN_IN) {
+      // Higher confidence for new sign-in when we have strong signals
+      if (sessionSignals.hasSupabaseSession && !sessionSignals.lastActivity) {
+        confidence = 90; // Very confident - has auth but no history
+      } else if (sessionSignals.authTimestamp) {
+        confidence = 85; // Confident - fresh auth timestamp
+      }
+    } else if (detectedType === DETECTION_TYPES.PAGE_REFRESH) {
+      if (sessionSignals.lastActivity && sessionSignals.pageLoadCount >= 2) {
+        confidence = 85; // Confident - established session
+      }
+    }
+
+    // Create result object with enhanced data
     const result = {
       type: detectedType,
       confidence,
+      scores: {
+        pageLoadCount: Math.max(navSignals.pageLoadCount, sessionSignals.pageLoadCount),
+        hasActivity: !!sessionSignals.lastActivity,
+        hasSupabaseSession: sessionSignals.hasSupabaseSession,
+        authAge: sessionSignals.authTimestamp ? Date.now() - parseInt(sessionSignals.authTimestamp) : null
+      },
       signals: {
         navigation: navSignals,
         session: sessionSignals
       },
+      sessionId,
       timestamp: Date.now()
     };
 
-    // Update session tracking
+    // Cache the result BEFORE any side effects
+    cacheDetectionResult(result, sessionId);
+
+    // Update session tracking AFTER detection and caching
     updateSessionTracking(detectedType);
 
-    // Simple detection logging
-    debugLog(detectedType);
+    // Enhanced detection logging
+    debugLog(detectedType, `(confidence: ${confidence}%, session: ${sessionId.substr(-4)})`);
 
     return result;
 
   } catch (error) {
     console.error('Session detection failed:', error);
-    
+
     // Fallback to safe default
     const fallbackResult = {
       type: DETECTION_TYPES.PAGE_REFRESH,
@@ -207,10 +335,11 @@ export function detectSessionType() {
       scores: {},
       signals: {},
       error: error.message,
+      sessionId: null,
       timestamp: Date.now()
     };
 
-    debugLog(DETECTION_TYPES.PAGE_REFRESH);
+    debugLog(DETECTION_TYPES.PAGE_REFRESH, '(FALLBACK)');
 
     return fallbackResult;
   }
@@ -290,9 +419,51 @@ export function clearAllSessionData() {
 }
 
 /**
+ * Debug storage info utility
+ */
+export function debugStorageInfo() {
+  const info = {
+    localStorage: {},
+    sessionStorage: {},
+    totalSize: 0
+  };
+
+  try {
+    // List all localStorage keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const value = localStorage.getItem(key);
+      const size = value ? new Blob([value]).size : 0;
+      info.localStorage[key] = { size, preview: value?.substring(0, 100) + '...' };
+      info.totalSize += size;
+    }
+
+    // List all sessionStorage keys
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      const value = sessionStorage.getItem(key);
+      const size = value ? new Blob([value]).size : 0;
+      info.sessionStorage[key] = { size, preview: value?.substring(0, 100) + '...' };
+      info.totalSize += size;
+    }
+
+    console.table(info.localStorage);
+    console.table(info.sessionStorage);
+    console.log(`Total size: ${(info.totalSize / 1024).toFixed(2)} KB`);
+
+    return info;
+  } catch (error) {
+    console.error('Error analyzing storage:', error);
+    return null;
+  }
+}
+
+
+/**
  * Debug function: Make this available globally for testing
  */
 if (process.env.NODE_ENV === 'development') {
   window.clearAllSessionData = clearAllSessionData;
   window.resetSessionTracking = resetSessionTracking;
+  window.debugStorageInfo = debugStorageInfo;
 }

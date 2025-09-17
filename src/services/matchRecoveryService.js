@@ -28,15 +28,9 @@ export async function checkForRecoverableMatch() {
     const currentMatchId = gameState.currentMatchId;
 
     if (!currentMatchId) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 No currentMatchId in localStorage, no recovery needed');
-      }
-      return { success: true, match: null };
+        return { success: true, match: null };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Checking for recoverable match:', currentMatchId);
-    }
 
     // Query database for the match
     const { data: match, error } = await supabase
@@ -49,9 +43,6 @@ export async function checkForRecoverableMatch() {
     if (error) {
       // If match not found or not accessible, it's not recoverable
       if (error.code === 'PGRST116') {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🚫 Match not found or not accessible for recovery');
-        }
         return { success: true, match: null };
       }
       
@@ -62,14 +53,6 @@ export async function checkForRecoverableMatch() {
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Recoverable match found:', {
-        matchId: match.id,
-        opponent: match.opponent,
-        finishedAt: match.finished_at,
-        outcome: match.outcome
-      });
-    }
 
     return {
       success: true,
@@ -100,9 +83,6 @@ export async function deleteAbandonedMatch(matchId) {
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🗑️ Deleting abandoned match:', matchId);
-    }
 
     const { error } = await supabase
       .from('match')
@@ -117,9 +97,6 @@ export async function deleteAbandonedMatch(matchId) {
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Successfully deleted abandoned match');
-    }
 
     return { success: true };
 
@@ -187,15 +164,6 @@ export function validateRecoveryData(match, localData) {
 
   const isValid = checks.every(check => check === true);
   
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 Recovery data validation:', {
-      isValid,
-      matchId: match.id,
-      localMatchId: localData.currentMatchId,
-      playersCount: localData.allPlayers?.length,
-      scores: `${localData.ownScore}-${localData.opponentScore}`
-    });
-  }
 
   return isValid;
 }

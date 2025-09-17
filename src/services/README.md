@@ -18,14 +18,14 @@ The system implements a three-state lifecycle for matches:
 
 #### 1. Match Creation and ID Management
 - **When**: Match record created automatically when first period starts (`currentPeriodNumber === 1`)
-- **Prevention**: `matchCreationAttempted` flag prevents duplicate database inserts
+- **Prevention**: `matchCreated` flag prevents duplicate database inserts
 - **ID Persistence**: `currentMatchId` stored in localStorage and passed through game state
-- **Critical**: `clearStoredState()` MUST reset both `currentMatchId` and `matchCreationAttempted` for new matches
+- **Critical**: `clearStoredState()` MUST reset both `currentMatchId` and `matchCreated` for new matches
 
 ```javascript
 // Match creation triggered in useGameState.js
-if (currentPeriodNumber === 1 && !matchCreationAttempted && currentTeam?.id) {
-  setMatchCreationAttempted(true); // Prevent duplicates
+if (currentPeriodNumber === 1 && !matchCreated && currentTeam?.id) {
+  setMatchCreated(true); // Prevent duplicates
   const result = await createMatch(matchData);
   setCurrentMatchId(result.matchId);
 }
@@ -150,7 +150,7 @@ const handleSaveMatchHistory = async () => {
 The service integrates with game state management through:
 
 - **Match ID Storage**: `currentMatchId` in localStorage and game state
-- **Creation Flag**: `matchCreationAttempted` prevents duplicate attempts
+- **Creation Flag**: `matchCreated` prevents duplicate attempts
 - **State Reset**: `clearStoredState()` properly cleans match lifecycle state
 
 ### Common Integration Patterns
@@ -210,3 +210,206 @@ The system handles both pairs and individual substitution modes:
 - **State Validation**: Only processes players who participated (`startedMatchAs !== null`)
 - **Logging**: Environment-gated success logs prevent production performance impact
 - **Error Recovery**: Graceful degradation when match ID missing or database unavailable
+
+## Resume Pending Match Configuration (`pendingMatchService.js` & `matchConfigurationService.js`)
+
+The resume pending match system allows users to save incomplete match configurations and resume them later. This is particularly useful when users are interrupted during configuration setup or need to prepare matches in advance.
+
+### Core Concepts for AI Understanding
+
+#### 1. Match State Lifecycle Extension
+The resume system extends the existing match lifecycle with a `pending` state:
+
+1. **`pending`** - Configuration saved but match not yet started
+2. **`running`** - Match is actively being played
+3. **`finished`** - Match completed but not yet saved to history
+4. **`confirmed`** - Match saved to history by user
+
+#### 2. Configuration Data Structure
+The `initial_config` JSON field stores the complete configuration needed to resume:
+
+```javascript
+{
+  teamConfig: {
+    formation: '2-2',
+    squadSize: 7,
+    substitutionType: 'pairs'
+  },
+  matchConfig: {
+    periods: 3,
+    periodDurationMinutes: 15,
+    opponentTeam: 'Rival FC',
+    matchType: 'league',
+    captainId: 'player-uuid'
+  },
+  squadSelection: ['player1-id', 'player2-id', ...],
+  formation: { /* formation data */ },
+  periodGoalies: { 1: 'goalie1-id', 2: 'goalie2-id', 3: 'goalie3-id' }
+}
+```
+
+#### 3. Session Detection Integration
+The system integrates with `sessionDetectionService.js` to determine when to show resume modals:
+
+- **NEW_SIGN_IN**: Show pending match modal if available
+- **PAGE_REFRESH**: Skip pending match modal (user likely continuing current work)
+
+### Key Functions
+
+#### Pending Match Detection (`pendingMatchService.js`)
+- `checkForPendingMatches(teamId)` - Returns all pending matches for multi-match selection
+- `checkForPendingMatch(teamId)` - Returns single pending match for resume workflow
+- Both functions validate that `initial_config` exists and is not empty
+
+#### Configuration Management (`matchConfigurationService.js`)
+- `savePendingMatchConfiguration(teamId, configData)` - Save configuration as pending match
+- `updatePendingMatch(matchId, configData)` - Update existing pending configuration
+- `createMatchFromConfiguration(teamId, configData)` - Create running match from configuration
+- `handleExistingMatch(matchId, action)` - Handle existing match conflicts
+
+#### Data Transformation
+- `validatePendingMatchConfig(initialConfig)` - Comprehensive validation of configuration completeness
+- `createResumeDataForConfiguration(initialConfig)` - Transform database config for ConfigurationScreen
+- `matchesCurrentConfiguration(currentConfig, pendingMatch)` - Prevent duplicate pending matches
+
+### Critical Patterns and Gotchas
+
+#### 1. Boolean Return Values - CRITICAL BUG FIX
+**Problem**: Functions were returning `undefined` instead of `false` for negative cases.
+
+```javascript
+// ❌ Incorrect: Returns undefined when conditions fail
+const shouldShow = result.match &&
+                  result.match.initial_config &&
+                  Object.keys(result.match.initial_config).length > 0;
+
+// ✅ Correct: Always returns boolean
+const shouldShow = !!(result.match &&
+                     result.match.initial_config &&
+                     Object.keys(result.match.initial_config).length > 0);
+```
+
+#### 2. Configuration Validation Requirements
+All pending configurations must include:
+- **teamConfig**: `formation`, `squadSize`, `substitutionType`
+- **matchConfig**: `format`, `periods`, `periodDurationMinutes`
+- **squadSelection**: Non-empty array of player IDs
+
+#### 3. Database State vs UI State
+- **Always use database as authoritative source** for pending match detection
+- UI state and localStorage are unreliable for detecting pending matches
+- Query database directly rather than relying on cached state
+
+#### 4. Data Structure Flattening
+The database stores configuration in flat structure, but ConfigurationScreen expects nested:
+
+```javascript
+// Database format (flat)
+{
+  teamConfig: { formation: '2-2', squadSize: 7 },
+  formation: '2-2',  // Duplicate for compatibility
+  formationData: { /* detailed formation data */ }
+}
+
+// ConfigurationScreen expects both flat and nested access
+```
+
+### Integration Patterns
+
+#### 1. Saving Pending Configuration
+```javascript
+// From ConfigurationScreen - save current configuration
+const configData = {
+  teamConfig: { formation, squadSize, substitutionType },
+  matchConfig: { periods, periodDurationMinutes, opponentTeam, matchType, captainId },
+  squadSelection: selectedPlayers,
+  formation: formationData,
+  periodGoalies: goalieAssignments
+};
+
+const result = await savePendingMatchConfiguration(currentTeam.id, configData);
+```
+
+#### 2. Resume Workflow
+```javascript
+// Check for pending matches on app start
+const { shouldShow, pendingMatch } = await checkForPendingMatch(teamId);
+
+if (shouldShow) {
+  // Show resume modal
+  const resumeData = createResumeDataForConfiguration(pendingMatch.initial_config);
+  // Apply resumeData to ConfigurationScreen state
+}
+```
+
+#### 3. Multi-Match Selection
+```javascript
+// When multiple pending matches exist
+const { shouldShow, pendingMatches } = await checkForPendingMatches(teamId);
+
+if (shouldShow && pendingMatches.length > 1) {
+  // Show selection modal with match list
+  // User selects which match to resume
+}
+```
+
+### Error Handling Patterns
+
+#### Graceful Degradation
+```javascript
+// All functions return standardized responses
+{ success: true, data: {...} }     // Success
+{ success: false, error: string }  // Failure
+
+// Always provide fallback behavior
+const { shouldShow, pendingMatch } = await checkForPendingMatch(teamId) ||
+                                           { shouldShow: false, pendingMatch: null };
+```
+
+#### Validation Failures
+```javascript
+if (!validatePendingMatchConfig(initialConfig)) {
+  console.warn('⚠️ Invalid pending match config, cannot create resume data');
+  return null; // Graceful failure
+}
+```
+
+### Testing Considerations
+
+#### Mock Strategy
+- **Supabase**: Mock all database operations with realistic responses
+- **Dependencies**: Mock `getPendingMatchForTeam` and `getInitialFormationTemplate`
+- **Edge Cases**: Test empty configs, missing fields, database errors
+
+#### Critical Test Cases
+- Boolean return validation (prevents `undefined` returns)
+- Configuration validation with missing required fields
+- Resume data transformation accuracy
+- Error handling when database unavailable
+- Multi-match vs single-match detection logic
+
+### Development vs Production Behavior
+
+#### Logging
+- **Development**: Detailed logs for debugging configuration saving/loading
+- **Production**: Only errors and warnings to prevent performance impact
+- **Always logged**: Database errors and validation warnings
+
+#### Performance
+- **Database Queries**: Optimized to fetch only required fields
+- **Validation**: Front-loaded to prevent unnecessary processing
+- **Caching**: No caching implemented - always query fresh data for accuracy
+
+### Future Enhancement Considerations
+
+#### Potential Improvements
+- **TTL for Pending Matches**: Automatic cleanup of old pending configurations
+- **Configuration Versioning**: Handle configuration format changes gracefully
+- **Partial Resume**: Resume only parts of configuration (e.g., just squad selection)
+- **Conflict Resolution**: Better handling when multiple devices create pending matches
+
+#### Architecture Decisions
+- **Single Source of Truth**: Database is authoritative, not localStorage
+- **Validation First**: Always validate before processing configuration data
+- **Explicit Boolean Logic**: Use `!!()` to ensure boolean returns
+- **Error Isolation**: Service failures don't break user workflow

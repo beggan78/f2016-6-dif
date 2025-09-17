@@ -57,38 +57,41 @@ function shouldCleanupKey(key) {
 export function cleanupPreviousSession() {
   try {
     const keysToRemove = [];
+    const allKeys = [];
+    const preservedKeys = [];
+    const unknownKeys = [];
     
     // Iterate through all localStorage keys
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key) continue;
       
+      allKeys.push(key);
+      
       // Skip preserved keys (user preferences)
       if (shouldPreserveKey(key)) {
+        preservedKeys.push(key);
         continue;
       }
       
       // Mark session-specific keys for removal
       if (shouldCleanupKey(key)) {
         keysToRemove.push(key);
+      } else {
+        unknownKeys.push(key);
       }
     }
+    
     
     // Remove the keys (done separately to avoid modifying during iteration)
     keysToRemove.forEach(key => {
       try {
         localStorage.removeItem(key);
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🧹 Cleaned up localStorage key: ${key}`);
-        }
       } catch (error) {
         console.warn(`Failed to remove localStorage key ${key}:`, error);
       }
     });
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ Session cleanup completed. Removed ${keysToRemove.length} keys, preserved ${PRESERVED_KEYS.length} preference keys`);
-    }
     
     return {
       success: true,
@@ -143,9 +146,6 @@ export function clearAllLocalStorage() {
     const keyCount = localStorage.length;
     localStorage.clear();
     
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`🚨 Emergency cleanup: cleared all ${keyCount} localStorage keys`);
-    }
     
     return { success: true, clearedKeys: keyCount };
   } catch (error) {

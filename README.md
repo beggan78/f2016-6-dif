@@ -137,11 +137,19 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 #### Match Abandonment Protection
 - **Database-Backed Safeguards**: Prevents accidental loss of active match data
 - **Intelligent Detection**: Automatically detects running or finished matches before allowing new game creation
-- **Flexible Recovery Options**: 
+- **Flexible Recovery Options**:
   - **Running Matches**: Choose to abandon (delete) or cancel and continue
   - **Finished Matches**: Save to history, delete, or cancel with three-option modal
 - **Data Integrity**: Uses database as authoritative source rather than UI state for reliable detection
 - **Error Handling**: Graceful fallback behavior when database queries fail (defaults to showing protection modal)
+
+#### Resume Pending Match Configuration
+- **Smart Session Detection**: Automatically detects new sign-ins vs page refreshes to determine when to show resume modal
+- **Configuration Persistence**: Saves complete match setup (team config, squad selection, match settings) to database as 'pending' state
+- **Seamless Resume Flow**: One-click resume from configuration screen with all settings pre-populated
+- **Multi-Match Support**: Handles multiple pending matches per team with user selection interface
+- **Validation System**: Comprehensive validation ensures pending configurations are complete and valid before resuming
+- **Intelligent Cleanup**: Automatically manages pending match lifecycle to prevent database clutter
 
 ## 7-Player Individual Mode (Detailed)
 

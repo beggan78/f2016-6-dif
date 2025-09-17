@@ -113,14 +113,6 @@ export function NavigationHistoryProvider({ children }) {
   }, [navigationHistory]);
 
   const navigateTo = useCallback((view, data = null, options = {}) => {
-    console.log('📱 NavigationHistory: navigateTo called', {
-      fromView: currentView,
-      toView: view,
-      options,
-      currentHistoryLength: navigationHistory.length,
-      isUntracked: UNTRACKED_VIEWS.has(view)
-    });
-
     // Validate view - ensure it's a simple string
     if (!view || typeof view !== 'string' || !VALID_VIEWS.includes(view)) {
       console.warn('Invalid view for navigation:', view, 'Expected one of:', VALID_VIEWS);
@@ -138,19 +130,11 @@ export function NavigationHistoryProvider({ children }) {
     try {
       // Don't navigate if already at the same view
       if (currentView === view) {
-        console.log('📱 NavigationHistory: Already at target view, skipping');
         return true;
       }
 
       // Don't track certain automatic transitions
       const shouldTrack = !UNTRACKED_VIEWS.has(view) && !options.skipHistory;
-      
-      console.log('📱 NavigationHistory: Tracking decision', {
-        shouldTrack,
-        isUntracked: UNTRACKED_VIEWS.has(view),
-        skipHistory: options.skipHistory,
-        hasCurrentView: !!currentView
-      });
       
       // If we have a current view and should track it, add to history
       if (currentView && shouldTrack) {
@@ -159,13 +143,7 @@ export function NavigationHistoryProvider({ children }) {
           
           // Avoid duplicate consecutive entries
           if (newHistory.length === 0 || newHistory[newHistory.length - 1] !== currentView) {
-            console.log('📱 NavigationHistory: Adding to history', {
-              previousView: currentView,
-              newHistoryLength: newHistory.length + 1
-            });
             newHistory.push(currentView);
-          } else {
-            console.log('📱 NavigationHistory: Skipping duplicate history entry');
           }
           
           // Limit history size to prevent memory issues
@@ -180,11 +158,6 @@ export function NavigationHistoryProvider({ children }) {
       // Update current view - ensure it's a clean string
       setCurrentView(String(view));
       
-      console.log('📱 NavigationHistory: View updated', {
-        newCurrentView: view,
-        historyLength: navigationHistory.length
-      });
-      
       // Record this programmatic navigation to prevent sync conflicts
       lastProgrammaticNavigation.current = {
         view: String(view),
@@ -198,17 +171,9 @@ export function NavigationHistoryProvider({ children }) {
     } finally {
       isNavigating.current = false;
     }
-  }, [currentView, navigationHistory.length]);
+  }, [currentView]);
 
   const navigateBack = useCallback((fallbackView = null) => {
-    console.log('📱 NavigationHistory: navigateBack called', {
-      currentView,
-      historyLength: navigationHistory.length,
-      history: navigationHistory,
-      fallbackView,
-      canNavigateBack: navigationHistory.length > 0
-    });
-
     if (isNavigating.current) {
       console.warn('NavigationHistory: Navigation already in progress, skipping navigateBack');
       return null;
@@ -221,11 +186,6 @@ export function NavigationHistoryProvider({ children }) {
         // Get the most recent view from history
         const targetView = navigationHistory[navigationHistory.length - 1];
         
-        console.log('📱 NavigationHistory: Found history target', {
-          targetView,
-          remainingHistoryLength: navigationHistory.length - 1
-        });
-        
         // Validate target view is a clean string
         if (!targetView || typeof targetView !== 'string' || !VALID_VIEWS.includes(targetView)) {
           console.error('NavigationHistory: Invalid target view from history:', targetView, 'Expected one of:', VALID_VIEWS);
@@ -237,11 +197,6 @@ export function NavigationHistoryProvider({ children }) {
           // Navigate to the target view - ensure it's a clean string
           setCurrentView(String(targetView));
           
-          console.log('📱 NavigationHistory: Navigated back via history', {
-            targetView,
-            newHistoryLength: navigationHistory.length - 1
-          });
-          
           return String(targetView);
         }
       }
@@ -249,12 +204,6 @@ export function NavigationHistoryProvider({ children }) {
       // No history available or invalid history entry, use context-aware fallback
       const contextFallback = getContextAwareFallback(currentView);
       const targetView = fallbackView || contextFallback;
-      
-      console.log('📱 NavigationHistory: Using fallback', {
-        fallbackView,
-        contextFallback,
-        selectedTargetView: targetView
-      });
       
       // Validate fallback view
       if (!targetView || typeof targetView !== 'string' || !VALID_VIEWS.includes(targetView)) {
@@ -264,7 +213,6 @@ export function NavigationHistoryProvider({ children }) {
       }
       
       setCurrentView(String(targetView));
-      console.log('📱 NavigationHistory: Navigated back via fallback', { targetView });
       return String(targetView);
     } catch (error) {
       console.error('Error during back navigation:', error);

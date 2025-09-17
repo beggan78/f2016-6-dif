@@ -112,10 +112,6 @@ function AppContent() {
     return navigationHistory.navigateBack(fallback);
   }, [navigationHistory]);
 
-  // Enhanced setViewWithData that tracks navigation history
-  const setViewWithData = useCallback((view, data = null) => {
-    return navigateToView(view, data);
-  }, [navigateToView]);
   const timers = useTimers(gameState.periodDurationMinutes, gameState.alertMinutes, gameState.playAlertSounds, gameState.currentPeriodNumber);
   const {
     showSessionWarning,
@@ -139,6 +135,8 @@ function AppContent() {
   // Authentication modal
   const authModal = useAuthModal();
 
+
+
   // Check for password reset tokens or codes in URL on app load
   useEffect(() => {
     const { hasTokens } = detectResetTokens();
@@ -158,6 +156,8 @@ function AppContent() {
 
 
 
+
+
   // Debug mode detection
   const debugMode = isDebugMode();
   
@@ -171,6 +171,7 @@ function AppContent() {
     }
     syncCurrentView(gameState.view);
   }, [gameState.view, syncCurrentView]);
+  
   
   // Custom sign out handler that resets view to ConfigurationScreen
   const handleSignOut = useCallback(async () => {
@@ -201,6 +202,7 @@ function AppContent() {
       setSuccessMessage('');
     }, 3000); // 3 second auto-dismiss
   }, []);
+
 
   // Create a ref to store the pushNavigationState function to avoid circular dependency
   const pushNavigationStateRef = useRef(null);
@@ -237,6 +239,7 @@ function AppContent() {
       setNavigationData(null);
     }
   }, [gameState.view, navigationData]);
+
 
 
   // Handle invitation processed callback from InvitationWelcome - now delegated to hook
@@ -867,11 +870,15 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             updateTeamConfig={gameState.updateTeamConfig}
             selectedFormation={gameState.selectedFormation}
+            setSelectedFormation={gameState.setSelectedFormation}
             updateFormationSelection={gameState.updateFormationSelection}
             createTeamConfigFromSquadSize={gameState.createTeamConfigFromSquadSize}
+            formation={gameState.formation}
+            setFormation={gameState.setFormation}
             alertMinutes={gameState.alertMinutes}
             setAlertMinutes={gameState.setAlertMinutes}
             handleStartPeriodSetup={gameState.handleStartPeriodSetup}
+            handleSaveConfiguration={gameState.handleSaveConfiguration}
             selectedSquadPlayers={selectedSquadPlayers}
             opponentTeam={gameState.opponentTeam}
             setOpponentTeam={gameState.setOpponentTeam}
@@ -882,13 +889,17 @@ function AppContent() {
             debugMode={debugMode}
             authModal={authModal}
             setView={navigateToView}
-            setViewWithData={setViewWithData}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
+            setCurrentMatchId={gameState.setCurrentMatchId}
+            setMatchCreated={gameState.setMatchCreated}
+            hasActiveConfiguration={gameState.hasActiveConfiguration}
+            setHasActiveConfiguration={gameState.setHasActiveConfiguration}
+            clearStoredState={gameState.clearStoredState}
           />
         );
       case VIEWS.PERIOD_SETUP:
         return (
-          <PeriodSetupScreen 
+          <PeriodSetupScreen
             currentPeriodNumber={gameState.currentPeriodNumber}
             formation={gameState.formation}
             setFormation={gameState.setFormation}
@@ -910,6 +921,8 @@ function AppContent() {
             rotationQueue={gameState.rotationQueue}
             setRotationQueue={gameState.setRotationQueue}
             preparePeriodWithGameLog={gameState.preparePeriodWithGameLog}
+            handleSavePeriodConfiguration={gameState.handleSavePeriodConfiguration}
+            matchState={gameState.matchState}
             debugMode={debugMode}
           />
         );
@@ -1165,6 +1178,7 @@ function AppContent() {
         saving={isProcessingRecovery}
         deleting={isProcessingRecovery}
       />
+
 
         {/* Session Expiry Warning Modal */}
         <SessionExpiryModal

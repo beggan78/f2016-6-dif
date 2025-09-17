@@ -16,6 +16,9 @@ const AuthContext = createContext({
   authError: null,
   sessionExpiry: null,
   
+  // Session detection
+  sessionDetectionResult: null,
+  
   // Computed properties
   isAuthenticated: false,
   isEmailConfirmed: false,
@@ -41,14 +44,6 @@ const AuthContext = createContext({
   updateProfile: async () => {},
 });
 
-// Simple debug logging
-const debugLog = (message, data = null, isError = false) => {
-  if (process.env.NODE_ENV === 'development') {
-    const timestamp = new Date().toISOString();
-    const prefix = isError ? '❌' : '✅';
-    console.log(`${prefix} [${timestamp}] ${message}`, data || '');
-  }
-};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -59,6 +54,7 @@ export function AuthProvider({ children }) {
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
   const [skipProfileFetch, setSkipProfileFetch] = useState(false);
+  const [sessionDetectionResult, setSessionDetectionResult] = useState(null);
 
   // Clear any auth errors when user changes
   useEffect(() => {
@@ -75,19 +71,13 @@ export function AuthProvider({ children }) {
       if (detectionResult?.type === DETECTION_TYPES.PAGE_REFRESH) {
         const cachedProfile = getCachedUserProfile();
         if (cachedProfile && cachedProfile.id === userId) {
-          debugLog('✅ PAGE REFRESH DETECTED - loading cached profile immediately');
           setUserProfile(cachedProfile);
           const needsCompletion = !cachedProfile.name || cachedProfile.name.trim().length === 0;
           setNeedsProfileCompletion(needsCompletion);
           
           // Return cached data immediately, skip database query
-          debugLog('📝 Using cached profile, skipping database query to avoid overwrite');
           return cachedProfile;
-        } else {
-          debugLog('⚠️ Page refresh detected but no valid cache found - proceeding with database query');
         }
-      } else if (detectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN) {
-        debugLog('🔍 NEW SIGN-IN DETECTED - skipping cache, fetching fresh profile from database');
       }
       
       // Use provided session data to avoid auth deadlock
@@ -97,10 +87,6 @@ export function AuthProvider({ children }) {
         session = sessionCheck.data?.session;
       }
 
-      // Auth state check (simplified)
-      if (!session) {
-        debugLog('⚠️ No session available for profile query');
-      }
       
       // Create the database query
       const queryPromise = supabase
@@ -137,11 +123,6 @@ export function AuthProvider({ children }) {
       return data;
       
     } catch (error) {
-      if (error.message === 'Profile fetch timeout') {
-        debugLog('Profile fetch timed out after 10 seconds', null, true);
-      } else {
-        debugLog('Error fetching profile', error, true);
-      }
       console.error('Error fetching profile:', error.message);
       setUserProfile(null);
       setNeedsProfileCompletion(true); // Assume needs completion if fetch fails
@@ -159,11 +140,9 @@ export function AuthProvider({ children }) {
         const expiryTime = new Date(session.expires_at * 1000);
         setSessionExpiry(expiryTime);
         setShowSessionWarning(false);
-        debugLog('Session extended successfully');
       }
       return { success: true };
     } catch (error) {
-      debugLog('Failed to extend session', error, true);
       return { success: false, error: error.message };
     }
   }, []);
@@ -192,14 +171,12 @@ export function AuthProvider({ children }) {
     const expiryTime = new Date(session.expires_at * 1000);
     setSessionExpiry(expiryTime);
     
-    debugLog(`Session expires at: ${expiryTime.toLocaleTimeString()}`);
     
     // Warn user 5 minutes before expiry (disabled via feature flag)
     if (ENABLE_SESSION_EXPIRY_WARNINGS) {
       const warningTime = expiryTime.getTime() - Date.now() - (5 * 60 * 1000);
       if (warningTime > 0) {
         setTimeout(() => {
-          debugLog('⚠️ Session expiring soon!');
           setShowSessionWarning(true);
         }, warningTime);
       }
@@ -241,11 +218,9 @@ export function AuthProvider({ children }) {
         // Process the session
         if (session?.user) {
           const userId = session.user.id;
-          debugLog(`Processing session for user: ${userId}`);
           
           // Check if we're already processing this user
           if (currentUserIdRef.current === userId && currentFetchRef.current) {
-            debugLog('Already processing this user, ignoring duplicate session');
             return;
           }
           
@@ -255,17 +230,17 @@ export function AuthProvider({ children }) {
           
           // Use advanced session detection to determine cleanup strategy
           const detectionResult = detectSessionType();
-          debugLog(`🔍 Session detection result:`, detectionResult);
+          
+          // Store detection result for other components to access
+          setSessionDetectionResult(detectionResult);
           
           // Set session flag immediately after detection to prevent false positives on subsequent runs
           sessionStorage.setItem('auth_session_initialized', 'true');
           
           // Only clean up localStorage based on reliable detection
           if (shouldCleanupSession(detectionResult)) {
-            debugLog('🧹 Session cleanup required - performing localStorage cleanup');
             cleanupPreviousSession();
           } else {
-            debugLog(`📋 No cleanup required - detected ${detectionResult.type}`);
           }
           
           // Run match cleanup in background (fire-and-forget)
@@ -278,12 +253,10 @@ export function AuthProvider({ children }) {
           
           // Cancel any existing profile fetch for different user
           if (currentFetchRef.current) {
-            debugLog('Cancelling previous profile fetch for different user');
           }
           
           // Skip profile fetch during invitation password setup to prevent delays
           if (skipProfileFetch) {
-            debugLog('Skipping profile fetch during invitation setup');
             initializedRef.current = true;
             setLoading(false);
           } else {
@@ -304,7 +277,6 @@ export function AuthProvider({ children }) {
     );
 
     return () => {
-      debugLog('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, [fetchUserProfile, setupSessionMonitoring, skipProfileFetch]); // Include required dependencies
@@ -340,17 +312,11 @@ export function AuthProvider({ children }) {
       // User was created and signed in immediately
       return { user: data.user, error: null };
     } catch (error) {
-      console.log('=== SIGNUP ERROR CAUGHT ===');
-      console.log('Error type:', error.constructor.name);
-      console.log('Error message:', error.message);
-      console.log('Error stack:', error.stack);
-      console.log('Full error object:', error);
-      
       const errorMessage = error.message || 'Failed to sign up';
       setAuthError(errorMessage);
+      console.error('Sign up error:', error.message);
       return { user: null, error: { message: errorMessage } };
     } finally {
-      console.log('=== SIGNUP DEBUG END ===');
       setLoading(false);
     }
   };
@@ -563,12 +529,10 @@ export function AuthProvider({ children }) {
 
   // Profile fetch control functions
   const enableProfileFetchSkip = useCallback(() => {
-    debugLog('Enabling profile fetch skip');
     setSkipProfileFetch(true);
   }, []);
 
   const disableProfileFetchSkip = useCallback(() => {
-    debugLog('Disabling profile fetch skip');
     setSkipProfileFetch(false);
   }, []);
 
@@ -579,6 +543,9 @@ export function AuthProvider({ children }) {
     loading,
     authError,
     sessionExpiry,
+    
+    // Session detection
+    sessionDetectionResult,
     
     // Computed properties
     isAuthenticated,
