@@ -388,17 +388,21 @@ export const simulateConfigurationSetup = async (gameScenario) => {
   });
 };
 
+/**
+ * Helper to simulate period setup navigation
+ */
+export const simulatePeriodSetup = async () => {
   // Since the PeriodSetupScreen UI structure is complex and the actual selects don't have
   // consistent data-testid attributes, we'll use a simpler approach
-  
+
   // For integration tests, we just need to verify that we can navigate to the game screen
   // The detailed formation setup is already tested in the unit tests
-  
+
   // Wait for the formation setup screen to load
   await waitFor(() => {
     expect(screen.getByText(/Period 1 Team Selection/i)).toBeInTheDocument();
   });
-  
+
   // Find and click the start game button (it may be disabled until formation is complete)
   // For now, we'll just wait for it to be available
   await waitFor(() => {

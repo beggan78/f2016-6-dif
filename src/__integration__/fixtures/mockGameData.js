@@ -465,7 +465,7 @@ export const workflowScenarios = {
       {
         name: 'configuration',
         screen: 'config',
-        data: gameConfigScenarios.standardPairs,
+        data: { squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
         expectedResult: { view: 'setup', selectedSquadIds: Array.isArray }
       },
       {
@@ -521,7 +521,7 @@ export const workflowScenarios = {
     steps: [
       {
         name: 'setup_game',
-        data: gameStateScenarios.midGame(),
+        data: persistenceScenarios.midGameState,
         action: 'save_to_storage'
       },
       {

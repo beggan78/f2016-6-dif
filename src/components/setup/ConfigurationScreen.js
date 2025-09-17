@@ -40,6 +40,8 @@ export function ConfigurationScreen({
   setSelectedFormation,
   updateFormationSelection,
   createTeamConfigFromSquadSize,
+  formation,
+  setFormation,
   alertMinutes,
   setAlertMinutes,
   handleStartPeriodSetup, 
@@ -544,7 +546,13 @@ export function ConfigurationScreen({
         if (resumeData.periodGoalies) {
           setPeriodGoalieIds(resumeData.periodGoalies);
         }
-        
+
+        // CRITICAL: Restore formation data with position assignments
+        if (resumeData.formationData) {
+          console.log('🔄 RESUME: Restoring formation data with position assignments:', resumeData.formationData);
+          setFormation(resumeData.formationData);
+        }
+
         // Mark resume data as processed and applied
         resumeDataProcessedRef.current = true;
         resumeDataAppliedRef.current = true;

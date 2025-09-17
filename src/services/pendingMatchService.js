@@ -7,6 +7,7 @@
 
 import { getPendingMatchForTeam } from './matchStateManager';
 import { supabase } from '../lib/supabase';
+import { getInitialFormationTemplate } from '../constants/gameModes';
 
 /**
  * Get ALL pending matches for a team (for multi-match modal)
@@ -70,9 +71,9 @@ export async function checkForPendingMatch(teamId) {
     }
 
     // Only show modal if there's a pending match with initial config
-    const shouldShow = result.match && 
-                      result.match.initial_config && 
-                      Object.keys(result.match.initial_config).length > 0;
+    const shouldShow = !!(result.match &&
+                         result.match.initial_config &&
+                         Object.keys(result.match.initial_config).length > 0);
 
 
     return {
@@ -150,6 +151,7 @@ export function createResumeDataForConfiguration(initialConfig) {
       captainId: initialConfig.matchConfig?.captainId || null,
       teamConfig: teamConfig,
       formation: teamConfig.formation || '2-2',
+      formationData: initialConfig.formation || getInitialFormationTemplate(teamConfig),
       periodGoalies: initialConfig.periodGoalies || {}
     };
   } catch (error) {
