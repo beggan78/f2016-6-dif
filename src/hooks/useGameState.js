@@ -71,6 +71,30 @@ const hasPlayerAssignments = (formation, teamConfig) => {
   });
 };
 
+const findPlayerPairKey = (playerId, formation, isPairsMode, formationAwareTeamConfig) => {
+  if (!isPairsMode) {
+    const modeDefinition = getModeDefinition(formationAwareTeamConfig);
+    if (!modeDefinition) {
+      return null;
+    }
+
+    const positions = ['goalie', ...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
+    for (const pos of positions) {
+      if (formation[pos] === playerId) return pos;
+    }
+    return null;
+  }
+
+  const pairKeys = ['leftPair', 'rightPair', 'subPair'];
+  for (const pairKey of pairKeys) {
+    const pair = formation[pairKey];
+    if (pair?.defender === playerId || pair?.attacker === playerId) {
+      return pairKey;
+    }
+  }
+  return null;
+};
+
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
   const { currentTeam } = useTeam();
@@ -431,7 +455,8 @@ export function useGameState(navigateToView = null) {
   }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam,
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
-      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated]);
+      setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated,
+      getFormationAwareTeamConfig]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
@@ -1418,7 +1443,12 @@ export function useGameState(navigateToView = null) {
               ...stats,
               currentRole,
               currentStatus,
-              currentPairKey: findPlayerPairKey(p.id, formation, teamConfig.substitutionType === 'pairs'),
+              currentPairKey: findPlayerPairKey(
+                p.id,
+                formation,
+                teamConfig.substitutionType === 'pairs',
+                formationAwareTeamConfig
+              ),
               lastStintStartTimeEpoch: currentTimeEpoch
             }
           };
@@ -1582,33 +1612,6 @@ export function useGameState(navigateToView = null) {
   const handleSavePeriodConfiguration = useCallback(async () => {
     return await saveMatchConfiguration({ shouldNavigate: false });
   }, [saveMatchConfiguration]);
-
-  // Helper function to find player's pair key for pairs mode
-  const findPlayerPairKey = (playerId, formation, isPairsMode) => {
-    if (!isPairsMode) {
-      const formationAwareConfig = getFormationAwareTeamConfig();
-      const modeDefinition = getModeDefinition(formationAwareConfig);
-      if (!modeDefinition) {
-        return null;
-      }
-
-      const positions = ['goalie', ...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
-      for (const pos of positions) {
-        if (formation[pos] === playerId) return pos;
-      }
-      return null;
-    }
-    
-    // For pairs mode, find the pair key
-    const pairKeys = ['leftPair', 'rightPair', 'subPair'];
-    for (const pairKey of pairKeys) {
-      const pair = formation[pairKey];
-      if (pair?.defender === playerId || pair?.attacker === playerId) {
-        return pairKey;
-      }
-    }
-    return null;
-  };
 
   return {
     // State

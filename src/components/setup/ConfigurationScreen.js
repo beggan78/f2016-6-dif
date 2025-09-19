@@ -88,7 +88,6 @@ export function ConfigurationScreen({
   const [isResumedMatch, setIsResumedMatch] = useState(false);
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
-  const activeFormatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
 
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
@@ -238,7 +237,7 @@ export function ConfigurationScreen({
 
     updateTeamConfig(newTeamConfig);
     setHasActiveConfiguration(true);
-  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, setHasActiveConfiguration]);
 
   // Handle pair role rotation changes
   const handlePairRoleRotationChange = React.useCallback((newPairRoleRotation) => {
@@ -254,7 +253,7 @@ export function ConfigurationScreen({
 
     updateTeamConfig(newTeamConfig);
     setHasActiveConfiguration(true);
-  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, setHasActiveConfiguration]);
 
   // Auto-select "Pairs" substitution mode when 7 players + 2-2 formation is selected
   React.useEffect(() => {
