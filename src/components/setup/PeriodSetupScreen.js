@@ -923,7 +923,7 @@ export function PeriodSetupScreen({
       )}
 
       {/* Save Period Configuration Button - Only show when formation is complete and match hasn't started */}
-      {handleSavePeriodConfiguration && matchState !== 'running' && (
+      {handleSavePeriodConfiguration && matchState !== 'running' && currentPeriodNumber === 1 && (
         <Button
           onClick={handleSavePeriodConfigClick}
           disabled={savePeriodConfigStatus.loading || !isFormationComplete()}
