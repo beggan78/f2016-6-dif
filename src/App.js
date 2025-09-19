@@ -228,7 +228,9 @@ function AppContent() {
   
   const invitationNotifications = useInvitationNotifications({
     onSuccess: showSuccessMessage,
-    onNavigate: gameState.setView
+    onNavigate: gameState.setView,
+    currentView: gameState.view,
+    currentMatchState: gameState.matchState
   });
 
   // setViewWithData is now defined above with navigation history integration

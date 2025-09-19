@@ -19,6 +19,11 @@ const POSITION_CONFIG = {
   left: { title: 'Left Mid', position: 'left' },
   right: { title: 'Right Mid', position: 'right' },
   attacker: { title: 'Attacker', position: 'attacker' },
+
+  // 7v7 Formation positions
+  leftMidfielder: { title: 'Left Midfielder', position: 'leftMidfielder' },
+  rightMidfielder: { title: 'Right Midfielder', position: 'rightMidfielder' },
+  centerMidfielder: { title: 'Center Midfielder', position: 'centerMidfielder' },
   
   // Substitute positions
   substitute_1: { title: 'Substitute', position: 'substitute_1' },
@@ -159,7 +164,8 @@ export function PeriodSetupScreen({
       // Handle both 2-2 and 1-2-1 formation field positions
       return position === 'leftDefender' || position === 'rightDefender' || 
              position === 'leftAttacker' || position === 'rightAttacker' ||
-             position === 'defender' || position === 'left' || position === 'right' || position === 'attacker';
+             position === 'defender' || position === 'left' || position === 'right' || position === 'attacker' ||
+             position === 'leftMidfielder' || position === 'rightMidfielder' || position === 'centerMidfielder';
     }
   };
 

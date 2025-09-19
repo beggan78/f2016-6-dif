@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS } from '../../constants/teamConfiguration';
+import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS } from '../../constants/teamConfiguration';
+import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
@@ -85,6 +86,9 @@ export function ConfigurationScreen({
   const [resumeData, setResumeData] = useState(null);
   // Track if current match is a resumed match to prevent inappropriate state clearing
   const [isResumedMatch, setIsResumedMatch] = useState(false);
+
+  const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
+  const activeFormatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
 
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
@@ -217,8 +221,15 @@ export function ConfigurationScreen({
   const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
     if (!teamConfig) return;
 
+    const format = teamConfig.format || FORMATS.FORMAT_5V5;
+    const formatConfig = FORMAT_CONFIGS[format] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+    if (!formatConfig.allowedSubstitutionTypes.includes(newSubstitutionType)) {
+      console.warn(`Substitution type ${newSubstitutionType} not supported for format ${format}`);
+      return;
+    }
+
     const newTeamConfig = createTeamConfig(
-      teamConfig.format || '5v5',
+      format,
       teamConfig.squadSize || selectedSquadIds.length,
       teamConfig.formation || selectedFormation,
       newSubstitutionType,
@@ -226,6 +237,7 @@ export function ConfigurationScreen({
     );
 
     updateTeamConfig(newTeamConfig);
+    setHasActiveConfiguration(true);
   }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
 
   // Handle pair role rotation changes
@@ -233,7 +245,7 @@ export function ConfigurationScreen({
     if (!teamConfig || teamConfig.substitutionType !== SUBSTITUTION_TYPES.PAIRS) return;
 
     const newTeamConfig = createTeamConfig(
-      teamConfig.format || '5v5',
+      teamConfig.format || FORMATS.FORMAT_5V5,
       teamConfig.squadSize || selectedSquadIds.length,
       teamConfig.formation || selectedFormation,
       teamConfig.substitutionType,
@@ -241,17 +253,22 @@ export function ConfigurationScreen({
     );
 
     updateTeamConfig(newTeamConfig);
+    setHasActiveConfiguration(true);
   }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig]);
 
   // Auto-select "Pairs" substitution mode when 7 players + 2-2 formation is selected
   React.useEffect(() => {
-    if (selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2) {
+    if (
+      teamConfig?.format === FORMATS.FORMAT_5V5 &&
+      selectedSquadIds.length === 7 &&
+      selectedFormation === FORMATIONS.FORMATION_2_2
+    ) {
       // If no substitution type is set or if we need to default to pairs
       if (!teamConfig?.substitutionType) {
         handleSubstitutionModeChange(SUBSTITUTION_TYPES.PAIRS);
       }
     }
-  }, [selectedSquadIds.length, selectedFormation, teamConfig?.substitutionType, handleSubstitutionModeChange]);
+  }, [teamConfig?.format, selectedSquadIds.length, selectedFormation, teamConfig?.substitutionType, handleSubstitutionModeChange]);
 
   // Sync team roster to game state on mount and when team/players change
   React.useEffect(() => {
@@ -337,8 +354,8 @@ export function ConfigurationScreen({
       return;
     }
     
-    // Submit the vote (currently always for 5v5 format)
-    const result = await submitVote(formationToVoteFor, '5v5');
+    // Submit the vote for the actively selected format
+    const result = await submitVote(formationToVoteFor, currentFormat);
     
     if (result.success) {
       // Close modal on success after a brief delay to show success message
@@ -621,15 +638,17 @@ export function ConfigurationScreen({
 
       // Auto-create team configuration based on squad size
       // GUARD: Skip auto-configuration during resume data processing to prevent override
-      if (newIds.length >= 5 && newIds.length <= 10 && !isProcessingResumeDataRef.current) {
-        // Default to pairs for 7-player mode, individual for others
-        const defaultSubstitutionType = (newIds.length === 7) ? 'pairs' : 'individual';
+      if (newIds.length >= 5 && newIds.length <= 15 && !isProcessingResumeDataRef.current) {
+        const formatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+        const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
+          ? formatConfig.getDefaultSubstitutionType(newIds.length)
+          : SUBSTITUTION_TYPES.INDIVIDUAL;
         console.log('⚡ AUTO-CONFIG: Squad selection changed, triggering createTeamConfigFromSquadSize:', {
           squadSize: newIds.length,
           defaultSubstitutionType,
           currentTeamConfig: teamConfig
         });
-        createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType);
+        createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType, currentFormat);
       } else if (isProcessingResumeDataRef.current) {
         console.log('🛡️ AUTO-CONFIG: Skipped during resume processing to prevent override');
       }
@@ -683,6 +702,45 @@ export function ConfigurationScreen({
     setOpponentTeam(sanitizedValue);
   };
 
+  const handleFormatChange = React.useCallback((newFormat) => {
+    if (!teamConfig) return;
+
+    const formatConfig = FORMAT_CONFIGS[newFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+    const availableFormations = getValidFormations(newFormat, selectedSquadIds.length);
+    const fallbackFormation = formatConfig.defaultFormation || FORMATIONS.FORMATION_2_2;
+    const nextFormation = availableFormations.includes(selectedFormation)
+      ? selectedFormation
+      : fallbackFormation;
+
+    const squadSize = teamConfig.squadSize || selectedSquadIds.length || (formatConfig.fieldPlayers + 1);
+    const allowedSubTypes = formatConfig.allowedSubstitutionTypes || [SUBSTITUTION_TYPES.INDIVIDUAL];
+    const nextSubstitutionType = allowedSubTypes.includes(teamConfig.substitutionType)
+      ? teamConfig.substitutionType
+      : (formatConfig.getDefaultSubstitutionType
+        ? formatConfig.getDefaultSubstitutionType(squadSize)
+        : SUBSTITUTION_TYPES.INDIVIDUAL);
+
+    const nextPairRotation = nextSubstitutionType === SUBSTITUTION_TYPES.PAIRS
+      ? teamConfig.pairRoleRotation
+      : null;
+
+    const newTeamConfig = createTeamConfig(
+      newFormat,
+      squadSize,
+      nextFormation,
+      nextSubstitutionType,
+      nextPairRotation
+    );
+
+    setSelectedFormation(nextFormation);
+    updateTeamConfig(newTeamConfig);
+    const initialTemplate = getInitialFormationTemplate(newTeamConfig, formation?.goalie || null);
+    if (initialTemplate && typeof setFormation === 'function') {
+      setFormation(initialTemplate);
+    }
+    setHasActiveConfiguration(true);
+  }, [teamConfig, selectedSquadIds.length, selectedFormation, formation, setFormation, setSelectedFormation, updateTeamConfig, setHasActiveConfiguration]);
+
   const randomizeConfiguration = () => {
     // Clear existing selections
     setSelectedSquadIds([]);
@@ -696,10 +754,11 @@ export function ConfigurationScreen({
     
     // Always select 2-2 formation to avoid debug mode bug with 1-2-1
     const randomFormation = FORMATIONS.FORMATION_2_2;
+    handleFormatChange(FORMATS.FORMAT_5V5);
     updateFormationSelection(randomFormation);
 
     // Create team config for 7 players with pairs substitution
-    createTeamConfigFromSquadSize(7, 'pairs');
+    createTeamConfigFromSquadSize(7, SUBSTITUTION_TYPES.PAIRS, FORMATS.FORMAT_5V5);
     
     // Randomize goalie assignments (use current numPeriods setting)
     const goalieAssignments = randomizeGoalieAssignments(randomPlayers, numPeriods);
@@ -1005,7 +1064,7 @@ export function ConfigurationScreen({
         <h3 className="text-base font-medium text-sky-200 mb-2">
           {hasNoTeamPlayers 
             ? "Add Players to Your Team" 
-            : `Select Squad (5-10 Players) - Selected: ${selectedSquadIds.length}`
+            : `Select Squad (5-15 Players) - Selected: ${selectedSquadIds.length}`
           }
         </h3>
         {hasNoTeamPlayers ? (
@@ -1034,7 +1093,7 @@ export function ConfigurationScreen({
                   checked={selectedSquadIds.includes(player.id)}
                   onChange={() => togglePlayerSelection(player.id)}
                   className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
-                  disabled={selectedSquadIds.length >= 10 && !selectedSquadIds.includes(player.id)}
+                  disabled={selectedSquadIds.length >= 15 && !selectedSquadIds.includes(player.id)}
                 />
                 <span>{formatPlayerName(player)}</span>
               </label>
@@ -1089,8 +1148,27 @@ export function ConfigurationScreen({
         </div>
       </div>
 
+      {/* Match Format Selection */}
+      <div className="p-3 bg-slate-700 rounded-md">
+        <label htmlFor="matchFormat" className="block text-sm font-medium text-sky-200 mb-1">Match Format</label>
+        <Select
+          id="matchFormat"
+          value={currentFormat}
+          onChange={value => handleFormatChange(value)}
+          options={Object.values(FORMATS).map(format => ({
+            value: format,
+            label: FORMAT_CONFIGS[format]?.label || format
+          }))}
+        />
+        <p className="text-xs text-slate-400 mt-1">
+          {currentFormat === FORMATS.FORMAT_7V7
+            ? '7v7 adds two extra field players (4-6 subs). Individual substitutions only.'
+            : '5v5 uses 4 field players with individual or pairs substitution options.'}
+        </p>
+      </div>
+
       {/* Formation Selection */}
-      {selectedSquadIds.length >= 5 && selectedSquadIds.length <= 10 && (
+      {selectedSquadIds.length >= 5 && selectedSquadIds.length <= 15 && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2 flex items-center">
             <Layers className="mr-2 h-4 w-4" />
@@ -1105,7 +1183,7 @@ export function ConfigurationScreen({
                 id="formation"
                 value={selectedFormation}
                 onChange={value => handleFormationChange(value)}
-                options={getValidFormations('5v5', selectedSquadIds.length).map(formation => ({
+                options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => ({
                   value: formation,
                   label: FORMATION_DEFINITIONS[formation].label
                 }))}
@@ -1113,6 +1191,8 @@ export function ConfigurationScreen({
               <p className="text-xs text-slate-400 mt-1">
                 {selectedFormation === FORMATIONS.FORMATION_2_2 && 'Classic formation with left/right defenders and attackers'}
                 {selectedFormation === FORMATIONS.FORMATION_1_2_1 && 'Modern formation with center back, wing midfielders, and striker'}
+                {selectedFormation === FORMATIONS.FORMATION_2_2_2 && 'Balanced 2-2-2 shape with dual midfielders supporting two forwards'}
+                {selectedFormation === FORMATIONS.FORMATION_2_3_1 && 'Two defenders, a midfield trio, and a lone striker for 7v7 play'}
               </p>
             </div>
 
@@ -1122,8 +1202,8 @@ export function ConfigurationScreen({
         </div>
       )}
 
-      {/* Substitution Mode Selection - Only show for 7 players with 2-2 formation */}
-      {selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2 && (
+      {/* Substitution Mode Selection - only when format supports pairs */}
+      {teamConfig?.format === FORMATS.FORMAT_5V5 && selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2 && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
           <div className="space-y-3">
@@ -1198,7 +1278,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Goalie Assignment */}
-      {(selectedSquadIds.length >= 5 && selectedSquadIds.length <= 10) && (
+      {(selectedSquadIds.length >= 5 && selectedSquadIds.length <= 15) && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">

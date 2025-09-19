@@ -18,7 +18,7 @@ import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig } from '../constants/teamConfiguration';
+import { createTeamConfig, FORMATS } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 
@@ -48,43 +48,27 @@ const updateNextNextPlayerIfSupported = (teamConfig, playerList, setNextNextPlay
  * @param {Object} formation - The formation object to check
  * @returns {boolean} True if there are actual player assignments, false otherwise
  */
-const hasPlayerAssignments = (formation) => {
-  if (!formation) return false;
-  
-  // Check pairs mode assignments
-  const pairKeys = ['leftPair', 'rightPair', 'subPair'];
-  for (const pairKey of pairKeys) {
-    const pair = formation[pairKey];
-    if (pair && (pair.defender || pair.attacker)) {
-      return true;
-    }
+const hasPlayerAssignments = (formation, teamConfig) => {
+  if (!formation || !teamConfig) return false;
+
+  const modeDefinition = getModeDefinition(teamConfig);
+  if (!modeDefinition) {
+    return false;
   }
-  
-  // Check individual mode assignments (2-2 formation)
-  const twoTwoPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
-  for (const position of twoTwoPositions) {
-    if (formation[position]) {
-      return true;
+
+  return modeDefinition.positionOrder.some(positionKey => {
+    const assignment = formation[positionKey];
+
+    if (!assignment) {
+      return false;
     }
-  }
-  
-  // Check individual mode assignments (1-2-1 formation)  
-  const oneTwoOnePositions = ['defender', 'left', 'right', 'attacker'];
-  for (const position of oneTwoOnePositions) {
-    if (formation[position]) {
-      return true;
+
+    if (typeof assignment === 'object') {
+      return Boolean(assignment.defender || assignment.attacker);
     }
-  }
-  
-  // Check substitute positions
-  const substitutePositions = ['substitute', 'substitute_1', 'substitute_2', 'substitute_3', 'substitute_4', 'substitute_5'];
-  for (const position of substitutePositions) {
-    if (formation[position]) {
-      return true;
-    }
-  }
-  
-  return false;
+
+    return true;
+  });
 };
 
 export function useGameState(navigateToView = null) {
@@ -428,7 +412,7 @@ export function useGameState(navigateToView = null) {
     
     // Restore position assignments after period preparation (but preserve the goalie set by preparePeriod)
     // This ensures user's position assignments are retained when navigating between Configuration and Period Setup screens
-    if (currentFormationAssignments && hasPlayerAssignments(currentFormationAssignments)) {
+    if (currentFormationAssignments && hasPlayerAssignments(currentFormationAssignments, getFormationAwareTeamConfig())) {
       const goalieFromPreparePeriod = formation.goalie; // Preserve goalie set by preparePeriod
       
       setFormation(prev => {
@@ -465,48 +449,24 @@ export function useGameState(navigateToView = null) {
         return;
       }
     } else if (teamConfig.substitutionType === 'individual') {
-      // Formation-aware individual mode validation
-      // Detect formation type from actual positions assigned
-      const hasOneTwoOnePositions = formation.defender && formation.left && formation.right && formation.attacker;
-      const hasTwoTwoPositions = formation.leftDefender && formation.rightDefender && formation.leftAttacker && formation.rightAttacker;
-      
-      if (hasOneTwoOnePositions) {
-        // Validate 1-2-1 formation
-        const oneTwoOnePositions = ['defender', 'left', 'right', 'attacker'];
-        
-        // Add substitute positions based on team config
-        const substituteCount = (teamConfig?.squadSize || 7) - 5; // squadSize - 4 field players - 1 goalie
-        for (let i = 1; i <= substituteCount; i++) {
-          oneTwoOnePositions.push(`substitute_${i}`);
-        }
-        
-        const allOutfieldersInFormation = oneTwoOnePositions.map(pos => formation[pos]).filter(Boolean);
-        const expectedOutfieldCount = oneTwoOnePositions.length;
+      const formationAwareConfig = getFormationAwareTeamConfig();
+      const modeDefinition = getModeDefinition(formationAwareConfig);
 
-        if (new Set(allOutfieldersInFormation).size !== expectedOutfieldCount || !formation.goalie) {
-          alert(`Please complete the team formation with 1 goalie and ${expectedOutfieldCount} unique outfield players.`);
-          return;
-        }
-      } else if (hasTwoTwoPositions) {
-        // Validate 2-2 formation
-        const twoTwoPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
-        
-        // Add substitute positions based on team config
-        const substituteCount = (teamConfig?.squadSize || 7) - 5; // squadSize - 4 field players - 1 goalie
-        for (let i = 1; i <= substituteCount; i++) {
-          twoTwoPositions.push(`substitute_${i}`);
-        }
-        
-        const allOutfieldersInFormation = twoTwoPositions.map(pos => formation[pos]).filter(Boolean);
-        const expectedOutfieldCount = twoTwoPositions.length;
+      if (!modeDefinition) {
+        alert('Invalid formation detected. Please ensure all positions are properly assigned.');
+        return;
+      }
 
-        if (new Set(allOutfieldersInFormation).size !== expectedOutfieldCount || !formation.goalie) {
-          alert(`Please complete the team formation with 1 goalie and ${expectedOutfieldCount} unique outfield players.`);
-          return;
-        }
-      } else {
-        // Neither formation detected - invalid state
-        alert("Invalid formation detected. Please ensure all positions are properly assigned.");
+      const outfieldPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
+      const assignedOutfielders = outfieldPositions
+        .map(positionKey => formation[positionKey])
+        .filter(Boolean);
+
+      const expectedOutfieldCount = outfieldPositions.length;
+      const uniqueAssignedCount = new Set(assignedOutfielders).size;
+
+      if (uniqueAssignedCount !== expectedOutfieldCount || assignedOutfielders.length !== expectedOutfieldCount || !formation.goalie) {
+        alert(`Please complete the team formation with 1 goalie and ${expectedOutfieldCount} unique outfield players.`);
         return;
       }
     }
@@ -856,7 +816,7 @@ export function useGameState(navigateToView = null) {
     }));
 
     // Update team config to individual mode
-    const newTeamConfig = createTeamConfig('5v5', 7, selectedFormation, 'individual');
+    const newTeamConfig = createTeamConfig(teamConfig?.format || FORMATS.FORMAT_5V5, 7, selectedFormation, 'individual');
     updateTeamConfig(newTeamConfig);
     
     // Create individual rotation queue that preserves pairs rotation order
@@ -931,7 +891,7 @@ export function useGameState(navigateToView = null) {
     }));
 
     // Update team config to pairs mode
-    const newTeamConfig = createTeamConfig('5v5', 7, selectedFormation, 'pairs');
+    const newTeamConfig = createTeamConfig(teamConfig?.format || FORMATS.FORMAT_5V5, 7, selectedFormation, 'pairs');
     updateTeamConfig(newTeamConfig);
     
     // Set the next pair to rotate based on individual queue analysis
@@ -1375,6 +1335,8 @@ export function useGameState(navigateToView = null) {
     const { shouldNavigate = false } = options;
     
     // Validation based on team mode (same as handleStartGame)
+    const formationAwareConfig = getFormationAwareTeamConfig();
+
     if (teamConfig.substitutionType === 'pairs') {
       const allOutfieldersInFormation = [
         formation.leftPair.defender, formation.leftPair.attacker,
@@ -1390,19 +1352,28 @@ export function useGameState(navigateToView = null) {
         return { success: false, error: errorMessage };
       }
     } else if (teamConfig.substitutionType === 'individual') {
-      const hasOneTwoOnePositions = formation.defender && formation.left && formation.right && formation.attacker;
-      const hasTwoTwoPositions = formation.leftDefender && formation.rightDefender && formation.leftAttacker && formation.rightAttacker;
-      
-      if (!hasOneTwoOnePositions && !hasTwoTwoPositions) {
+      if (!formationAwareConfig) {
         return { success: false, error: "Please complete the formation assignment." };
       }
-      
-      const expectedFieldPlayers = hasOneTwoOnePositions ? 4 : 4; // Both formations have 4 field players
-      const actualFieldPlayers = hasOneTwoOnePositions
-        ? [formation.defender, formation.left, formation.right, formation.attacker].filter(Boolean)
-        : [formation.leftDefender, formation.rightDefender, formation.leftAttacker, formation.rightAttacker].filter(Boolean);
-      
-      if (actualFieldPlayers.length !== expectedFieldPlayers || !formation.goalie) {
+
+      const modeDefinition = getModeDefinition(formationAwareConfig);
+      if (!modeDefinition) {
+        return { success: false, error: "Please complete the formation assignment." };
+      }
+
+      const outfieldPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
+      const assignedOutfielders = outfieldPositions
+        .map(positionKey => formation[positionKey])
+        .filter(Boolean);
+
+      const expectedOutfieldCount = outfieldPositions.length;
+      const uniqueAssignedCount = new Set(assignedOutfielders).size;
+
+      if (
+        assignedOutfielders.length !== expectedOutfieldCount ||
+        uniqueAssignedCount !== expectedOutfieldCount ||
+        !formation.goalie
+      ) {
         const errorMessage = "Please assign all positions including goalie.";
         if (shouldNavigate) {
           alert(errorMessage);
@@ -1615,9 +1586,13 @@ export function useGameState(navigateToView = null) {
   // Helper function to find player's pair key for pairs mode
   const findPlayerPairKey = (playerId, formation, isPairsMode) => {
     if (!isPairsMode) {
-      // For individual mode, find the position key
-      const positions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker', 
-                        'defender', 'left', 'right', 'attacker', 'substitute', 'substitute_1', 'substitute_2'];
+      const formationAwareConfig = getFormationAwareTeamConfig();
+      const modeDefinition = getModeDefinition(formationAwareConfig);
+      if (!modeDefinition) {
+        return null;
+      }
+
+      const positions = ['goalie', ...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
       for (const pos of positions) {
         if (formation[pos] === playerId) return pos;
       }

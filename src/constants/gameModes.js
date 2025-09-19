@@ -1,5 +1,5 @@
 import { PLAYER_ROLES, PLAYER_STATUS } from './playerConstants.js';
-import { SUBSTITUTION_TYPES, GAME_CONSTANTS } from './teamConfiguration.js';
+import { SUBSTITUTION_TYPES, GAME_CONSTANTS, FORMAT_CONFIGS, FORMATS, FORMATIONS } from './teamConfiguration.js';
 import { normalizeRole, validateRoleInDev } from './roleConstants.js';
 
 /**
@@ -25,31 +25,81 @@ import { normalizeRole, validateRoleInDev } from './roleConstants.js';
  * Defines the tactical arrangement and role mappings for each formation
  */
 const FORMATION_LAYOUTS = {
-  '2-2': {
-    fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
-    positions: {
-      leftDefender: PLAYER_ROLES.DEFENDER,
-      rightDefender: PLAYER_ROLES.DEFENDER,
-      leftAttacker: PLAYER_ROLES.ATTACKER,
-      rightAttacker: PLAYER_ROLES.ATTACKER,
+  [FORMATS.FORMAT_5V5]: {
+    [FORMATIONS.FORMATION_2_2]: {
+      fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
+      positions: {
+        leftDefender: PLAYER_ROLES.DEFENDER,
+        rightDefender: PLAYER_ROLES.DEFENDER,
+        leftAttacker: PLAYER_ROLES.ATTACKER,
+        rightAttacker: PLAYER_ROLES.ATTACKER,
+      },
+      expectedRoleCounts: {
+        [PLAYER_ROLES.DEFENDER]: 2,
+        [PLAYER_ROLES.ATTACKER]: 2
+      }
     },
-    expectedRoleCounts: {
-      [PLAYER_ROLES.DEFENDER]: 2,
-      [PLAYER_ROLES.ATTACKER]: 2
+    [FORMATIONS.FORMATION_1_2_1]: {
+      fieldPositions: ['defender', 'left', 'right', 'attacker'],
+      positions: {
+        defender: PLAYER_ROLES.DEFENDER,
+        left: PLAYER_ROLES.MIDFIELDER,
+        right: PLAYER_ROLES.MIDFIELDER,
+        attacker: PLAYER_ROLES.ATTACKER,
+      },
+      expectedRoleCounts: {
+        [PLAYER_ROLES.DEFENDER]: 1,
+        [PLAYER_ROLES.MIDFIELDER]: 2,
+        [PLAYER_ROLES.ATTACKER]: 1
+      }
     }
   },
-  '1-2-1': {
-    fieldPositions: ['defender', 'left', 'right', 'attacker'],
-    positions: {
-      defender: PLAYER_ROLES.DEFENDER,
-      left: PLAYER_ROLES.MIDFIELDER,
-      right: PLAYER_ROLES.MIDFIELDER,
-      attacker: PLAYER_ROLES.ATTACKER,
+  [FORMATS.FORMAT_7V7]: {
+    [FORMATIONS.FORMATION_2_2_2]: {
+      fieldPositions: [
+        'leftDefender',
+        'rightDefender',
+        'leftMidfielder',
+        'rightMidfielder',
+        'leftAttacker',
+        'rightAttacker'
+      ],
+      positions: {
+        leftDefender: PLAYER_ROLES.DEFENDER,
+        rightDefender: PLAYER_ROLES.DEFENDER,
+        leftMidfielder: PLAYER_ROLES.MIDFIELDER,
+        rightMidfielder: PLAYER_ROLES.MIDFIELDER,
+        leftAttacker: PLAYER_ROLES.ATTACKER,
+        rightAttacker: PLAYER_ROLES.ATTACKER
+      },
+      expectedRoleCounts: {
+        [PLAYER_ROLES.DEFENDER]: 2,
+        [PLAYER_ROLES.MIDFIELDER]: 2,
+        [PLAYER_ROLES.ATTACKER]: 2
+      }
     },
-    expectedRoleCounts: {
-      [PLAYER_ROLES.DEFENDER]: 1,
-      [PLAYER_ROLES.MIDFIELDER]: 2,
-      [PLAYER_ROLES.ATTACKER]: 1
+    [FORMATIONS.FORMATION_2_3_1]: {
+      fieldPositions: [
+        'leftDefender',
+        'rightDefender',
+        'leftMidfielder',
+        'centerMidfielder',
+        'rightMidfielder',
+        'attacker'
+      ],
+      positions: {
+        leftDefender: PLAYER_ROLES.DEFENDER,
+        rightDefender: PLAYER_ROLES.DEFENDER,
+        leftMidfielder: PLAYER_ROLES.MIDFIELDER,
+        centerMidfielder: PLAYER_ROLES.MIDFIELDER,
+        rightMidfielder: PLAYER_ROLES.MIDFIELDER,
+        attacker: PLAYER_ROLES.ATTACKER
+      },
+      expectedRoleCounts: {
+        [PLAYER_ROLES.DEFENDER]: 2,
+        [PLAYER_ROLES.MIDFIELDER]: 3,
+        [PLAYER_ROLES.ATTACKER]: 1
+      }
     }
   }
 };
@@ -59,8 +109,10 @@ const FORMATION_LAYOUTS = {
  * @param {number} squadSize - Total number of players
  * @returns {string[]} Array of substitute position keys
  */
-const generateSubstitutePositions = (squadSize) => {
-  const substituteCount = squadSize - (GAME_CONSTANTS.FIELD_PLAYERS_5V5 + GAME_CONSTANTS.GOALIE_COUNT);
+const generateSubstitutePositions = (format, squadSize) => {
+  const formatConfig = FORMAT_CONFIGS[format] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+  const fieldPlayers = formatConfig.fieldPlayers;
+  const substituteCount = Math.max(0, squadSize - (fieldPlayers + GAME_CONSTANTS.GOALIE_COUNT));
   return Array.from({ length: substituteCount }, (_, i) => `substitute_${i + 1}`);
 };
 
@@ -70,10 +122,10 @@ const generateSubstitutePositions = (squadSize) => {
  * @param {number} substituteCount - Number of substitute positions
  * @returns {Object} Expected counts object
  */
-const calculateExpectedCounts = (formationLayout, substituteCount) => {
+const calculateExpectedCounts = (fieldPlayers, substituteCount) => {
   return {
-    outfield: GAME_CONSTANTS.FIELD_PLAYERS_5V5 + substituteCount,
-    onField: GAME_CONSTANTS.FIELD_PLAYERS_5V5
+    outfield: fieldPlayers + substituteCount,
+    onField: fieldPlayers
   };
 };
 
@@ -198,11 +250,11 @@ const buildPairsModeDefinition = (teamConfig) => {
  * @param {string[]} substitutePositions - Array of substitute position keys
  * @returns {Object} Complete individual mode definition
  */
-const buildIndividualModeDefinition = (teamConfig, formationLayout, substitutePositions) => {
+const buildIndividualModeDefinition = (teamConfig, formationLayout, substitutePositions, fieldPlayers) => {
   const { format, squadSize, formation, substitutionType } = teamConfig;
   
   const positions = buildCompletePositions(formationLayout, substitutePositions);
-  const expectedCounts = calculateExpectedCounts(formationLayout, substitutePositions.length);
+  const expectedCounts = calculateExpectedCounts(fieldPlayers, substitutePositions.length);
   const positionOrder = ['goalie', ...formationLayout.fieldPositions, ...substitutePositions];
   const substituteRotationPattern = determineSubstituteRotationPattern(substitutePositions.length);
   
@@ -250,14 +302,17 @@ export const getModeDefinition = (teamConfig) => {
     modeDefinition = buildPairsModeDefinition(teamConfig);
   } else {
     // Individual substitution type
-    const formationLayout = FORMATION_LAYOUTS[teamConfig.formation];
+    const formatKey = teamConfig.format || FORMATS.FORMAT_5V5;
+    const formatLayouts = FORMATION_LAYOUTS[formatKey] || {};
+    const formationLayout = formatLayouts[teamConfig.formation];
     if (!formationLayout) {
-      console.warn(`Unknown formation: ${teamConfig.formation}`);
+      console.warn(`Unknown formation: ${teamConfig.formation} for format ${formatKey}`);
       return null;
     }
-    
-    const substitutePositions = generateSubstitutePositions(teamConfig.squadSize);
-    modeDefinition = buildIndividualModeDefinition(teamConfig, formationLayout, substitutePositions);
+
+    const substitutePositions = generateSubstitutePositions(formatKey, teamConfig.squadSize);
+    const formatConfig = FORMAT_CONFIGS[formatKey] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+    modeDefinition = buildIndividualModeDefinition(teamConfig, formationLayout, substitutePositions, formatConfig.fieldPlayers);
   }
   
   // Cache and return

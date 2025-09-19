@@ -167,6 +167,38 @@ describe('StatsScreen', () => {
     }));
   });
 
+  it('omits bench players with no playing time from the statistics table', () => {
+    const benchPlayer = {
+      id: 'bench-player',
+      name: 'Bench Player',
+      stats: {
+        startedMatchAs: PLAYER_ROLES.SUBSTITUTE,
+        timeOnFieldSeconds: 0,
+        timeAsGoalieSeconds: 0,
+        timeAsDefenderSeconds: 0,
+        timeAsAttackerSeconds: 0,
+        timeAsMidfielderSeconds: 0,
+        periodsAsGoalie: 0,
+        periodsAsDefender: 0,
+        periodsAsAttacker: 0,
+        periodsAsMidfielder: 0,
+        goals: 0,
+        saves: 0,
+        blocks: 0,
+        cards: []
+      }
+    };
+
+    render(
+      <StatsScreen
+        {...defaultProps}
+        allPlayers={[...defaultProps.allPlayers, benchPlayer]}
+      />
+    );
+
+    expect(screen.queryByText('Bench Player')).not.toBeInTheDocument();
+  });
+
 
   describe('Basic Component Structure', () => {
 

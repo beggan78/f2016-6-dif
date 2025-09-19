@@ -21,12 +21,12 @@
 // Field formats supported by the application
 export const FORMATS = {
   FORMAT_5V5: '5v5',
-  FORMAT_7V7: '7v7'  // Future support
+  FORMAT_7V7: '7v7'
 };
 
 // Game configuration constants
 export const GAME_CONSTANTS = {
-  FIELD_PLAYERS_5V5: 4,        // Number of field players in 5v5 format
+  FIELD_PLAYERS_5V5: 4,        // Number of field players in 5v5 format (legacy reference)
   GOALIE_COUNT: 1,             // Number of goalies
   MIN_SQUAD_SIZE: 5,           // Minimum squad size
   MAX_SQUAD_SIZE: 15           // Maximum squad size
@@ -39,29 +39,46 @@ export const FORMATIONS = {
   FORMATION_1_3: '1-3',
   FORMATION_1_1_2: '1-1-2',
   FORMATION_2_1_1: '2-1-1',
+  FORMATION_2_2_2: '2-2-2',
+  FORMATION_2_3_1: '2-3-1'
 };
 
 // Detailed formation definitions, including status
 export const FORMATION_DEFINITIONS = {
   [FORMATIONS.FORMATION_2_2]: { 
     label: '2-2', 
-    status: 'available' 
+    status: 'available',
+    formats: [FORMATS.FORMAT_5V5]
   },
   [FORMATIONS.FORMATION_1_2_1]: { 
     label: '1-2-1', 
-    status: 'available' 
+    status: 'available',
+    formats: [FORMATS.FORMAT_5V5]
   },
   [FORMATIONS.FORMATION_1_3]: { 
     label: '1-3 (Coming soon - Select to up-vote)', 
-    status: 'coming-soon' 
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_5V5]
   },
   [FORMATIONS.FORMATION_1_1_2]: { 
     label: '1-1-2 (Coming soon - Select to up-vote)', 
-    status: 'coming-soon' 
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_5V5]
   },
   [FORMATIONS.FORMATION_2_1_1]: { 
     label: '2-1-1 (Coming soon - Select to up-vote)', 
-    status: 'coming-soon' 
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_5V5]
+  },
+  [FORMATIONS.FORMATION_2_2_2]: {
+    label: '2-2-2',
+    status: 'available',
+    formats: [FORMATS.FORMAT_7V7]
+  },
+  [FORMATIONS.FORMATION_2_3_1]: {
+    label: '2-3-1',
+    status: 'available',
+    formats: [FORMATS.FORMAT_7V7]
   },
 };
 
@@ -69,6 +86,35 @@ export const FORMATION_DEFINITIONS = {
 export const SUBSTITUTION_TYPES = {
   INDIVIDUAL: 'individual',
   PAIRS: 'pairs'
+};
+
+// Centralised format metadata for dynamic validation/selection logic
+export const FORMAT_CONFIGS = {
+  [FORMATS.FORMAT_5V5]: {
+    label: '5v5',
+    fieldPlayers: 4,
+    defaultFormation: FORMATIONS.FORMATION_2_2,
+    formations: [
+      FORMATIONS.FORMATION_2_2,
+      FORMATIONS.FORMATION_1_2_1,
+      FORMATIONS.FORMATION_1_3,
+      FORMATIONS.FORMATION_1_1_2,
+      FORMATIONS.FORMATION_2_1_1
+    ],
+    allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL, SUBSTITUTION_TYPES.PAIRS],
+    getDefaultSubstitutionType: (squadSize) => (squadSize === 7 ? SUBSTITUTION_TYPES.PAIRS : SUBSTITUTION_TYPES.INDIVIDUAL)
+  },
+  [FORMATS.FORMAT_7V7]: {
+    label: '7v7',
+    fieldPlayers: 6,
+    defaultFormation: FORMATIONS.FORMATION_2_2_2,
+    formations: [
+      FORMATIONS.FORMATION_2_2_2,
+      FORMATIONS.FORMATION_2_3_1
+    ],
+    allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL],
+    getDefaultSubstitutionType: () => SUBSTITUTION_TYPES.INDIVIDUAL
+  }
 };
 
 // Pair role rotation styles (for pairs substitution mode)
@@ -123,17 +169,20 @@ export const createTeamConfig = (format, squadSize, formation, substitutionType,
  * @returns {string[]} Array of valid formation strings
  */
 export const getValidFormations = (format, squadSize) => {
-  if (format === FORMATS.FORMAT_5V5) {
-    // For 5v5, all defined formations are returned
-    return Object.keys(FORMATION_DEFINITIONS);
+  const formationsForFormat = Object.entries(FORMATION_DEFINITIONS)
+    .filter(([, definition]) => {
+      if (definition.formats && !definition.formats.includes(format)) {
+        return false;
+      }
+      return true;
+    })
+    .map(([key]) => key);
+
+  if (formationsForFormat.length > 0) {
+    return formationsForFormat;
   }
-  
-  // Future: 7v7 formations
-  if (format === FORMATS.FORMAT_7V7) {
-    return [FORMATIONS.FORMATION_2_2]; // Placeholder for future 7v7 formations
-  }
-  
-  // Default to 2-2 formation
+
+  // Fallback: retain existing behaviour for unknown formats
   return [FORMATIONS.FORMATION_2_2];
 };
 
@@ -147,9 +196,11 @@ export const validateTeamConfig = (teamConfig) => {
   const { format, squadSize, formation, substitutionType, pairRoleRotation } = teamConfig;
 
   // Validate format
-  if (!Object.values(FORMATS).includes(format)) {
+  if (!Object.values(FORMATS).includes(format) || !FORMAT_CONFIGS[format]) {
     throw new Error(`Invalid format: ${format}. Must be one of: ${Object.values(FORMATS).join(', ')}`);
   }
+
+  const formatConfig = FORMAT_CONFIGS[format];
 
   // Validate squad size
   if (squadSize < GAME_CONSTANTS.MIN_SQUAD_SIZE || squadSize > GAME_CONSTANTS.MAX_SQUAD_SIZE) {
@@ -167,8 +218,15 @@ export const validateTeamConfig = (teamConfig) => {
     throw new Error(`Invalid substitution type: ${substitutionType}. Must be one of: ${Object.values(SUBSTITUTION_TYPES).join(', ')}`);
   }
 
+  if (!formatConfig.allowedSubstitutionTypes.includes(substitutionType)) {
+    throw new Error(`Substitution type ${substitutionType} is not supported for ${format}. Allowed: ${formatConfig.allowedSubstitutionTypes.join(', ')}`);
+  }
+
   // Business rule: Pairs substitution only allowed with 2-2 formation and 7 players
   if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+    if (format !== FORMATS.FORMAT_5V5) {
+      throw new Error(`Pairs substitution is only supported for ${FORMATS.FORMAT_5V5}, not ${format}`);
+    }
     if (formation !== FORMATIONS.FORMATION_2_2) {
       throw new Error(`Pairs substitution is only supported with ${FORMATIONS.FORMATION_2_2} formation, not ${formation}`);
     }
@@ -202,6 +260,7 @@ export const validateTeamConfig = (teamConfig) => {
 export const validateAndCorrectTeamConfig = (teamConfig) => {
   const corrections = [];
   let correctedConfig = { ...teamConfig };
+  const formatConfig = FORMAT_CONFIGS[teamConfig.format];
 
   try {
     validateTeamConfig(teamConfig);
@@ -210,9 +269,21 @@ export const validateAndCorrectTeamConfig = (teamConfig) => {
     // Handle specific business rule violations with auto-correction
     const { squadSize, formation, substitutionType } = teamConfig;
 
+    // Auto-correct unsupported substitution types for the selected format
+    if (formatConfig && !formatConfig.allowedSubstitutionTypes.includes(substitutionType)) {
+      const fallbackSubType = formatConfig.getDefaultSubstitutionType
+        ? formatConfig.getDefaultSubstitutionType(squadSize)
+        : SUBSTITUTION_TYPES.INDIVIDUAL;
+
+      correctedConfig.substitutionType = fallbackSubType;
+      correctedConfig.pairRoleRotation = null;
+      corrections.push(`Changed substitution type to ${fallbackSubType} (unsupported for format ${teamConfig.format})`);
+    }
+
     // Auto-correct pairs substitution incompatibility
-    if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-      if (formation !== FORMATIONS.FORMATION_2_2 || squadSize !== 7) {
+    if (correctedConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+      const pairsSupportedForFormat = teamConfig.format === FORMATS.FORMAT_5V5;
+      if (!pairsSupportedForFormat || formation !== FORMATIONS.FORMATION_2_2 || squadSize !== 7) {
         correctedConfig.substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL;
         correctedConfig.pairRoleRotation = null;
         corrections.push(`Changed substitution type from pairs to individual (pairs only supported with 2-2 formation and 7 players)`);
@@ -227,7 +298,7 @@ export const validateAndCorrectTeamConfig = (teamConfig) => {
     }
 
     // Auto-correct individual substitution with invalid pairRoleRotation
-    if (substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL && teamConfig.pairRoleRotation) {
+    if (correctedConfig.substitutionType !== SUBSTITUTION_TYPES.PAIRS && teamConfig.pairRoleRotation) {
       correctedConfig.pairRoleRotation = null;
       corrections.push(`Removed pairRoleRotation setting (only valid for pairs substitution mode)`);
 
@@ -254,23 +325,23 @@ export const validateAndCorrectTeamConfig = (teamConfig) => {
  * @param {number} squadSize - Squad size
  * @returns {Object} Default team configuration
  */
-export const createDefaultTeamConfig = (squadSize) => {
-  // Determine default substitution type based on squad size
-  // 7-player squads can use pairs, others default to individual
-  const defaultSubstitutionType = squadSize === 7
-    ? SUBSTITUTION_TYPES.PAIRS
+export const createDefaultTeamConfig = (squadSize, format = FORMATS.FORMAT_5V5) => {
+  const resolvedFormat = FORMAT_CONFIGS[format] ? format : FORMATS.FORMAT_5V5;
+  const formatConfig = FORMAT_CONFIGS[resolvedFormat];
+
+  const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
+    ? formatConfig.getDefaultSubstitutionType(squadSize)
     : SUBSTITUTION_TYPES.INDIVIDUAL;
 
-  // For pairs mode, default to keeping roles throughout period for backwards compatibility
   const defaultPairRoleRotation = defaultSubstitutionType === SUBSTITUTION_TYPES.PAIRS
     ? PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
     : null;
 
   return createTeamConfig(
-    FORMATS.FORMAT_5V5,           // Default to 5v5
-    squadSize,                    // Use provided squad size
-    FORMATIONS.FORMATION_2_2,     // Default to 2-2 formation
-    defaultSubstitutionType,      // Individual or pairs based on squad size
-    defaultPairRoleRotation       // Role rotation for pairs mode
+    resolvedFormat,
+    squadSize,
+    formatConfig.defaultFormation || FORMATIONS.FORMATION_2_2,
+    defaultSubstitutionType,
+    defaultPairRoleRotation
   );
 };

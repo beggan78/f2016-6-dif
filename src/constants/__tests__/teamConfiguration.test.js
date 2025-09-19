@@ -229,8 +229,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
         pairRoleRotation: null
       });
-      expect(result.corrections).toHaveLength(1);
-      expect(result.corrections[0]).toContain('pairs to individual');
+      expect(result.corrections).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('pairs to individual'),
+          expect.stringContaining('pairRoleRotation')
+        ])
+      );
     });
 
     test('should auto-correct pairs with non-7 squad size', () => {
@@ -252,8 +256,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
         pairRoleRotation: null
       });
-      expect(result.corrections).toHaveLength(1);
-      expect(result.corrections[0]).toContain('pairs to individual');
+      expect(result.corrections).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('pairs to individual'),
+          expect.stringContaining('pairRoleRotation')
+        ])
+      );
     });
 
     test('should auto-correct pairs with both invalid formation and squad size', () => {
@@ -275,8 +283,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
         pairRoleRotation: null
       });
-      expect(result.corrections).toHaveLength(1);
-      expect(result.corrections[0]).toContain('pairs to individual');
+      expect(result.corrections).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('pairs to individual'),
+          expect.stringContaining('pairRoleRotation')
+        ])
+      );
     });
 
     test('should preserve individual mode configuration', () => {

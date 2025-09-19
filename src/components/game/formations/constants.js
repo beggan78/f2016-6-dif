@@ -73,6 +73,11 @@ export const POSITION_DISPLAY_NAMES = {
   left: 'Left Mid',
   right: 'Right Mid',
   attacker: 'Attacker',
+
+  // 7v7 Midfielder variants
+  leftMidfielder: 'Left Midfielder',
+  rightMidfielder: 'Right Midfielder',
+  centerMidfielder: 'Center Midfielder',
   
   // Pairs Formation positions
   leftPair: 'Left',

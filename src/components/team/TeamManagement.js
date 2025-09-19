@@ -927,7 +927,7 @@ function TeamPreferences({ team, onRefresh }) {
               onChange={(value) => setPreferences(prev => ({ ...prev, matchFormat: value }))}
               options={[
                 { value: '5v5', label: '5v5' },
-                { value: '7v7', label: '7v7 (Coming Soon)' },
+                { value: '7v7', label: '7v7' },
                 { value: '9v9', label: '9v9 (Coming Soon)' },
                 { value: '11v11', label: '11v11 (Coming Soon)' }
               ]}

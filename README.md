@@ -1,16 +1,16 @@
 # Sport Wizard
 
-A mobile-first web application designed for coaching youth soccer teams. This app helps manage player rotations, track playing time, and maintain fair substitution patterns during games with 5v5 formations.
+A mobile-first web application designed for coaching youth soccer teams. This app helps manage player rotations, track playing time, and maintain fair substitution patterns during games with 5v5 and 7v7 formations.
 
 ## Overview
 
-Sport Wizard is built for managing youth soccer teams with flexible squad sizes (5-15 players) and multiple tactical formations. The app uses a modern composite configuration system combining format (5v5), squad size, formation (2-2 or 1-2-1), and substitution type (individual or pairs) to create customized team management experiences with intelligent rotation systems that ensure fair playing time distribution.
+Sport Wizard is built for managing youth soccer teams with flexible squad sizes (5-15 players) and multiple tactical formations. The app uses a modern composite configuration system combining format (5v5 or 7v7), squad size, formation (2-2, 1-2-1, 2-2-2, or 2-3-1), and substitution type (individual or pairs) to create customized team management experiences with intelligent rotation systems that ensure fair playing time distribution.
 
 ### Key Features
 
 #### Core Game Management
 - **Smart Player Selection**: Choose players from flexible squad sizes (5-15 players supported)
-- **Multiple Formations**: Support for 2-2 (classic) and 1-2-1 (tactical) formations with midfielder roles
+- **Multiple Formations**: Support for 2-2 (classic), 1-2-1 (tactical), 2-2-2, and 2-3-1 formations with role-aware time tracking
 - **Flexible Team Modes**: Supports pair-based substitutions and individual player rotations
 - **Real-time Game Management**: Dual timers track match time and substitution intervals
 - **Automated Substitution Planning**: AI-powered recommendations for optimal player rotations
@@ -37,16 +37,16 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 
 ### Field Setup
 - **5v5 Format**: 1 goalie + 4 field players per team
-- **Formations Available**: 
-  - **2-2 Formation**: 2 defenders + 2 attackers (classic setup)
-  - **1-2-1 Formation**: 1 defender + 2 midfielders + 1 attacker (tactical flexibility)
+  - **Formations**: 2-2 (classic) and 1-2-1 (midfield flexibility)
+- **7v7 Format**: 1 goalie + 6 field players per team
+  - **Formations**: 2-2-2 (balanced lines) and 2-3-1 (midfield triangle with lone striker)
 - **Configurable Periods**: 1-3 periods, each 10-30 minutes (default: 3 periods of 15 minutes)
 - **Substitution Strategy**: Regular rotations approximately every 2 minutes with formation-aware role tracking
 
 ### Team Configurations
 
 #### 7-Player Mode (Pairs)
-- Players are organized into pairs (defender + attacker)
+- Players are organized into pairs (defender + attacker) for the 5v5 format
 - Three pairs total: Left, Right, and Substitute
 - Substitutions occur at the pair level
 - Automatic round-robin rotation between pairs
@@ -64,10 +64,17 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 - Advanced visual indicators showing both immediate and upcoming substitutions
 - Round-robin rotation through all 6 outfield positions during periods
 
+#### 7v7 Individual Modes
+- Players cover six field positions with formation-specific midfield roles
+- **2-2-2**: Balanced left/right defenders, midfielders, and attackers
+- **2-3-1**: Two backs supporting a midfield trio and a lone striker
+- Individual substitution mode only (pairs not yet available)
+- Rotation queue adapts to the larger roster and inactive player handling
+
 ## App Workflow
 
 ### 1. Game Configuration
-- Select 6 or 7 players from the 14-player roster
+- Select a squad (5-15 players) and choose the match format (5v5 or 7v7)
 - Set number of periods (1-3) and duration (10-30 minutes)
 - Assign goalies for each period
 

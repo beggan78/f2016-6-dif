@@ -1,5 +1,5 @@
 import { getModeDefinition as getModernModeDefinition } from '../constants/gameModes';
-import { SUBSTITUTION_TYPES, FORMATIONS } from '../constants/teamConfiguration';
+import { SUBSTITUTION_TYPES } from '../constants/teamConfiguration';
 
 /**
  * Cross-screen formation utilities and standardization functions
@@ -88,28 +88,17 @@ export function getExpectedFormationStructure(teamConfig) {
     };
   }
 
-  // For individual mode, build structure based on formation type and squad size
   const structure = { goalie: null };
 
-  // Add field positions based on formation
-  if (teamConfig.formation === FORMATIONS.FORMATION_1_2_1) {
-    structure.defender = null;
-    structure.left = null;
-    structure.right = null;
-    structure.attacker = null;
-  } else {
-    // Default to 2-2 formation positions
-    structure.leftDefender = null;
-    structure.rightDefender = null;
-    structure.leftAttacker = null;
-    structure.rightAttacker = null;
-  }
+  const fieldPositions = modeDefinition.fieldPositions || [];
+  fieldPositions.forEach(positionKey => {
+    structure[positionKey] = null;
+  });
 
-  // Add substitute positions
-  const substituteCount = teamConfig.squadSize - 5; // squadSize - 1 goalie - 4 field players
-  for (let i = 1; i <= substituteCount; i++) {
-    structure[`substitute_${i}`] = null;
-  }
+  const substitutePositions = modeDefinition.substitutePositions || [];
+  substitutePositions.forEach(positionKey => {
+    structure[positionKey] = null;
+  });
 
   return structure;
 }
@@ -207,26 +196,19 @@ export function normalizeFormationStructure(messyFormation, teamConfig, squadSel
       }
     }
   } else {
-    // Normalize individual mode
-    if (teamConfig.formation === FORMATIONS.FORMATION_1_2_1) {
-      // 1-2-1 formation positions
-      cleanFormation.defender = getValidPlayerId(messyFormation.defender);
-      cleanFormation.left = getValidPlayerId(messyFormation.left);
-      cleanFormation.right = getValidPlayerId(messyFormation.right);
-      cleanFormation.attacker = getValidPlayerId(messyFormation.attacker);
-    } else {
-      // 2-2 formation positions (default)
-      cleanFormation.leftDefender = getValidPlayerId(messyFormation.leftDefender);
-      cleanFormation.rightDefender = getValidPlayerId(messyFormation.rightDefender);
-      cleanFormation.leftAttacker = getValidPlayerId(messyFormation.leftAttacker);
-      cleanFormation.rightAttacker = getValidPlayerId(messyFormation.rightAttacker);
-    }
+    const modeDefinition = getModeDefinition(teamConfig);
 
-    // Clean substitute positions
-    const substituteCount = teamConfig.squadSize - 5;
-    for (let i = 1; i <= substituteCount; i++) {
-      const subKey = `substitute_${i}`;
-      cleanFormation[subKey] = getValidPlayerId(messyFormation[subKey]);
+    if (modeDefinition) {
+      (modeDefinition.fieldPositions || []).forEach(positionKey => {
+        cleanFormation[positionKey] = getValidPlayerId(messyFormation[positionKey]);
+      });
+
+      (modeDefinition.substitutePositions || []).forEach(positionKey => {
+        const legacyKey = positionKey === 'substitute_1' && messyFormation.substitute
+          ? 'substitute'
+          : positionKey;
+        cleanFormation[positionKey] = getValidPlayerId(messyFormation[legacyKey]);
+      });
     }
   }
 

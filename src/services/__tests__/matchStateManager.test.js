@@ -454,7 +454,8 @@ describe('matchStateManager', () => {
       expect(mapFormationPositionToRole('rightDefender')).toBe('defender');
       expect(mapFormationPositionToRole('leftAttacker')).toBe('attacker');
       expect(mapFormationPositionToRole('rightAttacker')).toBe('attacker');
-      // Note: midfielder positions may not be implemented yet - testing actual behavior
+      expect(mapFormationPositionToRole('leftMidfielder')).toBe('midfielder');
+      expect(mapFormationPositionToRole('centerMidfielder')).toBe('midfielder');
     });
 
     it('should fall back to unknown for unmapped positions', () => {

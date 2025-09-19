@@ -23,13 +23,15 @@ describe('Game Mode Configuration', () => {
   describe('Team configuration compatibility', () => {
     test('should work with all supported team configurations', () => {
       const expectedConfigs = [
-        TEAM_CONFIGS.PAIRS_7, 
+        TEAM_CONFIGS.PAIRS_7,
         createTeamConfig('5v5', 5, '2-2', 'individual'),
-        TEAM_CONFIGS.INDIVIDUAL_6, 
-        TEAM_CONFIGS.INDIVIDUAL_7, 
-        TEAM_CONFIGS.INDIVIDUAL_8, 
-        TEAM_CONFIGS.INDIVIDUAL_9, 
-        TEAM_CONFIGS.INDIVIDUAL_10
+        TEAM_CONFIGS.INDIVIDUAL_6,
+        TEAM_CONFIGS.INDIVIDUAL_7,
+        TEAM_CONFIGS.INDIVIDUAL_8,
+        TEAM_CONFIGS.INDIVIDUAL_9,
+        TEAM_CONFIGS.INDIVIDUAL_10,
+        TEAM_CONFIGS.INDIVIDUAL_7V7_222,
+        TEAM_CONFIGS.INDIVIDUAL_7V7_231
       ];
       
       expectedConfigs.forEach(config => {
@@ -47,7 +49,9 @@ describe('Game Mode Configuration', () => {
         createTeamConfig('5v5', 7, '2-2', 'individual'),
         createTeamConfig('5v5', 8, '2-2', 'individual'),
         createTeamConfig('5v5', 9, '2-2', 'individual'),
-        createTeamConfig('5v5', 10, '2-2', 'individual')
+        createTeamConfig('5v5', 10, '2-2', 'individual'),
+        createTeamConfig('7v7', 9, '2-2-2', 'individual'),
+        createTeamConfig('7v7', 10, '2-3-1', 'individual')
       ];
 
       testConfigs.forEach(config => {
@@ -65,7 +69,8 @@ describe('Game Mode Configuration', () => {
       const individualConfigs = [
         TEAM_CONFIGS.INDIVIDUAL_6,
         TEAM_CONFIGS.INDIVIDUAL_7,
-        TEAM_CONFIGS.INDIVIDUAL_8
+        TEAM_CONFIGS.INDIVIDUAL_8,
+        TEAM_CONFIGS.INDIVIDUAL_7V7_222
       ];
 
       individualConfigs.forEach(config => {
@@ -79,13 +84,28 @@ describe('Game Mode Configuration', () => {
       const testCases = [
         { config: TEAM_CONFIGS.INDIVIDUAL_6, expectedOutfield: 5 },
         { config: TEAM_CONFIGS.INDIVIDUAL_7, expectedOutfield: 6 },
-        { config: TEAM_CONFIGS.PAIRS_7, expectedOutfield: 6 }
+        { config: TEAM_CONFIGS.PAIRS_7, expectedOutfield: 6 },
+        { config: TEAM_CONFIGS.INDIVIDUAL_7V7_222, expectedOutfield: 8 }
       ];
 
       testCases.forEach(({ config, expectedOutfield }) => {
         const modeDefinition = getModeDefinition(config);
         expect(modeDefinition.expectedCounts.outfield).toBe(expectedOutfield);
       });
+    });
+
+    test('7v7 formations define six field positions', () => {
+      const config = TEAM_CONFIGS.INDIVIDUAL_7V7_231;
+      const modeDefinition = getModeDefinition(config);
+      expect(modeDefinition.fieldPositions).toHaveLength(6);
+      expect(modeDefinition.fieldPositions).toEqual([
+        'leftDefender',
+        'rightDefender',
+        'leftMidfielder',
+        'centerMidfielder',
+        'rightMidfielder',
+        'attacker'
+      ]);
     });
   });
 });

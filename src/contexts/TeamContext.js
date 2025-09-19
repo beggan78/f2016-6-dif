@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { DETECTION_TYPES } from '../services/sessionDetectionService';
 import { getCachedTeamData, cacheTeamData } from '../utils/cacheUtils';
 import { sanitizeSearchInput } from '../utils/inputSanitization';
 import { syncTeamRosterToGameState } from '../utils/playerSyncUtils';
 
 const TeamContext = createContext({});
+
+const REFRESH_REVALIDATION_DELAY_MS = 12000;
 
 export const useTeam = () => {
   const context = useContext(TeamContext);
@@ -16,7 +19,7 @@ export const useTeam = () => {
 };
 
 export const TeamProvider = ({ children }) => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, sessionDetectionResult } = useAuth();
   const [currentTeam, setCurrentTeam] = useState(null);
   const [userTeams, setUserTeams] = useState([]);
   const [userClubs, setUserClubs] = useState([]);
@@ -24,7 +27,8 @@ export const TeamProvider = ({ children }) => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+  const deferredRefreshTimeoutRef = useRef(null);
+
   // Flag to prevent redundant initialization
   const initializationDone = useRef(false);
 
@@ -394,7 +398,9 @@ export const TeamProvider = ({ children }) => {
       // Check cache first if this is a page refresh AND valid cache exists
       const cachedData = getCachedTeamData();
       const hasValidCache = cachedData.userTeams || cachedData.userClubs || cachedData.currentTeam;
-      const isPageRefresh = performance.navigation.type === 1;
+      const detectedRefresh = sessionDetectionResult?.type === DETECTION_TYPES.PAGE_REFRESH;
+      const navigationRefresh = typeof performance !== 'undefined' && performance.navigation?.type === 1;
+      const isPageRefresh = detectedRefresh || navigationRefresh;
       
       if (isPageRefresh && hasValidCache) {
         console.log('🔄 Page refresh detected with valid cache, loading team data from cache...');
@@ -419,15 +425,24 @@ export const TeamProvider = ({ children }) => {
           setPendingRequests(cachedData.pendingRequests);
         }
         
-        // Background refresh to update cache
-        Promise.all([
-          getUserTeams(),
-          getClubMemberships()
-        ]).then(([teams, clubs]) => {
-          console.log('🔄 Background refresh completed - Teams:', teams.length, 'Clubs:', clubs.length);
-        }).catch((error) => {
-          console.error('Background refresh failed:', error);
-        });
+        // Defer background refresh to avoid blocking during session recovery
+        if (deferredRefreshTimeoutRef.current) {
+          clearTimeout(deferredRefreshTimeoutRef.current);
+        }
+
+        deferredRefreshTimeoutRef.current = setTimeout(() => {
+          Promise.all([
+            getUserTeams(),
+            getClubMemberships()
+          ]).then(([teams, clubs]) => {
+            console.log('🔄 Deferred refresh completed - Teams:', teams.length, 'Clubs:', clubs.length);
+            setUserClubs(clubs);
+          }).catch((error) => {
+            console.error('Deferred background refresh failed:', error);
+          }).finally(() => {
+            deferredRefreshTimeoutRef.current = null;
+          });
+        }, REFRESH_REVALIDATION_DELAY_MS);
       } else {
         // Normal loading (fresh sign-in or no valid cache)
 
@@ -451,7 +466,16 @@ export const TeamProvider = ({ children }) => {
       setPendingRequests([]);
       localStorage.removeItem('currentTeamId');
     }
-  }, [user, getUserTeams, getClubMemberships]);
+  }, [user, getUserTeams, getClubMemberships, sessionDetectionResult]);
+
+  useEffect(() => {
+    return () => {
+      if (deferredRefreshTimeoutRef.current) {
+        clearTimeout(deferredRefreshTimeoutRef.current);
+        deferredRefreshTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Handle team switching when userTeams changes
   useEffect(() => {

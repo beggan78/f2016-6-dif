@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { getCachedUserProfile, cacheUserProfile, clearAllCache } from '../utils/cacheUtils';
+import { getCachedUserProfile, cacheUserProfile, clearAllCache, cacheAuthUser, getCachedAuthUser } from '../utils/cacheUtils';
 import { cleanupAbandonedMatches } from '../services/matchCleanupService';
 import { cleanupPreviousSession } from '../utils/sessionCleanupUtils';
 import { detectSessionType, shouldCleanupSession, clearAllSessionData, DETECTION_TYPES } from '../services/sessionDetectionService';
@@ -183,10 +183,39 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const initialDetectionRef = useRef(null);
+  const hasCachedProfileRef = useRef(false);
   // Track if we've already processed initial session to prevent duplicates
   const initializedRef = useRef(false);
   const currentFetchRef = useRef(null);
   const currentUserIdRef = useRef(null);
+
+  // Early detection to hydrate state from cache before Supabase finishes recovery
+  useEffect(() => {
+    const detection = detectSessionType();
+    initialDetectionRef.current = detection;
+    setSessionDetectionResult(detection);
+
+    if (detection.type === DETECTION_TYPES.PAGE_REFRESH) {
+      const cachedUser = getCachedAuthUser();
+      const cachedProfile = getCachedUserProfile();
+
+      if (cachedUser) {
+        setUser(cachedUser);
+      }
+
+      if (cachedProfile && (!cachedUser || cachedProfile.id === cachedUser.id)) {
+        setUserProfile(cachedProfile);
+        const needsCompletion = !cachedProfile?.name || cachedProfile.name.trim().length === 0;
+        setNeedsProfileCompletion(needsCompletion);
+        hasCachedProfileRef.current = true;
+      }
+
+      if (cachedUser || cachedProfile) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
 
   // Main auth state change handler
@@ -225,11 +254,13 @@ export function AuthProvider({ children }) {
           }
           
           setUser(session.user);
+          cacheAuthUser(session.user);
           setupSessionMonitoring(session);
           currentUserIdRef.current = userId;
           
           // Use advanced session detection to determine cleanup strategy
-          const detectionResult = detectSessionType();
+          const detectionResult = initialDetectionRef.current || detectSessionType();
+          initialDetectionRef.current = detectionResult;
           
           // Store detection result for other components to access
           setSessionDetectionResult(detectionResult);
@@ -244,12 +275,14 @@ export function AuthProvider({ children }) {
           }
           
           // Run match cleanup in background (fire-and-forget)
-          cleanupAbandonedMatches().catch(error => {
-            // Log cleanup errors but don't disrupt login flow
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Match cleanup failed during login:', error.message);
-            }
-          });
+          if (detectionResult.type === DETECTION_TYPES.NEW_SIGN_IN) {
+            cleanupAbandonedMatches().catch(error => {
+              // Log cleanup errors but don't disrupt login flow
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('⚠️ Match cleanup failed during login:', error.message);
+              }
+            });
+          }
           
           // Cancel any existing profile fetch for different user
           if (currentFetchRef.current) {
@@ -260,14 +293,33 @@ export function AuthProvider({ children }) {
             initializedRef.current = true;
             setLoading(false);
           } else {
-            // Fetch profile with proper tracking and detection result
-            const fetchPromise = fetchUserProfile(userId, session, detectionResult);
-            currentFetchRef.current = fetchPromise;
-            
-            try {
-              await fetchPromise;
-            } finally {
-              currentFetchRef.current = null;
+            const isPageRefresh = detectionResult.type === DETECTION_TYPES.PAGE_REFRESH;
+            const skipImmediateFetch = isPageRefresh && hasCachedProfileRef.current;
+
+            // Fetch profile with proper tracking and detection result when needed
+            if (!skipImmediateFetch) {
+              const fetchPromise = fetchUserProfile(userId, session, detectionResult);
+              currentFetchRef.current = fetchPromise;
+
+              if (isPageRefresh) {
+                fetchPromise.finally(() => {
+                  if (currentFetchRef.current === fetchPromise) {
+                    currentFetchRef.current = null;
+                  }
+                });
+                initializedRef.current = true;
+                setLoading(false);
+              } else {
+                try {
+                  await fetchPromise;
+                } finally {
+                  currentFetchRef.current = null;
+                  initializedRef.current = true;
+                  setLoading(false);
+                }
+              }
+            } else {
+              // We already hydrated from cache; mark initialization complete without hitting Supabase
               initializedRef.current = true;
               setLoading(false);
             }
@@ -358,6 +410,7 @@ export function AuthProvider({ children }) {
       
       // Clear all cached data on sign out
       clearAllCache();
+      cacheAuthUser(null);
       
       // Clear session detection state to ensure fresh detection on next sign-in
       clearAllSessionData();

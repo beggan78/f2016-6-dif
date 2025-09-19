@@ -8,6 +8,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { TEAM_CONFIGS } from '../../game/testUtils';
+import { getModeDefinition } from '../../constants/gameModes';
 
 /**
  * Create mock props for GameScreen component
@@ -94,32 +95,20 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
         pairKey = 'goalie';
       }
     } else {
-      // Individual modes structure
-      if (i <= 4) {
+      const modeDefinition = getModeDefinition(teamConfig);
+      const fieldPositions = modeDefinition?.fieldPositions || [];
+      const substitutePositions = modeDefinition?.substitutePositions || [];
+      const totalOutfield = fieldPositions.length + substitutePositions.length;
+
+      if (i <= fieldPositions.length) {
         status = PLAYER_STATUS.ON_FIELD;
-        
-        // Role assignment based on formation
-        if (teamConfig.formation === '1-2-1') {
-          if (i === 1) {
-            role = PLAYER_ROLES.DEFENDER;
-            pairKey = 'defender';
-          } else if (i <= 3) {
-            role = PLAYER_ROLES.MIDFIELDER;
-            pairKey = i === 2 ? 'leftMidfielder' : 'rightMidfielder';
-          } else {
-            role = PLAYER_ROLES.ATTACKER;
-            pairKey = 'attacker';
-          }
-        } else {
-          // 2-2 formation
-          role = i <= 2 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-          pairKey = i <= 2 ? (i === 1 ? 'leftDefender' : 'rightDefender') :
-                            (i === 3 ? 'leftAttacker' : 'rightAttacker');
-        }
-      } else if (i < count) {
+        pairKey = fieldPositions[i - 1];
+        role = modeDefinition.positions[pairKey]?.role || PLAYER_ROLES.FIELD_PLAYER;
+      } else if (i <= totalOutfield) {
         status = PLAYER_STATUS.SUBSTITUTE;
-        role = PLAYER_ROLES.SUBSTITUTE;
-        pairKey = `substitute_${i - 4}`;
+        const subIndex = i - fieldPositions.length - 1;
+        pairKey = substitutePositions[subIndex];
+        role = modeDefinition.positions[pairKey]?.role || PLAYER_ROLES.SUBSTITUTE;
       } else {
         status = PLAYER_STATUS.GOALIE;
         role = PLAYER_ROLES.GOALIE;
@@ -161,7 +150,7 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
 export const createMockFormation = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
   const squadSize = teamConfig.squadSize || 7;
   const goalieId = squadSize.toString();
-  
+
   if (teamConfig.substitutionType === 'pairs') {
     return {
       goalie: goalieId,
@@ -170,39 +159,26 @@ export const createMockFormation = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
       subPair: { defender: '5', attacker: '6' }
     };
   }
-  
-  // Individual modes - formation-aware
-  if (teamConfig.formation === '1-2-1') {
-    const formation = {
-      goalie: goalieId,
-      defender: '1',
-      leftMidfielder: '2',
-      rightMidfielder: '3',
-      attacker: '4'
-    };
-    
-    // Add substitutes based on squad size
-    for (let i = 5; i < squadSize; i++) {
-      formation[`substitute_${i - 4}`] = i.toString();
-    }
-    
-    return formation;
+
+  const modeDefinition = getModeDefinition(teamConfig);
+
+  if (!modeDefinition) {
+    throw new Error(`Unable to build formation for teamConfig: ${JSON.stringify(teamConfig)}`);
   }
-  
-  // Default to 2-2 formation
-  const formation = {
-    goalie: goalieId,
-    leftDefender: '1',
-    rightDefender: '2',
-    leftAttacker: '3',
-    rightAttacker: '4'
-  };
-  
-  // Add substitutes based on squad size
-  for (let i = 5; i < squadSize; i++) {
-    formation[`substitute_${i - 4}`] = i.toString();
-  }
-  
+
+  const formation = { goalie: goalieId };
+  let playerId = 1;
+
+  modeDefinition.fieldPositions.forEach(position => {
+    formation[position] = playerId.toString();
+    playerId += 1;
+  });
+
+  modeDefinition.substitutePositions.forEach(position => {
+    formation[position] = playerId.toString();
+    playerId += 1;
+  });
+
   return formation;
 };
 

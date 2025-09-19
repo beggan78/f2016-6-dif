@@ -67,6 +67,29 @@ describe('Formation Utilities', () => {
         subPair: { defender: null, attacker: null }
       });
     });
+    it('should return correct structure for 7v7 2-3-1 formation', () => {
+      const teamConfig = {
+        format: '7v7',
+        formation: '2-3-1',
+        squadSize: 10,
+        substitutionType: 'individual'
+      };
+
+      const expected = getExpectedFormationStructure(teamConfig);
+
+      expect(expected).toEqual({
+        goalie: null,
+        leftDefender: null,
+        rightDefender: null,
+        leftMidfielder: null,
+        centerMidfielder: null,
+        rightMidfielder: null,
+        attacker: null,
+        substitute_1: null,
+        substitute_2: null,
+        substitute_3: null
+      });
+    });
   });
 
   describe('validateFormationStructure', () => {
@@ -237,5 +260,67 @@ describe('Formation Utilities', () => {
       expect(cleaned.leftDefender).toBe('player2');
       expect(cleaned.substitute_1).toBe('player6');
     });
+    it('should normalize 7v7 2-2-2 formation', () => {
+      const teamConfig = {
+        format: '7v7',
+        formation: '2-2-2',
+        squadSize: 9,
+        substitutionType: 'individual'
+      };
+
+      const squadSelection = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9'];
+
+      const messyFormation = {
+        goalie: 'p1',
+        leftDefender: 'p2',
+        rightDefender: 'p3',
+        leftMidfielder: 'p4',
+        rightMidfielder: 'p5',
+        leftAttacker: 'p6',
+        rightAttacker: 'p7',
+        substitute_1: 'p8',
+        substitute_2: 'p9'
+      };
+
+      const normalized = normalizeFormationStructure(messyFormation, teamConfig, squadSelection);
+
+      expect(normalized).toEqual({
+        goalie: 'p1',
+        leftDefender: 'p2',
+        rightDefender: 'p3',
+        leftMidfielder: 'p4',
+        rightMidfielder: 'p5',
+        leftAttacker: 'p6',
+        rightAttacker: 'p7',
+        substitute_1: 'p8',
+        substitute_2: 'p9'
+      });
+    });
   });
 });
+    it('should validate correct 7v7 2-3-1 formation', () => {
+      const teamConfig = {
+        format: '7v7',
+        formation: '2-3-1',
+        squadSize: 10,
+        substitutionType: 'individual'
+      };
+
+      const formation = {
+        goalie: 'player1',
+        leftDefender: 'player2',
+        rightDefender: 'player3',
+        leftMidfielder: 'player4',
+        centerMidfielder: 'player5',
+        rightMidfielder: 'player6',
+        attacker: 'player7',
+        substitute_1: 'player8',
+        substitute_2: 'player9',
+        substitute_3: 'player10'
+      };
+
+      const result = validateFormationStructure(formation, teamConfig);
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
