@@ -1148,59 +1148,51 @@ export function ConfigurationScreen({
         </div>
       </div>
 
-      {/* Match Format Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
-        <label htmlFor="matchFormat" className="block text-sm font-medium text-sky-200 mb-1">Match Format</label>
-        <Select
-          id="matchFormat"
-          value={currentFormat}
-          onChange={value => handleFormatChange(value)}
-          options={Object.values(FORMATS).map(format => ({
-            value: format,
-            label: FORMAT_CONFIGS[format]?.label || format
-          }))}
-        />
-        <p className="text-xs text-slate-400 mt-1">
-          {currentFormat === FORMATS.FORMAT_7V7
-            ? '7v7 adds two extra field players (4-6 subs). Individual substitutions only.'
-            : '5v5 uses 4 field players with individual or pairs substitution options.'}
-        </p>
-      </div>
-
-      {/* Formation Selection */}
-      {selectedSquadIds.length >= 5 && selectedSquadIds.length <= 15 && (
-        <div className="p-3 bg-slate-700 rounded-md">
-          <h3 className="text-base font-medium text-sky-200 mb-2 flex items-center">
-            <Layers className="mr-2 h-4 w-4" />
-            Formation Selection
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
-                Tactical Formation
-              </label>
-              <Select
-                id="formation"
-                value={selectedFormation}
-                onChange={value => handleFormationChange(value)}
-                options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => ({
-                  value: formation,
-                  label: FORMATION_DEFINITIONS[formation].label
-                }))}
-              />
-              <p className="text-xs text-slate-400 mt-1">
-                {selectedFormation === FORMATIONS.FORMATION_2_2 && 'Classic formation with left/right defenders and attackers'}
-                {selectedFormation === FORMATIONS.FORMATION_1_2_1 && 'Modern formation with center back, wing midfielders, and striker'}
-                {selectedFormation === FORMATIONS.FORMATION_2_2_2 && 'Balanced 2-2-2 shape with dual midfielders supporting two forwards'}
-                {selectedFormation === FORMATIONS.FORMATION_2_3_1 && 'Two defenders, a midfield trio, and a lone striker for 7v7 play'}
-              </p>
-            </div>
-
-            {/* Formation Preview */}
-            <FormationPreview formation={selectedFormation} className="mt-3" />
+        <h3 className="text-base font-medium text-sky-200 mb-2 flex items-center">
+          <Layers className="mr-2 h-4 w-4" />
+          Match Format & Formation
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="matchFormat" className="block text-sm font-medium text-sky-200 mb-1">Match Format</label>
+            <Select
+              id="matchFormat"
+              value={currentFormat}
+              onChange={value => handleFormatChange(value)}
+              options={Object.values(FORMATS).map(format => ({
+                value: format,
+                label: FORMAT_CONFIGS[format]?.label || format
+              }))}
+            />
           </div>
+
+          {selectedSquadIds.length >= 5 && selectedSquadIds.length <= 15 ? (
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
+                  Tactical Formation
+                </label>
+                <Select
+                  id="formation"
+                  value={selectedFormation}
+                  onChange={value => handleFormationChange(value)}
+                  options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => ({
+                    value: formation,
+                    label: FORMATION_DEFINITIONS[formation].label
+                  }))}
+                />
+              </div>
+
+              <FormationPreview formation={selectedFormation} className="mt-3" />
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400">
+              Add between 5 and 15 players to configure a tactical formation.
+            </p>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Substitution Mode Selection - only when format supports pairs */}
       {teamConfig?.format === FORMATS.FORMAT_5V5 && selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2 && (

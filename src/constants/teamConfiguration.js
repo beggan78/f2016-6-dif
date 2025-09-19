@@ -40,7 +40,12 @@ export const FORMATIONS = {
   FORMATION_1_1_2: '1-1-2',
   FORMATION_2_1_1: '2-1-1',
   FORMATION_2_2_2: '2-2-2',
-  FORMATION_2_3_1: '2-3-1'
+  FORMATION_2_3_1: '2-3-1',
+  FORMATION_3_3: '3-3',
+  FORMATION_1_3_2: '1-3-2',
+  FORMATION_2_1_3: '2-1-3',
+  FORMATION_3_2_1: '3-2-1',
+  FORMATION_3_1_2: '3-1-2'
 };
 
 // Detailed formation definitions, including status
@@ -80,6 +85,31 @@ export const FORMATION_DEFINITIONS = {
     status: 'available',
     formats: [FORMATS.FORMAT_7V7]
   },
+  [FORMATIONS.FORMATION_3_3]: {
+    label: '3-3 (Coming soon - Select to up-vote)',
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_7V7]
+  },
+  [FORMATIONS.FORMATION_1_3_2]: {
+    label: '1-3-2 (Coming soon - Select to up-vote)',
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_7V7]
+  },
+  [FORMATIONS.FORMATION_2_1_3]: {
+    label: '2-1-3 (Coming soon - Select to up-vote)',
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_7V7]
+  },
+  [FORMATIONS.FORMATION_3_2_1]: {
+    label: '3-2-1 (Coming soon - Select to up-vote)',
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_7V7]
+  },
+  [FORMATIONS.FORMATION_3_1_2]: {
+    label: '3-1-2 (Coming soon - Select to up-vote)',
+    status: 'coming-soon',
+    formats: [FORMATS.FORMAT_7V7]
+  },
 };
 
 // Substitution styles available
@@ -110,7 +140,12 @@ export const FORMAT_CONFIGS = {
     defaultFormation: FORMATIONS.FORMATION_2_2_2,
     formations: [
       FORMATIONS.FORMATION_2_2_2,
-      FORMATIONS.FORMATION_2_3_1
+      FORMATIONS.FORMATION_2_3_1,
+      FORMATIONS.FORMATION_3_3,
+      FORMATIONS.FORMATION_1_3_2,
+      FORMATIONS.FORMATION_2_1_3,
+      FORMATIONS.FORMATION_3_2_1,
+      FORMATIONS.FORMATION_3_1_2
     ],
     allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL],
     getDefaultSubstitutionType: () => SUBSTITUTION_TYPES.INDIVIDUAL
