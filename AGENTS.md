@@ -1,30 +1,24 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `src/` hosts the React app, split by domain (`components/`, `game/`, `hooks/`, `services/`, `utils/`) plus `assets/` for media and `types/` for generated Supabase typings.
-- Tests live alongside source in `src/__tests__/` and `src/__integration__/`; shared fixtures belong beside the code they exercise.
-- `public/` serves static assets and the HTML shell, while `scripts/` contains CLI helpers for maintenance.
-- `supabase/` stores migrations, seeds, and config; snapshots from `npm run db:types` land in `src/types/supabase.ts`.
+Source lives in `src/`, organized by domain: UI under `components/`, gameplay utilities in `game/`, shared hooks in `hooks/`, data calls in `services/`, and helpers inside `utils/`. Store static media in `src/assets/`, while generated Supabase types belong to `src/types/supabase.ts`. Jest specs sit alongside features inside `src/__tests__/` for units and `src/__integration__/` for broader flows. Runtime assets stay in `public/`, CLI helpers in `scripts/`, and Supabase migrations plus seeds in `supabase/`.
 
 ## Build, Test, and Development Commands
-- `npm start` boots the React development server with hot reload.
-- `npm run build` creates the production bundle used for deployments.
-- `npm test` opens Jest in watch mode; add `-- --watchAll=false` for one-off runs or `-- --coverage` for reports.
-- `npm run test:performance` runs the performance-focused Jest suite (set `RUN_PERFORMANCE_TESTS=true`).
-- `npm run db:start|stop|reset|migrate|seed` control the local Supabase stack; run `db:start` before features that hit Postgres.
+Use `npm start` for the hot-reloading React dev server and `npm run build` for the production bundle. Run `npm test -- --watchAll=false` before pushing to execute the Jest suite once, or add `--coverage` when you need reports. Performance-focused checks live behind `npm run test:performance` (set `RUN_PERFORMANCE_TESTS=true`). The local database stack is managed with `npm run db:start|stop|reset|migrate|seed`; keep it running when you touch features that depend on Postgres.
 
 ## Coding Style & Naming Conventions
-- Follow the existing ESLint rules from `react-app` and keep two-space indentation; run `npx eslint src` if you need a manual check.
-- Component files use PascalCase (for example `TeamManagement.js`); hooks start with `use*` inside `hooks/`; utilities remain camelCase.
-- Favor functional React components, Tailwind utility classes, and centralize constants in `src/constants/`.
+Follow the Create React App ESLint config with two-space indentation. Components use PascalCase (`TeamManagement.js`), hooks start with `use*`, utilities stay camelCase, and constants collect under `src/constants/`. Favor functional React components, Tailwind utility classes, and TypeScript-friendly patterns even in plain JS. Run `npx eslint src` whenever you need a manual lint check.
 
 ## Testing Guidelines
-- Jest with React Testing Library backs the suite; target ≥90% coverage for new or changed code.
-- Place fast unit tests as `*.test.js` within `__tests__` folders; broader flows go under `src/__integration__/`.
-- Mock Supabase calls with existing helpers before hitting the live service; clear timers and storage between specs.
-- Run `npm test -- --watchAll=false` before opening a pull request, and include screenshots for UI changes in `screenshots/` when applicable.
+Jest plus React Testing Library power the suite. Target at least 90% coverage for new or updated modules and group fast specs as `*.test.js` in `__tests__/`. Larger flows move to `src/__integration__/`. Mock Supabase calls with the existing helpers, reset timers and storage between specs, and add UI screenshots to `screenshots/` for visual changes.
 
 ## Commit & Pull Request Guidelines
-- Match the Git history: concise, imperative summaries (e.g., "Add invitation notifications"), optionally referencing issues with `#123`.
-- Each PR should explain the problem, solution, and test results; link Supabase migration IDs when schema changes ship.
-- Include any generated assets or updated docs (such as `src/types/supabase.ts`) in the same PR to keep reviewers current.
+Write concise, imperative commit messages (e.g., `Add invitation notifications`) and reference issues with `#123` when relevant. PRs should explain the problem, outline the solution, list manual or automated test results, and link Supabase migration IDs when schema changes ship. Include regenerated assets—such as `src/types/supabase.ts` or screenshots—in the same PR so reviewers stay current.
+
+## Security & Configuration Tips
+Store Supabase keys in your local `.env` file and never commit secrets. After pulling migration changes, run `npm run db:migrate` followed by `npm run db:seed` to sync your environment. If you update database types, commit the refreshed `src/types/supabase.ts` snapshot with the associated API changes.
+
+## Game Configuration Notes
+- Formats currently supported: `5v5` (pairs or individual) and `7v7` (individual only). Use the metadata in `src/constants/teamConfiguration.js` when adding new modes so validation and defaults update automatically.
+- 7v7 formations (`2-2-2`, `2-3-1`) add dedicated midfielder positions. UI/helpers should source position lists from `getModeDefinition` rather than hard-coding keys.
+- When persisting team configs or match data, always include the `format` field so Supabase records reflect the correct ruleset.

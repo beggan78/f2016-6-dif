@@ -11,6 +11,7 @@
 import { supabase } from '../lib/supabase';
 import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
+import { FORMATS, FORMAT_CONFIGS, FORMATIONS } from '../constants/teamConfiguration';
 import { normalizeFormationStructure } from '../utils/formationUtils';
 
 /**
@@ -418,10 +419,14 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     matchType = 'league' // Default to league if not provided
   } = gameState;
 
+  const formatKey = teamConfig?.format || FORMATS.FORMAT_5V5;
+  const formatConfig = FORMAT_CONFIGS[formatKey] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+  const defaultFormation = formatConfig?.defaultFormation || FORMATIONS.FORMATION_2_2;
+
   return {
     teamId,
-    format: teamConfig?.format || '5v5',
-    formation: selectedFormation || teamConfig?.formation || '2-2',
+    format: teamConfig?.format || FORMATS.FORMAT_5V5,
+    formation: selectedFormation || teamConfig?.formation || defaultFormation,
     periods,
     periodDurationMinutes,
     type: matchType,
@@ -491,6 +496,9 @@ export function mapFormationPositionToRole(position, currentRole = null) {
     // Midfielder positions (1-2-1 formation)
     case 'left':            // Left midfielder in 1-2-1
     case 'right':           // Right midfielder in 1-2-1
+    case 'leftMidfielder':
+    case 'rightMidfielder':
+    case 'centerMidfielder':
       return roleToDatabase(PLAYER_ROLES.MIDFIELDER);
 
     // Attacker positions (2-2 and 1-2-1 formations)

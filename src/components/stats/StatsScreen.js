@@ -6,6 +6,7 @@ import { FeatureGate } from '../auth/FeatureGate';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { calculateRolePoints } from '../../utils/rolePointUtils';
 import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
+import { hasPlayerParticipated } from '../../utils/playerUtils';
 import { updateMatchToConfirmed } from '../../services/matchStateManager';
 
 export function StatsScreen({ 
@@ -44,7 +45,7 @@ export function StatsScreen({
   const [saving, setSaving] = useState(false);
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const { isAuthenticated } = useAuth();
-  const squadForStats = allPlayers.filter(p => p.stats.startedMatchAs !== null); // Show only players who were part of the game
+  const squadForStats = allPlayers.filter(hasPlayerParticipated); // Hide bench players who never stepped on the field
   
 
   // Fair Play Award styling constants

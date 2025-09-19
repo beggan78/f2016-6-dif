@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
 import { History, Trash2, X, Calendar, Clock, Trophy, Users } from 'lucide-react';
+import { FORMATS } from '../../constants/teamConfiguration';
 
 /**
  * Modal for recovering finished matches that weren't saved to history
@@ -149,7 +150,7 @@ export function MatchRecoveryModal({
               <div className="flex items-center space-x-2 col-span-2">
                 <Trophy className="w-4 h-4 text-slate-400" />
                 <span className="text-slate-300">
-                  Format: {match.format || '5v5'} • Formation: {match.formation || '2-2'}
+                  Format: {match.format || FORMATS.FORMAT_5V5} • Formation: {match.formation || '2-2'}
                 </span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { PLAYER_STATUS } from '../constants/playerConstants';
 import { roleToDatabase } from '../constants/roleConstants';
+import { FORMATS } from '../constants/teamConfiguration';
 
 /**
  * DataSyncManager - Handles synchronization between localStorage and Supabase database
@@ -80,13 +81,16 @@ export class DataSyncManager {
         throw new Error('No current team selected. Please create or select a team first.');
       }
 
+      const formatValue = matchData?.format || matchData?.teamConfig?.format || FORMATS.FORMAT_5V5;
+      const formationValue = matchData?.teamConfig?.formation || matchData?.formation || '2-2';
+
       // Create match record
       const { data: match, error: matchError } = await supabase
         .from('match')
         .insert([{
           team_id: teamId,
-          format: '5v5', // Default format
-          formation: matchData.teamMode || 'INDIVIDUAL_6',
+          format: formatValue,
+          formation: formationValue,
           periods: matchData.numPeriods || 3,
           period_duration_minutes: matchData.periodDurationMinutes || 15,
           match_duration_seconds: (matchData.periodDurationMinutes || 15) * (matchData.numPeriods || 3) * 60,
@@ -147,7 +151,7 @@ export class DataSyncManager {
           substitutions_out: player.stats.substitutionsOut || 0,
           goalie_time_seconds: player.stats.timeAsGoalieSeconds || 0,
           defender_time_seconds: player.stats.timeAsDefenderSeconds || 0,
-          midfielder_time_seconds: 0, // Not used in current 5v5 format
+          midfielder_time_seconds: player.stats.timeAsMidfielderSeconds || 0,
           attacker_time_seconds: player.stats.timeAsAttackerSeconds || 0,
           substitute_time_seconds: (player.stats.totalTimeSeconds || 0) - (player.stats.timeOnFieldSeconds || 0),
           started_as: this.mapPlayerRoleToDatabase(player.stats.startedMatchAs),

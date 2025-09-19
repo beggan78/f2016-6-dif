@@ -51,6 +51,24 @@ export const TEAM_CONFIGS = {
     squadSize: 7,
     formation: '1-2-1',
     substitutionType: 'individual'
+  },
+  INDIVIDUAL_7V7_MIN: {
+    format: '7v7',
+    squadSize: 7,
+    formation: '2-2-2',
+    substitutionType: 'individual'
+  },
+  INDIVIDUAL_7V7_222: {
+    format: '7v7',
+    squadSize: 9,
+    formation: '2-2-2',
+    substitutionType: 'individual'
+  },
+  INDIVIDUAL_7V7_231: {
+    format: '7v7',
+    squadSize: 10,
+    formation: '2-3-1',
+    substitutionType: 'individual'
   }
 };
 
@@ -204,15 +222,20 @@ export const createMockFormation = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
 export const createMockGameState = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7, overrides = {}) => {
   const allPlayers = createMockPlayers(teamConfig.squadSize || 7, teamConfig);
   const formation = createMockFormation(teamConfig);
+  const definition = getDefinitionForTests(teamConfig);
+  const firstFieldPosition = definition?.fieldPositions?.[0] || 'leftDefender';
+  const rotationQueue = definition
+    ? [...definition.fieldPositions, ...definition.substitutePositions].map((_, idx) => (idx + 1).toString())
+    : ['1', '2', '3', '4', '5'];
   
   return {
     formation,
     allPlayers,
     teamConfig,
     selectedFormation: teamConfig.formation,
-    rotationQueue: ['1', '2', '3', '4', '5'],
-    nextPhysicalPairToSubOut: teamConfig.substitutionType === 'pairs' ? 'leftPair' : 'leftDefender',
-    nextPlayerToSubOut: 'leftDefender',
+    rotationQueue,
+    nextPhysicalPairToSubOut: teamConfig.substitutionType === 'pairs' ? 'leftPair' : firstFieldPosition,
+    nextPlayerToSubOut: teamConfig.substitutionType === 'pairs' ? 'leftPair' : firstFieldPosition,
     nextPlayerIdToSubOut: '1',
     nextNextPlayerIdToSubOut: '2',
     selectedSquadPlayers: allPlayers,
@@ -228,15 +251,18 @@ export const createMockGameState = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7, over
  * Creates a mock rotation queue based on teamConfig
  */
 export const createMockRotationQueue = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
-  const squadSize = teamConfig.squadSize || 7;
-  
+  const definition = getDefinitionForTests(teamConfig);
+
+  if (!definition) {
+    return [];
+  }
+
   if (teamConfig.substitutionType === 'pairs') {
     return ['1', '2', '3', '4', '5', '6'];
   }
-  
-  // For individual modes, queue size is squadSize - 1 (excluding goalie)
-  const queueSize = Math.max(squadSize - 1, 5);
-  return Array.from({ length: queueSize }, (_, i) => (i + 1).toString());
+
+  const outfieldSlots = definition.fieldPositions.length + definition.substitutePositions.length;
+  return Array.from({ length: Math.max(outfieldSlots, 1) }, (_, i) => (i + 1).toString());
 };
 
 /**
@@ -393,4 +419,3 @@ export const expectIndividualModesConsistent = (testFn) => {
     expect(result).toBeDefined();
   });
 };
-

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { FileText, Clock, Users, Trophy, Settings } from 'lucide-react';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
+import { hasPlayerParticipated } from '../../utils/playerUtils';
 
 // Placeholder imports - these components will be created next
 import { MatchSummaryHeader } from './MatchSummaryHeader';
@@ -75,7 +76,7 @@ export function MatchReportScreen({
 
   const squadPlayers = useMemo(() => {
     if (!allPlayers) return [];
-    return allPlayers.filter(p => p.stats.startedMatchAs !== null);
+    return allPlayers.filter(hasPlayerParticipated);
   }, [allPlayers]);
 
   const filteredEvents = useMemo(() => {

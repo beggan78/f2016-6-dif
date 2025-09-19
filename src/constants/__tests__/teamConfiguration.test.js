@@ -6,7 +6,10 @@ import {
   SUBSTITUTION_TYPES,
   PAIR_ROLE_ROTATION_TYPES,
   PAIR_ROLE_ROTATION_DEFINITIONS,
-  FORMATIONS
+  FORMATIONS,
+  FORMATS,
+  FORMAT_CONFIGS,
+  FORMATION_DEFINITIONS
 } from '../teamConfiguration';
 
 describe('Team Configuration with Pair Role Rotation', () => {
@@ -229,8 +232,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
         pairRoleRotation: null
       });
-      expect(result.corrections).toHaveLength(1);
-      expect(result.corrections[0]).toContain('pairs to individual');
+      expect(result.corrections).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('pairs to individual'),
+          expect.stringContaining('pairRoleRotation')
+        ])
+      );
     });
 
     test('should auto-correct pairs with non-7 squad size', () => {
@@ -252,8 +259,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
         pairRoleRotation: null
       });
-      expect(result.corrections).toHaveLength(1);
-      expect(result.corrections[0]).toContain('pairs to individual');
+      expect(result.corrections).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('pairs to individual'),
+          expect.stringContaining('pairRoleRotation')
+        ])
+      );
     });
 
     test('should auto-correct pairs with both invalid formation and squad size', () => {
@@ -275,8 +286,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
         pairRoleRotation: null
       });
-      expect(result.corrections).toHaveLength(1);
-      expect(result.corrections[0]).toContain('pairs to individual');
+      expect(result.corrections).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('pairs to individual'),
+          expect.stringContaining('pairRoleRotation')
+        ])
+      );
     });
 
     test('should preserve individual mode configuration', () => {
@@ -292,6 +307,41 @@ describe('Team Configuration with Pair Role Rotation', () => {
       expect(result.isValid).toBe(true);
       expect(result.correctedConfig).toEqual(individualConfig);
       expect(result.corrections).toEqual([]);
+    });
+  });
+
+  describe('7v7 formation catalog', () => {
+    test('should expose available and coming soon formations for 7v7', () => {
+      const formations = FORMAT_CONFIGS[FORMATS.FORMAT_7V7].formations;
+
+      expect(formations).toEqual(
+        expect.arrayContaining([
+          FORMATIONS.FORMATION_2_2_2,
+          FORMATIONS.FORMATION_2_3_1,
+          FORMATIONS.FORMATION_3_3,
+          FORMATIONS.FORMATION_1_3_2,
+          FORMATIONS.FORMATION_2_1_3,
+          FORMATIONS.FORMATION_3_2_1,
+          FORMATIONS.FORMATION_3_1_2
+        ])
+      );
+
+      const comingSoonEntries = formations.filter(
+        formation => FORMATION_DEFINITIONS[formation].status === 'coming-soon'
+      );
+
+      expect(comingSoonEntries).toEqual(
+        expect.arrayContaining([
+          FORMATIONS.FORMATION_3_3,
+          FORMATIONS.FORMATION_1_3_2,
+          FORMATIONS.FORMATION_2_1_3,
+          FORMATIONS.FORMATION_3_2_1,
+          FORMATIONS.FORMATION_3_1_2
+        ])
+      );
+
+      expect(FORMATION_DEFINITIONS[FORMATIONS.FORMATION_2_2_2].status).toBe('available');
+      expect(FORMATION_DEFINITIONS[FORMATIONS.FORMATION_2_3_1].status).toBe('available');
     });
   });
 });

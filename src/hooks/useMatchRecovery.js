@@ -42,10 +42,6 @@ export function useMatchRecovery({
       // Small delay to allow other authentication flows to complete
       const timer = setTimeout(async () => {
         try {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 Checking for recoverable match...');
-          }
-          
           const result = await checkForRecoverableMatch();
           
           if (result.success && result.match) {

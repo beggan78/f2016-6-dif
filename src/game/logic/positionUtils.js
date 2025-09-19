@@ -14,21 +14,22 @@ import { PLAYER_ROLES } from '../../constants/playerConstants';
 export function getPositionRole(position) {
   // Simple position to role mapping
   if (!position) return null;
-  
-  if (position.includes('Defender') || position.includes('defender')) {
+  const normalized = position.toLowerCase();
+
+  if (normalized.includes('defender')) {
     return PLAYER_ROLES.DEFENDER;
   }
-  if (position.includes('Attacker') || position.includes('attacker')) {
+  if (normalized.includes('attacker') || normalized.includes('forward') || normalized === 'attacker') {
     return PLAYER_ROLES.ATTACKER;
   }
   // Handle midfielder positions (1-2-1 formation)
-  if (position === 'left' || position === 'right') {
+  if (normalized === 'left' || normalized === 'right' || normalized.includes('midfielder') || normalized.includes('mid')) {
     return PLAYER_ROLES.MIDFIELDER;
   }
-  if (position.includes('substitute') || position.includes('Substitute')) {
+  if (normalized.includes('substitute')) {
     return PLAYER_ROLES.SUBSTITUTE;
   }
-  if (position === 'goalie') {
+  if (normalized === 'goalie') {
     return PLAYER_ROLES.GOALIE;
   }
   

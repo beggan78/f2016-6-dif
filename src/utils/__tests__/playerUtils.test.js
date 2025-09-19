@@ -11,6 +11,7 @@ import {
   getPlayerName,
   getSelectedSquadPlayers,
   getOutfieldPlayers,
+  hasPlayerParticipated,
   createPlayerLookup,
   getPlayersByStatus,
   isPlayerInactive,
@@ -137,6 +138,50 @@ describe('playerUtils', () => {
     it('should handle players without stats', () => {
       const playersWithoutStats = [{ id: 'p1', name: 'Player 1' }];
       expect(hasInactivePlayersInSquad(playersWithoutStats, ['p1'])).toBe(false);
+    });
+  });
+
+  describe('hasPlayerParticipated', () => {
+    const buildStats = (overrides = {}) => ({
+      startedMatchAs: null,
+      timeOnFieldSeconds: 0,
+      timeAsGoalieSeconds: 0,
+      timeAsDefenderSeconds: 0,
+      timeAsAttackerSeconds: 0,
+      timeAsMidfielderSeconds: 0,
+      periodsAsGoalie: 0,
+      periodsAsDefender: 0,
+      periodsAsAttacker: 0,
+      periodsAsMidfielder: 0,
+      goals: 0,
+      saves: 0,
+      blocks: 0,
+      cards: [],
+      ...overrides
+    });
+
+    it('returns true when player logged outfield time', () => {
+      const player = { stats: buildStats({ timeOnFieldSeconds: 120 }) };
+      expect(hasPlayerParticipated(player)).toBe(true);
+    });
+
+    it('returns true when player logged goalie time', () => {
+      const player = { stats: buildStats({ timeAsGoalieSeconds: 90 }) };
+      expect(hasPlayerParticipated(player)).toBe(true);
+    });
+
+    it('returns true when player started as field player even without recorded time', () => {
+      const player = { stats: buildStats({ startedMatchAs: PLAYER_ROLES.FIELD_PLAYER }) };
+      expect(hasPlayerParticipated(player)).toBe(true);
+    });
+
+    it('returns false for substitute who never entered play or logged stats', () => {
+      const player = { stats: buildStats({ startedMatchAs: PLAYER_ROLES.SUBSTITUTE }) };
+      expect(hasPlayerParticipated(player)).toBe(false);
+    });
+
+    it('returns false when stats object is missing', () => {
+      expect(hasPlayerParticipated({})).toBe(false);
     });
   });
 

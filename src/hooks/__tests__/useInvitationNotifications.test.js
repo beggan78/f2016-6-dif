@@ -198,6 +198,23 @@ describe('useInvitationNotifications', () => {
       expect(mockGetUserPendingInvitations).toHaveBeenCalledTimes(1);
     });
 
+    it('should skip checks while on GameScreen during active match', async () => {
+      const { result } = renderHook(() =>
+        useInvitationNotifications({
+          ...defaultOptions,
+          currentView: VIEWS.GAME,
+          currentMatchState: 'running'
+        })
+      );
+
+      await act(async () => {
+        await result.current.checkPendingInvitationNotifications();
+      });
+
+      expect(mockGetUserPendingInvitations).not.toHaveBeenCalled();
+      expect(result.current.hasCheckedInvitations).toBe(false);
+    });
+
     it('should reset check status when manually set', async () => {
       const { result } = renderHook(() => useInvitationNotifications(defaultOptions));
 

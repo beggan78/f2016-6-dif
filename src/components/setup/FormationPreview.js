@@ -46,7 +46,47 @@ export function FormationPreview({ formation, className = '' }) {
             { role: 'Attacker', count: 1, color: 'text-red-400' }
           ]
         };
-      
+
+      case FORMATIONS.FORMATION_2_2_2:
+        return {
+          name: '2-2-2 Formation',
+          description: '2 defenders, 2 midfielders, 2 attackers',
+          positions: [
+            { name: 'Left Attacker', icon: Sword, x: 38, y: 18, color: 'text-blue-400' },
+            { name: 'Right Attacker', icon: Sword, x: 62, y: 18, color: 'text-blue-400' },
+            { name: 'Left Midfielder', icon: ArrowDownUp, x: 35, y: 40, color: 'text-blue-400' },
+            { name: 'Right Midfielder', icon: ArrowDownUp, x: 65, y: 40, color: 'text-blue-400' },
+            { name: 'Left Defender', icon: Shield, x: 32, y: 62, color: 'text-blue-400' },
+            { name: 'Right Defender', icon: Shield, x: 68, y: 62, color: 'text-blue-400' },
+            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-blue-400' }
+          ],
+          roles: [
+            { role: 'Defenders', count: 2, color: 'text-blue-400' },
+            { role: 'Midfielders', count: 2, color: 'text-yellow-400' },
+            { role: 'Attackers', count: 2, color: 'text-red-400' }
+          ]
+        };
+
+      case FORMATIONS.FORMATION_2_3_1:
+        return {
+          name: '2-3-1 Formation',
+          description: '2 defenders, 3 midfielders, 1 attacker',
+          positions: [
+            { name: 'Attacker', icon: Sword, x: 50, y: 18, color: 'text-blue-400' },
+            { name: 'Left Midfielder', icon: ArrowDownUp, x: 32, y: 38, color: 'text-blue-400' },
+            { name: 'Center Midfielder', icon: ArrowDownUp, x: 50, y: 42, color: 'text-blue-400' },
+            { name: 'Right Midfielder', icon: ArrowDownUp, x: 68, y: 38, color: 'text-blue-400' },
+            { name: 'Left Defender', icon: Shield, x: 35, y: 63, color: 'text-blue-400' },
+            { name: 'Right Defender', icon: Shield, x: 65, y: 63, color: 'text-blue-400' },
+            { name: 'Goalie', icon: Hand, x: 50, y: 88, color: 'text-blue-400' }
+          ],
+          roles: [
+            { role: 'Defenders', count: 2, color: 'text-blue-400' },
+            { role: 'Midfielders', count: 3, color: 'text-yellow-400' },
+            { role: 'Attacker', count: 1, color: 'text-red-400' }
+          ]
+        };
+
       default:
         return null;
     }

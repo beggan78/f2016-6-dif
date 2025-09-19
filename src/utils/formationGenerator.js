@@ -274,18 +274,26 @@ function determineSubstituteRecommendations(finalPairs, outfieldersWithStats) {
  * @returns {Object} Formation recommendation with formation, rotationQueue, and nextToRotateOff
  */
 const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, teamConfig, selectedFormation = null) => {
-  // Extract formation from team config or direct parameter
-  const formation = selectedFormation || 
-    (teamConfig && teamConfig.formation) ||
-    FORMATIONS.FORMATION_2_2; // Default to 2-2 formation
-  
-  // Route to appropriate algorithm based on formation type
-  if (formation === FORMATIONS.FORMATION_1_2_1) {
+  const modeDefinition = getDefinition(teamConfig, selectedFormation || teamConfig?.formation);
+  if (!modeDefinition) {
+    return {
+      formation: { goalie: currentGoalieId },
+      rotationQueue: [],
+      nextToRotateOff: null
+    };
+  }
+
+  const formationKey = selectedFormation || teamConfig?.formation || FORMATIONS.FORMATION_2_2;
+
+  if (formationKey === FORMATIONS.FORMATION_1_2_1) {
     return generate121FormationRecommendation(currentGoalieId, playerStats, squad, teamConfig);
   }
-  
-  // Default to existing 2-2 algorithm
-  return generate22FormationRecommendation(currentGoalieId, playerStats, squad, teamConfig);
+
+  if (formationKey === FORMATIONS.FORMATION_2_2) {
+    return generate22FormationRecommendation(currentGoalieId, playerStats, squad, teamConfig);
+  }
+
+  return generateFormationRecommendation(currentGoalieId, playerStats, squad, teamConfig, formationKey);
 };
 
 /**
@@ -346,8 +354,9 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   // For formation recommendation, we don't have existing formation data
   // So we'll determine field vs substitute based on time (least time = field players)
   const sortedByTime = activePlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-  const currentFieldPlayers = sortedByTime.slice(0, 4); // 4 field players
-  const currentSubstitutes = sortedByTime.slice(4); // Remaining are substitutes
+  const fieldSlotCount = modeConfig?.fieldPositions?.length || 4;
+  const currentFieldPlayers = sortedByTime.slice(0, fieldSlotCount);
+  const currentSubstitutes = sortedByTime.slice(fieldSlotCount);
   
   
   // Sort field players by most time first (ready to rotate off)
@@ -364,13 +373,12 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   // We want the 4 players with the least total time to be on the field (for fairness)
   const playersForField = activePlayers
     .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime)
-    .slice(0, 4);
+    .slice(0, fieldSlotCount);
   
   
   let formationResult;
 
   if (formation === FORMATIONS.FORMATION_1_2_1) {
-    // Assign 1-2-1 positions based on role deficits
     const positionAssignments = assign121Positions(playersForField);
     formationResult = {
       goalie: currentGoalieId,
@@ -379,8 +387,7 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
       right: positionAssignments.right?.id || null,
       attacker: positionAssignments.attacker?.id || null
     };
-  } else {
-    // Assign 2-2 positions based on surplus attacker time
+  } else if (formation === FORMATIONS.FORMATION_2_2) {
     const fieldPlayersByAttackerSurplus = [...playersForField].sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
     const defenders = fieldPlayersByAttackerSurplus.slice(0, 2);
     const attackers = fieldPlayersByAttackerSurplus.slice(2, 4);
@@ -392,13 +399,12 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
       leftAttacker: attackers[0]?.id || null,
       rightAttacker: attackers[1]?.id || null
     };
+  } else {
+    formationResult = buildFormationForMode(currentGoalieId, modeConfig, playersForField, substitutesOrdered, inactivePlayers);
   }
 
-  // Add substitute positions dynamically based on mode configuration
   const substitutePositions = modeConfig?.substitutePositions || [];
-  const activeSubstitutes = rotationQueue.slice(4);
-
-  addSubstitutePositions(formationResult, substitutePositions, activeSubstitutes, inactivePlayers, rotationQueue);
+  addSubstitutePositions(formationResult, substitutePositions, substitutesOrdered, inactivePlayers);
 
   // Ensure nextToRotateOff is always a field player (never a substitute)
   const nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
@@ -410,53 +416,70 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   };
 };
 
+const buildFormationForMode = (currentGoalieId, modeDefinition, playersForField, substitutesOrdered, inactivePlayers) => {
+  const formation = { goalie: currentGoalieId };
+  const remainingPlayers = [...playersForField];
+
+  const defenderPositions = (modeDefinition.fieldPositions || []).filter(position => position.toLowerCase().includes('defender'));
+  const midfielderPositions = (modeDefinition.fieldPositions || []).filter(position => position.toLowerCase().includes('mid'));
+  const attackerPositions = (modeDefinition.fieldPositions || []).filter(position => position.toLowerCase().includes('attack') || position === 'attacker');
+
+  const assignRolePositions = (positions, role) => {
+    positions.forEach(position => {
+      remainingPlayers.sort((a, b) => getRoleTimeByKey(a, role) - getRoleTimeByKey(b, role));
+      const player = remainingPlayers.shift();
+      formation[position] = player?.id || null;
+    });
+  };
+
+  assignRolePositions(defenderPositions, 'defender');
+  assignRolePositions(midfielderPositions, 'midfielder');
+  assignRolePositions(attackerPositions, 'attacker');
+
+  const unfilledPositions = (modeDefinition.fieldPositions || []).filter(position => formation[position] === undefined);
+  if (unfilledPositions.length > 0 && remainingPlayers.length > 0) {
+    remainingPlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+    unfilledPositions.forEach((position, index) => {
+      formation[position] = remainingPlayers[index]?.id || null;
+    });
+  }
+
+  const substitutePositions = modeDefinition.substitutePositions || [];
+  addSubstitutePositions(formation, substitutePositions, substitutesOrdered, inactivePlayers);
+
+  return formation;
+};
+
+const getRoleTimeByKey = (player, role) => {
+  switch (role) {
+    case 'defender':
+      return player.defenderTime ?? 0;
+    case 'midfielder':
+      return player.midfielderTime ?? 0;
+    case 'attacker':
+      return player.attackerTime ?? 0;
+    default:
+      return player.totalOutfieldTime ?? 0;
+  }
+};
+
 /**
  * Handle formation when there are ≤4 active players (consolidated for both formations)
  */
 const handleLimitedPlayersFormation = (currentGoalieId, activePlayers, inactivePlayers, teamConfig, formation) => {
   const availableActivePlayers = activePlayers.sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-  
-  let formationResult = { goalie: currentGoalieId };
-  
-  // Get mode configuration to determine positions
   const modeConfig = getDefinition(teamConfig, formation);
   const fieldPositions = modeConfig?.fieldPositions || [];
   const substitutePositions = modeConfig?.substitutePositions || [];
-  
-  // Assign field positions based on formation type
-  if (availableActivePlayers.length >= 4) {
-    if (formation === FORMATIONS.FORMATION_1_2_1) {
-      const fieldAssignments = assign121Positions(availableActivePlayers.slice(0, 4));
-      formationResult.defender = fieldAssignments.defender?.id || null;
-      formationResult.left = fieldAssignments.left?.id || null;
-      formationResult.right = fieldAssignments.right?.id || null;
-      formationResult.attacker = fieldAssignments.attacker?.id || null;
-    } else {
-      // 2-2 formation
-      const fieldPlayersByAttackerSurplus = [...availableActivePlayers.slice(0, 4)]
-        .sort((a, b) => b.surplusAttackerTime - a.surplusAttackerTime);
-      const defenders = fieldPlayersByAttackerSurplus.slice(0, 2);
-      const attackers = fieldPlayersByAttackerSurplus.slice(2, 4);
-      
-      formationResult.leftDefender = defenders[0]?.id || null;
-      formationResult.rightDefender = defenders[1]?.id || null;
-      formationResult.leftAttacker = attackers[0]?.id || null;
-      formationResult.rightAttacker = attackers[1]?.id || null;
-    }
-  } else {
-    // Less than 4 active players - assign what we can using field positions
-    fieldPositions.forEach((position, index) => {
-      formationResult[position] = availableActivePlayers[index]?.id || null;
-    });
-  }
-  
-  // Set all substitute positions to null initially
-  substitutePositions.forEach(position => {
-    formationResult[position] = null;
+
+  const formationResult = { goalie: currentGoalieId };
+
+  fieldPositions.forEach((position, index) => {
+    formationResult[position] = availableActivePlayers[index]?.id || null;
   });
-  
-  // Assign inactive players to available substitute positions
-  assignInactivePlayersToSubstitutes(formationResult, substitutePositions, inactivePlayers);
+
+  const remainingActive = availableActivePlayers.slice(fieldPositions.length);
+  addSubstitutePositions(formationResult, substitutePositions, remainingActive, inactivePlayers);
   
   return {
     formation: formationResult,
@@ -468,37 +491,18 @@ const handleLimitedPlayersFormation = (currentGoalieId, activePlayers, inactiveP
 /**
  * Add substitute positions to formation (consolidated logic)
  */
-const addSubstitutePositions = (formation, substitutePositions, activeSubstitutes, inactivePlayers, rotationQueue) => {
+const addSubstitutePositions = (formation, substitutePositions, activeSubstitutes, inactivePlayers) => {
+  const activeIds = activeSubstitutes.map(player => player.id);
+  const inactiveIds = inactivePlayers.map(player => player.id);
+
   substitutePositions.forEach((positionKey, index) => {
-    if (substitutePositions.length === 1) {
-      formation[positionKey] = rotationQueue[4]?.id || null;
-    } else if (substitutePositions.length >= 2) {
-      const bottomPositionsForInactive = Math.min(inactivePlayers.length, substitutePositions.length);
-      const isBottomPosition = index >= substitutePositions.length - bottomPositionsForInactive;
-      
-      if (isBottomPosition && inactivePlayers.length > 0) {
-        const inactivePlayerIndex = index - (substitutePositions.length - inactivePlayers.length);
-        formation[positionKey] = inactivePlayers[inactivePlayerIndex]?.id || null;
-      } else {
-        formation[positionKey] = activeSubstitutes[index]?.id || null;
-      }
+    if (index < activeIds.length) {
+      formation[positionKey] = activeIds[index] || null;
+    } else {
+      const inactiveIndex = index - activeIds.length;
+      formation[positionKey] = inactiveIds[inactiveIndex] || null;
     }
   });
-};
-
-/**
- * Assign inactive players to substitute positions (consolidated logic)
- */
-const assignInactivePlayersToSubstitutes = (formation, substitutePositions, inactivePlayers) => {
-  if (inactivePlayers.length > 0 && substitutePositions.length > 0) {
-    const availableSubPositions = [...substitutePositions].reverse();
-    
-    inactivePlayers.forEach((inactivePlayer, index) => {
-      if (index < availableSubPositions.length) {
-        formation[availableSubPositions[index]] = inactivePlayer.id;
-      }
-    });
-  }
 };
 
 /**

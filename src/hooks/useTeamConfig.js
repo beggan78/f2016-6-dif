@@ -1,5 +1,13 @@
 import { useState, useCallback } from 'react';
-import { createTeamConfig, createDefaultTeamConfig, FORMATIONS, validateAndCorrectTeamConfig } from '../constants/teamConfiguration';
+import {
+  createTeamConfig,
+  createDefaultTeamConfig,
+  FORMATIONS,
+  FORMATS,
+  FORMAT_CONFIGS,
+  SUBSTITUTION_TYPES,
+  validateAndCorrectTeamConfig
+} from '../constants/teamConfiguration';
 
 /**
  * Hook for managing team configuration and formation selection
@@ -18,16 +26,26 @@ export function useTeamConfig(initialState = {}) {
   const initializeTeamConfig = (state) => {
     let config = state.teamConfig;
     if (!config) {
-      config = createDefaultTeamConfig(7); // Default to 7-player individual
+      const defaultFormat = state.teamConfig?.format || FORMATS.FORMAT_5V5;
+      config = createDefaultTeamConfig(7, defaultFormat); // Default squad size/format
+    }
+
+    let normalizedConfig = config;
+    try {
+      const validated = validateAndCorrectTeamConfig(config);
+      normalizedConfig = validated?.correctedConfig || config;
+    } catch (error) {
+      console.warn('⚠️ Failed to validate existing team config, falling back to defaults:', error);
+      normalizedConfig = createDefaultTeamConfig(config?.squadSize || 7, config?.format || FORMATS.FORMAT_5V5);
     }
 
     // Migration: Extract formation from teamConfig if not present
     let formation = state.selectedFormation;
-    if (!formation && config) {
-      formation = config.formation || FORMATIONS.FORMATION_2_2;
+    if (!formation && normalizedConfig) {
+      formation = normalizedConfig.formation || FORMATIONS.FORMATION_2_2;
     }
 
-    return { teamConfig: config, selectedFormation: formation };
+    return { teamConfig: normalizedConfig, selectedFormation: formation };
   };
 
   const { teamConfig: initialTeamConfig, selectedFormation: initialFormation } =
@@ -82,7 +100,7 @@ export function useTeamConfig(initialState = {}) {
   }, [teamConfig, updateTeamConfig]);
 
   // Create new team config from squad size with validation
-  const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = 'individual') => {
+  const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = null, formatOverride = null) => {
     console.log('🔧 createTeamConfigFromSquadSize called:', {
       squadSize,
       substitutionType,
@@ -91,12 +109,24 @@ export function useTeamConfig(initialState = {}) {
       'currentTeamConfig.substitutionType': teamConfig?.substitutionType
     });
 
+    const formatToUse = formatOverride || teamConfig?.format || FORMATS.FORMAT_5V5;
+    const formatConfig = FORMAT_CONFIGS[formatToUse] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+    const substitutionToUse = substitutionType
+      || teamConfig?.substitutionType
+      || (formatConfig.getDefaultSubstitutionType
+        ? formatConfig.getDefaultSubstitutionType(squadSize)
+        : SUBSTITUTION_TYPES.INDIVIDUAL);
+
+    const pairRotation = substitutionToUse === SUBSTITUTION_TYPES.PAIRS
+      ? teamConfig?.pairRoleRotation
+      : null;
+
     const newConfig = createTeamConfig(
-      '5v5', // format
+      formatToUse,
       squadSize,
       selectedFormation, // use current formation selection
-      substitutionType,
-      teamConfig?.pairRoleRotation // Preserve existing pairRoleRotation value
+      substitutionToUse,
+      pairRotation
     );
 
     console.log('🔧 createTeamConfigFromSquadSize result:', {

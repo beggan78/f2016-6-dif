@@ -2,6 +2,8 @@
  * Utility functions for player-related operations
  */
 
+import { PLAYER_ROLES } from '../constants/playerConstants';
+
 // Helper to initialize player objects
 export const initializePlayers = (roster) => roster.map((name, index) => ({
   id: `p${index + 1}`,
@@ -155,6 +157,60 @@ export const getOutfieldPlayers = (allPlayers, selectedSquadIds, goalieId) => {
   return allPlayers.filter(p => 
     selectedSquadIds.includes(p.id) && p.id !== goalieId
   );
+};
+
+/**
+ * Determine if a player actually participated in the match (took the field or played goalie)
+ * @param {Object} player - Player object with stats
+ * @returns {boolean} True when the player logged any on-field/goalie time or recorded match stats
+ */
+export const hasPlayerParticipated = (player) => {
+  if (!player?.stats) {
+    return false;
+  }
+
+  const {
+    timeOnFieldSeconds = 0,
+    timeAsGoalieSeconds = 0,
+    timeAsDefenderSeconds = 0,
+    timeAsAttackerSeconds = 0,
+    timeAsMidfielderSeconds = 0,
+    periodsAsGoalie = 0,
+    periodsAsDefender = 0,
+    periodsAsAttacker = 0,
+    periodsAsMidfielder = 0,
+    goals = 0,
+    saves = 0,
+    blocks = 0,
+    cards = []
+  } = player.stats;
+
+  if (timeOnFieldSeconds > 0 || timeAsGoalieSeconds > 0) {
+    return true;
+  }
+
+  if (timeAsDefenderSeconds > 0 || timeAsAttackerSeconds > 0 || timeAsMidfielderSeconds > 0) {
+    return true;
+  }
+
+  if (periodsAsGoalie > 0 || periodsAsDefender > 0 || periodsAsAttacker > 0 || periodsAsMidfielder > 0) {
+    return true;
+  }
+
+  if (goals > 0 || saves > 0 || blocks > 0) {
+    return true;
+  }
+
+  if (Array.isArray(cards) && cards.length > 0) {
+    return true;
+  }
+
+  // Treat players who started on the field or as goalie as participants even if duration tracking failed
+  if (player.stats.startedMatchAs === PLAYER_ROLES.GOALIE || player.stats.startedMatchAs === PLAYER_ROLES.FIELD_PLAYER) {
+    return true;
+  }
+
+  return false;
 };
 
 /**

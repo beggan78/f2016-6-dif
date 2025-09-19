@@ -558,7 +558,7 @@ describe('PeriodSetupScreen', () => {
   });
 
   describe('Save Configuration Button Visibility', () => {
-    it('should show Save Configuration button when match state is not running', () => {
+    it('should show Save Configuration button only in first period before match starts', () => {
       const completeFormation = {
         goalie: '7',
         leftPair: { defender: '1', attacker: '2' },
@@ -569,6 +569,7 @@ describe('PeriodSetupScreen', () => {
       const props = {
         ...mockProps,
         formation: completeFormation,
+        currentPeriodNumber: 1,
         matchState: 'pending', // Not running
         handleSavePeriodConfiguration: jest.fn()
       };
@@ -577,6 +578,27 @@ describe('PeriodSetupScreen', () => {
 
       // Save Configuration button should be visible
       expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+    });
+
+    it('should hide Save Configuration button for later periods even when match not started', () => {
+      const completeFormation = {
+        goalie: '7',
+        leftPair: { defender: '1', attacker: '2' },
+        rightPair: { defender: '3', attacker: '4' },
+        subPair: { defender: '5', attacker: '6' }
+      };
+
+      const props = {
+        ...mockProps,
+        currentPeriodNumber: 2,
+        formation: completeFormation,
+        matchState: 'pending',
+        handleSavePeriodConfiguration: jest.fn()
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
     });
 
     it('should hide Save Configuration button when match state is running', () => {
@@ -590,6 +612,7 @@ describe('PeriodSetupScreen', () => {
       const props = {
         ...mockProps,
         formation: completeFormation,
+        currentPeriodNumber: 1,
         matchState: 'running', // Match has started
         handleSavePeriodConfiguration: jest.fn()
       };
@@ -611,6 +634,7 @@ describe('PeriodSetupScreen', () => {
       const props = {
         ...mockProps,
         formation: completeFormation,
+        currentPeriodNumber: 1,
         matchState: 'pending',
         handleSavePeriodConfiguration: null // No handler provided
       };

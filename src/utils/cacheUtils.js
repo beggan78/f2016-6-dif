@@ -12,6 +12,7 @@ const CACHE_CONFIG = {
 
 // Cache keys for different data types
 export const CACHE_KEYS = {
+  AUTH_USER: 'authUser',
   USER_PROFILE: 'userProfile',
   CURRENT_TEAM: 'currentTeam',
   USER_TEAMS: 'userTeams', 
@@ -263,6 +264,24 @@ export const getCacheStats = () => {
  */
 export const cacheUserProfile = (profile) => {
   return saveToCache(CACHE_KEYS.USER_PROFILE, profile);
+};
+
+/**
+ * Cache authenticated user data for fast refresh recovery
+ */
+export const cacheAuthUser = (user) => {
+  if (!user) {
+    removeFromCache(CACHE_KEYS.AUTH_USER);
+    return false;
+  }
+  return saveToCache(CACHE_KEYS.AUTH_USER, user);
+};
+
+/**
+ * Get cached authenticated user data
+ */
+export const getCachedAuthUser = () => {
+  return getFromCache(CACHE_KEYS.AUTH_USER);
 };
 
 /**

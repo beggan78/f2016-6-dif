@@ -20,7 +20,9 @@ import { VIEWS } from '../constants/viewConstants';
  */
 export function useInvitationNotifications({ 
   onSuccess = () => {}, 
-  onNavigate = () => {}
+  onNavigate = () => {},
+  currentView = null,
+  currentMatchState = null
 }) {
   const { user } = useAuth();
   const { getUserPendingInvitations } = useTeam();
@@ -33,6 +35,11 @@ export function useInvitationNotifications({
   // Check for pending invitation notifications
   const checkPendingInvitationNotifications = useCallback(async () => {
     if (!user || hasCheckedInvitations) return;
+
+    // Avoid interrupting active or in-progress matches with invitation modals
+    if (currentView === VIEWS.GAME && currentMatchState && currentMatchState !== 'finished') {
+      return;
+    }
 
     try {
       console.log('Checking for pending invitation notifications...');
@@ -51,7 +58,7 @@ export function useInvitationNotifications({
       console.error('Error checking pending invitations:', error);
       setHasCheckedInvitations(true);
     }
-  }, [user, getUserPendingInvitations, hasCheckedInvitations]);
+  }, [user, getUserPendingInvitations, hasCheckedInvitations, currentView, currentMatchState]);
 
   // Handle invitation notification processed (accept/decline)
   const handleInvitationNotificationProcessed = useCallback((processedInvitation, action) => {
