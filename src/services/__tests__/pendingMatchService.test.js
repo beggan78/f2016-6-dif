@@ -55,6 +55,16 @@ describe('pendingMatchService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    supabase.from.mockImplementation(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            order: jest.fn(() => Promise.resolve({ data: [], error: null }))
+          }))
+        }))
+      }))
+    }));
+
     // Setup console mocks
     console.warn = mockConsole.warn;
     console.error = mockConsole.error;
@@ -123,7 +133,90 @@ describe('pendingMatchService', () => {
 
       expect(result).toEqual({
         shouldShow: true,
-        pendingMatches: mockMatches
+        pendingMatches: mockMatches.map(match => ({
+          ...match,
+          created_by_profile: null,
+          creatorName: null
+        }))
+      });
+    });
+
+    it('should include creator profile name when available', async () => {
+      const mockMatches = [
+        {
+          id: 'match1',
+          team_id: 'team123',
+          state: 'pending',
+          created_by: 'user-1',
+          initial_config: {
+            teamConfig: { formation: '2-2', squadSize: 7 },
+            matchConfig: { periods: 3, periodDurationMinutes: 15 },
+            squadSelection: ['player1', 'player2']
+          },
+          created_at: '2023-09-17T10:00:00Z'
+        },
+        {
+          id: 'match2',
+          team_id: 'team123',
+          state: 'pending',
+          created_by: null,
+          initial_config: {
+            teamConfig: { formation: '1-2-1', squadSize: 6 },
+            matchConfig: { periods: 2, periodDurationMinutes: 20 },
+            squadSelection: ['player3', 'player4']
+          },
+          created_at: '2023-09-17T09:00:00Z'
+        }
+      ];
+
+      const mockOrder = jest.fn(() => Promise.resolve({ data: mockMatches, error: null }));
+      const mockEqState = jest.fn(() => ({ order: mockOrder }));
+      const mockEqTeam = jest.fn(() => ({ eq: mockEqState }));
+      const mockSelectMatches = jest.fn(() => ({ eq: mockEqTeam }));
+
+      const mockIn = jest.fn(() => Promise.resolve({
+        data: [{ id: 'user-1', name: 'Coach Carter' }],
+        error: null
+      }));
+      const mockSelectProfiles = jest.fn(() => ({ in: mockIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'match') {
+          return { select: mockSelectMatches };
+        }
+        if (table === 'user_profile') {
+          return { select: mockSelectProfiles };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await checkForPendingMatches('team123');
+
+      expect(mockSelectMatches).toHaveBeenCalledWith('*');
+      expect(mockEqTeam).toHaveBeenCalledWith('team_id', 'team123');
+      expect(mockEqState).toHaveBeenCalledWith('state', 'pending');
+      expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
+
+      expect(mockSelectProfiles).toHaveBeenCalledWith('id, name');
+      expect(mockIn).toHaveBeenCalledWith('id', ['user-1']);
+
+      expect(result).toEqual({
+        shouldShow: true,
+        pendingMatches: [
+          {
+            ...mockMatches[0],
+            created_by_profile: {
+              id: 'user-1',
+              name: 'Coach Carter'
+            },
+            creatorName: 'Coach Carter'
+          },
+          {
+            ...mockMatches[1],
+            created_by_profile: null,
+            creatorName: null
+          }
+        ]
       });
     });
 
@@ -161,7 +254,13 @@ describe('pendingMatchService', () => {
 
       expect(result).toEqual({
         shouldShow: true,
-        pendingMatches: [mockMatches[0]] // Only the first match should remain
+        pendingMatches: [
+          {
+            ...mockMatches[0],
+            created_by_profile: null,
+            creatorName: null
+          }
+        ] // Only the first match should remain
       });
     });
 

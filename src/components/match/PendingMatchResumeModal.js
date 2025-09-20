@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
-import { Play, Trash2, X, Calendar, Users, Clock, Target, Plus } from 'lucide-react';
+import { Play, Trash2, X, Calendar, Users, Clock, Target, Plus, User } from 'lucide-react';
 
 /**
  * Modal component for handling pending match resume actions
@@ -120,9 +120,10 @@ export function PendingMatchResumeModal({
           {pendingMatches.length > 0 && (
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {pendingMatches.map((match) => {
-                const { initial_config, opponent, created_at, id } = match;
+                const { initial_config, opponent, created_at, id, creatorName, created_by_profile } = match;
                 const matchConfig = initial_config?.matchConfig || {};
                 const teamConfig = initial_config?.teamConfig || {};
+                const createdByName = creatorName || created_by_profile?.name || null;
                 
                 // Extract key details for display
                 const opponentName = opponent || matchConfig.opponentTeam || 'Unknown Opponent';
@@ -143,9 +144,17 @@ export function PendingMatchResumeModal({
                         <Target className="w-4 h-4 text-slate-400" />
                         <span>vs {opponentName}</span>
                       </h3>
-                      <div className="flex items-center space-x-1 text-xs text-slate-400">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatMatchDate(created_at)}</span>
+                      <div className="flex flex-col items-end space-y-1 text-xs text-slate-400">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>{formatMatchDate(created_at)}</span>
+                        </div>
+                        {createdByName && (
+                          <div className="flex items-center space-x-1">
+                            <User className="w-3 h-3" />
+                            <span>Created by {createdByName}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
