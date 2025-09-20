@@ -30,7 +30,8 @@ jest.mock('lucide-react', () => ({
   Users: ({ className }) => <div data-testid="users-icon" className={className} />,
   Clock: ({ className }) => <div data-testid="clock-icon" className={className} />,
   Target: ({ className }) => <div data-testid="target-icon" className={className} />,
-  Plus: ({ className }) => <div data-testid="plus-icon" className={className} />
+  Plus: ({ className }) => <div data-testid="plus-icon" className={className} />,
+  User: ({ className }) => <div data-testid="user-icon" className={className} />
 }));
 
 // Mock the Button component from shared UI
@@ -198,6 +199,33 @@ describe('PendingMatchResumeModal', () => {
       expect(screen.getByText('3 × 15 min periods')).toBeInTheDocument();
       expect(screen.getByText('Squad:')).toBeInTheDocument();
       expect(screen.getByText('7 players, 2-2 formation')).toBeInTheDocument(); // Uses squadSize (7)
+    });
+
+    it('should display creator name when provided', () => {
+      const matchWithCreator = {
+        ...singleMatch,
+        creatorName: 'Coach Carter'
+      };
+
+      render(<PendingMatchResumeModal {...defaultProps} pendingMatches={[matchWithCreator]} />);
+
+      expect(screen.getByText('Created by Coach Carter')).toBeInTheDocument();
+      expect(screen.getByTestId('user-icon')).toBeInTheDocument();
+    });
+
+    it('should display creator name from created_by_profile fallback', () => {
+      const matchWithProfile = {
+        ...singleMatch,
+        creatorName: null,
+        created_by_profile: {
+          id: 'user-1',
+          name: 'Coach Taylor'
+        }
+      };
+
+      render(<PendingMatchResumeModal {...defaultProps} pendingMatches={[matchWithProfile]} />);
+
+      expect(screen.getByText('Created by Coach Taylor')).toBeInTheDocument();
     });
 
     it('should format creation date correctly', () => {

@@ -40,10 +40,54 @@ export async function checkForPendingMatches(teamId) {
 
     const shouldShow = validMatches.length > 0;
 
+    if (!shouldShow) {
+      return {
+        shouldShow,
+        pendingMatches: []
+      };
+    }
+
+    const createdByIds = Array.from(
+      new Set(
+        validMatches
+          .map(match => match.created_by)
+          .filter(Boolean)
+      )
+    );
+
+    let profileMap = new Map();
+
+    if (createdByIds.length > 0) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('user_profile')
+        .select('id, name')
+        .in('id', createdByIds);
+
+      if (profileError) {
+        console.warn('⚠️ Failed to fetch creator profiles for pending matches:', profileError);
+      } else if (profiles?.length) {
+        profileMap = new Map(profiles.map(profile => [profile.id, profile.name]));
+      }
+    }
+
+    const pendingMatchesWithCreators = validMatches.map(match => {
+      const creatorName = profileMap.get(match.created_by) || null;
+
+      return {
+        ...match,
+        created_by_profile: creatorName
+          ? {
+              id: match.created_by,
+              name: creatorName
+            }
+          : null,
+        creatorName
+      };
+    });
 
     return {
       shouldShow,
-      pendingMatches: validMatches
+      pendingMatches: pendingMatchesWithCreators
     };
 
   } catch (error) {
