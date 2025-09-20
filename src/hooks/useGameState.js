@@ -1435,8 +1435,10 @@ export function useGameState(navigateToView = null) {
             stats.startedMatchAs = newStartedMatchAs;
             // Store the specific formation position for formation-aware role mapping
             stats.startedAtPosition = currentPairKey;
+            // Preserve the exact role at match start for accurate reporting
+            stats.startedAtRole = currentRole || null;
           }
-          
+
           return {
             ...p,
             stats: {

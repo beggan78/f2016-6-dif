@@ -593,13 +593,20 @@ export function formatInitialPlayerStats(player, matchId, captainId) {
     return null;
   }
 
+  let startingRole;
+  if (player.stats?.startedAtRole) {
+    startingRole = roleToDatabase(player.stats.startedAtRole);
+  } else if (player.stats?.startedAtPosition) {
+    startingRole = mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole);
+  } else {
+    startingRole = roleToDatabase(PLAYER_ROLES.UNKNOWN);
+  }
+
   return {
     player_id: player.id,
     match_id: matchId,
     // Match participation details - only data available at match start
-    started_as: player.stats.startedAtPosition
-      ? mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole)
-      : 'unknown', // Direct fallback when position data is missing
+    started_as: startingRole,
     was_captain: player.id === captainId || player.stats?.isCaptain || false,
     // Performance metrics default to 0/false - will be updated when match finishes
     goals_scored: 0,
@@ -634,6 +641,15 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
   const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 
 
+  let startingRole;
+  if (player.stats?.startedAtRole) {
+    startingRole = roleToDatabase(player.stats.startedAtRole);
+  } else if (player.stats?.startedAtPosition) {
+    startingRole = mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole);
+  } else {
+    startingRole = roleToDatabase(PLAYER_ROLES.UNKNOWN);
+  }
+
   return {
     player_id: player.id,
     match_id: matchId,
@@ -648,9 +664,7 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
     // Total outfield time (excluding goalie time)
     total_field_time_seconds: totalFieldTime,
     // Match participation details
-    started_as: player.stats.startedAtPosition
-      ? mapFormationPositionToRole(player.stats.startedAtPosition, player.stats.currentRole)
-      : 'unknown', // Direct fallback when position data is missing
+    started_as: startingRole,
     was_captain: player.stats.isCaptain || false,
     got_fair_play_award: player.hasFairPlayAward || false
   };
@@ -825,7 +839,7 @@ export async function deletePlayerMatchStats(matchId) {
 }
 
 /**
- * Upsert player match statistics with updated squad/formation (delete + insert pattern)
+ * Upsert player match statistics with updated squad/formation without destructive deletes
  * @param {string} matchId - Match ID
  * @param {Array} allPlayers - Array of all players from game state
  * @param {string} captainId - Captain player ID for this match
@@ -841,38 +855,41 @@ export async function upsertPlayerMatchStats(matchId, allPlayers, captainId, sel
       };
     }
 
-    // Step 1: Delete existing player stats
-    const deleteResult = await deletePlayerMatchStats(matchId);
-    let deletedCount = 0;
-    
-    if (deleteResult.success) {
-      deletedCount = deleteResult.deleted;
-    } else {
-      console.warn('⚠️  Delete phase failed, continuing with insert:', deleteResult.error);
-      // Don't fail the entire operation - try to insert anyway
-    }
-
-    // Step 2: Filter to only currently selected players (defensive approach)
-    let playersToInsert = allPlayers;
+    // Filter to only currently selected players (defensive approach)
+    let playersToProcess = allPlayers;
     if (selectedSquadIds && Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0) {
-      playersToInsert = allPlayers.filter(player => selectedSquadIds.includes(player.id));
+      playersToProcess = allPlayers.filter(player => selectedSquadIds.includes(player.id));
     }
 
-    // Step 3: Insert new player stats for selected players only
-    const insertResult = await insertInitialPlayerMatchStats(matchId, playersToInsert, captainId);
-    
-    if (!insertResult.success) {
+    const statsPayload = playersToProcess
+      .map(player => formatInitialPlayerStats(player, matchId, captainId))
+      .filter(stats => stats !== null);
+
+    if (statsPayload.length === 0) {
+      return {
+        success: true,
+        inserted: 0,
+        updated: 0
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('player_match_stats')
+      .upsert(statsPayload, { onConflict: 'match_id,player_id' })
+      .select('id');
+
+    if (error) {
+      console.error('❌ Failed to upsert player match stats:', error);
       return {
         success: false,
-        error: `Failed to insert updated player stats: ${insertResult.error}`,
-        deleted: deletedCount
+        error: `Database error: ${error.message}`
       };
     }
 
     return {
       success: true,
-      inserted: insertResult.inserted,
-      deleted: deletedCount
+      inserted: data?.length || 0,
+      updated: data?.length || 0
     };
 
   } catch (error) {

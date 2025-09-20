@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { PLAYER_STATUS } from '../constants/playerConstants';
-import { roleToDatabase } from '../constants/roleConstants';
+import { PLAYER_ROLES } from '../constants/playerConstants';
+import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 import { FORMATS } from '../constants/teamConfiguration';
 
 /**
@@ -154,7 +154,7 @@ export class DataSyncManager {
           midfielder_time_seconds: player.stats.timeAsMidfielderSeconds || 0,
           attacker_time_seconds: player.stats.timeAsAttackerSeconds || 0,
           substitute_time_seconds: (player.stats.totalTimeSeconds || 0) - (player.stats.timeOnFieldSeconds || 0),
-          started_as: this.mapPlayerRoleToDatabase(player.stats.startedMatchAs),
+          started_as: this.mapPlayerRoleToDatabase(player.stats.startedAtRole || player.stats.startedMatchAs),
           was_captain: player.isCaptain || false,
           got_fair_play_award: player.fairPlayAward || false,
           team_mode: players[0]?.teamMode || 'individual_6'
@@ -372,12 +372,13 @@ export class DataSyncManager {
   }
 
   mapPlayerRoleToDatabase(role) {
-    const roleMap = {
-      'goalie': roleToDatabase('GOALIE'),
-      [PLAYER_STATUS.ON_FIELD]: roleToDatabase('ATTACKER'), // Default to attacker for field players
-      [PLAYER_STATUS.SUBSTITUTE]: roleToDatabase('SUBSTITUTE')
-    };
-    return roleMap[role] || roleToDatabase('SUBSTITUTE');
+    const normalized = normalizeRole(role);
+    if (normalized && normalized !== PLAYER_ROLES.UNKNOWN) {
+      return roleToDatabase(normalized);
+    }
+
+    // Default to substitute when we cannot determine a meaningful role
+    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
 
   mapEventTypeToDatabase(eventType) {

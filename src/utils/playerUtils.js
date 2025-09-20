@@ -10,6 +10,7 @@ export const initializePlayers = (roster) => roster.map((name, index) => ({
   name,
   stats: {
     startedMatchAs: null, // 'Goalie', 'On Field', 'Substitute'
+    startedAtRole: null, // PLAYER_ROLES constant for the role at match start
     startedAtPosition: null, // Formation-specific position ('goalie', 'defender', 'left', 'right', 'attacker', etc.)
     periodsAsGoalie: 0,
     periodsAsDefender: 0,

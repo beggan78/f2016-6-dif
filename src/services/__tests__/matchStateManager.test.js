@@ -11,6 +11,7 @@ import {
   updateMatchToFinished,
   updateMatchToConfirmed,
   insertInitialPlayerMatchStats,
+  upsertPlayerMatchStats,
   updatePlayerMatchStatsOnFinish,
   updatePlayerMatchStatsFairPlayAward,
   formatInitialPlayerStats,
@@ -72,6 +73,7 @@ describe('matchStateManager', () => {
       name: 'Player One',
       stats: {
         startedMatchAs: PLAYER_ROLES.GOALIE,
+        startedAtRole: PLAYER_ROLES.GOALIE,
         startedAtPosition: 'goalie',
         timeOnFieldSeconds: 1200,
         timeAsGoalieSeconds: 1200,
@@ -86,6 +88,7 @@ describe('matchStateManager', () => {
       name: 'Player Two',
       stats: {
         startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
+        startedAtRole: PLAYER_ROLES.DEFENDER,
         startedAtPosition: 'leftDefender',
         timeOnFieldSeconds: 800,
         timeAsGoalieSeconds: 0,
@@ -338,6 +341,49 @@ describe('matchStateManager', () => {
     });
   });
 
+  describe('upsertPlayerMatchStats', () => {
+    it('should upsert stats without deleting existing rows', async () => {
+      const upsertMock = jest.fn(() => ({
+        select: jest.fn().mockResolvedValue({
+          data: [{ id: '1' }, { id: '2' }],
+          error: null
+        })
+      }));
+
+      supabase.from.mockReturnValueOnce({
+        upsert: upsertMock
+      });
+
+      const result = await upsertPlayerMatchStats('match-123', mockPlayers, 'player-captain', ['player-1', 'player-2']);
+
+      expect(result.success).toBe(true);
+      expect(result.inserted).toBe(2);
+      expect(upsertMock).toHaveBeenCalledTimes(1);
+      const [payload, options] = upsertMock.mock.calls[0];
+      expect(Array.isArray(payload)).toBe(true);
+      expect(payload).toHaveLength(2);
+      expect(options).toEqual({ onConflict: 'match_id,player_id' });
+    });
+
+    it('should handle upsert errors gracefully', async () => {
+      const upsertMock = jest.fn(() => ({
+        select: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Upsert failed' }
+        })
+      }));
+
+      supabase.from.mockReturnValueOnce({
+        upsert: upsertMock
+      });
+
+      const result = await upsertPlayerMatchStats('match-123', mockPlayers, 'player-captain', ['player-1', 'player-2']);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error: Upsert failed');
+    });
+  });
+
   describe('updatePlayerMatchStatsFairPlayAward', () => {
     it('should update fair play award correctly', async () => {
       // Mock clearing existing awards
@@ -421,6 +467,7 @@ describe('matchStateManager', () => {
       expect(result.total_field_time_seconds).toBe(800);
       expect(result.defender_time_seconds).toBe(800);
       expect(result.attacker_time_seconds).toBe(0);
+      expect(result.started_as).toBe('defender');
     });
 
     it('should return null for non-participating player', () => {
@@ -429,6 +476,21 @@ describe('matchStateManager', () => {
       const result = formatPlayerMatchStats(nonParticipatingPlayer, 'match-123', mockGoalScorers, mockMatchEvents);
 
       expect(result).toBeNull();
+    });
+
+    it('should prefer stored starting role over current role changes', () => {
+      const player = {
+        ...mockPlayers[1],
+        stats: {
+          ...mockPlayers[1].stats,
+          currentRole: PLAYER_ROLES.GOALIE, // Simulate role change during match
+          startedAtRole: PLAYER_ROLES.DEFENDER
+        }
+      };
+
+      const result = formatPlayerMatchStats(player, 'match-123');
+
+      expect(result.started_as).toBe('defender');
     });
   });
 
