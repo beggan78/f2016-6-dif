@@ -382,6 +382,26 @@ describe('matchStateManager', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe('Database error: Upsert failed');
     });
+
+    it('filters out players removed from the selected squad without deleting rows', async () => {
+      const upsertMock = jest.fn(() => ({
+        select: jest.fn().mockResolvedValue({
+          data: [{ id: '1' }],
+          error: null
+        })
+      }));
+
+      supabase.from.mockReturnValueOnce({
+        upsert: upsertMock
+      });
+
+      const result = await upsertPlayerMatchStats('match-123', mockPlayers, 'player-captain', ['player-1']);
+
+      expect(result.success).toBe(true);
+      const payload = upsertMock.mock.calls[0][0];
+      expect(payload).toHaveLength(1);
+      expect(payload[0].player_id).toBe('player-1');
+    });
   });
 
   describe('updatePlayerMatchStatsFairPlayAward', () => {
