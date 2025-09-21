@@ -37,7 +37,8 @@ export function StatsScreen({
   currentMatchId,
   goalScorers,
   authModal,
-  checkForActiveMatch
+  checkForActiveMatch,
+  selectedSquadIds = []
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -45,7 +46,16 @@ export function StatsScreen({
   const [saving, setSaving] = useState(false);
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const { isAuthenticated } = useAuth();
-  const squadForStats = allPlayers.filter(hasPlayerParticipated); // Hide bench players who never stepped on the field
+  const participantSet = Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0
+    ? new Set(selectedSquadIds)
+    : null;
+
+  const squadForStats = allPlayers.filter(player => {
+    if (participantSet && !participantSet.has(player.id)) {
+      return false;
+    }
+    return hasPlayerParticipated(player);
+  }); // Hide bench players who never stepped on the field
   
 
   // Fair Play Award styling constants

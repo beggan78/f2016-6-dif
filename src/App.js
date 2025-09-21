@@ -1012,6 +1012,7 @@ function AppContent() {
             goalScorers={gameState.goalScorers || {}}
             authModal={authModal}
             checkForActiveMatch={checkForActiveMatch}
+            selectedSquadIds={gameState.selectedSquadIds}
           />
         );
       case VIEWS.MATCH_REPORT:

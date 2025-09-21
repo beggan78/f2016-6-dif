@@ -28,7 +28,7 @@ import { normalizeFormationStructure } from '../utils/formationUtils';
  * @param {Array} allPlayers - Array of all players from game state (optional, for initial stats)
  * @returns {Promise<{success: boolean, matchId?: string, playerStatsInserted?: number, error?: string}>}
  */
-export async function createMatch(matchData, allPlayers = []) {
+export async function createMatch(matchData, allPlayers = [], selectedSquadIds = []) {
   try {
     // Validate required fields
     const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type'];
@@ -72,8 +72,16 @@ export async function createMatch(matchData, allPlayers = []) {
     // Insert initial player match statistics immediately after match creation
     let playerStatsInserted = 0;
     if (allPlayers && allPlayers.length > 0) {
-      
-      const playerStatsResult = await insertInitialPlayerMatchStats(data.id, allPlayers, matchData.captainId);
+      const participatingPlayers = Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0
+        ? allPlayers.filter(player => selectedSquadIds.includes(player.id))
+        : allPlayers;
+
+      const playerStatsResult = await insertInitialPlayerMatchStats(
+        data.id,
+        participatingPlayers,
+        matchData.captainId,
+        selectedSquadIds
+      );
       
       if (playerStatsResult.success) {
         playerStatsInserted = playerStatsResult.inserted;
@@ -677,10 +685,14 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
  * @param {string} captainId - Captain player ID for this match
  * @returns {Promise<{success: boolean, inserted: number, error?: string}>}
  */
-export async function insertInitialPlayerMatchStats(matchId, allPlayers, captainId) {
+export async function insertInitialPlayerMatchStats(matchId, allPlayers, captainId, selectedSquadIds = []) {
   try {
+    const participatingPlayers = Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0
+      ? allPlayers.filter(player => selectedSquadIds.includes(player.id))
+      : allPlayers;
+
     // Filter and format initial player stats for players who are participating
-    const initialPlayerStatsData = allPlayers
+    const initialPlayerStatsData = participatingPlayers
       .map(player => formatInitialPlayerStats(player, matchId, captainId))
       .filter(stats => stats !== null); // Remove players who aren't participating
 

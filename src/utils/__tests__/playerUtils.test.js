@@ -18,7 +18,8 @@ import {
   getCaptainPlayer,
   isPlayerCaptain,
   setCaptain,
-  hasActiveSubstitutes
+  hasActiveSubstitutes,
+  resetPlayerMatchStartState
 } from '../playerUtils';
 import { PLAYER_STATUS, PLAYER_ROLES } from '../../constants/playerConstants';
 
@@ -88,10 +89,12 @@ describe('playerUtils', () => {
         name: 'Alice',
         stats: {
           startedMatchAs: null,
+          startedAtRole: null,
           startedAtPosition: null,
           periodsAsGoalie: 0,
           periodsAsDefender: 0,
           periodsAsAttacker: 0,
+          periodsAsMidfielder: 0,
           timeOnFieldSeconds: 0,
           timeAsSubSeconds: 0,
           timeAsGoalieSeconds: 0,
@@ -103,7 +106,11 @@ describe('playerUtils', () => {
           lastStintStartTimeEpoch: 0,
           currentPairKey: null,
           isInactive: false,
-          isCaptain: false
+          isCaptain: false,
+          goals: 0,
+          saves: 0,
+          blocks: 0,
+          cards: []
         }
       });
     });
@@ -182,6 +189,44 @@ describe('playerUtils', () => {
 
     it('returns false when stats object is missing', () => {
       expect(hasPlayerParticipated({})).toBe(false);
+    });
+  });
+
+  describe('resetPlayerMatchStartState', () => {
+    it('clears match-start markers while preserving cumulative stats', () => {
+      const player = {
+        id: 'p1',
+        stats: {
+          startedMatchAs: PLAYER_ROLES.GOALIE,
+          startedAtRole: PLAYER_ROLES.GOALIE,
+          startedAtPosition: 'goalie',
+          currentRole: PLAYER_ROLES.GOALIE,
+          currentStatus: PLAYER_STATUS.GOALIE,
+          currentPairKey: 'goalie',
+          lastStintStartTimeEpoch: 1234567890,
+          timeOnFieldSeconds: 312,
+          timeAsGoalieSeconds: 312
+        }
+      };
+
+      const result = resetPlayerMatchStartState(player);
+
+      expect(result).not.toBe(player);
+      expect(result.stats.startedMatchAs).toBeNull();
+      expect(result.stats.startedAtRole).toBeNull();
+      expect(result.stats.startedAtPosition).toBeNull();
+      expect(result.stats.currentRole).toBeNull();
+      expect(result.stats.currentStatus).toBe(PLAYER_STATUS.SUBSTITUTE);
+      expect(result.stats.currentPairKey).toBeNull();
+      expect(result.stats.lastStintStartTimeEpoch).toBeNull();
+      // ensure other stats remain intact
+      expect(result.stats.timeOnFieldSeconds).toBe(312);
+      expect(result.stats.timeAsGoalieSeconds).toBe(312);
+    });
+
+    it('returns original player when stats are missing', () => {
+      const player = { id: 'p2', name: 'No Stats' };
+      expect(resetPlayerMatchStartState(player)).toBe(player);
     });
   });
 

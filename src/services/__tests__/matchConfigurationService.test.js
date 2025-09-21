@@ -191,6 +191,7 @@ describe('matchConfigurationService', () => {
     const createMockParams = () => ({
       matchData: { format: '5v5', teamId: 'team123' },
       allPlayers: [{ id: 'player1', name: 'Player 1' }],
+      selectedSquadIds: ['player1'],
       initialConfig: { formation: {}, teamConfig: {}, matchConfig: {} },
       setCurrentMatchId: jest.fn(),
       setMatchCreated: jest.fn()
@@ -206,7 +207,7 @@ describe('matchConfigurationService', () => {
 
       const result = await saveNewMatchConfiguration(params);
 
-      expect(createMatch).toHaveBeenCalledWith(params.matchData, params.allPlayers);
+      expect(createMatch).toHaveBeenCalledWith(params.matchData, params.allPlayers, params.selectedSquadIds);
       expect(params.setCurrentMatchId).toHaveBeenCalledWith('match123');
       expect(params.setMatchCreated).toHaveBeenCalledWith(true);
       expect(result).toEqual({
@@ -554,6 +555,7 @@ describe('matchConfigurationService', () => {
       matchCreated: false,
       matchData: { format: '5v5', teamId: 'team123' },
       allPlayers: [{ id: 'player1', name: 'Player 1' }],
+      selectedSquadIds: ['player1'],
       setCurrentMatchId: jest.fn(),
       setMatchCreated: jest.fn(),
       ...overrides
@@ -569,7 +571,7 @@ describe('matchConfigurationService', () => {
       const result = await handleMatchCreateOrUpdate(params);
 
       expect(params.setMatchCreated).toHaveBeenCalledWith(true);
-      expect(createMatch).toHaveBeenCalledWith(params.matchData, params.allPlayers);
+      expect(createMatch).toHaveBeenCalledWith(params.matchData, params.allPlayers, params.selectedSquadIds);
       expect(params.setCurrentMatchId).toHaveBeenCalledWith('match123');
       expect(result).toEqual({
         success: true,

@@ -72,7 +72,8 @@ describe('MatchReportScreen', () => {
     navigateToMatchReport: jest.fn(),
     onGoalClick: jest.fn(),
     formation: {},
-    debugMode: false
+    debugMode: false,
+    selectedSquadIds: []
   };
 
   beforeEach(() => {
@@ -106,6 +107,7 @@ describe('MatchReportScreen', () => {
       <MatchReportScreen
         {...baseProps}
         allPlayers={[participatingPlayer, goalieParticipant, benchPlayer]}
+        selectedSquadIds={['p1', 'p2', 'p3']}
       />
     );
 
@@ -116,5 +118,24 @@ describe('MatchReportScreen', () => {
     expect(playerIds).toEqual(expect.arrayContaining(['p1', 'p2']));
     expect(playerIds).not.toContain('p3');
   });
-});
 
+  it('filters out players not in the selected squad even if they have stats', () => {
+    const pastMatchPlayer = createPlayer({
+      id: 'p9',
+      name: 'Outside Squad',
+      startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
+      timeOnFieldSeconds: 1200
+    });
+
+    render(
+      <MatchReportScreen
+        {...baseProps}
+        allPlayers={[pastMatchPlayer]}
+        selectedSquadIds={['p1', 'p2']}
+      />
+    );
+
+    const { players } = mockPlayerStatsTableSpy.mock.calls[0][0];
+    expect(players).toHaveLength(0);
+  });
+});

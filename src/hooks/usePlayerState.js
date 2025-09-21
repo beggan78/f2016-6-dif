@@ -1,10 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import { initializePlayers } from '../utils/playerUtils';
+import { initializePlayers, resetPlayerMatchStartState, findPlayerById } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
 import { syncTeamRosterToGameState, analyzePlayerSync } from '../utils/playerSyncUtils';
 import { initializePlayerRoleAndStatus } from '../constants/gameModes';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
-import { findPlayerById } from '../utils/playerUtils';
 
 /**
  * Hook for managing player state and squad management
@@ -51,7 +50,7 @@ export function usePlayerState(initialState = {}) {
 
   // Player state
   const [allPlayers, setAllPlayers] = useState(initialPlayers);
-  const [selectedSquadIds, setSelectedSquadIds] = useState(initialSquadIds);
+  const [selectedSquadIds, setSelectedSquadIdsState] = useState(initialSquadIds);
   const [captainId, setCaptainId] = useState(initialCaptainId);
 
   // Sync captain data in allPlayers whenever captainId changes
@@ -76,6 +75,35 @@ export function usePlayerState(initialState = {}) {
       })));
     }
   }, [captainId]);
+
+  // Custom setter that clears match-start markers when players leave the squad
+  const setSelectedSquadIds = useCallback((value) => {
+    setSelectedSquadIdsState(prevSquadIds => {
+      const nextValue = typeof value === 'function' ? value(prevSquadIds) : value;
+
+      if (!Array.isArray(nextValue)) {
+        console.warn('setSelectedSquadIds expects an array of player IDs');
+        return prevSquadIds;
+      }
+
+      const dedupedNext = Array.from(new Set(nextValue));
+      const nextSet = new Set(dedupedNext);
+      const removedIds = prevSquadIds.filter(id => !nextSet.has(id));
+
+      if (removedIds.length > 0) {
+        setAllPlayers(prevPlayers => prevPlayers.map(player => (
+          removedIds.includes(player.id)
+            ? resetPlayerMatchStartState(player)
+            : player
+        )));
+      }
+
+      const noChange = prevSquadIds.length === dedupedNext.length &&
+        prevSquadIds.every((id, index) => id === dedupedNext[index]);
+
+      return noChange ? prevSquadIds : dedupedNext;
+    });
+  }, [setAllPlayers]);
 
   // Update player roles and status based on formation changes
   const updatePlayerRolesFromFormation = useCallback((formation, selectedSquadIds, formationAwareTeamConfig) => {

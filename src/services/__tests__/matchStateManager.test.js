@@ -67,6 +67,8 @@ describe('matchStateManager', () => {
     captainId: 'player-captain'
   };
 
+  const mockSelectedSquadIds = ['player-1', 'player-2'];
+
   const mockPlayers = [
     {
       id: 'player-1',
@@ -162,7 +164,7 @@ describe('matchStateManager', () => {
         }))
       });
 
-      const result = await createMatch(mockMatchData, mockPlayers);
+      const result = await createMatch(mockMatchData, mockPlayers, mockSelectedSquadIds);
 
       expect(result.success).toBe(true);
       expect(result.matchId).toBe(mockMatchId);
@@ -310,7 +312,7 @@ describe('matchStateManager', () => {
         }))
       });
 
-      const result = await insertInitialPlayerMatchStats('match-123', mockPlayers, 'player-captain');
+      const result = await insertInitialPlayerMatchStats('match-123', mockPlayers, 'player-captain', mockSelectedSquadIds);
 
       expect(result.success).toBe(true);
       expect(result.inserted).toBe(2);
@@ -318,7 +320,7 @@ describe('matchStateManager', () => {
     });
 
     it('should handle empty player array', async () => {
-      const result = await insertInitialPlayerMatchStats('match-123', [], 'player-captain');
+      const result = await insertInitialPlayerMatchStats('match-123', [], 'player-captain', mockSelectedSquadIds);
 
       expect(result.success).toBe(true);
       expect(result.inserted).toBe(0);
@@ -334,10 +336,43 @@ describe('matchStateManager', () => {
         }))
       });
 
-      const result = await insertInitialPlayerMatchStats('match-123', mockPlayers, 'player-captain');
+      const result = await insertInitialPlayerMatchStats('match-123', mockPlayers, 'player-captain', mockSelectedSquadIds);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Database error: Insertion failed');
+    });
+
+    it('should exclude players not in the selected squad', async () => {
+      const insertMock = jest.fn(() => ({
+        select: jest.fn().mockResolvedValue({
+          data: [{ id: '1' }, { id: '2' }],
+          error: null
+        })
+      }));
+
+      supabase.from.mockReturnValueOnce({
+        insert: insertMock
+      });
+
+      const extraPlayer = {
+        id: 'player-99',
+        stats: {
+          startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
+          startedAtRole: PLAYER_ROLES.ATTACKER,
+          startedAtPosition: 'leftAttacker'
+        }
+      };
+
+      await insertInitialPlayerMatchStats(
+        'match-123',
+        [...mockPlayers, extraPlayer],
+        'player-captain',
+        mockSelectedSquadIds
+      );
+
+      const payload = insertMock.mock.calls[0][0];
+      expect(payload.length).toBe(2);
+      expect(payload.some(stat => stat.player_id === 'player-99')).toBe(false);
     });
   });
 

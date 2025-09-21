@@ -150,6 +150,7 @@ describe('StatsScreen', () => {
         openLogin: jest.fn(),
         openSignup: jest.fn()
       },
+      selectedSquadIds: mockPlayers.map(player => player.id),
       ...mockSetters
     };
 
@@ -193,10 +194,43 @@ describe('StatsScreen', () => {
       <StatsScreen
         {...defaultProps}
         allPlayers={[...defaultProps.allPlayers, benchPlayer]}
+        selectedSquadIds={[...defaultProps.selectedSquadIds, benchPlayer.id]}
       />
     );
 
     expect(screen.queryByText('Bench Player')).not.toBeInTheDocument();
+  });
+
+  it('excludes non-squad players even if they have residual stats', () => {
+    const unrelatedPlayer = {
+      id: 'unrelated-player',
+      name: 'Past Match Hero',
+      stats: {
+        startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
+        timeOnFieldSeconds: 1200,
+        timeAsGoalieSeconds: 0,
+        timeAsDefenderSeconds: 600,
+        timeAsMidfielderSeconds: 0,
+        timeAsAttackerSeconds: 600,
+        periodsAsGoalie: 0,
+        periodsAsDefender: 2,
+        periodsAsAttacker: 2,
+        goals: 3,
+        saves: 0,
+        blocks: 1,
+        cards: []
+      }
+    };
+
+    render(
+      <StatsScreen
+        {...defaultProps}
+        allPlayers={[...defaultProps.allPlayers, unrelatedPlayer]}
+        selectedSquadIds={defaultProps.selectedSquadIds}
+      />
+    );
+
+    expect(screen.queryByText('Past Match Hero')).not.toBeInTheDocument();
   });
 
 
