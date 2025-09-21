@@ -129,7 +129,8 @@ function AppContent() {
     teamPlayers,
     hasPendingRequests,
     pendingRequestsCount,
-    canManageTeam
+    canManageTeam,
+    isMatchRunning
   } = useTeam();
 
   // Authentication modal
@@ -864,6 +865,10 @@ function AppContent() {
     // 3. No modal is currently open
     // 4. User is not completing their profile
     // 5. Modal has not been dismissed by user in this session
+    if (isMatchRunning) {
+      return;
+    }
+
     if (canManageTeam && hasPendingRequests && currentTeam && !showTeamAdminModal && !needsProfileCompletion) {
       // Check if user has dismissed this team's access modal
       if (!isModalDismissed('team_access', currentTeam.id)) {
@@ -871,7 +876,7 @@ function AppContent() {
       } else {
       }
     }
-  }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal]);
+  }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal, isMatchRunning]);
 
   // Render logic
   const renderView = () => {

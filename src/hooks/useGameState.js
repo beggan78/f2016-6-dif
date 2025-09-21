@@ -96,7 +96,7 @@ const findPlayerPairKey = (playerId, formation, isPairsMode, formationAwareTeamC
 
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
-  const { currentTeam } = useTeam();
+  const { currentTeam, updateMatchActivityStatus } = useTeam();
   // Get preferences for various integrations
   const { audioPreferences } = usePreferences();
 
@@ -186,6 +186,12 @@ export function useGameState(navigateToView = null) {
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
   // Configuration activity tracking - prevents accidental clearing during active configuration
   const [hasActiveConfiguration, setHasActiveConfiguration] = useState(initialState.hasActiveConfiguration || false);
+
+  useEffect(() => {
+    if (updateMatchActivityStatus) {
+      updateMatchActivityStatus(matchState);
+    }
+  }, [matchState, updateMatchActivityStatus]);
 
   // Initialize match persistence hook
   const gameState = {
