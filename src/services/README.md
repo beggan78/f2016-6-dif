@@ -26,7 +26,8 @@ The system implements a three-state lifecycle for matches:
 // Match creation triggered in useGameState.js
 if (currentPeriodNumber === 1 && !matchCreated && currentTeam?.id) {
   setMatchCreated(true); // Prevent duplicates
-  const result = await createMatch(matchData);
+  const selectedPlayers = allPlayers.filter(player => selectedSquadIds.includes(player.id));
+  const result = await createMatch(matchData, selectedPlayers, selectedSquadIds);
   setCurrentMatchId(result.matchId);
 }
 ```
@@ -75,7 +76,7 @@ const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 ### Key Functions
 
 #### Match Lifecycle Functions
-- `createMatch(matchData)` - Creates initial match record in 'running' state
+- `createMatch(matchData, allPlayers, selectedSquadIds)` - Creates initial match record and seeds stats for the active squad
 - `updateMatchToFinished(matchId, finalStats)` - Transitions to 'finished' state with match results
 - `updateMatchToConfirmed(matchId)` - Final transition to 'confirmed' state (user saves to history)
 
@@ -85,7 +86,7 @@ const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 - `formatPlayerMatchStats(player, matchId, goalScorers, matchEvents)` - Individual player stats for database
 
 #### Player Statistics Functions
-- `insertInitialPlayerMatchStats(matchId, allPlayers, captainId)` - Insert initial player stats when match starts
+- `insertInitialPlayerMatchStats(matchId, allPlayers, captainId, selectedSquadIds)` - Insert initial player stats when match starts
 - `updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalScorers, matchEvents)` - Update player performance stats when match finishes
 - `mapFormationPositionToRole(position, currentRole)` - Critical for accurate role mapping
 - `countPlayerGoals(goalScorers, matchEvents, playerId)` - Accurate goal counting across data sources

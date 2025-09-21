@@ -49,7 +49,8 @@ export function MatchReportScreen({
   navigateToMatchReport,
   onGoalClick,
   formation = {},
-  debugMode = false
+  debugMode = false,
+  selectedSquadIds = []
 }) {
   // Local state for UI controls
   const [showSubstitutionEvents, setShowSubstitutionEvents] = useState(false);
@@ -74,10 +75,22 @@ export function MatchReportScreen({
     return gameLog.length;
   }, [gameLog]);
 
+  const participantSet = useMemo(() => {
+    if (!Array.isArray(selectedSquadIds) || selectedSquadIds.length === 0) {
+      return null;
+    }
+    return new Set(selectedSquadIds);
+  }, [selectedSquadIds]);
+
   const squadPlayers = useMemo(() => {
     if (!allPlayers) return [];
-    return allPlayers.filter(hasPlayerParticipated);
-  }, [allPlayers]);
+    return allPlayers.filter(player => {
+      if (participantSet && !participantSet.has(player.id)) {
+        return false;
+      }
+      return hasPlayerParticipated(player);
+    });
+  }, [allPlayers, participantSet]);
 
   const filteredEvents = useMemo(() => {
     if (!matchEvents) return [];

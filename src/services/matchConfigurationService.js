@@ -91,6 +91,7 @@ export async function saveNewMatchConfiguration(params) {
   const {
     matchData,
     allPlayers,
+    selectedSquadIds = [],
     initialConfig,
     setCurrentMatchId,
     setMatchCreated
@@ -98,7 +99,7 @@ export async function saveNewMatchConfiguration(params) {
 
   try {
     // CREATE FLOW: No existing match, create new one
-    const createResult = await createMatch(matchData, allPlayers);
+    const createResult = await createMatch(matchData, allPlayers, selectedSquadIds);
     
     if (createResult.success) {
       setCurrentMatchId(createResult.matchId);
@@ -259,6 +260,7 @@ export async function saveMatchConfiguration(params) {
       result = await saveNewMatchConfiguration({
         matchData,
         allPlayers,
+        selectedSquadIds,
         initialConfig,
         setCurrentMatchId,
         setMatchCreated
@@ -335,6 +337,7 @@ export async function handleMatchCreateOrUpdate(params) {
     matchCreated,
     matchData,
     allPlayers,
+    selectedSquadIds = [],
     setCurrentMatchId,
     setMatchCreated
   } = params;
@@ -355,7 +358,7 @@ export async function handleMatchCreateOrUpdate(params) {
       // CREATE FLOW: No existing match, create new one
       setMatchCreated(true); // Prevent duplicate attempts
       
-      const createResult = await createMatch(matchData, allPlayers);
+      const createResult = await createMatch(matchData, allPlayers, selectedSquadIds);
       if (createResult.success) {
         setCurrentMatchId(createResult.matchId);
         return {

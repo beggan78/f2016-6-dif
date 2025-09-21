@@ -2,34 +2,72 @@
  * Utility functions for player-related operations
  */
 
-import { PLAYER_ROLES } from '../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
+
+export const createEmptyPlayerStats = () => ({
+  startedMatchAs: null, // 'Goalie', 'On Field', 'Substitute'
+  startedAtRole: null, // PLAYER_ROLES constant for the role at match start
+  startedAtPosition: null, // Formation-specific position ('goalie', 'defender', 'left', 'right', 'attacker', etc.)
+  periodsAsGoalie: 0,
+  periodsAsDefender: 0,
+  periodsAsAttacker: 0,
+  periodsAsMidfielder: 0,
+  timeOnFieldSeconds: 0, // Total outfield play time
+  timeAsSubSeconds: 0,   // Total time as substitute
+  timeAsGoalieSeconds: 0, // Total time as goalie
+  // Role-specific time tracking for new points system
+  timeAsDefenderSeconds: 0, // Total time spent as defender
+  timeAsAttackerSeconds: 0, // Total time spent as attacker
+  timeAsMidfielderSeconds: 0, // Total time spent as midfielder (1-2-1 formation)
+  // Temporary per-period tracking
+  currentRole: null, // 'Goalie', 'Defender', 'Attacker'
+  currentStatus: null, // 'on_field', 'substitute', 'goalie'
+  lastStintStartTimeEpoch: 0, // For calculating duration of current stint
+  currentPairKey: null, // 'leftPair', 'rightPair', 'subPair'
+  isInactive: false, // For 7-player individual mode - temporarily removes player from rotation
+  isCaptain: false, // Captain designation for the current game
+  goals: 0,
+  saves: 0,
+  blocks: 0,
+  cards: []
+});
 
 // Helper to initialize player objects
 export const initializePlayers = (roster) => roster.map((name, index) => ({
   id: `p${index + 1}`,
   name,
-  stats: {
-    startedMatchAs: null, // 'Goalie', 'On Field', 'Substitute'
-    startedAtPosition: null, // Formation-specific position ('goalie', 'defender', 'left', 'right', 'attacker', etc.)
-    periodsAsGoalie: 0,
-    periodsAsDefender: 0,
-    periodsAsAttacker: 0,
-    timeOnFieldSeconds: 0, // Total outfield play time
-    timeAsSubSeconds: 0,   // Total time as substitute
-    timeAsGoalieSeconds: 0, // Total time as goalie
-    // Role-specific time tracking for new points system
-    timeAsDefenderSeconds: 0, // Total time spent as defender
-    timeAsAttackerSeconds: 0, // Total time spent as attacker
-    timeAsMidfielderSeconds: 0, // Total time spent as midfielder (1-2-1 formation)
-    // Temporary per-period tracking
-    currentRole: null, // 'Goalie', 'Defender', 'Attacker'
-    currentStatus: null, // 'on_field', 'substitute', 'goalie'
-    lastStintStartTimeEpoch: 0, // For calculating duration of current stint
-    currentPairKey: null, // 'leftPair', 'rightPair', 'subPair'
-    isInactive: false, // For 7-player individual mode - temporarily removes player from rotation
-    isCaptain: false, // Captain designation for the current game
-  }
+  stats: createEmptyPlayerStats()
 }));
+
+/**
+ * Reset match-start participation markers for a player.
+ *
+ * Clears the fields we derive database participation from so a player removed
+ * from the active squad won't accidentally be treated as a starter the next time
+ * we persist match data. Keeps cumulative stat counters intact.
+ *
+ * @param {Object} player - Player object to reset
+ * @returns {Object} New player object with cleared match-start markers
+ */
+export const resetPlayerMatchStartState = (player) => {
+  if (!player || !player.stats) {
+    return player;
+  }
+
+  return {
+    ...player,
+    stats: {
+      ...player.stats,
+      startedMatchAs: null,
+      startedAtRole: null,
+      startedAtPosition: null,
+      currentRole: null,
+      currentStatus: PLAYER_STATUS.SUBSTITUTE,
+      currentPairKey: null,
+      lastStintStartTimeEpoch: null
+    }
+  };
+};
 
 /**
  * Checks if there are any inactive players in the selected squad

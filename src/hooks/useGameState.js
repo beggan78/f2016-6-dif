@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { initializePlayers } from '../utils/playerUtils';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
@@ -13,7 +12,7 @@ import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { useMatchPersistence } from './useMatchPersistence';
-import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers } from '../utils/playerUtils';
+import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers, createEmptyPlayerStats } from '../utils/playerUtils';
 import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
@@ -380,18 +379,27 @@ export function useGameState(navigateToView = null) {
 
     // Reset player stats for the new game for the selected squad
     const updatedPlayers = allPlayers.map(p => {
+      const freshStats = createEmptyPlayerStats();
+
       if (selectedSquadIds.includes(p.id)) {
-        const freshStats = initializePlayers([p.name])[0].stats;
         return {
           ...p,
           stats: {
             ...freshStats,
-            // Preserve captain data during stats reset
+            // Preserve captain designation for players taking part in the match
             isCaptain: p.stats?.isCaptain || false
           }
         };
       }
-      return p;
+
+      // Non-squad players should not carry stale match participation state
+      return {
+        ...p,
+        stats: {
+          ...freshStats,
+          isCaptain: false
+        }
+      };
     });
 
     setAllPlayers(updatedPlayers);
@@ -696,7 +704,9 @@ export function useGameState(navigateToView = null) {
     setAllPlayers(updatedPlayersWithFinalStats);
 
     // Calculate the updated gameLog first
-    const currentPlayersSnapshot = updatedPlayersWithFinalStats.map(p => ({
+    const currentPlayersSnapshot = updatedPlayersWithFinalStats
+      .filter(p => selectedSquadIds.includes(p.id))
+      .map(p => ({
       id: p.id,
       name: p.name,
       stats: JSON.parse(JSON.stringify(p.stats)) // Deep copy of stats for the log
@@ -1307,10 +1317,11 @@ export function useGameState(navigateToView = null) {
     }
 
     try {
-      // Prepare updated players for CREATE flow
+      // Prepare updated players for CREATE flow - reset participation state for entire roster
       const updatedPlayers = allPlayers.map(p => {
+        const freshStats = createEmptyPlayerStats();
+
         if (selectedSquadIds.includes(p.id)) {
-          const freshStats = initializePlayers([p.name])[0].stats;
           return {
             ...p,
             stats: {
@@ -1319,7 +1330,14 @@ export function useGameState(navigateToView = null) {
             }
           };
         }
-        return p;
+
+        return {
+          ...p,
+          stats: {
+            ...freshStats,
+            isCaptain: false
+          }
+        };
       });
 
       // Use consolidated service for database save logic
@@ -1435,8 +1453,10 @@ export function useGameState(navigateToView = null) {
             stats.startedMatchAs = newStartedMatchAs;
             // Store the specific formation position for formation-aware role mapping
             stats.startedAtPosition = currentPairKey;
+            // Preserve the exact role at match start for accurate reporting
+            stats.startedAtRole = currentRole || null;
           }
-          
+
           return {
             ...p,
             stats: {
@@ -1515,7 +1535,7 @@ export function useGameState(navigateToView = null) {
           // CREATE FLOW: No existing match, create new one
           setMatchCreated(true); // Prevent duplicate attempts
           
-          matchUpdatePromise = createMatch(matchData, updatedPlayers)
+          matchUpdatePromise = createMatch(matchData, updatedPlayers, selectedSquadIds)
             .then((result) => {
               if (result.success) {
                 setCurrentMatchId(result.matchId);
