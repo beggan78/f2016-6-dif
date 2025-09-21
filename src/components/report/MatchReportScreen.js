@@ -25,9 +25,7 @@ import { ReportNavigation } from './ReportNavigation';
  * @param {number} props.periodDurationMinutes - Duration of each period
  * @param {string} props.ownTeamName - Own team name (defaults to "Djurgården")
  * @param {string} props.opponentTeam - Opponent team name
- * @param {Function} props.onNavigateToStats - Navigation callback to stats screen
  * @param {Function} props.onNavigateBack - Navigation callback for general back navigation
- * @param {Function} props.navigateToMatchReport - Internal navigation callback
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
  * @param {Function} props.onGoalClick - Callback for when goal events are clicked for editing
  * @param {Object} props.formation - Current period formation for starting role determination
@@ -44,9 +42,9 @@ export function MatchReportScreen({
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME || "Djurgården",
   opponentTeam = "Opponent",
   goalScorers = {},
-  onNavigateToStats,
+
   onNavigateBack,
-  navigateToMatchReport,
+
   onGoalClick,
   formation = {},
   debugMode = false,
@@ -138,8 +136,7 @@ export function MatchReportScreen({
             </div>
             <div className="text-center py-8">
               <p className="text-slate-400 mb-4">No match data available</p>
-              <ReportNavigation 
-                onNavigateToStats={onNavigateToStats}
+              <ReportNavigation
                 onNavigateBack={onNavigateBack}
                 className="justify-center"
               />
@@ -162,8 +159,7 @@ export function MatchReportScreen({
           </div>
           
           {/* Navigation Controls */}
-          <ReportNavigation 
-            onNavigateToStats={onNavigateToStats}
+          <ReportNavigation
             onNavigateBack={onNavigateBack}
           />
         </div>
@@ -233,8 +229,7 @@ export function MatchReportScreen({
               opponentTeam={opponentTeam}
               matchStartTime={matchStartTime}
               periodDurationMinutes={periodDurationMinutes}
-              onNavigateToStats={onNavigateToStats}
-            />
+                          />
           </ReportSection>
         </div>
       </div>

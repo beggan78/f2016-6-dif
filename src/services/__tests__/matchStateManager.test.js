@@ -287,10 +287,12 @@ describe('matchStateManager', () => {
       supabase.from.mockReturnValue({
         update: jest.fn(() => ({
           eq: jest.fn(() => ({
-            eq: jest.fn().mockResolvedValue({
-              data: null,
-              error: null
-            })
+            eq: jest.fn(() => ({
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: 'match-123' }],
+                error: null
+              })
+            }))
           }))
         }))
       });

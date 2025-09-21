@@ -8,6 +8,7 @@ export const createEmptyPlayerStats = () => ({
   startedMatchAs: null, // 'Goalie', 'On Field', 'Substitute'
   startedAtRole: null, // PLAYER_ROLES constant for the role at match start
   startedAtPosition: null, // Formation-specific position ('goalie', 'defender', 'left', 'right', 'attacker', etc.)
+  startLocked: false,
   periodsAsGoalie: 0,
   periodsAsDefender: 0,
   periodsAsAttacker: 0,
@@ -61,6 +62,7 @@ export const resetPlayerMatchStartState = (player) => {
       startedMatchAs: null,
       startedAtRole: null,
       startedAtPosition: null,
+      startLocked: false,
       currentRole: null,
       currentStatus: PLAYER_STATUS.SUBSTITUTE,
       currentPairKey: null,

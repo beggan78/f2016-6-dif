@@ -91,6 +91,7 @@ describe('playerUtils', () => {
           startedMatchAs: null,
           startedAtRole: null,
           startedAtPosition: null,
+          startLocked: false,
           periodsAsGoalie: 0,
           periodsAsDefender: 0,
           periodsAsAttacker: 0,

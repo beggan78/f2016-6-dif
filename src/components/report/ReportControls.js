@@ -4,11 +4,10 @@
  */
 
 import React from 'react';
-import { BarChart, Printer, Share2, Settings } from 'lucide-react';
+import { Printer, Share2, Settings } from 'lucide-react';
 import { Button } from '../shared/UI';
 
 export function ReportControls({
-  onNavigateToStats,
   onPrint,
   onShare,
   showSubstitutions,
@@ -49,20 +48,7 @@ export function ReportControls({
   return (
     <div className="space-y-4 no-print">
       {/* Navigation Controls */}
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex gap-3">
-          {onNavigateToStats && (
-            <Button
-              onClick={onNavigateToStats}
-              variant="primary"
-              size="md"
-              Icon={BarChart}
-            >
-              Quick Stats
-            </Button>
-          )}
-        </div>
-
+      <div className="flex flex-wrap gap-3 items-center justify-end">
         {/* Export Controls */}
         <div className="flex gap-3">
           <Button

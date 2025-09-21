@@ -244,11 +244,12 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
       updateData.fair_play_award = fairPlayAwardId;
     }
 
-    const { error } = await supabase
+    const { data: updatedMatches, error } = await supabase
       .from('match')
       .update(updateData)
       .eq('id', matchId)
-      .eq('state', 'finished'); // Only update if currently finished
+      .eq('state', 'finished')
+      .select('id'); // Ensure at least one row was updated
 
     if (error) {
       console.error('❌ Failed to update match to confirmed:', error);
@@ -258,12 +259,24 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
       };
     }
 
+    if (!updatedMatches || updatedMatches.length === 0) {
+      const warningMessage = 'Match must be finished before it can be saved to history.';
+      console.warn(`⚠️  No finished match found to confirm for matchId=${matchId}`);
+      return {
+        success: false,
+        error: warningMessage
+      };
+    }
+
     // If fair play award was provided, also update player_match_stats
     if (fairPlayAwardId !== null) {
       const statsResult = await updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAwardId);
       if (!statsResult.success) {
-        console.warn('⚠️  Match confirmed but failed to update fair play award in player stats:', statsResult.error);
-        // Don't fail the entire operation - the match confirmation was successful
+        console.error('❌ Failed to persist fair play award update during match confirmation:', statsResult.error);
+        return {
+          success: false,
+          error: statsResult.error || 'Unable to assign fair play award for this match.'
+        };
       }
     }
 
@@ -287,11 +300,19 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
 export async function updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAwardPlayerId) {
   try {
     // First, clear any existing fair play awards for this match
-    await supabase
+    const { error: clearError } = await supabase
       .from('player_match_stats')
       .update({ got_fair_play_award: false })
       .eq('match_id', matchId)
       .eq('got_fair_play_award', true);
+
+    if (clearError) {
+      console.error('❌ Failed to clear existing fair play awards:', clearError);
+      return {
+        success: false,
+        error: `Database error: ${clearError.message}`
+      };
+    }
 
     // Then set the fair play award for the selected player
     const { data, error } = await supabase
@@ -306,6 +327,14 @@ export async function updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAward
       return {
         success: false,
         error: `Database error: ${error.message}`
+      };
+    }
+
+    if (!data || data.length === 0) {
+      console.error('❌ No player match stats rows updated with fair play award for match:', matchId);
+      return {
+        success: false,
+        error: 'No player statistics were updated with the fair play award. Ensure the player participated in this match.'
       };
     }
 

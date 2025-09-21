@@ -96,7 +96,7 @@ const findPlayerPairKey = (playerId, formation, isPairsMode, formationAwareTeamC
 
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
-  const { currentTeam } = useTeam();
+  const { currentTeam, updateMatchActivityStatus } = useTeam();
   // Get preferences for various integrations
   const { audioPreferences } = usePreferences();
 
@@ -186,6 +186,12 @@ export function useGameState(navigateToView = null) {
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
   // Configuration activity tracking - prevents accidental clearing during active configuration
   const [hasActiveConfiguration, setHasActiveConfiguration] = useState(initialState.hasActiveConfiguration || false);
+
+  useEffect(() => {
+    if (updateMatchActivityStatus) {
+      updateMatchActivityStatus(matchState);
+    }
+  }, [matchState, updateMatchActivityStatus]);
 
   // Initialize match persistence hook
   const gameState = {
@@ -609,6 +615,55 @@ export function useGameState(navigateToView = null) {
 
   // New function to actually start the match when user clicks Start Match button
   const handleActualMatchStart = async () => {
+    const formationAwareTeamConfig = getFormationAwareTeamConfig();
+    const lockTimestamp = Date.now();
+
+    const lockedPlayers = allPlayers.map(player => {
+      if (!selectedSquadIds.includes(player.id)) {
+        return player;
+      }
+
+      const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(
+        player.id,
+        formation,
+        formationAwareTeamConfig
+      );
+
+      const stats = { ...player.stats };
+
+      if (!stats.startLocked) {
+        let newStartedMatchAs = stats.startedMatchAs;
+        if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
+        else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
+        else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+
+        stats.startedMatchAs = newStartedMatchAs;
+        stats.startedAtPosition = currentPairKey;
+        stats.startedAtRole = currentRole || null;
+      }
+
+      stats.currentRole = currentRole;
+      stats.currentStatus = currentStatus;
+      stats.currentPairKey = currentPairKey;
+      stats.lastStintStartTimeEpoch = lockTimestamp;
+      stats.startLocked = true;
+
+      return {
+        ...player,
+        stats
+      };
+    });
+
+    setAllPlayers(lockedPlayers);
+
+    if (currentMatchId) {
+      try {
+        await upsertPlayerMatchStats(currentMatchId, lockedPlayers, captainId, selectedSquadIds);
+      } catch (error) {
+        console.warn('⚠️  Failed to upsert player stats on match start:', error);
+      }
+    }
+
     // Update match state to running in database
     if (currentMatchId) {
       try {
@@ -1444,7 +1499,7 @@ export function useGameState(navigateToView = null) {
           const stats = { ...p.stats };
           
           // Set participation markers for database insertion (same logic as handleStartGame)
-          if (!stats.startedMatchAs) {
+          if (!stats.startLocked) {
             let newStartedMatchAs = null;
             if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
             else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
@@ -1455,6 +1510,7 @@ export function useGameState(navigateToView = null) {
             stats.startedAtPosition = currentPairKey;
             // Preserve the exact role at match start for accurate reporting
             stats.startedAtRole = currentRole || null;
+            stats.startLocked = false;
           }
 
           return {
