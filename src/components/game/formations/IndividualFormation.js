@@ -15,6 +15,8 @@ import { getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES } from './constants';
 
+const EMPTY_FORMATION = {};
+
 export function IndividualFormation({
   teamConfig,
   selectedFormation,
@@ -33,11 +35,6 @@ export function IndividualFormation({
   renderSection = 'all',
   ...domProps
 }) {
-  // Handle null/undefined formation
-  if (!formation) {
-    return <div className="space-y-2" {...domProps}></div>;
-  }
-
   // Create formation-aware team config for position utilities
   const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
     ...teamConfig,
@@ -52,6 +49,51 @@ export function IndividualFormation({
   // Mode capabilities
   const modeSupportsInactive = supportsInactiveUsers(formationAwareTeamConfig);
   const modeSupportsNextNext = supportsNextNextIndicators(formationAwareTeamConfig);
+
+  // Map upcoming outgoing players to their field positions for substitute indicators
+  const formationPositionsToCheck = React.useMemo(
+    () => ['goalie', ...fieldPositions],
+    [fieldPositions]
+  );
+
+  const findFieldPositionForPlayer = React.useCallback(
+    (playerId) => {
+      if (!playerId) return null;
+      const sourceFormation = formation || EMPTY_FORMATION;
+      for (const positionKey of formationPositionsToCheck) {
+        if (sourceFormation[positionKey] === playerId) {
+          return positionKey;
+        }
+      }
+      return null;
+    },
+    [formation, formationPositionsToCheck]
+  );
+
+  const upcomingFieldAssignments = React.useMemo(
+    () => ({
+      next: findFieldPositionForPlayer(nextPlayerIdToSubOut),
+      nextNext: findFieldPositionForPlayer(nextNextPlayerIdToSubOut)
+    }),
+    [findFieldPositionForPlayer, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut]
+  );
+
+  const incomingPositionLabels = React.useMemo(
+    () => ({
+      next: upcomingFieldAssignments.next
+        ? getPositionDisplayName(upcomingFieldAssignments.next, null, formationAwareTeamConfig, substitutePositions)
+        : null,
+      nextNext: upcomingFieldAssignments.nextNext
+        ? getPositionDisplayName(upcomingFieldAssignments.nextNext, null, formationAwareTeamConfig, substitutePositions)
+        : null
+    }),
+    [upcomingFieldAssignments, formationAwareTeamConfig, substitutePositions]
+  );
+
+  // Handle null/undefined formation after hook definitions to satisfy rules of hooks
+  if (!formation) {
+    return <div className="space-y-2" {...domProps}></div>;
+  }
 
   // Determine which positions to render based on renderSection prop
   let positionsToRender;
@@ -111,6 +153,14 @@ export function IndividualFormation({
     const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(quickTapHandlers, position);
     const positionDisplayName = getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
+    const substituteIndex = substitutePositions.indexOf(position);
+    const incomingPositionLabel = substituteIndex === 0
+      ? incomingPositionLabels.next
+      : substituteIndex === 1
+        ? incomingPositionLabels.nextNext
+        : null;
+    const shouldShowIncomingPosition = isSubstitutePosition && incomingPositionLabel && (!modeSupportsInactive || !isInactive);
+    const playerName = getPlayerNameById ? getPlayerNameById(playerId) : playerId;
 
     return (
       <div 
@@ -121,7 +171,17 @@ export function IndividualFormation({
         {...longPressEvents}
       >
         <h3 className="text-sm font-semibold mb-1 flex items-center justify-between">
-          {positionDisplayName} {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
+          <span className="flex items-center gap-2">
+            <span>
+              {positionDisplayName}
+            </span>
+            {shouldShowIncomingPosition && (
+              <span className="text-[11px] font-normal text-slate-200">
+                (Next: {incomingPositionLabel})
+              </span>
+            )}
+            {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
+          </span>
           <div className="flex space-x-1">
             {/* Primary indicators (full opacity) - only show for active players */}
             {(!modeSupportsInactive || !isInactive) && isNextOff && !hideNextOffIndicator && <ArrowDownCircle className={`${ICON_STYLES.large} ${ICON_STYLES.indicators.nextOff} inline-block`} />}
@@ -132,7 +192,7 @@ export function IndividualFormation({
           </div>
         </h3>
         <div className="flex items-center justify-between">
-          <div>{icon} {getPlayerNameById ? getPlayerNameById(playerId) : playerId}</div>
+          <div>{icon} {playerName}</div>
           <PlayerStatsDisplay playerId={playerId} getPlayerTimeStats={getPlayerTimeStats} />
         </div>
       </div>
