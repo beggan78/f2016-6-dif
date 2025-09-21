@@ -104,8 +104,9 @@ export function AuthProvider({ children }) {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No profile found - this is OK, profile might not exist yet
+          // No profile found - treat as incomplete but do not crash
           setUserProfile(null);
+          setNeedsProfileCompletion(true);
           return null;
         }
         throw error;
@@ -125,7 +126,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Error fetching profile:', error.message);
       setUserProfile(null);
-      setNeedsProfileCompletion(true); // Assume needs completion if fetch fails
+      // Do not force profile completion prompt on transient fetch failures
       return null;
     }
   }, []);
