@@ -103,7 +103,7 @@ export function usePlayerState(initialState = {}) {
 
       return noChange ? prevSquadIds : dedupedNext;
     });
-  }, [setAllPlayers]);
+  }, [setAllPlayers, setSelectedSquadIdsState]);
 
   // Update player roles and status based on formation changes
   const updatePlayerRolesFromFormation = useCallback((formation, selectedSquadIds, formationAwareTeamConfig) => {
@@ -158,7 +158,7 @@ export function usePlayerState(initialState = {}) {
 
     setAllPlayers(prev => [...prev, newPlayer]);
     setSelectedSquadIds(prev => [...prev, newPlayerId]);
-  }, []);
+  }, [setAllPlayers, setSelectedSquadIds]);
 
   // Captain management
   const setCaptain = useCallback((newCaptainId) => {

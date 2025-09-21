@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { initializePlayers } from '../utils/playerUtils';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
