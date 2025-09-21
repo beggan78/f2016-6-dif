@@ -1048,7 +1048,7 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             ownTeamName={selectedSquadPlayers ? 'Djurgården' : 'Own'}
             opponentTeam={gameState.opponentTeam || 'Opponent'}
-            onNavigateBack={navigateBack}
+            onNavigateBack={() => navigateBack(VIEWS.STATS)}
             goalScorers={gameState.goalScorers || {}}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);

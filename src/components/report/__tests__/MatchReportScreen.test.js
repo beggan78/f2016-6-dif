@@ -67,7 +67,6 @@ describe('MatchReportScreen', () => {
     ownTeamName: 'Djurgården',
     opponentTeam: 'Opponent',
     goalScorers: {},
-    onNavigateToStats: jest.fn(),
     onNavigateBack: jest.fn(),
     navigateToMatchReport: jest.fn(),
     onGoalClick: jest.fn(),
