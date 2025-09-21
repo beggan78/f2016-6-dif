@@ -99,7 +99,7 @@ export function MatchRecoveryModal({
               <History className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Recover Unsaved Match</h2>
+              <h2 className="text-lg font-semibold text-slate-100">Save Match?</h2>
               <p className="text-sm text-slate-400">
                 Found a finished match that wasn't saved
               </p>

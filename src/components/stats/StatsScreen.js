@@ -103,6 +103,7 @@ export function StatsScreen({
   const handleSaveMatchHistory = async () => {
     setSaving(true);
     setSaveError(null);
+    setSaveSuccess(false);
     
     try {
       if (!currentMatchId) {
@@ -141,6 +142,7 @@ export function StatsScreen({
           setSaveSuccess(false);
         }, 3000);
       } else {
+        setSaveSuccess(false);
         setSaveError(result.error || 'Failed to confirm match');
         console.error('❌ Failed to confirm match:', result);
       }

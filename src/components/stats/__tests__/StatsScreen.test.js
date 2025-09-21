@@ -378,7 +378,7 @@ describe('StatsScreen', () => {
       render(<StatsScreen {...defaultProps} />);
       
       const firstPlayer = mockPlayers[0];
-      
+
       // Select a player for fair play award
       await selectFairPlayAward(firstPlayer.name);
       
@@ -440,6 +440,24 @@ describe('StatsScreen', () => {
         'test-match-123', // matchId
         selectedPlayer.id // fairPlayAwardPlayerId
       );
+    });
+
+    it('should surface an error message when saving fails', async () => {
+      updateMatchToConfirmed.mockResolvedValue({
+        success: false,
+        error: 'Match must be finished before it can be saved to history.'
+      });
+
+      render(<StatsScreen {...defaultProps} />);
+
+      const saveButton = screen.getByText('Save Match to History');
+      await userEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('❌ Match must be finished before it can be saved to history.')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('✓ Match saved successfully!')).not.toBeInTheDocument();
     });
   });
 });
