@@ -36,10 +36,15 @@ export function IndividualFormation({
   ...domProps
 }) {
   // Create formation-aware team config for position utilities
-  const formationAwareTeamConfig = selectedFormation && selectedFormation !== teamConfig.formation ? {
-    ...teamConfig,
-    formation: selectedFormation
-  } : teamConfig;
+  const formationAwareTeamConfig = React.useMemo(() => {
+    if (selectedFormation && selectedFormation !== teamConfig.formation) {
+      return {
+        ...teamConfig,
+        formation: selectedFormation
+      };
+    }
+    return teamConfig;
+  }, [selectedFormation, teamConfig]);
 
   // Get formation-specific position lists from formation definitions
   const fieldPositions = getFieldPositions(formationAwareTeamConfig);
