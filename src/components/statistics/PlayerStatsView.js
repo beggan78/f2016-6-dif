@@ -8,6 +8,10 @@ const SORT_FIELDS = {
   GOALS: 'goalsScored',
   AVG_TIME: 'averageTimePerMatch',
   SUB_START: 'percentageStartedAsSubstitute',
+  DEF_TIME: 'percentageTimeAsDefender',
+  MID_TIME: 'percentageTimeAsMidfielder',
+  ATT_TIME: 'percentageTimeAsAttacker',
+  GK_TIME: 'percentageTimeAsGoalkeeper',
   CAPTAIN: 'matchesAsCaptain',
   FAIR_PLAY: 'fairPlayAwards'
 };
@@ -89,7 +93,18 @@ export function PlayerStatsView() {
                   <SortableHeader field={SORT_FIELDS.SUB_START} className="text-center">
                     Sub Start %
                   </SortableHeader>
-                  <th className="py-2 px-2 text-xs font-medium text-slate-200 text-center">Position Time %</th>
+                  <SortableHeader field={SORT_FIELDS.DEF_TIME} className="text-center">
+                    DEF %
+                  </SortableHeader>
+                  <SortableHeader field={SORT_FIELDS.MID_TIME} className="text-center">
+                    MID %
+                  </SortableHeader>
+                  <SortableHeader field={SORT_FIELDS.ATT_TIME} className="text-center">
+                    ATT %
+                  </SortableHeader>
+                  <SortableHeader field={SORT_FIELDS.GK_TIME} className="text-center">
+                    GK %
+                  </SortableHeader>
                   <SortableHeader field={SORT_FIELDS.CAPTAIN} className="text-center">
                     Captain
                   </SortableHeader>
@@ -116,33 +131,25 @@ export function PlayerStatsView() {
                     <td className="py-2 px-2 text-sm text-center text-slate-300">
                       {formatPercentage(player.percentageStartedAsSubstitute)}
                     </td>
-                    <td className="py-2 px-2 text-xs text-center text-slate-300">
-                      <div className="space-y-0.5">
-                        {player.percentageTimeAsGoalkeeper > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-purple-300">GK:</span>
-                            <span>{formatPercentage(player.percentageTimeAsGoalkeeper)}</span>
-                          </div>
-                        )}
-                        {player.percentageTimeAsDefender > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-blue-300">DEF:</span>
-                            <span>{formatPercentage(player.percentageTimeAsDefender)}</span>
-                          </div>
-                        )}
-                        {player.percentageTimeAsMidfielder > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-green-300">MID:</span>
-                            <span>{formatPercentage(player.percentageTimeAsMidfielder)}</span>
-                          </div>
-                        )}
-                        {player.percentageTimeAsAttacker > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-red-300">ATT:</span>
-                            <span>{formatPercentage(player.percentageTimeAsAttacker)}</span>
-                          </div>
-                        )}
-                      </div>
+                    <td className="py-2 px-2 text-sm text-center text-slate-300">
+                      <span className={player.percentageTimeAsDefender > 0 ? "text-blue-300" : "text-slate-500"}>
+                        {player.percentageTimeAsDefender > 0 ? formatPercentage(player.percentageTimeAsDefender) : "-"}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-sm text-center text-slate-300">
+                      <span className={player.percentageTimeAsMidfielder > 0 ? "text-green-300" : "text-slate-500"}>
+                        {player.percentageTimeAsMidfielder > 0 ? formatPercentage(player.percentageTimeAsMidfielder) : "-"}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-sm text-center text-slate-300">
+                      <span className={player.percentageTimeAsAttacker > 0 ? "text-red-300" : "text-slate-500"}>
+                        {player.percentageTimeAsAttacker > 0 ? formatPercentage(player.percentageTimeAsAttacker) : "-"}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-sm text-center text-slate-300">
+                      <span className={player.percentageTimeAsGoalkeeper > 0 ? "text-purple-300" : "text-slate-500"}>
+                        {player.percentageTimeAsGoalkeeper > 0 ? formatPercentage(player.percentageTimeAsGoalkeeper) : "-"}
+                      </span>
                     </td>
                     <td className="py-2 px-2 text-sm text-center text-slate-300">
                       {player.matchesAsCaptain}
@@ -160,11 +167,15 @@ export function PlayerStatsView() {
         {/* Legend */}
         <div className="mt-4 p-3 bg-slate-600 rounded-lg">
           <h4 className="text-sm font-medium text-slate-200 mb-2">Legend</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-slate-300">
-            <div className="flex items-center space-x-1">
-              <span className="text-purple-300">GK:</span>
-              <span>Goalkeeper</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-400">
+            <div>
+              <strong>Sub Start %:</strong> Percentage of matches where the player started as a substitute
             </div>
+            <div>
+              <strong>Position %:</strong> Percentage of total playing time spent in each position
+            </div>
+          </div>
+          <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-slate-300">
             <div className="flex items-center space-x-1">
               <span className="text-blue-300">DEF:</span>
               <span>Defender</span>
@@ -177,9 +188,10 @@ export function PlayerStatsView() {
               <span className="text-red-300">ATT:</span>
               <span>Attacker</span>
             </div>
-          </div>
-          <div className="mt-2 text-xs text-slate-400">
-            <strong>Sub Start %:</strong> Percentage of matches where the player started as a substitute
+            <div className="flex items-center space-x-1">
+              <span className="text-purple-300">GK:</span>
+              <span>Goalkeeper</span>
+            </div>
           </div>
         </div>
       </div>
