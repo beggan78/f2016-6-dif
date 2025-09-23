@@ -189,7 +189,16 @@ export function PlayerStatistics({ dateRange }) {
                   Avg Time {getSortIcon(SORT_OPTIONS.TIME)}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Position Distribution
+                  % Defender
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
+                  % Midfielder
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
+                  % Attacker
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
+                  % Goalkeeper
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
                   Sub Start %
@@ -231,25 +240,17 @@ export function PlayerStatistics({ dateRange }) {
                       <span className="text-sm text-slate-300">{player.averageTimePerMatch}m</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="grid grid-cols-2 gap-1 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">D:</span>
-                        <span className={getPositionColor(player.defenderPercentage)}>{player.defenderPercentage}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">M:</span>
-                        <span className={getPositionColor(player.midfielderPercentage)}>{player.midfielderPercentage}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">A:</span>
-                        <span className={getPositionColor(player.attackerPercentage)}>{player.attackerPercentage}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">G:</span>
-                        <span className={getPositionColor(player.goaliePercentage)}>{player.goaliePercentage}%</span>
-                      </div>
-                    </div>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                    <span className={getPositionColor(player.defenderPercentage)}>{player.defenderPercentage}%</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                    <span className={getPositionColor(player.midfielderPercentage)}>{player.midfielderPercentage}%</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                    <span className={getPositionColor(player.attackerPercentage)}>{player.attackerPercentage}%</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                    <span className={getPositionColor(player.goaliePercentage)}>{player.goaliePercentage}%</span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-300">
                     {player.substituteStartPercentage}%
