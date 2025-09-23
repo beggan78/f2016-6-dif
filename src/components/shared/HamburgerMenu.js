@@ -74,8 +74,9 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const handleMatchHistory = () => {
     setIsOpen(false);
-    // TODO: Navigate to match history view
-    console.log('Match history clicked');
+    if (setView) {
+      setView(VIEWS.STATISTICS);
+    }
   };
 
   const handleCreateTeam = () => {

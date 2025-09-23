@@ -20,6 +20,8 @@ import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
+import { StatisticsScreen } from './components/statistics/StatisticsScreen';
+import { MatchDetailsScreen } from './components/statistics/MatchDetailsScreen';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
 import { MatchRecoveryModal } from './components/modals/MatchRecoveryModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
@@ -1090,6 +1092,22 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
+          />
+        );
+      case VIEWS.STATISTICS:
+        return (
+          <StatisticsScreen
+            onNavigateBack={navigateBack}
+            onNavigateToMatchDetails={(matchId) => navigateToView(VIEWS.STATISTICS_MATCH_DETAILS, { matchId })}
+            isAdminUser={canManageTeam}
+          />
+        );
+      case VIEWS.STATISTICS_MATCH_DETAILS:
+        return (
+          <MatchDetailsScreen
+            matchId={navigationData?.matchId}
+            onNavigateBack={() => navigateBack(VIEWS.STATISTICS)}
+            isAdminUser={canManageTeam}
           />
         );
       default:
