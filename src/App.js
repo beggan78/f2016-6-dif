@@ -20,6 +20,7 @@ import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
+import { StatisticsScreen } from './components/statistics/StatisticsScreen';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
 import { MatchRecoveryModal } from './components/modals/MatchRecoveryModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
@@ -147,6 +148,24 @@ function AppContent() {
       authModal.openReset();
     }
   }, [authModal]);
+
+  // Handle URL-based routing for statistics
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (currentPath === '/stats' && gameState.view !== VIEWS.STATISTICS) {
+      gameState.setView(VIEWS.STATISTICS);
+    }
+  }, [gameState]);
+
+  // Update URL when navigating to statistics view
+  useEffect(() => {
+    if (gameState.view === VIEWS.STATISTICS) {
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/stats') {
+        window.history.pushState({ view: VIEWS.STATISTICS }, '', '/stats');
+      }
+    }
+  }, [gameState.view]);
 
   // Check if user becomes authenticated via magic link and should show password reset
   useEffect(() => {
@@ -1090,6 +1109,12 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
+          />
+        );
+      case VIEWS.STATISTICS:
+        return (
+          <StatisticsScreen
+            onNavigateBack={navigateBack}
           />
         );
       default:
