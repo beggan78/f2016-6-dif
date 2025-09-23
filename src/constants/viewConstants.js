@@ -9,6 +9,7 @@ export const VIEWS = {
   GAME: 'game',
   MATCH_REPORT: 'matchReport',
   STATS: 'stats',
+  STATISTICS: 'statistics',
   PROFILE: 'profile',
   TACTICAL_BOARD: 'tacticalBoard',
   TEAM_MANAGEMENT: 'teamManagement'
