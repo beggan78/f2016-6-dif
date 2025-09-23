@@ -16,6 +16,7 @@ import { ConfigurationScreen } from './components/setup/ConfigurationScreen';
 import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
 import { StatsScreen } from './components/stats/StatsScreen';
+import { StatisticsScreen } from './components/statistics/StatisticsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
@@ -1056,6 +1057,12 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             fromView={fromView}
+          />
+        );
+      case VIEWS.STATISTICS:
+        return (
+          <StatisticsScreen
+            onNavigateBack={navigateBack}
           />
         );
       case VIEWS.TEAM_MANAGEMENT:
