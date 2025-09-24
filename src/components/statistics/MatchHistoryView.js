@@ -209,7 +209,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   });
 
   const getOutcomeBadge = (outcome) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium w-12 text-center";
+    const baseClasses = "inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium w-12 text-center";
     switch (outcome) {
       case 'W':
         return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
