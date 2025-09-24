@@ -349,63 +349,60 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
           {filteredMatches.map((match) => (
             <div
               key={match.id}
-              className="bg-slate-800 p-3 rounded-lg border border-slate-600 hover:bg-slate-750 transition-colors cursor-pointer"
+              className="bg-slate-800 p-4 rounded-lg border border-slate-600 hover:bg-slate-750 transition-colors cursor-pointer"
               onClick={() => onMatchSelect(match.id)}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+              <div className="flex items-start justify-between gap-4">
+                {/* Left Section: Date & Match Info */}
+                <div className="flex items-start gap-4 flex-1 min-w-0">
                   {/* Date and Time */}
-                  <div className="flex items-center space-x-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-slate-400 shrink-0">
                     <Calendar className="h-4 w-4" />
                     <div className="text-sm">
                       <div className="font-mono">{formatDate(match.date)}</div>
-                      <div className="font-mono text-xs">{formatTime(match.date)}</div>
+                      <div className="font-mono text-xs opacity-75">{formatTime(match.date)}</div>
                     </div>
                   </div>
 
                   {/* Match Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <div className="text-slate-200 font-medium">
-                        {match.opponent}
-                      </div>
-                      <div className="flex items-center space-x-1 text-slate-400">
-                        <MapPin className="h-3 w-3" />
-                        <span className="text-xs">
-                          {match.isHome ? 'Home' : 'Away'}
-                        </span>
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    {/* Opponent Name */}
+                    <div className="text-slate-200 font-semibold text-lg truncate">
+                      {match.opponent}
                     </div>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className={getTypeBadge(match.type)}>{match.type}</span>
+
+                    {/* Match Details Row */}
+                    <div className="flex items-center gap-3 mt-1">
+                      {/* Home/Away - Hidden on mobile */}
+                      {!isMobile && (
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <MapPin className="h-3 w-3" />
+                          <span className="text-sm">
+                            {match.isHome ? 'Home' : 'Away'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Match Type - Hidden on mobile */}
+                      {!isMobile && (
+                        <span className={getTypeBadge(match.type)}>{match.type}</span>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  {/* Score */}
-                  <div className="text-right">
-                    <div className="text-lg font-mono font-semibold text-slate-100">
-                      {formatScore(match)}
-                    </div>
+                {/* Right Section: Score & Result */}
+                <div className="text-right shrink-0">
+                  <div className="text-2xl font-mono font-bold text-slate-100 mb-1">
+                    {formatScore(match)}
+                  </div>
+                  {/* Win/Loss/Draw - Hidden on mobile */}
+                  {!isMobile && (
                     <span className={getOutcomeBadge(match.outcome)}>
                       {match.outcome === 'W' ? 'Win' :
                        match.outcome === 'D' ? 'Draw' : 'Loss'}
                     </span>
-                  </div>
-
-                  {/* View Details Button */}
-                  <Button
-                    Icon={Eye}
-                    variant="secondary"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMatchSelect(match.id);
-                    }}
-                  >
-                    Details
-                  </Button>
+                  )}
                 </div>
               </div>
             </div>
