@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
 
 // Mock data - replace with real data later
 const mockTeamStats = {
@@ -113,7 +113,10 @@ export function TeamStatsView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Goals Section */}
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-400 mb-4">Goals</h3>
+          <div className="flex items-center space-x-2 mb-4">
+            <Target className="h-5 w-5 text-sky-400" />
+            <h3 className="text-lg font-semibold text-sky-400">Goals</h3>
+          </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-slate-300">Goals Scored</span>
@@ -137,7 +140,10 @@ export function TeamStatsView() {
 
         {/* Match Outcomes Section */}
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-400 mb-4">Match Outcomes</h3>
+          <div className="flex items-center space-x-2 mb-4">
+            <PieChart className="h-5 w-5 text-sky-400" />
+            <h3 className="text-lg font-semibold text-sky-400">Match Outcomes</h3>
+          </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-slate-300">Matches Won</span>
@@ -166,7 +172,10 @@ export function TeamStatsView() {
 
       {/* Recent Matches */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <h3 className="text-lg font-semibold text-sky-400 mb-4">Recent Matches</h3>
+        <div className="flex items-center space-x-2 mb-4">
+          <Clock className="h-5 w-5 text-sky-400" />
+          <h3 className="text-lg font-semibold text-sky-400">Recent Matches</h3>
+        </div>
         <div className="space-y-3">
           {recentMatches.map((match) => (
             <div key={match.id} className="bg-slate-800 p-3 rounded-lg border border-slate-600">
@@ -176,7 +185,7 @@ export function TeamStatsView() {
                     {new Date(match.date).toLocaleDateString()}
                   </div>
                   <div className="text-slate-200 font-medium">
-                    vs {match.opponent}
+                    {match.opponent}
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
