@@ -337,22 +337,19 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
       </div>
 
       {/* Match List */}
-      <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Match History
-          </h3>
-          <p className="text-slate-400 text-sm mt-1">
-            {filteredMatches.length} matches found. Click on a match to view detailed statistics.
-          </p>
+      <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+        <div className="flex items-center space-x-2 mb-4">
+          <History className="h-5 w-5 text-sky-400" />
+          <h3 className="text-lg font-semibold text-sky-400">Match History</h3>
         </div>
-
-        <div className="divide-y divide-slate-600">
+        <p className="text-slate-400 text-sm mb-4">
+          {filteredMatches.length} matches found. Click on a match to view detailed statistics.
+        </p>
+        <div className="space-y-3">
           {filteredMatches.map((match) => (
             <div
               key={match.id}
-              className="p-4 hover:bg-slate-600 transition-colors cursor-pointer"
+              className="bg-slate-800 p-3 rounded-lg border border-slate-600 hover:bg-slate-750 transition-colors cursor-pointer"
               onClick={() => onMatchSelect(match.id)}
             >
               <div className="flex items-center justify-between">
@@ -413,15 +410,15 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
               </div>
             </div>
           ))}
-        </div>
 
-        {filteredMatches.length === 0 && (
-          <div className="p-8 text-center text-slate-400">
-            <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No matches found with the selected filters.</p>
-            <p className="text-sm mt-1">Try adjusting your filter criteria.</p>
-          </div>
-        )}
+          {filteredMatches.length === 0 && (
+            <div className="p-8 text-center text-slate-400">
+              <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No matches found with the selected filters.</p>
+              <p className="text-sm mt-1">Try adjusting your filter criteria.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
