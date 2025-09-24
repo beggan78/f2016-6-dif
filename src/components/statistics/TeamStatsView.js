@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Target, Shield, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trophy, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 
 // Mock data - replace with real data later
 const mockTeamStats = {
@@ -40,7 +40,7 @@ export function TeamStatsView() {
     <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-sky-900/50 rounded-lg">
+          <div className="p-2 rounded-lg">
             <Icon className="h-5 w-5 text-sky-400" />
           </div>
           <div>
@@ -92,23 +92,20 @@ export function TeamStatsView() {
           title="Win Rate"
           value={`${winPercentage}%`}
           subtitle={`${wins} victories`}
-          trend={winPercentage > 50 ? 5 : winPercentage < 30 ? -3 : 0}
         />
 
         <StatCard
-          icon={Target}
-          title="Goals Scored"
-          value={goalsScored}
-          subtitle={`${averageGoalsScored} per match`}
-          trend={averageGoalsScored > 2.5 ? 8 : averageGoalsScored < 1.5 ? -5 : 0}
+          icon={TrendingUp}
+          title="Avg. Goals Scored"
+          value={averageGoalsScored}
+          subtitle={`${goalsScored} total goals`}
         />
 
         <StatCard
-          icon={Shield}
-          title="Goals Conceded"
-          value={goalsConceded}
-          subtitle={`${averageGoalsConceded} per match`}
-          trend={averageGoalsConceded < 1.5 ? 10 : averageGoalsConceded > 2.5 ? -7 : 0}
+          icon={TrendingDown}
+          title="Avg. Goals Conceded"
+          value={averageGoalsConceded}
+          subtitle={`${goalsConceded} total goals`}
         />
       </div>
 

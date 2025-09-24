@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, BarChart3, Users, History } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { TeamStatsView } from './TeamStatsView';
