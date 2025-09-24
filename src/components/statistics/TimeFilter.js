@@ -230,17 +230,41 @@ export function TimeFilter({
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* Trigger Button */}
-      <Button
+      {/* Time Picker Control */}
+      <div
         onClick={() => setIsOpen(!isOpen)}
-        variant="secondary"
-        size="md"
-        Icon={Clock}
-        className="text-sm min-w-0"
+        className={`
+          cursor-pointer select-none
+          bg-slate-700 border rounded-lg
+          px-4 py-2.5
+          flex items-center space-x-3
+          transition-all duration-200 ease-in-out
+          min-w-0
+          ${isOpen
+            ? 'border-sky-500 bg-slate-600'
+            : 'border-slate-600 hover:border-slate-500 hover:bg-slate-600'
+          }
+          focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800
+        `}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
       >
-        <span className="truncate max-w-[200px] whitespace-nowrap">{displayLabel}</span>
-        <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform ml-2 ${isOpen ? 'rotate-180' : ''}`} />
-      </Button>
+        <Clock className="h-4 w-4 text-sky-400 flex-shrink-0" />
+        <span className="text-slate-100 text-sm font-medium truncate max-w-[200px] whitespace-nowrap">
+          {displayLabel}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-sky-400 flex-shrink-0 transition-transform duration-200 ${
+          isOpen ? 'rotate-180' : ''
+        }`} />
+      </div>
 
       {/* Dropdown Menu */}
       {isOpen && (

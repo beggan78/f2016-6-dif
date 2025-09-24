@@ -70,7 +70,7 @@ export function TeamStatsView({ startDate, endDate }) {
       averageGoalsConceded: Math.round(averageGoalsConceded * 10) / 10,
       recentMatches: filteredMatches.slice(0, 5) // Show top 5 recent matches
     };
-  }, [filteredMatches]);
+  }, [filteredMatches, startDate, endDate]);
 
   const {
     totalMatches,
