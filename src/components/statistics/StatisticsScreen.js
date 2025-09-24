@@ -107,7 +107,7 @@ export function StatisticsScreen({ onNavigateBack }) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                     isActive
-                      ? 'border-sky-500 text-sky-300'
+                      ? 'border-sky-400 text-sky-400'
                       : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-300'
                   }`}
                 >

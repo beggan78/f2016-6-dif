@@ -157,11 +157,7 @@ export function MatchHistoryView({ onMatchSelect }) {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return date.toISOString().split('T')[0];
   };
 
   const formatTime = (dateString) => {
@@ -175,38 +171,9 @@ export function MatchHistoryView({ onMatchSelect }) {
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Total Matches</h3>
-          <div className="text-2xl font-bold text-sky-400">{mockMatches.length}</div>
-        </div>
-
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Wins</h3>
-          <div className="text-2xl font-bold text-emerald-400">
-            {mockMatches.filter(m => m.outcome === 'W').length}
-          </div>
-        </div>
-
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Draws</h3>
-          <div className="text-2xl font-bold text-slate-400">
-            {mockMatches.filter(m => m.outcome === 'D').length}
-          </div>
-        </div>
-
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Losses</h3>
-          <div className="text-2xl font-bold text-rose-400">
-            {mockMatches.filter(m => m.outcome === 'L').length}
-          </div>
-        </div>
-      </div>
-
       {/* Filters */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <h3 className="text-lg font-semibold text-slate-100 mb-4">Filter Matches</h3>
+        <h3 className="text-lg font-semibold text-sky-400 mb-4">Filter Matches</h3>
         <div className="flex flex-wrap gap-4">
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Match Type</label>
@@ -250,10 +217,39 @@ export function MatchHistoryView({ onMatchSelect }) {
         </div>
       </div>
 
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+          <h3 className="text-slate-300 font-medium mb-2">Total Matches</h3>
+          <div className="text-2xl font-bold text-sky-400">{mockMatches.length}</div>
+        </div>
+
+        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+          <h3 className="text-slate-300 font-medium mb-2">Wins</h3>
+          <div className="text-2xl font-bold text-emerald-400">
+            {mockMatches.filter(m => m.outcome === 'W').length}
+          </div>
+        </div>
+
+        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+          <h3 className="text-slate-300 font-medium mb-2">Draws</h3>
+          <div className="text-2xl font-bold text-slate-400">
+            {mockMatches.filter(m => m.outcome === 'D').length}
+          </div>
+        </div>
+
+        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+          <h3 className="text-slate-300 font-medium mb-2">Losses</h3>
+          <div className="text-2xl font-bold text-rose-400">
+            {mockMatches.filter(m => m.outcome === 'L').length}
+          </div>
+        </div>
+      </div>
+
       {/* Match List */}
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-slate-100">Match History</h3>
+          <h3 className="text-lg font-semibold text-sky-400">Match History</h3>
           <p className="text-slate-400 text-sm mt-1">
             {filteredMatches.length} matches found. Click on a match to view detailed statistics.
           </p>
@@ -281,7 +277,7 @@ export function MatchHistoryView({ onMatchSelect }) {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
                       <div className="text-slate-200 font-medium">
-                        vs {match.opponent}
+                        {match.opponent}
                       </div>
                       <div className="flex items-center space-x-1 text-slate-400">
                         <MapPin className="h-3 w-3" />

@@ -182,7 +182,7 @@ export function TeamStatsView() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="text-slate-400 text-sm font-mono">
-                    {new Date(match.date).toLocaleDateString()}
+                    {match.date}
                   </div>
                   <div className="text-slate-200 font-medium">
                     {match.opponent}
