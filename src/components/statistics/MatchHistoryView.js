@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar, MapPin, Trophy, Eye } from 'lucide-react';
-import { Button } from '../shared/UI';
+import { Button, Select } from '../shared/UI';
 
 // Mock data - replace with real data later
 const mockMatches = [
@@ -12,7 +12,8 @@ const mockMatches = [
     awayScore: 1,
     isHome: true,
     type: 'League',
-    outcome: 'W'
+    outcome: 'W',
+    players: ['Alice Johnson', 'Bob Smith', 'Charlie Brown', 'David Wilson', 'Eva Davis']
   },
   {
     id: 2,
@@ -22,7 +23,8 @@ const mockMatches = [
     awayScore: 2,
     isHome: false,
     type: 'Friendly',
-    outcome: 'D'
+    outcome: 'D',
+    players: ['Alice Johnson', 'Bob Smith', 'Frank Miller', 'Grace Lee', 'Henry Taylor']
   },
   {
     id: 3,
@@ -32,7 +34,8 @@ const mockMatches = [
     awayScore: 2,
     isHome: true,
     type: 'Cup',
-    outcome: 'L'
+    outcome: 'L',
+    players: ['Charlie Brown', 'David Wilson', 'Eva Davis', 'Frank Miller', 'Grace Lee']
   },
   {
     id: 4,
@@ -42,7 +45,8 @@ const mockMatches = [
     awayScore: 0,
     isHome: false,
     type: 'League',
-    outcome: 'W'
+    outcome: 'W',
+    players: ['Alice Johnson', 'Bob Smith', 'Charlie Brown', 'Henry Taylor', 'Ian Clark']
   },
   {
     id: 5,
@@ -52,7 +56,8 @@ const mockMatches = [
     awayScore: 1,
     isHome: true,
     type: 'League',
-    outcome: 'W'
+    outcome: 'W',
+    players: ['David Wilson', 'Eva Davis', 'Frank Miller', 'Grace Lee', 'Henry Taylor']
   },
   {
     id: 6,
@@ -62,7 +67,8 @@ const mockMatches = [
     awayScore: 3,
     isHome: false,
     type: 'Friendly',
-    outcome: 'L'
+    outcome: 'L',
+    players: ['Alice Johnson', 'Charlie Brown', 'Eva Davis', 'Ian Clark', 'Jack Wilson']
   },
   {
     id: 7,
@@ -72,7 +78,8 @@ const mockMatches = [
     awayScore: 1,
     isHome: true,
     type: 'League',
-    outcome: 'D'
+    outcome: 'D',
+    players: ['Bob Smith', 'Frank Miller', 'Grace Lee', 'Henry Taylor', 'Ian Clark']
   },
   {
     id: 8,
@@ -82,7 +89,8 @@ const mockMatches = [
     awayScore: 2,
     isHome: false,
     type: 'Cup',
-    outcome: 'W'
+    outcome: 'W',
+    players: ['Alice Johnson', 'Charlie Brown', 'David Wilson', 'Jack Wilson', 'Liam Brown']
   },
   {
     id: 9,
@@ -92,7 +100,8 @@ const mockMatches = [
     awayScore: 0,
     isHome: true,
     type: 'League',
-    outcome: 'W'
+    outcome: 'W',
+    players: ['Bob Smith', 'Eva Davis', 'Frank Miller', 'Ian Clark', 'Jack Wilson']
   },
   {
     id: 10,
@@ -102,20 +111,65 @@ const mockMatches = [
     awayScore: 4,
     isHome: false,
     type: 'Friendly',
-    outcome: 'L'
+    outcome: 'L',
+    players: ['Charlie Brown', 'Grace Lee', 'Henry Taylor', 'Liam Brown', 'Mike Davis']
   }
 ];
 
-const MATCH_TYPES = ['All', 'League', 'Cup', 'Friendly'];
-const OUTCOMES = ['All', 'W', 'D', 'L'];
+const MATCH_TYPES = [
+  { value: 'All', label: 'All' },
+  { value: 'League', label: 'League' },
+  { value: 'Cup', label: 'Cup' },
+  { value: 'Friendly', label: 'Friendly' }
+];
+
+const OUTCOMES = [
+  { value: 'All', label: 'All' },
+  { value: 'W', label: 'Win' },
+  { value: 'D', label: 'Draw' },
+  { value: 'L', label: 'Loss' }
+];
+
+const HOME_AWAY = [
+  { value: 'All', label: 'All' },
+  { value: 'Home', label: 'Home' },
+  { value: 'Away', label: 'Away' }
+];
 
 export function MatchHistoryView({ onMatchSelect }) {
   const [typeFilter, setTypeFilter] = useState('All');
   const [outcomeFilter, setOutcomeFilter] = useState('All');
+  const [homeAwayFilter, setHomeAwayFilter] = useState('All');
+  const [opponentFilter, setOpponentFilter] = useState('All');
+  const [playerFilter, setPlayerFilter] = useState('All');
+
+  // Get unique opponents from matches
+  const opponents = useMemo(() => {
+    const uniqueOpponents = [...new Set(mockMatches.map(match => match.opponent))];
+    return [
+      { value: 'All', label: 'All' },
+      ...uniqueOpponents.map(opponent => ({ value: opponent, label: opponent }))
+    ];
+  }, []);
+
+  // Get unique players from matches
+  const players = useMemo(() => {
+    const uniquePlayers = [...new Set(mockMatches.flatMap(match => match.players || []))];
+    return [
+      { value: 'All', label: 'All' },
+      ...uniquePlayers.sort().map(player => ({ value: player, label: player }))
+    ];
+  }, []);
 
   const filteredMatches = mockMatches.filter(match => {
     if (typeFilter !== 'All' && match.type !== typeFilter) return false;
     if (outcomeFilter !== 'All' && match.outcome !== outcomeFilter) return false;
+    if (homeAwayFilter !== 'All') {
+      const matchHomeAway = match.isHome ? 'Home' : 'Away';
+      if (matchHomeAway !== homeAwayFilter) return false;
+    }
+    if (opponentFilter !== 'All' && match.opponent !== opponentFilter) return false;
+    if (playerFilter !== 'All' && (!match.players || !match.players.includes(playerFilter))) return false;
     return true;
   });
 
@@ -173,75 +227,51 @@ export function MatchHistoryView({ onMatchSelect }) {
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <h3 className="text-lg font-semibold text-sky-400 mb-4">Filter Matches</h3>
-        <div className="flex flex-wrap gap-4">
+        <h3 className="text-lg font-semibold text-sky-400 mb-4">Filter</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Match Type</label>
-            <div className="flex gap-2">
-              {MATCH_TYPES.map(type => (
-                <button
-                  key={type}
-                  onClick={() => setTypeFilter(type)}
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    typeFilter === type
-                      ? 'bg-sky-600 text-white'
-                      : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
+            <label className="text-slate-300 text-sm mb-2">Type</label>
+            <Select
+              value={typeFilter}
+              onChange={setTypeFilter}
+              options={MATCH_TYPES}
+            />
           </div>
 
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Outcome</label>
-            <div className="flex gap-2">
-              {OUTCOMES.map(outcome => (
-                <button
-                  key={outcome}
-                  onClick={() => setOutcomeFilter(outcome)}
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    outcomeFilter === outcome
-                      ? 'bg-sky-600 text-white'
-                      : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                  }`}
-                >
-                  {outcome === 'All' ? 'All' :
-                   outcome === 'W' ? 'Wins' :
-                   outcome === 'D' ? 'Draws' : 'Losses'}
-                </button>
-              ))}
-            </div>
+            <Select
+              value={outcomeFilter}
+              onChange={setOutcomeFilter}
+              options={OUTCOMES}
+            />
           </div>
-        </div>
-      </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Total Matches</h3>
-          <div className="text-2xl font-bold text-sky-400">{mockMatches.length}</div>
-        </div>
-
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Wins</h3>
-          <div className="text-2xl font-bold text-emerald-400">
-            {mockMatches.filter(m => m.outcome === 'W').length}
+          <div className="flex flex-col">
+            <label className="text-slate-300 text-sm mb-2">Home/Away</label>
+            <Select
+              value={homeAwayFilter}
+              onChange={setHomeAwayFilter}
+              options={HOME_AWAY}
+            />
           </div>
-        </div>
 
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Draws</h3>
-          <div className="text-2xl font-bold text-slate-400">
-            {mockMatches.filter(m => m.outcome === 'D').length}
+          <div className="flex flex-col">
+            <label className="text-slate-300 text-sm mb-2">Opponent</label>
+            <Select
+              value={opponentFilter}
+              onChange={setOpponentFilter}
+              options={opponents}
+            />
           </div>
-        </div>
 
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Losses</h3>
-          <div className="text-2xl font-bold text-rose-400">
-            {mockMatches.filter(m => m.outcome === 'L').length}
+          <div className="flex flex-col">
+            <label className="text-slate-300 text-sm mb-2">With Player</label>
+            <Select
+              value={playerFilter}
+              onChange={setPlayerFilter}
+              options={players}
+            />
           </div>
         </div>
       </div>
