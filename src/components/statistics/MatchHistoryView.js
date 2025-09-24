@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, Eye, Filter, History, ChevronDown, ChevronUp } from 'lucide-react';
-import { Button, Select } from '../shared/UI';
+import { Calendar, MapPin, Trophy, Filter, History, ChevronDown, ChevronUp } from 'lucide-react';
+import { Select } from '../shared/UI';
 
 // Mock data - replace with real data later
 const mockMatches = [
@@ -143,32 +143,32 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const [opponentFilter, setOpponentFilter] = useState('All');
   const [playerFilter, setPlayerFilter] = useState('All');
 
-  // Mobile detection and filter collapse state
-  const [isMobile, setIsMobile] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 640;
+  // Screen size detection and filter collapse state
+  const [needsCollapse, setNeedsCollapse] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
   });
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 640;
+    return typeof window !== 'undefined' && window.innerWidth < 1024;
   });
 
-  // Detect mobile screen size
+  // Detect screen size that requires filter collapsing
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 640; // sm breakpoint
-      setIsMobile(mobile);
+    const checkScreenSize = () => {
+      const shouldCollapse = window.innerWidth < 1024; // lg breakpoint - when filters wrap to multiple rows
+      setNeedsCollapse(shouldCollapse);
 
       // Don't auto-collapse if user has manually expanded filters
-      // Only auto-collapse when transitioning from desktop to mobile
-      if (mobile && !isMobile) {
+      // Only auto-collapse when transitioning from wide to narrow screen
+      if (shouldCollapse && !needsCollapse) {
         setIsFilterCollapsed(true);
-      } else if (!mobile) {
+      } else if (!shouldCollapse) {
         setIsFilterCollapsed(false);
       }
     };
 
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [isMobile]);
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, [needsCollapse]);
 
   // Get unique opponents from matches
   const opponents = useMemo(() => {
@@ -209,7 +209,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   });
 
   const getOutcomeBadge = (outcome) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium";
+    const baseClasses = "px-2 py-1 rounded text-xs font-medium w-12 text-center";
     switch (outcome) {
       case 'W':
         return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
@@ -270,7 +270,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
             <Filter className="h-5 w-5" />
             Filter
           </h3>
-          {isMobile && (
+          {needsCollapse && (
             <button className="text-sky-400 hover:text-sky-300 transition-colors">
               {isFilterCollapsed ? (
                 <ChevronDown className="h-5 w-5" />
@@ -281,9 +281,9 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
           )}
         </div>
 
-        {/* Filter content - collapsible on mobile */}
+        {/* Filter content - collapsible when screen is narrow */}
         <div className={`${
-          isMobile
+          needsCollapse
             ? (isFilterCollapsed ? 'hidden' : 'block mt-4')
             : 'mt-4'
         }`}>
@@ -373,8 +373,8 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
 
                     {/* Match Details Row */}
                     <div className="flex items-center gap-3 mt-1">
-                      {/* Home/Away - Hidden on mobile */}
-                      {!isMobile && (
+                      {/* Home/Away - Hidden on narrow screens */}
+                      {!needsCollapse && (
                         <div className="flex items-center gap-1 text-slate-400">
                           <MapPin className="h-3 w-3" />
                           <span className="text-sm">
@@ -383,8 +383,8 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
                         </div>
                       )}
 
-                      {/* Match Type - Hidden on mobile */}
-                      {!isMobile && (
+                      {/* Match Type - Hidden on narrow screens */}
+                      {!needsCollapse && (
                         <span className={getTypeBadge(match.type)}>{match.type}</span>
                       )}
                     </div>
@@ -396,8 +396,8 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
                   <div className="text-2xl font-mono font-bold text-slate-100 mb-1">
                     {formatScore(match)}
                   </div>
-                  {/* Win/Loss/Draw - Hidden on mobile */}
-                  {!isMobile && (
+                  {/* Win/Loss/Draw - Hidden on narrow screens */}
+                  {!needsCollapse && (
                     <span className={getOutcomeBadge(match.outcome)}>
                       {match.outcome === 'W' ? 'Win' :
                        match.outcome === 'D' ? 'Draw' : 'Loss'}
