@@ -223,7 +223,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   };
 
   const getTypeBadge = (type) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium";
+    const baseClasses = "inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium w-20 text-center";
     switch (type) {
       case 'League':
         return `${baseClasses} bg-sky-900/50 text-sky-300 border border-sky-600`;

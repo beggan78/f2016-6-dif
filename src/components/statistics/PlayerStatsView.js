@@ -205,10 +205,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       sortable: true,
       className: 'text-center',
       render: (player) => (
-        <div className="flex items-center justify-center space-x-1">
-          {player.matchesAsCaptain > 0 && <Award className="h-3 w-3 text-yellow-400" />}
-          <span className="text-slate-300 font-mono">{player.matchesAsCaptain}</span>
-        </div>
+        <span className="text-slate-300 font-mono">{player.matchesAsCaptain}</span>
       )
     },
     {
@@ -217,10 +214,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       sortable: true,
       className: 'text-center',
       render: (player) => (
-        <div className="flex items-center justify-center space-x-1">
-          {player.fairPlayAwards > 0 && <Award className="h-3 w-3 text-emerald-400" />}
-          <span className="text-slate-300 font-mono">{player.fairPlayAwards}</span>
-        </div>
+        <span className="text-slate-300 font-mono">{player.fairPlayAwards}</span>
       )
     }
   ];
