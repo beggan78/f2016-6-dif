@@ -259,6 +259,7 @@ export function PlayerStatsView() {
       totalPlayers,
       averageFieldTime,
       averageGoalsPerPlayer,
+      totalGoals,
       topScorer
     };
   }, []);
@@ -319,9 +320,9 @@ export function PlayerStatsView() {
 
         <StatCard
           icon={Target}
-          title="Avg. Goals"
+          title="Average goals"
           value={summaryStats.averageGoalsPerPlayer.toFixed(1)}
-          subtitle={`Total goals`}
+          subtitle={`Total goals: ${summaryStats.totalGoals}`}
         />
 
         <StatCard
