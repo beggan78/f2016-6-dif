@@ -145,7 +145,6 @@ export function PlayerStatsView() {
       className: 'text-center',
       render: (player) => (
         <div className="flex items-center justify-center space-x-1">
-          <Clock className="h-3 w-3 text-slate-400" />
           <span className="text-slate-300 font-mono">{player.averageTimePerMatch.toFixed(1)}min</span>
         </div>
       )
@@ -161,7 +160,7 @@ export function PlayerStatsView() {
     },
     {
       key: SORT_COLUMNS.DEFENDER,
-      label: 'Time as Defender',
+      label: 'Defender',
       sortable: true,
       className: 'text-center',
       render: (player) => (
@@ -170,7 +169,7 @@ export function PlayerStatsView() {
     },
     {
       key: SORT_COLUMNS.MIDFIELDER,
-      label: 'Time as Midfielder',
+      label: 'Midfielder',
       sortable: true,
       className: 'text-center',
       render: (player) => (
@@ -179,7 +178,7 @@ export function PlayerStatsView() {
     },
     {
       key: SORT_COLUMNS.ATTACKER,
-      label: 'Time as Attacker',
+      label: 'Attacker',
       sortable: true,
       className: 'text-center',
       render: (player) => (
@@ -188,7 +187,7 @@ export function PlayerStatsView() {
     },
     {
       key: SORT_COLUMNS.GOALKEEPER,
-      label: 'Time as Goalkeeper',
+      label: 'Goalkeeper',
       sortable: true,
       className: 'text-center',
       render: (player) => (
@@ -336,7 +335,10 @@ export function PlayerStatsView() {
       {/* Player Stats Table */}
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-slate-100">Player Statistics</h3>
+          <h3 className="text-lg font-semibold text-sky-400 flex items-center space-x-2">
+            <Users className="h-5 w-5" />
+            <span>Player Statistics</span>
+          </h3>
           <p className="text-slate-400 text-sm mt-1">
             Click column headers to sort. Statistics are calculated across all matches.
           </p>
@@ -350,7 +352,7 @@ export function PlayerStatsView() {
                   <th
                     key={column.key}
                     scope="col"
-                    className={`px-3 py-2 text-xs font-medium text-sky-200 uppercase tracking-wider ${
+                    className={`px-3 py-2 text-xs font-medium text-sky-200 tracking-wider ${
                       column.sortable ? 'cursor-pointer hover:bg-slate-700 transition-colors' : ''
                     } ${
                       sortBy === column.key ? 'bg-slate-700' : ''
