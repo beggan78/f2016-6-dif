@@ -83,7 +83,7 @@ export function StatisticsScreen({ onNavigateBack }) {
             Back
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-sky-300">
+            <h2 className="text-2xl font-bold text-sky-400">
               {selectedMatchId ? 'Match Details' : 'Statistics'}
             </h2>
             {!selectedMatchId && currentTab && (

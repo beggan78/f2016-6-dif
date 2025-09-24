@@ -109,25 +109,64 @@ export function TeamStatsView() {
         />
       </div>
 
-      {/* Goal Difference */}
-      <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-100">Goal Difference</h3>
-            <p className="text-slate-400 text-sm">Goals scored vs goals conceded</p>
+      {/* Goals and Match Outcomes Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Goals Section */}
+        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-400 mb-4">Goals</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Goals Scored</span>
+              <span className="text-slate-100 font-semibold">{goalsScored}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Goals Conceded</span>
+              <span className="text-slate-100 font-semibold">{goalsConceded}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300 font-medium">Goal Difference</span>
+              <span className={`font-bold ${
+                goalDifference > 0 ? 'text-emerald-400' :
+                goalDifference < 0 ? 'text-rose-400' : 'text-slate-400'
+              }`}>
+                {goalDifference > 0 ? '+' : ''}{goalDifference}
+              </span>
+            </div>
           </div>
-          <div className={`text-2xl font-bold ${
-            goalDifference > 0 ? 'text-emerald-400' :
-            goalDifference < 0 ? 'text-rose-400' : 'text-slate-400'
-          }`}>
-            {goalDifference > 0 ? '+' : ''}{goalDifference}
+        </div>
+
+        {/* Match Outcomes Section */}
+        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-400 mb-4">Match Outcomes</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Matches Won</span>
+              <div className="text-right">
+                <span className="text-slate-100 font-semibold">{wins}</span>
+                <span className="text-slate-400 text-sm ml-2">({((wins / totalMatches) * 100).toFixed(1)}%)</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Matches Drawn</span>
+              <div className="text-right">
+                <span className="text-slate-100 font-semibold">{draws}</span>
+                <span className="text-slate-400 text-sm ml-2">({((draws / totalMatches) * 100).toFixed(1)}%)</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Matches Lost</span>
+              <div className="text-right">
+                <span className="text-slate-100 font-semibold">{losses}</span>
+                <span className="text-slate-400 text-sm ml-2">({((losses / totalMatches) * 100).toFixed(1)}%)</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Recent Matches */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <h3 className="text-lg font-semibold text-slate-100 mb-4">Recent Matches</h3>
+        <h3 className="text-lg font-semibold text-sky-400 mb-4">Recent Matches</h3>
         <div className="space-y-3">
           {recentMatches.map((match) => (
             <div key={match.id} className="bg-slate-800 p-3 rounded-lg border border-slate-600">
