@@ -100,16 +100,28 @@ export function StatisticsScreen({ onNavigateBack }) {
           </div>
         </div>
 
-        {/* Time Filter - only show when not viewing match details */}
+        {/* Time Filter - only show when not viewing match details and on larger screens */}
         {!selectedMatchId && (
           <TimeFilter
             startDate={timeRangeStart}
             endDate={timeRangeEnd}
             onTimeRangeChange={handleTimeRangeChange}
-            className="flex-shrink-0"
+            className="flex-shrink-0 hidden sm:block"
           />
         )}
       </div>
+
+      {/* Time Filter for mobile - show under title but above tabs */}
+      {!selectedMatchId && (
+        <div className="sm:hidden">
+          <TimeFilter
+            startDate={timeRangeStart}
+            endDate={timeRangeEnd}
+            onTimeRangeChange={handleTimeRangeChange}
+            className="w-full"
+          />
+        </div>
+      )}
 
       {/* Tab Navigation - only show when not viewing match details */}
       {!selectedMatchId && (

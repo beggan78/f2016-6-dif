@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Calendar, MapPin, Trophy, Eye, Filter, History } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Calendar, MapPin, Trophy, Eye, Filter, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 
 // Mock data - replace with real data later
@@ -143,6 +143,33 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const [opponentFilter, setOpponentFilter] = useState('All');
   const [playerFilter, setPlayerFilter] = useState('All');
 
+  // Mobile detection and filter collapse state
+  const [isMobile, setIsMobile] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 640;
+  });
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 640;
+  });
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 640; // sm breakpoint
+      setIsMobile(mobile);
+
+      // Don't auto-collapse if user has manually expanded filters
+      // Only auto-collapse when transitioning from desktop to mobile
+      if (mobile && !isMobile) {
+        setIsFilterCollapsed(true);
+      } else if (!mobile) {
+        setIsFilterCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [isMobile]);
+
   // Get unique opponents from matches
   const opponents = useMemo(() => {
     const uniqueOpponents = [...new Set(mockMatches.map(match => match.opponent))];
@@ -235,11 +262,32 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <h3 className="text-lg font-semibold text-sky-400 mb-4 flex items-center gap-2">
-          <Filter className="h-5 w-5" />
-          Filter
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setIsFilterCollapsed(!isFilterCollapsed)}
+        >
+          <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filter
+          </h3>
+          {isMobile && (
+            <button className="text-sky-400 hover:text-sky-300 transition-colors">
+              {isFilterCollapsed ? (
+                <ChevronDown className="h-5 w-5" />
+              ) : (
+                <ChevronUp className="h-5 w-5" />
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Filter content - collapsible on mobile */}
+        <div className={`${
+          isMobile
+            ? (isFilterCollapsed ? 'hidden' : 'block mt-4')
+            : 'mt-4'
+        }`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Type</label>
             <Select
@@ -283,6 +331,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
               onChange={setPlayerFilter}
               options={players}
             />
+          </div>
           </div>
         </div>
       </div>
