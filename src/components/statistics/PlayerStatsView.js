@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, User, Award, Clock } from 'lucide-react';
+import { ChevronUp, ChevronDown, User, Award, Clock, Users, Target } from 'lucide-react';
 
 // Mock data - replace with real data later
 const mockPlayerStats = [
@@ -238,6 +238,31 @@ export function PlayerStatsView() {
     return sorted;
   }, [sortBy, sortOrder]);
 
+  // Calculate summary statistics
+  const summaryStats = useMemo(() => {
+    const totalPlayers = mockPlayerStats.length;
+
+    // Calculate average field time across all players
+    const totalFieldTime = mockPlayerStats.reduce((sum, player) => sum + player.averageTimePerMatch, 0);
+    const averageFieldTime = totalFieldTime / totalPlayers;
+
+    // Calculate average goals per player
+    const totalGoals = mockPlayerStats.reduce((sum, player) => sum + player.goalsScored, 0);
+    const averageGoalsPerPlayer = totalGoals / totalPlayers;
+
+    // Find top scorer
+    const topScorer = mockPlayerStats.reduce((top, player) =>
+      player.goalsScored > top.goalsScored ? player : top
+    );
+
+    return {
+      totalPlayers,
+      averageFieldTime,
+      averageGoalsPerPlayer,
+      topScorer
+    };
+  }, []);
+
   const handleSort = (columnKey) => {
     if (sortBy === columnKey) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -257,50 +282,54 @@ export function PlayerStatsView() {
     );
   };
 
+  const StatCard = ({ icon: Icon, title, value, subtitle }) => (
+    <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 rounded-lg">
+            <Icon className="h-5 w-5 text-sky-400" />
+          </div>
+          <div>
+            <p className="text-slate-400 text-sm">{title}</p>
+            <p className="text-slate-100 text-xl font-semibold">{value}</p>
+            {subtitle && <p className="text-slate-400 text-xs">{subtitle}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Total Players</h3>
-          <div className="text-2xl font-bold text-sky-400">{mockPlayerStats.length}</div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={Users}
+          title="Total Players"
+          value={summaryStats.totalPlayers}
+          subtitle={`Active players`}
+        />
 
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Top Scorer</h3>
-          <div className="text-lg font-semibold text-slate-100">
-            {mockPlayerStats.reduce((top, player) =>
-              player.goalsScored > top.goalsScored ? player : top
-            ).name}
-          </div>
-          <div className="text-slate-400 text-sm">
-            {Math.max(...mockPlayerStats.map(p => p.goalsScored))} goals
-          </div>
-        </div>
+        <StatCard
+          icon={Clock}
+          title="Avg. Playing Time"
+          value={`${summaryStats.averageFieldTime.toFixed(1)}min`}
+          subtitle={`Per match`}
+        />
 
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Most Active</h3>
-          <div className="text-lg font-semibold text-slate-100">
-            {mockPlayerStats.reduce((top, player) =>
-              player.matchesPlayed > top.matchesPlayed ? player : top
-            ).name}
-          </div>
-          <div className="text-slate-400 text-sm">
-            {Math.max(...mockPlayerStats.map(p => p.matchesPlayed))} matches
-          </div>
-        </div>
+        <StatCard
+          icon={Target}
+          title="Avg. Goals"
+          value={summaryStats.averageGoalsPerPlayer.toFixed(1)}
+          subtitle={`Total goals`}
+        />
 
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h3 className="text-slate-300 font-medium mb-2">Fair Play Leader</h3>
-          <div className="text-lg font-semibold text-slate-100">
-            {mockPlayerStats.reduce((top, player) =>
-              player.fairPlayAwards > top.fairPlayAwards ? player : top
-            ).name}
-          </div>
-          <div className="text-slate-400 text-sm">
-            {Math.max(...mockPlayerStats.map(p => p.fairPlayAwards))} awards
-          </div>
-        </div>
+        <StatCard
+          icon={Award}
+          title="Top Scorer"
+          value={summaryStats.topScorer.name}
+          subtitle={`${summaryStats.topScorer.goalsScored} goals`}
+        />
       </div>
 
       {/* Player Stats Table */}
