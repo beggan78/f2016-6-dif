@@ -63,7 +63,7 @@ export function TeamStatsView() {
   );
 
   const getResultBadge = (result) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium";
+    const baseClasses = "px-2 py-1 rounded text-xs font-medium w-12 text-center";
     switch (result) {
       case 'W':
         return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
