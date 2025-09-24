@@ -103,9 +103,14 @@ const SORT_COLUMNS = {
   FAIR_PLAY: 'fairPlayAwards'
 };
 
-export function PlayerStatsView() {
+export function PlayerStatsView({ startDate, endDate }) {
   const [sortBy, setSortBy] = useState(SORT_COLUMNS.NAME);
   const [sortOrder, setSortOrder] = useState('asc');
+
+  // Note: Time filtering for player stats would require filtering based on
+  // match participation dates. With mock data, we'll show all player stats.
+  // In a real implementation, this would filter players' stats based on
+  // matches played within the selected time range.
 
   const columns = [
     {

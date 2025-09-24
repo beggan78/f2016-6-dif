@@ -5,6 +5,7 @@ import { TeamStatsView } from './TeamStatsView';
 import { PlayerStatsView } from './PlayerStatsView';
 import { MatchHistoryView } from './MatchHistoryView';
 import { MatchDetailsView } from './MatchDetailsView';
+import { TimeFilter } from './TimeFilter';
 
 const STATS_TABS = {
   TEAM: 'team',
@@ -15,6 +16,8 @@ const STATS_TABS = {
 export function StatisticsScreen({ onNavigateBack }) {
   const [activeTab, setActiveTab] = useState(STATS_TABS.TEAM);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [timeRangeStart, setTimeRangeStart] = useState(null);
+  const [timeRangeEnd, setTimeRangeEnd] = useState(null);
 
   const handleMatchSelect = (matchId) => {
     setSelectedMatchId(matchId);
@@ -22,6 +25,11 @@ export function StatisticsScreen({ onNavigateBack }) {
 
   const handleBackToHistory = () => {
     setSelectedMatchId(null);
+  };
+
+  const handleTimeRangeChange = (startDate, endDate) => {
+    setTimeRangeStart(startDate);
+    setTimeRangeEnd(endDate);
   };
 
   const tabs = [
@@ -57,13 +65,13 @@ export function StatisticsScreen({ onNavigateBack }) {
 
     switch (activeTab) {
       case STATS_TABS.TEAM:
-        return <TeamStatsView />;
+        return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
       case STATS_TABS.PLAYER:
-        return <PlayerStatsView />;
+        return <PlayerStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
       case STATS_TABS.HISTORY:
-        return <MatchHistoryView onMatchSelect={handleMatchSelect} />;
+        return <MatchHistoryView onMatchSelect={handleMatchSelect} startDate={timeRangeStart} endDate={timeRangeEnd} />;
       default:
-        return <TeamStatsView />;
+        return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
     }
   };
 
@@ -91,6 +99,16 @@ export function StatisticsScreen({ onNavigateBack }) {
             )}
           </div>
         </div>
+
+        {/* Time Filter - only show when not viewing match details */}
+        {!selectedMatchId && (
+          <TimeFilter
+            startDate={timeRangeStart}
+            endDate={timeRangeEnd}
+            onTimeRangeChange={handleTimeRangeChange}
+            className="flex-shrink-0"
+          />
+        )}
       </div>
 
       {/* Tab Navigation - only show when not viewing match details */}

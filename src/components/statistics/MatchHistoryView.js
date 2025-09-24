@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, MapPin, Trophy, Eye } from 'lucide-react';
+import { Calendar, MapPin, Trophy, Eye, Filter, History } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 
 // Mock data - replace with real data later
 const mockMatches = [
   {
     id: 1,
-    date: '2024-01-20T15:00:00Z',
+    date: '2025-01-20T15:00:00Z',
     opponent: 'Hammarby IF',
     homeScore: 3,
     awayScore: 1,
@@ -17,7 +17,7 @@ const mockMatches = [
   },
   {
     id: 2,
-    date: '2024-01-15T14:30:00Z',
+    date: '2025-01-15T14:30:00Z',
     opponent: 'AIK',
     homeScore: 2,
     awayScore: 2,
@@ -28,7 +28,7 @@ const mockMatches = [
   },
   {
     id: 3,
-    date: '2024-01-10T16:00:00Z',
+    date: '2025-01-10T16:00:00Z',
     opponent: 'IFK Göteborg',
     homeScore: 1,
     awayScore: 2,
@@ -39,7 +39,7 @@ const mockMatches = [
   },
   {
     id: 4,
-    date: '2024-01-05T13:00:00Z',
+    date: '2025-01-05T13:00:00Z',
     opponent: 'Malmö FF',
     homeScore: 4,
     awayScore: 0,
@@ -50,7 +50,7 @@ const mockMatches = [
   },
   {
     id: 5,
-    date: '2023-12-20T15:30:00Z',
+    date: '2024-12-20T15:30:00Z',
     opponent: 'Örebro SK',
     homeScore: 2,
     awayScore: 1,
@@ -61,7 +61,7 @@ const mockMatches = [
   },
   {
     id: 6,
-    date: '2023-12-15T14:00:00Z',
+    date: '2024-12-15T14:00:00Z',
     opponent: 'Helsingborgs IF',
     homeScore: 0,
     awayScore: 3,
@@ -72,7 +72,7 @@ const mockMatches = [
   },
   {
     id: 7,
-    date: '2023-12-10T16:30:00Z',
+    date: '2024-12-10T16:30:00Z',
     opponent: 'BK Häcken',
     homeScore: 1,
     awayScore: 1,
@@ -83,7 +83,7 @@ const mockMatches = [
   },
   {
     id: 8,
-    date: '2023-12-05T15:00:00Z',
+    date: '2024-12-05T15:00:00Z',
     opponent: 'IFK Norrköping',
     homeScore: 3,
     awayScore: 2,
@@ -94,7 +94,7 @@ const mockMatches = [
   },
   {
     id: 9,
-    date: '2023-11-30T14:30:00Z',
+    date: '2024-11-30T14:30:00Z',
     opponent: 'Degerfors IF',
     homeScore: 2,
     awayScore: 0,
@@ -105,7 +105,7 @@ const mockMatches = [
   },
   {
     id: 10,
-    date: '2023-11-25T13:30:00Z',
+    date: '2024-11-25T13:30:00Z',
     opponent: 'Varbergs BoIS',
     homeScore: 1,
     awayScore: 4,
@@ -136,7 +136,7 @@ const HOME_AWAY = [
   { value: 'Away', label: 'Away' }
 ];
 
-export function MatchHistoryView({ onMatchSelect }) {
+export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const [typeFilter, setTypeFilter] = useState('All');
   const [outcomeFilter, setOutcomeFilter] = useState('All');
   const [homeAwayFilter, setHomeAwayFilter] = useState('All');
@@ -162,6 +162,14 @@ export function MatchHistoryView({ onMatchSelect }) {
   }, []);
 
   const filteredMatches = mockMatches.filter(match => {
+    // Time range filter
+    if (startDate || endDate) {
+      const matchDate = new Date(match.date);
+      if (startDate && matchDate < startDate) return false;
+      if (endDate && matchDate > endDate) return false;
+    }
+
+    // Existing filters
     if (typeFilter !== 'All' && match.type !== typeFilter) return false;
     if (outcomeFilter !== 'All' && match.outcome !== outcomeFilter) return false;
     if (homeAwayFilter !== 'All') {
@@ -227,7 +235,10 @@ export function MatchHistoryView({ onMatchSelect }) {
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <h3 className="text-lg font-semibold text-sky-400 mb-4">Filter</h3>
+        <h3 className="text-lg font-semibold text-sky-400 mb-4 flex items-center gap-2">
+          <Filter className="h-5 w-5" />
+          Filter
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Type</label>
@@ -279,7 +290,10 @@ export function MatchHistoryView({ onMatchSelect }) {
       {/* Match List */}
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-400">Match History</h3>
+          <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Match History
+          </h3>
           <p className="text-slate-400 text-sm mt-1">
             {filteredMatches.length} matches found. Click on a match to view detailed statistics.
           </p>

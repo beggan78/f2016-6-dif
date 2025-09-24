@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
 
 // Mock data - replace with real data later
@@ -20,7 +20,58 @@ const mockTeamStats = {
   ]
 };
 
-export function TeamStatsView() {
+export function TeamStatsView({ startDate, endDate }) {
+  // Filter matches based on time range
+  const filteredMatches = useMemo(() => {
+    if (!startDate && !endDate) {
+      return mockTeamStats.recentMatches;
+    }
+
+    return mockTeamStats.recentMatches.filter(match => {
+      const matchDate = new Date(match.date);
+      if (startDate && matchDate < startDate) return false;
+      if (endDate && matchDate > endDate) return false;
+      return true;
+    });
+  }, [startDate, endDate]);
+
+  // Calculate filtered stats
+  const filteredStats = useMemo(() => {
+    if (!startDate && !endDate) {
+      return mockTeamStats;
+    }
+
+    const totalMatches = filteredMatches.length;
+    const wins = filteredMatches.filter(match => match.result === 'W').length;
+    const draws = filteredMatches.filter(match => match.result === 'D').length;
+    const losses = filteredMatches.filter(match => match.result === 'L').length;
+
+    // Calculate goals from scores
+    let goalsScored = 0;
+    let goalsConceded = 0;
+
+    filteredMatches.forEach(match => {
+      const [scored, conceded] = match.score.split('-').map(Number);
+      goalsScored += scored;
+      goalsConceded += conceded;
+    });
+
+    const averageGoalsScored = totalMatches > 0 ? (goalsScored / totalMatches) : 0;
+    const averageGoalsConceded = totalMatches > 0 ? (goalsConceded / totalMatches) : 0;
+
+    return {
+      totalMatches,
+      wins,
+      draws,
+      losses,
+      goalsScored,
+      goalsConceded,
+      averageGoalsScored: Math.round(averageGoalsScored * 10) / 10,
+      averageGoalsConceded: Math.round(averageGoalsConceded * 10) / 10,
+      recentMatches: filteredMatches.slice(0, 5) // Show top 5 recent matches
+    };
+  }, [filteredMatches]);
+
   const {
     totalMatches,
     wins,
@@ -31,7 +82,7 @@ export function TeamStatsView() {
     averageGoalsScored,
     averageGoalsConceded,
     recentMatches
-  } = mockTeamStats;
+  } = filteredStats;
 
   const winPercentage = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : 0;
   const goalDifference = goalsScored - goalsConceded;
