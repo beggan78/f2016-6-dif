@@ -187,7 +187,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-sky-300">Match Details</h2>
-            <p className="text-slate-400 text-sm">vs {editData.opponent}</p>
+            <p className="text-slate-400 text-sm">{editData.opponent}</p>
           </div>
         </div>
 
@@ -210,66 +210,23 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
       </div>
 
       {/* Match Summary */}
-      <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column - Match Info */}
-          <div className="space-y-4">
+      <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
+        {/* Main Match Info Row */}
+        <div className="p-4 bg-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Left: Opponent & Outcome */}
             <div className="flex items-center space-x-3">
-              <Calendar className="h-5 w-5 text-slate-400" />
-              <div>
-                <label className="text-slate-300 text-sm">Date & Time</label>
-                {isEditing ? (
-                  <div className="flex space-x-2 mt-1">
-                    <Input
-                      type="date"
-                      value={editData.date}
-                      onChange={(e) => updateMatchDetail('date', e.target.value)}
-                      className="w-32"
-                    />
-                    <Input
-                      type="time"
-                      value={editData.time}
-                      onChange={(e) => updateMatchDetail('time', e.target.value)}
-                      className="w-24"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-slate-100 font-mono">
-                    {new Date(editData.date + 'T' + editData.time).toLocaleString()}
-                  </div>
-                )}
+              <div className="flex items-center space-x-2">
+                <span className="text-xl font-semibold text-slate-100">{editData.opponent}</span>
               </div>
+              <span className={getOutcomeBadge(editData.outcome)}>
+                {editData.outcome === 'W' ? 'Win' :
+                 editData.outcome === 'D' ? 'Draw' : 'Loss'}
+              </span>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <Trophy className="h-5 w-5 text-slate-400" />
-              <div>
-                <label className="text-slate-300 text-sm">Match Type</label>
-                {isEditing ? (
-                  <Select
-                    value={editData.type}
-                    onChange={(value) => updateMatchDetail('type', value)}
-                    options={MATCH_TYPES}
-                  />
-                ) : (
-                  <div className="text-slate-100">{editData.type}</div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <MapPin className="h-5 w-5 text-slate-400" />
-              <div>
-                <label className="text-slate-300 text-sm">Venue</label>
-                <div className="text-slate-100">{editData.isHome ? 'Home' : 'Away'}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Score & Details */}
-          <div className="space-y-4">
+            {/* Center: Score */}
             <div className="text-center">
-              <div className="text-slate-300 text-sm mb-2">Final Score</div>
               {isEditing ? (
                 <div className="flex items-center justify-center space-x-2">
                   <Input
@@ -282,7 +239,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                     className="w-16 text-center"
                     min="0"
                   />
-                  <span className="text-slate-400">-</span>
+                  <span className="text-slate-400 text-xl">-</span>
                   <Input
                     type="number"
                     value={editData.isHome ? editData.awayScore : editData.homeScore}
@@ -295,39 +252,105 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                   />
                 </div>
               ) : (
-                <div className="text-3xl font-bold text-slate-100">{formatScore()}</div>
+                <div className="text-3xl font-bold text-sky-300">{formatScore()}</div>
               )}
-              <div className="mt-2">
-                <span className={getOutcomeBadge(editData.outcome)}>
-                  {editData.outcome === 'W' ? 'Win' :
-                   editData.outcome === 'D' ? 'Draw' : 'Loss'}
-                </span>
+            </div>
+
+            {/* Right: Date & Time */}
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-4 w-4 text-slate-400" />
+              <div className="text-right">
+                {isEditing ? (
+                  <div className="flex flex-col space-y-1">
+                    <Input
+                      type="date"
+                      value={editData.date}
+                      onChange={(e) => updateMatchDetail('date', e.target.value)}
+                      className="w-32 text-sm"
+                    />
+                    <Input
+                      type="time"
+                      value={editData.time}
+                      onChange={(e) => updateMatchDetail('time', e.target.value)}
+                      className="w-32 text-sm"
+                    />
+                  </div>
+                ) : (
+                  <div className="text-sm">
+                    <div className="text-slate-100 font-mono">
+                      {editData.date}
+                    </div>
+                    <div className="text-slate-300">
+                      {editData.time}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary Details Row */}
+        <div className="px-4 py-3 border-t border-slate-600">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="flex items-center space-x-2">
+              <Trophy className="h-4 w-4 text-slate-400" />
+              <div>
+                <div className="text-xs text-slate-400 uppercase tracking-wide">Type</div>
+                {isEditing ? (
+                  <Select
+                    value={editData.type}
+                    onChange={(value) => updateMatchDetail('type', value)}
+                    options={MATCH_TYPES}
+                    className="text-sm"
+                  />
+                ) : (
+                  <div className="text-sm text-slate-100 font-medium">{editData.type}</div>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-slate-300 text-sm">Format</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wide">Venue</div>
+                <div className="text-sm text-slate-100 font-medium">
+                  {editData.isHome ? 'Home' : 'Away'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Users className="h-4 w-4 text-slate-400" />
+              <div>
+                <div className="text-xs text-slate-400 uppercase tracking-wide">Format</div>
                 {isEditing ? (
                   <Input
                     value={editData.format}
                     onChange={(e) => updateMatchDetail('format', e.target.value)}
-                    className="text-center"
+                    className="text-sm"
                   />
                 ) : (
-                  <div className="text-slate-100">{editData.format}</div>
+                  <div className="text-sm text-slate-100 font-medium">{editData.format}</div>
                 )}
               </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <div className="h-4 w-4 bg-slate-500 rounded-sm flex items-center justify-center">
+                <div className="text-xs text-slate-100 font-bold">F</div>
+              </div>
               <div>
-                <div className="text-slate-300 text-sm">Formation</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wide">Formation</div>
                 {isEditing ? (
                   <Select
                     value={editData.formation}
                     onChange={(value) => updateMatchDetail('formation', value)}
                     options={FORMATIONS}
+                    className="text-sm"
                   />
                 ) : (
-                  <div className="text-slate-100">{editData.formation}</div>
+                  <div className="text-sm text-slate-100 font-medium">{editData.formation}</div>
                 )}
               </div>
             </div>

@@ -181,3 +181,4 @@ Modern composite team configuration system using four components:
 - **Time Tracking Bug Fix**: Fixed substitution timer conditional logic with `isSubTimerPaused` checks
 - **Match Database System**: Full match lifecycle with player statistics persistence via `matchStateManager.js`
 - **Role Constants Cleanup**: Eliminated `ON_FIELD` role, introduced `FIELD_PLAYER` and role/status separation
+- Always display dates on the ISO format YYYY-MM-DD

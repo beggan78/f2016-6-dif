@@ -79,37 +79,35 @@ export function StatisticsScreen({ onNavigateBack }) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            onClick={onNavigateBack}
-            Icon={ArrowLeft}
-            variant="secondary"
-            size="md"
-          >
-            Back
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-sky-400">
-              {selectedMatchId ? 'Match Details' : 'Statistics'}
-            </h2>
-            {!selectedMatchId && currentTab && (
-              <p className="text-slate-400 text-sm">{currentTab.description}</p>
-            )}
+      {/* Header - only show when not viewing match details */}
+      {!selectedMatchId && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={onNavigateBack}
+              Icon={ArrowLeft}
+              variant="secondary"
+              size="md"
+            >
+              Back
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold text-sky-400">Statistics</h2>
+              {currentTab && (
+                <p className="text-slate-400 text-sm">{currentTab.description}</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Time Filter - only show when not viewing match details and on larger screens */}
-        {!selectedMatchId && (
+          {/* Time Filter - only show on larger screens */}
           <TimeFilter
             startDate={timeRangeStart}
             endDate={timeRangeEnd}
             onTimeRangeChange={handleTimeRangeChange}
             className="flex-shrink-0 hidden sm:block"
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Time Filter for mobile - show under title but above tabs */}
       {!selectedMatchId && (
