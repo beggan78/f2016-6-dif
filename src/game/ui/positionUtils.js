@@ -1,7 +1,9 @@
 import React from 'react';
-import { Shield, Sword, RotateCcw, Hand } from 'lucide-react';
+import { Shield, Sword, RotateCcw, Hand, ArrowDownUp } from 'lucide-react';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
 import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
+import { getPositionRole } from '../logic/positionUtils';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 /**
  * Game-screen UI utilities for position rendering
@@ -21,14 +23,22 @@ export function getPositionIcon(position, substitutePositions) {
   if (substitutePositions && substitutePositions.includes(position)) {
     return <RotateCcw className={ICON_STYLES.small} />;
   }
-  
-  // Use position names for field positions
-  if (position.includes('Defender') || position.includes('defender')) {
-    return <Shield className={ICON_STYLES.small} />;
+
+  const role = getPositionRole(position);
+
+  switch (role) {
+    case PLAYER_ROLES.DEFENDER:
+      return <Shield className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.MIDFIELDER:
+      return <ArrowDownUp className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.GOALIE:
+      return <Hand className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.SUBSTITUTE:
+      return <RotateCcw className={ICON_STYLES.small} />;
+    case PLAYER_ROLES.ATTACKER:
+    default:
+      return <Sword className={ICON_STYLES.small} />;
   }
-  
-  // Default to sword for other field positions
-  return <Sword className={ICON_STYLES.small} />;
 }
 
 /**
