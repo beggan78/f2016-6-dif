@@ -1,6 +1,81 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button, Input, Select } from '../shared/UI';
+import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
+import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
+
+const SmartTimeInput = ({ value, onChange, className = '' }) => {
+  const [displayValue, setDisplayValue] = useState('');
+
+  React.useEffect(() => {
+    const totalSeconds = Math.round((value || 0) * 60);
+    if (totalSeconds >= 3600) { // 60 minutes or more
+      const hours = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      setDisplayValue(`${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+    } else {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      setDisplayValue(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+    }
+  }, [value]);
+
+  const parseTimeInput = (input) => {
+    if (!input) return 0;
+
+    // If no colon, treat as minutes only
+    if (!input.includes(':')) {
+      const minutes = parseInt(input, 10) || 0;
+      return minutes;
+    }
+
+    const parts = input.split(':');
+
+    // If two colons, parse as HH:MM:SS
+    if (parts.length === 3) {
+      const [hours, mins, secs] = parts.map(num => parseInt(num, 10) || 0);
+      return (hours * 60) + mins + (secs / 60);
+    }
+
+    // Parse MM:SS format
+    const [mins, secs] = parts.map(num => parseInt(num, 10) || 0);
+    return mins + (secs / 60);
+  };
+
+  const handleBlur = (e) => {
+    const inputValue = e.target.value.trim();
+    const parsedMinutes = parseTimeInput(inputValue);
+
+    // Format and update display
+    const totalSeconds = Math.round(parsedMinutes * 60);
+    let formatted;
+    if (totalSeconds >= 3600) { // 60 minutes or more
+      const hours = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      formatted = `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    setDisplayValue(formatted);
+    onChange(parsedMinutes);
+  };
+
+  return (
+    <Input
+      type="text"
+      value={displayValue}
+      onChange={(e) => setDisplayValue(e.target.value)}
+      onBlur={handleBlur}
+      className={`w-20 text-center font-mono ${className}`}
+      placeholder="0:00:00"
+    />
+  );
+};
 
 // Mock data - replace with real data later
 const mockMatchDetails = {
@@ -153,20 +228,55 @@ const mockMatchDetails = {
   }
 };
 
-const MATCH_TYPES = ['League', 'Cup', 'Friendly'];
-const FORMATIONS = ['2-2', '1-2-1', '3-1'];
+const VENUE_OPTIONS = ['Home', 'Away'];
 const STARTING_ROLES = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Substitute'];
 
-const formatTimeAsMinutesSeconds = (minutes) => {
-  const mins = Math.floor(minutes);
-  const secs = Math.round((minutes - mins) * 60);
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+// Helper function to get formation options for selected format
+const getFormationOptionsForFormat = (format) => {
+  const validFormations = getValidFormations(format, 15); // Use max squad size to get all formations
+  return validFormations.map(formation => ({
+    value: formation,
+    label: FORMATION_DEFINITIONS[formation]?.label || formation
+  }));
 };
+
+// Helper function to get format options
+const getFormatOptions = () => {
+  return Object.values(FORMATS).map(format => ({
+    value: format,
+    label: FORMAT_CONFIGS[format]?.label || format
+  }));
+};
+
+// Helper function to convert total minutes to HH:MM:SS format
+const formatTimeAsHours = (minutes) => {
+  const totalSeconds = Math.round(minutes * 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+const formatTimeAsMinutesSeconds = (minutes) => {
+  const totalSeconds = Math.round(minutes * 60);
+
+  if (totalSeconds >= 3600) { // 60 minutes or more
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  } else {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+};
+
 
 export function MatchDetailsView({ matchId, onNavigateBack }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(null);
-  const [sortField, setSortField] = useState(null);
+  const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
 
   const matchData = mockMatchDetails[matchId];
@@ -215,12 +325,32 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   const updatePlayerStat = (playerId, field, value) => {
     setEditData(prev => ({
       ...prev,
-      playerStats: prev.playerStats.map(player =>
-        player.id === playerId
-          ? { ...player, [field]: value }
-          : player
-      )
+      playerStats: prev.playerStats.map(player => {
+        if (player.id === playerId) {
+          const updatedPlayer = { ...player, [field]: value };
+
+          // If updating role times, recalculate total time (excluding goalie time)
+          if (['timeAsDefender', 'timeAsMidfielder', 'timeAsAttacker', 'timeAsGoalkeeper'].includes(field)) {
+            updatedPlayer.totalTimePlayed =
+              (updatedPlayer.timeAsDefender || 0) +
+              (updatedPlayer.timeAsMidfielder || 0) +
+              (updatedPlayer.timeAsAttacker || 0);
+          }
+
+          return updatedPlayer;
+        }
+        return player;
+      })
     }));
+  };
+
+  const getMaxMatchDuration = () => {
+    return editData.periods * editData.periodDuration;
+  };
+
+  const checkTimeInconsistency = (player) => {
+    const maxDuration = getMaxMatchDuration();
+    return player.totalTimePlayed > maxDuration;
   };
 
   const formatScore = () => {
@@ -410,11 +540,9 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                   </div>
                 ) : (
                   <div className="text-sm">
-                    <div className="text-slate-100 font-mono">
-                      {editData.date}
-                    </div>
-                    <div className="text-slate-300">
-                      {editData.time}
+                    <div className="text-slate-100 font-mono flex flex-col sm:flex-row sm:space-x-2">
+                      <span>{editData.date}</span>
+                      <span className="text-slate-300">{editData.time}</span>
                     </div>
                   </div>
                 )}
@@ -434,7 +562,10 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                   <Select
                     value={editData.type}
                     onChange={(value) => updateMatchDetail('type', value)}
-                    options={MATCH_TYPES}
+                    options={MATCH_TYPE_OPTIONS.map(option => ({
+                      value: option.value,
+                      label: option.label
+                    }))}
                     className="text-sm"
                   />
                 ) : (
@@ -447,9 +578,18 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
               <MapPin className="h-4 w-4 text-slate-400" />
               <div>
                 <div className="text-xs text-slate-400 uppercase tracking-wide">Venue</div>
-                <div className="text-sm text-slate-100 font-medium">
-                  {editData.isHome ? 'Home' : 'Away'}
-                </div>
+                {isEditing ? (
+                  <Select
+                    value={editData.isHome ? 'Home' : 'Away'}
+                    onChange={(value) => updateMatchDetail('isHome', value === 'Home')}
+                    options={VENUE_OPTIONS}
+                    className="text-sm"
+                  />
+                ) : (
+                  <div className="text-sm text-slate-100 font-medium">
+                    {editData.isHome ? 'Home' : 'Away'}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -458,9 +598,10 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
               <div>
                 <div className="text-xs text-slate-400 uppercase tracking-wide">Format</div>
                 {isEditing ? (
-                  <Input
+                  <Select
                     value={editData.format}
-                    onChange={(e) => updateMatchDetail('format', e.target.value)}
+                    onChange={(value) => updateMatchDetail('format', value)}
+                    options={getFormatOptions()}
                     className="text-sm"
                   />
                 ) : (
@@ -477,7 +618,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                   <Select
                     value={editData.formation}
                     onChange={(value) => updateMatchDetail('formation', value)}
-                    options={FORMATIONS}
+                    options={getFormationOptionsForFormat(editData.format)}
                     className="text-sm"
                   />
                 ) : (
@@ -509,16 +650,14 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
               <div>
                 <div className="text-xs text-slate-400 uppercase tracking-wide">Total Time</div>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={editData.periodDuration}
-                    onChange={(e) => updateMatchDetail('periodDuration', parseInt(e.target.value) || 0)}
+                  <SmartTimeInput
+                    value={editData.periods * editData.periodDuration}
+                    onChange={(minutes) => updateMatchDetail('periodDuration', minutes / editData.periods)}
                     className="text-sm"
-                    min="1"
                   />
                 ) : (
                   <div className="text-sm text-slate-100 font-medium">
-                    {formatTimeAsMinutesSeconds(editData.periods * editData.periodDuration)}
+                    {formatTimeAsHours(editData.periods * editData.periodDuration)}
                   </div>
                 )}
               </div>
@@ -584,31 +723,57 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
                     {isEditing ? (
-                      <div className="flex items-center justify-center space-x-1">
-                        <Input
-                          type="number"
-                          value={player.totalTimePlayed}
-                          onChange={(e) => updatePlayerStat(player.id, 'totalTimePlayed', parseInt(e.target.value) || 0)}
-                          className="w-16 text-center"
-                          min="0"
-                        />
-                        <span className="text-xs text-slate-400">min</span>
+                      <div className="flex flex-col items-center space-y-1">
+                        <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.totalTimePlayed)}</span>
+                        {checkTimeInconsistency(player) && (
+                          <div className="text-xs text-red-400 text-center">
+                            ⚠️ Exceeds match duration
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.totalTimePlayed)}</span>
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsDefender)}</span>
+                    {isEditing ? (
+                      <SmartTimeInput
+                        value={player.timeAsDefender}
+                        onChange={(minutes) => updatePlayerStat(player.id, 'timeAsDefender', minutes)}
+                      />
+                    ) : (
+                      <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsDefender)}</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsMidfielder)}</span>
+                    {isEditing ? (
+                      <SmartTimeInput
+                        value={player.timeAsMidfielder}
+                        onChange={(minutes) => updatePlayerStat(player.id, 'timeAsMidfielder', minutes)}
+                      />
+                    ) : (
+                      <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsMidfielder)}</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsAttacker)}</span>
+                    {isEditing ? (
+                      <SmartTimeInput
+                        value={player.timeAsAttacker}
+                        onChange={(minutes) => updatePlayerStat(player.id, 'timeAsAttacker', minutes)}
+                      />
+                    ) : (
+                      <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsAttacker)}</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsGoalkeeper)}</span>
+                    {isEditing ? (
+                      <SmartTimeInput
+                        value={player.timeAsGoalkeeper}
+                        onChange={(minutes) => updatePlayerStat(player.id, 'timeAsGoalkeeper', minutes)}
+                      />
+                    ) : (
+                      <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsGoalkeeper)}</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
                     {isEditing ? (
