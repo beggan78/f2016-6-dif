@@ -29,11 +29,10 @@
     "db:restart": "supabase stop && supabase start",
     "db:status": "supabase status",
     "db:reset": "supabase db reset",
-    "db:migrate": "supabase db push",
+    "db:migrate": "supabase db push --local",
     "db:seed": "supabase db reset --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres",
     "db:diff": "supabase db diff",
     "db:types": "supabase gen types typescript --local > src/types/supabase.ts",
-    "db:deploy": "supabase db push --linked",
     "db:pull": "supabase db pull",
     "db:link": "supabase link",
     "db:unlink": "supabase unlink"

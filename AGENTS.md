@@ -18,6 +18,11 @@ Write concise, imperative commit messages (e.g., `Add invitation notifications`)
 ## Security & Configuration Tips
 Store Supabase keys in your local `.env` file and never commit secrets. After pulling migration changes, run `npm run db:migrate` followed by `npm run db:seed` to sync your environment. If you update database types, commit the refreshed `src/types/supabase.ts` snapshot with the associated API changes.
 
+### Supabase Operations
+- When developing locally, migrations and Supabase edge function deployments are **only** run against the local Supabase instance. Never push schema or function changes to the remote project from your workstation; production updates happen exclusively via CI.
+- The user makes all changes, prompt the user to run the commands for you:
+  - `supabase db push --local` – apply pending SQL migrations to the local Supabase database.
+
 ## Game Configuration Notes
 - Formats currently supported: `5v5` (pairs or individual) and `7v7` (individual only). Use the metadata in `src/constants/teamConfiguration.js` when adding new modes so validation and defaults update automatically.
 - 7v7 formations (`2-2-2`, `2-3-1`) add dedicated midfielder positions. UI/helpers should source position lists from `getModeDefinition` rather than hard-coding keys.
