@@ -245,6 +245,7 @@ export function useGameState(navigateToView = null) {
         gameLog,
         opponentTeam,
         matchType,
+        venueType,
         lastSubstitutionTimestamp,
         // Match event tracking state from hook
         ...matchEventsHook.getEventState(),
@@ -264,7 +265,7 @@ export function useGameState(navigateToView = null) {
 
     // Cleanup timeout on dependency change or unmount
     return () => clearTimeout(timeoutId);
-  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
+  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
 
 
 
@@ -1408,6 +1409,7 @@ export function useGameState(navigateToView = null) {
         opponentTeam,
         captainId,
         matchType,
+        venueType,
         formation,
         periodGoalieIds,
         selectedSquadIds,
@@ -1428,7 +1430,7 @@ export function useGameState(navigateToView = null) {
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
   }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
-      periodDurationMinutes, opponentTeam, captainId, matchType, currentMatchId, matchCreated,
+      periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentMatchId, matchCreated,
       formation, allPlayers]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
