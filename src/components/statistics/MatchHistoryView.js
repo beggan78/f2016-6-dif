@@ -13,6 +13,7 @@ const mockMatches = [
     isHome: true,
     type: 'League',
     outcome: 'W',
+    format: '5v5',
     players: ['Alice Johnson', 'Bob Smith', 'Charlie Brown', 'David Wilson', 'Eva Davis']
   },
   {
@@ -24,6 +25,7 @@ const mockMatches = [
     isHome: false,
     type: 'Friendly',
     outcome: 'D',
+    format: '7v7',
     players: ['Alice Johnson', 'Bob Smith', 'Frank Miller', 'Grace Lee', 'Henry Taylor']
   },
   {
@@ -35,6 +37,7 @@ const mockMatches = [
     isHome: true,
     type: 'Cup',
     outcome: 'L',
+    format: '5v5',
     players: ['Charlie Brown', 'David Wilson', 'Eva Davis', 'Frank Miller', 'Grace Lee']
   },
   {
@@ -46,6 +49,7 @@ const mockMatches = [
     isHome: false,
     type: 'League',
     outcome: 'W',
+    format: '5v5',
     players: ['Alice Johnson', 'Bob Smith', 'Charlie Brown', 'Henry Taylor', 'Ian Clark']
   },
   {
@@ -57,6 +61,7 @@ const mockMatches = [
     isHome: true,
     type: 'League',
     outcome: 'W',
+    format: '7v7',
     players: ['David Wilson', 'Eva Davis', 'Frank Miller', 'Grace Lee', 'Henry Taylor']
   },
   {
@@ -68,6 +73,7 @@ const mockMatches = [
     isHome: false,
     type: 'Friendly',
     outcome: 'L',
+    format: '5v5',
     players: ['Alice Johnson', 'Charlie Brown', 'Eva Davis', 'Ian Clark', 'Jack Wilson']
   },
   {
@@ -79,6 +85,7 @@ const mockMatches = [
     isHome: true,
     type: 'League',
     outcome: 'D',
+    format: '7v7',
     players: ['Bob Smith', 'Frank Miller', 'Grace Lee', 'Henry Taylor', 'Ian Clark']
   },
   {
@@ -90,6 +97,7 @@ const mockMatches = [
     isHome: false,
     type: 'Cup',
     outcome: 'W',
+    format: '5v5',
     players: ['Alice Johnson', 'Charlie Brown', 'David Wilson', 'Jack Wilson', 'Liam Brown']
   },
   {
@@ -101,6 +109,7 @@ const mockMatches = [
     isHome: true,
     type: 'League',
     outcome: 'W',
+    format: '5v5',
     players: ['Bob Smith', 'Eva Davis', 'Frank Miller', 'Ian Clark', 'Jack Wilson']
   },
   {
@@ -112,6 +121,7 @@ const mockMatches = [
     isHome: false,
     type: 'Friendly',
     outcome: 'L',
+    format: '7v7',
     players: ['Charlie Brown', 'Grace Lee', 'Henry Taylor', 'Liam Brown', 'Mike Davis']
   }
 ];
@@ -142,6 +152,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const [homeAwayFilter, setHomeAwayFilter] = useState('All');
   const [opponentFilter, setOpponentFilter] = useState('All');
   const [playerFilter, setPlayerFilter] = useState('All');
+  const [formatFilter, setFormatFilter] = useState('All');
 
   // Screen size detection and filter collapse state
   const [needsCollapse, setNeedsCollapse] = useState(() => {
@@ -188,6 +199,17 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     ];
   }, []);
 
+  // Get unique formats from matches - only show filter if multiple formats exist
+  const formats = useMemo(() => {
+    const uniqueFormats = [...new Set(mockMatches.map(match => match.format).filter(Boolean))];
+    return [
+      { value: 'All', label: 'All' },
+      ...uniqueFormats.sort().map(format => ({ value: format, label: format }))
+    ];
+  }, []);
+
+  const shouldShowFormatFilter = formats.length > 2; // More than just 'All' option
+
   const filteredMatches = mockMatches.filter(match => {
     // Time range filter
     if (startDate || endDate) {
@@ -205,6 +227,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     }
     if (opponentFilter !== 'All' && match.opponent !== opponentFilter) return false;
     if (playerFilter !== 'All' && (!match.players || !match.players.includes(playerFilter))) return false;
+    if (formatFilter !== 'All' && match.format !== formatFilter) return false;
     return true;
   });
 
@@ -287,7 +310,9 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
             ? (isFilterCollapsed ? 'hidden' : 'block mt-4')
             : 'mt-4'
         }`}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
+            shouldShowFormatFilter ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
+          }`}>
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Type</label>
             <Select
@@ -332,6 +357,17 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
               options={players}
             />
           </div>
+
+          {shouldShowFormatFilter && (
+            <div className="flex flex-col">
+              <label className="text-slate-300 text-sm mb-2">Format</label>
+              <Select
+                value={formatFilter}
+                onChange={setFormatFilter}
+                options={formats}
+              />
+            </div>
+          )}
           </div>
         </div>
       </div>
