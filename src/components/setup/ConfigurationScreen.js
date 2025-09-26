@@ -1119,51 +1119,44 @@ export function ConfigurationScreen({
         )}
       </div>
 
-      {/* Venue Type Selection */}
-      <div className="p-3 bg-slate-700 rounded-md">
-        <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">Venue</label>
-        <Select
-          id="venueType"
-          value={venueType}
-          onChange={handleVenueTypeChange}
-          options={VENUE_TYPE_OPTIONS.map(option => ({
-            value: option.value,
-            label: option.label
-          }))}
-        />
-        <p className="text-xs text-slate-400 mt-1">
-          {VENUE_TYPE_OPTIONS.find(opt => opt.value === venueType)?.description || 'Select where the match will be played'}
-        </p>
-      </div>
+      {/* Match Details */}
+      <div className="p-3 bg-slate-700 rounded-md space-y-4">
+        <div>
+          <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
+          <Input
+            id="opponentTeam"
+            value={opponentTeam}
+            onChange={e => handleOpponentTeamChange(e.target.value)}
+            placeholder="Enter opponent team name (optional)"
+            maxLength={50}
+          />
+        </div>
 
-      {/* Match Type Selection */}
-      <div className="p-3 bg-slate-700 rounded-md">
-        <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
-        <Select
-          id="matchType"
-          value={matchType}
-          onChange={handleMatchTypeChange}
-          options={MATCH_TYPE_OPTIONS.map(option => ({
-            value: option.value,
-            label: option.label
-          }))}
-        />
-        <p className="text-xs text-slate-400 mt-1">
-          {MATCH_TYPE_OPTIONS.find(opt => opt.value === matchType)?.description || 'Select the type of match'}
-        </p>
-      </div>
+        <div>
+          <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
+          <Select
+            id="matchType"
+            value={matchType}
+            onChange={handleMatchTypeChange}
+            options={MATCH_TYPE_OPTIONS.map(option => ({
+              value: option.value,
+              label: option.label
+            }))}
+          />
+        </div>
 
-      {/* Opponent Team Name */}
-      <div className="p-3 bg-slate-700 rounded-md">
-        <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
-        <Input
-          id="opponentTeam"
-          value={opponentTeam}
-          onChange={e => handleOpponentTeamChange(e.target.value)}
-          placeholder="Enter opponent team name (optional)"
-          maxLength={50}
-        />
-        <p className="text-xs text-slate-400 mt-1">Leave empty to use "Opponent"</p>
+        <div>
+          <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">Venue</label>
+          <Select
+            id="venueType"
+            value={venueType}
+            onChange={handleVenueTypeChange}
+            options={VENUE_TYPE_OPTIONS.map(option => ({
+              value: option.value,
+              label: option.label
+            }))}
+          />
+        </div>
       </div>
 
       {/* Game Settings */}
