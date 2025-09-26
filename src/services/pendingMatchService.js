@@ -8,6 +8,7 @@
 import { getPendingMatchForTeam } from './matchStateManager';
 import { supabase } from '../lib/supabase';
 import { getInitialFormationTemplate } from '../constants/gameModes';
+import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 
 /**
  * Get ALL pending matches for a team (for multi-match modal)
@@ -192,6 +193,7 @@ export function createResumeDataForConfiguration(initialConfig) {
       periodDurationMinutes: initialConfig.matchConfig?.periodDurationMinutes || 15,
       opponentTeam: initialConfig.matchConfig?.opponentTeam || '',
       matchType: initialConfig.matchConfig?.matchType || 'league',
+      venueType: initialConfig.matchConfig?.venueType || DEFAULT_VENUE_TYPE,
       captainId: initialConfig.matchConfig?.captainId || null,
       teamConfig: teamConfig,
       formation: teamConfig.formation || '2-2',

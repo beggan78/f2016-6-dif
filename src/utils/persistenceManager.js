@@ -199,6 +199,8 @@ export class GamePersistenceManager extends PersistenceManager {
     // Import here to avoid circular dependency
     const { getInitialFormationTemplate } = require('../constants/gameModes');
     const { createDefaultTeamConfig, FORMATS } = require('../constants/teamConfiguration');
+    const { DEFAULT_MATCH_TYPE } = require('../constants/matchTypes');
+    const { DEFAULT_VENUE_TYPE } = require('../constants/matchVenues');
     
     const defaultTeamConfig = createDefaultTeamConfig(7, FORMATS.FORMAT_5V5);
     
@@ -222,6 +224,8 @@ export class GamePersistenceManager extends PersistenceManager {
       rotationQueue: [],
       gameLog: [],
       opponentTeam: '',
+      matchType: DEFAULT_MATCH_TYPE,
+      venueType: DEFAULT_VENUE_TYPE,
       ownScore: 0,
       opponentScore: 0,
       // Match event tracking state for Match Report feature
@@ -265,6 +269,8 @@ export class GamePersistenceManager extends PersistenceManager {
       rotationQueue: gameState.rotationQueue,
       gameLog: gameState.gameLog,
       opponentTeam: gameState.opponentTeam,
+      matchType: gameState.matchType,
+      venueType: gameState.venueType,
       ownScore: gameState.ownScore,
       opponentScore: gameState.opponentScore,
       // Match event tracking state for Match Report feature

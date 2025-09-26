@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 import { FORMATS, FORMAT_CONFIGS, FORMATIONS } from '../constants/teamConfiguration';
+import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 import { normalizeFormationStructure } from '../utils/formationUtils';
 
 /**
@@ -31,7 +32,7 @@ import { normalizeFormationStructure } from '../utils/formationUtils';
 export async function createMatch(matchData, allPlayers = [], selectedSquadIds = []) {
   try {
     // Validate required fields
-    const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type'];
+    const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type', 'venueType'];
     const missingFields = requiredFields.filter(field => !matchData[field]);
     
     if (missingFields.length > 0) {
@@ -51,6 +52,7 @@ export async function createMatch(matchData, allPlayers = [], selectedSquadIds =
       type: matchData.type,
       opponent: matchData.opponent || null,
       captain: matchData.captainId || null,
+      venue_type: matchData.venueType,
       state: 'pending' // Match created but not yet started
     };
 
@@ -125,7 +127,8 @@ export async function updateMatchToRunning(matchId) {
       .from('match')
       .update({ 
         state: 'running',
-        updated_at: 'now()'
+        started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .eq('id', matchId)
       .eq('state', 'pending'); // Only update if currently pending
@@ -453,7 +456,8 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     periodDurationMinutes = 15,
     opponentTeam,
     captainId,
-    matchType = 'league' // Default to league if not provided
+    matchType = 'league', // Default to league if not provided
+    venueType = DEFAULT_VENUE_TYPE
   } = gameState;
 
   const formatKey = teamConfig?.format || FORMATS.FORMAT_5V5;
@@ -468,7 +472,8 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     periodDurationMinutes,
     type: matchType,
     opponent: opponentTeam || null,
-    captainId: captainId || null
+    captainId: captainId || null,
+    venueType: venueType || DEFAULT_VENUE_TYPE
   };
 }
 
@@ -778,7 +783,7 @@ export async function insertInitialPlayerMatchStats(matchId, allPlayers, captain
 export async function updateExistingMatch(matchId, matchData) {
   try {
     // Validate required fields
-    const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type'];
+    const requiredFields = ['teamId', 'format', 'formation', 'periods', 'periodDurationMinutes', 'type', 'venueType'];
     const missingFields = requiredFields.filter(field => !matchData[field]);
     
     if (missingFields.length > 0) {
@@ -804,6 +809,7 @@ export async function updateExistingMatch(matchId, matchData) {
       type: matchData.type,
       opponent: matchData.opponent || null,
       captain: matchData.captainId || null,
+      venue_type: matchData.venueType,
       updated_at: new Date().toISOString()
     };
 

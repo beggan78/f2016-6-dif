@@ -31,6 +31,7 @@ export function useMatchPersistence(gameState, setters, teamContext) {
     opponentTeam,
     captainId,
     matchType,
+    venueType,
     formation,
     currentMatchId,
     matchCreated
@@ -64,6 +65,7 @@ export function useMatchPersistence(gameState, setters, teamContext) {
         opponentTeam,
         captainId,
         matchType,
+        venueType,
         formation,
         periodGoalieIds,
         selectedSquadIds,
@@ -86,7 +88,7 @@ export function useMatchPersistence(gameState, setters, teamContext) {
     }
   }, [
     teamConfig, selectedFormation, numPeriods, periodDurationMinutes,
-    opponentTeam, captainId, matchType, formation, periodGoalieIds,
+    opponentTeam, captainId, matchType, venueType, formation, periodGoalieIds,
     selectedSquadIds, allPlayers, currentTeam, currentMatchId,
     matchCreated, setCurrentMatchId, setMatchCreated
   ]);

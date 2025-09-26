@@ -77,10 +77,12 @@ export type Database = {
           outcome: Database["public"]["Enums"]["match_outcome"] | null
           period_duration_minutes: number
           periods: number
+          started_at: string | null
           state: Database["public"]["Enums"]["match_state"]
           team_id: string
           type: Database["public"]["Enums"]["match_type"]
           updated_at: string
+          venue_type: Database["public"]["Enums"]["match_venue_type"]
         }
         Insert: {
           captain?: string | null
@@ -97,10 +99,12 @@ export type Database = {
           outcome?: Database["public"]["Enums"]["match_outcome"] | null
           period_duration_minutes?: number
           periods?: number
+          started_at?: string | null
           state?: Database["public"]["Enums"]["match_state"]
           team_id: string
           type?: Database["public"]["Enums"]["match_type"]
           updated_at?: string
+          venue_type?: Database["public"]["Enums"]["match_venue_type"]
         }
         Update: {
           captain?: string | null
@@ -117,10 +121,12 @@ export type Database = {
           outcome?: Database["public"]["Enums"]["match_outcome"] | null
           period_duration_minutes?: number
           periods?: number
+          started_at?: string | null
           state?: Database["public"]["Enums"]["match_state"]
           team_id?: string
           type?: Database["public"]["Enums"]["match_type"]
           updated_at?: string
+          venue_type?: Database["public"]["Enums"]["match_venue_type"]
         }
         Relationships: [
           {
@@ -550,6 +556,7 @@ export type Database = {
       match_outcome: "win" | "loss" | "draw"
       match_state: "running" | "finished" | "pending" | "confirmed"
       match_type: "friendly" | "internal" | "league" | "tournament" | "cup"
+      match_venue_type: "home" | "away" | "neutral"
       player_role:
         | "goalie"
         | "defender"
@@ -718,4 +725,3 @@ export const Constants = {
     },
   },
 } as const
-

@@ -18,6 +18,7 @@ import FeatureVoteModal from '../shared/FeatureVoteModal';
 import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
+import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch } from '../../services/matchStateManager';
@@ -52,6 +53,8 @@ export function ConfigurationScreen({
   setOpponentTeam,
   matchType,
   setMatchType,
+  venueType,
+  setVenueType,
   captainId,
   setCaptain,
   debugMode = false,
@@ -184,6 +187,7 @@ export function ConfigurationScreen({
     // Reset state to match "New Game" behavior from Hamburger Menu
     setOpponentTeam('');  // Clear opponent team name
     setMatchType('league');  // Reset to default match type
+    setVenueType(DEFAULT_VENUE_TYPE);
     setCaptain(null);     // Clear captain selection
 
     // Clear resumed match state and data
@@ -192,7 +196,7 @@ export function ConfigurationScreen({
     resumeDataAppliedRef.current = false;
 
     clearStoredState();   // Clear localStorage and match state
-  }, [setOpponentTeam, setMatchType, setCaptain, clearStoredState]);
+  }, [setOpponentTeam, setMatchType, setVenueType, setCaptain, clearStoredState]);
 
   // Modal closure handler specifically for resume flow - does NOT clear stored state
   const handleResumeMatchModalClose = React.useCallback(() => {
@@ -549,6 +553,10 @@ export function ConfigurationScreen({
           setMatchType(resumeData.matchType);
         }
 
+        if (resumeData.venueType) {
+          setVenueType(resumeData.venueType);
+        }
+
         if (resumeData.captainId) {
           setCaptain(resumeData.captainId);
         }
@@ -699,6 +707,16 @@ export function ConfigurationScreen({
     }
 
     setOpponentTeam(sanitizedValue);
+  };
+
+  const handleMatchTypeChange = (value) => {
+    setMatchType(value);
+    setHasActiveConfiguration(true);
+  };
+
+  const handleVenueTypeChange = (value) => {
+    setVenueType(value);
+    setHasActiveConfiguration(true);
   };
 
   const handleFormatChange = React.useCallback((newFormat) => {
@@ -1101,13 +1119,30 @@ export function ConfigurationScreen({
         )}
       </div>
 
+      {/* Venue Type Selection */}
+      <div className="p-3 bg-slate-700 rounded-md">
+        <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">Venue</label>
+        <Select
+          id="venueType"
+          value={venueType}
+          onChange={handleVenueTypeChange}
+          options={VENUE_TYPE_OPTIONS.map(option => ({
+            value: option.value,
+            label: option.label
+          }))}
+        />
+        <p className="text-xs text-slate-400 mt-1">
+          {VENUE_TYPE_OPTIONS.find(opt => opt.value === venueType)?.description || 'Select where the match will be played'}
+        </p>
+      </div>
+
       {/* Match Type Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
         <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
         <Select
           id="matchType"
           value={matchType}
-          onChange={value => setMatchType(value)}
+          onChange={handleMatchTypeChange}
           options={MATCH_TYPE_OPTIONS.map(option => ({
             value: option.value,
             label: option.label
