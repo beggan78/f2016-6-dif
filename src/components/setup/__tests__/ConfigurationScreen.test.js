@@ -22,7 +22,7 @@ jest.mock('lucide-react', () => ({
 
 jest.mock('../../shared/UI', () => ({
   Select: ({ value, onChange, options, id }) => (
-    <select data-testid={id || 'select'} value={value || ''} onChange={(e) => onChange && onChange(e.target.value)}>
+    <select id={id} data-testid={id || 'select'} value={value || ''} onChange={(e) => onChange && onChange(e.target.value)}>
       {options && options.map(option => (
         typeof option === 'object'
           ? <option key={option.value} value={option.value}>{option.label}</option>
@@ -161,31 +161,29 @@ describe('ConfigurationScreen venue selection', () => {
     const props = buildProps();
     render(<ConfigurationScreen {...props} />);
 
-    const homeOption = screen.getByTestId('venue-option-home');
-    const awayOption = screen.getByTestId('venue-option-away');
-    const neutralOption = screen.getByTestId('venue-option-neutral');
+    const venueSelect = screen.getByTestId('venueType');
+    const optionValues = Array.from(venueSelect.options).map(option => option.value);
 
-    expect(homeOption).toHaveAttribute('aria-checked', 'true');
-    expect(homeOption).toHaveTextContent('Selected');
-    expect(awayOption).toHaveAttribute('aria-checked', 'false');
-    expect(neutralOption).toHaveAttribute('aria-checked', 'false');
+    expect(optionValues).toEqual([VENUE_TYPES.HOME, VENUE_TYPES.AWAY, VENUE_TYPES.NEUTRAL]);
+    expect(venueSelect.value).toBe(VENUE_TYPES.HOME);
+    expect(screen.queryByTestId('venue-description')).toBeNull();
   });
 
   it('falls back to home selection when venueType prop is undefined', () => {
     const props = buildProps({ venueType: undefined });
     render(<ConfigurationScreen {...props} />);
 
-    expect(screen.getByTestId('venue-option-home')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('venueType').value).toBe(VENUE_TYPES.HOME);
   });
 
   it('invokes callbacks and updates selection when choosing a new venue', () => {
     const props = buildProps();
     const { rerender } = render(<ConfigurationScreen {...props} />);
 
-    const awayOption = screen.getByTestId('venue-option-away');
+    const venueSelect = screen.getByTestId('venueType');
     const initialCalls = props.setHasActiveConfiguration.mock.calls.length;
 
-    fireEvent.click(awayOption);
+    fireEvent.change(venueSelect, { target: { value: VENUE_TYPES.AWAY } });
 
     expect(props.setVenueType).toHaveBeenCalledWith(VENUE_TYPES.AWAY);
     expect(props.setHasActiveConfiguration.mock.calls.length).toBeGreaterThan(initialCalls);
@@ -193,6 +191,7 @@ describe('ConfigurationScreen venue selection', () => {
     expect(lastCallArgs[0]).toBe(true);
 
     rerender(<ConfigurationScreen {...{ ...props, venueType: VENUE_TYPES.AWAY }} />);
-    expect(screen.getByTestId('venue-option-away')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('venueType').value).toBe(VENUE_TYPES.AWAY);
+    expect(screen.queryByTestId('venue-description')).toBeNull();
   });
 });

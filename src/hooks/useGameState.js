@@ -470,7 +470,7 @@ export function useGameState(navigateToView = null) {
     
     setView(VIEWS.PERIOD_SETUP);
   }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam,
-      teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType,
+      teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, venueType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
       setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated,
       getFormationAwareTeamConfig]);
@@ -1428,7 +1428,7 @@ export function useGameState(navigateToView = null) {
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
   }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
-      periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentMatchId, matchCreated,
+      periodDurationMinutes, opponentTeam, captainId, matchType, currentMatchId, matchCreated,
       formation, allPlayers]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
@@ -1689,7 +1689,7 @@ export function useGameState(navigateToView = null) {
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
   }, [formation, teamConfig, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
-      numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, currentTeam?.id, periodGoalieIds,
+      numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentTeam?.id, periodGoalieIds,
       currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
 
   const handleSavePeriodConfiguration = useCallback(async () => {

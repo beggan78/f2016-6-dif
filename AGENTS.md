@@ -9,6 +9,9 @@ Use `npm start` for the hot-reloading React dev server and `npm run build` for t
 ## Coding Style & Naming Conventions
 Follow the Create React App ESLint config with two-space indentation. Components use PascalCase (`TeamManagement.js`), hooks start with `use*`, utilities stay camelCase, and constants collect under `src/constants/`. Favor functional React components, Tailwind utility classes, and TypeScript-friendly patterns even in plain JS. Run `npx eslint src` whenever you need a manual lint check.
 
+**Agent Workflow Requirement**
+- Always run `npx eslint src` (or a narrowed path if appropriate) against the files you just modified and fix eslint errors before returning control to the user.
+
 ## Testing Guidelines
 Jest plus React Testing Library power the suite. Target at least 90% coverage for new or updated modules and group fast specs as `*.test.js` in `__tests__/`. Larger flows move to `src/__integration__/`. Mock Supabase calls with the existing helpers, reset timers and storage between specs, and add UI screenshots to `screenshots/` for visual changes.
 

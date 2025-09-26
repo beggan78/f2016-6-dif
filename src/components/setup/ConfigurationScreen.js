@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save, Home, Plane, Globe2, MapPin } from 'lucide-react';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS } from '../../constants/teamConfiguration';
@@ -23,13 +23,6 @@ import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch } from '../../services/matchStateManager';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
-
-
-const VENUE_TYPE_ICON_MAP = {
-  [VENUE_TYPES.HOME]: Home,
-  [VENUE_TYPES.AWAY]: Plane,
-  [VENUE_TYPES.NEUTRAL]: Globe2,
-};
 
 
 export function ConfigurationScreen({ 
@@ -1155,40 +1148,16 @@ export function ConfigurationScreen({
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-sky-200 mb-1">Venue</span>
-          <div
-            role="radiogroup"
-            aria-label="Venue type"
-            className="grid grid-cols-1 sm:grid-cols-3 gap-2"
-          >
-            {VENUE_TYPE_OPTIONS.map(option => {
-              const Icon = VENUE_TYPE_ICON_MAP[option.value] || MapPin;
-              const isSelected = effectiveVenueType === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  onClick={() => handleVenueTypeChange(option.value)}
-                  tabIndex={isSelected ? 0 : -1}
-                  className={`text-left p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 ${isSelected ? 'bg-sky-700/60 border-sky-400 text-sky-50 shadow-lg' : 'bg-slate-600 border-slate-500 text-slate-200 hover:bg-slate-500'}`}
-                  data-testid={`venue-option-${option.value}`}
-                >
-                  <Icon className={`h-5 w-5 mb-2 ${isSelected ? 'text-sky-200' : 'text-slate-300'}`} aria-hidden="true" />
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold tracking-wide">{option.label}</span>
-                    {isSelected && (
-                      <span className="text-xs uppercase tracking-wider text-sky-200">Selected</span>
-                    )}
-                  </div>
-                  <p className={`text-xs mt-1 leading-snug ${isSelected ? 'text-sky-100' : 'text-slate-300'}`}>
-                    {option.description}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
+          <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">Venue</label>
+          <Select
+            id="venueType"
+            value={effectiveVenueType}
+            onChange={handleVenueTypeChange}
+            options={VENUE_TYPE_OPTIONS.map(option => ({
+              value: option.value,
+              label: option.label
+            }))}
+          />
         </div>
       </div>
 
