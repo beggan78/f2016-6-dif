@@ -29,4 +29,4 @@ Store Supabase keys in your local `.env` file and never commit secrets. After pu
 ## Game Configuration Notes
 - Formats currently supported: `5v5` (pairs or individual) and `7v7` (individual only). Use the metadata in `src/constants/teamConfiguration.js` when adding new modes so validation and defaults update automatically.
 - 7v7 formations (`2-2-2`, `2-3-1`) add dedicated midfielder positions. UI/helpers should source position lists from `getModeDefinition` rather than hard-coding keys.
-- When persisting team configs or match data, always include the `format` field so Supabase records reflect the correct ruleset.
+- When persisting team configs or match data, always include the `format`, `type`, and `venueType` fields so Supabase records reflect the correct ruleset, fixture classification, and location context.
