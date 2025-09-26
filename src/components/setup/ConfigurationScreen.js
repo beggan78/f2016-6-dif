@@ -18,7 +18,7 @@ import FeatureVoteModal from '../shared/FeatureVoteModal';
 import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
-import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE, VENUE_TYPES } from '../../constants/matchVenues';
+import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch } from '../../services/matchStateManager';
