@@ -65,13 +65,13 @@ export function StatisticsScreen({ onNavigateBack }) {
 
     switch (activeTab) {
       case STATS_TABS.TEAM:
-        return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
+        return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} onMatchSelect={handleMatchSelect} />;
       case STATS_TABS.PLAYER:
         return <PlayerStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
       case STATS_TABS.HISTORY:
         return <MatchHistoryView onMatchSelect={handleMatchSelect} startDate={timeRangeStart} endDate={timeRangeEnd} />;
       default:
-        return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
+        return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} onMatchSelect={handleMatchSelect} />;
     }
   };
 

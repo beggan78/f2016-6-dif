@@ -20,7 +20,7 @@ const mockTeamStats = {
   ]
 };
 
-export function TeamStatsView({ startDate, endDate }) {
+export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   // Filter matches based on time range
   const filteredMatches = useMemo(() => {
     if (!startDate && !endDate) {
@@ -229,7 +229,13 @@ export function TeamStatsView({ startDate, endDate }) {
         </div>
         <div className="space-y-3">
           {recentMatches.map((match) => (
-            <div key={match.id} className="bg-slate-800 p-3 rounded-lg border border-slate-600">
+            <div
+              key={match.id}
+              className={`bg-slate-800 p-3 rounded-lg border border-slate-600 ${
+                onMatchSelect ? 'hover:bg-slate-750 transition-colors cursor-pointer' : ''
+              }`}
+              onClick={onMatchSelect ? () => onMatchSelect(match.id) : undefined}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="text-slate-400 text-sm font-mono">
