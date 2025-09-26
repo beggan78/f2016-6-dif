@@ -911,6 +911,8 @@ function AppContent() {
             setOpponentTeam={gameState.setOpponentTeam}
             matchType={gameState.matchType}
             setMatchType={gameState.setMatchType}
+            venueType={gameState.venueType}
+            setVenueType={gameState.setVenueType}
             captainId={gameState.captainId}
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}

@@ -18,6 +18,7 @@ import FeatureVoteModal from '../shared/FeatureVoteModal';
 import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
+import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch } from '../../services/matchStateManager';
@@ -52,6 +53,8 @@ export function ConfigurationScreen({
   setOpponentTeam,
   matchType,
   setMatchType,
+  venueType,
+  setVenueType,
   captainId,
   setCaptain,
   debugMode = false,
@@ -88,6 +91,7 @@ export function ConfigurationScreen({
   const [isResumedMatch, setIsResumedMatch] = useState(false);
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
+  const effectiveVenueType = venueType ?? DEFAULT_VENUE_TYPE;
 
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
@@ -184,6 +188,7 @@ export function ConfigurationScreen({
     // Reset state to match "New Game" behavior from Hamburger Menu
     setOpponentTeam('');  // Clear opponent team name
     setMatchType('league');  // Reset to default match type
+    setVenueType(DEFAULT_VENUE_TYPE);
     setCaptain(null);     // Clear captain selection
 
     // Clear resumed match state and data
@@ -192,7 +197,7 @@ export function ConfigurationScreen({
     resumeDataAppliedRef.current = false;
 
     clearStoredState();   // Clear localStorage and match state
-  }, [setOpponentTeam, setMatchType, setCaptain, clearStoredState]);
+  }, [setOpponentTeam, setMatchType, setVenueType, setCaptain, clearStoredState]);
 
   // Modal closure handler specifically for resume flow - does NOT clear stored state
   const handleResumeMatchModalClose = React.useCallback(() => {
@@ -374,7 +379,8 @@ export function ConfigurationScreen({
 
       // Check if user has local data that could be migrated
       const localMatches = dataSyncManager.getLocalMatches();
-      setShowMigration(localMatches.length > 0);
+      const hasLocalMatches = Array.isArray(localMatches) && localMatches.length > 0;
+      setShowMigration(hasLocalMatches);
     } else {
       dataSyncManager.setUserId(null);
       setShowMigration(false);
@@ -549,6 +555,10 @@ export function ConfigurationScreen({
           setMatchType(resumeData.matchType);
         }
 
+        if (resumeData.venueType) {
+          setVenueType(resumeData.venueType);
+        }
+
         if (resumeData.captainId) {
           setCaptain(resumeData.captainId);
         }
@@ -699,6 +709,16 @@ export function ConfigurationScreen({
     }
 
     setOpponentTeam(sanitizedValue);
+  };
+
+  const handleMatchTypeChange = (value) => {
+    setMatchType(value);
+    setHasActiveConfiguration(true);
+  };
+
+  const handleVenueTypeChange = (value) => {
+    setVenueType(value);
+    setHasActiveConfiguration(true);
   };
 
   const handleFormatChange = React.useCallback((newFormat) => {
@@ -1101,34 +1121,44 @@ export function ConfigurationScreen({
         )}
       </div>
 
-      {/* Match Type Selection */}
-      <div className="p-3 bg-slate-700 rounded-md">
-        <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
-        <Select
-          id="matchType"
-          value={matchType}
-          onChange={value => setMatchType(value)}
-          options={MATCH_TYPE_OPTIONS.map(option => ({
-            value: option.value,
-            label: option.label
-          }))}
-        />
-        <p className="text-xs text-slate-400 mt-1">
-          {MATCH_TYPE_OPTIONS.find(opt => opt.value === matchType)?.description || 'Select the type of match'}
-        </p>
-      </div>
+      {/* Match Details */}
+      <div className="p-3 bg-slate-700 rounded-md space-y-4">
+        <div>
+          <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
+          <Input
+            id="opponentTeam"
+            value={opponentTeam}
+            onChange={e => handleOpponentTeamChange(e.target.value)}
+            placeholder="Enter opponent team name (optional)"
+            maxLength={50}
+          />
+        </div>
 
-      {/* Opponent Team Name */}
-      <div className="p-3 bg-slate-700 rounded-md">
-        <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
-        <Input
-          id="opponentTeam"
-          value={opponentTeam}
-          onChange={e => handleOpponentTeamChange(e.target.value)}
-          placeholder="Enter opponent team name (optional)"
-          maxLength={50}
-        />
-        <p className="text-xs text-slate-400 mt-1">Leave empty to use "Opponent"</p>
+        <div>
+          <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
+          <Select
+            id="matchType"
+            value={matchType}
+            onChange={handleMatchTypeChange}
+            options={MATCH_TYPE_OPTIONS.map(option => ({
+              value: option.value,
+              label: option.label
+            }))}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">Venue</label>
+          <Select
+            id="venueType"
+            value={effectiveVenueType}
+            onChange={handleVenueTypeChange}
+            options={VENUE_TYPE_OPTIONS.map(option => ({
+              value: option.value,
+              label: option.label
+            }))}
+          />
+        </div>
       </div>
 
       {/* Game Settings */}

@@ -14,6 +14,7 @@ import {
   updateExistingMatch, 
   saveInitialMatchConfig 
 } from './matchStateManager';
+import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 
 /**
  * Transforms team configuration to the database format using flat structure
@@ -37,6 +38,7 @@ export function formatTeamConfigForDatabase(teamConfig) {
  * @param {Object} params.teamConfig - Team configuration
  * @param {Object} params.matchData - Match data
  * @param {string} params.matchType - Match type
+ * @param {string} params.venueType - Venue type (home, away, neutral)
  * @param {string} params.opponentTeam - Opponent team name
  * @param {number} params.numPeriods - Number of periods
  * @param {number} params.periodDurationMinutes - Period duration
@@ -51,6 +53,7 @@ export function createInitialConfiguration(params) {
     teamConfig,
     matchData,
     matchType,
+    venueType = DEFAULT_VENUE_TYPE,
     opponentTeam,
     numPeriods,
     periodDurationMinutes,
@@ -67,6 +70,7 @@ export function createInitialConfiguration(params) {
     matchConfig: {
       format: matchData.format,
       matchType: matchType,
+      venueType: venueType,
       opponentTeam: opponentTeam,
       periods: numPeriods,
       periodDurationMinutes: periodDurationMinutes,
@@ -181,6 +185,7 @@ export async function updateMatchConfiguration(params) {
  * @param {string} params.opponentTeam - Opponent team name
  * @param {string} params.captainId - Captain player ID
  * @param {string} params.matchType - Match type
+ * @param {string} params.venueType - Venue type (home, away, neutral)
  * @param {Object} params.formation - Formation object
  * @param {Object} params.periodGoalieIds - Period goalie assignments
  * @param {Array} params.selectedSquadIds - Selected squad player IDs
@@ -201,6 +206,7 @@ export async function saveMatchConfiguration(params) {
     opponentTeam,
     captainId,
     matchType,
+    venueType = DEFAULT_VENUE_TYPE,
     formation,
     periodGoalieIds,
     selectedSquadIds,
@@ -229,7 +235,8 @@ export async function saveMatchConfiguration(params) {
       periodDurationMinutes,
       opponentTeam,
       captainId,
-      matchType
+      matchType,
+      venueType
     }, currentTeam.id);
 
     // Create initial configuration object
@@ -238,6 +245,7 @@ export async function saveMatchConfiguration(params) {
       teamConfig,
       matchData,
       matchType,
+      venueType,
       opponentTeam,
       numPeriods,
       periodDurationMinutes,

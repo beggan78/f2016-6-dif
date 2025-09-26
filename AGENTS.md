@@ -9,6 +9,9 @@ Use `npm start` for the hot-reloading React dev server and `npm run build` for t
 ## Coding Style & Naming Conventions
 Follow the Create React App ESLint config with two-space indentation. Components use PascalCase (`TeamManagement.js`), hooks start with `use*`, utilities stay camelCase, and constants collect under `src/constants/`. Favor functional React components, Tailwind utility classes, and TypeScript-friendly patterns even in plain JS. Run `npx eslint src` whenever you need a manual lint check.
 
+**Agent Workflow Requirement**
+- Always run `npx eslint src` (or a narrowed path if appropriate) against the files you just modified and fix eslint errors before returning control to the user.
+
 ## Testing Guidelines
 Jest plus React Testing Library power the suite. Target at least 90% coverage for new or updated modules and group fast specs as `*.test.js` in `__tests__/`. Larger flows move to `src/__integration__/`. Mock Supabase calls with the existing helpers, reset timers and storage between specs, and add UI screenshots to `screenshots/` for visual changes.
 
@@ -17,6 +20,11 @@ Write concise, imperative commit messages (e.g., `Add invitation notifications`)
 
 ## Security & Configuration Tips
 Store Supabase keys in your local `.env` file and never commit secrets. After pulling migration changes, run `npm run db:migrate` followed by `npm run db:seed` to sync your environment. If you update database types, commit the refreshed `src/types/supabase.ts` snapshot with the associated API changes.
+
+### Supabase Operations
+- When developing locally, migrations and Supabase edge function deployments are **only** run against the local Supabase instance. Never push schema or function changes to the remote project from your workstation; production updates happen exclusively via CI.
+- The user makes all changes, prompt the user to run the commands for you:
+  - `supabase db push --local` – apply pending SQL migrations to the local Supabase database.
 
 ## Game Configuration Notes
 - Formats currently supported: `5v5` (pairs or individual) and `7v7` (individual only). Use the metadata in `src/constants/teamConfiguration.js` when adding new modes so validation and defaults update automatically.

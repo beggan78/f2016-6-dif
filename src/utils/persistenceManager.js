@@ -1,3 +1,5 @@
+import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
+
 /**
  * Manages localStorage operations for game state persistence
  * Provides centralized error handling, validation, and state management
@@ -199,6 +201,8 @@ export class GamePersistenceManager extends PersistenceManager {
     // Import here to avoid circular dependency
     const { getInitialFormationTemplate } = require('../constants/gameModes');
     const { createDefaultTeamConfig, FORMATS } = require('../constants/teamConfiguration');
+    const { DEFAULT_MATCH_TYPE } = require('../constants/matchTypes');
+    const { DEFAULT_VENUE_TYPE } = require('../constants/matchVenues');
     
     const defaultTeamConfig = createDefaultTeamConfig(7, FORMATS.FORMAT_5V5);
     
@@ -222,6 +226,8 @@ export class GamePersistenceManager extends PersistenceManager {
       rotationQueue: [],
       gameLog: [],
       opponentTeam: '',
+      matchType: DEFAULT_MATCH_TYPE,
+      venueType: DEFAULT_VENUE_TYPE,
       ownScore: 0,
       opponentScore: 0,
       // Match event tracking state for Match Report feature
@@ -244,40 +250,49 @@ export class GamePersistenceManager extends PersistenceManager {
    * Save only specific game state fields
    */
   saveGameState(gameState) {
+    if (!gameState || typeof gameState !== 'object') {
+      console.warn('GamePersistenceManager.saveGameState called with invalid gameState. Aborting save.');
+      return false;
+    }
+
+    const defaults = this.defaultState || {};
+
     // Only save serializable game state, exclude React-specific fields
     const stateToSave = {
-      allPlayers: gameState.allPlayers,
-      view: gameState.view,
-      selectedSquadIds: gameState.selectedSquadIds,
-      numPeriods: gameState.numPeriods,
-      periodDurationMinutes: gameState.periodDurationMinutes,
-      periodGoalieIds: gameState.periodGoalieIds,
-      teamConfig: gameState.teamConfig,
-      selectedFormation: gameState.selectedFormation,
-      alertMinutes: gameState.alertMinutes,
-      captainId: gameState.captainId,
-      currentPeriodNumber: gameState.currentPeriodNumber,
-      formation: gameState.formation,
-      nextPhysicalPairToSubOut: gameState.nextPhysicalPairToSubOut,
-      nextPlayerToSubOut: gameState.nextPlayerToSubOut,
-      nextPlayerIdToSubOut: gameState.nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut: gameState.nextNextPlayerIdToSubOut,
-      rotationQueue: gameState.rotationQueue,
-      gameLog: gameState.gameLog,
-      opponentTeam: gameState.opponentTeam,
-      ownScore: gameState.ownScore,
-      opponentScore: gameState.opponentScore,
+      allPlayers: gameState.allPlayers ?? defaults.allPlayers ?? [],
+      view: gameState.view ?? defaults.view ?? 'config',
+      selectedSquadIds: gameState.selectedSquadIds ?? defaults.selectedSquadIds ?? [],
+      numPeriods: gameState.numPeriods ?? defaults.numPeriods ?? 3,
+      periodDurationMinutes: gameState.periodDurationMinutes ?? defaults.periodDurationMinutes ?? 15,
+      periodGoalieIds: gameState.periodGoalieIds ?? defaults.periodGoalieIds ?? {},
+      teamConfig: gameState.teamConfig ?? defaults.teamConfig ?? null,
+      selectedFormation: gameState.selectedFormation ?? defaults.selectedFormation ?? null,
+      alertMinutes: gameState.alertMinutes ?? defaults.alertMinutes ?? 0,
+      captainId: gameState.captainId ?? defaults.captainId ?? null,
+      currentPeriodNumber: gameState.currentPeriodNumber ?? defaults.currentPeriodNumber ?? 1,
+      formation: gameState.formation ?? defaults.formation ?? null,
+      nextPhysicalPairToSubOut: gameState.nextPhysicalPairToSubOut ?? defaults.nextPhysicalPairToSubOut ?? null,
+      nextPlayerToSubOut: gameState.nextPlayerToSubOut ?? defaults.nextPlayerToSubOut ?? null,
+      nextPlayerIdToSubOut: gameState.nextPlayerIdToSubOut ?? defaults.nextPlayerIdToSubOut ?? null,
+      nextNextPlayerIdToSubOut: gameState.nextNextPlayerIdToSubOut ?? defaults.nextNextPlayerIdToSubOut ?? null,
+      rotationQueue: gameState.rotationQueue ?? defaults.rotationQueue ?? [],
+      gameLog: gameState.gameLog ?? defaults.gameLog ?? [],
+      opponentTeam: gameState.opponentTeam ?? defaults.opponentTeam ?? '',
+      matchType: gameState.matchType ?? defaults.matchType ?? 'league',
+      venueType: gameState.venueType ?? defaults.venueType ?? DEFAULT_VENUE_TYPE,
+      ownScore: gameState.ownScore ?? defaults.ownScore ?? 0,
+      opponentScore: gameState.opponentScore ?? defaults.opponentScore ?? 0,
       // Match event tracking state for Match Report feature
-      matchEvents: gameState.matchEvents,
-      matchStartTime: gameState.matchStartTime,
-      goalScorers: gameState.goalScorers,
-      eventSequenceNumber: gameState.eventSequenceNumber,
-      lastEventBackup: gameState.lastEventBackup,
-      timerPauseStartTime: gameState.timerPauseStartTime,
-      totalMatchPausedDuration: gameState.totalMatchPausedDuration,
+      matchEvents: gameState.matchEvents ?? defaults.matchEvents ?? [],
+      matchStartTime: gameState.matchStartTime ?? defaults.matchStartTime ?? null,
+      goalScorers: gameState.goalScorers ?? defaults.goalScorers ?? {},
+      eventSequenceNumber: gameState.eventSequenceNumber ?? defaults.eventSequenceNumber ?? 0,
+      lastEventBackup: gameState.lastEventBackup ?? defaults.lastEventBackup ?? null,
+      timerPauseStartTime: gameState.timerPauseStartTime ?? defaults.timerPauseStartTime ?? null,
+      totalMatchPausedDuration: gameState.totalMatchPausedDuration ?? defaults.totalMatchPausedDuration ?? 0,
       // Match lifecycle state management
-      currentMatchId: gameState.currentMatchId,
-      matchCreated: gameState.matchCreated,
+      currentMatchId: gameState.currentMatchId ?? defaults.currentMatchId ?? null,
+      matchCreated: gameState.matchCreated ?? defaults.matchCreated ?? false,
     };
 
     return this.saveState(stateToSave);
