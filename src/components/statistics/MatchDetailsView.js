@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, Clock, Award } from 'lucide-react';
+import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button, Input, Select } from '../shared/UI';
 
 // Mock data - replace with real data later
@@ -83,6 +83,71 @@ const mockMatchDetails = {
         startingRole: 'Substitute',
         wasCaptain: false,
         receivedFairPlayAward: false
+      },
+      {
+        id: 6,
+        name: 'Alexander Bergström',
+        goalsScored: 1,
+        totalTimePlayed: 32,
+        timeAsDefender: 25,
+        timeAsMidfielder: 7,
+        timeAsAttacker: 0,
+        timeAsGoalkeeper: 0,
+        startingRole: 'Defender',
+        wasCaptain: false,
+        receivedFairPlayAward: true
+      },
+      {
+        id: 7,
+        name: 'Noah Pettersson',
+        goalsScored: 0,
+        totalTimePlayed: 18,
+        timeAsDefender: 0,
+        timeAsMidfielder: 12,
+        timeAsAttacker: 6,
+        timeAsGoalkeeper: 0,
+        startingRole: 'Substitute',
+        wasCaptain: false,
+        receivedFairPlayAward: false
+      },
+      {
+        id: 8,
+        name: 'Hugo Nilsson',
+        goalsScored: 0,
+        totalTimePlayed: 15,
+        timeAsDefender: 0,
+        timeAsMidfielder: 0,
+        timeAsAttacker: 0,
+        timeAsGoalkeeper: 15,
+        startingRole: 'Substitute',
+        wasCaptain: false,
+        receivedFairPlayAward: false
+      },
+      {
+        id: 9,
+        name: 'Emil Gustafsson',
+        goalsScored: 2,
+        totalTimePlayed: 37,
+        timeAsDefender: 5,
+        timeAsMidfielder: 18,
+        timeAsAttacker: 14,
+        timeAsGoalkeeper: 0,
+        startingRole: 'Midfielder',
+        wasCaptain: false,
+        receivedFairPlayAward: true
+      },
+      {
+        id: 10,
+        name: 'Isak Holm',
+        goalsScored: 1,
+        totalTimePlayed: 28,
+        timeAsDefender: 8,
+        timeAsMidfielder: 10,
+        timeAsAttacker: 10,
+        timeAsGoalkeeper: 0,
+        startingRole: 'Substitute',
+        wasCaptain: false,
+        receivedFairPlayAward: false
       }
     ]
   }
@@ -92,9 +157,17 @@ const MATCH_TYPES = ['League', 'Cup', 'Friendly'];
 const FORMATIONS = ['2-2', '1-2-1', '3-1'];
 const STARTING_ROLES = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Substitute'];
 
+const formatTimeAsMinutesSeconds = (minutes) => {
+  const mins = Math.floor(minutes);
+  const secs = Math.round((minutes - mins) * 60);
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 export function MatchDetailsView({ matchId, onNavigateBack }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
 
   const matchData = mockMatchDetails[matchId];
 
@@ -172,6 +245,63 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
     }
   };
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedPlayers = () => {
+    if (!sortField) return editData.playerStats;
+
+    return [...editData.playerStats].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      // Handle string sorting
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      let result = 0;
+      if (aValue < bValue) result = -1;
+      if (aValue > bValue) result = 1;
+
+      return sortDirection === 'desc' ? -result : result;
+    });
+  };
+
+  const SortableHeader = ({ children, field, align = 'center' }) => {
+    const isActive = sortField === field;
+    const showSort = field && !['wasCaptain', 'receivedFairPlayAward'].includes(field);
+    const alignClass = align === 'left' ? 'text-left' : 'text-center';
+    const justifyClass = align === 'left' ? 'justify-start' : 'justify-center';
+
+    return (
+      <th className={`px-3 py-2 ${alignClass} text-xs font-medium text-sky-200 tracking-wider`}>
+        {showSort ? (
+          <button
+            onClick={() => handleSort(field)}
+            className={`flex items-center ${justifyClass} space-x-1 hover:text-sky-100 transition-colors w-full`}
+          >
+            <span>{children}</span>
+            {isActive && (
+              sortDirection === 'asc' ?
+                <ChevronUp className="h-3 w-3" /> :
+                <ChevronDown className="h-3 w-3" />
+            )}
+          </button>
+        ) : (
+          <span>{children}</span>
+        )}
+      </th>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -186,7 +316,10 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             Back
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-sky-300">Match Details</h2>
+            <div className="flex items-center space-x-2">
+              <ChartColumn className="h-6 w-6 text-sky-400" />
+              <h2 className="text-2xl font-bold text-sky-400">Match Details</h2>
+            </div>
             <p className="text-slate-400 text-sm">{editData.opponent}</p>
           </div>
         </div>
@@ -292,7 +425,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
 
         {/* Secondary Details Row */}
         <div className="px-4 py-3 border-t border-slate-600">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="flex items-center space-x-2">
               <Trophy className="h-4 w-4 text-slate-400" />
               <div>
@@ -321,7 +454,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             </div>
 
             <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-slate-400" />
+              <Layers2 className="h-4 w-4 text-slate-400" />
               <div>
                 <div className="text-xs text-slate-400 uppercase tracking-wide">Format</div>
                 {isEditing ? (
@@ -337,9 +470,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             </div>
 
             <div className="flex items-center space-x-2">
-              <div className="h-4 w-4 bg-slate-500 rounded-sm flex items-center justify-center">
-                <div className="text-xs text-slate-100 font-bold">F</div>
-              </div>
+              <Layers className="h-4 w-4 text-slate-400" />
               <div>
                 <div className="text-xs text-slate-400 uppercase tracking-wide">Formation</div>
                 {isEditing ? (
@@ -354,6 +485,44 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 )}
               </div>
             </div>
+
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-slate-400" />
+              <div>
+                <div className="text-xs text-slate-400 uppercase tracking-wide">Periods</div>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editData.periods}
+                    onChange={(e) => updateMatchDetail('periods', parseInt(e.target.value) || 0)}
+                    className="text-sm"
+                    min="1"
+                  />
+                ) : (
+                  <div className="text-sm text-slate-100 font-medium">{editData.periods}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-slate-400" />
+              <div>
+                <div className="text-xs text-slate-400 uppercase tracking-wide">Total Time</div>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editData.periodDuration}
+                    onChange={(e) => updateMatchDetail('periodDuration', parseInt(e.target.value) || 0)}
+                    className="text-sm"
+                    min="1"
+                  />
+                ) : (
+                  <div className="text-sm text-slate-100 font-medium">
+                    {formatTimeAsMinutesSeconds(editData.periods * editData.periodDuration)}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -361,7 +530,10 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
       {/* Player Statistics */}
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-slate-100">Player Statistics</h3>
+          <div className="flex items-center space-x-2">
+            <Users className="h-5 w-5 text-sky-400" />
+            <h3 className="text-lg font-semibold text-sky-400">Player Statistics</h3>
+          </div>
           <p className="text-slate-400 text-sm mt-1">
             Individual player performance for this match
           </p>
@@ -371,40 +543,20 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
           <table className="min-w-full">
             <thead className="bg-slate-800">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Player
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Goals
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Total Time
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Defender
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Midfielder
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Attacker
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Goalkeeper
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Starting Role
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Captain
-                </th>
-                <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  Fair Play
-                </th>
+                <SortableHeader field="name" align="left">Player</SortableHeader>
+                <SortableHeader field="goalsScored">Goals</SortableHeader>
+                <SortableHeader field="totalTimePlayed">Total Time</SortableHeader>
+                <SortableHeader field="timeAsDefender">Defender</SortableHeader>
+                <SortableHeader field="timeAsMidfielder">Midfielder</SortableHeader>
+                <SortableHeader field="timeAsAttacker">Attacker</SortableHeader>
+                <SortableHeader field="timeAsGoalkeeper">Goalkeeper</SortableHeader>
+                <SortableHeader field="startingRole">Starting Role</SortableHeader>
+                <SortableHeader field="wasCaptain">Captain</SortableHeader>
+                <SortableHeader field="receivedFairPlayAward">Fair Play</SortableHeader>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-600">
-              {editData.playerStats.map((player, index) => (
+              {getSortedPlayers().map((player, index) => (
                 <tr
                   key={player.id}
                   className={`${
@@ -413,7 +565,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 >
                   <td className="px-3 py-2 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-slate-400" />
+                      <User className="h-4 w-4 text-slate-400" />
                       <span className="text-slate-100 font-medium">{player.name}</span>
                     </div>
                   </td>
@@ -443,23 +595,20 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                         <span className="text-xs text-slate-400">min</span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center space-x-1">
-                        <Clock className="h-3 w-3 text-slate-400" />
-                        <span className="text-slate-300 font-mono">{player.totalTimePlayed}min</span>
-                      </div>
+                      <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.totalTimePlayed)}</span>
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{player.timeAsDefender}min</span>
+                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsDefender)}</span>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{player.timeAsMidfielder}min</span>
+                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsMidfielder)}</span>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{player.timeAsAttacker}min</span>
+                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsAttacker)}</span>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <span className="text-slate-300 font-mono">{player.timeAsGoalkeeper}min</span>
+                    <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.timeAsGoalkeeper)}</span>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
                     {isEditing ? (
@@ -481,7 +630,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                         className="rounded border-slate-500 bg-slate-600 text-sky-600 focus:ring-sky-500"
                       />
                     ) : (
-                      player.wasCaptain && <Award className="h-4 w-4 text-yellow-400 mx-auto" />
+                      player.wasCaptain && <span className="text-yellow-400 font-bold text-lg mx-auto block text-center">C</span>
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
