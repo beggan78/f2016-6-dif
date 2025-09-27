@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, Filter, History, ChevronDown, ChevronUp } from 'lucide-react';
-import { Select } from '../shared/UI';
+import { Calendar, MapPin, Trophy, Filter, History, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { Select, Button } from '../shared/UI';
 
 // Mock data - replace with real data later
 const mockMatches = [
@@ -210,6 +210,16 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
 
   const shouldShowFormatFilter = formats.length > 2; // More than just 'All' option
 
+  // Function to clear all filters
+  const clearAllFilters = () => {
+    setTypeFilter('All');
+    setOutcomeFilter('All');
+    setHomeAwayFilter('All');
+    setOpponentFilter('All');
+    setPlayerFilter('All');
+    setFormatFilter('All');
+  };
+
   const filteredMatches = mockMatches.filter(match => {
     // Time range filter
     if (startDate || endDate) {
@@ -285,23 +295,35 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <div
-          className="flex items-center justify-between cursor-pointer"
-          onClick={() => setIsFilterCollapsed(!isFilterCollapsed)}
-        >
-          <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filter
-          </h3>
-          {needsCollapse && (
-            <button className="text-sky-400 hover:text-sky-300 transition-colors">
-              {isFilterCollapsed ? (
-                <ChevronDown className="h-5 w-5" />
-              ) : (
-                <ChevronUp className="h-5 w-5" />
-              )}
-            </button>
-          )}
+        <div className="flex items-center justify-between">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => setIsFilterCollapsed(!isFilterCollapsed)}
+          >
+            <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filter
+            </h3>
+            {needsCollapse && (
+              <button className="text-sky-400 hover:text-sky-300 transition-colors">
+                {isFilterCollapsed ? (
+                  <ChevronDown className="h-5 w-5" />
+                ) : (
+                  <ChevronUp className="h-5 w-5" />
+                )}
+              </button>
+            )}
+          </div>
+
+          <Button
+            onClick={clearAllFilters}
+            Icon={RotateCcw}
+            variant="ghost"
+            size="sm"
+            className="text-sky-400 hover:text-sky-300"
+          >
+            Clear All
+          </Button>
         </div>
 
         {/* Filter content - collapsible when screen is narrow */}
