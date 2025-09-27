@@ -37,6 +37,7 @@ export async function checkForRecoverableMatch() {
       .from('match')
       .select('*')
       .eq('id', currentMatchId)
+      .is('deleted_at', null)
       .eq('state', 'finished') // Only finished matches can be recovered
       .single();
 
@@ -84,10 +85,15 @@ export async function deleteAbandonedMatch(matchId) {
     }
 
 
+    const nowIso = new Date().toISOString();
+
     const { error } = await supabase
       .from('match')
-      .delete()
-      .eq('id', matchId);
+      .update({
+        deleted_at: nowIso
+      })
+      .eq('id', matchId)
+      .is('deleted_at', null);
 
     if (error) {
       console.error('❌ Failed to delete abandoned match:', error);

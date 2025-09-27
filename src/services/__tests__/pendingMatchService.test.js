@@ -23,15 +23,7 @@ jest.mock('../matchStateManager', () => ({
 
 jest.mock('../../lib/supabase', () => ({
   supabase: {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            order: jest.fn(() => Promise.resolve({ data: [], error: null }))
-          }))
-        }))
-      }))
-    }))
+    from: jest.fn()
   }
 }));
 
@@ -51,19 +43,21 @@ const mockConsole = {
   log: jest.fn()
 };
 
+const createMatchSelectChain = ({ data = [], error = null } = {}) => {
+  const order = jest.fn(() => Promise.resolve({ data, error }));
+  const eqState = jest.fn(() => ({ order }));
+  const isDeleted = jest.fn(() => ({ eq: eqState }));
+  const eqTeam = jest.fn(() => ({ is: isDeleted }));
+  const select = jest.fn(() => ({ eq: eqTeam }));
+  return { select, eqTeam, isDeleted, eqState, order };
+};
+
 describe('pendingMatchService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    supabase.from.mockImplementation(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            order: jest.fn(() => Promise.resolve({ data: [], error: null }))
-          }))
-        }))
-      }))
-    }));
+    const chain = createMatchSelectChain();
+    supabase.from.mockImplementation(() => ({ select: chain.select }));
 
     // Setup console mocks
     console.warn = mockConsole.warn;
@@ -117,19 +111,17 @@ describe('pendingMatchService', () => {
       ];
 
       // Mock successful Supabase response
-      const mockOrder = jest.fn(() => Promise.resolve({ data: mockMatches, error: null }));
-      const mockEq2 = jest.fn(() => ({ order: mockOrder }));
-      const mockEq1 = jest.fn(() => ({ eq: mockEq2 }));
-      const mockSelect = jest.fn(() => ({ eq: mockEq1 }));
-      supabase.from.mockReturnValue({ select: mockSelect });
+      const chain = createMatchSelectChain({ data: mockMatches });
+      supabase.from.mockReturnValue({ select: chain.select });
 
       const result = await checkForPendingMatches('team123');
 
       expect(supabase.from).toHaveBeenCalledWith('match');
-      expect(mockSelect).toHaveBeenCalledWith('*');
-      expect(mockEq1).toHaveBeenCalledWith('team_id', 'team123');
-      expect(mockEq2).toHaveBeenCalledWith('state', 'pending');
-      expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
+      expect(chain.select).toHaveBeenCalledWith('*');
+      expect(chain.eqTeam).toHaveBeenCalledWith('team_id', 'team123');
+      expect(chain.isDeleted).toHaveBeenCalledWith('deleted_at', null);
+      expect(chain.eqState).toHaveBeenCalledWith('state', 'pending');
+      expect(chain.order).toHaveBeenCalledWith('created_at', { ascending: false });
 
       expect(result).toEqual({
         shouldShow: true,
@@ -169,10 +161,7 @@ describe('pendingMatchService', () => {
         }
       ];
 
-      const mockOrder = jest.fn(() => Promise.resolve({ data: mockMatches, error: null }));
-      const mockEqState = jest.fn(() => ({ order: mockOrder }));
-      const mockEqTeam = jest.fn(() => ({ eq: mockEqState }));
-      const mockSelectMatches = jest.fn(() => ({ eq: mockEqTeam }));
+      const matchChain = createMatchSelectChain({ data: mockMatches });
 
       const mockIn = jest.fn(() => Promise.resolve({
         data: [{ id: 'user-1', name: 'Coach Carter' }],
@@ -182,7 +171,7 @@ describe('pendingMatchService', () => {
 
       supabase.from.mockImplementation((table) => {
         if (table === 'match') {
-          return { select: mockSelectMatches };
+          return { select: matchChain.select };
         }
         if (table === 'user_profile') {
           return { select: mockSelectProfiles };
@@ -192,10 +181,11 @@ describe('pendingMatchService', () => {
 
       const result = await checkForPendingMatches('team123');
 
-      expect(mockSelectMatches).toHaveBeenCalledWith('*');
-      expect(mockEqTeam).toHaveBeenCalledWith('team_id', 'team123');
-      expect(mockEqState).toHaveBeenCalledWith('state', 'pending');
-      expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
+      expect(matchChain.select).toHaveBeenCalledWith('*');
+      expect(matchChain.eqTeam).toHaveBeenCalledWith('team_id', 'team123');
+      expect(matchChain.isDeleted).toHaveBeenCalledWith('deleted_at', null);
+      expect(matchChain.eqState).toHaveBeenCalledWith('state', 'pending');
+      expect(matchChain.order).toHaveBeenCalledWith('created_at', { ascending: false });
 
       expect(mockSelectProfiles).toHaveBeenCalledWith('id, name');
       expect(mockIn).toHaveBeenCalledWith('id', ['user-1']);
@@ -244,11 +234,8 @@ describe('pendingMatchService', () => {
         }
       ];
 
-      const mockOrder = jest.fn(() => Promise.resolve({ data: mockMatches, error: null }));
-      const mockEq2 = jest.fn(() => ({ order: mockOrder }));
-      const mockEq1 = jest.fn(() => ({ eq: mockEq2 }));
-      const mockSelect = jest.fn(() => ({ eq: mockEq1 }));
-      supabase.from.mockReturnValue({ select: mockSelect });
+      const chain = createMatchSelectChain({ data: mockMatches });
+      supabase.from.mockReturnValue({ select: chain.select });
 
       const result = await checkForPendingMatches('team123');
 
@@ -265,14 +252,11 @@ describe('pendingMatchService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      const mockOrder = jest.fn(() => Promise.resolve({
+      const chain = createMatchSelectChain({
         data: null,
         error: { message: 'Database connection failed' }
-      }));
-      const mockEq2 = jest.fn(() => ({ order: mockOrder }));
-      const mockEq1 = jest.fn(() => ({ eq: mockEq2 }));
-      const mockSelect = jest.fn(() => ({ eq: mockEq1 }));
-      supabase.from.mockReturnValue({ select: mockSelect });
+      });
+      supabase.from.mockReturnValue({ select: chain.select });
 
       const result = await checkForPendingMatches('team123');
 

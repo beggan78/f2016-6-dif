@@ -65,6 +65,7 @@ export type Database = {
         Row: {
           captain: string | null
           created_at: string
+          deleted_at: string | null
           fair_play_award: string | null
           finished_at: string | null
           format: Database["public"]["Enums"]["match_format"]
@@ -87,6 +88,7 @@ export type Database = {
         Insert: {
           captain?: string | null
           created_at?: string
+          deleted_at?: string | null
           fair_play_award?: string | null
           finished_at?: string | null
           format?: Database["public"]["Enums"]["match_format"]
@@ -109,6 +111,7 @@ export type Database = {
         Update: {
           captain?: string | null
           created_at?: string
+          deleted_at?: string | null
           fair_play_award?: string | null
           finished_at?: string | null
           format?: Database["public"]["Enums"]["match_format"]

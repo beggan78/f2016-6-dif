@@ -126,7 +126,7 @@ export function useMatchRecovery({
         console.log('🗑️ Deleting abandoned recovered match:', recoveryMatch.id);
       }
 
-      // Delete match from database
+      // Soft delete match in database
       const deleteResult = await deleteAbandonedMatch(recoveryMatch.id);
       if (!deleteResult.success) {
         throw new Error(deleteResult.error);
