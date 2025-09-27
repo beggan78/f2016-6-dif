@@ -1,15 +1,17 @@
-import { 
-  checkForRecoverableMatch, 
-  deleteAbandonedMatch, 
-  getRecoveryMatchData, 
-  validateRecoveryData 
+import {
+  checkForRecoverableMatch,
+  deleteAbandonedMatch,
+  getRecoveryMatchData,
+  restoreSoftDeletedMatch,
+  validateRecoveryData
 } from '../matchRecoveryService';
 import { supabase } from '../../lib/supabase';
 
 // Mock the supabase client
 jest.mock('../../lib/supabase', () => ({
   supabase: {
-    from: jest.fn()
+    from: jest.fn(),
+    rpc: jest.fn()
   }
 }));
 
@@ -46,7 +48,7 @@ const mockLoadState = createGamePersistenceManager().loadState;
 describe('matchRecoveryService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock console methods for clean test output
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -253,6 +255,65 @@ describe('matchRecoveryService', () => {
         '❌ Exception while deleting abandoned match:',
         expect.any(Error)
       );
+    });
+  });
+
+  describe('restoreSoftDeletedMatch', () => {
+    it('requires matchId', async () => {
+      const result = await restoreSoftDeletedMatch();
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Match ID is required'
+      });
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it('returns error when RPC fails', async () => {
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: 'permission denied' }
+      });
+
+      const result = await restoreSoftDeletedMatch('match-123');
+
+      expect(supabase.rpc).toHaveBeenCalledWith('restore_soft_deleted_match', {
+        p_match_id: 'match-123'
+      });
+      expect(result).toEqual({
+        success: false,
+        error: 'Database error: permission denied'
+      });
+    });
+
+    it('returns error when no match is restored', async () => {
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: null
+      });
+
+      const result = await restoreSoftDeletedMatch('match-123');
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Unable to restore match. It may not be soft deleted or accessible.'
+      });
+    });
+
+    it('returns restored match on success', async () => {
+      const restoredMatch = { id: 'match-123', deleted_at: null };
+
+      supabase.rpc.mockResolvedValue({
+        data: restoredMatch,
+        error: null
+      });
+
+      const result = await restoreSoftDeletedMatch('match-123');
+
+      expect(result).toEqual({
+        success: true,
+        match: restoredMatch
+      });
     });
   });
 

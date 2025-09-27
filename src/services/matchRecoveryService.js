@@ -116,6 +116,54 @@ export async function deleteAbandonedMatch(matchId) {
 }
 
 /**
+ * Restore a soft-deleted match via controlled RPC
+ *
+ * @param {string} matchId - Match identifier to restore
+ * @returns {Promise<{success: boolean, match?: Object, error?: string}>}
+ */
+export async function restoreSoftDeletedMatch(matchId) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    const { data: restoredMatch, error } = await supabase.rpc('restore_soft_deleted_match', {
+      p_match_id: matchId
+    });
+
+    if (error) {
+      console.error('❌ Failed to restore soft-deleted match:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    if (!restoredMatch) {
+      return {
+        success: false,
+        error: 'Unable to restore match. It may not be soft deleted or accessible.'
+      };
+    }
+
+    return {
+      success: true,
+      match: restoredMatch
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while restoring soft-deleted match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
  * Get match statistics from localStorage for recovery
  * 
  * @deprecated This function is no longer needed as player_match_stats are stored in database when match is created
