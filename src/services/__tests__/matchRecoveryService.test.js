@@ -9,18 +9,25 @@ import { supabase } from '../../lib/supabase';
 // Mock the supabase client
 jest.mock('../../lib/supabase', () => ({
   supabase: {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn()
-        }))
-      })),
-      delete: jest.fn(() => ({
-        eq: jest.fn()
-      }))
-    }))
+    from: jest.fn()
   }
 }));
+
+const createSelectChain = ({ singleResult }) => {
+  const single = jest.fn().mockResolvedValue(singleResult);
+  const eqState = jest.fn(() => ({ single }));
+  const isDeleted = jest.fn(() => ({ eq: eqState }));
+  const eqId = jest.fn(() => ({ is: isDeleted }));
+  const select = jest.fn(() => ({ eq: eqId }));
+  return { select, eqId, isDeleted, eqState, single };
+};
+
+const createUpdateChain = response => {
+  const isDeleted = jest.fn(() => Promise.resolve(response));
+  const eqId = jest.fn(() => ({ is: isDeleted }));
+  const update = jest.fn(() => ({ eq: eqId }));
+  return { update, eqId, isDeleted };
+};
 
 // Mock the persistence manager
 jest.mock('../../utils/persistenceManager', () => {
@@ -90,26 +97,11 @@ describe('matchRecoveryService', () => {
         currentMatchId: 'match-123'
       });
 
-      const mockSingle = jest.fn().mockResolvedValue({
-        data: mockMatch,
-        error: null
+      const chain = createSelectChain({
+        singleResult: { data: mockMatch, error: null }
       });
-      
-      const mockEq2 = jest.fn(() => ({
-        single: mockSingle
-      }));
-      
-      const mockEq1 = jest.fn(() => ({
-        eq: mockEq2
-      }));
-      
-      const mockSelect = jest.fn(() => ({
-        eq: mockEq1
-      }));
 
-      supabase.from.mockReturnValue({
-        select: mockSelect
-      });
+      supabase.from.mockReturnValue({ select: chain.select });
 
       const result = await checkForRecoverableMatch();
 
@@ -119,9 +111,10 @@ describe('matchRecoveryService', () => {
       });
 
       expect(supabase.from).toHaveBeenCalledWith('match');
-      expect(mockSelect).toHaveBeenCalledWith('*');
-      expect(mockEq1).toHaveBeenCalledWith('id', 'match-123');
-      expect(mockEq2).toHaveBeenCalledWith('state', 'finished');
+      expect(chain.select).toHaveBeenCalledWith('*');
+      expect(chain.eqId).toHaveBeenCalledWith('id', 'match-123');
+      expect(chain.isDeleted).toHaveBeenCalledWith('deleted_at', null);
+      expect(chain.eqState).toHaveBeenCalledWith('state', 'finished');
     });
 
     it('returns null when match not found', async () => {
@@ -129,26 +122,14 @@ describe('matchRecoveryService', () => {
         currentMatchId: 'non-existent-match'
       });
 
-      const mockSingle = jest.fn().mockResolvedValue({
-        data: null,
-        error: { code: 'PGRST116' } // Not found
+      const chain = createSelectChain({
+        singleResult: {
+          data: null,
+          error: { code: 'PGRST116' }
+        }
       });
-      
-      const mockEq2 = jest.fn(() => ({
-        single: mockSingle
-      }));
-      
-      const mockEq1 = jest.fn(() => ({
-        eq: mockEq2
-      }));
-      
-      const mockSelect = jest.fn(() => ({
-        eq: mockEq1
-      }));
 
-      supabase.from.mockReturnValue({
-        select: mockSelect
-      });
+      supabase.from.mockReturnValue({ select: chain.select });
 
       const result = await checkForRecoverableMatch();
 
@@ -160,26 +141,14 @@ describe('matchRecoveryService', () => {
         currentMatchId: 'match-123'
       });
 
-      const mockSingle = jest.fn().mockResolvedValue({
-        data: null,
-        error: { message: 'Database connection failed', code: 'PGRST001' }
+      const chain = createSelectChain({
+        singleResult: {
+          data: null,
+          error: { message: 'Database connection failed', code: 'PGRST001' }
+        }
       });
-      
-      const mockEq2 = jest.fn(() => ({
-        single: mockSingle
-      }));
-      
-      const mockEq1 = jest.fn(() => ({
-        eq: mockEq2
-      }));
-      
-      const mockSelect = jest.fn(() => ({
-        eq: mockEq1
-      }));
 
-      supabase.from.mockReturnValue({
-        select: mockSelect
-      });
+      supabase.from.mockReturnValue({ select: chain.select });
 
       const result = await checkForRecoverableMatch();
 
@@ -214,24 +183,20 @@ describe('matchRecoveryService', () => {
   });
 
   describe('deleteAbandonedMatch', () => {
-    it('successfully deletes a match', async () => {
-      const mockEq = jest.fn().mockResolvedValue({
-        error: null
-      });
-      const mockDelete = jest.fn(() => ({
-        eq: mockEq
-      }));
+    it('successfully soft deletes a match', async () => {
+      const chain = createUpdateChain({ error: null });
 
-      supabase.from.mockReturnValue({
-        delete: mockDelete
-      });
+      supabase.from.mockReturnValue({ update: chain.update });
 
       const result = await deleteAbandonedMatch('match-123');
 
       expect(result).toEqual({ success: true });
       expect(supabase.from).toHaveBeenCalledWith('match');
-      expect(mockDelete).toHaveBeenCalled();
-      expect(mockEq).toHaveBeenCalledWith('id', 'match-123');
+      expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({
+        deleted_at: expect.any(String)
+      }));
+      expect(chain.eqId).toHaveBeenCalledWith('id', 'match-123');
+      expect(chain.isDeleted).toHaveBeenCalledWith('deleted_at', null);
     });
 
     it('returns error when matchId is missing', async () => {
@@ -254,17 +219,10 @@ describe('matchRecoveryService', () => {
       });
     });
 
-    it('handles database delete errors', async () => {
-      const mockEq = jest.fn().mockResolvedValue({
-        error: { message: 'Permission denied' }
-      });
-      const mockDelete = jest.fn(() => ({
-        eq: mockEq
-      }));
+    it('handles database update errors', async () => {
+      const chain = createUpdateChain({ error: { message: 'Permission denied' } });
 
-      supabase.from.mockReturnValue({
-        delete: mockDelete
-      });
+      supabase.from.mockReturnValue({ update: chain.update });
 
       const result = await deleteAbandonedMatch('match-123');
 

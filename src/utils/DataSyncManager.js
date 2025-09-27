@@ -265,6 +265,7 @@ export class DataSyncManager {
           player_match_stats (*)
         `)
         .eq('team.team_user.user_id', this.userId)
+        .is('deleted_at', null)
         .order('finished_at', { ascending: false })
         .limit(limit);
 

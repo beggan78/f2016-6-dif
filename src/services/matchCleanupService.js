@@ -2,17 +2,17 @@ import { supabase } from '../lib/supabase';
 
 /**
  * Service for automatically cleaning up orphaned match records
- * 
+ *
  * Removes matches that have been abandoned or left unfinished:
  * - Running matches older than 5 hours (likely abandoned)
  * - Finished matches older than 14 days (user forgot to save)
- * 
- * Respects existing RLS policies - only deletes matches the user manages.
+ *
+ * Respects existing RLS policies - only marks matches the user manages as deleted.
  */
 
 /**
  * Clean up orphaned match records based on age and state
- * 
+ *
  * @returns {Promise<{success: boolean, cleanedRunning: number, cleanedFinished: number, error?: string}>}
  */
 export async function cleanupAbandonedMatches() {
@@ -21,14 +21,20 @@ export async function cleanupAbandonedMatches() {
     const now = new Date();
     const runningCutoff = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
     const finishedCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000); // 14 days ago
+    const nowIso = now.toISOString();
 
+    const softDeletePayload = {
+      deleted_at: nowIso
+    };
 
-    // Clean up running matches older than 5 hours
+    // Clean up running matches older than 5 hours using started_at to avoid deleting newly resumed games
     const { data: deletedRunning, error: runningError } = await supabase
       .from('match')
-      .delete()
+      .update(softDeletePayload)
       .eq('state', 'running')
-      .lt('created_at', runningCutoff.toISOString())
+      .is('deleted_at', null)
+      .not('started_at', 'is', null)
+      .lt('started_at', runningCutoff.toISOString())
       .select('id');
 
     if (runningError) {
@@ -44,9 +50,11 @@ export async function cleanupAbandonedMatches() {
     // Clean up finished matches older than 14 days
     const { data: deletedFinished, error: finishedError } = await supabase
       .from('match')
-      .delete()
+      .update(softDeletePayload)
       .eq('state', 'finished')
-      .lt('created_at', finishedCutoff.toISOString())
+      .is('deleted_at', null)
+      .not('finished_at', 'is', null)
+      .lt('finished_at', finishedCutoff.toISOString())
       .select('id');
 
     if (finishedError) {
@@ -88,7 +96,7 @@ export async function cleanupAbandonedMatches() {
 /**
  * Get statistics about potentially orphaned matches without deleting them
  * Useful for monitoring and debugging
- * 
+ *
  * @returns {Promise<{success: boolean, runningCount: number, finishedCount: number, error?: string}>}
  */
 export async function getOrphanedMatchStats() {
@@ -102,7 +110,9 @@ export async function getOrphanedMatchStats() {
       .from('match')
       .select('id', { count: 'exact', head: true })
       .eq('state', 'running')
-      .lt('created_at', runningCutoff.toISOString());
+      .is('deleted_at', null)
+      .not('started_at', 'is', null)
+      .lt('started_at', runningCutoff.toISOString());
 
     if (runningError) {
       return {
@@ -118,7 +128,9 @@ export async function getOrphanedMatchStats() {
       .from('match')
       .select('id', { count: 'exact', head: true })
       .eq('state', 'finished')
-      .lt('created_at', finishedCutoff.toISOString());
+      .is('deleted_at', null)
+      .not('finished_at', 'is', null)
+      .lt('finished_at', finishedCutoff.toISOString());
 
     if (finishedError) {
       return {
