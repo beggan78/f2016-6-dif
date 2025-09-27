@@ -176,6 +176,7 @@ Modern composite team configuration system using four components:
 - Maintain separation between logic, animation, and UI concerns
 - When in doubt about time calculations, trace through stint manager flow
 - Always run the whole test suite after having completed a feature or a change to make sure nothing has broken
+- Always display dates on the ISO format YYYY-MM-DD
 - **Linting**: Always run `CI=true && npm run build` before finishing a task to check for ESLint errors that will fail in GitHub CI
 - **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
 - **New components**: Write tests first, following established patterns in `__tests__` directories
