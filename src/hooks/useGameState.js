@@ -20,6 +20,7 @@ import { usePlayerState } from './usePlayerState';
 import { createTeamConfig, FORMATS } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
+import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 
 // PersistenceManager for handling localStorage operations
 const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
@@ -96,7 +97,7 @@ const findPlayerPairKey = (playerId, formation, isPairsMode, formationAwareTeamC
 
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
-  const { currentTeam } = useTeam();
+  const { currentTeam, updateMatchActivityStatus } = useTeam();
   // Get preferences for various integrations
   const { audioPreferences } = usePreferences();
 
@@ -154,6 +155,7 @@ export function useGameState(navigateToView = null) {
   const [gameLog, setGameLog] = useState(initialState.gameLog);
   const [opponentTeam, setOpponentTeam] = useState(initialState.opponentTeam || '');
   const [matchType, setMatchType] = useState(initialState.matchType || DEFAULT_MATCH_TYPE);
+  const [venueType, setVenueType] = useState(initialState.venueType || DEFAULT_VENUE_TYPE);
   const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
 
   // Match events and scoring - extracted to useMatchEvents hook
@@ -187,11 +189,17 @@ export function useGameState(navigateToView = null) {
   // Configuration activity tracking - prevents accidental clearing during active configuration
   const [hasActiveConfiguration, setHasActiveConfiguration] = useState(initialState.hasActiveConfiguration || false);
 
+  useEffect(() => {
+    if (updateMatchActivityStatus) {
+      updateMatchActivityStatus(matchState);
+    }
+  }, [matchState, updateMatchActivityStatus]);
+
   // Initialize match persistence hook
   const gameState = {
     allPlayers, selectedSquadIds, numPeriods, periodGoalieIds,
     teamConfig, selectedFormation, periodDurationMinutes,
-    opponentTeam, captainId, matchType, formation,
+    opponentTeam, captainId, matchType, venueType, formation,
     currentMatchId, matchCreated
   };
   
@@ -237,6 +245,7 @@ export function useGameState(navigateToView = null) {
         gameLog,
         opponentTeam,
         matchType,
+        venueType,
         lastSubstitutionTimestamp,
         // Match event tracking state from hook
         ...matchEventsHook.getEventState(),
@@ -256,7 +265,7 @@ export function useGameState(navigateToView = null) {
 
     // Cleanup timeout on dependency change or unmount
     return () => clearTimeout(timeoutId);
-  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
+  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
 
 
 
@@ -414,6 +423,7 @@ export function useGameState(navigateToView = null) {
         opponentTeam,
         captainId,
         matchType,
+        venueType,
         formation,
         periodGoalieIds,
         selectedSquadIds,
@@ -461,7 +471,7 @@ export function useGameState(navigateToView = null) {
     
     setView(VIEWS.PERIOD_SETUP);
   }, [selectedSquadIds, numPeriods, periodGoalieIds, preparePeriod, allPlayers, currentTeam,
-      teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType,
+      teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, venueType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
       setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated,
       getFormationAwareTeamConfig]);
@@ -609,6 +619,55 @@ export function useGameState(navigateToView = null) {
 
   // New function to actually start the match when user clicks Start Match button
   const handleActualMatchStart = async () => {
+    const formationAwareTeamConfig = getFormationAwareTeamConfig();
+    const lockTimestamp = Date.now();
+
+    const lockedPlayers = allPlayers.map(player => {
+      if (!selectedSquadIds.includes(player.id)) {
+        return player;
+      }
+
+      const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(
+        player.id,
+        formation,
+        formationAwareTeamConfig
+      );
+
+      const stats = { ...player.stats };
+
+      if (!stats.startLocked) {
+        let newStartedMatchAs = stats.startedMatchAs;
+        if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
+        else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
+        else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
+
+        stats.startedMatchAs = newStartedMatchAs;
+        stats.startedAtPosition = currentPairKey;
+        stats.startedAtRole = currentRole || null;
+      }
+
+      stats.currentRole = currentRole;
+      stats.currentStatus = currentStatus;
+      stats.currentPairKey = currentPairKey;
+      stats.lastStintStartTimeEpoch = lockTimestamp;
+      stats.startLocked = true;
+
+      return {
+        ...player,
+        stats
+      };
+    });
+
+    setAllPlayers(lockedPlayers);
+
+    if (currentMatchId) {
+      try {
+        await upsertPlayerMatchStats(currentMatchId, lockedPlayers, captainId, selectedSquadIds);
+      } catch (error) {
+        console.warn('⚠️  Failed to upsert player stats on match start:', error);
+      }
+    }
+
     // Update match state to running in database
     if (currentMatchId) {
       try {
@@ -780,6 +839,7 @@ export function useGameState(navigateToView = null) {
 
       // Reset configuration activity tracking
       setHasActiveConfiguration(false);
+      setVenueType(DEFAULT_VENUE_TYPE);
     } else {
       console.warn('Failed to clear game events');
     }
@@ -791,7 +851,7 @@ export function useGameState(navigateToView = null) {
     }
 
     return result;
-  }, [persistence, clearAllMatchEvents, clearCaptain]);
+  }, [persistence, clearAllMatchEvents, clearCaptain, setVenueType]);
 
 
   // Team mode switching functions
@@ -1349,6 +1409,7 @@ export function useGameState(navigateToView = null) {
         opponentTeam,
         captainId,
         matchType,
+        venueType,
         formation,
         periodGoalieIds,
         selectedSquadIds,
@@ -1369,7 +1430,7 @@ export function useGameState(navigateToView = null) {
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
   }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
-      periodDurationMinutes, opponentTeam, captainId, matchType, currentMatchId, matchCreated,
+      periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentMatchId, matchCreated,
       formation, allPlayers]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
@@ -1444,7 +1505,7 @@ export function useGameState(navigateToView = null) {
           const stats = { ...p.stats };
           
           // Set participation markers for database insertion (same logic as handleStartGame)
-          if (!stats.startedMatchAs) {
+          if (!stats.startLocked) {
             let newStartedMatchAs = null;
             if (currentStatus === PLAYER_STATUS.GOALIE) newStartedMatchAs = PLAYER_ROLES.GOALIE;
             else if (currentStatus === PLAYER_STATUS.ON_FIELD) newStartedMatchAs = PLAYER_ROLES.FIELD_PLAYER;
@@ -1455,6 +1516,7 @@ export function useGameState(navigateToView = null) {
             stats.startedAtPosition = currentPairKey;
             // Preserve the exact role at match start for accurate reporting
             stats.startedAtRole = currentRole || null;
+            stats.startLocked = false;
           }
 
           return {
@@ -1494,6 +1556,7 @@ export function useGameState(navigateToView = null) {
           periods: numPeriods,
           captainId: captainId,
           matchType: matchType,
+          venueType: venueType,
           opponentTeam: opponentTeam,
           periodDurationMinutes: periodDurationMinutes
         },
@@ -1515,7 +1578,8 @@ export function useGameState(navigateToView = null) {
           allPlayers: updatedPlayers,
           opponentTeam,
           captainId,
-          matchType
+          matchType,
+          venueType
         }, currentTeam.id);
 
         if (currentMatchId && matchCreated) {
@@ -1559,7 +1623,8 @@ export function useGameState(navigateToView = null) {
           periodDurationMinutes,
           opponentTeam,
           captainId,
-          matchType
+          matchType,
+          venueType
         }, currentTeam?.id))
           .then((updateResult) => {
             if (!updateResult.success) {
@@ -1626,7 +1691,7 @@ export function useGameState(navigateToView = null) {
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
   }, [formation, teamConfig, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
-      numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, currentTeam?.id, periodGoalieIds,
+      numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentTeam?.id, periodGoalieIds,
       currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
 
   const handleSavePeriodConfiguration = useCallback(async () => {
@@ -1673,6 +1738,8 @@ export function useGameState(navigateToView = null) {
     setOpponentTeam,
     matchType,
     setMatchType,
+    venueType,
+    setVenueType,
     ownScore,
     opponentScore,
     lastSubstitutionTimestamp,

@@ -149,6 +149,7 @@ describe('useGameState starting role persistence', () => {
             : PLAYER_ROLES.FIELD_PLAYER,
       startedAtRole: startedAsRole,
       startedAtPosition: startedPosition,
+      startLocked: false,
       currentRole,
       currentStatus,
       goals: 0,
@@ -181,6 +182,7 @@ describe('useGameState starting role persistence', () => {
     matchStateManager.saveInitialMatchConfig.mockResolvedValue({ success: true });
     matchStateManager.upsertPlayerMatchStats.mockResolvedValue({ success: true });
     matchStateManager.createMatch.mockResolvedValue({ success: true, matchId: 'match-123' });
+    matchStateManager.updateMatchToRunning.mockResolvedValue({ success: true });
 
     currentPlayers = [
       buildPlayer('p1', 'Sophie', PLAYER_ROLES.GOALIE, 'goalie', PLAYER_ROLES.GOALIE, PLAYER_STATUS.GOALIE),
@@ -190,6 +192,15 @@ describe('useGameState starting role persistence', () => {
       buildPlayer('p5', 'Tyra', PLAYER_ROLES.ATTACKER, 'rightAttacker', PLAYER_ROLES.ATTACKER, PLAYER_STATUS.ON_FIELD),
       buildPlayer('p6', 'Nicole', PLAYER_ROLES.SUBSTITUTE, 'substitute_1', PLAYER_ROLES.SUBSTITUTE, PLAYER_STATUS.SUBSTITUTE)
     ];
+
+    setAllPlayersMock.mockImplementation((updater) => {
+      if (typeof updater === 'function') {
+        currentPlayers = updater(currentPlayers);
+      } else {
+        currentPlayers = updater;
+      }
+      return currentPlayers;
+    });
 
     mockPersistenceManager.loadState.mockReturnValue({ ...mockInitialState });
 
@@ -280,5 +291,49 @@ describe('useGameState starting role persistence', () => {
     const upsertPlayers = lastUpsertCall[1];
     const upsertedDefender = upsertPlayers.find(player => player.id === 'p2');
     expect(upsertedDefender.stats.startedAtRole).toBe(PLAYER_ROLES.DEFENDER);
+  });
+
+  it('allows pre-match edits but locks roles after match start', async () => {
+    const { result } = renderHook(() => useGameState());
+
+    await act(async () => {
+      await result.current.handleSavePeriodConfiguration();
+    });
+
+    // Update formation before match start: move defender to goalie
+    await act(async () => {
+      result.current.setFormation({
+        ...baseFormation,
+        goalie: 'p2',
+        leftDefender: 'p3',
+        rightDefender: 'p4',
+        leftAttacker: 'p5',
+        rightAttacker: 'p6',
+        substitute_1: 'p1'
+      });
+      await result.current.handleSavePeriodConfiguration();
+    });
+
+    await act(async () => {
+      await result.current.handleActualMatchStart();
+    });
+
+    const lockedPlayer = currentPlayers.find(player => player.id === 'p2');
+    expect(lockedPlayer.stats.startedMatchAs).toBe(PLAYER_ROLES.GOALIE);
+    expect(lockedPlayer.stats.startLocked).toBe(true);
+
+    // Attempt to change roles after match start
+    await act(async () => {
+      result.current.setFormation({
+        ...baseFormation,
+        goalie: 'p3',
+        leftDefender: 'p2'
+      });
+      await result.current.handleSavePeriodConfiguration();
+    });
+
+    const lockedPlayerAfterChange = currentPlayers.find(player => player.id === 'p2');
+    expect(lockedPlayerAfterChange.stats.startedMatchAs).toBe(PLAYER_ROLES.GOALIE);
+    expect(lockedPlayerAfterChange.stats.startedAtRole).toBe(PLAYER_ROLES.GOALIE);
   });
 });

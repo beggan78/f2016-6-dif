@@ -4,6 +4,7 @@ import {
   createPersistenceManager,
   createGamePersistenceManager 
 } from '../persistenceManager';
+import { DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
 
 describe('PersistenceManager', () => {
   let manager;
@@ -466,11 +467,9 @@ describe('GamePersistenceManager', () => {
       expect(gameManager.saveState).toHaveBeenCalled();
       const savedState = gameManager.saveState.mock.calls[0][0];
       
-      // Verify score fields are present (even if undefined)
-      expect('ownScore' in savedState).toBe(true);
-      expect('opponentScore' in savedState).toBe(true);
-      expect(savedState.ownScore).toBeUndefined();
-      expect(savedState.opponentScore).toBeUndefined();
+      // Verify score fields default to zeros when absent
+      expect(savedState.ownScore).toBe(0);
+      expect(savedState.opponentScore).toBe(0);
     });
 
     it('should save zero scores correctly', () => {
@@ -493,6 +492,44 @@ describe('GamePersistenceManager', () => {
       // Verify zero scores are saved correctly
       expect(savedState.ownScore).toBe(0);
       expect(savedState.opponentScore).toBe(0);
+    });
+
+    it('should default venueType when not provided', () => {
+      const partialState = {
+        allPlayers: [],
+        view: 'config',
+        selectedSquadIds: []
+      };
+
+      jest.spyOn(gameManager, 'saveState');
+      gameManager.saveGameState(partialState);
+
+      const savedState = gameManager.saveState.mock.calls[0][0];
+      expect(savedState.venueType).toBe(DEFAULT_VENUE_TYPE);
+    });
+
+    it('should default venueType when explicitly null', () => {
+      const stateWithNullVenue = {
+        allPlayers: [],
+        view: 'config',
+        selectedSquadIds: [],
+        venueType: null
+      };
+
+      jest.spyOn(gameManager, 'saveState');
+      gameManager.saveGameState(stateWithNullVenue);
+
+      const savedState = gameManager.saveState.mock.calls[0][0];
+      expect(savedState.venueType).toBe(DEFAULT_VENUE_TYPE);
+    });
+
+    it('should warn and skip save for invalid game state', () => {
+      jest.spyOn(gameManager, 'saveState');
+      const result = gameManager.saveGameState(null);
+
+      expect(result).toBe(false);
+      expect(console.warn).toHaveBeenCalledWith('GamePersistenceManager.saveGameState called with invalid gameState. Aborting save.');
+      expect(gameManager.saveState).not.toHaveBeenCalled();
     });
   });
 

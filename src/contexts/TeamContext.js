@@ -25,6 +25,12 @@ export const TeamProvider = ({ children }) => {
   const [userClubs, setUserClubs] = useState([]);
   const [teamPlayers, setTeamPlayers] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [matchActivityStatus, setMatchActivityStatus] = useState(() => ({
+    matchState: 'not_started',
+    isRunning: false,
+    isActive: false
+  }));
+  const isMatchRunning = matchActivityStatus.isRunning;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const deferredRefreshTimeoutRef = useRef(null);
@@ -567,6 +573,10 @@ export const TeamProvider = ({ children }) => {
 
   // Check for pending requests for current team (for automatic notification)
   const checkPendingRequests = useCallback(async () => {
+    if (isMatchRunning) {
+      return;
+    }
+
     if (!currentTeam || !user || !userProfile) {
       setPendingRequests([]);
       return;
@@ -588,10 +598,35 @@ export const TeamProvider = ({ children }) => {
       setPendingRequests([]);
       return [];
     }
-  }, [currentTeam, user, userProfile, getTeamAccessRequests]);
+  }, [currentTeam, user, userProfile, getTeamAccessRequests, isMatchRunning]);
+
+  const updateMatchActivityStatus = useCallback((nextMatchState) => {
+    if (!nextMatchState) {
+      return;
+    }
+
+    setMatchActivityStatus(prev => {
+      if (prev.matchState === nextMatchState) {
+        return prev;
+      }
+
+      const isRunning = nextMatchState === 'running';
+      const isActive = isRunning || nextMatchState === 'pending';
+
+      return {
+        matchState: nextMatchState,
+        isRunning,
+        isActive
+      };
+    });
+  }, []);
 
   // Automatic pending request check for team admins
   useEffect(() => {
+    if (isMatchRunning) {
+      return;
+    }
+
     // Check if all required conditions are met for pending request check
     if (user && userProfile && currentTeam) {
       const userRole = currentTeam.userRole;
@@ -607,7 +642,7 @@ export const TeamProvider = ({ children }) => {
       // Clear pending requests if conditions not met
       setPendingRequests([]);
     }
-  }, [user, userProfile, currentTeam, checkPendingRequests]);
+  }, [user, userProfile, currentTeam, checkPendingRequests, isMatchRunning]);
 
   // ============================================================================
   // CLUB MEMBERSHIP FUNCTIONS
@@ -1794,7 +1829,10 @@ export const TeamProvider = ({ children }) => {
     
     // Pending request management
     checkPendingRequests,
-    
+    matchActivityStatus,
+    isMatchRunning,
+    updateMatchActivityStatus,
+
     // Computed properties
     hasTeams: userTeams.length > 0,
     hasClubs: userClubs.length > 0,

@@ -132,7 +132,7 @@ npm run db:reset
 
 #### `match`
 - Individual games/matches
-- **Key fields**: `team_id`, `format`, `formation`, `periods`, `opponent`, `captain`, `goals_scored`, `outcome`
+- **Key fields**: `team_id`, `format`, `formation`, `periods`, `opponent`, `captain`, `goals_scored`, `outcome`, `type`, `venue_type`
 
 #### `match_log_event`
 - Audit trail of all match activities
@@ -151,6 +151,16 @@ npm run db:reset
 #### `club_user`
 - Team access control
 - **Key fields**: `team_id`, `user_id`, `role` (parent/player/coach/admin)
+
+### Enum Types
+
+#### `match_type`
+- Values: `league`, `friendly`, `cup`, `tournament`, `internal`
+- Referenced by `match.type` and analytics views to label fixture category
+
+#### `match_venue_type`
+- Values: `home`, `away`, `neutral`
+- Referenced by `match.venue_type` to record match location context
 
 
 ## Production Deployment

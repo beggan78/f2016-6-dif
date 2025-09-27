@@ -121,7 +121,8 @@ describe('matchConfigurationService', () => {
           substitutionType: 'pairs'
         },
         matchData: {
-          format: '5v5'
+          format: '5v5',
+          venueType: 'home'
         },
         matchType: 'league',
         opponentTeam: 'Eagles FC',
@@ -145,6 +146,7 @@ describe('matchConfigurationService', () => {
         matchConfig: {
           format: '5v5',
           matchType: 'league',
+          venueType: 'home',
           opponentTeam: 'Eagles FC',
           periods: 3,
           periodDurationMinutes: 15,
@@ -165,7 +167,8 @@ describe('matchConfigurationService', () => {
           substitutionType: 'individual'
         },
         matchData: {
-          format: '5v5'
+          format: '5v5',
+          venueType: 'home'
         },
         matchType: 'friendly',
         opponentTeam: '',
@@ -180,6 +183,7 @@ describe('matchConfigurationService', () => {
 
       expect(result.teamConfig.formation).toBe('1-2-1');
       expect(result.matchConfig.matchType).toBe('friendly');
+      expect(result.matchConfig.venueType).toBe('home');
       expect(result.matchConfig.opponentTeam).toBe('');
       expect(result.matchConfig.captainId).toBe(null);
       expect(result.periodGoalies).toEqual({});
@@ -189,7 +193,7 @@ describe('matchConfigurationService', () => {
 
   describe('saveNewMatchConfiguration', () => {
     const createMockParams = () => ({
-      matchData: { format: '5v5', teamId: 'team123' },
+      matchData: { format: '5v5', teamId: 'team123', venueType: 'home' },
       allPlayers: [{ id: 'player1', name: 'Player 1' }],
       selectedSquadIds: ['player1'],
       initialConfig: { formation: {}, teamConfig: {}, matchConfig: {} },
@@ -276,7 +280,7 @@ describe('matchConfigurationService', () => {
   describe('updateMatchConfiguration', () => {
     const createMockParams = () => ({
       matchId: 'match123',
-      matchData: { format: '5v5', teamId: 'team123' },
+      matchData: { format: '5v5', teamId: 'team123', venueType: 'home' },
       initialConfig: { formation: {}, teamConfig: {}, matchConfig: {} }
     });
 
@@ -379,7 +383,8 @@ describe('matchConfigurationService', () => {
       const params = createMockParams();
       formatMatchDataFromGameState.mockReturnValue({
         format: '5v5',
-        teamId: 'team123'
+        teamId: 'team123',
+        venueType: 'home'
       });
       createMatch.mockResolvedValue({
         success: true,
@@ -405,7 +410,8 @@ describe('matchConfigurationService', () => {
       });
       formatMatchDataFromGameState.mockReturnValue({
         format: '5v5',
-        teamId: 'team123'
+        teamId: 'team123',
+        venueType: 'home'
       });
       updateExistingMatch.mockResolvedValue({
         success: true
@@ -440,7 +446,8 @@ describe('matchConfigurationService', () => {
       const params = createMockParams();
       formatMatchDataFromGameState.mockReturnValue({
         format: '5v5',
-        teamId: 'team123'
+        teamId: 'team123',
+        venueType: 'home'
       });
       createMatch.mockResolvedValue({
         success: false,
@@ -553,7 +560,7 @@ describe('matchConfigurationService', () => {
     const createMockParams = (overrides = {}) => ({
       currentMatchId: null,
       matchCreated: false,
-      matchData: { format: '5v5', teamId: 'team123' },
+      matchData: { format: '5v5', teamId: 'team123', venueType: 'home' },
       allPlayers: [{ id: 'player1', name: 'Player 1' }],
       selectedSquadIds: ['player1'],
       setCurrentMatchId: jest.fn(),

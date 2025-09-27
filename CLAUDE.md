@@ -81,9 +81,18 @@ Modern composite team configuration system using four components:
 
 ### Team Configuration Components
 - **Format**: Field format (`5v5`, future: `7v7`)
+- **Venue Type**: Match location context (`home`, `away`, `neutral`) used for analytics and persistence
 - **Squad Size**: Total players (5-15 players supported)
 - **Formation**: Tactical formation (`2-2`, `1-2-1`, and future formations)
 - **Substitution Type**: Substitution style (`individual`, `pairs`)
+
+### ConfigurationScreen Reference
+- **Opponent & Match Type**: Opponent name is optional (50 char). `matchType` comes from `MATCH_TYPE_OPTIONS` and persists to `match.type` (`league`, `friendly`, `cup`, `tournament`, `internal`).
+- **Venue Type**: Defaults to `home`; stored alongside match data for analytics and pending-match recovery.
+- **Alert Minutes**: `ALERT_OPTIONS` control substitution reminders (0-5 minutes). Values propagate to `useTimers` for rotation cues.
+- **Goalie Assignments**: Each period must specify a goalie before period setup or saving is enabled.
+- **Substitution Mode**: 7-player 5v5 squads in 2-2 formation can switch between `individual` and `pairs`; pairs mode exposes `PAIR_ROLE_ROTATION_DEFINITIONS` settings.
+- **Captain Selection**: Optional dropdown stored in match state and persisted with configuration saves.
 
 ### Common Configurations
 - **7-player pairs**: `{format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs'}`
@@ -167,6 +176,7 @@ Modern composite team configuration system using four components:
 - Maintain separation between logic, animation, and UI concerns
 - When in doubt about time calculations, trace through stint manager flow
 - Always run the whole test suite after having completed a feature or a change to make sure nothing has broken
+- Always display dates on the ISO format YYYY-MM-DD
 - **Linting**: Always run `CI=true && npm run build` before finishing a task to check for ESLint errors that will fail in GitHub CI
 - **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
 - **New components**: Write tests first, following established patterns in `__tests__` directories
@@ -181,4 +191,3 @@ Modern composite team configuration system using four components:
 - **Time Tracking Bug Fix**: Fixed substitution timer conditional logic with `isSubTimerPaused` checks
 - **Match Database System**: Full match lifecycle with player statistics persistence via `matchStateManager.js`
 - **Role Constants Cleanup**: Eliminated `ON_FIELD` role, introduced `FIELD_PLAYER` and role/status separation
-- Always display dates on the ISO format YYYY-MM-DD

@@ -130,7 +130,8 @@ function AppContent() {
     teamPlayers,
     hasPendingRequests,
     pendingRequestsCount,
-    canManageTeam
+    canManageTeam,
+    isMatchRunning
   } = useTeam();
 
   // Authentication modal
@@ -174,8 +175,9 @@ function AppContent() {
   }, [gameState.view, syncCurrentView]);
   
   
-  // Custom sign out handler that resets view to ConfigurationScreen
-  const handleSignOut = useCallback(async () => {
+  const [showSignOutConfirmModal, setShowSignOutConfirmModal] = useState(false);
+
+  const executeSignOut = useCallback(async () => {
     // Clear dismissed modals state for new session
     clearDismissedModals();
     // Clear navigation history for new session
@@ -185,6 +187,25 @@ function AppContent() {
     // Then perform the actual sign out
     return await signOut();
   }, [gameState, signOut, clearHistory]);
+
+  // Custom sign out handler that resets view to ConfigurationScreen
+  const handleSignOut = useCallback(async () => {
+    if (gameState.matchState === 'running') {
+      setShowSignOutConfirmModal(true);
+      return;
+    }
+
+    await executeSignOut();
+  }, [executeSignOut, gameState.matchState]);
+
+  const handleConfirmSignOut = useCallback(async () => {
+    setShowSignOutConfirmModal(false);
+    await executeSignOut();
+  }, [executeSignOut]);
+
+  const handleCancelSignOut = useCallback(() => {
+    setShowSignOutConfirmModal(false);
+  }, []);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
@@ -845,6 +866,10 @@ function AppContent() {
     // 3. No modal is currently open
     // 4. User is not completing their profile
     // 5. Modal has not been dismissed by user in this session
+    if (isMatchRunning) {
+      return;
+    }
+
     if (canManageTeam && hasPendingRequests && currentTeam && !showTeamAdminModal && !needsProfileCompletion) {
       // Check if user has dismissed this team's access modal
       if (!isModalDismissed('team_access', currentTeam.id)) {
@@ -852,7 +877,7 @@ function AppContent() {
       } else {
       }
     }
-  }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal]);
+  }, [canManageTeam, hasPendingRequests, currentTeam, showTeamAdminModal, needsProfileCompletion, pendingRequestsCount, handleOpenTeamAdminModal, isMatchRunning]);
 
   // Render logic
   const renderView = () => {
@@ -887,6 +912,8 @@ function AppContent() {
             setOpponentTeam={gameState.setOpponentTeam}
             matchType={gameState.matchType}
             setMatchType={gameState.setMatchType}
+            venueType={gameState.venueType}
+            setVenueType={gameState.setVenueType}
             captainId={gameState.captainId}
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}
@@ -1029,7 +1056,7 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             ownTeamName={selectedSquadPlayers ? 'Djurgården' : 'Own'}
             opponentTeam={gameState.opponentTeam || 'Opponent'}
-            onNavigateBack={navigateBack}
+            onNavigateBack={() => navigateBack(VIEWS.STATS)}
             goalScorers={gameState.goalScorers || {}}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
@@ -1130,6 +1157,16 @@ function AppContent() {
         onCancel={handleCancelEndPeriod}
         title="End Period Early?"
         message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
+      />
+
+      <ConfirmationModal
+        isOpen={showSignOutConfirmModal}
+        onConfirm={handleConfirmSignOut}
+        onCancel={handleCancelSignOut}
+        title="Sign Out During Active Match?"
+        message="You have a match currently running. Signing out now may stop tracking this match. Are you sure you want to sign out?"
+        confirmText="Sign Out"
+        cancelText="Stay Logged In"
       />
       
       <AddPlayerModal

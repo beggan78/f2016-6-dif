@@ -510,6 +510,7 @@ describe('pendingMatchService', () => {
         periodDurationMinutes: 15,
         opponentTeam: 'Eagles FC',
         matchType: 'league',
+        venueType: 'home',
         captainId: 'player1',
         teamConfig: validConfig.teamConfig,
         formation: '2-2',

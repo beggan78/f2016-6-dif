@@ -64,7 +64,8 @@ describe('matchStateManager', () => {
     periodDurationMinutes: 20,
     type: 'friendly',
     opponent: 'Test Opponents',
-    captainId: 'player-captain'
+    captainId: 'player-captain',
+    venueType: 'home'
   };
 
   const mockSelectedSquadIds = ['player-1', 'player-2'];
@@ -287,10 +288,12 @@ describe('matchStateManager', () => {
       supabase.from.mockReturnValue({
         update: jest.fn(() => ({
           eq: jest.fn(() => ({
-            eq: jest.fn().mockResolvedValue({
-              data: null,
-              error: null
-            })
+            eq: jest.fn(() => ({
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: 'match-123' }],
+                error: null
+              })
+            }))
           }))
         }))
       });

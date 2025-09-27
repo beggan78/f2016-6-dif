@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { VENUE_TYPES } from '../constants/matchVenues';
 
 export function useGameModals(pushNavigationState, removeFromNavigationStack) {
   // Pending goal state management
@@ -35,7 +36,7 @@ export function useGameModals(pushNavigationState, removeFromNavigationStack) {
     goalScorer: {
       isOpen: false,
       eventId: null,
-      team: 'home',
+      team: VENUE_TYPES.HOME,
       mode: 'new', // 'new', 'correct', 'view'
       matchTime: '00:00',
       periodNumber: 1,
