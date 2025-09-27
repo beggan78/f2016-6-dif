@@ -193,12 +193,44 @@ export function TimeFilter({
   };
 
   const handleCustomRangeApply = () => {
-    const start = customStartDate ? new Date(customStartDate) : null;
-    const end = customEndDate ? new Date(customEndDate) : null;
+    let start = null;
+    let end = null;
+
+    // Parse and validate start date
+    if (customStartDate) {
+      start = new Date(customStartDate);
+      if (isNaN(start.getTime())) {
+        alert('Invalid start date');
+        return;
+      }
+    }
+
+    // Parse and validate end date
+    if (customEndDate) {
+      end = new Date(customEndDate);
+      if (isNaN(end.getTime())) {
+        alert('Invalid end date');
+        return;
+      }
+    }
 
     // Validate date range
     if (start && end && start > end) {
       alert('Start date must be before end date');
+      return;
+    }
+
+    // Validate dates are not in the future beyond reasonable bounds
+    const now = new Date();
+    const maxFutureDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // 1 year in future
+
+    if (start && start > maxFutureDate) {
+      alert('Start date cannot be more than a year in the future');
+      return;
+    }
+
+    if (end && end > maxFutureDate) {
+      alert('End date cannot be more than a year in the future');
       return;
     }
 

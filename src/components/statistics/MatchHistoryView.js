@@ -166,20 +166,32 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   useEffect(() => {
     const checkScreenSize = () => {
       const shouldCollapse = window.innerWidth < 1024; // lg breakpoint - when filters wrap to multiple rows
-      setNeedsCollapse(shouldCollapse);
 
-      // Don't auto-collapse if user has manually expanded filters
-      // Only auto-collapse when transitioning from wide to narrow screen
-      if (shouldCollapse && !needsCollapse) {
-        setIsFilterCollapsed(true);
-      } else if (!shouldCollapse) {
-        setIsFilterCollapsed(false);
-      }
+      setNeedsCollapse(prevNeedsCollapse => {
+        // Only update collapse state if needsCollapse actually changed
+        if (prevNeedsCollapse !== shouldCollapse) {
+          // Use a callback to ensure we're working with the latest state
+          setIsFilterCollapsed(prevIsCollapsed => {
+            // Don't auto-collapse if user has manually expanded filters
+            // Only auto-collapse when transitioning from wide to narrow screen
+            if (shouldCollapse && !prevNeedsCollapse) {
+              return true;
+            } else if (!shouldCollapse) {
+              return false;
+            }
+            return prevIsCollapsed;
+          });
+        }
+        return shouldCollapse;
+      });
     };
+
+    // Initial check
+    checkScreenSize();
 
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, [needsCollapse]);
+  }, []); // Remove needsCollapse dependency to prevent race condition
 
   // Get unique opponents from matches
   const opponents = useMemo(() => {
