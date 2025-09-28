@@ -1102,9 +1102,12 @@ export async function discardPendingMatch(matchId) {
 
     const { error } = await supabase
       .from('match')
-      .update({
-        deleted_at: nowIso
-      })
+      .update(
+        {
+          deleted_at: nowIso
+        },
+        { returning: 'minimal' }
+      )
       .eq('id', matchId)
       .is('deleted_at', null)
       .eq('state', 'pending'); // Only update pending matches

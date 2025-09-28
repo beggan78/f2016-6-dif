@@ -29,8 +29,20 @@ const SESSION_KEYS = {
   DETECTION_SESSION_ID: 'sport-wizard-detection-session-id'
 };
 
+const SUPABASE_TOKEN_KEY_PATTERN = /^sb-.*-auth-token$/;
+
+const SESSION_GUARD_KEYS = {
+  LAST_SIGN_OUT: 'sport-wizard-last-sign-out'
+};
+
+const SIGN_OUT_SUPPRESS_WINDOW_MS = 10000;
+
+const SESSION_FLAG_KEYS = {
+  PENDING_SIGN_IN: 'sport-wizard-pending-sign-in'
+};
+
 /**
- * Enhanced debug logging with detection state tracking
+ * Enhanced debug logging with detection state tracking - DO NOT REMOVE!
  */
 const debugLog = (type, additionalInfo = '') => {
   if (process.env.NODE_ENV !== 'development') return;
@@ -156,13 +168,123 @@ function collectNavigationSignals() {
  * Collect essential session signals (READ-ONLY - no side effects)
  * CRITICAL: Do not read auth_session_initialized here to avoid circular logic
  */
+function hasSupabaseSessionToken() {
+  const storageCandidates = [];
+
+  if (typeof sessionStorage !== 'undefined') storageCandidates.push(sessionStorage);
+  if (typeof localStorage !== 'undefined') storageCandidates.push(localStorage);
+
+  const addGlobalStorage = (storageRef) => {
+    if (storageRef && !storageCandidates.includes(storageRef)) {
+      storageCandidates.push(storageRef);
+    }
+  };
+
+  if (typeof global !== 'undefined') {
+    addGlobalStorage(global.sessionStorage);
+    addGlobalStorage(global.localStorage);
+  }
+
+  if (typeof window !== 'undefined') {
+    addGlobalStorage(window.sessionStorage);
+    addGlobalStorage(window.localStorage);
+  }
+
+  const seen = new Set();
+
+  return storageCandidates.some((storageRef) => {
+    if (!storageRef || typeof storageRef.getItem !== 'function') {
+      return false;
+    }
+
+    if (seen.has(storageRef)) {
+      return false;
+    }
+    seen.add(storageRef);
+
+    try {
+      const length = typeof storageRef.length === 'number'
+        ? storageRef.length
+        : (typeof storageRef.key === 'function' ? Number.MAX_SAFE_INTEGER : 0);
+
+      if (typeof storageRef.key !== 'function') {
+        return Object.keys(storageRef).some((key) => {
+          if (typeof key !== 'string') return false;
+          if (!SUPABASE_TOKEN_KEY_PATTERN.test(key)) return false;
+          return !!storageRef.getItem(key);
+        });
+      }
+
+      for (let index = 0; index < length; index += 1) {
+        const key = storageRef.key(index);
+        if (!key || typeof key !== 'string') continue;
+        if (!SUPABASE_TOKEN_KEY_PATTERN.test(key)) continue;
+        if (storageRef.getItem(key)) {
+          return true;
+        }
+      }
+    } catch (error) {
+      return false;
+    }
+
+    return false;
+  });
+}
+
+function consumeSignOutGuard() {
+  const storageRefs = [];
+
+  if (typeof localStorage !== 'undefined') storageRefs.push(localStorage);
+  if (typeof global !== 'undefined' && global.localStorage) storageRefs.push(global.localStorage);
+  if (typeof window !== 'undefined' && window.localStorage) storageRefs.push(window.localStorage);
+
+  let guardTimestamp = null;
+
+  storageRefs.forEach((storageRef) => {
+    if (!storageRef || typeof storageRef.getItem !== 'function') return;
+
+    try {
+      const rawValue = storageRef.getItem(SESSION_GUARD_KEYS.LAST_SIGN_OUT);
+      if (rawValue) {
+        const parsed = parseInt(rawValue, 10);
+        if (!Number.isNaN(parsed)) {
+          guardTimestamp = Math.max(guardTimestamp ?? parsed, parsed);
+        }
+      }
+      storageRef.removeItem(SESSION_GUARD_KEYS.LAST_SIGN_OUT);
+    } catch (error) {
+      // Ignore storage access issues
+    }
+  });
+
+  return guardTimestamp;
+}
+
+function consumePendingSignInFlag() {
+  try {
+    if (typeof sessionStorage === 'undefined') {
+      return false;
+    }
+
+    const rawValue = sessionStorage.getItem(SESSION_FLAG_KEYS.PENDING_SIGN_IN);
+    if (!rawValue) {
+      return false;
+    }
+
+    sessionStorage.removeItem(SESSION_FLAG_KEYS.PENDING_SIGN_IN);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 function collectSessionSignals() {
   return {
     authTimestamp: sessionStorage.getItem(SESSION_KEYS.AUTH_TIMESTAMP),
     lastActivity: sessionStorage.getItem(SESSION_KEYS.LAST_ACTIVITY),
     // REMOVED: authSessionInitialized - this creates circular dependency
     // Detection should be based on independent signals only
-    hasSupabaseSession: !!sessionStorage.getItem('sb-localhost-auth-token'), // Alternative signal
+    hasSupabaseSession: hasSupabaseSessionToken(),
     pageLoadCount: parseInt(sessionStorage.getItem(SESSION_KEYS.PAGE_LOAD_COUNT) || '0')
   };
 }
@@ -171,25 +293,59 @@ function collectSessionSignals() {
  * Pure function to determine if this is a new sign-in
  * Uses only independent signals to avoid circular logic
  */
-function isNewSignIn(navPageLoadCount, sessionPageLoadCount, hasActivity, navType, authTimestamp, hasSupabaseSession) {
+function isNewSignIn(navPageLoadCount, sessionPageLoadCount, hasActivity, navType, authTimestamp, hasSupabaseSession, hasRecentSignOut, hasPendingSignIn) {
   // Use navigation page load count (incremented fresh) vs session page load count (persistent)
   const actualPageLoadCount = Math.max(navPageLoadCount, sessionPageLoadCount);
 
-  // Primary indicators: Low page count + no previous activity
-  if (actualPageLoadCount <= 2 && !hasActivity) {
+  if (hasPendingSignIn) {
     return true;
   }
 
-  // Fresh auth override: Very recent authentication with Supabase session present
-  if (authTimestamp && hasSupabaseSession) {
-    const authAge = Date.now() - parseInt(authTimestamp);
-    if (authAge < TIMING_CONSTANTS.FRESH_AUTH_WINDOW_MS) {
-      return true;
+  if (hasRecentSignOut) {
+    return false;
+  }
+
+  if (!hasSupabaseSession) {
+    return false;
+  }
+
+  const lacksRecordedActivity = !hasActivity;
+
+  // **FIX**: Prevent false NEW_SIGN_IN detection during in-app actions like "New Game"
+  // Check if auth session was already initialized in this browser session
+  const authSessionInitialized = sessionStorage.getItem('auth_session_initialized') === 'true';
+
+  // If the auth session is already initialized, be much more conservative about NEW_SIGN_IN detection
+  // This prevents in-app actions from being incorrectly classified as new sign-ins
+  if (authSessionInitialized && hasSupabaseSession) {
+    // For already-initialized sessions, only detect NEW_SIGN_IN if we have very strong evidence
+    // like extremely low page count (user just opened browser) or explicit pending sign-in flag
+    if (actualPageLoadCount <= 1 || sessionStorage.getItem(SESSION_FLAG_KEYS.PENDING_SIGN_IN)) {
+      // Allow NEW_SIGN_IN for genuine cases even in initialized sessions
+    } else {
+      // For any other case in an initialized session, treat as in-app action, not new sign-in
+      return false;
     }
   }
 
-  // First-time sign-in: Has Supabase session but no activity history
-  if (hasSupabaseSession && !hasActivity && actualPageLoadCount <= 3) {
+  // Primary indicators: Low page count + no previous activity
+  if (lacksRecordedActivity && actualPageLoadCount <= 2) {
+    return true;
+  }
+
+  // Fresh auth override: Very recent authentication with Supabase session present AND no prior activity
+  if (lacksRecordedActivity && authTimestamp) {
+    const parsedAuthTimestamp = parseInt(authTimestamp, 10);
+    if (!Number.isNaN(parsedAuthTimestamp)) {
+      const authAge = Date.now() - parsedAuthTimestamp;
+      if (authAge < TIMING_CONSTANTS.FRESH_AUTH_WINDOW_MS) {
+        return true;
+      }
+    }
+  }
+
+  // First-time sign-in fallback: Has Supabase session but no activity history within early page loads
+  if (lacksRecordedActivity && actualPageLoadCount <= 3) {
     return true;
   }
 
@@ -217,7 +373,8 @@ function isPageRefresh(pageLoadCount, hasActivity, navType) {
  * Main detection logic using pure functions
  * Uses independent signals to avoid circular dependencies
  */
-function determineSessionType(navSignals, sessionSignals) {
+function determineSessionType(navSignals, sessionSignals, options = {}) {
+  const { hasRecentSignOut = false, hasPendingSignIn = false } = options;
   const navPageLoadCount = navSignals.pageLoadCount;
   const sessionPageLoadCount = sessionSignals.pageLoadCount;
   const hasActivity = !!sessionSignals.lastActivity;
@@ -226,7 +383,7 @@ function determineSessionType(navSignals, sessionSignals) {
   const authTimestamp = sessionSignals.authTimestamp;
   const hasSupabaseSession = sessionSignals.hasSupabaseSession;
 
-  if (isNewSignIn(navPageLoadCount, sessionPageLoadCount, hasActivity, navType, authTimestamp, hasSupabaseSession)) {
+  if (isNewSignIn(navPageLoadCount, sessionPageLoadCount, hasActivity, navType, authTimestamp, hasSupabaseSession, hasRecentSignOut, hasPendingSignIn)) {
     return DETECTION_TYPES.NEW_SIGN_IN;
   }
 
@@ -265,10 +422,19 @@ function updateSessionTracking(detectionType) {
  */
 export function detectSessionType() {
   try {
-    // FIRST: Check for cached result to prevent repeated execution
-    const cachedResult = getCachedDetectionResult();
-    if (cachedResult) {
-      return cachedResult; // Return cached result with (CACHED) debug log
+    const signOutGuardTimestamp = consumeSignOutGuard();
+    const hasRecentSignOut = !!(signOutGuardTimestamp && (Date.now() - signOutGuardTimestamp < SIGN_OUT_SUPPRESS_WINDOW_MS));
+    const hasPendingSignIn = consumePendingSignInFlag();
+    const bypassCache = hasRecentSignOut || hasPendingSignIn;
+
+    // FIRST: Check for cached result to prevent repeated execution (unless we're coming straight from sign-out or awaiting sign-in confirmation)
+    if (!bypassCache) {
+      const cachedResult = getCachedDetectionResult();
+      if (cachedResult) {
+        return cachedResult; // Return cached result with (CACHED) debug log
+      }
+    } else {
+      sessionStorage.removeItem(SESSION_KEYS.DETECTION_CACHE);
     }
 
     // Get detection session ID for this session
@@ -279,7 +445,7 @@ export function detectSessionType() {
     const sessionSignals = collectSessionSignals();
 
     // Use pure function logic for detection
-    const detectedType = determineSessionType(navSignals, sessionSignals);
+    const detectedType = determineSessionType(navSignals, sessionSignals, { hasRecentSignOut, hasPendingSignIn });
 
     // Enhanced confidence based on signal strength
     let confidence = 75; // Base confidence
@@ -315,7 +481,9 @@ export function detectSessionType() {
     };
 
     // Cache the result BEFORE any side effects
-    cacheDetectionResult(result, sessionId);
+    if (!bypassCache) {
+      cacheDetectionResult(result, sessionId);
+    }
 
     // Update session tracking AFTER detection and caching
     updateSessionTracking(detectedType);
@@ -379,7 +547,7 @@ export function resetSessionTracking() {
   Object.values(SESSION_KEYS).forEach(key => {
     sessionStorage.removeItem(key);
   });
-  
+
   // Session tracking reset - no logging needed
 }
 
@@ -393,6 +561,8 @@ export function clearAllSessionData() {
     Object.values(SESSION_KEYS).forEach(key => {
       sessionStorage.removeItem(key);
     });
+
+    sessionStorage.removeItem(SESSION_FLAG_KEYS.PENDING_SIGN_IN);
     
     // Clear auth session flag
     sessionStorage.removeItem('auth_session_initialized');
@@ -405,6 +575,38 @@ export function clearAllSessionData() {
     authKeys.forEach(key => {
       sessionStorage.removeItem(key);
     });
+
+    const removeSupabaseTokens = (storageRef) => {
+      if (!storageRef || typeof storageRef.removeItem !== 'function') {
+        return;
+      }
+
+      try {
+        if (typeof storageRef.key === 'function') {
+          const keysToRemove = [];
+          for (let index = 0; index < (storageRef.length || 0); index += 1) {
+            const key = storageRef.key(index);
+            if (key && SUPABASE_TOKEN_KEY_PATTERN.test(key)) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach((key) => storageRef.removeItem(key));
+        } else {
+          Object.keys(storageRef).forEach((key) => {
+            if (SUPABASE_TOKEN_KEY_PATTERN.test(key)) {
+              storageRef.removeItem(key);
+            }
+          });
+        }
+      } catch (storageError) {
+        // Ignore cleanup errors - typically blocked in restricted environments
+      }
+    };
+
+    removeSupabaseTokens(typeof sessionStorage !== 'undefined' ? sessionStorage : null);
+    removeSupabaseTokens(typeof localStorage !== 'undefined' ? localStorage : null);
+    removeSupabaseTokens(typeof global !== 'undefined' ? global.localStorage : null);
+    removeSupabaseTokens(typeof window !== 'undefined' ? window.localStorage : null);
     
     // Session data cleared - no logging needed
     
@@ -466,4 +668,40 @@ if (process.env.NODE_ENV === 'development') {
   window.clearAllSessionData = clearAllSessionData;
   window.resetSessionTracking = resetSessionTracking;
   window.debugStorageInfo = debugStorageInfo;
+}
+
+export function markPendingSignIn() {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(SESSION_FLAG_KEYS.PENDING_SIGN_IN, Date.now().toString());
+    }
+  } catch (error) {
+    // Ignore storage failures
+  }
+}
+
+export function markSignOutGuard() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(SESSION_GUARD_KEYS.LAST_SIGN_OUT, Date.now().toString());
+    }
+  } catch (error) {
+    // Ignore storage failures
+  }
+
+  try {
+    if (typeof global !== 'undefined' && global.localStorage) {
+      global.localStorage.setItem(SESSION_GUARD_KEYS.LAST_SIGN_OUT, Date.now().toString());
+    }
+  } catch (error) {
+    // Ignore storage failures
+  }
+
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(SESSION_GUARD_KEYS.LAST_SIGN_OUT, Date.now().toString());
+    }
+  } catch (error) {
+    // Ignore storage failures
+  }
 }

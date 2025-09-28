@@ -13,6 +13,8 @@ import {
   shouldShowRecoveryModal,
   resetSessionTracking,
   clearAllSessionData,
+  markPendingSignIn,
+  markSignOutGuard,
   DETECTION_TYPES
 } from '../sessionDetectionService';
 
@@ -27,12 +29,31 @@ const mockSessionStorage = {
   getItem: jest.fn((key) => mockSessionStorage.storage[key] || null),
   setItem: jest.fn((key, value) => { mockSessionStorage.storage[key] = value; }),
   removeItem: jest.fn((key) => { delete mockSessionStorage.storage[key]; }),
-  clear: jest.fn(() => { mockSessionStorage.storage = {}; })
+  clear: jest.fn(() => { mockSessionStorage.storage = {}; }),
+  key: jest.fn((index) => Object.keys(mockSessionStorage.storage)[index] || null)
 };
+
+Object.defineProperty(mockSessionStorage, 'length', {
+  get: () => Object.keys(mockSessionStorage.storage).length
+});
+
+const mockLocalStorage = {
+  storage: {},
+  getItem: jest.fn((key) => mockLocalStorage.storage[key] || null),
+  setItem: jest.fn((key, value) => { mockLocalStorage.storage[key] = value; }),
+  removeItem: jest.fn((key) => { delete mockLocalStorage.storage[key]; }),
+  clear: jest.fn(() => { mockLocalStorage.storage = {}; }),
+  key: jest.fn((index) => Object.keys(mockLocalStorage.storage)[index] || null)
+};
+
+Object.defineProperty(mockLocalStorage, 'length', {
+  get: () => Object.keys(mockLocalStorage.storage).length
+});
 
 // Setup global mocks
 global.performance = mockPerformance;
 global.sessionStorage = mockSessionStorage;
+global.localStorage = mockLocalStorage;
 
 // Mock console.log for debug testing
 const originalConsoleLog = console.log;
@@ -43,7 +64,10 @@ describe('sessionDetectionService', () => {
     // Clear all mocks and storage
     jest.clearAllMocks();
     mockSessionStorage.storage = {};
-    
+    mockSessionStorage.key.mockClear();
+    mockLocalStorage.storage = {};
+    mockLocalStorage.key.mockClear();
+
     // Reset performance mock
     mockPerformance.navigation = { type: 0 };
     mockPerformance.getEntriesByType.mockReturnValue([]);
@@ -77,6 +101,44 @@ describe('sessionDetectionService', () => {
       expect([DETECTION_TYPES.NEW_SIGN_IN, DETECTION_TYPES.PAGE_REFRESH]).toContain(result.type);
       expect(typeof result.confidence).toBe('number');
       expect(typeof result.timestamp).toBe('number');
+    });
+
+    it('should treat fresh loads without a Supabase session as PAGE_REFRESH', () => {
+      const result = detectSessionType();
+
+      expect(result.type).toBe(DETECTION_TYPES.PAGE_REFRESH);
+      expect(result.signals.session.hasSupabaseSession).toBe(false);
+    });
+
+    it('should detect NEW_SIGN_IN when pending sign-in flag is set', () => {
+      markPendingSignIn();
+
+      const result = detectSessionType();
+
+      expect(result.type).toBe(DETECTION_TYPES.NEW_SIGN_IN);
+      expect(result.signals.session.hasSupabaseSession).toBe(false);
+    });
+
+    it('should suppress NEW_SIGN_IN immediately after a recent sign-out', () => {
+      markSignOutGuard();
+
+      const result = detectSessionType();
+
+      expect(result.type).toBe(DETECTION_TYPES.PAGE_REFRESH);
+      expect(result.signals.session.hasSupabaseSession).toBe(false);
+    });
+
+    it('should detect NEW_SIGN_IN once guard is consumed and auth token becomes available', () => {
+      markSignOutGuard();
+      const guardedResult = detectSessionType();
+      expect(guardedResult.type).toBe(DETECTION_TYPES.PAGE_REFRESH);
+
+      resetSessionTracking();
+      mockSessionStorage.storage['sb-test-auth-token'] = 'token-value';
+
+      const signInResult = detectSessionType();
+      expect(signInResult.type).toBe(DETECTION_TYPES.NEW_SIGN_IN);
+      expect(signInResult.signals.session.hasSupabaseSession).toBe(true);
     });
 
     it('should include navigation and session signals', () => {
@@ -402,6 +464,25 @@ describe('sessionDetectionService', () => {
         expect(result.type).toBeDefined();
         expect(typeof result.confidence).toBe('number');
       });
+    });
+
+    it('should not flag established sessions as NEW_SIGN_IN during in-app actions', () => {
+      // Simulate authenticated session with Supabase token present
+      mockSessionStorage.storage['sb-test-auth-token'] = 'token-value';
+
+      const initialDetection = detectSessionType();
+      expect(initialDetection.type).toBe(DETECTION_TYPES.NEW_SIGN_IN);
+
+      // Remove cache so follow-up detection performs full evaluation
+      delete mockSessionStorage.storage['sport-wizard-detection-cache'];
+
+      const now = Date.now().toString();
+      mockSessionStorage.storage['sport-wizard-last-activity'] = now;
+      mockSessionStorage.storage['sport-wizard-auth-timestamp'] = now;
+      mockSessionStorage.storage['sport-wizard-page-load-count'] = '5';
+
+      const followUpDetection = detectSessionType();
+      expect(followUpDetection.type).toBe(DETECTION_TYPES.PAGE_REFRESH);
     });
   });
 });
