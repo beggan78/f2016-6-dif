@@ -24,9 +24,10 @@ const createSelectChain = ({ singleResult }) => {
 
 const createUpdateChain = response => {
   const isDeleted = jest.fn(() => Promise.resolve(response));
-  const eqId = jest.fn(() => ({ is: isDeleted }));
+  const eqState = jest.fn(() => ({ is: isDeleted }));
+  const eqId = jest.fn(() => ({ eq: eqState, is: isDeleted }));
   const update = jest.fn(() => ({ eq: eqId }));
-  return { update, eqId, isDeleted };
+  return { update, eqId, eqState, isDeleted };
 };
 
 // Mock the persistence manager
@@ -196,6 +197,7 @@ describe('matchRecoveryService', () => {
         deleted_at: expect.any(String)
       }));
       expect(chain.eqId).toHaveBeenCalledWith('id', 'match-123');
+      expect(chain.eqState).toHaveBeenCalledWith('state', 'finished');
       expect(chain.isDeleted).toHaveBeenCalledWith('deleted_at', null);
     });
 

@@ -93,6 +93,7 @@ export async function deleteAbandonedMatch(matchId) {
         deleted_at: nowIso
       })
       .eq('id', matchId)
+      .eq('state', 'finished')
       .is('deleted_at', null);
 
     if (error) {
