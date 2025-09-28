@@ -7,13 +7,20 @@ jest.mock('../../lib/supabase', () => ({
   }
 }));
 
-const createUpdateChain = response => {
+const createSelectChain = response => {
   const chain = {};
-  chain.update = jest.fn(() => chain);
+  chain.select = jest.fn(() => chain);
   chain.eq = jest.fn(() => chain);
   chain.is = jest.fn(() => chain);
   chain.not = jest.fn(() => chain);
-  chain.lt = jest.fn(() => ({ select: jest.fn(() => Promise.resolve(response)) }));
+  chain.lt = jest.fn(() => Promise.resolve(response));
+  return chain;
+};
+
+const createUpdateChain = response => {
+  const chain = {};
+  chain.update = jest.fn(() => chain);
+  chain.in = jest.fn(() => Promise.resolve(response));
   return chain;
 };
 
@@ -41,32 +48,36 @@ describe('matchCleanupService', () => {
 
   describe('cleanupAbandonedMatches', () => {
     it('soft deletes running and finished matches when both queries succeed', async () => {
-      const runningChain = createUpdateChain({ data: [{ id: 'match-1' }, { id: 'match-2' }], error: null });
-      const finishedChain = createUpdateChain({ data: [{ id: 'match-3' }], error: null });
+      const runningSelectChain = createSelectChain({ data: [{ id: 'match-1' }, { id: 'match-2' }], error: null });
+      const runningUpdateChain = createUpdateChain({ error: null });
+      const finishedSelectChain = createSelectChain({ data: [{ id: 'match-3' }], error: null });
+      const finishedUpdateChain = createUpdateChain({ error: null });
 
       supabase.from
-        .mockReturnValueOnce(runningChain)
-        .mockReturnValueOnce(finishedChain);
+        .mockReturnValueOnce(runningSelectChain)
+        .mockReturnValueOnce(runningUpdateChain)
+        .mockReturnValueOnce(finishedSelectChain)
+        .mockReturnValueOnce(finishedUpdateChain);
 
       const result = await cleanupAbandonedMatches();
 
       expect(result).toEqual({ success: true, cleanedRunning: 2, cleanedFinished: 1 });
-      expect(supabase.from).toHaveBeenCalledTimes(2);
-      expect(runningChain.update).toHaveBeenCalledWith(expect.objectContaining({
+      expect(supabase.from).toHaveBeenCalledTimes(4);
+      expect(runningUpdateChain.update).toHaveBeenCalledWith(expect.objectContaining({
         deleted_at: expect.any(String)
-      }));
-      expect(finishedChain.update).toHaveBeenCalledWith(expect.objectContaining({
+      }), { returning: 'minimal' });
+      expect(finishedUpdateChain.update).toHaveBeenCalledWith(expect.objectContaining({
         deleted_at: expect.any(String)
-      }));
+      }), { returning: 'minimal' });
     });
 
     it('handles zero matches gracefully', async () => {
-      const runningChain = createUpdateChain({ data: [], error: null });
-      const finishedChain = createUpdateChain({ data: [], error: null });
+      const runningSelectChain = createSelectChain({ data: [], error: null });
+      const finishedSelectChain = createSelectChain({ data: [], error: null });
 
       supabase.from
-        .mockReturnValueOnce(runningChain)
-        .mockReturnValueOnce(finishedChain);
+        .mockReturnValueOnce(runningSelectChain)
+        .mockReturnValueOnce(finishedSelectChain);
 
       const result = await cleanupAbandonedMatches();
 
@@ -74,9 +85,9 @@ describe('matchCleanupService', () => {
     });
 
     it('returns an error when the running match cleanup fails', async () => {
-      const runningChain = createUpdateChain({ data: null, error: { message: 'Database connection failed' } });
+      const runningSelectChain = createSelectChain({ data: null, error: { message: 'Database connection failed' } });
 
-      supabase.from.mockReturnValueOnce(runningChain);
+      supabase.from.mockReturnValueOnce(runningSelectChain);
 
       const result = await cleanupAbandonedMatches();
 
@@ -84,21 +95,23 @@ describe('matchCleanupService', () => {
         success: false,
         cleanedRunning: 0,
         cleanedFinished: 0,
-        error: 'Failed to cleanup running matches: Database connection failed'
+        error: 'Failed to fetch running matches: Database connection failed'
       });
       expect(console.error).toHaveBeenCalledWith(
-        '❌ Failed to cleanup running matches:',
+        '❌ Failed to fetch running matches for cleanup:',
         { message: 'Database connection failed' }
       );
     });
 
     it('returns an error when the finished match cleanup fails', async () => {
-      const runningChain = createUpdateChain({ data: [{ id: 'match-1' }], error: null });
-      const finishedChain = createUpdateChain({ data: null, error: { message: 'Permission denied' } });
+      const runningSelectChain = createSelectChain({ data: [{ id: 'match-1' }], error: null });
+      const runningUpdateChain = createUpdateChain({ error: null });
+      const finishedSelectChain = createSelectChain({ data: null, error: { message: 'Permission denied' } });
 
       supabase.from
-        .mockReturnValueOnce(runningChain)
-        .mockReturnValueOnce(finishedChain);
+        .mockReturnValueOnce(runningSelectChain)
+        .mockReturnValueOnce(runningUpdateChain)
+        .mockReturnValueOnce(finishedSelectChain);
 
       const result = await cleanupAbandonedMatches();
 
@@ -106,7 +119,7 @@ describe('matchCleanupService', () => {
         success: false,
         cleanedRunning: 1,
         cleanedFinished: 0,
-        error: 'Failed to cleanup finished matches: Permission denied'
+        error: 'Failed to fetch finished matches: Permission denied'
       });
     });
 
