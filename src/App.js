@@ -176,6 +176,7 @@ function AppContent() {
   
   
   const [showSignOutConfirmModal, setShowSignOutConfirmModal] = useState(false);
+  const [configSessionToken, setConfigSessionToken] = useState(0);
 
   const executeSignOut = useCallback(async () => {
     // Clear dismissed modals state for new session
@@ -197,6 +198,10 @@ function AppContent() {
 
     await executeSignOut();
   }, [executeSignOut, gameState.matchState]);
+
+  const beginNewConfigurationSession = useCallback(() => {
+    setConfigSessionToken((prev) => prev + 1);
+  }, []);
 
   const handleConfirmSignOut = useCallback(async () => {
     setShowSignOutConfirmModal(false);
@@ -755,6 +760,8 @@ function AppContent() {
     gameState.resetScore();
     gameState.setOpponentTeam('');
     gameState.clearStoredState();
+
+    beginNewConfigurationSession();
   };
 
   const handleNewGameFromMenu = async () => {
@@ -936,6 +943,7 @@ function AppContent() {
             hasActiveConfiguration={gameState.hasActiveConfiguration}
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
             clearStoredState={gameState.clearStoredState}
+            configurationSessionId={configSessionToken}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -1048,12 +1056,13 @@ function AppContent() {
             navigateToMatchReport={gameState.navigateToMatchReport}
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
-            goalScorers={gameState.goalScorers || {}}
-            authModal={authModal}
-            checkForActiveMatch={checkForActiveMatch}
-            selectedSquadIds={gameState.selectedSquadIds}
-          />
-        );
+          goalScorers={gameState.goalScorers || {}}
+          authModal={authModal}
+          checkForActiveMatch={checkForActiveMatch}
+          selectedSquadIds={gameState.selectedSquadIds}
+          onStartNewConfigurationSession={beginNewConfigurationSession}
+        />
+      );
       case VIEWS.MATCH_REPORT:
         return (
           <MatchReportScreen 

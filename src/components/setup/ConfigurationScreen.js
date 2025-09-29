@@ -65,7 +65,8 @@ export function ConfigurationScreen({
   setMatchCreated,
   hasActiveConfiguration,
   setHasActiveConfiguration,
-  clearStoredState
+  clearStoredState,
+  configurationSessionId = 0
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -101,6 +102,9 @@ export function ConfigurationScreen({
   const teamSyncCompletedRef = useRef(false);
   const isProcessingResumeDataRef = useRef(false);
   const processingTimeoutRef = useRef(null);
+  const lastConfigSessionIdRef = useRef(configurationSessionId);
+  const pendingMatchCheckQueuedRef = useRef(false);
+  const pendingCheckAfterLoadingRef = useRef(false);
   
   // Component unmount cleanup to prevent memory leaks
   React.useEffect(() => {
@@ -177,6 +181,84 @@ export function ConfigurationScreen({
       loadPendingMatches(currentTeam.id, true);
     }
   }, [currentTeam?.id, loadPendingMatches]);
+
+  const triggerPendingMatchesForNewSession = React.useCallback((teamId) => {
+    if (!teamId) {
+      return;
+    }
+
+    if (pendingMatchLoading) {
+      pendingCheckAfterLoadingRef.current = true;
+      return;
+    }
+
+    pendingCheckAfterLoadingRef.current = false;
+    setPendingMatchError(null);
+    setPendingMatches([]);
+    setShowPendingMatchModal(false);
+    setPendingMatchModalClosed(false);
+
+    try {
+      sessionStorage.removeItem('sport-wizard-pending-modal-closed');
+    } catch {
+      // Ignore storage access errors (e.g., Safari private mode)
+    }
+
+    loadPendingMatches(teamId, true);
+  }, [loadPendingMatches, pendingMatchLoading]);
+
+  React.useEffect(() => {
+    if (configurationSessionId === undefined || configurationSessionId === null) {
+      return;
+    }
+
+    if (lastConfigSessionIdRef.current === configurationSessionId) {
+      return;
+    }
+
+    lastConfigSessionIdRef.current = configurationSessionId;
+
+    if (!configurationSessionId) {
+      return;
+    }
+
+    if (currentTeam?.id && !teamLoading) {
+      triggerPendingMatchesForNewSession(currentTeam.id);
+    } else {
+      pendingMatchCheckQueuedRef.current = true;
+    }
+  }, [configurationSessionId, currentTeam?.id, teamLoading, triggerPendingMatchesForNewSession]);
+
+  React.useEffect(() => {
+    if (!pendingMatchCheckQueuedRef.current) {
+      return;
+    }
+
+    if (!currentTeam?.id || teamLoading) {
+      return;
+    }
+
+    pendingMatchCheckQueuedRef.current = false;
+    triggerPendingMatchesForNewSession(currentTeam.id);
+  }, [currentTeam?.id, teamLoading, triggerPendingMatchesForNewSession]);
+
+  React.useEffect(() => {
+    if (pendingMatchLoading) {
+      return;
+    }
+
+    if (!pendingCheckAfterLoadingRef.current) {
+      return;
+    }
+
+    pendingCheckAfterLoadingRef.current = false;
+
+    if (currentTeam?.id && !teamLoading) {
+      triggerPendingMatchesForNewSession(currentTeam.id);
+    } else {
+      pendingMatchCheckQueuedRef.current = true;
+    }
+  }, [pendingMatchLoading, currentTeam?.id, teamLoading, triggerPendingMatchesForNewSession]);
   
   // Modal closure handler - defined early so other handlers can use it
   // When "Configure New Match" is clicked, it should reset the same way as "New Game" from Hamburger Menu

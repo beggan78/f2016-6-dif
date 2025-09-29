@@ -38,7 +38,8 @@ export function StatsScreen({
   goalScorers,
   authModal,
   checkForActiveMatch,
-  selectedSquadIds = []
+  selectedSquadIds = [],
+  onStartNewConfigurationSession = () => {}
 }) {
   const [copySuccess, setCopySuccess] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -175,6 +176,7 @@ export function StatsScreen({
       setGameLog([]);
       resetScore(); // Clear score
       setOpponentTeam(''); // Clear opponent team name
+      onStartNewConfigurationSession();
       setView('config');
     });
   };

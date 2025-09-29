@@ -1,8 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
+import { checkForPendingMatches } from '../../../services/pendingMatchService';
 
 jest.mock('lucide-react', () => ({
   Settings: (props) => <svg data-testid="icon-settings" {...props} />,
@@ -153,10 +154,15 @@ const buildProps = (overrides = {}) => ({
   hasActiveConfiguration: false,
   setHasActiveConfiguration: jest.fn(),
   clearStoredState: jest.fn(),
+  configurationSessionId: 0,
   ...overrides
 });
 
 describe('ConfigurationScreen venue selection', () => {
+  beforeEach(() => {
+    checkForPendingMatches.mockClear();
+  });
+
   it('renders all venue options with home selected by default', () => {
     const props = buildProps();
     render(<ConfigurationScreen {...props} />);
@@ -193,5 +199,18 @@ describe('ConfigurationScreen venue selection', () => {
     rerender(<ConfigurationScreen {...{ ...props, venueType: VENUE_TYPES.AWAY }} />);
     expect(screen.getByTestId('venueType').value).toBe(VENUE_TYPES.AWAY);
     expect(screen.queryByTestId('venue-description')).toBeNull();
+  });
+
+  it('checks for pending matches when configurationSessionId changes', async () => {
+    const props = buildProps();
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    expect(checkForPendingMatches).not.toHaveBeenCalled();
+
+    rerender(<ConfigurationScreen {...{ ...props, configurationSessionId: 1 }} />);
+
+    await waitFor(() => {
+      expect(checkForPendingMatches).toHaveBeenCalledWith('team-1');
+    });
   });
 });
