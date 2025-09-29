@@ -447,8 +447,6 @@ export function ConfigurationScreen({
         !newSignInProcessed &&
         clearStoredState) {
 
-      console.log('🔄 NEW_SIGN_IN detected with no active configuration - clearing previous user data');
-
       // Mark as processed to prevent infinite loops
       setNewSignInProcessed(true);
 
