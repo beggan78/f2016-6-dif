@@ -123,14 +123,17 @@ export async function updateMatchToRunning(matchId) {
     }
 
 
+    const nowIso = new Date().toISOString();
+
     const { error } = await supabase
       .from('match')
-      .update({ 
+      .update({
         state: 'running',
-        started_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        started_at: nowIso,
+        updated_at: nowIso
       })
       .eq('id', matchId)
+      .is('deleted_at', null)
       .eq('state', 'pending'); // Only update if currently pending
 
     if (error) {
@@ -194,6 +197,7 @@ export async function updateMatchToFinished(matchId, finalStats, allPlayers = []
       .from('match')
       .update(updateData)
       .eq('id', matchId)
+      .is('deleted_at', null)
       .eq('state', 'running'); // Only update if currently running
 
     if (error) {
@@ -251,6 +255,7 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
       .from('match')
       .update(updateData)
       .eq('id', matchId)
+      .is('deleted_at', null)
       .eq('state', 'finished')
       .select('id'); // Ensure at least one row was updated
 
@@ -366,6 +371,7 @@ export async function getMatch(matchId) {
       .from('match')
       .select('*')
       .eq('id', matchId)
+      .is('deleted_at', null)
       .single();
 
     if (error) {
@@ -407,6 +413,7 @@ export async function checkForRunningMatch(teamId) {
       .select('id')
       .eq('team_id', teamId)
       .eq('state', 'running')
+      .is('deleted_at', null)
       .limit(1);
 
     if (error) {
@@ -818,6 +825,7 @@ export async function updateExistingMatch(matchId, matchData) {
       .from('match')
       .update(updateData)
       .eq('id', matchId)
+      .is('deleted_at', null)
       .eq('state', 'pending'); // Only update pending matches
 
     if (error) {
@@ -1000,6 +1008,7 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
         updated_at: new Date().toISOString()
       })
       .eq('id', matchId)
+      .is('deleted_at', null)
       .eq('state', 'pending'); // Only update pending matches
 
     if (error) {
@@ -1039,6 +1048,7 @@ export async function getPendingMatchForTeam(teamId) {
       .from('match')
       .select('*')
       .eq('team_id', teamId)
+      .is('deleted_at', null)
       .eq('state', 'pending')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -1087,12 +1097,20 @@ export async function discardPendingMatch(matchId) {
       .delete()
       .eq('match_id', matchId);
 
-    // Then delete the match itself
+    // Then soft delete the match record
+    const nowIso = new Date().toISOString();
+
     const { error } = await supabase
       .from('match')
-      .delete()
+      .update(
+        {
+          deleted_at: nowIso
+        },
+        { returning: 'minimal' }
+      )
       .eq('id', matchId)
-      .eq('state', 'pending'); // Only delete pending matches
+      .is('deleted_at', null)
+      .eq('state', 'pending'); // Only update pending matches
 
     if (error) {
       console.error('❌ Failed to discard pending match:', error);

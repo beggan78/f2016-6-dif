@@ -25,6 +25,7 @@ export async function checkForPendingMatches(teamId) {
       .from('match')
       .select('*')
       .eq('team_id', teamId)
+      .is('deleted_at', null)
       .eq('state', 'pending')
       .order('created_at', { ascending: false });
 

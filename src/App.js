@@ -176,6 +176,7 @@ function AppContent() {
   
   
   const [showSignOutConfirmModal, setShowSignOutConfirmModal] = useState(false);
+  const [configSessionToken, setConfigSessionToken] = useState(0);
 
   const executeSignOut = useCallback(async () => {
     // Clear dismissed modals state for new session
@@ -197,6 +198,10 @@ function AppContent() {
 
     await executeSignOut();
   }, [executeSignOut, gameState.matchState]);
+
+  const beginNewConfigurationSession = useCallback(() => {
+    setConfigSessionToken((prev) => prev + 1);
+  }, []);
 
   const handleConfirmSignOut = useCallback(async () => {
     setShowSignOutConfirmModal(false);
@@ -396,6 +401,7 @@ function AppContent() {
         .from('match')
         .select('id, state')
         .eq('id', gameState.currentMatchId)
+        .is('deleted_at', null)
         .in('state', ['running', 'finished'])
         .single();
 
@@ -435,17 +441,22 @@ function AppContent() {
     }
   }, [gameState.currentMatchId]);
 
-  // Handle abandonment confirmation - delete match record and proceed
+  // Handle abandonment confirmation - mark match record as deleted and proceed
   const handleAbandonMatch = useCallback(async () => {
     try {
       if (gameState.currentMatchId) {
+        const nowIso = new Date().toISOString();
+
         const { error } = await supabase
           .from('match')
-          .delete()
-          .eq('id', gameState.currentMatchId);
+          .update({
+            deleted_at: nowIso
+          })
+          .eq('id', gameState.currentMatchId)
+          .is('deleted_at', null);
           
         if (error) {
-          console.error('Error deleting match record:', error);
+          console.error('Error marking match as deleted:', error);
           // Continue anyway - don't block user if deletion fails
         }
       }
@@ -519,17 +530,22 @@ function AppContent() {
     
   }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
 
-  // Handle "Delete Match" option - delete database record and proceed
+  // Handle "Delete Match" option - mark database record as deleted and proceed
   const handleDeleteFinishedMatch = useCallback(async () => {
     try {
       if (gameState.currentMatchId) {
+        const nowIso = new Date().toISOString();
+
         const { error } = await supabase
           .from('match')
-          .delete()
-          .eq('id', gameState.currentMatchId);
+          .update({
+            deleted_at: nowIso
+          })
+          .eq('id', gameState.currentMatchId)
+          .is('deleted_at', null);
           
         if (error) {
-          console.error('Error deleting match record:', error);
+          console.error('Error marking match as deleted:', error);
           showSuccessMessage('Error deleting match. Please try again.');
         } else {
           showSuccessMessage('Match deleted successfully!');
@@ -744,6 +760,8 @@ function AppContent() {
     gameState.resetScore();
     gameState.setOpponentTeam('');
     gameState.clearStoredState();
+
+    beginNewConfigurationSession();
   };
 
   const handleNewGameFromMenu = async () => {
@@ -925,6 +943,7 @@ function AppContent() {
             hasActiveConfiguration={gameState.hasActiveConfiguration}
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
             clearStoredState={gameState.clearStoredState}
+            configurationSessionId={configSessionToken}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -1037,12 +1056,13 @@ function AppContent() {
             navigateToMatchReport={gameState.navigateToMatchReport}
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
-            goalScorers={gameState.goalScorers || {}}
-            authModal={authModal}
-            checkForActiveMatch={checkForActiveMatch}
-            selectedSquadIds={gameState.selectedSquadIds}
-          />
-        );
+          goalScorers={gameState.goalScorers || {}}
+          authModal={authModal}
+          checkForActiveMatch={checkForActiveMatch}
+          selectedSquadIds={gameState.selectedSquadIds}
+          onStartNewConfigurationSession={beginNewConfigurationSession}
+        />
+      );
       case VIEWS.MATCH_REPORT:
         return (
           <MatchReportScreen 

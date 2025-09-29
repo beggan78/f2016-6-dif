@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getCachedUserProfile, cacheUserProfile, clearAllCache, cacheAuthUser, getCachedAuthUser } from '../utils/cacheUtils';
 import { cleanupAbandonedMatches } from '../services/matchCleanupService';
 import { cleanupPreviousSession } from '../utils/sessionCleanupUtils';
-import { detectSessionType, shouldCleanupSession, clearAllSessionData, DETECTION_TYPES } from '../services/sessionDetectionService';
+import { detectSessionType, shouldCleanupSession, clearAllSessionData, markPendingSignIn, markSignOutGuard, DETECTION_TYPES } from '../services/sessionDetectionService';
 
 // Feature flag to control session expiry warnings
 const ENABLE_SESSION_EXPIRY_WARNINGS = false;
@@ -386,6 +386,10 @@ export function AuthProvider({ children }) {
 
       if (error) throw error;
 
+      markPendingSignIn();
+      const detection = detectSessionType();
+      setSessionDetectionResult(detection);
+
       return { user: data.user, error: null };
     } catch (error) {
       const errorMessage = error.message || 'Failed to sign in';
@@ -413,6 +417,9 @@ export function AuthProvider({ children }) {
       clearAllCache();
       cacheAuthUser(null);
       
+      // Mark sign-out guard so detection treats follow-up refresh as PAGE_REFRESH
+      markSignOutGuard();
+
       // Clear session detection state to ensure fresh detection on next sign-in
       clearAllSessionData();
       

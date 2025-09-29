@@ -12,7 +12,6 @@ import {
   updateMatchToConfirmed,
   insertInitialPlayerMatchStats,
   upsertPlayerMatchStats,
-  updatePlayerMatchStatsOnFinish,
   updatePlayerMatchStatsFairPlayAward,
   formatInitialPlayerStats,
   formatPlayerMatchStats,
@@ -26,33 +25,18 @@ import { supabase } from '../../lib/supabase';
 // Mock the supabase client
 jest.mock('../../lib/supabase', () => ({
   supabase: {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn()
-        })),
-        gte: jest.fn(),
-        lte: jest.fn(),
-        order: jest.fn(),
-        limit: jest.fn()
-      })),
-      insert: jest.fn(() => ({
-        select: jest.fn(() => ({
-          single: jest.fn()
-        }))
-      })),
-      update: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          select: jest.fn(),
-          eq: jest.fn()
-        }))
-      })),
-      upsert: jest.fn(() => ({
-        select: jest.fn()
-      }))
-    }))
+    from: jest.fn()
   }
 }));
+
+const createUpdateChain = ({ finalResult = { data: null, error: null }, selectResult } = {}) => {
+  const select = selectResult ? jest.fn().mockResolvedValue(selectResult) : null;
+  const finalEq = jest.fn(() => (select ? { select } : Promise.resolve(finalResult)));
+  const is = jest.fn(() => ({ eq: finalEq }));
+  const firstEq = jest.fn(() => ({ is }));
+  const update = jest.fn(() => ({ eq: firstEq }));
+  return { update, firstEq, is, finalEq, select };
+};
 
 describe('matchStateManager', () => {
   // Test data fixtures
@@ -202,16 +186,8 @@ describe('matchStateManager', () => {
 
   describe('updateMatchToRunning', () => {
     it('should update match state to running successfully', async () => {
-      supabase.from.mockReturnValue({
-        update: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            eq: jest.fn().mockResolvedValue({
-              data: null,
-              error: null
-            })
-          }))
-        }))
-      });
+      const chain = createUpdateChain();
+      supabase.from.mockReturnValue({ update: chain.update });
 
       const result = await updateMatchToRunning('match-123');
 
@@ -220,16 +196,8 @@ describe('matchStateManager', () => {
     });
 
     it('should handle database error', async () => {
-      supabase.from.mockReturnValue({
-        update: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            eq: jest.fn().mockResolvedValue({
-              data: null,
-              error: { message: 'Update failed' }
-            })
-          }))
-        }))
-      });
+      const chain = createUpdateChain({ finalResult: { data: null, error: { message: 'Update failed' } } });
+      supabase.from.mockReturnValue({ update: chain.update });
 
       const result = await updateMatchToRunning('match-123');
 
@@ -256,16 +224,8 @@ describe('matchStateManager', () => {
 
     it('should update match to finished successfully without player stats', async () => {
       // Mock successful match update (only one call to supabase.from)
-      supabase.from.mockReturnValue({
-        update: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            eq: jest.fn().mockResolvedValue({
-              data: null,
-              error: null
-            })
-          }))
-        }))
-      });
+      const chain = createUpdateChain();
+      supabase.from.mockReturnValue({ update: chain.update });
 
       // Call without allPlayers to avoid internal stats update calls
       const result = await updateMatchToFinished('match-123', finalStats);
@@ -285,18 +245,8 @@ describe('matchStateManager', () => {
 
   describe('updateMatchToConfirmed', () => {
     it('should update match to confirmed successfully', async () => {
-      supabase.from.mockReturnValue({
-        update: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            eq: jest.fn(() => ({
-              select: jest.fn().mockResolvedValue({
-                data: [{ id: 'match-123' }],
-                error: null
-              })
-            }))
-          }))
-        }))
-      });
+      const chain = createUpdateChain({ selectResult: { data: [{ id: 'match-123' }], error: null } });
+      supabase.from.mockReturnValue({ update: chain.update });
 
       const result = await updateMatchToConfirmed('match-123');
 
