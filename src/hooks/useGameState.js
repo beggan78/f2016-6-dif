@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
@@ -17,7 +17,7 @@ import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig, FORMATS } from '../constants/teamConfiguration';
+import { createTeamConfig, FORMATS, getMinimumPlayersForFormat } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
@@ -157,6 +157,10 @@ export function useGameState(navigateToView = null) {
   const [matchType, setMatchType] = useState(initialState.matchType || DEFAULT_MATCH_TYPE);
   const [venueType, setVenueType] = useState(initialState.venueType || DEFAULT_VENUE_TYPE);
   const [lastSubstitutionTimestamp, setLastSubstitutionTimestamp] = useState(initialState.lastSubstitutionTimestamp || null);
+
+  const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
+  const minimumPlayersForFormat = useMemo(() => getMinimumPlayersForFormat(currentFormat), [currentFormat]);
+  const maximumPlayersForMatch = 10;
 
   // Match events and scoring - extracted to useMatchEvents hook
   const matchEventsHook = useMatchEvents(initialState);
@@ -374,8 +378,8 @@ export function useGameState(navigateToView = null) {
   }, [preparePeriodWithGameLog, gameLog]);
 
   const handleStartPeriodSetup = useCallback(async () => {
-    if (selectedSquadIds.length < 5 || selectedSquadIds.length > 10) {
-      alert("Please select 5-8 players for the squad."); // Replace with modal
+    if (selectedSquadIds.length < minimumPlayersForFormat || selectedSquadIds.length > maximumPlayersForMatch) {
+      alert(`Please select between ${minimumPlayersForFormat} and ${maximumPlayersForMatch} players for the squad.`); // Replace with modal
       return;
     }
     const goaliesAssigned = Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean);
@@ -474,7 +478,7 @@ export function useGameState(navigateToView = null) {
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, venueType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
       setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated,
-      getFormationAwareTeamConfig]);
+      getFormationAwareTeamConfig, minimumPlayersForFormat]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
@@ -1363,14 +1367,9 @@ export function useGameState(navigateToView = null) {
   // Save Configuration handler for ConfigurationScreen - extracts database save logic without navigation
   const handleSaveConfiguration = useCallback(async () => {
     // Validation
-    if (selectedSquadIds.length < 5 || selectedSquadIds.length > 10) {
-      return { success: false, error: "Please select 5-10 players for the squad." };
+    if (selectedSquadIds.length < minimumPlayersForFormat || selectedSquadIds.length > maximumPlayersForMatch) {
+      return { success: false, error: `Please select between ${minimumPlayersForFormat} and ${maximumPlayersForMatch} players for the squad.` };
     }
-    const goaliesAssigned = Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean);
-    if (!goaliesAssigned) {
-      return { success: false, error: "Please assign a goalie for each period." };
-    }
-
     // Skip save if no team context
     if (!currentTeam?.id) {
       return { success: false, error: "Team context required for saving configuration." };
@@ -1431,7 +1430,7 @@ export function useGameState(navigateToView = null) {
     }
   }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
       periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentMatchId, matchCreated,
-      formation, allPlayers]);
+      formation, allPlayers, minimumPlayersForFormat]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
   // Shared function for saving match configuration (used by both handleStartGame and handleSavePeriodConfiguration)

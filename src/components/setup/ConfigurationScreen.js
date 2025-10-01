@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS } from '../../constants/teamConfiguration';
+import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS, getMinimumPlayersForFormat, GAME_CONSTANTS } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
@@ -93,6 +93,8 @@ export function ConfigurationScreen({
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const effectiveVenueType = venueType ?? DEFAULT_VENUE_TYPE;
+  const minPlayersRequired = React.useMemo(() => getMinimumPlayersForFormat(currentFormat), [currentFormat]);
+  const maxPlayersAllowed = GAME_CONSTANTS.MAX_SQUAD_SIZE;
 
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
@@ -727,7 +729,7 @@ export function ConfigurationScreen({
 
       // Auto-create team configuration based on squad size
       // GUARD: Skip auto-configuration during resume data processing to prevent override
-      if (newIds.length >= 5 && newIds.length <= 15 && !isProcessingResumeDataRef.current) {
+      if (newIds.length >= minPlayersRequired && newIds.length <= maxPlayersAllowed && !isProcessingResumeDataRef.current) {
         const formatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
         const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
           ? formatConfig.getDefaultSubstitutionType(newIds.length)
@@ -1276,7 +1278,7 @@ export function ConfigurationScreen({
             />
           </div>
 
-          {selectedSquadIds.length >= 5 && selectedSquadIds.length <= 15 ? (
+          {selectedSquadIds.length >= minPlayersRequired && selectedSquadIds.length <= maxPlayersAllowed ? (
             <div className="space-y-3">
               <div>
                 <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
@@ -1297,7 +1299,7 @@ export function ConfigurationScreen({
             </div>
           ) : (
             <p className="text-xs text-slate-400">
-              Add between 5 and 15 players to configure a tactical formation.
+              Add between {minPlayersRequired} and {maxPlayersAllowed} players to configure a tactical formation.
             </p>
           )}
         </div>
@@ -1379,7 +1381,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Goalie Assignment */}
-      {(selectedSquadIds.length >= 5 && selectedSquadIds.length <= 15) && (
+      {(selectedSquadIds.length >= minPlayersRequired && selectedSquadIds.length <= maxPlayersAllowed) && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">
@@ -1400,7 +1402,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Captain Assignment */}
-      {selectedSquadIds.length >= 5 && (
+      {selectedSquadIds.length >= minPlayersRequired && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Captain</h3>
           <div>
@@ -1423,7 +1425,11 @@ export function ConfigurationScreen({
       {isAuthenticated && currentTeam && handleSaveConfiguration && (
         <Button 
           onClick={handleSaveConfigClick}
-          disabled={saveConfigStatus.loading || (selectedSquadIds.length < 5 || selectedSquadIds.length > 10) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)}
+          disabled={
+            saveConfigStatus.loading ||
+            selectedSquadIds.length < minPlayersRequired ||
+            selectedSquadIds.length > 10
+          }
           variant="secondary"
           Icon={Save}
         >
@@ -1433,7 +1439,7 @@ export function ConfigurationScreen({
 
       <Button 
         onClick={handleStartPeriodSetup} 
-        disabled={(selectedSquadIds.length < 5 || selectedSquadIds.length > 10) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
+        disabled={(selectedSquadIds.length < minPlayersRequired || selectedSquadIds.length > 10) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
         Icon={Play}
       >
         Proceed to Period Setup

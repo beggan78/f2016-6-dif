@@ -152,6 +152,23 @@ export const FORMAT_CONFIGS = {
   }
 };
 
+/**
+ * Determine minimum players required for a given format (goalie + field players)
+ * Falls back to global minimum squad size if format metadata is unavailable
+ * @param {string} format - Team format identifier (e.g., 5v5, 7v7)
+ * @returns {number} Minimum players required to satisfy the format
+ */
+export function getMinimumPlayersForFormat(format) {
+  const formatConfig = FORMAT_CONFIGS[format];
+  const goalieCount = GAME_CONSTANTS.GOALIE_COUNT ?? 1;
+  if (!formatConfig || typeof formatConfig.fieldPlayers !== 'number') {
+    return GAME_CONSTANTS.MIN_SQUAD_SIZE;
+  }
+
+  const minimumPlayers = formatConfig.fieldPlayers + goalieCount;
+  return Math.max(GAME_CONSTANTS.MIN_SQUAD_SIZE, minimumPlayers);
+}
+
 // Pair role rotation styles (for pairs substitution mode)
 export const PAIR_ROLE_ROTATION_TYPES = {
   KEEP_THROUGHOUT_PERIOD: 'keep_throughout_period',
