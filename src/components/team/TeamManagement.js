@@ -1074,7 +1074,7 @@ function TeamPreferences({ team, onRefresh }) {
                 <CheckCircle className="w-3 h-3 text-white" />
               )}
             </div>
-            <span className="text-slate-300">Fair Play Award (Coming Soon)</span>
+            <span className="text-slate-300">Fair Play Award</span>
           </label>
         </div>
 

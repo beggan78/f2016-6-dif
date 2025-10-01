@@ -1,39 +1,138 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
-import { getTeamStats } from '../../services/matchStateManager';
+import { getConfirmedMatches } from '../../services/matchStateManager';
+import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
+import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
+import { MatchFiltersPanel } from './MatchFiltersPanel';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   const { currentTeam } = useTeam();
-  const [teamStats, setTeamStats] = useState(null);
+  const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch team stats from database
+  // Filter state
+  const [typeFilter, setTypeFilter] = useState([]);
+  const [outcomeFilter, setOutcomeFilter] = useState([]);
+  const [venueFilter, setVenueFilter] = useState([]);
+  const [opponentFilter, setOpponentFilter] = useState([]);
+  const [playerFilter, setPlayerFilter] = useState([]);
+  const [formatFilter, setFormatFilter] = useState([]);
+
+  // Fetch matches from database
   useEffect(() => {
-    async function fetchTeamStats() {
+    async function fetchMatches() {
       if (!currentTeam?.id) {
-        setTeamStats(null);
+        setMatches([]);
         return;
       }
 
       setLoading(true);
       setError(null);
 
-      const result = await getTeamStats(currentTeam.id, startDate, endDate);
+      const result = await getConfirmedMatches(currentTeam.id, startDate, endDate);
 
       if (result.success) {
-        setTeamStats(result.stats);
+        setMatches(result.matches || []);
       } else {
-        setError(result.error || 'Failed to load team statistics');
-        setTeamStats(null);
+        setError(result.error || 'Failed to load match data');
+        setMatches([]);
       }
 
       setLoading(false);
     }
 
-    fetchTeamStats();
+    fetchMatches();
   }, [currentTeam?.id, startDate, endDate]);
+
+  // Function to clear all filters
+  const clearAllFilters = () => {
+    setTypeFilter([]);
+    setOutcomeFilter([]);
+    setVenueFilter([]);
+    setOpponentFilter([]);
+    setPlayerFilter([]);
+    setFormatFilter([]);
+  };
+
+  // Apply filters to matches
+  const filteredMatches = useMemo(() => {
+    return filterMatchesByCriteria(matches, {
+      typeFilter,
+      outcomeFilter,
+      venueFilter,
+      opponentFilter,
+      playerFilter,
+      formatFilter,
+      startDate,
+      endDate
+    });
+  }, [matches, typeFilter, outcomeFilter, venueFilter, opponentFilter, playerFilter, formatFilter, startDate, endDate]);
+
+  // Calculate stats from filtered matches
+  const teamStats = useMemo(() => {
+    if (filteredMatches.length === 0) return null;
+
+    const totalMatches = filteredMatches.length;
+    const wins = filteredMatches.filter(m => m.outcome === 'W').length;
+    const draws = filteredMatches.filter(m => m.outcome === 'D').length;
+    const losses = filteredMatches.filter(m => m.outcome === 'L').length;
+
+    const goalsScored = filteredMatches.reduce((sum, m) => sum + m.goalsScored, 0);
+    const goalsConceded = filteredMatches.reduce((sum, m) => sum + m.goalsConceded, 0);
+
+    const averageGoalsScored = (goalsScored / totalMatches).toFixed(1);
+    const averageGoalsConceded = (goalsConceded / totalMatches).toFixed(1);
+
+    const cleanSheets = filteredMatches.filter(m => m.goalsConceded === 0).length;
+    const cleanSheetPercentage = totalMatches > 0
+      ? ((cleanSheets / totalMatches) * 100).toFixed(1)
+      : '0.0';
+
+    // Home/Away/Neutral records
+    const homeMatches = filteredMatches.filter(m => m.venueType === 'home');
+    const awayMatches = filteredMatches.filter(m => m.venueType === 'away');
+
+    const homeRecord = {
+      total: homeMatches.length,
+      wins: homeMatches.filter(m => m.outcome === 'W').length,
+      draws: homeMatches.filter(m => m.outcome === 'D').length,
+      losses: homeMatches.filter(m => m.outcome === 'L').length
+    };
+
+    const awayRecord = {
+      total: awayMatches.length,
+      wins: awayMatches.filter(m => m.outcome === 'W').length,
+      draws: awayMatches.filter(m => m.outcome === 'D').length,
+      losses: awayMatches.filter(m => m.outcome === 'L').length
+    };
+
+    // Recent matches (last 5)
+    const recentMatches = filteredMatches.slice(0, 5).map(match => ({
+      id: match.id,
+      date: new Date(match.date).toISOString().split('T')[0],
+      opponent: match.opponent,
+      score: `${match.goalsScored}-${match.goalsConceded}`,
+      result: match.outcome
+    }));
+
+    return {
+      totalMatches,
+      wins,
+      draws,
+      losses,
+      goalsScored,
+      goalsConceded,
+      averageGoalsScored,
+      averageGoalsConceded,
+      cleanSheets,
+      cleanSheetPercentage,
+      homeRecord,
+      awayRecord,
+      recentMatches
+    };
+  }, [filteredMatches]);
 
   // Show loading state
   if (loading) {
@@ -58,12 +157,41 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     );
   }
 
-  // Show empty state if no stats
-  if (!teamStats) {
+  // Show empty state if no matches at all
+  if (!loading && matches.length === 0) {
     return (
       <div className="space-y-6">
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
           <div className="text-slate-400">No team statistics available</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if filters resulted in no matches
+  if (!loading && !teamStats && matches.length > 0) {
+    return (
+      <div className="space-y-6">
+        {/* Filters */}
+        <MatchFiltersPanel
+          matches={matches}
+          typeFilter={typeFilter}
+          outcomeFilter={outcomeFilter}
+          venueFilter={venueFilter}
+          opponentFilter={opponentFilter}
+          playerFilter={playerFilter}
+          formatFilter={formatFilter}
+          onTypeFilterChange={setTypeFilter}
+          onOutcomeFilterChange={setOutcomeFilter}
+          onVenueFilterChange={setVenueFilter}
+          onOpponentFilterChange={setOpponentFilter}
+          onPlayerFilterChange={setPlayerFilter}
+          onFormatFilterChange={setFormatFilter}
+          onClearAllFilters={clearAllFilters}
+        />
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">No matches found with the selected filters</div>
+          <p className="text-slate-500 text-sm mt-2">Try adjusting your filter criteria</p>
         </div>
       </div>
     );
@@ -85,8 +213,18 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     recentMatches
   } = teamStats;
 
-  const winPercentage = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : 0;
+  const formatPercentage = (count) => (
+    totalMatches > 0 ? ((count / totalMatches) * 100).toFixed(1) : '0.0'
+  );
+
+  const winPercentage = formatPercentage(wins);
   const goalDifference = goalsScored - goalsConceded;
+
+  const matchOutcomes = [
+    { label: 'Matches Won', count: wins },
+    { label: 'Matches Drawn', count: draws },
+    { label: 'Matches Lost', count: losses }
+  ];
 
   const StatCard = ({ icon: Icon, title, value, subtitle, trend }) => (
     <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
@@ -97,7 +235,9 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
           </div>
           <div>
             <p className="text-slate-400 text-sm">{title}</p>
-            <p className="text-slate-100 text-xl font-semibold">{value}</p>
+            <p className="text-slate-100 text-xl font-semibold" aria-label={`${title} value`}>
+              {value}
+            </p>
             {subtitle && <p className="text-slate-400 text-xs">{subtitle}</p>}
           </div>
         </div>
@@ -114,22 +254,30 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     </div>
   );
 
-  const getResultBadge = (result) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium w-12 text-center";
-    switch (result) {
-      case 'W':
-        return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
-      case 'D':
-        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
-      case 'L':
-        return `${baseClasses} bg-rose-900/50 text-rose-300 border border-rose-600`;
-      default:
-        return `${baseClasses} bg-slate-700 text-slate-300`;
-    }
-  };
+  const getResultBadge = (result) => getOutcomeBadgeClasses(result, {
+    baseClasses: 'px-2 py-1 rounded text-xs font-medium w-12 text-center'
+  });
 
   return (
     <div className="space-y-6">
+      {/* Filters */}
+      <MatchFiltersPanel
+        matches={matches}
+        typeFilter={typeFilter}
+        outcomeFilter={outcomeFilter}
+        venueFilter={venueFilter}
+        opponentFilter={opponentFilter}
+        playerFilter={playerFilter}
+        formatFilter={formatFilter}
+        onTypeFilterChange={setTypeFilter}
+        onOutcomeFilterChange={setOutcomeFilter}
+        onVenueFilterChange={setVenueFilter}
+        onOpponentFilterChange={setOpponentFilter}
+        onPlayerFilterChange={setPlayerFilter}
+        onFormatFilterChange={setFormatFilter}
+        onClearAllFilters={clearAllFilters}
+      />
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -197,27 +345,20 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
             <h3 className="text-lg font-semibold text-sky-400">Match Outcomes</h3>
           </div>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Matches Won</span>
-              <div className="text-right">
-                <span className="text-slate-100 font-semibold">{wins}</span>
-                <span className="text-slate-400 text-sm ml-2">({((wins / totalMatches) * 100).toFixed(1)}%)</span>
+            {matchOutcomes.map(({ label, count }) => (
+              <div
+                key={label}
+                className="grid grid-cols-[1fr_auto_auto] items-center gap-3"
+              >
+                <span className="text-slate-300">{label}</span>
+                <span className="text-slate-100 font-semibold text-right tabular-nums min-w-[2.5rem]">
+                  {count}
+                </span>
+                <span className="text-slate-400 text-sm text-right tabular-nums min-w-[3.5rem]">
+                  ({formatPercentage(count)}%)
+                </span>
               </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Matches Drawn</span>
-              <div className="text-right">
-                <span className="text-slate-100 font-semibold">{draws}</span>
-                <span className="text-slate-400 text-sm ml-2">({((draws / totalMatches) * 100).toFixed(1)}%)</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Matches Lost</span>
-              <div className="text-right">
-                <span className="text-slate-100 font-semibold">{losses}</span>
-                <span className="text-slate-400 text-sm ml-2">({((losses / totalMatches) * 100).toFixed(1)}%)</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

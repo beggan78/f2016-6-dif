@@ -1,8 +1,21 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MatchHistoryView } from '../MatchHistoryView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../../services/matchStateManager';
+
+/* eslint-disable testing-library/no-node-access */
+function openFilterToggle(labelText) {
+  const label = screen.getByText(labelText);
+  const container = label.closest('div');
+  if (!container) {
+    throw new Error(`Unable to find container for label ${labelText}`);
+  }
+  const toggle = within(container).getByRole('button');
+  fireEvent.click(toggle);
+  return toggle;
+}
+/* eslint-enable testing-library/no-node-access */
 
 // Mock dependencies
 jest.mock('../../../contexts/TeamContext');
@@ -14,9 +27,9 @@ const mockMatches = [
     id: 1,
     date: '2025-01-20T15:00:00Z',
     opponent: 'Hammarby IF',
-    homeScore: 3,
-    awayScore: 1,
-    isHome: true,
+    goalsScored: 3,
+    goalsConceded: 1,
+    venueType: 'home',
     type: 'League',
     outcome: 'W',
     format: '5v5',
@@ -26,9 +39,9 @@ const mockMatches = [
     id: 2,
     date: '2025-01-15T14:30:00Z',
     opponent: 'AIK',
-    homeScore: 2,
-    awayScore: 2,
-    isHome: false,
+    goalsScored: 2,
+    goalsConceded: 2,
+    venueType: 'neutral',
     type: 'Friendly',
     outcome: 'D',
     format: '7v7',
@@ -38,9 +51,9 @@ const mockMatches = [
     id: 3,
     date: '2025-01-10T16:00:00Z',
     opponent: 'IFK Göteborg',
-    homeScore: 1,
-    awayScore: 2,
-    isHome: true,
+    goalsScored:1,
+    goalsConceded:2,
+    venueType: 'home',
     type: 'Cup',
     outcome: 'L',
     format: '5v5',
@@ -50,9 +63,9 @@ const mockMatches = [
     id: 4,
     date: '2025-01-05T13:00:00Z',
     opponent: 'Malmö FF',
-    homeScore: 4,
-    awayScore: 0,
-    isHome: false,
+    goalsScored:4,
+    goalsConceded:0,
+    venueType: 'away',
     type: 'League',
     outcome: 'W',
     format: '5v5',
@@ -62,9 +75,9 @@ const mockMatches = [
     id: 5,
     date: '2024-12-20T15:30:00Z',
     opponent: 'Örebro SK',
-    homeScore: 2,
-    awayScore: 1,
-    isHome: true,
+    goalsScored:2,
+    goalsConceded:1,
+    venueType: 'home',
     type: 'League',
     outcome: 'W',
     format: '7v7',
@@ -74,9 +87,9 @@ const mockMatches = [
     id: 6,
     date: '2024-12-15T14:00:00Z',
     opponent: 'Helsingborgs IF',
-    homeScore: 0,
-    awayScore: 3,
-    isHome: false,
+    goalsScored:0,
+    goalsConceded:3,
+    venueType: 'away',
     type: 'Friendly',
     outcome: 'L',
     format: '5v5',
@@ -86,9 +99,9 @@ const mockMatches = [
     id: 7,
     date: '2024-12-10T16:30:00Z',
     opponent: 'BK Häcken',
-    homeScore: 1,
-    awayScore: 1,
-    isHome: true,
+    goalsScored:1,
+    goalsConceded:1,
+    venueType: 'neutral',
     type: 'League',
     outcome: 'D',
     format: '7v7',
@@ -98,9 +111,9 @@ const mockMatches = [
     id: 8,
     date: '2024-12-05T15:00:00Z',
     opponent: 'IFK Norrköping',
-    homeScore: 3,
-    awayScore: 2,
-    isHome: false,
+    goalsScored:3,
+    goalsConceded:2,
+    venueType: 'away',
     type: 'Cup',
     outcome: 'W',
     format: '5v5',
@@ -110,9 +123,9 @@ const mockMatches = [
     id: 9,
     date: '2024-11-30T14:30:00Z',
     opponent: 'Degerfors IF',
-    homeScore: 2,
-    awayScore: 0,
-    isHome: true,
+    goalsScored:2,
+    goalsConceded:0,
+    venueType: 'home',
     type: 'League',
     outcome: 'W',
     format: '5v5',
@@ -122,9 +135,9 @@ const mockMatches = [
     id: 10,
     date: '2024-11-25T13:30:00Z',
     opponent: 'Varbergs BoIS',
-    homeScore: 1,
-    awayScore: 4,
-    isHome: false,
+    goalsScored:1,
+    goalsConceded:4,
+    venueType: 'away',
     type: 'Friendly',
     outcome: 'L',
     format: '7v7',
@@ -153,92 +166,93 @@ describe('MatchHistoryView', () => {
   test('shows format filter when multiple formats exist in matches', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Format')).toBeInTheDocument();
-    });
+    await screen.findByText('Format');
   });
 
   test('filters matches by format correctly', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load and check initial count
-    await waitFor(() => {
-      expect(screen.getByText(/10 matches found/i)).toBeInTheDocument();
-    });
+    await screen.findByText(/10 matches found/i);
 
-    // Find the format filter by looking for the label
-    const formatLabel = screen.getByText('Format');
-    const formatSelect = formatLabel.closest('.flex')?.querySelector('select');
+    openFilterToggle('Format');
 
-    expect(formatSelect).toBeInTheDocument();
+    const formatOption = await screen.findByLabelText('5v5');
+    fireEvent.click(formatOption);
 
-    if (formatSelect) {
-      // Change to 5v5 filter
-      fireEvent.change(formatSelect, { target: { value: '5v5' } });
-
-      // Should now show fewer matches (6 matches have 5v5 format in mock data)
-      await waitFor(() => {
-        expect(screen.getByText(/6 matches found/i)).toBeInTheDocument();
-      });
-    }
+    await screen.findByText(/6 matches found/i);
   });
 
   test('format filter shows all format options from matches', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Format')).toBeInTheDocument();
-    });
+    await screen.findByText('Format');
 
-    // Find the format filter select
-    const formatLabel = screen.getByText('Format');
-    const formatSelect = formatLabel.closest('.flex')?.querySelector('select');
+    openFilterToggle('Format');
 
-    expect(formatSelect).toBeInTheDocument();
+    const listbox = await screen.findByRole('listbox');
+    const optionCheckboxes = within(listbox).getAllByRole('checkbox');
+    expect(optionCheckboxes).toHaveLength(2); // 5v5 and 7v7
 
-    if (formatSelect) {
-      // The select should have All, 5v5, and 7v7 options based on mock data
-      expect(formatSelect.children).toHaveLength(3); // All + 5v5 + 7v7
-
-      const options = Array.from(formatSelect.children).map(option => option.textContent);
-      expect(options).toContain('All');
-      expect(options).toContain('5v5');
-      expect(options).toContain('7v7');
-    }
+    expect(screen.getByLabelText('5v5')).toBeInTheDocument();
+    expect(screen.getByLabelText('7v7')).toBeInTheDocument();
   });
 
   test('format filter visibility changes based on available formats', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Format')).toBeInTheDocument();
-    });
+    await screen.findByText('Format');
 
-    // Format dropdown should exist
-    const formatLabel = screen.getByText('Format');
-    const formatSelect = formatLabel.closest('.flex')?.querySelector('select');
-    expect(formatSelect).toBeInTheDocument();
+    openFilterToggle('Format');
 
-    // Test that 7v7 filter works too
-    if (formatSelect) {
-      fireEvent.change(formatSelect, { target: { value: '7v7' } });
-      await waitFor(() => {
-        expect(screen.getByText(/4 matches found/i)).toBeInTheDocument();
-      });
-    }
+    const option = await screen.findByLabelText('7v7');
+    fireEvent.click(option);
+
+    await screen.findByText(/4 matches found/i);
   });
 
   test('component renders without errors', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load and check basic elements are present
-    await waitFor(() => {
-      expect(screen.getByText('Filter')).toBeInTheDocument();
-      expect(screen.getByText('Match History')).toBeInTheDocument();
-      expect(screen.getByText(/matches found/i)).toBeInTheDocument();
-    });
+    await screen.findByText('Filter');
+    expect(screen.getByText('Match History')).toBeInTheDocument();
+    expect(screen.getByText(/matches found/i)).toBeInTheDocument();
+  });
+
+  test('filters matches by venue type including neutral', async () => {
+    render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
+
+    await screen.findByText(/10 matches found/i);
+
+    openFilterToggle('Venue');
+
+    const homeOption = await screen.findByLabelText('Home');
+    fireEvent.click(homeOption);
+    await screen.findByText(/4 matches found/i);
+
+    fireEvent.click(homeOption);
+    const awayOption = screen.getByLabelText('Away');
+    fireEvent.click(awayOption);
+    await screen.findByText(/4 matches found/i);
+
+    fireEvent.click(awayOption);
+    const neutralOption = screen.getByLabelText('Neutral');
+    fireEvent.click(neutralOption);
+    await screen.findByText(/2 matches found/i);
+
+    const clearButton = screen.getByText('Clear selection');
+    fireEvent.click(clearButton);
+    await screen.findByText(/10 matches found/i);
+  });
+
+  test('venue filter shows all venue options', async () => {
+    render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
+
+    await screen.findByText('Venue');
+
+    openFilterToggle('Venue');
+
+    expect(screen.getByLabelText('Home')).toBeInTheDocument();
+    expect(screen.getByLabelText('Away')).toBeInTheDocument();
+    expect(screen.getByLabelText('Neutral')).toBeInTheDocument();
   });
 });

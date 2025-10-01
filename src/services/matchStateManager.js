@@ -513,9 +513,9 @@ export async function getConfirmedMatches(teamId, startDate = null, endDate = nu
         id: match.id,
         date: match.started_at,
         opponent: match.opponent || 'Unknown',
-        homeScore: match.venue_type === 'home' ? match.goals_scored : match.goals_conceded,
-        awayScore: match.venue_type === 'home' ? match.goals_conceded : match.goals_scored,
-        isHome: match.venue_type === 'home',
+        goalsScored: match.goals_scored,
+        goalsConceded: match.goals_conceded,
+        venueType: match.venue_type,
         type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
         outcome: match.outcome === 'win' ? 'W' : match.outcome === 'draw' ? 'D' : 'L',
         format: match.format,
@@ -612,19 +612,21 @@ export async function getMatchDetails(matchId) {
 
     // Transform match data to UI format
     const matchDate = new Date(match.started_at);
+
     const transformedMatch = {
       id: match.id,
       date: matchDate.toISOString().split('T')[0],
       time: matchDate.toTimeString().slice(0, 5),
       type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
       opponent: match.opponent || 'Unknown',
-      homeScore: match.venue_type === 'home' ? match.goals_scored : match.goals_conceded,
-      awayScore: match.venue_type === 'home' ? match.goals_conceded : match.goals_scored,
-      isHome: match.venue_type === 'home',
+      goalsScored: match.goals_scored,
+      goalsConceded: match.goals_conceded,
+      venueType: match.venue_type,
       outcome: match.outcome === 'win' ? 'W' : match.outcome === 'draw' ? 'D' : 'L',
       format: match.format,
       periods: match.periods,
       periodDuration: match.period_duration_minutes,
+      matchDurationSeconds: match.match_duration_seconds,
       formation: match.formation
     };
 
@@ -805,9 +807,9 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null) {
         ? (player.totalAttackerSeconds / totalOutfielderSeconds) * 100
         : 0;
 
-      // For goalie, use total field time as denominator
-      const percentTimeAsGoalkeeper = player.totalFieldTimeSeconds > 0
-        ? (player.totalGoalieSeconds / player.totalFieldTimeSeconds) * 100
+      // For goalie, use total playing time (goalie + outfield) as denominator
+      const percentTimeAsGoalkeeper = (player.totalGoalieSeconds + player.totalFieldTimeSeconds) > 0
+        ? (player.totalGoalieSeconds / (player.totalGoalieSeconds + player.totalFieldTimeSeconds)) * 100
         : 0;
 
       return {
@@ -1659,6 +1661,154 @@ export async function discardPendingMatch(matchId) {
 
   } catch (error) {
     console.error('❌ Exception while discarding pending match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Update match details from the edit view
+ * @param {string} matchId - Match ID
+ * @param {Object} matchUpdates - Updated match fields
+ * @param {string} matchUpdates.opponent - Opponent team name (optional)
+ * @param {number} matchUpdates.goalsScored - Goals scored by team
+ * @param {number} matchUpdates.goalsConceded - Goals conceded by team
+ * @param {string} matchUpdates.venueType - Venue type (home/away/neutral)
+ * @param {string} matchUpdates.type - Match type
+ * @param {string} matchUpdates.format - Match format
+ * @param {string} matchUpdates.formation - Formation
+ * @param {number} matchUpdates.periods - Number of periods
+ * @param {number} matchUpdates.periodDuration - Period duration in minutes
+ * @param {string} matchUpdates.date - Match date (YYYY-MM-DD)
+ * @param {string} matchUpdates.time - Match time (HH:MM)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function updateMatchDetails(matchId, matchUpdates) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    // Recalculate outcome based on scores
+    const outcome = calculateMatchOutcome(matchUpdates.goalsScored, matchUpdates.goalsConceded);
+
+    // Combine date and time to create started_at timestamp
+    const startedAt = new Date(`${matchUpdates.date}T${matchUpdates.time}:00`).toISOString();
+
+    // Prepare update data
+    const updateData = {
+      opponent: matchUpdates.opponent || null,
+      goals_scored: matchUpdates.goalsScored,
+      goals_conceded: matchUpdates.goalsConceded,
+      outcome: outcome,
+      venue_type: matchUpdates.venueType,
+      type: matchUpdates.type.toLowerCase(),
+      format: matchUpdates.format,
+      formation: matchUpdates.formation,
+      periods: matchUpdates.periods,
+      period_duration_minutes: matchUpdates.periodDuration,
+      match_duration_seconds: matchUpdates.matchDurationSeconds,
+      started_at: startedAt,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('match')
+      .update(updateData)
+      .eq('id', matchId)
+      .is('deleted_at', null);
+
+    if (error) {
+      console.error('❌ Failed to update match details:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Exception while updating match details:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Update individual player match statistics from the edit view
+ * @param {string} matchId - Match ID
+ * @param {string} playerId - Player ID (from playerStats.playerId)
+ * @param {Object} statUpdates - Updated stat fields
+ * @param {number} statUpdates.goalsScored - Goals scored
+ * @param {number} statUpdates.timeAsDefender - Time as defender (minutes)
+ * @param {number} statUpdates.timeAsMidfielder - Time as midfielder (minutes)
+ * @param {number} statUpdates.timeAsAttacker - Time as attacker (minutes)
+ * @param {number} statUpdates.timeAsGoalkeeper - Time as goalkeeper (minutes)
+ * @param {string} statUpdates.startingRole - Starting role
+ * @param {boolean} statUpdates.wasCaptain - Was captain flag
+ * @param {boolean} statUpdates.receivedFairPlayAward - Fair play award flag
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function updatePlayerMatchStat(matchId, playerId, statUpdates) {
+  try {
+    if (!matchId || !playerId) {
+      return {
+        success: false,
+        error: 'Match ID and Player ID are required'
+      };
+    }
+
+    // Convert minutes to seconds and calculate total field time
+    const defenderSeconds = Math.round((statUpdates.timeAsDefender || 0) * 60);
+    const midfielderSeconds = Math.round((statUpdates.timeAsMidfielder || 0) * 60);
+    const attackerSeconds = Math.round((statUpdates.timeAsAttacker || 0) * 60);
+    const goalieSeconds = Math.round((statUpdates.timeAsGoalkeeper || 0) * 60);
+
+    // Total field time excludes goalie time
+    const totalFieldTimeSeconds = defenderSeconds + midfielderSeconds + attackerSeconds;
+
+    // Convert starting role to database format (e.g., "Defender" -> "defender")
+    const startedAs = statUpdates.startingRole.toLowerCase();
+
+    const updateData = {
+      goals_scored: statUpdates.goalsScored,
+      defender_time_seconds: defenderSeconds,
+      midfielder_time_seconds: midfielderSeconds,
+      attacker_time_seconds: attackerSeconds,
+      goalie_time_seconds: goalieSeconds,
+      total_field_time_seconds: totalFieldTimeSeconds,
+      started_as: startedAs,
+      was_captain: statUpdates.wasCaptain,
+      got_fair_play_award: statUpdates.receivedFairPlayAward,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('player_match_stats')
+      .update(updateData)
+      .eq('match_id', matchId)
+      .eq('player_id', playerId);
+
+    if (error) {
+      console.error('❌ Failed to update player match stats:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Exception while updating player match stats:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button, Input, Select } from '../shared/UI';
+import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
-import { getMatchDetails } from '../../services/matchStateManager';
+import { getMatchDetails, updateMatchDetails, updatePlayerMatchStat } from '../../services/matchStateManager';
 
 const SmartTimeInput = ({ value, onChange, className = '' }) => {
   const [displayValue, setDisplayValue] = useState('');
@@ -79,7 +80,11 @@ const SmartTimeInput = ({ value, onChange, className = '' }) => {
 };
 
 
-const VENUE_OPTIONS = ['Home', 'Away'];
+const VENUE_OPTIONS = [
+  { value: 'home', label: 'Home' },
+  { value: 'away', label: 'Away' },
+  { value: 'neutral', label: 'Neutral' }
+];
 const STARTING_ROLES = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Substitute'];
 
 // Helper function to get formation options for selected format
@@ -132,6 +137,8 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [saveError, setSaveError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch match data from database
   useEffect(() => {
@@ -183,10 +190,67 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
     );
   }
 
-  const handleSave = () => {
-    // In real implementation, save to database
-    console.log('Saving match data:', editData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      // Update match details
+      const matchResult = await updateMatchDetails(matchId, {
+        opponent: editData.opponent,
+        goalsScored: editData.goalsScored,
+        goalsConceded: editData.goalsConceded,
+        venueType: editData.venueType,
+        type: editData.type,
+        format: editData.format,
+        formation: editData.formation,
+        periods: editData.periods,
+        periodDuration: editData.periodDuration,
+        matchDurationSeconds: editData.matchDurationSeconds,
+        date: editData.date,
+        time: editData.time
+      });
+
+      if (!matchResult.success) {
+        throw new Error(matchResult.error || 'Failed to update match details');
+      }
+
+      // Update player stats for each player
+      for (const player of editData.playerStats) {
+        const playerResult = await updatePlayerMatchStat(matchId, player.playerId, {
+          goalsScored: player.goalsScored,
+          timeAsDefender: player.timeAsDefender,
+          timeAsMidfielder: player.timeAsMidfielder,
+          timeAsAttacker: player.timeAsAttacker,
+          timeAsGoalkeeper: player.timeAsGoalkeeper,
+          startingRole: player.startingRole,
+          wasCaptain: player.wasCaptain,
+          receivedFairPlayAward: player.receivedFairPlayAward
+        });
+
+        if (!playerResult.success) {
+          throw new Error(playerResult.error || `Failed to update stats for ${player.name}`);
+        }
+      }
+
+      // Refresh data from database
+      const result = await getMatchDetails(matchId);
+      if (result.success) {
+        const data = {
+          ...result.match,
+          playerStats: result.playerStats
+        };
+        setMatchData(data);
+        setEditData(data);
+      }
+
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error saving match data:', err);
+      setSaveError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -194,6 +258,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
       ...matchData,
       playerStats: [...matchData.playerStats]
     });
+    setSaveError(null);
     setIsEditing(false);
   };
 
@@ -227,7 +292,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   };
 
   const getMaxMatchDuration = () => {
-    return editData.periods * editData.periodDuration;
+    return (editData.matchDurationSeconds || 0) / 60;
   };
 
   const checkTimeInconsistency = (player) => {
@@ -236,26 +301,13 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   };
 
   const formatScore = () => {
-    if (editData.isHome) {
-      return `${editData.homeScore}-${editData.awayScore}`;
-    } else {
-      return `${editData.awayScore}-${editData.homeScore}`;
-    }
+    // Always show team goals first (left), opponent goals second (right)
+    return `${editData.goalsScored}-${editData.goalsConceded}`;
   };
 
-  const getOutcomeBadge = (outcome) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium";
-    switch (outcome) {
-      case 'W':
-        return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
-      case 'D':
-        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
-      case 'L':
-        return `${baseClasses} bg-rose-900/50 text-rose-300 border border-rose-600`;
-      default:
-        return `${baseClasses} bg-slate-700 text-slate-300`;
-    }
-  };
+  const getOutcomeBadge = (outcome) => getOutcomeBadgeClasses(outcome, {
+    baseClasses: 'px-2 py-1 rounded text-xs font-medium'
+  });
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -339,10 +391,20 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
         <div className="flex items-center space-x-2">
           {isEditing ? (
             <>
-              <Button onClick={handleSave} Icon={Save} variant="primary">
-                Save Changes
+              <Button
+                onClick={handleSave}
+                Icon={Save}
+                variant="primary"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
-              <Button onClick={handleCancel} Icon={X} variant="secondary">
+              <Button
+                onClick={handleCancel}
+                Icon={X}
+                variant="secondary"
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
             </>
@@ -353,6 +415,14 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
           )}
         </div>
       </div>
+
+      {/* Save Error Message */}
+      {saveError && (
+        <div className="bg-red-900/50 border border-red-600 rounded-lg p-4">
+          <p className="text-red-200 font-medium">Error saving changes:</p>
+          <p className="text-red-300 text-sm mt-1">{saveError}</p>
+        </div>
+      )}
 
       {/* Match Summary */}
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
@@ -376,22 +446,16 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 <div className="flex items-center justify-center space-x-2">
                   <Input
                     type="number"
-                    value={editData.isHome ? editData.homeScore : editData.awayScore}
-                    onChange={(e) => updateMatchDetail(
-                      editData.isHome ? 'homeScore' : 'awayScore',
-                      parseInt(e.target.value) || 0
-                    )}
+                    value={editData.goalsScored}
+                    onChange={(e) => updateMatchDetail('goalsScored', parseInt(e.target.value) || 0)}
                     className="w-16 text-center"
                     min="0"
                   />
                   <span className="text-slate-400 text-xl">-</span>
                   <Input
                     type="number"
-                    value={editData.isHome ? editData.awayScore : editData.homeScore}
-                    onChange={(e) => updateMatchDetail(
-                      editData.isHome ? 'awayScore' : 'homeScore',
-                      parseInt(e.target.value) || 0
-                    )}
+                    value={editData.goalsConceded}
+                    onChange={(e) => updateMatchDetail('goalsConceded', parseInt(e.target.value) || 0)}
                     className="w-16 text-center"
                     min="0"
                   />
@@ -439,7 +503,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Trophy className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Type</div>
+                <div className="text-xs text-slate-400 tracking-wide">Type</div>
                 {isEditing ? (
                   <Select
                     value={editData.type}
@@ -459,17 +523,17 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <MapPin className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Venue</div>
+                <div className="text-xs text-slate-400 tracking-wide">Venue</div>
                 {isEditing ? (
                   <Select
-                    value={editData.isHome ? 'Home' : 'Away'}
-                    onChange={(value) => updateMatchDetail('isHome', value === 'Home')}
+                    value={editData.venueType}
+                    onChange={(value) => updateMatchDetail('venueType', value)}
                     options={VENUE_OPTIONS}
                     className="text-sm"
                   />
                 ) : (
                   <div className="text-sm text-slate-100 font-medium">
-                    {editData.isHome ? 'Home' : 'Away'}
+                    {editData.venueType === 'home' ? 'Home' : editData.venueType === 'neutral' ? 'Neutral' : 'Away'}
                   </div>
                 )}
               </div>
@@ -478,7 +542,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Layers2 className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Format</div>
+                <div className="text-xs text-slate-400 tracking-wide">Format</div>
                 {isEditing ? (
                   <Select
                     value={editData.format}
@@ -495,7 +559,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Layers className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Formation</div>
+                <div className="text-xs text-slate-400 tracking-wide">Formation</div>
                 {isEditing ? (
                   <Select
                     value={editData.formation}
@@ -512,7 +576,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Periods</div>
+                <div className="text-xs text-slate-400 tracking-wide">Periods</div>
                 {isEditing ? (
                   <Input
                     type="number"
@@ -530,16 +594,16 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Total Time</div>
+                <div className="text-xs text-slate-400 tracking-wide">Total Time</div>
                 {isEditing ? (
                   <SmartTimeInput
-                    value={editData.periods * editData.periodDuration}
-                    onChange={(minutes) => updateMatchDetail('periodDuration', minutes / editData.periods)}
+                    value={(editData.matchDurationSeconds || 0) / 60}
+                    onChange={(minutes) => updateMatchDetail('matchDurationSeconds', minutes * 60)}
                     className="text-sm"
                   />
                 ) : (
                   <div className="text-sm text-slate-100 font-medium">
-                    {formatTimeAsHours(editData.periods * editData.periodDuration)}
+                    {formatTimeAsHours((editData.matchDurationSeconds || 0) / 60)}
                   </div>
                 )}
               </div>
