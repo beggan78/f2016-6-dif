@@ -807,9 +807,9 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null) {
         ? (player.totalAttackerSeconds / totalOutfielderSeconds) * 100
         : 0;
 
-      // For goalie, use total field time as denominator
-      const percentTimeAsGoalkeeper = player.totalFieldTimeSeconds > 0
-        ? (player.totalGoalieSeconds / player.totalFieldTimeSeconds) * 100
+      // For goalie, use total playing time (goalie + outfield) as denominator
+      const percentTimeAsGoalkeeper = (player.totalGoalieSeconds + player.totalFieldTimeSeconds) > 0
+        ? (player.totalGoalieSeconds / (player.totalGoalieSeconds + player.totalFieldTimeSeconds)) * 100
         : 0;
 
       return {
