@@ -105,9 +105,11 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   // Get unique opponents from matches
   const opponents = useMemo(() => {
     const uniqueOpponents = [...new Set(matches.map(match => match.opponent))];
+    // Sort opponents alphabetically
+    const sortedOpponents = uniqueOpponents.sort((a, b) => a.localeCompare(b));
     return [
       { value: 'All', label: 'All' },
-      ...uniqueOpponents.map(opponent => ({ value: opponent, label: opponent }))
+      ...sortedOpponents.map(opponent => ({ value: opponent, label: opponent }))
     ];
   }, [matches]);
 
@@ -188,15 +190,8 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   };
 
   const formatScore = (match) => {
-    if (match.venueType === 'home') {
-      return `${match.homeScore}-${match.awayScore}`;
-    } else if (match.venueType === 'neutral') {
-      // For neutral venue, show team score first (stored in homeScore)
-      return `${match.homeScore}-${match.awayScore}`;
-    } else {
-      // For away, swap the scores
-      return `${match.awayScore}-${match.homeScore}`;
-    }
+    // Always show team goals first (left), opponent goals second (right)
+    return `${match.goalsScored}-${match.goalsConceded}`;
   };
 
   const formatDate = (dateString) => {

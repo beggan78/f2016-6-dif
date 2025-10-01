@@ -57,8 +57,8 @@ The report components provide comprehensive post-match analysis and reporting ca
   allPlayers: [],           // Player data with stats
   gameLog: [],              // Period-by-period data
   goalScorers: {},          // Event ID to player ID mapping
-  homeScore: 0,             // Final scores
-  awayScore: 0,
+  goalsScored: 0,             // Final scores
+  goalsConceded: 0,
   matchStartTime: timestamp  // Match timing data
 }
 ```

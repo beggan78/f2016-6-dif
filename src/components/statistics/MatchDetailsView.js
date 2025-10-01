@@ -3,7 +3,7 @@ import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock,
 import { Button, Input, Select } from '../shared/UI';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
-import { getMatchDetails } from '../../services/matchStateManager';
+import { getMatchDetails, updateMatchDetails, updatePlayerMatchStat } from '../../services/matchStateManager';
 
 const SmartTimeInput = ({ value, onChange, className = '' }) => {
   const [displayValue, setDisplayValue] = useState('');
@@ -136,6 +136,8 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [saveError, setSaveError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch match data from database
   useEffect(() => {
@@ -187,10 +189,66 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
     );
   }
 
-  const handleSave = () => {
-    // In real implementation, save to database
-    console.log('Saving match data:', editData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      // Update match details
+      const matchResult = await updateMatchDetails(matchId, {
+        opponent: editData.opponent,
+        goalsScored: editData.goalsScored,
+        goalsConceded: editData.goalsConceded,
+        venueType: editData.venueType,
+        type: editData.type,
+        format: editData.format,
+        formation: editData.formation,
+        periods: editData.periods,
+        periodDuration: editData.periodDuration,
+        date: editData.date,
+        time: editData.time
+      });
+
+      if (!matchResult.success) {
+        throw new Error(matchResult.error || 'Failed to update match details');
+      }
+
+      // Update player stats for each player
+      for (const player of editData.playerStats) {
+        const playerResult = await updatePlayerMatchStat(matchId, player.playerId, {
+          goalsScored: player.goalsScored,
+          timeAsDefender: player.timeAsDefender,
+          timeAsMidfielder: player.timeAsMidfielder,
+          timeAsAttacker: player.timeAsAttacker,
+          timeAsGoalkeeper: player.timeAsGoalkeeper,
+          startingRole: player.startingRole,
+          wasCaptain: player.wasCaptain,
+          receivedFairPlayAward: player.receivedFairPlayAward
+        });
+
+        if (!playerResult.success) {
+          throw new Error(playerResult.error || `Failed to update stats for ${player.name}`);
+        }
+      }
+
+      // Refresh data from database
+      const result = await getMatchDetails(matchId);
+      if (result.success) {
+        const data = {
+          ...result.match,
+          playerStats: result.playerStats
+        };
+        setMatchData(data);
+        setEditData(data);
+      }
+
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error saving match data:', err);
+      setSaveError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -198,6 +256,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
       ...matchData,
       playerStats: [...matchData.playerStats]
     });
+    setSaveError(null);
     setIsEditing(false);
   };
 
@@ -240,15 +299,8 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   };
 
   const formatScore = () => {
-    if (editData.venueType === 'home') {
-      return `${editData.homeScore}-${editData.awayScore}`;
-    } else if (editData.venueType === 'neutral') {
-      // For neutral venue, show team score first (stored in homeScore)
-      return `${editData.homeScore}-${editData.awayScore}`;
-    } else {
-      // For away, swap the scores
-      return `${editData.awayScore}-${editData.homeScore}`;
-    }
+    // Always show team goals first (left), opponent goals second (right)
+    return `${editData.goalsScored}-${editData.goalsConceded}`;
   };
 
   const getOutcomeBadge = (outcome) => {
@@ -347,10 +399,20 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
         <div className="flex items-center space-x-2">
           {isEditing ? (
             <>
-              <Button onClick={handleSave} Icon={Save} variant="primary">
-                Save Changes
+              <Button
+                onClick={handleSave}
+                Icon={Save}
+                variant="primary"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
-              <Button onClick={handleCancel} Icon={X} variant="secondary">
+              <Button
+                onClick={handleCancel}
+                Icon={X}
+                variant="secondary"
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
             </>
@@ -361,6 +423,14 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
           )}
         </div>
       </div>
+
+      {/* Save Error Message */}
+      {saveError && (
+        <div className="bg-red-900/50 border border-red-600 rounded-lg p-4">
+          <p className="text-red-200 font-medium">Error saving changes:</p>
+          <p className="text-red-300 text-sm mt-1">{saveError}</p>
+        </div>
+      )}
 
       {/* Match Summary */}
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
@@ -384,22 +454,16 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 <div className="flex items-center justify-center space-x-2">
                   <Input
                     type="number"
-                    value={editData.venueType === 'home' ? editData.homeScore : editData.awayScore}
-                    onChange={(e) => updateMatchDetail(
-                      editData.venueType === 'home' ? 'homeScore' : 'awayScore',
-                      parseInt(e.target.value) || 0
-                    )}
+                    value={editData.goalsScored}
+                    onChange={(e) => updateMatchDetail('goalsScored', parseInt(e.target.value) || 0)}
                     className="w-16 text-center"
                     min="0"
                   />
                   <span className="text-slate-400 text-xl">-</span>
                   <Input
                     type="number"
-                    value={editData.venueType === 'home' ? editData.awayScore : editData.homeScore}
-                    onChange={(e) => updateMatchDetail(
-                      editData.venueType === 'home' ? 'awayScore' : 'homeScore',
-                      parseInt(e.target.value) || 0
-                    )}
+                    value={editData.goalsConceded}
+                    onChange={(e) => updateMatchDetail('goalsConceded', parseInt(e.target.value) || 0)}
                     className="w-16 text-center"
                     min="0"
                   />
