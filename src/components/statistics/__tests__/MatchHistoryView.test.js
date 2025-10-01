@@ -4,6 +4,19 @@ import { MatchHistoryView } from '../MatchHistoryView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../../services/matchStateManager';
 
+/* eslint-disable testing-library/no-node-access */
+function openFilterToggle(labelText) {
+  const label = screen.getByText(labelText);
+  const container = label.closest('div');
+  if (!container) {
+    throw new Error(`Unable to find container for label ${labelText}`);
+  }
+  const toggle = within(container).getByRole('button');
+  fireEvent.click(toggle);
+  return toggle;
+}
+/* eslint-enable testing-library/no-node-access */
+
 // Mock dependencies
 jest.mock('../../../contexts/TeamContext');
 jest.mock('../../../services/matchStateManager');
@@ -161,8 +174,7 @@ describe('MatchHistoryView', () => {
 
     await screen.findByText(/10 matches found/i);
 
-    const formatButton = screen.getByRole('button', { name: /All formats/i });
-    fireEvent.click(formatButton);
+    openFilterToggle('Format');
 
     const formatOption = await screen.findByLabelText('5v5');
     fireEvent.click(formatOption);
@@ -175,8 +187,7 @@ describe('MatchHistoryView', () => {
 
     await screen.findByText('Format');
 
-    const formatButton = screen.getByRole('button', { name: /All formats/i });
-    fireEvent.click(formatButton);
+    openFilterToggle('Format');
 
     const listbox = await screen.findByRole('listbox');
     const optionCheckboxes = within(listbox).getAllByRole('checkbox');
@@ -191,8 +202,7 @@ describe('MatchHistoryView', () => {
 
     await screen.findByText('Format');
 
-    const formatButton = screen.getByRole('button', { name: /All formats/i });
-    fireEvent.click(formatButton);
+    openFilterToggle('Format');
 
     const option = await screen.findByLabelText('7v7');
     fireEvent.click(option);
@@ -213,8 +223,7 @@ describe('MatchHistoryView', () => {
 
     await screen.findByText(/10 matches found/i);
 
-    const venueButton = screen.getByRole('button', { name: /All venues/i });
-    fireEvent.click(venueButton);
+    openFilterToggle('Venue');
 
     const homeOption = await screen.findByLabelText('Home');
     fireEvent.click(homeOption);
@@ -240,8 +249,7 @@ describe('MatchHistoryView', () => {
 
     await screen.findByText('Venue');
 
-    const venueButton = screen.getByRole('button', { name: /All venues/i });
-    fireEvent.click(venueButton);
+    openFilterToggle('Venue');
 
     expect(screen.getByLabelText('Home')).toBeInTheDocument();
     expect(screen.getByLabelText('Away')).toBeInTheDocument();

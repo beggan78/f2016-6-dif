@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { TeamStatsView } from '../TeamStatsView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../../services/matchStateManager';
@@ -7,6 +7,19 @@ import { getConfirmedMatches } from '../../../services/matchStateManager';
 // Mock dependencies
 jest.mock('../../../contexts/TeamContext');
 jest.mock('../../../services/matchStateManager');
+
+/* eslint-disable testing-library/no-node-access */
+function openFilterToggle(labelText) {
+  const label = screen.getByText(labelText);
+  const container = label.closest('div');
+  if (!container) {
+    throw new Error(`Unable to find container for label ${labelText}`);
+  }
+  const toggle = within(container).getByRole('button');
+  fireEvent.click(toggle);
+  return toggle;
+}
+/* eslint-enable testing-library/no-node-access */
 
 // Mock match data
 const mockMatches = [
@@ -92,8 +105,7 @@ describe('TeamStatsView', () => {
     const totalMatchesValue = screen.getByLabelText('Total Matches value');
     expect(totalMatchesValue).toHaveTextContent('4');
 
-    const typeButton = screen.getByRole('button', { name: /All types/i });
-    fireEvent.click(typeButton);
+    openFilterToggle('Type');
 
     const leagueOption = await screen.findByLabelText('League');
     fireEvent.click(leagueOption);
@@ -108,8 +120,7 @@ describe('TeamStatsView', () => {
 
     await screen.findByText('Filter');
 
-    const playerButton = screen.getByRole('button', { name: /All players/i });
-    fireEvent.click(playerButton);
+    openFilterToggle('With Player');
 
     const aliceOption = await screen.findByLabelText('Alice Johnson');
     fireEvent.click(aliceOption);
@@ -124,8 +135,7 @@ describe('TeamStatsView', () => {
 
     await screen.findByText('Filter');
 
-    const outcomeButton = screen.getByRole('button', { name: /All outcomes/i });
-    fireEvent.click(outcomeButton);
+    openFilterToggle('Outcome');
 
     const winOption = await screen.findByLabelText('Win');
     fireEvent.click(winOption);
@@ -146,14 +156,12 @@ describe('TeamStatsView', () => {
 
     await screen.findByText('Filter');
 
-    const typeButton = screen.getByRole('button', { name: /All types/i });
-    fireEvent.click(typeButton);
+    const typeButton = openFilterToggle('Type');
     const friendlyOption = await screen.findByLabelText('Friendly');
     fireEvent.click(friendlyOption);
     fireEvent.click(typeButton);
 
-    const opponentButton = screen.getByRole('button', { name: /All opponents/i });
-    fireEvent.click(opponentButton);
+    openFilterToggle('Opponent');
     const malmoOption = await screen.findByLabelText('Malmö FF');
     fireEvent.click(malmoOption);
 

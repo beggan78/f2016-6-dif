@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../services/matchStateManager';
+import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
@@ -56,20 +57,17 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
 
   // Apply filters to matches
   const filteredMatches = useMemo(() => {
-    return matches.filter(match => {
-      if (typeFilter.length > 0 && (!match.type || !typeFilter.includes(match.type))) return false;
-      if (outcomeFilter.length > 0 && (!match.outcome || !outcomeFilter.includes(match.outcome))) return false;
-      if (venueFilter.length > 0 && (!match.venueType || !venueFilter.includes(match.venueType))) return false;
-      if (opponentFilter.length > 0 && (!match.opponent || !opponentFilter.includes(match.opponent))) return false;
-      if (playerFilter.length > 0) {
-        const matchPlayers = match.players || [];
-        const hasSelectedPlayer = playerFilter.some(player => matchPlayers.includes(player));
-        if (!hasSelectedPlayer) return false;
-      }
-      if (formatFilter.length > 0 && (!match.format || !formatFilter.includes(match.format))) return false;
-      return true;
+    return filterMatchesByCriteria(matches, {
+      typeFilter,
+      outcomeFilter,
+      venueFilter,
+      opponentFilter,
+      playerFilter,
+      formatFilter,
+      startDate,
+      endDate
     });
-  }, [matches, typeFilter, outcomeFilter, venueFilter, opponentFilter, playerFilter, formatFilter]);
+  }, [matches, typeFilter, outcomeFilter, venueFilter, opponentFilter, playerFilter, formatFilter, startDate, endDate]);
 
   // Calculate stats from filtered matches
   const teamStats = useMemo(() => {

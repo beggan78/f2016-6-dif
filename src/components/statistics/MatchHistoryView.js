@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, History } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../services/matchStateManager';
+import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 
 export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
@@ -66,26 +67,15 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     setFormatFilter([]);
   };
 
-  const filteredMatches = matches.filter(match => {
-    // Time range filter
-    if (startDate || endDate) {
-      const matchDate = new Date(match.date);
-      if (startDate && matchDate < startDate) return false;
-      if (endDate && matchDate > endDate) return false;
-    }
-
-    // Existing filters
-    if (typeFilter.length > 0 && (!match.type || !typeFilter.includes(match.type))) return false;
-    if (outcomeFilter.length > 0 && (!match.outcome || !outcomeFilter.includes(match.outcome))) return false;
-    if (venueFilter.length > 0 && (!match.venueType || !venueFilter.includes(match.venueType))) return false;
-    if (opponentFilter.length > 0 && (!match.opponent || !opponentFilter.includes(match.opponent))) return false;
-    if (playerFilter.length > 0) {
-      const matchPlayers = match.players || [];
-      const hasSelectedPlayer = playerFilter.some(player => matchPlayers.includes(player));
-      if (!hasSelectedPlayer) return false;
-    }
-    if (formatFilter.length > 0 && (!match.format || !formatFilter.includes(match.format))) return false;
-    return true;
+  const filteredMatches = filterMatchesByCriteria(matches, {
+    typeFilter,
+    outcomeFilter,
+    venueFilter,
+    opponentFilter,
+    playerFilter,
+    formatFilter,
+    startDate,
+    endDate
   });
 
   const getOutcomeBadge = (outcome) => {

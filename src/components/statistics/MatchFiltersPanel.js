@@ -140,7 +140,7 @@ export function MatchFiltersPanel({
           ? (isFilterCollapsed ? 'hidden' : 'block mt-4')
           : 'mt-4'
       }`}>
-        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
           shouldShowFormatFilter ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
         }`}>
           <div className="flex flex-col">
@@ -149,7 +149,7 @@ export function MatchFiltersPanel({
               value={typeFilter}
               onChange={onTypeFilterChange}
               options={MATCH_TYPES}
-              placeholder="All types"
+              placeholder="All"
             />
           </div>
 
@@ -159,7 +159,7 @@ export function MatchFiltersPanel({
               value={outcomeFilter}
               onChange={onOutcomeFilterChange}
               options={OUTCOMES}
-              placeholder="All outcomes"
+              placeholder="All"
             />
           </div>
 
@@ -169,7 +169,7 @@ export function MatchFiltersPanel({
               value={venueFilter}
               onChange={onVenueFilterChange}
               options={VENUE_TYPES}
-              placeholder="All venues"
+              placeholder="All"
             />
           </div>
 
@@ -179,7 +179,7 @@ export function MatchFiltersPanel({
               value={opponentFilter}
               onChange={onOpponentFilterChange}
               options={opponents}
-              placeholder="All opponents"
+              placeholder="All"
             />
           </div>
 
@@ -189,7 +189,7 @@ export function MatchFiltersPanel({
               value={playerFilter}
               onChange={onPlayerFilterChange}
               options={players}
-              placeholder="All players"
+              placeholder="All"
             />
           </div>
 
@@ -200,7 +200,7 @@ export function MatchFiltersPanel({
                 value={formatFilter}
                 onChange={onFormatFilterChange}
                 options={formats}
-                placeholder="All formats"
+                placeholder="All"
               />
             </div>
           )}
