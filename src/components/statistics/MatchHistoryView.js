@@ -3,6 +3,7 @@ import { Calendar, MapPin, Trophy, History } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
+import { getOutcomeBadgeClasses, getMatchTypeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 
 export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
@@ -77,34 +78,6 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     startDate,
     endDate
   });
-
-  const getOutcomeBadge = (outcome) => {
-    const baseClasses = "inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium w-12 text-center";
-    switch (outcome) {
-      case 'W':
-        return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
-      case 'D':
-        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
-      case 'L':
-        return `${baseClasses} bg-rose-900/50 text-rose-300 border border-rose-600`;
-      default:
-        return `${baseClasses} bg-slate-700 text-slate-300`;
-    }
-  };
-
-  const getTypeBadge = (type) => {
-    const baseClasses = "inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium w-20 text-center";
-    switch (type) {
-      case 'League':
-        return `${baseClasses} bg-sky-900/50 text-sky-300 border border-sky-600`;
-      case 'Cup':
-        return `${baseClasses} bg-purple-900/50 text-purple-300 border border-purple-600`;
-      case 'Friendly':
-        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
-      default:
-        return `${baseClasses} bg-slate-700 text-slate-300`;
-    }
-  };
 
   const formatScore = (match) => {
     // Always show team goals first (left), opponent goals second (right)
@@ -217,7 +190,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
 
                       {/* Match Type - Hidden on narrow screens */}
                       {!needsCollapse && (
-                        <span className={getTypeBadge(match.type)}>{match.type}</span>
+                        <span className={getMatchTypeBadgeClasses(match.type)}>{match.type}</span>
                       )}
                     </div>
                   </div>
@@ -230,7 +203,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
                   </div>
                   {/* Win/Loss/Draw - Hidden on narrow screens */}
                   {!needsCollapse && (
-                    <span className={getOutcomeBadge(match.outcome)}>
+                    <span className={getOutcomeBadgeClasses(match.outcome)}>
                       {match.outcome === 'W' ? 'Win' :
                        match.outcome === 'D' ? 'Draw' : 'Loss'}
                     </span>

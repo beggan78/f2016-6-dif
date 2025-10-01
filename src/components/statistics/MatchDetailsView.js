@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button, Input, Select } from '../shared/UI';
+import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
 import { getMatchDetails, updateMatchDetails, updatePlayerMatchStat } from '../../services/matchStateManager';
@@ -304,19 +305,9 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
     return `${editData.goalsScored}-${editData.goalsConceded}`;
   };
 
-  const getOutcomeBadge = (outcome) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium";
-    switch (outcome) {
-      case 'W':
-        return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
-      case 'D':
-        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
-      case 'L':
-        return `${baseClasses} bg-rose-900/50 text-rose-300 border border-rose-600`;
-      default:
-        return `${baseClasses} bg-slate-700 text-slate-300`;
-    }
-  };
+  const getOutcomeBadge = (outcome) => getOutcomeBadgeClasses(outcome, {
+    baseClasses: 'px-2 py-1 rounded text-xs font-medium'
+  });
 
   const handleSort = (field) => {
     if (sortField === field) {

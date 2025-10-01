@@ -3,6 +3,7 @@ import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } f
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
+import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
@@ -253,19 +254,9 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     </div>
   );
 
-  const getResultBadge = (result) => {
-    const baseClasses = "px-2 py-1 rounded text-xs font-medium w-12 text-center";
-    switch (result) {
-      case 'W':
-        return `${baseClasses} bg-emerald-900/50 text-emerald-300 border border-emerald-600`;
-      case 'D':
-        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
-      case 'L':
-        return `${baseClasses} bg-rose-900/50 text-rose-300 border border-rose-600`;
-      default:
-        return `${baseClasses} bg-slate-700 text-slate-300`;
-    }
-  };
+  const getResultBadge = (result) => getOutcomeBadgeClasses(result, {
+    baseClasses: 'px-2 py-1 rounded text-xs font-medium w-12 text-center'
+  });
 
   return (
     <div className="space-y-6">
