@@ -432,7 +432,17 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             {/* Left: Opponent & Outcome */}
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <span className="text-xl font-semibold text-slate-100">{editData.opponent}</span>
+                {isEditing ? (
+                  <Input
+                    type="text"
+                    value={editData.opponent}
+                    onChange={(e) => updateMatchDetail('opponent', e.target.value)}
+                    className="w-48 text-lg font-semibold"
+                    placeholder="Opponent name"
+                  />
+                ) : (
+                  <span className="text-xl font-semibold text-slate-100">{editData.opponent}</span>
+                )}
               </div>
               <span className={getOutcomeBadge(editData.outcome)}>
                 {editData.outcome === 'W' ? 'Win' :

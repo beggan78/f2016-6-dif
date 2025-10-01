@@ -5,6 +5,7 @@ import { getConfirmedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
+import { useStatsFilters } from '../../hooks/useStatsFilters';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   const { currentTeam } = useTeam();
@@ -12,13 +13,21 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filter state
-  const [typeFilter, setTypeFilter] = useState([]);
-  const [outcomeFilter, setOutcomeFilter] = useState([]);
-  const [venueFilter, setVenueFilter] = useState([]);
-  const [opponentFilter, setOpponentFilter] = useState([]);
-  const [playerFilter, setPlayerFilter] = useState([]);
-  const [formatFilter, setFormatFilter] = useState([]);
+  const {
+    typeFilter,
+    outcomeFilter,
+    venueFilter,
+    opponentFilter,
+    playerFilter,
+    formatFilter,
+    setTypeFilter,
+    setOutcomeFilter,
+    setVenueFilter,
+    setOpponentFilter,
+    setPlayerFilter,
+    setFormatFilter,
+    clearFilters
+  } = useStatsFilters();
 
   // Fetch matches from database
   useEffect(() => {
@@ -46,15 +55,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     fetchMatches();
   }, [currentTeam?.id, startDate, endDate]);
 
-  // Function to clear all filters
-  const clearAllFilters = () => {
-    setTypeFilter([]);
-    setOutcomeFilter([]);
-    setVenueFilter([]);
-    setOpponentFilter([]);
-    setPlayerFilter([]);
-    setFormatFilter([]);
-  };
+  const clearAllFilters = clearFilters;
 
   // Apply filters to matches
   const filteredMatches = useMemo(() => {

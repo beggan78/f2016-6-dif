@@ -5,18 +5,28 @@ import { getConfirmedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { getOutcomeBadgeClasses, getMatchTypeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
+import { useStatsFilters } from '../../hooks/useStatsFilters';
 
 export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const { currentTeam } = useTeam();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [typeFilter, setTypeFilter] = useState([]);
-  const [outcomeFilter, setOutcomeFilter] = useState([]);
-  const [venueFilter, setVenueFilter] = useState([]);
-  const [opponentFilter, setOpponentFilter] = useState([]);
-  const [playerFilter, setPlayerFilter] = useState([]);
-  const [formatFilter, setFormatFilter] = useState([]);
+  const {
+    typeFilter,
+    outcomeFilter,
+    venueFilter,
+    opponentFilter,
+    playerFilter,
+    formatFilter,
+    setTypeFilter,
+    setOutcomeFilter,
+    setVenueFilter,
+    setOpponentFilter,
+    setPlayerFilter,
+    setFormatFilter,
+    clearFilters
+  } = useStatsFilters();
   const [needsCollapse, setNeedsCollapse] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
   });
@@ -58,15 +68,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Function to clear all filters
-  const clearAllFilters = () => {
-    setTypeFilter([]);
-    setOutcomeFilter([]);
-    setVenueFilter([]);
-    setOpponentFilter([]);
-    setPlayerFilter([]);
-    setFormatFilter([]);
-  };
+  const clearAllFilters = clearFilters;
 
   const filteredMatches = filterMatchesByCriteria(matches, {
     typeFilter,
