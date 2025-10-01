@@ -1,29 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, Filter, History, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
-import { Select, Button } from '../shared/UI';
+import React, { useState, useEffect } from 'react';
+import { Calendar, MapPin, Trophy, History } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../services/matchStateManager';
-
-const MATCH_TYPES = [
-  { value: 'All', label: 'All' },
-  { value: 'League', label: 'League' },
-  { value: 'Cup', label: 'Cup' },
-  { value: 'Friendly', label: 'Friendly' }
-];
-
-const OUTCOMES = [
-  { value: 'All', label: 'All' },
-  { value: 'W', label: 'Win' },
-  { value: 'D', label: 'Draw' },
-  { value: 'L', label: 'Loss' }
-];
-
-const VENUE_TYPES = [
-  { value: 'All', label: 'All' },
-  { value: 'home', label: 'Home' },
-  { value: 'away', label: 'Away' },
-  { value: 'neutral', label: 'Neutral' }
-];
+import { MatchFiltersPanel } from './MatchFiltersPanel';
 
 export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const { currentTeam } = useTeam();
@@ -36,6 +15,9 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const [opponentFilter, setOpponentFilter] = useState('All');
   const [playerFilter, setPlayerFilter] = useState('All');
   const [formatFilter, setFormatFilter] = useState('All');
+  const [needsCollapse, setNeedsCollapse] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
+  });
 
   // Fetch match data from database
   useEffect(() => {
@@ -63,75 +45,16 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     fetchMatches();
   }, [currentTeam?.id, startDate, endDate]);
 
-  // Screen size detection and filter collapse state
-  const [needsCollapse, setNeedsCollapse] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
-  });
-  const [isFilterCollapsed, setIsFilterCollapsed] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024;
-  });
-
-  // Detect screen size that requires filter collapsing
+  // Detect screen size for responsive layout
   useEffect(() => {
     const checkScreenSize = () => {
-      const shouldCollapse = window.innerWidth < 1024; // lg breakpoint - when filters wrap to multiple rows
-
-      setNeedsCollapse(prevNeedsCollapse => {
-        // Only update collapse state if needsCollapse actually changed
-        if (prevNeedsCollapse !== shouldCollapse) {
-          // Use a callback to ensure we're working with the latest state
-          setIsFilterCollapsed(prevIsCollapsed => {
-            // Don't auto-collapse if user has manually expanded filters
-            // Only auto-collapse when transitioning from wide to narrow screen
-            if (shouldCollapse && !prevNeedsCollapse) {
-              return true;
-            } else if (!shouldCollapse) {
-              return false;
-            }
-            return prevIsCollapsed;
-          });
-        }
-        return shouldCollapse;
-      });
+      setNeedsCollapse(window.innerWidth < 1024);
     };
 
-    // Initial check
     checkScreenSize();
-
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []); // Remove needsCollapse dependency to prevent race condition
-
-  // Get unique opponents from matches
-  const opponents = useMemo(() => {
-    const uniqueOpponents = [...new Set(matches.map(match => match.opponent))];
-    // Sort opponents alphabetically
-    const sortedOpponents = uniqueOpponents.sort((a, b) => a.localeCompare(b));
-    return [
-      { value: 'All', label: 'All' },
-      ...sortedOpponents.map(opponent => ({ value: opponent, label: opponent }))
-    ];
-  }, [matches]);
-
-  // Get unique players from matches
-  const players = useMemo(() => {
-    const uniquePlayers = [...new Set(matches.flatMap(match => match.players || []))];
-    return [
-      { value: 'All', label: 'All' },
-      ...uniquePlayers.sort().map(player => ({ value: player, label: player }))
-    ];
-  }, [matches]);
-
-  // Get unique formats from matches - only show filter if multiple formats exist
-  const formats = useMemo(() => {
-    const uniqueFormats = [...new Set(matches.map(match => match.format).filter(Boolean))];
-    return [
-      { value: 'All', label: 'All' },
-      ...uniqueFormats.sort().map(format => ({ value: format, label: format }))
-    ];
-  }, [matches]);
-
-  const shouldShowFormatFilter = formats.length > 2; // More than just 'All' option
+  }, []);
 
   // Function to clear all filters
   const clearAllFilters = () => {
@@ -234,105 +157,22 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <div className="flex items-center justify-between">
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => setIsFilterCollapsed(!isFilterCollapsed)}
-          >
-            <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filter
-            </h3>
-            {needsCollapse && (
-              <button className="text-sky-400 hover:text-sky-300 transition-colors">
-                {isFilterCollapsed ? (
-                  <ChevronDown className="h-5 w-5" />
-                ) : (
-                  <ChevronUp className="h-5 w-5" />
-                )}
-              </button>
-            )}
-          </div>
-
-          <Button
-            onClick={clearAllFilters}
-            Icon={RotateCcw}
-            variant="ghost"
-            size="sm"
-            className="text-sky-400 hover:text-sky-300"
-          >
-            Clear All
-          </Button>
-        </div>
-
-        {/* Filter content - collapsible when screen is narrow */}
-        <div className={`${
-          needsCollapse
-            ? (isFilterCollapsed ? 'hidden' : 'block mt-4')
-            : 'mt-4'
-        }`}>
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
-            shouldShowFormatFilter ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
-          }`}>
-          <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Type</label>
-            <Select
-              value={typeFilter}
-              onChange={setTypeFilter}
-              options={MATCH_TYPES}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Outcome</label>
-            <Select
-              value={outcomeFilter}
-              onChange={setOutcomeFilter}
-              options={OUTCOMES}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Venue</label>
-            <Select
-              value={venueFilter}
-              onChange={setVenueFilter}
-              options={VENUE_TYPES}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Opponent</label>
-            <Select
-              value={opponentFilter}
-              onChange={setOpponentFilter}
-              options={opponents}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">With Player</label>
-            <Select
-              value={playerFilter}
-              onChange={setPlayerFilter}
-              options={players}
-            />
-          </div>
-
-          {shouldShowFormatFilter && (
-            <div className="flex flex-col">
-              <label className="text-slate-300 text-sm mb-2">Format</label>
-              <Select
-                value={formatFilter}
-                onChange={setFormatFilter}
-                options={formats}
-              />
-            </div>
-          )}
-          </div>
-        </div>
-      </div>
+      <MatchFiltersPanel
+        matches={matches}
+        typeFilter={typeFilter}
+        outcomeFilter={outcomeFilter}
+        venueFilter={venueFilter}
+        opponentFilter={opponentFilter}
+        playerFilter={playerFilter}
+        formatFilter={formatFilter}
+        onTypeFilterChange={setTypeFilter}
+        onOutcomeFilterChange={setOutcomeFilter}
+        onVenueFilterChange={setVenueFilter}
+        onOpponentFilterChange={setOpponentFilter}
+        onPlayerFilterChange={setPlayerFilter}
+        onFormatFilterChange={setFormatFilter}
+        onClearAllFilters={clearAllFilters}
+      />
 
       {/* Match List */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">

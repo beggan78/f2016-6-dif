@@ -1,39 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
-import { getTeamStats } from '../../services/matchStateManager';
+import { getConfirmedMatches } from '../../services/matchStateManager';
+import { MatchFiltersPanel } from './MatchFiltersPanel';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   const { currentTeam } = useTeam();
-  const [teamStats, setTeamStats] = useState(null);
+  const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch team stats from database
+  // Filter state
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [outcomeFilter, setOutcomeFilter] = useState('All');
+  const [venueFilter, setVenueFilter] = useState('All');
+  const [opponentFilter, setOpponentFilter] = useState('All');
+  const [playerFilter, setPlayerFilter] = useState('All');
+  const [formatFilter, setFormatFilter] = useState('All');
+
+  // Fetch matches from database
   useEffect(() => {
-    async function fetchTeamStats() {
+    async function fetchMatches() {
       if (!currentTeam?.id) {
-        setTeamStats(null);
+        setMatches([]);
         return;
       }
 
       setLoading(true);
       setError(null);
 
-      const result = await getTeamStats(currentTeam.id, startDate, endDate);
+      const result = await getConfirmedMatches(currentTeam.id, startDate, endDate);
 
       if (result.success) {
-        setTeamStats(result.stats);
+        setMatches(result.matches || []);
       } else {
-        setError(result.error || 'Failed to load team statistics');
-        setTeamStats(null);
+        setError(result.error || 'Failed to load match data');
+        setMatches([]);
       }
 
       setLoading(false);
     }
 
-    fetchTeamStats();
+    fetchMatches();
   }, [currentTeam?.id, startDate, endDate]);
+
+  // Function to clear all filters
+  const clearAllFilters = () => {
+    setTypeFilter('All');
+    setOutcomeFilter('All');
+    setVenueFilter('All');
+    setOpponentFilter('All');
+    setPlayerFilter('All');
+    setFormatFilter('All');
+  };
+
+  // Apply filters to matches
+  const filteredMatches = useMemo(() => {
+    return matches.filter(match => {
+      if (typeFilter !== 'All' && match.type !== typeFilter) return false;
+      if (outcomeFilter !== 'All' && match.outcome !== outcomeFilter) return false;
+      if (venueFilter !== 'All' && match.venueType !== venueFilter) return false;
+      if (opponentFilter !== 'All' && match.opponent !== opponentFilter) return false;
+      if (playerFilter !== 'All' && (!match.players || !match.players.includes(playerFilter))) return false;
+      if (formatFilter !== 'All' && match.format !== formatFilter) return false;
+      return true;
+    });
+  }, [matches, typeFilter, outcomeFilter, venueFilter, opponentFilter, playerFilter, formatFilter]);
+
+  // Calculate stats from filtered matches
+  const teamStats = useMemo(() => {
+    if (filteredMatches.length === 0) return null;
+
+    const totalMatches = filteredMatches.length;
+    const wins = filteredMatches.filter(m => m.outcome === 'W').length;
+    const draws = filteredMatches.filter(m => m.outcome === 'D').length;
+    const losses = filteredMatches.filter(m => m.outcome === 'L').length;
+
+    const goalsScored = filteredMatches.reduce((sum, m) => sum + m.goalsScored, 0);
+    const goalsConceded = filteredMatches.reduce((sum, m) => sum + m.goalsConceded, 0);
+
+    const averageGoalsScored = (goalsScored / totalMatches).toFixed(1);
+    const averageGoalsConceded = (goalsConceded / totalMatches).toFixed(1);
+
+    const cleanSheets = filteredMatches.filter(m => m.goalsConceded === 0).length;
+    const cleanSheetPercentage = totalMatches > 0
+      ? ((cleanSheets / totalMatches) * 100).toFixed(1)
+      : '0.0';
+
+    // Home/Away/Neutral records
+    const homeMatches = filteredMatches.filter(m => m.venueType === 'home');
+    const awayMatches = filteredMatches.filter(m => m.venueType === 'away');
+
+    const homeRecord = {
+      total: homeMatches.length,
+      wins: homeMatches.filter(m => m.outcome === 'W').length,
+      draws: homeMatches.filter(m => m.outcome === 'D').length,
+      losses: homeMatches.filter(m => m.outcome === 'L').length
+    };
+
+    const awayRecord = {
+      total: awayMatches.length,
+      wins: awayMatches.filter(m => m.outcome === 'W').length,
+      draws: awayMatches.filter(m => m.outcome === 'D').length,
+      losses: awayMatches.filter(m => m.outcome === 'L').length
+    };
+
+    // Recent matches (last 5)
+    const recentMatches = filteredMatches.slice(0, 5).map(match => ({
+      id: match.id,
+      date: new Date(match.date).toISOString().split('T')[0],
+      opponent: match.opponent,
+      score: `${match.goalsScored}-${match.goalsConceded}`,
+      result: match.outcome
+    }));
+
+    return {
+      totalMatches,
+      wins,
+      draws,
+      losses,
+      goalsScored,
+      goalsConceded,
+      averageGoalsScored,
+      averageGoalsConceded,
+      cleanSheets,
+      cleanSheetPercentage,
+      homeRecord,
+      awayRecord,
+      recentMatches
+    };
+  }, [filteredMatches]);
 
   // Show loading state
   if (loading) {
@@ -58,12 +154,41 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     );
   }
 
-  // Show empty state if no stats
-  if (!teamStats) {
+  // Show empty state if no matches at all
+  if (!loading && matches.length === 0) {
     return (
       <div className="space-y-6">
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
           <div className="text-slate-400">No team statistics available</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if filters resulted in no matches
+  if (!loading && !teamStats && matches.length > 0) {
+    return (
+      <div className="space-y-6">
+        {/* Filters */}
+        <MatchFiltersPanel
+          matches={matches}
+          typeFilter={typeFilter}
+          outcomeFilter={outcomeFilter}
+          venueFilter={venueFilter}
+          opponentFilter={opponentFilter}
+          playerFilter={playerFilter}
+          formatFilter={formatFilter}
+          onTypeFilterChange={setTypeFilter}
+          onOutcomeFilterChange={setOutcomeFilter}
+          onVenueFilterChange={setVenueFilter}
+          onOpponentFilterChange={setOpponentFilter}
+          onPlayerFilterChange={setPlayerFilter}
+          onFormatFilterChange={setFormatFilter}
+          onClearAllFilters={clearAllFilters}
+        />
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">No matches found with the selected filters</div>
+          <p className="text-slate-500 text-sm mt-2">Try adjusting your filter criteria</p>
         </div>
       </div>
     );
@@ -140,6 +265,24 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
 
   return (
     <div className="space-y-6">
+      {/* Filters */}
+      <MatchFiltersPanel
+        matches={matches}
+        typeFilter={typeFilter}
+        outcomeFilter={outcomeFilter}
+        venueFilter={venueFilter}
+        opponentFilter={opponentFilter}
+        playerFilter={playerFilter}
+        formatFilter={formatFilter}
+        onTypeFilterChange={setTypeFilter}
+        onOutcomeFilterChange={setOutcomeFilter}
+        onVenueFilterChange={setVenueFilter}
+        onOpponentFilterChange={setOpponentFilter}
+        onPlayerFilterChange={setPlayerFilter}
+        onFormatFilterChange={setFormatFilter}
+        onClearAllFilters={clearAllFilters}
+      />
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
