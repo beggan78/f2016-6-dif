@@ -205,6 +205,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
         formation: editData.formation,
         periods: editData.periods,
         periodDuration: editData.periodDuration,
+        matchDurationSeconds: editData.matchDurationSeconds,
         date: editData.date,
         time: editData.time
       });
@@ -290,7 +291,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   };
 
   const getMaxMatchDuration = () => {
-    return editData.periods * editData.periodDuration;
+    return (editData.matchDurationSeconds || 0) / 60;
   };
 
   const checkTimeInconsistency = (player) => {
@@ -605,13 +606,13 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 <div className="text-xs text-slate-400 uppercase tracking-wide">Total Time</div>
                 {isEditing ? (
                   <SmartTimeInput
-                    value={editData.periods * editData.periodDuration}
-                    onChange={(minutes) => updateMatchDetail('periodDuration', minutes / editData.periods)}
+                    value={(editData.matchDurationSeconds || 0) / 60}
+                    onChange={(minutes) => updateMatchDetail('matchDurationSeconds', minutes * 60)}
                     className="text-sm"
                   />
                 ) : (
                   <div className="text-sm text-slate-100 font-medium">
-                    {formatTimeAsHours(editData.periods * editData.periodDuration)}
+                    {formatTimeAsHours((editData.matchDurationSeconds || 0) / 60)}
                   </div>
                 )}
               </div>

@@ -85,8 +85,18 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     recentMatches
   } = teamStats;
 
-  const winPercentage = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : 0;
+  const formatPercentage = (count) => (
+    totalMatches > 0 ? ((count / totalMatches) * 100).toFixed(1) : '0.0'
+  );
+
+  const winPercentage = formatPercentage(wins);
   const goalDifference = goalsScored - goalsConceded;
+
+  const matchOutcomes = [
+    { label: 'Matches Won', count: wins },
+    { label: 'Matches Drawn', count: draws },
+    { label: 'Matches Lost', count: losses }
+  ];
 
   const StatCard = ({ icon: Icon, title, value, subtitle, trend }) => (
     <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
@@ -197,27 +207,20 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
             <h3 className="text-lg font-semibold text-sky-400">Match Outcomes</h3>
           </div>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Matches Won</span>
-              <div className="text-right">
-                <span className="text-slate-100 font-semibold">{wins}</span>
-                <span className="text-slate-400 text-sm ml-2">({((wins / totalMatches) * 100).toFixed(1)}%)</span>
+            {matchOutcomes.map(({ label, count }) => (
+              <div
+                key={label}
+                className="grid grid-cols-[1fr_auto_auto] items-center gap-3"
+              >
+                <span className="text-slate-300">{label}</span>
+                <span className="text-slate-100 font-semibold text-right tabular-nums min-w-[2.5rem]">
+                  {count}
+                </span>
+                <span className="text-slate-400 text-sm text-right tabular-nums min-w-[3.5rem]">
+                  ({formatPercentage(count)}%)
+                </span>
               </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Matches Drawn</span>
-              <div className="text-right">
-                <span className="text-slate-100 font-semibold">{draws}</span>
-                <span className="text-slate-400 text-sm ml-2">({((draws / totalMatches) * 100).toFixed(1)}%)</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Matches Lost</span>
-              <div className="text-right">
-                <span className="text-slate-100 font-semibold">{losses}</span>
-                <span className="text-slate-400 text-sm ml-2">({((losses / totalMatches) * 100).toFixed(1)}%)</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

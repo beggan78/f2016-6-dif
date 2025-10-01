@@ -626,6 +626,7 @@ export async function getMatchDetails(matchId) {
       format: match.format,
       periods: match.periods,
       periodDuration: match.period_duration_minutes,
+      matchDurationSeconds: match.match_duration_seconds,
       formation: match.formation
     };
 
@@ -1711,6 +1712,7 @@ export async function updateMatchDetails(matchId, matchUpdates) {
       formation: matchUpdates.formation,
       periods: matchUpdates.periods,
       period_duration_minutes: matchUpdates.periodDuration,
+      match_duration_seconds: matchUpdates.matchDurationSeconds,
       started_at: startedAt,
       updated_at: new Date().toISOString()
     };
