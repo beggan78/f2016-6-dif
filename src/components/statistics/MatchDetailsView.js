@@ -512,7 +512,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Trophy className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Type</div>
+                <div className="text-xs text-slate-400 tracking-wide">Type</div>
                 {isEditing ? (
                   <Select
                     value={editData.type}
@@ -532,7 +532,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <MapPin className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Venue</div>
+                <div className="text-xs text-slate-400 tracking-wide">Venue</div>
                 {isEditing ? (
                   <Select
                     value={editData.venueType}
@@ -551,7 +551,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Layers2 className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Format</div>
+                <div className="text-xs text-slate-400 tracking-wide">Format</div>
                 {isEditing ? (
                   <Select
                     value={editData.format}
@@ -568,7 +568,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Layers className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Formation</div>
+                <div className="text-xs text-slate-400 tracking-wide">Formation</div>
                 {isEditing ? (
                   <Select
                     value={editData.formation}
@@ -585,7 +585,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Periods</div>
+                <div className="text-xs text-slate-400 tracking-wide">Periods</div>
                 {isEditing ? (
                   <Input
                     type="number"
@@ -603,7 +603,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wide">Total Time</div>
+                <div className="text-xs text-slate-400 tracking-wide">Total Time</div>
                 {isEditing ? (
                   <SmartTimeInput
                     value={(editData.matchDurationSeconds || 0) / 60}
