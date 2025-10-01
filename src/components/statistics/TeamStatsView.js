@@ -1,76 +1,73 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
-
-// Mock data - replace with real data later
-const mockTeamStats = {
-  totalMatches: 15,
-  wins: 8,
-  draws: 4,
-  losses: 3,
-  goalsScored: 42,
-  goalsConceded: 28,
-  averageGoalsScored: 2.8,
-  averageGoalsConceded: 1.9,
-  recentMatches: [
-    { id: 1, date: '2024-01-20', opponent: 'Hammarby IF', score: '3-1', result: 'W' },
-    { id: 2, date: '2024-01-15', opponent: 'AIK', score: '2-2', result: 'D' },
-    { id: 3, date: '2024-01-10', opponent: 'IFK Göteborg', score: '1-2', result: 'L' },
-    { id: 4, date: '2024-01-05', opponent: 'Malmö FF', score: '4-0', result: 'W' },
-    { id: 5, date: '2023-12-20', opponent: 'Örebro SK', score: '2-1', result: 'W' }
-  ]
-};
+import { useTeam } from '../../contexts/TeamContext';
+import { getTeamStats } from '../../services/matchStateManager';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
-  // Filter matches based on time range
-  const filteredMatches = useMemo(() => {
-    if (!startDate && !endDate) {
-      return mockTeamStats.recentMatches;
+  const { currentTeam } = useTeam();
+  const [teamStats, setTeamStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch team stats from database
+  useEffect(() => {
+    async function fetchTeamStats() {
+      if (!currentTeam?.id) {
+        setTeamStats(null);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      const result = await getTeamStats(currentTeam.id, startDate, endDate);
+
+      if (result.success) {
+        setTeamStats(result.stats);
+      } else {
+        setError(result.error || 'Failed to load team statistics');
+        setTeamStats(null);
+      }
+
+      setLoading(false);
     }
 
-    return mockTeamStats.recentMatches.filter(match => {
-      const matchDate = new Date(match.date);
-      if (startDate && matchDate < startDate) return false;
-      if (endDate && matchDate > endDate) return false;
-      return true;
-    });
-  }, [startDate, endDate]);
+    fetchTeamStats();
+  }, [currentTeam?.id, startDate, endDate]);
 
-  // Calculate filtered stats
-  const filteredStats = useMemo(() => {
-    if (!startDate && !endDate) {
-      return mockTeamStats;
-    }
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">Loading team statistics...</div>
+        </div>
+      </div>
+    );
+  }
 
-    const totalMatches = filteredMatches.length;
-    const wins = filteredMatches.filter(match => match.result === 'W').length;
-    const draws = filteredMatches.filter(match => match.result === 'D').length;
-    const losses = filteredMatches.filter(match => match.result === 'L').length;
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-red-400 mb-2">Error loading team statistics</div>
+          <div className="text-slate-400 text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
-    // Calculate goals from scores
-    let goalsScored = 0;
-    let goalsConceded = 0;
-
-    filteredMatches.forEach(match => {
-      const [scored, conceded] = match.score.split('-').map(Number);
-      goalsScored += scored;
-      goalsConceded += conceded;
-    });
-
-    const averageGoalsScored = totalMatches > 0 ? (goalsScored / totalMatches) : 0;
-    const averageGoalsConceded = totalMatches > 0 ? (goalsConceded / totalMatches) : 0;
-
-    return {
-      totalMatches,
-      wins,
-      draws,
-      losses,
-      goalsScored,
-      goalsConceded,
-      averageGoalsScored: Math.round(averageGoalsScored * 10) / 10,
-      averageGoalsConceded: Math.round(averageGoalsConceded * 10) / 10,
-      recentMatches: filteredMatches.slice(0, 5) // Show top 5 recent matches
-    };
-  }, [filteredMatches, startDate, endDate]);
+  // Show empty state if no stats
+  if (!teamStats) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">No team statistics available</div>
+        </div>
+      </div>
+    );
+  }
 
   const {
     totalMatches,
@@ -81,8 +78,12 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     goalsConceded,
     averageGoalsScored,
     averageGoalsConceded,
+    cleanSheets,
+    cleanSheetPercentage,
+    homeRecord,
+    awayRecord,
     recentMatches
-  } = filteredStats;
+  } = teamStats;
 
   const winPercentage = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : 0;
   const goalDifference = goalsScored - goalsConceded;
@@ -264,28 +265,34 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
           <h4 className="text-slate-300 font-medium mb-2">Home Record</h4>
           <div className="text-slate-100">
-            <span className="text-xl font-semibold">5</span>
+            <span className="text-xl font-semibold">{homeRecord.wins}</span>
             <span className="text-slate-400 text-sm ml-1">wins</span>
           </div>
-          <div className="text-slate-400 text-sm">2 draws, 1 loss</div>
+          <div className="text-slate-400 text-sm">
+            {homeRecord.draws} draws, {homeRecord.losses} {homeRecord.losses === 1 ? 'loss' : 'losses'}
+            {homeRecord.total > 0 && ` (${homeRecord.total} total)`}
+          </div>
         </div>
 
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
           <h4 className="text-slate-300 font-medium mb-2">Away Record</h4>
           <div className="text-slate-100">
-            <span className="text-xl font-semibold">3</span>
+            <span className="text-xl font-semibold">{awayRecord.wins}</span>
             <span className="text-slate-400 text-sm ml-1">wins</span>
           </div>
-          <div className="text-slate-400 text-sm">2 draws, 2 losses</div>
+          <div className="text-slate-400 text-sm">
+            {awayRecord.draws} draws, {awayRecord.losses} {awayRecord.losses === 1 ? 'loss' : 'losses'}
+            {awayRecord.total > 0 && ` (${awayRecord.total} total)`}
+          </div>
         </div>
 
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
           <h4 className="text-slate-300 font-medium mb-2">Clean Sheets</h4>
           <div className="text-slate-100">
-            <span className="text-xl font-semibold">4</span>
+            <span className="text-xl font-semibold">{cleanSheets}</span>
             <span className="text-slate-400 text-sm ml-1">matches</span>
           </div>
-          <div className="text-slate-400 text-sm">26.7% of total</div>
+          <div className="text-slate-400 text-sm">{cleanSheetPercentage}% of total</div>
         </div>
       </div>
     </div>

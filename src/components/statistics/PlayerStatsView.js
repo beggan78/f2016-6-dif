@@ -1,93 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronUp, ChevronDown, User, Award, Clock, Users, Target } from 'lucide-react';
-
-// Mock data - replace with real data later
-const mockPlayerStats = [
-  {
-    id: 1,
-    name: 'Erik Andersson',
-    matchesPlayed: 12,
-    goalsScored: 8,
-    averageTimePerMatch: 28.5, // minutes
-    percentStartedAsSubstitute: 25,
-    percentTimeAsDefender: 60,
-    percentTimeAsMidfielder: 20,
-    percentTimeAsAttacker: 15,
-    percentTimeAsGoalkeeper: 5,
-    matchesAsCaptain: 3,
-    fairPlayAwards: 2
-  },
-  {
-    id: 2,
-    name: 'Liam Johansson',
-    matchesPlayed: 15,
-    goalsScored: 12,
-    averageTimePerMatch: 32.1,
-    percentStartedAsSubstitute: 13,
-    percentTimeAsDefender: 20,
-    percentTimeAsMidfielder: 25,
-    percentTimeAsAttacker: 55,
-    percentTimeAsGoalkeeper: 0,
-    matchesAsCaptain: 5,
-    fairPlayAwards: 3
-  },
-  {
-    id: 3,
-    name: 'Oliver Lindqvist',
-    matchesPlayed: 14,
-    goalsScored: 2,
-    averageTimePerMatch: 29.8,
-    percentStartedAsSubstitute: 21,
-    percentTimeAsDefender: 75,
-    percentTimeAsMidfielder: 15,
-    percentTimeAsAttacker: 10,
-    percentTimeAsGoalkeeper: 0,
-    matchesAsCaptain: 1,
-    fairPlayAwards: 4
-  },
-  {
-    id: 4,
-    name: 'William Karlsson',
-    matchesPlayed: 13,
-    goalsScored: 0,
-    averageTimePerMatch: 30.2,
-    percentStartedAsSubstitute: 8,
-    percentTimeAsDefender: 5,
-    percentTimeAsMidfielder: 0,
-    percentTimeAsAttacker: 0,
-    percentTimeAsGoalkeeper: 95,
-    matchesAsCaptain: 0,
-    fairPlayAwards: 1
-  },
-  {
-    id: 5,
-    name: 'Lucas Svensson',
-    matchesPlayed: 11,
-    goalsScored: 5,
-    averageTimePerMatch: 25.7,
-    percentStartedAsSubstitute: 36,
-    percentTimeAsDefender: 30,
-    percentTimeAsMidfielder: 40,
-    percentTimeAsAttacker: 30,
-    percentTimeAsGoalkeeper: 0,
-    matchesAsCaptain: 2,
-    fairPlayAwards: 1
-  },
-  {
-    id: 6,
-    name: 'Alexander Berg',
-    matchesPlayed: 10,
-    goalsScored: 3,
-    averageTimePerMatch: 22.4,
-    percentStartedAsSubstitute: 50,
-    percentTimeAsDefender: 45,
-    percentTimeAsMidfielder: 30,
-    percentTimeAsAttacker: 25,
-    percentTimeAsGoalkeeper: 0,
-    matchesAsCaptain: 0,
-    fairPlayAwards: 2
-  }
-];
+import { useTeam } from '../../contexts/TeamContext';
+import { getPlayerStats } from '../../services/matchStateManager';
 
 const SORT_COLUMNS = {
   NAME: 'name',
@@ -104,13 +18,38 @@ const SORT_COLUMNS = {
 };
 
 export function PlayerStatsView({ startDate, endDate }) {
+  const { currentTeam } = useTeam();
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState(SORT_COLUMNS.NAME);
   const [sortOrder, setSortOrder] = useState('asc');
 
-  // Note: Time filtering for player stats would require filtering based on
-  // match participation dates. With mock data, we'll show all player stats.
-  // In a real implementation, this would filter players' stats based on
-  // matches played within the selected time range.
+  // Fetch player stats from database
+  useEffect(() => {
+    async function fetchPlayerStats() {
+      if (!currentTeam?.id) {
+        setPlayers([]);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      const result = await getPlayerStats(currentTeam.id, startDate, endDate);
+
+      if (result.success) {
+        setPlayers(result.players || []);
+      } else {
+        setError(result.error || 'Failed to load player statistics');
+        setPlayers([]);
+      }
+
+      setLoading(false);
+    }
+
+    fetchPlayerStats();
+  }, [currentTeam?.id, startDate, endDate]);
 
   const columns = [
     {
@@ -220,7 +159,7 @@ export function PlayerStatsView({ startDate, endDate }) {
   ];
 
   const sortedPlayers = useMemo(() => {
-    const sorted = [...mockPlayerStats].sort((a, b) => {
+    const sorted = [...players].sort((a, b) => {
       let aValue = a[sortBy];
       let bValue = b[sortBy];
 
@@ -234,22 +173,32 @@ export function PlayerStatsView({ startDate, endDate }) {
     });
 
     return sorted;
-  }, [sortBy, sortOrder]);
+  }, [players, sortBy, sortOrder]);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
-    const totalPlayers = mockPlayerStats.length;
+    if (players.length === 0) {
+      return {
+        totalPlayers: 0,
+        averageFieldTime: 0,
+        averageGoalsPerPlayer: 0,
+        totalGoals: 0,
+        topScorer: null
+      };
+    }
+
+    const totalPlayers = players.length;
 
     // Calculate average field time across all players
-    const totalFieldTime = mockPlayerStats.reduce((sum, player) => sum + player.averageTimePerMatch, 0);
+    const totalFieldTime = players.reduce((sum, player) => sum + player.averageTimePerMatch, 0);
     const averageFieldTime = totalFieldTime / totalPlayers;
 
     // Calculate average goals per player
-    const totalGoals = mockPlayerStats.reduce((sum, player) => sum + player.goalsScored, 0);
+    const totalGoals = players.reduce((sum, player) => sum + player.goalsScored, 0);
     const averageGoalsPerPlayer = totalGoals / totalPlayers;
 
     // Find top scorer
-    const topScorer = mockPlayerStats.reduce((top, player) =>
+    const topScorer = players.reduce((top, player) =>
       player.goalsScored > top.goalsScored ? player : top
     );
 
@@ -260,7 +209,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       totalGoals,
       topScorer
     };
-  }, []);
+  }, [players]);
 
   const handleSort = (columnKey) => {
     if (sortBy === columnKey) {
@@ -298,6 +247,29 @@ export function PlayerStatsView({ startDate, endDate }) {
     </div>
   );
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">Loading player statistics...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-red-400 mb-2">Error loading player statistics</div>
+          <div className="text-slate-400 text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
@@ -326,8 +298,8 @@ export function PlayerStatsView({ startDate, endDate }) {
         <StatCard
           icon={Award}
           title="Top Scorer"
-          value={summaryStats.topScorer.name}
-          subtitle={`${summaryStats.topScorer.goalsScored} goals`}
+          value={summaryStats.topScorer ? summaryStats.topScorer.name : '-'}
+          subtitle={summaryStats.topScorer ? `${summaryStats.topScorer.goalsScored} goals` : 'No data'}
         />
       </div>
 

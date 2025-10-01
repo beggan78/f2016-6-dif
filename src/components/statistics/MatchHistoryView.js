@@ -1,130 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, Filter, History, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
-
-// Mock data - replace with real data later
-const mockMatches = [
-  {
-    id: 1,
-    date: '2025-01-20T15:00:00Z',
-    opponent: 'Hammarby IF',
-    homeScore: 3,
-    awayScore: 1,
-    isHome: true,
-    type: 'League',
-    outcome: 'W',
-    format: '5v5',
-    players: ['Alice Johnson', 'Bob Smith', 'Charlie Brown', 'David Wilson', 'Eva Davis']
-  },
-  {
-    id: 2,
-    date: '2025-01-15T14:30:00Z',
-    opponent: 'AIK',
-    homeScore: 2,
-    awayScore: 2,
-    isHome: false,
-    type: 'Friendly',
-    outcome: 'D',
-    format: '7v7',
-    players: ['Alice Johnson', 'Bob Smith', 'Frank Miller', 'Grace Lee', 'Henry Taylor']
-  },
-  {
-    id: 3,
-    date: '2025-01-10T16:00:00Z',
-    opponent: 'IFK Göteborg',
-    homeScore: 1,
-    awayScore: 2,
-    isHome: true,
-    type: 'Cup',
-    outcome: 'L',
-    format: '5v5',
-    players: ['Charlie Brown', 'David Wilson', 'Eva Davis', 'Frank Miller', 'Grace Lee']
-  },
-  {
-    id: 4,
-    date: '2025-01-05T13:00:00Z',
-    opponent: 'Malmö FF',
-    homeScore: 4,
-    awayScore: 0,
-    isHome: false,
-    type: 'League',
-    outcome: 'W',
-    format: '5v5',
-    players: ['Alice Johnson', 'Bob Smith', 'Charlie Brown', 'Henry Taylor', 'Ian Clark']
-  },
-  {
-    id: 5,
-    date: '2024-12-20T15:30:00Z',
-    opponent: 'Örebro SK',
-    homeScore: 2,
-    awayScore: 1,
-    isHome: true,
-    type: 'League',
-    outcome: 'W',
-    format: '7v7',
-    players: ['David Wilson', 'Eva Davis', 'Frank Miller', 'Grace Lee', 'Henry Taylor']
-  },
-  {
-    id: 6,
-    date: '2024-12-15T14:00:00Z',
-    opponent: 'Helsingborgs IF',
-    homeScore: 0,
-    awayScore: 3,
-    isHome: false,
-    type: 'Friendly',
-    outcome: 'L',
-    format: '5v5',
-    players: ['Alice Johnson', 'Charlie Brown', 'Eva Davis', 'Ian Clark', 'Jack Wilson']
-  },
-  {
-    id: 7,
-    date: '2024-12-10T16:30:00Z',
-    opponent: 'BK Häcken',
-    homeScore: 1,
-    awayScore: 1,
-    isHome: true,
-    type: 'League',
-    outcome: 'D',
-    format: '7v7',
-    players: ['Bob Smith', 'Frank Miller', 'Grace Lee', 'Henry Taylor', 'Ian Clark']
-  },
-  {
-    id: 8,
-    date: '2024-12-05T15:00:00Z',
-    opponent: 'IFK Norrköping',
-    homeScore: 3,
-    awayScore: 2,
-    isHome: false,
-    type: 'Cup',
-    outcome: 'W',
-    format: '5v5',
-    players: ['Alice Johnson', 'Charlie Brown', 'David Wilson', 'Jack Wilson', 'Liam Brown']
-  },
-  {
-    id: 9,
-    date: '2024-11-30T14:30:00Z',
-    opponent: 'Degerfors IF',
-    homeScore: 2,
-    awayScore: 0,
-    isHome: true,
-    type: 'League',
-    outcome: 'W',
-    format: '5v5',
-    players: ['Bob Smith', 'Eva Davis', 'Frank Miller', 'Ian Clark', 'Jack Wilson']
-  },
-  {
-    id: 10,
-    date: '2024-11-25T13:30:00Z',
-    opponent: 'Varbergs BoIS',
-    homeScore: 1,
-    awayScore: 4,
-    isHome: false,
-    type: 'Friendly',
-    outcome: 'L',
-    format: '7v7',
-    players: ['Charlie Brown', 'Grace Lee', 'Henry Taylor', 'Liam Brown', 'Mike Davis']
-  }
-];
+import { useTeam } from '../../contexts/TeamContext';
+import { getConfirmedMatches } from '../../services/matchStateManager';
 
 const MATCH_TYPES = [
   { value: 'All', label: 'All' },
@@ -147,12 +25,42 @@ const HOME_AWAY = [
 ];
 
 export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
+  const { currentTeam } = useTeam();
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [typeFilter, setTypeFilter] = useState('All');
   const [outcomeFilter, setOutcomeFilter] = useState('All');
   const [homeAwayFilter, setHomeAwayFilter] = useState('All');
   const [opponentFilter, setOpponentFilter] = useState('All');
   const [playerFilter, setPlayerFilter] = useState('All');
   const [formatFilter, setFormatFilter] = useState('All');
+
+  // Fetch match data from database
+  useEffect(() => {
+    async function fetchMatches() {
+      if (!currentTeam?.id) {
+        setMatches([]);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      const result = await getConfirmedMatches(currentTeam.id, startDate, endDate);
+
+      if (result.success) {
+        setMatches(result.matches || []);
+      } else {
+        setError(result.error || 'Failed to load match history');
+        setMatches([]);
+      }
+
+      setLoading(false);
+    }
+
+    fetchMatches();
+  }, [currentTeam?.id, startDate, endDate]);
 
   // Screen size detection and filter collapse state
   const [needsCollapse, setNeedsCollapse] = useState(() => {
@@ -195,30 +103,30 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
 
   // Get unique opponents from matches
   const opponents = useMemo(() => {
-    const uniqueOpponents = [...new Set(mockMatches.map(match => match.opponent))];
+    const uniqueOpponents = [...new Set(matches.map(match => match.opponent))];
     return [
       { value: 'All', label: 'All' },
       ...uniqueOpponents.map(opponent => ({ value: opponent, label: opponent }))
     ];
-  }, []);
+  }, [matches]);
 
   // Get unique players from matches
   const players = useMemo(() => {
-    const uniquePlayers = [...new Set(mockMatches.flatMap(match => match.players || []))];
+    const uniquePlayers = [...new Set(matches.flatMap(match => match.players || []))];
     return [
       { value: 'All', label: 'All' },
       ...uniquePlayers.sort().map(player => ({ value: player, label: player }))
     ];
-  }, []);
+  }, [matches]);
 
   // Get unique formats from matches - only show filter if multiple formats exist
   const formats = useMemo(() => {
-    const uniqueFormats = [...new Set(mockMatches.map(match => match.format).filter(Boolean))];
+    const uniqueFormats = [...new Set(matches.map(match => match.format).filter(Boolean))];
     return [
       { value: 'All', label: 'All' },
       ...uniqueFormats.sort().map(format => ({ value: format, label: format }))
     ];
-  }, []);
+  }, [matches]);
 
   const shouldShowFormatFilter = formats.length > 2; // More than just 'All' option
 
@@ -232,7 +140,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     setFormatFilter('All');
   };
 
-  const filteredMatches = mockMatches.filter(match => {
+  const filteredMatches = matches.filter(match => {
     // Time range filter
     if (startDate || endDate) {
       const matchDate = new Date(match.date);
@@ -302,6 +210,29 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
       hour12: false
     });
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">Loading match history...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-red-400 mb-2">Error loading match history</div>
+          <div className="text-slate-400 text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
