@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
@@ -44,6 +44,148 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
         <ChevronDown size={18} />
       </div>
+    </div>
+  );
+}
+
+export function MultiSelect({
+  value = [],
+  onChange,
+  options = [],
+  placeholder = 'All',
+  id,
+  disabled = false,
+  className = ''
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const normalizedOptions = useMemo(() => {
+    return options.map(opt =>
+      typeof opt === 'object' ? opt : { value: opt, label: String(opt) }
+    );
+  }, [options]);
+
+  const selectedValues = useMemo(() => new Set(value || []), [value]);
+
+  const selectedOptions = useMemo(() => {
+    return normalizedOptions.filter(opt => selectedValues.has(opt.value));
+  }, [normalizedOptions, selectedValues]);
+
+  const displayLabel = useMemo(() => {
+    if (selectedOptions.length === 0) {
+      return placeholder;
+    }
+
+    if (selectedOptions.length === 1) {
+      return selectedOptions[0].label;
+    }
+
+    if (selectedOptions.length === normalizedOptions.length) {
+      return 'All selected';
+    }
+
+    if (selectedOptions.length <= 2) {
+      return selectedOptions.map(opt => opt.label).join(', ');
+    }
+
+    return `${selectedOptions.length} selected`;
+  }, [normalizedOptions.length, placeholder, selectedOptions]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const toggleSelect = () => {
+    if (disabled) return;
+    setIsOpen((prev) => !prev);
+  };
+
+  const handleOptionToggle = (optionValue) => {
+    if (disabled) return;
+
+    const isAlreadySelected = selectedValues.has(optionValue);
+    const nextValues = isAlreadySelected
+      ? (value || []).filter(v => v !== optionValue)
+      : [...(value || []), optionValue];
+
+    onChange(nextValues);
+  };
+
+  const handleClear = () => {
+    if (disabled) return;
+    onChange([]);
+  };
+
+  return (
+    <div className={`relative ${className}`} ref={containerRef}>
+      <button
+        type="button"
+        id={id}
+        onClick={toggleSelect}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`w-full bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors flex items-center justify-between gap-2 ${
+          disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+        }`}
+      >
+        <span className="truncate text-left flex-1">{displayLabel}</span>
+        <ChevronDown size={18} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute z-20 mt-1 w-full bg-slate-700 border border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
+        >
+          {normalizedOptions.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-slate-400">No options available</div>
+          ) : (
+            <ul className="py-1">
+              {normalizedOptions.map((opt) => {
+                const isSelected = selectedValues.has(opt.value);
+                return (
+                  <li key={opt.value}>
+                    <label className="flex items-center gap-2 px-3 py-2 text-sm text-slate-100 hover:bg-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleOptionToggle(opt.value)}
+                        className="h-4 w-4 rounded border-slate-500 text-sky-500 focus:ring-sky-500"
+                        aria-label={opt.label}
+                      />
+                      <span className="truncate">{opt.label}</span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {(value || []).length > 0 && (
+            <div className="border-t border-slate-600 px-3 py-2">
+              <button
+                type="button"
+                onClick={handleClear}
+                className="text-xs text-sky-400 hover:text-sky-300"
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,23 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Filter, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
-import { Select, Button } from '../shared/UI';
+import { MultiSelect, Button } from '../shared/UI';
 
 const MATCH_TYPES = [
-  { value: 'All', label: 'All' },
   { value: 'League', label: 'League' },
   { value: 'Cup', label: 'Cup' },
   { value: 'Friendly', label: 'Friendly' }
 ];
 
 const OUTCOMES = [
-  { value: 'All', label: 'All' },
   { value: 'W', label: 'Win' },
   { value: 'D', label: 'Draw' },
   { value: 'L', label: 'Loss' }
 ];
 
 const VENUE_TYPES = [
-  { value: 'All', label: 'All' },
   { value: 'home', label: 'Home' },
   { value: 'away', label: 'Away' },
   { value: 'neutral', label: 'Neutral' }
@@ -84,34 +81,25 @@ export function MatchFiltersPanel({
 
   // Get unique opponents from matches
   const opponents = useMemo(() => {
-    const uniqueOpponents = [...new Set(matches.map(match => match.opponent))];
+    const uniqueOpponents = [...new Set(matches.map(match => match.opponent).filter(Boolean))];
     // Sort opponents alphabetically
     const sortedOpponents = uniqueOpponents.sort((a, b) => a.localeCompare(b));
-    return [
-      { value: 'All', label: 'All' },
-      ...sortedOpponents.map(opponent => ({ value: opponent, label: opponent }))
-    ];
+    return sortedOpponents.map(opponent => ({ value: opponent, label: opponent }));
   }, [matches]);
 
   // Get unique players from matches
   const players = useMemo(() => {
-    const uniquePlayers = [...new Set(matches.flatMap(match => match.players || []))];
-    return [
-      { value: 'All', label: 'All' },
-      ...uniquePlayers.sort().map(player => ({ value: player, label: player }))
-    ];
+    const uniquePlayers = [...new Set(matches.flatMap(match => match.players || []).filter(Boolean))];
+    return uniquePlayers.sort().map(player => ({ value: player, label: player }));
   }, [matches]);
 
   // Get unique formats from matches - only show filter if multiple formats exist
   const formats = useMemo(() => {
     const uniqueFormats = [...new Set(matches.map(match => match.format).filter(Boolean))];
-    return [
-      { value: 'All', label: 'All' },
-      ...uniqueFormats.sort().map(format => ({ value: format, label: format }))
-    ];
+    return uniqueFormats.sort().map(format => ({ value: format, label: format }));
   }, [matches]);
 
-  const shouldShowFormatFilter = formats.length > 2; // More than just 'All' option
+  const shouldShowFormatFilter = formats.length > 1;
 
   return (
     <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
@@ -157,56 +145,62 @@ export function MatchFiltersPanel({
         }`}>
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Type</label>
-            <Select
+            <MultiSelect
               value={typeFilter}
               onChange={onTypeFilterChange}
               options={MATCH_TYPES}
+              placeholder="All"
             />
           </div>
 
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Outcome</label>
-            <Select
+            <MultiSelect
               value={outcomeFilter}
               onChange={onOutcomeFilterChange}
               options={OUTCOMES}
+              placeholder="All"
             />
           </div>
 
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Venue</label>
-            <Select
+            <MultiSelect
               value={venueFilter}
               onChange={onVenueFilterChange}
               options={VENUE_TYPES}
+              placeholder="All"
             />
           </div>
 
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Opponent</label>
-            <Select
+            <MultiSelect
               value={opponentFilter}
               onChange={onOpponentFilterChange}
               options={opponents}
+              placeholder="All"
             />
           </div>
 
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">With Player</label>
-            <Select
+            <MultiSelect
               value={playerFilter}
               onChange={onPlayerFilterChange}
               options={players}
+              placeholder="All"
             />
           </div>
 
           {shouldShowFormatFilter && (
             <div className="flex flex-col">
               <label className="text-slate-300 text-sm mb-2">Format</label>
-              <Select
+              <MultiSelect
                 value={formatFilter}
                 onChange={onFormatFilterChange}
                 options={formats}
+                placeholder="All"
               />
             </div>
           )}

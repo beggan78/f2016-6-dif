@@ -66,12 +66,10 @@ describe('TeamStatsView', () => {
   beforeEach(() => {
     mockOnMatchSelect.mockClear();
 
-    // Mock useTeam hook
     useTeam.mockReturnValue({
       currentTeam: { id: 'team-123', name: 'Test Team' }
     });
 
-    // Mock getConfirmedMatches
     getConfirmedMatches.mockResolvedValue({
       success: true,
       matches: mockMatches
@@ -81,132 +79,84 @@ describe('TeamStatsView', () => {
   test('renders filter panel and team stats', async () => {
     render(<TeamStatsView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load and check that filter is present
-    await waitFor(() => {
-      expect(screen.getByText('Filter')).toBeInTheDocument();
-    });
-
-    // Check that stats are displayed
-    await waitFor(() => {
-      expect(screen.getByText('Total Matches')).toBeInTheDocument();
-      expect(screen.getByText('Win Rate')).toBeInTheDocument();
-    });
+    await screen.findByText('Filter');
+    await screen.findByText('Total Matches');
+    expect(screen.getByText('Win Rate')).toBeInTheDocument();
   });
 
   test('filters update team statistics correctly', async () => {
     render(<TeamStatsView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for initial data to load
+    await screen.findByText('Total Matches');
+
+    const totalMatchesValue = screen.getByLabelText('Total Matches value');
+    expect(totalMatchesValue).toHaveTextContent('4');
+
+    const typeButton = screen.getByRole('button', { name: /All types/i });
+    fireEvent.click(typeButton);
+
+    const leagueOption = await screen.findByLabelText('League');
+    fireEvent.click(leagueOption);
+
     await waitFor(() => {
-      expect(screen.getByText('Total Matches')).toBeInTheDocument();
+      expect(screen.getByLabelText('Total Matches value')).toHaveTextContent('2');
     });
-
-    // Initial stats should show all 4 matches
-    const totalMatchesCard = screen.getByText('Total Matches').closest('.bg-slate-700');
-    expect(totalMatchesCard).toHaveTextContent('4');
-
-    // Find the type filter
-    const typeLabel = screen.getByText('Type');
-    const typeSelect = typeLabel.closest('.flex')?.querySelector('select');
-
-    if (typeSelect) {
-      // Filter by League type
-      fireEvent.change(typeSelect, { target: { value: 'League' } });
-
-      // Should now show only 2 matches (matches 1 and 4 are League)
-      await waitFor(() => {
-        const updatedCard = screen.getByText('Total Matches').closest('.bg-slate-700');
-        expect(updatedCard).toHaveTextContent('2');
-      });
-    }
   });
 
   test('filters by player correctly', async () => {
     render(<TeamStatsView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
+    await screen.findByText('Filter');
+
+    const playerButton = screen.getByRole('button', { name: /All players/i });
+    fireEvent.click(playerButton);
+
+    const aliceOption = await screen.findByLabelText('Alice Johnson');
+    fireEvent.click(aliceOption);
+
     await waitFor(() => {
-      expect(screen.getByText('Filter')).toBeInTheDocument();
+      expect(screen.getByLabelText('Total Matches value')).toHaveTextContent('3');
     });
-
-    // Find the player filter
-    const playerLabel = screen.getByText('With Player');
-    const playerSelect = playerLabel.closest('.flex')?.querySelector('select');
-
-    if (playerSelect) {
-      // Filter by Alice Johnson (appears in matches 1, 2, 4)
-      fireEvent.change(playerSelect, { target: { value: 'Alice Johnson' } });
-
-      // Should show 3 matches
-      await waitFor(() => {
-        const totalMatchesCard = screen.getByText('Total Matches').closest('.bg-slate-700');
-        expect(totalMatchesCard).toHaveTextContent('3');
-      });
-    }
   });
 
   test('clear all filters resets stats', async () => {
     render(<TeamStatsView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
+    await screen.findByText('Filter');
+
+    const outcomeButton = screen.getByRole('button', { name: /All outcomes/i });
+    fireEvent.click(outcomeButton);
+
+    const winOption = await screen.findByLabelText('Win');
+    fireEvent.click(winOption);
+
     await waitFor(() => {
-      expect(screen.getByText('Filter')).toBeInTheDocument();
+      expect(screen.getByLabelText('Total Matches value')).toHaveTextContent('2');
     });
 
-    // Apply a filter
-    const outcomeLabel = screen.getByText('Outcome');
-    const outcomeSelect = outcomeLabel.closest('.flex')?.querySelector('select');
+    fireEvent.click(screen.getByText('Clear All'));
 
-    if (outcomeSelect) {
-      fireEvent.change(outcomeSelect, { target: { value: 'W' } });
-
-      // Should show 2 wins
-      await waitFor(() => {
-        const totalMatchesCard = screen.getByText('Total Matches').closest('.bg-slate-700');
-        expect(totalMatchesCard).toHaveTextContent('2');
-      });
-
-      // Click clear all
-      const clearButton = screen.getByText('Clear All');
-      fireEvent.click(clearButton);
-
-      // Should show all 4 matches again
-      await waitFor(() => {
-        const totalMatchesCard = screen.getByText('Total Matches').closest('.bg-slate-700');
-        expect(totalMatchesCard).toHaveTextContent('4');
-      });
-    }
+    await waitFor(() => {
+      expect(screen.getByLabelText('Total Matches value')).toHaveTextContent('4');
+    });
   });
 
   test('shows empty state when filters result in no matches', async () => {
     render(<TeamStatsView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Filter')).toBeInTheDocument();
-    });
+    await screen.findByText('Filter');
 
-    // Find the opponent filter
-    const opponentLabel = screen.getByText('Opponent');
-    const opponentSelect = opponentLabel.closest('.flex')?.querySelector('select');
+    const typeButton = screen.getByRole('button', { name: /All types/i });
+    fireEvent.click(typeButton);
+    const friendlyOption = await screen.findByLabelText('Friendly');
+    fireEvent.click(friendlyOption);
+    fireEvent.click(typeButton);
 
-    if (opponentSelect) {
-      // Apply multiple filters that result in no matches
-      const typeLabel = screen.getByText('Type');
-      const typeSelect = typeLabel.closest('.flex')?.querySelector('select');
+    const opponentButton = screen.getByRole('button', { name: /All opponents/i });
+    fireEvent.click(opponentButton);
+    const malmoOption = await screen.findByLabelText('Malmö FF');
+    fireEvent.click(malmoOption);
 
-      if (typeSelect) {
-        // Filter by Friendly type
-        fireEvent.change(typeSelect, { target: { value: 'Friendly' } });
-
-        // Then filter by opponent that doesn't match Friendly (Malmö FF is League)
-        fireEvent.change(opponentSelect, { target: { value: 'Malmö FF' } });
-
-        // Should show empty state
-        await waitFor(() => {
-          expect(screen.getByText('No matches found with the selected filters')).toBeInTheDocument();
-        });
-      }
-    }
+    await screen.findByText('No matches found with the selected filters');
   });
 });

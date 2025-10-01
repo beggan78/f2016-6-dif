@@ -11,12 +11,12 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   const [error, setError] = useState(null);
 
   // Filter state
-  const [typeFilter, setTypeFilter] = useState('All');
-  const [outcomeFilter, setOutcomeFilter] = useState('All');
-  const [venueFilter, setVenueFilter] = useState('All');
-  const [opponentFilter, setOpponentFilter] = useState('All');
-  const [playerFilter, setPlayerFilter] = useState('All');
-  const [formatFilter, setFormatFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState([]);
+  const [outcomeFilter, setOutcomeFilter] = useState([]);
+  const [venueFilter, setVenueFilter] = useState([]);
+  const [opponentFilter, setOpponentFilter] = useState([]);
+  const [playerFilter, setPlayerFilter] = useState([]);
+  const [formatFilter, setFormatFilter] = useState([]);
 
   // Fetch matches from database
   useEffect(() => {
@@ -46,23 +46,27 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
 
   // Function to clear all filters
   const clearAllFilters = () => {
-    setTypeFilter('All');
-    setOutcomeFilter('All');
-    setVenueFilter('All');
-    setOpponentFilter('All');
-    setPlayerFilter('All');
-    setFormatFilter('All');
+    setTypeFilter([]);
+    setOutcomeFilter([]);
+    setVenueFilter([]);
+    setOpponentFilter([]);
+    setPlayerFilter([]);
+    setFormatFilter([]);
   };
 
   // Apply filters to matches
   const filteredMatches = useMemo(() => {
     return matches.filter(match => {
-      if (typeFilter !== 'All' && match.type !== typeFilter) return false;
-      if (outcomeFilter !== 'All' && match.outcome !== outcomeFilter) return false;
-      if (venueFilter !== 'All' && match.venueType !== venueFilter) return false;
-      if (opponentFilter !== 'All' && match.opponent !== opponentFilter) return false;
-      if (playerFilter !== 'All' && (!match.players || !match.players.includes(playerFilter))) return false;
-      if (formatFilter !== 'All' && match.format !== formatFilter) return false;
+      if (typeFilter.length > 0 && (!match.type || !typeFilter.includes(match.type))) return false;
+      if (outcomeFilter.length > 0 && (!match.outcome || !outcomeFilter.includes(match.outcome))) return false;
+      if (venueFilter.length > 0 && (!match.venueType || !venueFilter.includes(match.venueType))) return false;
+      if (opponentFilter.length > 0 && (!match.opponent || !opponentFilter.includes(match.opponent))) return false;
+      if (playerFilter.length > 0) {
+        const matchPlayers = match.players || [];
+        const hasSelectedPlayer = playerFilter.some(player => matchPlayers.includes(player));
+        if (!hasSelectedPlayer) return false;
+      }
+      if (formatFilter.length > 0 && (!match.format || !formatFilter.includes(match.format))) return false;
       return true;
     });
   }, [matches, typeFilter, outcomeFilter, venueFilter, opponentFilter, playerFilter, formatFilter]);
@@ -232,7 +236,9 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
           </div>
           <div>
             <p className="text-slate-400 text-sm">{title}</p>
-            <p className="text-slate-100 text-xl font-semibold">{value}</p>
+            <p className="text-slate-100 text-xl font-semibold" aria-label={`${title} value`}>
+              {value}
+            </p>
             {subtitle && <p className="text-slate-400 text-xs">{subtitle}</p>}
           </div>
         </div>

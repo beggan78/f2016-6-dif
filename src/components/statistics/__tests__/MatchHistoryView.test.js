@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MatchHistoryView } from '../MatchHistoryView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../../services/matchStateManager';
@@ -153,159 +153,98 @@ describe('MatchHistoryView', () => {
   test('shows format filter when multiple formats exist in matches', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Format')).toBeInTheDocument();
-    });
+    await screen.findByText('Format');
   });
 
   test('filters matches by format correctly', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load and check initial count
-    await waitFor(() => {
-      expect(screen.getByText(/10 matches found/i)).toBeInTheDocument();
-    });
+    await screen.findByText(/10 matches found/i);
 
-    // Find the format filter by looking for the label
-    const formatLabel = screen.getByText('Format');
-    const formatSelect = formatLabel.closest('.flex')?.querySelector('select');
+    const formatButton = screen.getByRole('button', { name: /All formats/i });
+    fireEvent.click(formatButton);
 
-    expect(formatSelect).toBeInTheDocument();
+    const formatOption = await screen.findByLabelText('5v5');
+    fireEvent.click(formatOption);
 
-    if (formatSelect) {
-      // Change to 5v5 filter
-      fireEvent.change(formatSelect, { target: { value: '5v5' } });
-
-      // Should now show fewer matches (6 matches have 5v5 format in mock data)
-      await waitFor(() => {
-        expect(screen.getByText(/6 matches found/i)).toBeInTheDocument();
-      });
-    }
+    await screen.findByText(/6 matches found/i);
   });
 
   test('format filter shows all format options from matches', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Format')).toBeInTheDocument();
-    });
+    await screen.findByText('Format');
 
-    // Find the format filter select
-    const formatLabel = screen.getByText('Format');
-    const formatSelect = formatLabel.closest('.flex')?.querySelector('select');
+    const formatButton = screen.getByRole('button', { name: /All formats/i });
+    fireEvent.click(formatButton);
 
-    expect(formatSelect).toBeInTheDocument();
+    const listbox = await screen.findByRole('listbox');
+    const optionCheckboxes = within(listbox).getAllByRole('checkbox');
+    expect(optionCheckboxes).toHaveLength(2); // 5v5 and 7v7
 
-    if (formatSelect) {
-      // The select should have All, 5v5, and 7v7 options based on mock data
-      expect(formatSelect.children).toHaveLength(3); // All + 5v5 + 7v7
-
-      const options = Array.from(formatSelect.children).map(option => option.textContent);
-      expect(options).toContain('All');
-      expect(options).toContain('5v5');
-      expect(options).toContain('7v7');
-    }
+    expect(screen.getByLabelText('5v5')).toBeInTheDocument();
+    expect(screen.getByLabelText('7v7')).toBeInTheDocument();
   });
 
   test('format filter visibility changes based on available formats', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Format')).toBeInTheDocument();
-    });
+    await screen.findByText('Format');
 
-    // Format dropdown should exist
-    const formatLabel = screen.getByText('Format');
-    const formatSelect = formatLabel.closest('.flex')?.querySelector('select');
-    expect(formatSelect).toBeInTheDocument();
+    const formatButton = screen.getByRole('button', { name: /All formats/i });
+    fireEvent.click(formatButton);
 
-    // Test that 7v7 filter works too
-    if (formatSelect) {
-      fireEvent.change(formatSelect, { target: { value: '7v7' } });
-      await waitFor(() => {
-        expect(screen.getByText(/4 matches found/i)).toBeInTheDocument();
-      });
-    }
+    const option = await screen.findByLabelText('7v7');
+    fireEvent.click(option);
+
+    await screen.findByText(/4 matches found/i);
   });
 
   test('component renders without errors', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load and check basic elements are present
-    await waitFor(() => {
-      expect(screen.getByText('Filter')).toBeInTheDocument();
-      expect(screen.getByText('Match History')).toBeInTheDocument();
-      expect(screen.getByText(/matches found/i)).toBeInTheDocument();
-    });
+    await screen.findByText('Filter');
+    expect(screen.getByText('Match History')).toBeInTheDocument();
+    expect(screen.getByText(/matches found/i)).toBeInTheDocument();
   });
 
   test('filters matches by venue type including neutral', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText(/10 matches found/i)).toBeInTheDocument();
-    });
+    await screen.findByText(/10 matches found/i);
 
-    // Find the venue filter by looking for the label
-    const venueLabel = screen.getByText('Venue');
-    const venueSelect = venueLabel.closest('.flex')?.querySelector('select');
+    const venueButton = screen.getByRole('button', { name: /All venues/i });
+    fireEvent.click(venueButton);
 
-    expect(venueSelect).toBeInTheDocument();
+    const homeOption = await screen.findByLabelText('Home');
+    fireEvent.click(homeOption);
+    await screen.findByText(/4 matches found/i);
 
-    if (venueSelect) {
-      // Filter by home venue
-      fireEvent.change(venueSelect, { target: { value: 'home' } });
-      await waitFor(() => {
-        expect(screen.getByText(/4 matches found/i)).toBeInTheDocument();
-      });
+    fireEvent.click(homeOption);
+    const awayOption = screen.getByLabelText('Away');
+    fireEvent.click(awayOption);
+    await screen.findByText(/4 matches found/i);
 
-      // Filter by away venue
-      fireEvent.change(venueSelect, { target: { value: 'away' } });
-      await waitFor(() => {
-        expect(screen.getByText(/4 matches found/i)).toBeInTheDocument();
-      });
+    fireEvent.click(awayOption);
+    const neutralOption = screen.getByLabelText('Neutral');
+    fireEvent.click(neutralOption);
+    await screen.findByText(/2 matches found/i);
 
-      // Filter by neutral venue
-      fireEvent.change(venueSelect, { target: { value: 'neutral' } });
-      await waitFor(() => {
-        expect(screen.getByText(/2 matches found/i)).toBeInTheDocument();
-      });
-
-      // Reset to all
-      fireEvent.change(venueSelect, { target: { value: 'All' } });
-      await waitFor(() => {
-        expect(screen.getByText(/10 matches found/i)).toBeInTheDocument();
-      });
-    }
+    const clearButton = screen.getByText('Clear selection');
+    fireEvent.click(clearButton);
+    await screen.findByText(/10 matches found/i);
   });
 
   test('venue filter shows all venue options', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Venue')).toBeInTheDocument();
-    });
+    await screen.findByText('Venue');
 
-    // Find the venue filter select
-    const venueLabel = screen.getByText('Venue');
-    const venueSelect = venueLabel.closest('.flex')?.querySelector('select');
+    const venueButton = screen.getByRole('button', { name: /All venues/i });
+    fireEvent.click(venueButton);
 
-    expect(venueSelect).toBeInTheDocument();
-
-    if (venueSelect) {
-      // The select should have All, home, away, and neutral options
-      expect(venueSelect.children).toHaveLength(4);
-
-      const options = Array.from(venueSelect.children).map(option => option.textContent);
-      expect(options).toContain('All');
-      expect(options).toContain('Home');
-      expect(options).toContain('Away');
-      expect(options).toContain('Neutral');
-    }
+    expect(screen.getByLabelText('Home')).toBeInTheDocument();
+    expect(screen.getByLabelText('Away')).toBeInTheDocument();
+    expect(screen.getByLabelText('Neutral')).toBeInTheDocument();
   });
 });
