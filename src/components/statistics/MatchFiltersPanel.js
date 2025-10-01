@@ -149,7 +149,7 @@ export function MatchFiltersPanel({
               value={typeFilter}
               onChange={onTypeFilterChange}
               options={MATCH_TYPES}
-              placeholder="All"
+              placeholder="All types"
             />
           </div>
 
@@ -159,7 +159,7 @@ export function MatchFiltersPanel({
               value={outcomeFilter}
               onChange={onOutcomeFilterChange}
               options={OUTCOMES}
-              placeholder="All"
+              placeholder="All outcomes"
             />
           </div>
 
@@ -169,7 +169,7 @@ export function MatchFiltersPanel({
               value={venueFilter}
               onChange={onVenueFilterChange}
               options={VENUE_TYPES}
-              placeholder="All"
+              placeholder="All venues"
             />
           </div>
 
@@ -179,7 +179,7 @@ export function MatchFiltersPanel({
               value={opponentFilter}
               onChange={onOpponentFilterChange}
               options={opponents}
-              placeholder="All"
+              placeholder="All opponents"
             />
           </div>
 
@@ -189,7 +189,7 @@ export function MatchFiltersPanel({
               value={playerFilter}
               onChange={onPlayerFilterChange}
               options={players}
-              placeholder="All"
+              placeholder="All players"
             />
           </div>
 
@@ -200,7 +200,7 @@ export function MatchFiltersPanel({
                 value={formatFilter}
                 onChange={onFormatFilterChange}
                 options={formats}
-                placeholder="All"
+                placeholder="All formats"
               />
             </div>
           )}
