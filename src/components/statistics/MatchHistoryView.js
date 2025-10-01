@@ -18,10 +18,11 @@ const OUTCOMES = [
   { value: 'L', label: 'Loss' }
 ];
 
-const HOME_AWAY = [
+const VENUE_TYPES = [
   { value: 'All', label: 'All' },
-  { value: 'Home', label: 'Home' },
-  { value: 'Away', label: 'Away' }
+  { value: 'home', label: 'Home' },
+  { value: 'away', label: 'Away' },
+  { value: 'neutral', label: 'Neutral' }
 ];
 
 export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
@@ -31,7 +32,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const [error, setError] = useState(null);
   const [typeFilter, setTypeFilter] = useState('All');
   const [outcomeFilter, setOutcomeFilter] = useState('All');
-  const [homeAwayFilter, setHomeAwayFilter] = useState('All');
+  const [venueFilter, setVenueFilter] = useState('All');
   const [opponentFilter, setOpponentFilter] = useState('All');
   const [playerFilter, setPlayerFilter] = useState('All');
   const [formatFilter, setFormatFilter] = useState('All');
@@ -134,7 +135,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   const clearAllFilters = () => {
     setTypeFilter('All');
     setOutcomeFilter('All');
-    setHomeAwayFilter('All');
+    setVenueFilter('All');
     setOpponentFilter('All');
     setPlayerFilter('All');
     setFormatFilter('All');
@@ -151,10 +152,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     // Existing filters
     if (typeFilter !== 'All' && match.type !== typeFilter) return false;
     if (outcomeFilter !== 'All' && match.outcome !== outcomeFilter) return false;
-    if (homeAwayFilter !== 'All') {
-      const matchHomeAway = match.isHome ? 'Home' : 'Away';
-      if (matchHomeAway !== homeAwayFilter) return false;
-    }
+    if (venueFilter !== 'All' && match.venueType !== venueFilter) return false;
     if (opponentFilter !== 'All' && match.opponent !== opponentFilter) return false;
     if (playerFilter !== 'All' && (!match.players || !match.players.includes(playerFilter))) return false;
     if (formatFilter !== 'All' && match.format !== formatFilter) return false;
@@ -190,9 +188,13 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
   };
 
   const formatScore = (match) => {
-    if (match.isHome) {
+    if (match.venueType === 'home') {
+      return `${match.homeScore}-${match.awayScore}`;
+    } else if (match.venueType === 'neutral') {
+      // For neutral venue, show team score first (stored in homeScore)
       return `${match.homeScore}-${match.awayScore}`;
     } else {
+      // For away, swap the scores
       return `${match.awayScore}-${match.homeScore}`;
     }
   };
@@ -297,11 +299,11 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
           </div>
 
           <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Home/Away</label>
+            <label className="text-slate-300 text-sm mb-2">Venue</label>
             <Select
-              value={homeAwayFilter}
-              onChange={setHomeAwayFilter}
-              options={HOME_AWAY}
+              value={venueFilter}
+              onChange={setVenueFilter}
+              options={VENUE_TYPES}
             />
           </div>
 
@@ -374,12 +376,12 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
 
                     {/* Match Details Row */}
                     <div className="flex items-center gap-3 mt-1">
-                      {/* Home/Away - Hidden on narrow screens */}
+                      {/* Venue Type - Hidden on narrow screens */}
                       {!needsCollapse && (
                         <div className="flex items-center gap-1 text-slate-400">
                           <MapPin className="h-3 w-3" />
                           <span className="text-sm">
-                            {match.isHome ? 'Home' : 'Away'}
+                            {match.venueType === 'home' ? 'Home' : match.venueType === 'neutral' ? 'Neutral' : 'Away'}
                           </span>
                         </div>
                       )}

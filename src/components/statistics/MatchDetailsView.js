@@ -79,7 +79,11 @@ const SmartTimeInput = ({ value, onChange, className = '' }) => {
 };
 
 
-const VENUE_OPTIONS = ['Home', 'Away'];
+const VENUE_OPTIONS = [
+  { value: 'home', label: 'Home' },
+  { value: 'away', label: 'Away' },
+  { value: 'neutral', label: 'Neutral' }
+];
 const STARTING_ROLES = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Substitute'];
 
 // Helper function to get formation options for selected format
@@ -236,9 +240,13 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   };
 
   const formatScore = () => {
-    if (editData.isHome) {
+    if (editData.venueType === 'home') {
+      return `${editData.homeScore}-${editData.awayScore}`;
+    } else if (editData.venueType === 'neutral') {
+      // For neutral venue, show team score first (stored in homeScore)
       return `${editData.homeScore}-${editData.awayScore}`;
     } else {
+      // For away, swap the scores
       return `${editData.awayScore}-${editData.homeScore}`;
     }
   };
@@ -376,9 +384,9 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 <div className="flex items-center justify-center space-x-2">
                   <Input
                     type="number"
-                    value={editData.isHome ? editData.homeScore : editData.awayScore}
+                    value={editData.venueType === 'home' ? editData.homeScore : editData.awayScore}
                     onChange={(e) => updateMatchDetail(
-                      editData.isHome ? 'homeScore' : 'awayScore',
+                      editData.venueType === 'home' ? 'homeScore' : 'awayScore',
                       parseInt(e.target.value) || 0
                     )}
                     className="w-16 text-center"
@@ -387,9 +395,9 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                   <span className="text-slate-400 text-xl">-</span>
                   <Input
                     type="number"
-                    value={editData.isHome ? editData.awayScore : editData.homeScore}
+                    value={editData.venueType === 'home' ? editData.awayScore : editData.homeScore}
                     onChange={(e) => updateMatchDetail(
-                      editData.isHome ? 'awayScore' : 'homeScore',
+                      editData.venueType === 'home' ? 'awayScore' : 'homeScore',
                       parseInt(e.target.value) || 0
                     )}
                     className="w-16 text-center"
@@ -462,14 +470,14 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 <div className="text-xs text-slate-400 uppercase tracking-wide">Venue</div>
                 {isEditing ? (
                   <Select
-                    value={editData.isHome ? 'Home' : 'Away'}
-                    onChange={(value) => updateMatchDetail('isHome', value === 'Home')}
+                    value={editData.venueType}
+                    onChange={(value) => updateMatchDetail('venueType', value)}
                     options={VENUE_OPTIONS}
                     className="text-sm"
                   />
                 ) : (
                   <div className="text-sm text-slate-100 font-medium">
-                    {editData.isHome ? 'Home' : 'Away'}
+                    {editData.venueType === 'home' ? 'Home' : editData.venueType === 'neutral' ? 'Neutral' : 'Away'}
                   </div>
                 )}
               </div>

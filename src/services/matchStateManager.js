@@ -509,13 +509,17 @@ export async function getConfirmedMatches(teamId, startDate = null, endDate = nu
         .filter(stat => stat.player)
         .map(stat => stat.player.name);
 
+      // For neutral venue, show scores from team's perspective (goals_scored first)
+      const teamScore = match.goals_scored;
+      const opponentScore = match.goals_conceded;
+
       return {
         id: match.id,
         date: match.started_at,
         opponent: match.opponent || 'Unknown',
-        homeScore: match.venue_type === 'home' ? match.goals_scored : match.goals_conceded,
-        awayScore: match.venue_type === 'home' ? match.goals_conceded : match.goals_scored,
-        isHome: match.venue_type === 'home',
+        homeScore: match.venue_type === 'home' ? teamScore : opponentScore,
+        awayScore: match.venue_type === 'home' ? opponentScore : teamScore,
+        venueType: match.venue_type,
         type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
         outcome: match.outcome === 'win' ? 'W' : match.outcome === 'draw' ? 'D' : 'L',
         format: match.format,
@@ -612,15 +616,20 @@ export async function getMatchDetails(matchId) {
 
     // Transform match data to UI format
     const matchDate = new Date(match.started_at);
+
+    // For neutral venue, show scores from team's perspective (goals_scored first)
+    const teamScore = match.goals_scored;
+    const opponentScore = match.goals_conceded;
+
     const transformedMatch = {
       id: match.id,
       date: matchDate.toISOString().split('T')[0],
       time: matchDate.toTimeString().slice(0, 5),
       type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
       opponent: match.opponent || 'Unknown',
-      homeScore: match.venue_type === 'home' ? match.goals_scored : match.goals_conceded,
-      awayScore: match.venue_type === 'home' ? match.goals_conceded : match.goals_scored,
-      isHome: match.venue_type === 'home',
+      homeScore: match.venue_type === 'home' ? teamScore : opponentScore,
+      awayScore: match.venue_type === 'home' ? opponentScore : teamScore,
+      venueType: match.venue_type,
       outcome: match.outcome === 'win' ? 'W' : match.outcome === 'draw' ? 'D' : 'L',
       format: match.format,
       periods: match.periods,

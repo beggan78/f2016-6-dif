@@ -16,7 +16,7 @@ const mockMatches = [
     opponent: 'Hammarby IF',
     homeScore: 3,
     awayScore: 1,
-    isHome: true,
+    venueType: 'home',
     type: 'League',
     outcome: 'W',
     format: '5v5',
@@ -28,7 +28,7 @@ const mockMatches = [
     opponent: 'AIK',
     homeScore: 2,
     awayScore: 2,
-    isHome: false,
+    venueType: 'neutral',
     type: 'Friendly',
     outcome: 'D',
     format: '7v7',
@@ -40,7 +40,7 @@ const mockMatches = [
     opponent: 'IFK Göteborg',
     homeScore: 1,
     awayScore: 2,
-    isHome: true,
+    venueType: 'home',
     type: 'Cup',
     outcome: 'L',
     format: '5v5',
@@ -52,7 +52,7 @@ const mockMatches = [
     opponent: 'Malmö FF',
     homeScore: 4,
     awayScore: 0,
-    isHome: false,
+    venueType: 'away',
     type: 'League',
     outcome: 'W',
     format: '5v5',
@@ -64,7 +64,7 @@ const mockMatches = [
     opponent: 'Örebro SK',
     homeScore: 2,
     awayScore: 1,
-    isHome: true,
+    venueType: 'home',
     type: 'League',
     outcome: 'W',
     format: '7v7',
@@ -76,7 +76,7 @@ const mockMatches = [
     opponent: 'Helsingborgs IF',
     homeScore: 0,
     awayScore: 3,
-    isHome: false,
+    venueType: 'away',
     type: 'Friendly',
     outcome: 'L',
     format: '5v5',
@@ -88,7 +88,7 @@ const mockMatches = [
     opponent: 'BK Häcken',
     homeScore: 1,
     awayScore: 1,
-    isHome: true,
+    venueType: 'neutral',
     type: 'League',
     outcome: 'D',
     format: '7v7',
@@ -100,7 +100,7 @@ const mockMatches = [
     opponent: 'IFK Norrköping',
     homeScore: 3,
     awayScore: 2,
-    isHome: false,
+    venueType: 'away',
     type: 'Cup',
     outcome: 'W',
     format: '5v5',
@@ -112,7 +112,7 @@ const mockMatches = [
     opponent: 'Degerfors IF',
     homeScore: 2,
     awayScore: 0,
-    isHome: true,
+    venueType: 'home',
     type: 'League',
     outcome: 'W',
     format: '5v5',
@@ -124,7 +124,7 @@ const mockMatches = [
     opponent: 'Varbergs BoIS',
     homeScore: 1,
     awayScore: 4,
-    isHome: false,
+    venueType: 'away',
     type: 'Friendly',
     outcome: 'L',
     format: '7v7',
@@ -240,5 +240,72 @@ describe('MatchHistoryView', () => {
       expect(screen.getByText('Match History')).toBeInTheDocument();
       expect(screen.getByText(/matches found/i)).toBeInTheDocument();
     });
+  });
+
+  test('filters matches by venue type including neutral', async () => {
+    render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText(/10 matches found/i)).toBeInTheDocument();
+    });
+
+    // Find the venue filter by looking for the label
+    const venueLabel = screen.getByText('Venue');
+    const venueSelect = venueLabel.closest('.flex')?.querySelector('select');
+
+    expect(venueSelect).toBeInTheDocument();
+
+    if (venueSelect) {
+      // Filter by home venue
+      fireEvent.change(venueSelect, { target: { value: 'home' } });
+      await waitFor(() => {
+        expect(screen.getByText(/4 matches found/i)).toBeInTheDocument();
+      });
+
+      // Filter by away venue
+      fireEvent.change(venueSelect, { target: { value: 'away' } });
+      await waitFor(() => {
+        expect(screen.getByText(/4 matches found/i)).toBeInTheDocument();
+      });
+
+      // Filter by neutral venue
+      fireEvent.change(venueSelect, { target: { value: 'neutral' } });
+      await waitFor(() => {
+        expect(screen.getByText(/2 matches found/i)).toBeInTheDocument();
+      });
+
+      // Reset to all
+      fireEvent.change(venueSelect, { target: { value: 'All' } });
+      await waitFor(() => {
+        expect(screen.getByText(/10 matches found/i)).toBeInTheDocument();
+      });
+    }
+  });
+
+  test('venue filter shows all venue options', async () => {
+    render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText('Venue')).toBeInTheDocument();
+    });
+
+    // Find the venue filter select
+    const venueLabel = screen.getByText('Venue');
+    const venueSelect = venueLabel.closest('.flex')?.querySelector('select');
+
+    expect(venueSelect).toBeInTheDocument();
+
+    if (venueSelect) {
+      // The select should have All, home, away, and neutral options
+      expect(venueSelect.children).toHaveLength(4);
+
+      const options = Array.from(venueSelect.children).map(option => option.textContent);
+      expect(options).toContain('All');
+      expect(options).toContain('Home');
+      expect(options).toContain('Away');
+      expect(options).toContain('Neutral');
+    }
   });
 });
