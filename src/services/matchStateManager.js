@@ -438,6 +438,230 @@ export async function checkForRunningMatch(teamId) {
 }
 
 /**
+ * Get confirmed matches for a team (match history)
+ * @param {string} teamId - Team ID
+ * @param {Date} startDate - Optional start date filter
+ * @param {Date} endDate - Optional end date filter
+ * @returns {Promise<{success: boolean, matches?: Array, error?: string}>}
+ */
+export async function getConfirmedMatches(teamId, startDate = null, endDate = null) {
+  try {
+    if (!teamId) {
+      return {
+        success: false,
+        error: 'Team ID is required'
+      };
+    }
+
+    let query = supabase
+      .from('match')
+      .select(`
+        id,
+        started_at,
+        opponent,
+        goals_scored,
+        goals_conceded,
+        venue_type,
+        type,
+        outcome,
+        format,
+        formation,
+        periods,
+        period_duration_minutes,
+        captain,
+        player_match_stats (
+          player:player_id (
+            id,
+            name
+          )
+        )
+      `)
+      .eq('team_id', teamId)
+      .eq('state', 'confirmed')
+      .is('deleted_at', null)
+      .order('started_at', { ascending: false });
+
+    // Apply date filters if provided
+    if (startDate) {
+      query = query.gte('started_at', startDate.toISOString());
+    }
+    if (endDate) {
+      // Add one day to include the entire end date
+      const endDatePlusOne = new Date(endDate);
+      endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+      query = query.lt('started_at', endDatePlusOne.toISOString());
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('❌ Failed to get confirmed matches:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    // Transform data to match UI expectations
+    const matches = (data || []).map(match => {
+      // Extract unique player names from player_match_stats
+      const playerNames = match.player_match_stats
+        .filter(stat => stat.player)
+        .map(stat => stat.player.name);
+
+      return {
+        id: match.id,
+        date: match.started_at,
+        opponent: match.opponent || 'Unknown',
+        homeScore: match.venue_type === 'home' ? match.goals_scored : match.goals_conceded,
+        awayScore: match.venue_type === 'home' ? match.goals_conceded : match.goals_scored,
+        isHome: match.venue_type === 'home',
+        type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
+        outcome: match.outcome === 'win' ? 'W' : match.outcome === 'draw' ? 'D' : 'L',
+        format: match.format,
+        players: playerNames
+      };
+    });
+
+    return {
+      success: true,
+      matches
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while getting confirmed matches:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Get match details with player statistics
+ * @param {string} matchId - Match ID
+ * @returns {Promise<{success: boolean, match?: Object, playerStats?: Array, error?: string}>}
+ */
+export async function getMatchDetails(matchId) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    const { data: match, error: matchError } = await supabase
+      .from('match')
+      .select(`
+        id,
+        started_at,
+        opponent,
+        goals_scored,
+        goals_conceded,
+        venue_type,
+        type,
+        outcome,
+        format,
+        formation,
+        periods,
+        period_duration_minutes,
+        match_duration_seconds,
+        captain
+      `)
+      .eq('id', matchId)
+      .is('deleted_at', null)
+      .single();
+
+    if (matchError) {
+      console.error('❌ Failed to get match details:', matchError);
+      return {
+        success: false,
+        error: `Database error: ${matchError.message}`
+      };
+    }
+
+    // Get player statistics for this match
+    const { data: playerStats, error: statsError } = await supabase
+      .from('player_match_stats')
+      .select(`
+        player:player_id (
+          id,
+          name
+        ),
+        goals_scored,
+        goalie_time_seconds,
+        defender_time_seconds,
+        midfielder_time_seconds,
+        attacker_time_seconds,
+        substitute_time_seconds,
+        total_field_time_seconds,
+        started_as,
+        was_captain,
+        got_fair_play_award
+      `)
+      .eq('match_id', matchId);
+
+    if (statsError) {
+      console.error('❌ Failed to get player stats:', statsError);
+      return {
+        success: false,
+        error: `Database error: ${statsError.message}`
+      };
+    }
+
+    // Transform match data to UI format
+    const matchDate = new Date(match.started_at);
+    const transformedMatch = {
+      id: match.id,
+      date: matchDate.toISOString().split('T')[0],
+      time: matchDate.toTimeString().slice(0, 5),
+      type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
+      opponent: match.opponent || 'Unknown',
+      homeScore: match.venue_type === 'home' ? match.goals_scored : match.goals_conceded,
+      awayScore: match.venue_type === 'home' ? match.goals_conceded : match.goals_scored,
+      isHome: match.venue_type === 'home',
+      outcome: match.outcome === 'win' ? 'W' : match.outcome === 'draw' ? 'D' : 'L',
+      format: match.format,
+      periods: match.periods,
+      periodDuration: match.period_duration_minutes,
+      formation: match.formation
+    };
+
+    // Transform player stats to UI format (convert seconds to minutes)
+    const transformedPlayerStats = playerStats
+      .filter(stat => stat.player)
+      .map((stat, index) => ({
+        id: index + 1,
+        playerId: stat.player.id,
+        name: stat.player.name,
+        goalsScored: stat.goals_scored || 0,
+        totalTimePlayed: (stat.total_field_time_seconds || 0) / 60,
+        timeAsDefender: (stat.defender_time_seconds || 0) / 60,
+        timeAsMidfielder: (stat.midfielder_time_seconds || 0) / 60,
+        timeAsAttacker: (stat.attacker_time_seconds || 0) / 60,
+        timeAsGoalkeeper: (stat.goalie_time_seconds || 0) / 60,
+        startingRole: stat.started_as ? stat.started_as.charAt(0).toUpperCase() + stat.started_as.slice(1) : 'Unknown',
+        wasCaptain: stat.was_captain || false,
+        receivedFairPlayAward: stat.got_fair_play_award || false
+      }));
+
+    return {
+      success: true,
+      match: transformedMatch,
+      playerStats: transformedPlayerStats
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while getting match details:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
  * Calculate match outcome based on scores
  * @param {number} goalsScored - Goals scored by team
  * @param {number} goalsConceded - Goals conceded by team

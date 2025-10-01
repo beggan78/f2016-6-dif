@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button, Input, Select } from '../shared/UI';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
+import { getMatchDetails } from '../../services/matchStateManager';
 
 const SmartTimeInput = ({ value, onChange, className = '' }) => {
   const [displayValue, setDisplayValue] = useState('');
@@ -77,156 +78,6 @@ const SmartTimeInput = ({ value, onChange, className = '' }) => {
   );
 };
 
-// Mock data - replace with real data later
-const mockMatchDetails = {
-  1: {
-    id: 1,
-    date: '2024-01-20',
-    time: '15:00',
-    type: 'League',
-    opponent: 'Hammarby IF',
-    homeScore: 3,
-    awayScore: 1,
-    isHome: true,
-    outcome: 'W',
-    format: '5v5',
-    periods: 2,
-    periodDuration: 20, // minutes
-    formation: '2-2',
-    playerStats: [
-      {
-        id: 1,
-        name: 'Erik Andersson',
-        goalsScored: 2,
-        totalTimePlayed: 38, // minutes
-        timeAsDefender: 20,
-        timeAsMidfielder: 8,
-        timeAsAttacker: 10,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Attacker',
-        wasCaptain: true,
-        receivedFairPlayAward: false
-      },
-      {
-        id: 2,
-        name: 'Liam Johansson',
-        goalsScored: 1,
-        totalTimePlayed: 40,
-        timeAsDefender: 5,
-        timeAsMidfielder: 15,
-        timeAsAttacker: 20,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Attacker',
-        wasCaptain: false,
-        receivedFairPlayAward: true
-      },
-      {
-        id: 3,
-        name: 'Oliver Lindqvist',
-        goalsScored: 0,
-        totalTimePlayed: 35,
-        timeAsDefender: 30,
-        timeAsMidfielder: 5,
-        timeAsAttacker: 0,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Defender',
-        wasCaptain: false,
-        receivedFairPlayAward: true
-      },
-      {
-        id: 4,
-        name: 'William Karlsson',
-        goalsScored: 0,
-        totalTimePlayed: 40,
-        timeAsDefender: 0,
-        timeAsMidfielder: 0,
-        timeAsAttacker: 0,
-        timeAsGoalkeeper: 40,
-        startingRole: 'Goalkeeper',
-        wasCaptain: false,
-        receivedFairPlayAward: false
-      },
-      {
-        id: 5,
-        name: 'Lucas Svensson',
-        goalsScored: 0,
-        totalTimePlayed: 25,
-        timeAsDefender: 15,
-        timeAsMidfielder: 5,
-        timeAsAttacker: 5,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Substitute',
-        wasCaptain: false,
-        receivedFairPlayAward: false
-      },
-      {
-        id: 6,
-        name: 'Alexander Bergström',
-        goalsScored: 1,
-        totalTimePlayed: 32,
-        timeAsDefender: 25,
-        timeAsMidfielder: 7,
-        timeAsAttacker: 0,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Defender',
-        wasCaptain: false,
-        receivedFairPlayAward: true
-      },
-      {
-        id: 7,
-        name: 'Noah Pettersson',
-        goalsScored: 0,
-        totalTimePlayed: 18,
-        timeAsDefender: 0,
-        timeAsMidfielder: 12,
-        timeAsAttacker: 6,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Substitute',
-        wasCaptain: false,
-        receivedFairPlayAward: false
-      },
-      {
-        id: 8,
-        name: 'Hugo Nilsson',
-        goalsScored: 0,
-        totalTimePlayed: 15,
-        timeAsDefender: 0,
-        timeAsMidfielder: 0,
-        timeAsAttacker: 0,
-        timeAsGoalkeeper: 15,
-        startingRole: 'Substitute',
-        wasCaptain: false,
-        receivedFairPlayAward: false
-      },
-      {
-        id: 9,
-        name: 'Emil Gustafsson',
-        goalsScored: 2,
-        totalTimePlayed: 37,
-        timeAsDefender: 5,
-        timeAsMidfielder: 18,
-        timeAsAttacker: 14,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Midfielder',
-        wasCaptain: false,
-        receivedFairPlayAward: true
-      },
-      {
-        id: 10,
-        name: 'Isak Holm',
-        goalsScored: 1,
-        totalTimePlayed: 28,
-        timeAsDefender: 8,
-        timeAsMidfielder: 10,
-        timeAsAttacker: 10,
-        timeAsGoalkeeper: 0,
-        startingRole: 'Substitute',
-        wasCaptain: false,
-        receivedFairPlayAward: false
-      }
-    ]
-  }
-};
 
 const VENUE_OPTIONS = ['Home', 'Away'];
 const STARTING_ROLES = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Substitute'];
@@ -275,25 +126,56 @@ const formatTimeAsMinutesSeconds = (minutes) => {
 
 export function MatchDetailsView({ matchId, onNavigateBack }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [matchData, setMatchData] = useState(null);
   const [editData, setEditData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
 
-  const matchData = mockMatchDetails[matchId];
+  // Fetch match data from database
+  useEffect(() => {
+    async function fetchMatchData() {
+      if (!matchId) {
+        setError('No match ID provided');
+        setLoading(false);
+        return;
+      }
 
-  React.useEffect(() => {
-    if (matchData && !editData) {
-      setEditData({
-        ...matchData,
-        playerStats: [...matchData.playerStats]
-      });
+      setLoading(true);
+      setError(null);
+
+      const result = await getMatchDetails(matchId);
+
+      if (result.success) {
+        const data = {
+          ...result.match,
+          playerStats: result.playerStats
+        };
+        setMatchData(data);
+        setEditData(data);
+      } else {
+        setError(result.error || 'Failed to load match details');
+      }
+
+      setLoading(false);
     }
-  }, [matchData, editData]);
 
-  if (!matchData || !editData) {
+    fetchMatchData();
+  }, [matchId]);
+
+  if (loading) {
     return (
       <div className="text-center py-8 text-slate-400">
-        <p>Match not found</p>
+        <p>Loading match details...</p>
+      </div>
+    );
+  }
+
+  if (error || !matchData || !editData) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-400 mb-2">{error || 'Match not found'}</p>
         <Button onClick={onNavigateBack} variant="secondary" className="mt-4">
           Back to Match History
         </Button>
