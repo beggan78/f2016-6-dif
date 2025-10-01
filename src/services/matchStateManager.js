@@ -662,6 +662,317 @@ export async function getMatchDetails(matchId) {
 }
 
 /**
+ * Get aggregated player statistics for a team
+ * @param {string} teamId - Team ID
+ * @param {Date} startDate - Optional start date filter
+ * @param {Date} endDate - Optional end date filter
+ * @returns {Promise<{success: boolean, players?: Array, error?: string}>}
+ */
+export async function getPlayerStats(teamId, startDate = null, endDate = null) {
+  try {
+    if (!teamId) {
+      return {
+        success: false,
+        error: 'Team ID is required'
+      };
+    }
+
+    // Query to get all player match stats for the team's confirmed matches
+    let query = supabase
+      .from('player_match_stats')
+      .select(`
+        player_id,
+        goals_scored,
+        goalie_time_seconds,
+        defender_time_seconds,
+        midfielder_time_seconds,
+        attacker_time_seconds,
+        total_field_time_seconds,
+        started_as,
+        was_captain,
+        got_fair_play_award,
+        match:match_id (
+          id,
+          team_id,
+          state,
+          deleted_at,
+          started_at
+        ),
+        player:player_id (
+          id,
+          name,
+          team_id
+        )
+      `);
+
+    // First fetch all data, then filter in memory
+    // (Supabase doesn't support nested filters directly in the select)
+    const { data: allStats, error: statsError } = await query;
+
+    if (statsError) {
+      console.error('❌ Failed to get player stats:', statsError);
+      return {
+        success: false,
+        error: `Database error: ${statsError.message}`
+      };
+    }
+
+    // Filter for confirmed matches of this team only
+    const filteredStats = (allStats || []).filter(stat => {
+      if (!stat.match || !stat.player) return false;
+      if (stat.match.team_id !== teamId) return false;
+      if (stat.match.state !== 'confirmed') return false;
+      if (stat.match.deleted_at !== null) return false;
+
+      // Apply date filters if provided
+      if (startDate || endDate) {
+        const matchDate = new Date(stat.match.started_at);
+        if (startDate && matchDate < startDate) return false;
+        if (endDate) {
+          // Add one day to include the entire end date
+          const endDatePlusOne = new Date(endDate);
+          endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+          if (matchDate >= endDatePlusOne) return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Group stats by player
+    const playerStatsMap = new Map();
+
+    filteredStats.forEach(stat => {
+      const playerId = stat.player_id;
+
+      if (!playerStatsMap.has(playerId)) {
+        playerStatsMap.set(playerId, {
+          playerId: playerId,
+          name: stat.player.name,
+          matchesPlayed: 0,
+          goalsScored: 0,
+          totalDefenderSeconds: 0,
+          totalMidfielderSeconds: 0,
+          totalAttackerSeconds: 0,
+          totalGoalieSeconds: 0,
+          totalFieldTimeSeconds: 0,
+          substituteStarts: 0,
+          matchesAsCaptain: 0,
+          fairPlayAwards: 0
+        });
+      }
+
+      const playerData = playerStatsMap.get(playerId);
+      playerData.matchesPlayed += 1;
+      playerData.goalsScored += stat.goals_scored || 0;
+      playerData.totalDefenderSeconds += stat.defender_time_seconds || 0;
+      playerData.totalMidfielderSeconds += stat.midfielder_time_seconds || 0;
+      playerData.totalAttackerSeconds += stat.attacker_time_seconds || 0;
+      playerData.totalGoalieSeconds += stat.goalie_time_seconds || 0;
+      playerData.totalFieldTimeSeconds += stat.total_field_time_seconds || 0;
+      if (stat.started_as === 'substitute') playerData.substituteStarts += 1;
+      if (stat.was_captain) playerData.matchesAsCaptain += 1;
+      if (stat.got_fair_play_award) playerData.fairPlayAwards += 1;
+    });
+
+    // Transform to UI format with percentage calculations
+    const players = Array.from(playerStatsMap.values()).map(player => {
+      const totalOutfielderSeconds = player.totalDefenderSeconds +
+                                      player.totalMidfielderSeconds +
+                                      player.totalAttackerSeconds;
+
+      // Calculate average time per match in minutes
+      const averageTimePerMatch = player.matchesPlayed > 0
+        ? player.totalFieldTimeSeconds / 60 / player.matchesPlayed
+        : 0;
+
+      // Calculate percentage started as substitute
+      const percentStartedAsSubstitute = player.matchesPlayed > 0
+        ? (player.substituteStarts / player.matchesPlayed) * 100
+        : 0;
+
+      // Calculate position percentages
+      // For outfield positions, use outfielder time as denominator
+      const percentTimeAsDefender = totalOutfielderSeconds > 0
+        ? (player.totalDefenderSeconds / totalOutfielderSeconds) * 100
+        : 0;
+
+      const percentTimeAsMidfielder = totalOutfielderSeconds > 0
+        ? (player.totalMidfielderSeconds / totalOutfielderSeconds) * 100
+        : 0;
+
+      const percentTimeAsAttacker = totalOutfielderSeconds > 0
+        ? (player.totalAttackerSeconds / totalOutfielderSeconds) * 100
+        : 0;
+
+      // For goalie, use total field time as denominator
+      const percentTimeAsGoalkeeper = player.totalFieldTimeSeconds > 0
+        ? (player.totalGoalieSeconds / player.totalFieldTimeSeconds) * 100
+        : 0;
+
+      return {
+        id: player.playerId,
+        name: player.name,
+        matchesPlayed: player.matchesPlayed,
+        goalsScored: player.goalsScored,
+        averageTimePerMatch: averageTimePerMatch,
+        percentStartedAsSubstitute: Math.round(percentStartedAsSubstitute * 10) / 10, // 1 decimal
+        percentTimeAsDefender: Math.round(percentTimeAsDefender * 10) / 10,
+        percentTimeAsMidfielder: Math.round(percentTimeAsMidfielder * 10) / 10,
+        percentTimeAsAttacker: Math.round(percentTimeAsAttacker * 10) / 10,
+        percentTimeAsGoalkeeper: Math.round(percentTimeAsGoalkeeper * 10) / 10,
+        matchesAsCaptain: player.matchesAsCaptain,
+        fairPlayAwards: player.fairPlayAwards
+      };
+    });
+
+    return {
+      success: true,
+      players
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while getting player stats:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Get aggregated team statistics
+ * @param {string} teamId - Team ID
+ * @param {Date} startDate - Optional start date filter
+ * @param {Date} endDate - Optional end date filter
+ * @returns {Promise<{success: boolean, stats?: Object, error?: string}>}
+ */
+export async function getTeamStats(teamId, startDate = null, endDate = null) {
+  try {
+    if (!teamId) {
+      return {
+        success: false,
+        error: 'Team ID is required'
+      };
+    }
+
+    // Query all confirmed matches for the team
+    let query = supabase
+      .from('match')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('state', 'confirmed')
+      .is('deleted_at', null)
+      .order('started_at', { ascending: false });
+
+    const { data: matches, error: matchError } = await query;
+
+    if (matchError) {
+      console.error('❌ Failed to get team stats:', matchError);
+      return {
+        success: false,
+        error: `Database error: ${matchError.message}`
+      };
+    }
+
+    // Filter by date range if provided
+    const filteredMatches = (matches || []).filter(match => {
+      if (startDate || endDate) {
+        const matchDate = new Date(match.started_at);
+        if (startDate && matchDate < startDate) return false;
+        if (endDate) {
+          const endDatePlusOne = new Date(endDate);
+          endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+          if (matchDate >= endDatePlusOne) return false;
+        }
+      }
+      return true;
+    });
+
+    // Calculate overall statistics
+    const totalMatches = filteredMatches.length;
+    const wins = filteredMatches.filter(m => m.outcome === 'win').length;
+    const draws = filteredMatches.filter(m => m.outcome === 'draw').length;
+    const losses = filteredMatches.filter(m => m.outcome === 'loss').length;
+
+    const goalsScored = filteredMatches.reduce((sum, m) => sum + (m.goals_scored || 0), 0);
+    const goalsConceded = filteredMatches.reduce((sum, m) => sum + (m.goals_conceded || 0), 0);
+
+    const cleanSheets = filteredMatches.filter(m => m.goals_conceded === 0).length;
+
+    // Calculate home/away/neutral records
+    const homeMatches = filteredMatches.filter(m => m.venue_type === 'home');
+    const awayMatches = filteredMatches.filter(m => m.venue_type === 'away');
+    const neutralMatches = filteredMatches.filter(m => m.venue_type === 'neutral');
+
+    const homeRecord = {
+      wins: homeMatches.filter(m => m.outcome === 'win').length,
+      draws: homeMatches.filter(m => m.outcome === 'draw').length,
+      losses: homeMatches.filter(m => m.outcome === 'loss').length,
+      total: homeMatches.length
+    };
+
+    const awayRecord = {
+      wins: awayMatches.filter(m => m.outcome === 'win').length,
+      draws: awayMatches.filter(m => m.outcome === 'draw').length,
+      losses: awayMatches.filter(m => m.outcome === 'loss').length,
+      total: awayMatches.length
+    };
+
+    const neutralRecord = {
+      wins: neutralMatches.filter(m => m.outcome === 'win').length,
+      draws: neutralMatches.filter(m => m.outcome === 'draw').length,
+      losses: neutralMatches.filter(m => m.outcome === 'loss').length,
+      total: neutralMatches.length
+    };
+
+    // Format recent matches for display (top 5)
+    const recentMatches = filteredMatches.slice(0, 5).map(match => {
+      const matchDate = new Date(match.started_at);
+      return {
+        id: match.id,
+        date: matchDate.toISOString().split('T')[0],
+        opponent: match.opponent || 'Unknown',
+        score: `${match.goals_scored}-${match.goals_conceded}`,
+        result: match.outcome === 'win' ? 'W' : match.outcome === 'draw' ? 'D' : 'L'
+      };
+    });
+
+    // Calculate derived statistics
+    const averageGoalsScored = totalMatches > 0 ? goalsScored / totalMatches : 0;
+    const averageGoalsConceded = totalMatches > 0 ? goalsConceded / totalMatches : 0;
+    const cleanSheetPercentage = totalMatches > 0 ? (cleanSheets / totalMatches) * 100 : 0;
+
+    return {
+      success: true,
+      stats: {
+        totalMatches,
+        wins,
+        draws,
+        losses,
+        goalsScored,
+        goalsConceded,
+        averageGoalsScored: Math.round(averageGoalsScored * 10) / 10,
+        averageGoalsConceded: Math.round(averageGoalsConceded * 10) / 10,
+        cleanSheets,
+        cleanSheetPercentage: Math.round(cleanSheetPercentage * 10) / 10,
+        homeRecord,
+        awayRecord,
+        neutralRecord,
+        recentMatches
+      }
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while getting team stats:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
  * Calculate match outcome based on scores
  * @param {number} goalsScored - Goals scored by team
  * @param {number} goalsConceded - Goals conceded by team
