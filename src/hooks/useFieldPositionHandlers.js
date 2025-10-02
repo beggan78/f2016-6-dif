@@ -31,6 +31,17 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => 
   const rightAttackerEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.rightAttackerCallback || (() => {})
   );
+
+  // 7v7 formation positions (2-2-2 and 2-3-1)
+  const leftMidfielderEvents = useQuickTapWithScrollDetection(
+    fieldPositionCallbacks.leftMidfielderCallback || (() => {})
+  );
+  const centerMidfielderEvents = useQuickTapWithScrollDetection(
+    fieldPositionCallbacks.centerMidfielderCallback || (() => {})
+  );
+  const rightMidfielderEvents = useQuickTapWithScrollDetection(
+    fieldPositionCallbacks.rightMidfielderCallback || (() => {})
+  );
   
   // 1-2-1 Formation positions (MISSING - this was the bug!)
   const defenderEvents = useQuickTapWithScrollDetection(
@@ -76,6 +87,11 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => 
       rightDefenderEvents,
       leftAttackerEvents,
       rightAttackerEvents,
+
+      // 7v7 formation events
+      leftMidfielderEvents,
+      centerMidfielderEvents,
+      rightMidfielderEvents,
       
       // 1-2-1 Formation events (FIXED - now included!)
       defenderEvents,
