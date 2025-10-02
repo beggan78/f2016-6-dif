@@ -32,7 +32,7 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => 
     fieldPositionCallbacks.rightAttackerCallback || (() => {})
   );
 
-  // 7v7 formation positions
+  // 7v7 formation positions (2-2-2 and 2-3-1)
   const leftMidfielderEvents = useQuickTapWithScrollDetection(
     fieldPositionCallbacks.leftMidfielderCallback || (() => {})
   );
