@@ -847,24 +847,47 @@ export function ConfigurationScreen({
     setSelectedSquadIds([]);
     setPeriodGoalieIds({});
     setCaptain(null);
-    
-    // Randomly select 7 players from roster
-    const randomPlayers = getRandomPlayers(playersToShow, 7);
+
+    // Determine format and squad size based on current format selection
+    const isCurrently7v7 = currentFormat === FORMATS.FORMAT_7V7;
+    const squadSize = isCurrently7v7 ? 10 : 7;
+    const format = isCurrently7v7 ? FORMATS.FORMAT_7V7 : FORMATS.FORMAT_5V5;
+
+    // Randomly select players based on format
+    const randomPlayers = getRandomPlayers(playersToShow, squadSize);
     const randomPlayerIds = randomPlayers.map(p => p.id);
     setSelectedSquadIds(randomPlayerIds);
-    
-    // Always select 2-2 formation to avoid debug mode bug with 1-2-1
-    const randomFormation = FORMATIONS.FORMATION_2_2;
-    handleFormatChange(FORMATS.FORMAT_5V5);
+
+    // Select formation based on format
+    let randomFormation;
+    let substitutionType;
+
+    if (isCurrently7v7) {
+      // 7v7: Randomly select between available 7v7 formations
+      const formations7v7 = [FORMATIONS.FORMATION_2_2_2, FORMATIONS.FORMATION_2_3_1]
+        .filter(formation => FORMATION_DEFINITIONS[formation]?.status === 'available');
+
+      // Fallback to first available formation if filtering yields no results
+      randomFormation = formations7v7.length > 0
+        ? formations7v7[Math.floor(Math.random() * formations7v7.length)]
+        : FORMAT_CONFIGS[FORMATS.FORMAT_7V7].defaultFormation;
+      substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL; // 7v7 only supports individual
+    } else {
+      // 5v5: Always select 2-2 formation with pairs substitution
+      randomFormation = FORMATIONS.FORMATION_2_2;
+      substitutionType = SUBSTITUTION_TYPES.PAIRS;
+    }
+
+    handleFormatChange(format);
     updateFormationSelection(randomFormation);
 
-    // Create team config for 7 players with pairs substitution
-    createTeamConfigFromSquadSize(7, SUBSTITUTION_TYPES.PAIRS, FORMATS.FORMAT_5V5);
-    
+    // Create team config based on format
+    createTeamConfigFromSquadSize(squadSize, substitutionType, format);
+
     // Randomize goalie assignments (use current numPeriods setting)
     const goalieAssignments = randomizeGoalieAssignments(randomPlayers, numPeriods);
     setPeriodGoalieIds(goalieAssignments);
-    
+
     // Set a random opponent name
     const opponentNames = ['Lions FC', 'Eagles United', 'Sharks', 'Thunder', 'Storm', 'Wildcats'];
     const randomOpponent = opponentNames[Math.floor(Math.random() * opponentNames.length)];

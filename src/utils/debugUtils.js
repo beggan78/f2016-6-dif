@@ -86,12 +86,13 @@ export const randomizeGoalieAssignments = (selectedPlayers, numPeriods) => {
 export const randomizeFormationPositions = (availablePlayers, teamConfig) => {
   const shuffled = shuffleArray(availablePlayers);
   const formation = {};
-  
+
   // Extract formation and substitution type from team config
   const selectedFormation = teamConfig?.formation || '2-2';
   const substitutionType = teamConfig?.substitutionType || 'individual';
   const squadSize = teamConfig?.squadSize || 7;
-  
+  const format = teamConfig?.format || '5v5';
+
   if (substitutionType === 'pairs') {
     // Pairs mode: 3 pairs (left, right, sub) with defender/attacker roles
     formation.leftPair = {
@@ -107,34 +108,83 @@ export const randomizeFormationPositions = (availablePlayers, teamConfig) => {
       attacker: shuffled[5]?.id || null
     };
   } else {
-    // Individual modes: Handle both 2-2 and 1-2-1 formations
-    const substituteCount = squadSize - 5; // 4 field players + 1 goalie = 5, rest are substitutes
-    
+    // Individual modes: Handle 5v5 and 7v7 formations
+    let fieldPlayerCount;
+
+    // Determine field player count based on format
+    if (format === '7v7') {
+      fieldPlayerCount = 6; // 7v7 has 6 field players
+    } else {
+      fieldPlayerCount = 4; // 5v5 has 4 field players (default)
+    }
+
+    const substituteCount = squadSize - fieldPlayerCount - 1; // Total - field players - goalie = substitutes
+
+    // 5v5 Formations
     if (selectedFormation === '1-2-1') {
       // 1-2-1 Formation: defender, left mid, right mid, attacker + substitutes
       formation.defender = shuffled[0]?.id || null;
       formation.left = shuffled[1]?.id || null;
       formation.right = shuffled[2]?.id || null;
       formation.attacker = shuffled[3]?.id || null;
-      
+
       // Add substitutes
       for (let i = 0; i < substituteCount; i++) {
         formation[`substitute_${i + 1}`] = shuffled[4 + i]?.id || null;
       }
-    } else {
-      // 2-2 Formation (default): left/right defenders and attackers + substitutes
+    } else if (selectedFormation === '2-2') {
+      // 2-2 Formation: left/right defenders and attackers + substitutes
       formation.leftDefender = shuffled[0]?.id || null;
       formation.rightDefender = shuffled[1]?.id || null;
       formation.leftAttacker = shuffled[2]?.id || null;
       formation.rightAttacker = shuffled[3]?.id || null;
-      
+
+      // Add substitutes
+      for (let i = 0; i < substituteCount; i++) {
+        formation[`substitute_${i + 1}`] = shuffled[4 + i]?.id || null;
+      }
+    }
+    // 7v7 Formations
+    else if (selectedFormation === '2-2-2') {
+      // 2-2-2 Formation: 2 defenders, 2 midfielders, 2 attackers + substitutes
+      formation.leftDefender = shuffled[0]?.id || null;
+      formation.rightDefender = shuffled[1]?.id || null;
+      formation.leftMidfielder = shuffled[2]?.id || null;
+      formation.rightMidfielder = shuffled[3]?.id || null;
+      formation.leftAttacker = shuffled[4]?.id || null;
+      formation.rightAttacker = shuffled[5]?.id || null;
+
+      // Add substitutes
+      for (let i = 0; i < substituteCount; i++) {
+        formation[`substitute_${i + 1}`] = shuffled[6 + i]?.id || null;
+      }
+    } else if (selectedFormation === '2-3-1') {
+      // 2-3-1 Formation: 2 defenders, 3 midfielders, 1 attacker + substitutes
+      formation.leftDefender = shuffled[0]?.id || null;
+      formation.rightDefender = shuffled[1]?.id || null;
+      formation.leftMidfielder = shuffled[2]?.id || null;
+      formation.centerMidfielder = shuffled[3]?.id || null;
+      formation.rightMidfielder = shuffled[4]?.id || null;
+      formation.attacker = shuffled[5]?.id || null;
+
+      // Add substitutes
+      for (let i = 0; i < substituteCount; i++) {
+        formation[`substitute_${i + 1}`] = shuffled[6 + i]?.id || null;
+      }
+    } else {
+      // Fallback to 2-2 Formation for unknown formations
+      formation.leftDefender = shuffled[0]?.id || null;
+      formation.rightDefender = shuffled[1]?.id || null;
+      formation.leftAttacker = shuffled[2]?.id || null;
+      formation.rightAttacker = shuffled[3]?.id || null;
+
       // Add substitutes
       for (let i = 0; i < substituteCount; i++) {
         formation[`substitute_${i + 1}`] = shuffled[4 + i]?.id || null;
       }
     }
   }
-  
+
   return formation;
 };
 
