@@ -613,11 +613,15 @@ export async function getMatchDetails(matchId) {
     // Transform match data to UI format
     const matchDate = new Date(match.started_at);
 
+    const normalizedType = typeof match.type === 'string'
+      ? match.type.toLowerCase()
+      : 'league';
+
     const transformedMatch = {
       id: match.id,
       date: matchDate.toISOString().split('T')[0],
       time: matchDate.toTimeString().slice(0, 5),
-      type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
+      type: normalizedType,
       opponent: match.opponent || 'Unknown',
       goalsScored: match.goals_scored,
       goalsConceded: match.goals_conceded,

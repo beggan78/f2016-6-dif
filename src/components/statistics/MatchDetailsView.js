@@ -309,6 +309,19 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
     baseClasses: 'px-2 py-1 rounded text-xs font-medium'
   });
 
+  const getMatchTypeLabel = (type) => {
+    const option = MATCH_TYPE_OPTIONS.find(matchType => matchType.value === type);
+    if (option) {
+      return option.label;
+    }
+
+    if (!type) {
+      return 'Unknown';
+    }
+
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -525,7 +538,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                     className="text-sm"
                   />
                 ) : (
-                  <div className="text-sm text-slate-100 font-medium">{editData.type}</div>
+                  <div className="text-sm text-slate-100 font-medium">{getMatchTypeLabel(editData.type)}</div>
                 )}
               </div>
             </div>
