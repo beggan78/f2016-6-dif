@@ -519,7 +519,7 @@ export function GameScreen({
         />
 
       {/* SUB NOW Button - positioned between field and substitute players */}
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-2 mt-4 z-30 relative">
         <Button
           onClick={substitutionHandlers.handleSubstitutionWithHighlight}
           Icon={RefreshCcw}

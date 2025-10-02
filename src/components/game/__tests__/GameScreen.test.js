@@ -435,15 +435,26 @@ describe('GameScreen', () => {
       expect(global.mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
     });
 
+    it('should have SUB NOW button with higher z-index than player cards', () => {
+      render(<GameScreen {...defaultProps} />);
+
+      const subButton = screen.getByText(/SUB NOW/i);
+      const subButtonContainer = subButton.closest('.flex.gap-2.mt-4');
+
+      // SUB button container should have z-30 class (higher than player animation z-10/z-20)
+      expect(subButtonContainer).toHaveClass('z-30');
+      expect(subButtonContainer).toHaveClass('relative');
+    });
+
     it('should display next player to substitute information', () => {
       const props = {
         ...defaultProps,
         nextPlayerIdToSubOut: '1',
         allPlayers: createMockPlayers()
       };
-      
+
       render(<GameScreen {...props} />);
-      
+
       // Component should render and handle next player info
       expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
       expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
