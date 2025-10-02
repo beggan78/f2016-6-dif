@@ -11,6 +11,9 @@ const createDefaultFilters = () => ({
   formatFilter: []
 });
 
+const canUsePersistentStorage = () =>
+  typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' && process.env.NODE_ENV !== 'test';
+
 const ensureFilterArrays = (filters) => {
   const safeFilters = filters && typeof filters === 'object' ? filters : {};
 
@@ -25,7 +28,7 @@ const ensureFilterArrays = (filters) => {
 };
 
 const readStoredFilters = () => {
-  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+  if (!canUsePersistentStorage()) {
     return createDefaultFilters();
   }
 
@@ -44,7 +47,7 @@ const readStoredFilters = () => {
 };
 
 const persistFilters = (filters) => {
-  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+  if (!canUsePersistentStorage()) {
     return;
   }
 
@@ -63,6 +66,10 @@ export function useStatsFilters() {
   }, [filters]);
 
   useEffect(() => {
+    if (!canUsePersistentStorage()) {
+      return undefined;
+    }
+
     const handleStorageChange = (event) => {
       if (event.key !== STORAGE_KEY) {
         return;
@@ -80,14 +87,10 @@ export function useStatsFilters() {
       }
     };
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', handleStorageChange);
-    }
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('storage', handleStorageChange);
-      }
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
