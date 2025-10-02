@@ -4,32 +4,32 @@ import { useStatisticsRouting } from '../../../hooks/useStatisticsRouting';
 import { VIEWS } from '../../../constants/viewConstants';
 import { StatisticsScreen } from '../StatisticsScreen';
 
-const useAuthMock = jest.fn();
+const mockUseAuth = jest.fn();
 jest.mock('../../../contexts/AuthContext', () => ({
-  useAuth: () => useAuthMock()
+  useAuth: () => mockUseAuth()
 }));
 
-const useTeamMock = jest.fn();
+const mockUseTeam = jest.fn();
 jest.mock('../../../contexts/TeamContext', () => ({
-  useTeam: () => useTeamMock()
+  useTeam: () => mockUseTeam()
 }));
 
-const useAuthModalIntegrationMock = jest.fn();
+const mockUseAuthModalIntegration = jest.fn();
 jest.mock('../../../hooks/useAuthModalIntegration', () => ({
-  useAuthModalIntegration: (modal) => useAuthModalIntegrationMock(modal)
+  useAuthModalIntegration: (modal) => mockUseAuthModalIntegration(modal)
 }));
 
 describe('Statistics Routing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useAuthMock.mockReturnValue({ loading: false, isAuthenticated: true });
-    useTeamMock.mockReturnValue({
+    mockUseAuth.mockReturnValue({ loading: false, isAuthenticated: true });
+    mockUseTeam.mockReturnValue({
       loading: false,
       currentTeam: { id: 'team-1' },
       userTeams: [{ id: 'team-1' }],
       canViewStatistics: true
     });
-    useAuthModalIntegrationMock.mockReturnValue({
+    mockUseAuthModalIntegration.mockReturnValue({
       openLogin: jest.fn(),
       openSignup: jest.fn()
     });
@@ -70,7 +70,7 @@ describe('Statistics Routing', () => {
   });
 
   it('handles authentication required state', () => {
-    useAuthMock.mockReturnValue({ loading: false, isAuthenticated: false });
+    mockUseAuth.mockReturnValue({ loading: false, isAuthenticated: false });
 
     render(
       <StatisticsScreen
@@ -85,8 +85,8 @@ describe('Statistics Routing', () => {
   });
 
   it('handles no team membership state', () => {
-    useAuthMock.mockReturnValue({ loading: false, isAuthenticated: true });
-    useTeamMock.mockReturnValue({
+    mockUseAuth.mockReturnValue({ loading: false, isAuthenticated: true });
+    mockUseTeam.mockReturnValue({
       loading: false,
       currentTeam: null,
       userTeams: [],
