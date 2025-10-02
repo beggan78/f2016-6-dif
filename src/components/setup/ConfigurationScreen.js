@@ -863,9 +863,14 @@ export function ConfigurationScreen({
     let substitutionType;
 
     if (isCurrently7v7) {
-      // 7v7: Randomly select between 2-2-2 and 2-3-1
-      const formations7v7 = [FORMATIONS.FORMATION_2_2_2, FORMATIONS.FORMATION_2_3_1];
-      randomFormation = formations7v7[Math.floor(Math.random() * formations7v7.length)];
+      // 7v7: Randomly select between available 7v7 formations
+      const formations7v7 = [FORMATIONS.FORMATION_2_2_2, FORMATIONS.FORMATION_2_3_1]
+        .filter(formation => FORMATION_DEFINITIONS[formation]?.status === 'available');
+
+      // Fallback to first available formation if filtering yields no results
+      randomFormation = formations7v7.length > 0
+        ? formations7v7[Math.floor(Math.random() * formations7v7.length)]
+        : FORMAT_CONFIGS[FORMATS.FORMAT_7V7].defaultFormation;
       substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL; // 7v7 only supports individual
     } else {
       // 5v5: Always select 2-2 formation with pairs substitution
