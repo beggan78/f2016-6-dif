@@ -613,11 +613,15 @@ export async function getMatchDetails(matchId) {
     // Transform match data to UI format
     const matchDate = new Date(match.started_at);
 
+    const normalizedType = typeof match.type === 'string'
+      ? match.type.toLowerCase()
+      : 'league';
+
     const transformedMatch = {
       id: match.id,
       date: matchDate.toISOString().split('T')[0],
       time: matchDate.toTimeString().slice(0, 5),
-      type: match.type.charAt(0).toUpperCase() + match.type.slice(1),
+      type: normalizedType,
       opponent: match.opponent || 'Unknown',
       goalsScored: match.goals_scored,
       goalsConceded: match.goals_conceded,
@@ -1757,6 +1761,32 @@ export async function updateMatchDetails(matchId, matchUpdates) {
  * @param {boolean} statUpdates.receivedFairPlayAward - Fair play award flag
  * @returns {Promise<{success: boolean, error?: string}>}
  */
+function buildPlayerMatchStatUpdateRow(matchId, playerId, statUpdates) {
+  const defenderSeconds = Math.round((statUpdates.timeAsDefender || 0) * 60);
+  const midfielderSeconds = Math.round((statUpdates.timeAsMidfielder || 0) * 60);
+  const attackerSeconds = Math.round((statUpdates.timeAsAttacker || 0) * 60);
+  const goalieSeconds = Math.round((statUpdates.timeAsGoalkeeper || 0) * 60);
+
+  const totalFieldTimeSeconds = defenderSeconds + midfielderSeconds + attackerSeconds;
+
+  const startedAs = statUpdates.startingRole ? statUpdates.startingRole.toLowerCase() : null;
+
+  return {
+    match_id: matchId,
+    player_id: playerId,
+    goals_scored: statUpdates.goalsScored,
+    defender_time_seconds: defenderSeconds,
+    midfielder_time_seconds: midfielderSeconds,
+    attacker_time_seconds: attackerSeconds,
+    goalie_time_seconds: goalieSeconds,
+    total_field_time_seconds: totalFieldTimeSeconds,
+    started_as: startedAs,
+    was_captain: statUpdates.wasCaptain,
+    got_fair_play_award: statUpdates.receivedFairPlayAward,
+    updated_at: new Date().toISOString()
+  };
+}
+
 export async function updatePlayerMatchStat(matchId, playerId, statUpdates) {
   try {
     if (!matchId || !playerId) {
@@ -1766,30 +1796,7 @@ export async function updatePlayerMatchStat(matchId, playerId, statUpdates) {
       };
     }
 
-    // Convert minutes to seconds and calculate total field time
-    const defenderSeconds = Math.round((statUpdates.timeAsDefender || 0) * 60);
-    const midfielderSeconds = Math.round((statUpdates.timeAsMidfielder || 0) * 60);
-    const attackerSeconds = Math.round((statUpdates.timeAsAttacker || 0) * 60);
-    const goalieSeconds = Math.round((statUpdates.timeAsGoalkeeper || 0) * 60);
-
-    // Total field time excludes goalie time
-    const totalFieldTimeSeconds = defenderSeconds + midfielderSeconds + attackerSeconds;
-
-    // Convert starting role to database format (e.g., "Defender" -> "defender")
-    const startedAs = statUpdates.startingRole.toLowerCase();
-
-    const updateData = {
-      goals_scored: statUpdates.goalsScored,
-      defender_time_seconds: defenderSeconds,
-      midfielder_time_seconds: midfielderSeconds,
-      attacker_time_seconds: attackerSeconds,
-      goalie_time_seconds: goalieSeconds,
-      total_field_time_seconds: totalFieldTimeSeconds,
-      started_as: startedAs,
-      was_captain: statUpdates.wasCaptain,
-      got_fair_play_award: statUpdates.receivedFairPlayAward,
-      updated_at: new Date().toISOString()
-    };
+    const updateData = buildPlayerMatchStatUpdateRow(matchId, playerId, statUpdates);
 
     const { error } = await supabase
       .from('player_match_stats')
@@ -1809,6 +1816,67 @@ export async function updatePlayerMatchStat(matchId, playerId, statUpdates) {
 
   } catch (error) {
     console.error('❌ Exception while updating player match stats:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+export async function updatePlayerMatchStatsBatch(matchId, playerStats = []) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    if (!Array.isArray(playerStats)) {
+      return {
+        success: false,
+        error: 'Player stats must be an array'
+      };
+    }
+
+    if (playerStats.length === 0) {
+      return {
+        success: true,
+        updated: 0
+      };
+    }
+
+    const updateRows = playerStats
+      .filter(player => player?.playerId)
+      .map(player => buildPlayerMatchStatUpdateRow(matchId, player.playerId, player));
+
+    if (updateRows.length === 0) {
+      return {
+        success: false,
+        error: 'No valid player stats to update'
+      };
+    }
+
+    const { error } = await supabase
+      .from('player_match_stats')
+      .upsert(updateRows, {
+        onConflict: 'match_id,player_id'
+      });
+
+    if (error) {
+      console.error('❌ Failed to batch update player match stats:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    return {
+      success: true,
+      updated: updateRows.length
+    };
+  } catch (error) {
+    console.error('❌ Exception while batch updating player match stats:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`

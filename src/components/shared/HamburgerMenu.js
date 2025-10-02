@@ -8,7 +8,7 @@ import { VIEWS } from '../../constants/viewConstants';
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, onSplitPairs, onFormPairs, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile } = useAuth();
-  const { hasTeams, canManageTeam, hasPendingRequests, pendingRequestsCount } = useTeam();
+  const { hasTeams, canManageTeam, hasPendingRequests, pendingRequestsCount, canViewStatistics } = useTeam();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -74,7 +74,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const handleMatchHistory = () => {
     setIsOpen(false);
-    if (setView) {
+    if (setView && canViewStatistics) {
       setView(VIEWS.STATISTICS);
     }
   };
@@ -230,18 +230,20 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                     </button>
                   )}
 
-                  {/* Match History - Protected Feature */}
-                  <button
-                    onClick={handleMatchHistory}
-                    className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <span>Statistics</span>
-                    </div>
-                  </button>
+                  {/* Statistics - Protected Feature */}
+                  {canViewStatistics && (
+                    <button
+                      onClick={handleMatchHistory}
+                      className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span>Statistics</span>
+                      </div>
+                    </button>
+                  )}
                 </>
               ) : (
                 <>

@@ -239,7 +239,7 @@ export function PendingMatchResumeModal({
               {/* Info Tip */}
               <div className="mt-4 p-2 bg-slate-700/50 rounded-lg">
                 <p className="text-xs text-slate-400 text-center">
-                  💡 <strong>Tip:</strong> Resume Setup takes you to Period Setup where you can review and modify settings
+                  💡 <strong>Tip:</strong> Resume Setup takes you to the Configuration Screen where you can review and modify settings
                 </p>
               </div>
             </div>

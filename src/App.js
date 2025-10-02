@@ -46,6 +46,7 @@ import { useMatchRecovery } from './hooks/useMatchRecovery';
 import { useInvitationDetection } from './hooks/useInvitationDetection';
 import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
+import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { updateMatchToConfirmed } from './services/matchStateManager';
 
 // Dismissed modals localStorage utilities
@@ -137,6 +138,8 @@ function AppContent() {
   // Authentication modal
   const authModal = useAuthModal();
 
+  useStatisticsRouting(gameState.view, navigateToView);
+
 
 
   // Check for password reset tokens or codes in URL on app load
@@ -216,6 +219,10 @@ function AppContent() {
   const [confirmModalData, setConfirmModalData] = useState({ timeString: '' });
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const closeNewGameModalRef = useRef(() => {
+    setShowNewGameModal(false);
+  });
+  const newGameModalNavigationActiveRef = useRef(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [fromView, setFromView] = useState(null);
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
@@ -366,15 +373,32 @@ function AppContent() {
       console.log('🌐 App: Showing new game modal (default fallback)');
       setShowNewGameModal(true);
       // Register this modal with the browser back intercept system
-      if (pushNavigationStateRef.current) {
+      if (pushNavigationStateRef.current && !newGameModalNavigationActiveRef.current) {
+        newGameModalNavigationActiveRef.current = true;
         pushNavigationStateRef.current(() => {
-          setShowNewGameModal(false);
-        });
+          newGameModalNavigationActiveRef.current = false;
+          closeNewGameModalRef.current({ removeNavigationState: false });
+        }, 'App-NewGameModal');
       }
     }
   }, [gameState, handleNavigateFromTacticalBoard, navigationHistory.canNavigateBack, navigationHistory.navigationHistory, navigationHistory.previousView, navigateBack]);
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
+
+  const closeNewGameModal = useCallback((options = {}) => {
+    const { removeNavigationState = true } = options;
+
+    newGameModalNavigationActiveRef.current = false;
+    setShowNewGameModal(false);
+
+    if (removeNavigationState) {
+      removeFromNavigationStack();
+    }
+  }, [removeFromNavigationStack]);
+
+  useEffect(() => {
+    closeNewGameModalRef.current = closeNewGameModal;
+  }, [closeNewGameModal]);
   
   // Database-based match abandonment state for preventing accidental data loss
   const [showAbandonModal, setShowAbandonModal] = useState(false);
@@ -792,24 +816,20 @@ function AppContent() {
   // Handle new game confirmation modal
   const handleConfirmNewGame = async () => {
     await checkForActiveMatch(() => {
-      setShowNewGameModal(false);
-      removeFromNavigationStack();
+      closeNewGameModal();
       handleRestartMatch();
     });
   };
 
   const handleCancelNewGame = () => {
     // When user clicks Cancel button, just close the modal without triggering browser back
-    setShowNewGameModal(false);
-    // Remove the modal from the browser back intercept stack without triggering navigation
-    removeFromNavigationStack();
+    closeNewGameModal();
   };
 
 
   const handleLeaveSportWizard = () => {
     // Close the modal first
-    setShowNewGameModal(false);
-    removeFromNavigationStack();
+    closeNewGameModal();
 
     // Navigate back to where the user was before entering the Sport Wizard app
     // Go back to the state before we initialized the app
@@ -1119,6 +1139,7 @@ function AppContent() {
         return (
           <StatisticsScreen
             onNavigateBack={navigateBack}
+            authModal={authModal}
           />
         );
       default:

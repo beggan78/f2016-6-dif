@@ -716,7 +716,7 @@ describe('PendingMatchResumeModal', () => {
 
       render(<PendingMatchResumeModal {...defaultProps} pendingMatches={[testMatch]} />);
 
-      expect(screen.getByText(/Resume Setup takes you to Period Setup/)).toBeInTheDocument();
+      expect(screen.getByText(/Resume Setup takes you to the Configuration Screen/)).toBeInTheDocument();
     });
   });
 
