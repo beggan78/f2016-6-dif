@@ -76,6 +76,27 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 3. **Time Management**: Stint-based time tracking in `/src/game/time/`
 4. **Queue Management**: Player rotation queues in `/src/game/queue/`
 
+### CRITICAL: State Immutability
+**Never mutate state directly** - always return new objects/arrays:
+- **Object updates**: Use spread syntax `{...obj, field: newValue}`
+- **Array updates**: Use spread `[...array, newItem]` or immutable methods (`.map()`, `.filter()`, `.slice()`)
+- **Forbidden operations**: Never use `.push()`, `.splice()`, direct property assignment on state objects
+- **Why**: Prevents React render bugs, enables pure function guarantees, and ensures predictable state transitions
+
+### React Hook Dependencies
+**Complete and correct dependencies are critical**:
+- **Exhaustive deps**: Include ALL values used inside `useEffect`/`useMemo`/`useCallback`
+- **ESLint rule**: Follow `exhaustive-deps` rule strictly - fix warnings, don't disable
+- **Stable references**: Use `useCallback` for functions passed to child components
+- **Interval pattern**: Store interval IDs in `useRef`, never `useState` (prevents infinite loops)
+
+### Defensive Coding Practices
+**Guard against runtime errors**:
+- **Null safety**: Validate data before accessing nested properties (use optional chaining `player?.stats?.time`)
+- **Default values**: Provide fallbacks for undefined data (`const name = player.name || 'Unknown'`)
+- **Early returns**: Use guard clauses at function start for invalid inputs
+- **Error boundaries**: Wrap components that may crash to prevent full app failures
+
 ## Team Configuration System
 Modern composite team configuration system using four components:
 

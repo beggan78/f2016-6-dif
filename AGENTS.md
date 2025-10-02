@@ -9,8 +9,31 @@ Use `npm start` for the hot-reloading React dev server and `npm run build` for t
 ## Coding Style & Naming Conventions
 Follow the Create React App ESLint config with two-space indentation. Components use PascalCase (`TeamManagement.js`), hooks start with `use*`, utilities stay camelCase, and constants collect under `src/constants/`. Favor functional React components, Tailwind utility classes, and TypeScript-friendly patterns even in plain JS. Run `npx eslint src` whenever you need a manual lint check.
 
-**Agent Workflow Requirement**
-- Always run `npx eslint src` (or a narrowed path if appropriate) against the files you just modified and fix eslint errors before returning control to the user.
+## Component Design Principles
+**Follow these principles when building components**:
+- **Single Responsibility**: Each component has one clear, focused purpose
+- **Composition over Props**: Break complex components into smaller, composable pieces
+- **Props Validation**: Always define PropTypes or TypeScript interfaces for all components
+- **Minimal Props**: Pass only necessary data; avoid prop drilling by using Context API when appropriate
+- **Presentational vs Container**: Separate UI rendering (presentational) from logic/state (container)
+
+## Pure Function Requirements
+**Game logic functions MUST be pure**:
+- **Definition**: Same input always produces same output with no side effects
+- **No Mutations**: Return new state objects/arrays; never modify parameters directly
+- **No I/O Operations**: Pure functions cannot call APIs, read localStorage, use Date.now(), or perform any side effects
+- **Testability**: Pure functions are easily unit testable with predictable, deterministic outputs
+- **Location**: All game state transitions in `/src/game/` must follow pure function principles
+
+## Agent Pre-Completion Checklist
+**Before returning control to the user, verify**:
+- [ ] No direct state mutations (check for `.push()`, `.splice()`, direct assignments to state)
+- [ ] All `useEffect`/`useMemo`/`useCallback` hooks have correct exhaustive dependencies
+- [ ] PropTypes or TypeScript types defined for all components touched
+- [ ] ESLint passes: `npx eslint src` (or narrowed path if appropriate)
+- [ ] Relevant tests pass for modified code
+- [ ] No console.logs in production code (use debug flags or remove)
+- [ ] Functions in `/src/game/` are pure (no side effects, no mutations)
 
 ## Testing Guidelines
 Jest plus React Testing Library power the suite. Target at least 90% coverage for new or updated modules and group fast specs as `*.test.js` in `__tests__/`. Larger flows move to `src/__integration__/`. Mock Supabase calls with the existing helpers, reset timers and storage between specs, and add UI screenshots to `screenshots/` for visual changes.

@@ -1838,7 +1838,9 @@ export const TeamProvider = ({ children }) => {
     hasClubs: userClubs.length > 0,
     isCoach: currentTeam?.userRole === 'coach',
     isTeamAdmin: currentTeam?.userRole === 'admin',
+    isParent: currentTeam?.userRole === 'parent',
     canManageTeam: currentTeam?.userRole === 'admin' || currentTeam?.userRole === 'coach',
+    canViewStatistics: ['parent', 'coach', 'admin'].includes(currentTeam?.userRole),
     hasPendingRequests: pendingRequests.length > 0,
     pendingRequestsCount: pendingRequests.length,
   };

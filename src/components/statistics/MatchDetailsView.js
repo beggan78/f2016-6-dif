@@ -4,7 +4,7 @@ import { Button, Input, Select } from '../shared/UI';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
-import { getMatchDetails, updateMatchDetails, updatePlayerMatchStat } from '../../services/matchStateManager';
+import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch } from '../../services/matchStateManager';
 
 const SmartTimeInput = ({ value, onChange, className = '' }) => {
   const [displayValue, setDisplayValue] = useState('');
@@ -215,22 +215,10 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
         throw new Error(matchResult.error || 'Failed to update match details');
       }
 
-      // Update player stats for each player
-      for (const player of editData.playerStats) {
-        const playerResult = await updatePlayerMatchStat(matchId, player.playerId, {
-          goalsScored: player.goalsScored,
-          timeAsDefender: player.timeAsDefender,
-          timeAsMidfielder: player.timeAsMidfielder,
-          timeAsAttacker: player.timeAsAttacker,
-          timeAsGoalkeeper: player.timeAsGoalkeeper,
-          startingRole: player.startingRole,
-          wasCaptain: player.wasCaptain,
-          receivedFairPlayAward: player.receivedFairPlayAward
-        });
+      const playerResult = await updatePlayerMatchStatsBatch(matchId, editData.playerStats);
 
-        if (!playerResult.success) {
-          throw new Error(playerResult.error || `Failed to update stats for ${player.name}`);
-        }
+      if (!playerResult.success) {
+        throw new Error(playerResult.error || 'Failed to update player stats');
       }
 
       // Refresh data from database
@@ -308,6 +296,19 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   const getOutcomeBadge = (outcome) => getOutcomeBadgeClasses(outcome, {
     baseClasses: 'px-2 py-1 rounded text-xs font-medium'
   });
+
+  const getMatchTypeLabel = (type) => {
+    const option = MATCH_TYPE_OPTIONS.find(matchType => matchType.value === type);
+    if (option) {
+      return option.label;
+    }
+
+    if (!type) {
+      return 'Unknown';
+    }
+
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -525,7 +526,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                     className="text-sm"
                   />
                 ) : (
-                  <div className="text-sm text-slate-100 font-medium">{editData.type}</div>
+                  <div className="text-sm text-slate-100 font-medium">{getMatchTypeLabel(editData.type)}</div>
                 )}
               </div>
             </div>
