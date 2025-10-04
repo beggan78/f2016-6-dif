@@ -23,6 +23,7 @@ import { createTimerHandlers } from '../../game/handlers/timerHandlers';
 import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
 import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtils';
+import { SubstitutionCountInlineControl } from './SubstitutionCountControls';
 
 // Animation timing constants are now imported from animationSupport
 
@@ -103,6 +104,23 @@ export function GameScreen({
     return sortPlayersByGoalScoringRelevance(filteredPlayers);
   }, [selectedSquadPlayers]);
   
+  const [substitutionCount, setSubstitutionCount] = React.useState(1);
+
+  const maxSubstitutionCount = React.useMemo(() => {
+    const eligibleCount = eligiblePlayers.length || 0;
+    return Math.max(1, eligibleCount);
+  }, [eligiblePlayers]);
+
+  React.useEffect(() => {
+    if (substitutionCount > maxSubstitutionCount) {
+      setSubstitutionCount(maxSubstitutionCount);
+    }
+  }, [substitutionCount, maxSubstitutionCount]);
+
+  const handleSubstitutionCountChange = React.useCallback((nextValue) => {
+    setSubstitutionCount(nextValue);
+  }, []);
+
   // Determine which formation mode we're using
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
 
@@ -242,6 +260,13 @@ export function GameScreen({
   const canSubstitute = React.useMemo(() => {
     return hasActiveSubstitutes(allPlayers, teamConfig);
   }, [allPlayers, teamConfig]);
+
+  const substitutionButtonLabel = React.useMemo(() => {
+    if (substitutionCount === 1) {
+      return 'SUB 1 PLAYER';
+    }
+    return `SUB ${substitutionCount} PLAYERS`;
+  }, [substitutionCount]);
 
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
@@ -519,7 +544,18 @@ export function GameScreen({
         />
 
       {/* SUB NOW Button - positioned between field and substitute players */}
-      <div className="flex gap-2 mt-4 z-30 relative">
+      <div
+        className="flex gap-2 mt-4 z-30 relative"
+        data-testid="substitution-action-row"
+      >
+        <SubstitutionCountInlineControl
+          value={substitutionCount}
+          min={1}
+          max={maxSubstitutionCount}
+          onChange={handleSubstitutionCountChange}
+          disabled={!canSubstitute}
+          className="flex-shrink-0"
+        />
         <Button
           onClick={substitutionHandlers.handleSubstitutionWithHighlight}
           Icon={RefreshCcw}
@@ -527,7 +563,7 @@ export function GameScreen({
           disabled={!canSubstitute}
           title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}
         >
-          SUB NOW
+          {substitutionButtonLabel}
         </Button>
         <button
           onClick={handleUndoSubstitutionClick}

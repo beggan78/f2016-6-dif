@@ -17,7 +17,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameScreen } from '../GameScreen';
 import {
@@ -26,11 +26,10 @@ import {
   createMockFormation,
   setupComponentTestEnvironment,
   userInteractions,
-  componentAssertions,
-  waitForComponent
 } from '../../__tests__/componentTestUtils';
-import { PLAYER_ROLES } from '../../../constants/playerConstants';
 import { TEAM_CONFIGS } from '../../../game/testUtils';
+
+const originalConsoleError = console.error;
 
 // Mock all external dependencies
 jest.mock('../../../hooks/useGameModals');
@@ -85,9 +84,11 @@ describe('GameScreen', () => {
     defaultProps = createMockGameScreenProps();
     
     // Suppress React DOM warnings for unknown props in tests
-    jest.spyOn(console, 'error').mockImplementation((message) => {
-      if (message.includes('React does not recognize')) return;
-      console.error(message);
+    jest.spyOn(console, 'error').mockImplementation((message, ...args) => {
+      if (typeof message === 'string' && message.includes('React does not recognize')) {
+        return;
+      }
+      originalConsoleError(message, ...args);
     });
     
     // Setup default hook returns
@@ -422,28 +423,42 @@ describe('GameScreen', () => {
     it('should display substitution button', () => {
       render(<GameScreen {...defaultProps} />);
       
-      const subButton = screen.getByText(/SUB NOW/i);
+      const subButton = screen.getByText(/SUB 1 PLAYER/i);
       expect(subButton).toBeInTheDocument();
     });
 
     it('should handle substitution button click', async () => {
       render(<GameScreen {...defaultProps} />);
       
-      const subButton = screen.getByText(/SUB NOW/i);
+      const subButton = screen.getByText(/SUB 1 PLAYER/i);
       await userInteractions.clickElement(subButton);
       
       expect(global.mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
     });
 
+    it('should reflect stepper selection in substitution button label', async () => {
+      render(<GameScreen {...defaultProps} />);
+
+      expect(screen.getByText(/SUB 1 PLAYER/i)).toBeInTheDocument();
+
+      const incrementButton = screen.getByLabelText(/increase number of players to substitute/i);
+      await act(async () => {
+        await userInteractions.clickElement(incrementButton);
+      });
+
+      expect(screen.getByText(/SUB 2 PLAYERS/i)).toBeInTheDocument();
+    });
+
     it('should have SUB NOW button with higher z-index than player cards', () => {
       render(<GameScreen {...defaultProps} />);
 
-      const subButton = screen.getByText(/SUB NOW/i);
-      const subButtonContainer = subButton.closest('.flex.gap-2.mt-4');
+      const subButtonContainer = screen.getByTestId('substitution-action-row');
+      const subButton = within(subButtonContainer).getByRole('button', { name: /SUB 1 PLAYER/i });
 
       // SUB button container should have z-30 class (higher than player animation z-10/z-20)
       expect(subButtonContainer).toHaveClass('z-30');
       expect(subButtonContainer).toHaveClass('relative');
+      expect(subButton).toBeInTheDocument();
     });
 
     it('should display next player to substitute information', () => {
@@ -509,7 +524,7 @@ describe('GameScreen', () => {
 
       render(<GameScreen {...defaultProps} />);
 
-      const subButton = screen.getByText(/SUB NOW/i);
+      const subButton = screen.getByText(/SUB 1 PLAYER/i);
       await userEvent.click(subButton);
 
       // Expect handleSubstitutionWithHighlight to be called
