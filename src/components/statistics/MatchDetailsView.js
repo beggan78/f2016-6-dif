@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
-import { Button, Input, Select } from '../shared/UI';
+import { Button, Input, Select, ConfirmationModal } from '../shared/UI';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
-import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch, createManualMatch, calculateMatchOutcome } from '../../services/matchStateManager';
+import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch, createManualMatch, calculateMatchOutcome, deleteConfirmedMatch } from '../../services/matchStateManager';
 
 const SmartTimeInput = ({ value, onChange, className = '' }) => {
   const [displayValue, setDisplayValue] = useState('');
@@ -142,7 +142,8 @@ export function MatchDetailsView({
   teamId,
   teamPlayers = [],
   onManualMatchCreated,
-  onMatchUpdated
+  onMatchUpdated,
+  onMatchDeleted
 }) {
   const isCreateMode = mode === 'create';
   const [playerToAdd, setPlayerToAdd] = useState('');
@@ -202,6 +203,9 @@ export function MatchDetailsView({
   const [sortDirection, setSortDirection] = useState('asc');
   const [saveError, setSaveError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const assignedPlayerIds = useMemo(() => {
     return new Set((editData?.playerStats || []).map(player => player.playerId));
   }, [editData?.playerStats]);
@@ -664,9 +668,25 @@ export function MatchDetailsView({
               </Button>
             </>
           ) : (
-            <Button onClick={() => setIsEditing(true)} Icon={Edit} variant="secondary">
-              Edit Match
-            </Button>
+            <>
+              <Button onClick={() => setIsEditing(true)} Icon={Edit} variant="secondary">
+                Edit Match
+              </Button>
+              {!isCreateMode && (
+                <Button
+                  onClick={() => {
+                    if (isDeleting) return;
+                    setDeleteError(null);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  Icon={Trash2}
+                  variant="secondary"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Match'}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -678,6 +698,48 @@ export function MatchDetailsView({
           <p className="text-red-300 text-sm mt-1">{saveError}</p>
         </div>
       )}
+
+      {/* Delete Error Message */}
+      {deleteError && (
+        <div className="bg-red-900/50 border border-red-600 rounded-lg p-4">
+          <p className="text-red-200 font-medium">Error deleting match:</p>
+          <p className="text-red-300 text-sm mt-1">{deleteError}</p>
+        </div>
+      )}
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onCancel={() => {
+          if (isDeleting) return;
+          setIsDeleteModalOpen(false);
+        }}
+        onConfirm={async () => {
+          if (isDeleting) return;
+          setIsDeleting(true);
+          setDeleteError(null);
+
+          const result = await deleteConfirmedMatch(matchId);
+
+          if (!result.success) {
+            setDeleteError(result.error || 'Failed to delete match');
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+            return;
+          }
+
+          setIsDeleting(false);
+          setIsDeleteModalOpen(false);
+          if (onMatchDeleted) {
+            onMatchDeleted(matchId);
+          }
+          onNavigateBack();
+        }}
+        title="Delete Match"
+        message="Are you sure you want to delete this match from history? This action cannot be undone."
+        confirmText={isDeleting ? 'Deleting…' : 'Delete Match'}
+        cancelText="Cancel"
+        variant="danger"
+      />
 
       {/* Match Summary */}
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
@@ -1083,5 +1145,6 @@ MatchDetailsView.propTypes = {
     name: PropTypes.string
   })),
   onManualMatchCreated: PropTypes.func,
-  onMatchUpdated: PropTypes.func
+  onMatchUpdated: PropTypes.func,
+  onMatchDeleted: PropTypes.func
 };

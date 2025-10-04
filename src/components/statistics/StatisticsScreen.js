@@ -68,6 +68,12 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     }
   };
 
+  const handleMatchDeleted = () => {
+    triggerHistoryRefresh();
+    setSelectedMatchId(null);
+    setIsCreatingMatch(false);
+  };
+
   const tabs = [
     {
       id: STATS_TABS.TEAM,
@@ -100,6 +106,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
           onNavigateBack={handleBackToHistory}
           onManualMatchCreated={handleManualMatchCreated}
           onMatchUpdated={triggerHistoryRefresh}
+          onMatchDeleted={handleMatchDeleted}
         />
       );
     }

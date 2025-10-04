@@ -18,7 +18,8 @@ import {
   formatPlayerMatchStats,
   countPlayerGoals,
   mapFormationPositionToRole,
-  mapStartingRoleToDBRole
+  mapStartingRoleToDBRole,
+  deleteConfirmedMatch
 } from '../matchStateManager';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { supabase } from '../../lib/supabase';
@@ -37,6 +38,12 @@ const createUpdateChain = ({ finalResult = { data: null, error: null }, selectRe
   const firstEq = jest.fn(() => ({ is }));
   const update = jest.fn(() => ({ eq: firstEq }));
   return { update, firstEq, is, finalEq, select };
+};
+
+const createDeleteChain = ({ finalResult = { data: null, error: null } } = {}) => {
+  const eq = jest.fn().mockResolvedValue(finalResult);
+  const deleteFn = jest.fn(() => ({ eq }));
+  return { delete: deleteFn, eq };
 };
 
 describe('matchStateManager', () => {
@@ -306,6 +313,55 @@ describe('matchStateManager', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Database error: Stats upsert failed');
+    });
+  });
+
+  describe('deleteConfirmedMatch', () => {
+    it('soft deletes confirmed match and related stats', async () => {
+      const deleteChain = createDeleteChain();
+      const updateMock = jest.fn(() => ({
+        eq: jest.fn(() => ({
+          is: jest.fn(() => ({
+            in: jest.fn(() => Promise.resolve({ data: [{ id: 'match-1' }], error: null }))
+          }))
+        }))
+      }));
+
+      supabase.from
+        .mockReturnValueOnce({ delete: deleteChain.delete })
+        .mockReturnValueOnce({ update: updateMock });
+
+      const result = await deleteConfirmedMatch('match-1');
+
+      expect(result.success).toBe(true);
+      expect(deleteChain.delete).toHaveBeenCalled();
+      expect(updateMock).toHaveBeenCalled();
+    });
+
+    it('returns error when matchId missing', async () => {
+      const result = await deleteConfirmedMatch();
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Match ID is required');
+    });
+
+    it('propagates supabase errors', async () => {
+      const deleteChain = createDeleteChain();
+      const updateMock = jest.fn(() => ({
+        eq: jest.fn(() => ({
+          is: jest.fn(() => ({
+            in: jest.fn(() => Promise.resolve({ data: null, error: { message: 'Failed' } }))
+          }))
+        }))
+      }));
+
+      supabase.from
+        .mockReturnValueOnce({ delete: deleteChain.delete })
+        .mockReturnValueOnce({ update: updateMock });
+
+      const result = await deleteConfirmedMatch('match-err');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error: Failed');
     });
   });
 

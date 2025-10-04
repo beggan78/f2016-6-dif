@@ -1870,6 +1870,68 @@ export async function discardPendingMatch(matchId) {
   }
 }
 
+export async function deleteConfirmedMatch(matchId) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+
+    const statsResult = await supabase
+      .from('player_match_stats')
+      .delete()
+      .eq('match_id', matchId);
+
+    if (statsResult.error) {
+      console.error('❌ Failed to delete player match stats:', statsResult.error);
+      return {
+        success: false,
+        error: `Database error: ${statsResult.error.message}`
+      };
+    }
+
+    const matchResult = await supabase
+      .from('match')
+      .update(
+        {
+          deleted_at: nowIso
+        },
+        { returning: 'minimal' }
+      )
+      .eq('id', matchId)
+      .is('deleted_at', null)
+      .in('state', ['finished', 'confirmed']);
+
+    if (matchResult.error) {
+      console.error('❌ Failed to delete confirmed match:', matchResult.error);
+      return {
+        success: false,
+        error: `Database error: ${matchResult.error.message}`
+      };
+    }
+
+    if (!matchResult.data || matchResult.data.length === 0) {
+      return {
+        success: false,
+        error: 'Match not found or already deleted'
+      };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Exception while deleting confirmed match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
 /**
  * Update match details from the edit view
  * @param {string} matchId - Match ID
