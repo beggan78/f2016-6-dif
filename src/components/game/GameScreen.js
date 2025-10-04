@@ -155,16 +155,18 @@ export function GameScreen({
       currentPeriodNumber,
       matchTimerSeconds,
       ownScore,
-      opponentScore
+      opponentScore,
+      substitutionCount
     };
-    
-    
+
+
     return gameState;
   }, [
     formation, allPlayers, teamConfig, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
-    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore
+    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore,
+    substitutionCount
   ]);
 
   // State updaters object for handlers
@@ -225,8 +227,9 @@ export function GameScreen({
       allPlayers,
       nextPlayerIdToSubOut,
       modalHandlers,
-      selectedFormation  // NEW: Pass selectedFormation for formation-aware position callbacks
-    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
+      selectedFormation,  // Pass selectedFormation for formation-aware position callbacks
+      substitutionCount   // Pass substitutionCount for multi-sub logic
+    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation, substitutionCount]
   );
 
   const quickTapHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
@@ -646,9 +649,13 @@ export function GameScreen({
         onActivate={() => substitutionHandlers.handleActivatePlayer(modalHandlers.modals.substitute)}
         onCancel={substitutionHandlers.handleCancelSubstituteModal}
         onSetAsNextToGoIn={() => substitutionHandlers.handleSetAsNextToGoIn(modalHandlers.modals.substitute, formation)}
+        onChangeNextPosition={(targetPosition) => substitutionHandlers.handleChangeNextPosition(modalHandlers.modals.substitute, targetPosition)}
         playerName={modalHandlers.modals.substitute.playerName}
         isCurrentlyInactive={modalHandlers.modals.substitute.isCurrentlyInactive}
         canSetAsNextToGoIn={modalHandlers.modals.substitute.canSetAsNextToGoIn}
+        canChangeNextPosition={modalHandlers.modals.substitute.canChangeNextPosition}
+        availableNextPositions={modalHandlers.modals.substitute.availableNextPositions}
+        showPositionSelection={modalHandlers.modals.substitute.showPositionSelection}
       />
 
       {/* Goalie Replacement Modal */}

@@ -20,7 +20,10 @@ export function useGameModals(pushNavigationState, removeFromNavigationStack) {
       playerId: null,
       playerName: '',
       isCurrentlyInactive: false,
-      canSetAsNextToGoIn: false
+      canSetAsNextToGoIn: false,
+      canChangeNextPosition: false,
+      availableNextPositions: [],
+      showPositionSelection: false
     },
     goalie: {
       isOpen: false,

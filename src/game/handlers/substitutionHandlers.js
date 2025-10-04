@@ -1,6 +1,6 @@
 import { animateStateChange } from '../animation/animationSupport';
-import { 
-  calculateSubstitution, 
+import {
+  calculateSubstitution,
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
   calculateUndo,
@@ -12,6 +12,7 @@ import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
+import { getSubstituteTargetPositions, getPositionDisplayName } from '../ui/positionUtils';
 
 export const createSubstitutionHandlers = (
   gameStateFactory,
@@ -716,6 +717,135 @@ export const createSubstitutionHandlers = (
     );
   };
 
+  const handleChangeNextPosition = (substituteModal, targetPosition) => {
+    if (!substituteModal.playerId) return;
+
+    const gameState = gameStateFactory();
+    const definition = getDefinition(teamConfig);
+
+    // "show-options" means show the position selection UI
+    if (targetPosition === 'show-options') {
+      // Get available positions (all positions the substitutes are going to)
+      const substitutePositions = definition?.substitutePositions || [];
+      const currentPlayerPosition = Object.keys(gameState.formation).find(
+        pos => gameState.formation[pos] === substituteModal.playerId
+      );
+
+      // Get the substitute target mapping to find which field positions are being taken
+      const substituteTargetMapping = getSubstituteTargetPositions(
+        gameState.rotationQueue,
+        gameState.formation,
+        definition.fieldPositions,
+        substitutePositions,
+        gameState.substitutionCount || 1
+      );
+
+      // Get available positions (exclude current player's position)
+      const availablePositions = [];
+      Object.entries(substituteTargetMapping).forEach(([subPos, fieldPos]) => {
+        if (subPos !== currentPlayerPosition) {
+          const label = getPositionDisplayName(
+            fieldPos,
+            null,
+            teamConfig,
+            substitutePositions
+          );
+          availablePositions.push({ value: subPos, label });
+        }
+      });
+
+      // Update modal to show position selection
+      modalHandlers.openSubstituteModal({
+        ...modalHandlers.modals.substitute,
+        showPositionSelection: true,
+        availableNextPositions: availablePositions
+      });
+      return;
+    }
+
+    // null means go back to main menu
+    if (targetPosition === null) {
+      modalHandlers.openSubstituteModal({
+        ...modalHandlers.modals.substitute,
+        showPositionSelection: false,
+        availableNextPositions: []
+      });
+      return;
+    }
+
+    // Otherwise, swap the positions
+    const currentTime = getCurrentTimestamp();
+    const currentPlayerPosition = Object.keys(gameState.formation).find(
+      pos => gameState.formation[pos] === substituteModal.playerId
+    );
+
+    if (!currentPlayerPosition || !targetPosition) {
+      closeSubstituteModal();
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+      return;
+    }
+
+    // Use animateStateChange to swap the positions
+    animateStateChange(
+      gameState,
+      (state) => {
+        const newFormation = { ...state.formation };
+        const playerId1 = newFormation[currentPlayerPosition];
+        const playerId2 = newFormation[targetPosition];
+
+        // Swap the players
+        newFormation[currentPlayerPosition] = playerId2;
+        newFormation[targetPosition] = playerId1;
+
+        return {
+          ...state,
+          formation: newFormation,
+          playersToHighlight: [playerId1, playerId2]
+        };
+      },
+      (newGameState) => {
+        setFormation(newGameState.formation);
+
+        // Log the position swap
+        try {
+          const player1 = gameState.allPlayers.find(p => p.id === substituteModal.playerId);
+          const player2 = gameState.allPlayers.find(p => p.id === gameState.formation[targetPosition]);
+
+          if (player1 && player2) {
+            logEvent(EVENT_TYPES.POSITION_CHANGE, {
+              type: 'substitute_position_swap',
+              playerId: substituteModal.playerId,
+              playerName: player1.name,
+              swapPlayerId: player2.id,
+              swapPlayerName: player2.name,
+              fromPosition: currentPlayerPosition,
+              toPosition: targetPosition,
+              description: `${player1.name} and ${player2.name} swapped next-in positions`,
+              beforeFormation: getFormationDescription(gameState.formation, teamConfig),
+              afterFormation: getFormationDescription(newGameState.formation, teamConfig),
+              teamConfig,
+              matchTime: calculateMatchTime(currentTime),
+              timestamp: currentTime,
+              periodNumber: gameState.currentPeriodNumber || 1
+            });
+          }
+        } catch (error) {
+          // Logging error should not prevent swap
+        }
+      },
+      setAnimationState,
+      setHideNextOffIndicator,
+      setRecentlySubstitutedPlayers
+    );
+
+    closeSubstituteModal();
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
+    }
+  };
+
   return {
     handleSetNextSubstitution,
     handleSubstituteNow,
@@ -726,6 +856,7 @@ export const createSubstitutionHandlers = (
     handleCancelSubstituteModal,
     handleSubstitutionWithHighlight,
     handleChangePosition,
+    handleChangeNextPosition,
     handleUndo
   };
 };
