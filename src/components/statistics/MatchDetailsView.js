@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { Button, Input, Select } from '../shared/UI';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
-import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch } from '../../services/matchStateManager';
+import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch, createManualMatch, calculateMatchOutcome } from '../../services/matchStateManager';
 
 const SmartTimeInput = ({ value, onChange, className = '' }) => {
   const [displayValue, setDisplayValue] = useState('');
@@ -87,6 +88,11 @@ const VENUE_OPTIONS = [
 ];
 const STARTING_ROLES = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Substitute'];
 
+const DEFAULT_PERIODS = 3;
+const DEFAULT_PERIOD_DURATION = 15;
+const DEFAULT_FORMAT = FORMATS.FORMAT_5V5;
+const DEFAULT_STARTING_ROLE = STARTING_ROLES[4];
+
 // Helper function to get formation options for selected format
 const getFormationOptionsForFormat = (format) => {
   const validFormations = getValidFormations(format, 15); // Use max squad size to get all formations
@@ -129,35 +135,142 @@ const formatTimeAsMinutesSeconds = (minutes) => {
 };
 
 
-export function MatchDetailsView({ matchId, onNavigateBack }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [matchData, setMatchData] = useState(null);
-  const [editData, setEditData] = useState(null);
-  const [loading, setLoading] = useState(true);
+export function MatchDetailsView({
+  matchId,
+  onNavigateBack,
+  mode = 'view',
+  teamId,
+  teamPlayers = [],
+  onManualMatchCreated,
+  onMatchUpdated
+}) {
+  const isCreateMode = mode === 'create';
+  const [playerToAdd, setPlayerToAdd] = useState('');
+
+  const defaultPlayerStats = useMemo(() => {
+    return (Array.isArray(teamPlayers) ? teamPlayers : []).map((player, index) => ({
+      id: player.id || `player-${index}`,
+      playerId: player.id,
+      name: player.name || 'Unnamed Player',
+      goalsScored: 0,
+      totalTimePlayed: 0,
+      timeAsDefender: 0,
+      timeAsMidfielder: 0,
+      timeAsAttacker: 0,
+      timeAsGoalkeeper: 0,
+      startingRole: DEFAULT_STARTING_ROLE,
+      wasCaptain: false,
+      receivedFairPlayAward: false
+    }));
+  }, [teamPlayers]);
+
+  const createModeDefaults = useMemo(() => {
+    if (!isCreateMode) {
+      return null;
+    }
+
+    const now = new Date();
+    const isoDate = now.toISOString();
+    const defaultFormation = FORMAT_CONFIGS[DEFAULT_FORMAT]?.defaultFormation || '2-2';
+    const durationSeconds = DEFAULT_PERIODS * DEFAULT_PERIOD_DURATION * 60;
+
+    return {
+      id: null,
+      opponent: '',
+      goalsScored: 0,
+      goalsConceded: 0,
+      venueType: 'home',
+      type: MATCH_TYPE_OPTIONS[0]?.value || 'league',
+      format: DEFAULT_FORMAT,
+      formation: defaultFormation,
+      periods: DEFAULT_PERIODS,
+      periodDuration: DEFAULT_PERIOD_DURATION,
+      matchDurationSeconds: durationSeconds,
+      date: isoDate.split('T')[0],
+      time: isoDate.slice(11, 16),
+      outcome: 'D',
+      playerStats: defaultPlayerStats
+    };
+  }, [defaultPlayerStats, isCreateMode]);
+
+  const [isEditing, setIsEditing] = useState(isCreateMode);
+  const [matchData, setMatchData] = useState(() => (isCreateMode ? createModeDefaults : null));
+  const [editData, setEditData] = useState(() => (isCreateMode ? createModeDefaults : null));
+  const [loading, setLoading] = useState(!isCreateMode);
   const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
   const [saveError, setSaveError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const assignedPlayerIds = useMemo(() => {
+    return new Set((editData?.playerStats || []).map(player => player.playerId));
+  }, [editData?.playerStats]);
 
-  // Fetch match data from database
+  const availablePlayers = useMemo(() => {
+    return (teamPlayers || []).filter(player => !assignedPlayerIds.has(player.id));
+  }, [teamPlayers, assignedPlayerIds]);
+
+  // Initialise create mode defaults when roster data becomes available
   useEffect(() => {
-    async function fetchMatchData() {
-      if (!matchId) {
-        setError('No match ID provided');
-        setLoading(false);
-        return;
-      }
+    if (!isCreateMode) {
+      return;
+    }
 
+    if (createModeDefaults) {
+      setMatchData((prev) => {
+        if (prev && Array.isArray(prev.playerStats) && prev.playerStats.length > 0) {
+          return prev;
+        }
+        return createModeDefaults;
+      });
+
+      setEditData((prev) => {
+        if (prev && Array.isArray(prev.playerStats) && prev.playerStats.length > 0) {
+          return prev;
+        }
+        return createModeDefaults;
+      });
+    }
+
+    setLoading(false);
+    setError(null);
+  }, [createModeDefaults, isCreateMode]);
+
+  // Fetch match data from database when viewing existing records
+  useEffect(() => {
+    if (isCreateMode) {
+      return;
+    }
+
+    if (!matchId) {
+      setError('No match ID provided');
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function fetchMatchData() {
       setLoading(true);
       setError(null);
+      setSaveError(null);
+      setMatchData(null);
+      setEditData(null);
 
       const result = await getMatchDetails(matchId);
 
+      if (!isMounted) {
+        return;
+      }
+
       if (result.success) {
+        const normalizedPlayerStats = (result.playerStats || []).map((player, index) => ({
+          ...player,
+          id: player.playerId || player.id || `player-${index}`
+        }));
         const data = {
           ...result.match,
-          playerStats: result.playerStats
+          playerStats: normalizedPlayerStats
         };
         setMatchData(data);
         setEditData(data);
@@ -169,7 +282,17 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
     }
 
     fetchMatchData();
-  }, [matchId]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isCreateMode, matchId]);
+
+  useEffect(() => {
+    if (playerToAdd && !availablePlayers.some(player => player.id === playerToAdd)) {
+      setPlayerToAdd('');
+    }
+  }, [availablePlayers, playerToAdd]);
 
   if (loading) {
     return (
@@ -191,11 +314,47 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   }
 
   const handleSave = async () => {
+    if (!editData) {
+      return;
+    }
+
     setIsSaving(true);
     setSaveError(null);
 
     try {
-      // Update match details
+      if (isCreateMode || !matchId) {
+        if (!teamId) {
+          throw new Error('A team must be selected before adding a match.');
+        }
+
+        const fairPlayAwardPlayerId = editData.playerStats?.find((player) => player.receivedFairPlayAward)?.playerId || null;
+        const captainPlayerId = editData.playerStats?.find((player) => player.wasCaptain)?.playerId || null;
+        const durationSeconds = typeof editData.matchDurationSeconds === 'number'
+          ? editData.matchDurationSeconds
+          : (editData.periods || 0) * (editData.periodDuration || 0) * 60;
+
+        const manualResult = await createManualMatch({
+          ...editData,
+          teamId,
+          fairPlayAwardPlayerId,
+          captainId: captainPlayerId,
+          matchDurationSeconds: durationSeconds
+        }, editData.playerStats || []);
+
+        if (!manualResult.success) {
+          throw new Error(manualResult.error || 'Failed to create match');
+        }
+
+        setMatchData(editData);
+        setIsEditing(false);
+
+        if (onManualMatchCreated) {
+          onManualMatchCreated(manualResult.matchId);
+        }
+
+        return;
+      }
+
       const matchResult = await updateMatchDetails(matchId, {
         opponent: editData.opponent,
         goalsScored: editData.goalsScored,
@@ -233,6 +392,10 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
       }
 
       setIsEditing(false);
+
+      if (onMatchUpdated) {
+        onMatchUpdated();
+      }
     } catch (err) {
       console.error('Error saving match data:', err);
       setSaveError(err.message);
@@ -242,26 +405,70 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   };
 
   const handleCancel = () => {
+    if (isCreateMode) {
+      if (onNavigateBack) {
+        onNavigateBack();
+      }
+      return;
+    }
+
+    if (!matchData) {
+      if (onNavigateBack) {
+        onNavigateBack();
+      }
+      return;
+    }
+
+    const safePlayerStats = Array.isArray(matchData.playerStats) ? matchData.playerStats : [];
+
     setEditData({
       ...matchData,
-      playerStats: [...matchData.playerStats]
+      playerStats: safePlayerStats.map((player) => ({ ...player }))
     });
     setSaveError(null);
     setIsEditing(false);
   };
 
   const updateMatchDetail = (field, value) => {
-    setEditData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setEditData((prev) => {
+      if (!prev) {
+        return prev;
+      }
+
+      const updated = {
+        ...prev,
+        [field]: value
+      };
+
+      if (field === 'format') {
+        const options = getFormationOptionsForFormat(value);
+        if (options.length > 0 && !options.some((option) => option.value === updated.formation)) {
+          updated.formation = options[0].value;
+        }
+      }
+
+      if (field === 'periods' || field === 'periodDuration') {
+        const periods = field === 'periods' ? value : updated.periods;
+        const periodDuration = field === 'periodDuration' ? value : updated.periodDuration;
+        updated.matchDurationSeconds = (periods || 0) * (periodDuration || 0) * 60;
+      }
+
+      if (field === 'goalsScored' || field === 'goalsConceded') {
+        const goalsFor = field === 'goalsScored' ? value : updated.goalsScored;
+        const goalsAgainst = field === 'goalsConceded' ? value : updated.goalsConceded;
+        const outcome = calculateMatchOutcome(goalsFor || 0, goalsAgainst || 0);
+        updated.outcome = outcome === 'win' ? 'W' : outcome === 'draw' ? 'D' : 'L';
+      }
+
+      return updated;
+    });
   };
 
-  const updatePlayerStat = (playerId, field, value) => {
+  const updatePlayerStat = (playerRowId, field, value) => {
     setEditData(prev => ({
       ...prev,
-      playerStats: prev.playerStats.map(player => {
-        if (player.id === playerId) {
+      playerStats: Array.isArray(prev.playerStats) ? prev.playerStats.map(player => {
+        if (player.id === playerRowId) {
           const updatedPlayer = { ...player, [field]: value };
 
           // If updating role times, recalculate total time (excluding goalie time)
@@ -275,8 +482,51 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
           return updatedPlayer;
         }
         return player;
-      })
+      }) : []
     }));
+  };
+
+  const handleRemovePlayer = (playerRowId) => {
+    setEditData(prev => ({
+      ...prev,
+      playerStats: Array.isArray(prev.playerStats)
+        ? prev.playerStats.filter(player => player.id !== playerRowId)
+        : []
+    }));
+  };
+
+  const handleAddPlayer = () => {
+    if (!playerToAdd) {
+      return;
+    }
+
+    const rosterPlayer = (teamPlayers || []).find(player => player.id === playerToAdd);
+    if (!rosterPlayer) {
+      return;
+    }
+
+    const newPlayerStats = {
+      id: rosterPlayer.id,
+      playerId: rosterPlayer.id,
+      name: rosterPlayer.name || 'Unnamed Player',
+      goalsScored: 0,
+      totalTimePlayed: 0,
+      timeAsDefender: 0,
+      timeAsMidfielder: 0,
+      timeAsAttacker: 0,
+      timeAsGoalkeeper: 0,
+      startingRole: DEFAULT_STARTING_ROLE,
+      wasCaptain: false,
+      receivedFairPlayAward: false
+    };
+
+    setEditData(prev => ({
+      ...prev,
+      playerStats: Array.isArray(prev.playerStats)
+        ? [...prev.playerStats, newPlayerStats]
+        : [newPlayerStats]
+    }));
+    setPlayerToAdd('');
   };
 
   const getMaxMatchDuration = () => {
@@ -320,6 +570,10 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
   };
 
   const getSortedPlayers = () => {
+    if (!editData?.playerStats) {
+      return [];
+    }
+
     if (!sortField) return editData.playerStats;
 
     return [...editData.playerStats].sort((a, b) => {
@@ -385,7 +639,7 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
               <ChartColumn className="h-6 w-6 text-sky-400" />
               <h2 className="text-2xl font-bold text-sky-400">Match Details</h2>
             </div>
-            <p className="text-slate-400 text-sm">{editData.opponent}</p>
+            <p className="text-slate-400 text-sm">{editData.opponent || 'New Match'}</p>
           </div>
         </div>
 
@@ -635,6 +889,31 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
           </p>
         </div>
 
+        {isCreateMode && isEditing && (
+          <div className="p-4 border-b border-slate-600 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Select
+                value={playerToAdd}
+                onChange={setPlayerToAdd}
+                options={availablePlayers.map(player => ({
+                  value: player.id,
+                  label: player.name || 'Unnamed Player'
+                }))}
+                placeholder={availablePlayers.length === 0 ? 'All players included' : 'Select player'}
+                disabled={availablePlayers.length === 0}
+              />
+              <Button
+                onClick={handleAddPlayer}
+                variant="secondary"
+                size="sm"
+                disabled={!playerToAdd}
+              >
+                Add Player
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-slate-800">
@@ -649,6 +928,11 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                 <SortableHeader field="startingRole">Starting Role</SortableHeader>
                 <SortableHeader field="wasCaptain">Captain</SortableHeader>
                 <SortableHeader field="receivedFairPlayAward">Fair Play</SortableHeader>
+                {isCreateMode && isEditing && (
+                  <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 tracking-wider">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-600">
@@ -767,6 +1051,18 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
                       player.receivedFairPlayAward && <Award className="h-4 w-4 text-emerald-400 mx-auto" />
                     )}
                   </td>
+                  {isCreateMode && isEditing && (
+                    <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <Button
+                        onClick={() => handleRemovePlayer(player.id)}
+                        Icon={Trash2}
+                        variant="secondary"
+                        size="sm"
+                      >
+                        Remove
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -776,3 +1072,16 @@ export function MatchDetailsView({ matchId, onNavigateBack }) {
     </div>
   );
 }
+
+MatchDetailsView.propTypes = {
+  matchId: PropTypes.string,
+  onNavigateBack: PropTypes.func.isRequired,
+  mode: PropTypes.oneOf(['view', 'create']),
+  teamId: PropTypes.string,
+  teamPlayers: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string,
+    name: PropTypes.string
+  })),
+  onManualMatchCreated: PropTypes.func,
+  onMatchUpdated: PropTypes.func
+};
