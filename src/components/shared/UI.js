@@ -409,7 +409,7 @@ export function SubstitutePlayerModal({
             </Button>
             {canSetAsNextToGoIn && !isCurrentlyInactive && (
               <Button onClick={onSetAsNextToGoIn} variant="accent">
-                Set as next to go in
+                Set to go in next
               </Button>
             )}
             {isCurrentlyInactive ? (

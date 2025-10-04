@@ -198,7 +198,7 @@ export const createSubstitutionHandlers = (
       // Find current player position
       const currentPosition = Object.keys(formation).find(pos => formation[pos] === playerId);
       
-      // Check if player can be set as next to go in
+      // Check if player can be set to go in next
       const canSetAsNext = definition.substitutePositions.includes(currentPosition) && 
                           currentPosition !== 'substitute_1' &&
                           !gameState.allPlayers.find(p => p.id === playerId)?.stats?.isInactive;

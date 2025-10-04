@@ -75,8 +75,8 @@ export const createFieldPositionHandlers = (
     const player = findPlayerById(allPlayers, playerId);
     const isCurrentlyInactive = player?.stats.isInactive || false;
     
-    // Determine if player can be set as next to go in
-    // All substitute positions except substitute_1 can be set as next to go in
+    // Determine if player can be set to go in next
+    // All substitute positions except substitute_1 can be set to go in next
     const isNextToGoIn = playerId === nextPlayerIdToSubOut;
     const canSetAsNextToGoIn = supportsNextNext && 
                                position !== 'substitute_1' &&
