@@ -13,6 +13,8 @@ import { formatPlayerName } from '../../utils/formatUtils';
 import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { getSubstituteTargetPositions, getPositionDisplayName } from '../ui/positionUtils';
+import { getPositionRole } from '../logic/positionUtils';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 export const createSubstitutionHandlers = (
   gameStateFactory,
@@ -750,8 +752,21 @@ export const createSubstitutionHandlers = (
             teamConfig,
             substitutePositions
           );
-          availablePositions.push({ value: subPos, label });
+          const role = getPositionRole(fieldPos);
+          availablePositions.push({ value: subPos, label, role });
         }
+      });
+
+      // Sort positions: defenders first, midfielders second, attackers last
+      availablePositions.sort((a, b) => {
+        const roleOrder = {
+          [PLAYER_ROLES.DEFENDER]: 1,
+          [PLAYER_ROLES.MIDFIELDER]: 2,
+          [PLAYER_ROLES.ATTACKER]: 3
+        };
+        const orderA = roleOrder[a.role] || 999;
+        const orderB = roleOrder[b.role] || 999;
+        return orderA - orderB;
       });
 
       // Update modal to show position selection
