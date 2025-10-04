@@ -216,8 +216,9 @@ export function GameScreen({
       stateUpdaters,
       animationHooks,
       modalHandlers,
-      teamConfig
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig]
+      teamConfig,
+      () => substitutionCount
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, substitutionCount]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>

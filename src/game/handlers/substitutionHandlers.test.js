@@ -194,16 +194,17 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_CONFIGS.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7,
+        () => 1 // Default substitutionCount
       );
 
       const substituteModal = { playerId: '6' };
       const formation = { substitute_1: '5', substitute_2: '6' };
-      
+
       handlers.handleSetAsNextToGoIn(substituteModal, formation);
 
       expect(animateStateChange).toHaveBeenCalled();
-      expect(calculateSubstituteReorder).toHaveBeenCalledWith(mockGameState, 'substitute_2');
+      expect(calculateSubstituteReorder).toHaveBeenCalledWith(mockGameState, 'substitute_2', 1);
       expect(mockDependencies.modalHandlers.closeSubstituteModal).toHaveBeenCalled();
     });
 
@@ -213,12 +214,13 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_CONFIGS.INDIVIDUAL_7
+        TEAM_CONFIGS.INDIVIDUAL_7,
+        () => 1 // Default substitutionCount
       );
 
       const substituteModal = { playerId: '5' };
       const formation = { substitute_1: '5', substitute_2: '6' };
-      
+
       handlers.handleSetAsNextToGoIn(substituteModal, formation);
 
       expect(animateStateChange).not.toHaveBeenCalled();
@@ -231,12 +233,13 @@ describe('createSubstitutionHandlers', () => {
         mockDependencies.stateUpdaters,
         mockDependencies.animationHooks,
         mockDependencies.modalHandlers,
-        TEAM_CONFIGS.INDIVIDUAL_6
+        TEAM_CONFIGS.INDIVIDUAL_6,
+        () => 1 // Default substitutionCount
       );
 
       const substituteModal = { playerId: '5' };
       const formation = { substitute: '5' };
-      
+
       handlers.handleSetAsNextToGoIn(substituteModal, formation);
 
       expect(animateStateChange).not.toHaveBeenCalled();

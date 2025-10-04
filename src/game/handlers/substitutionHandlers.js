@@ -21,7 +21,8 @@ export const createSubstitutionHandlers = (
   stateUpdaters,
   animationHooks,
   modalHandlers,
-  teamConfig
+  teamConfig,
+  getSubstitutionCount = () => 1
 ) => {
   // Helper to get mode definition - handles team config objects
   const getDefinition = (teamConfig, selectedFormation = null) => {
@@ -208,11 +209,12 @@ export const createSubstitutionHandlers = (
       
       if (canSetAsNext) {
         const currentTime = getCurrentTimestamp();
-        
+        const substitutionCount = getSubstitutionCount();
+
         // Use the new substitute reorder function
         animateStateChange(
           gameState,
-          (state) => calculateSubstituteReorder(state, currentPosition),
+          (state) => calculateSubstituteReorder(state, currentPosition, substitutionCount),
           (newGameState) => {
             // Apply the state changes
             setFormation(newGameState.formation);
@@ -221,14 +223,18 @@ export const createSubstitutionHandlers = (
             // Log substitute order change event
             try {
               const targetPlayer = gameState.allPlayers.find(p => p.id === playerId);
-              
+
               if (targetPlayer) {
+                // Determine the target position based on substitutionCount
+                const substitutePositions = definition.substitutePositions;
+                const toPosition = substitutePositions[Math.min(substitutionCount - 1, substitutePositions.length - 1)];
+
                 logEvent(EVENT_TYPES.POSITION_CHANGE, {
                   type: 'substitute_order_reorder',
                   playerId: playerId,
                   playerName: targetPlayer.name,
                   fromPosition: currentPosition,
-                  toPosition: 'substitute_1',
+                  toPosition: toPosition,
                   description: `${targetPlayer.name} moved to next-to-go-in position with cascading reorder`,
                   beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                   afterFormation: getFormationDescription(newGameState.formation, teamConfig),

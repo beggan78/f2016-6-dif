@@ -879,64 +879,69 @@ export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPositi
  * Calculate the result of reordering substitutes when setting a player as next to go in
  * The target player moves to substitute_1, all players ahead of them move down one position
  */
-export const calculateSubstituteReorder = (gameState, targetPosition) => {
+export const calculateSubstituteReorder = (gameState, targetPosition, substitutionCount = 1) => {
   const { allPlayers, formation, teamConfig, selectedFormation } = gameState;
-  
+
   if (!supportsNextNextIndicators(teamConfig)) {
     return gameState;
   }
-  
+
   const definition = getDefinitionForGameLogic(teamConfig, selectedFormation);
   if (!definition || !definition.substitutePositions.includes(targetPosition)) {
     return gameState;
   }
-  
-  // Cannot reorder substitute_1 (already next to go in)
-  if (targetPosition === 'substitute_1') {
+
+  const substitutePositions = definition.substitutePositions;
+
+  // Determine the last "next to go in" position based on substitutionCount
+  // If substitutionCount is 3, the last "next" position is substitute_3
+  const lastNextPosition = substitutePositions[Math.min(substitutionCount - 1, substitutePositions.length - 1)];
+
+  // Cannot reorder if already in a "next to go in" position
+  const targetIndex = substitutePositions.indexOf(targetPosition);
+  if (targetIndex < substitutionCount) {
     return gameState;
   }
-  
+
   const targetPlayerId = formation[targetPosition];
   if (!targetPlayerId) {
     return gameState;
   }
-  
-  const substitutePositions = definition.substitutePositions;
-  const targetIndex = substitutePositions.indexOf(targetPosition);
-  
+
   if (targetIndex === -1) {
     return gameState;
   }
-  
+
   // Create new formation with reordered positions
   const newFormation = { ...formation };
-  
-  // Store the players who need to be shifted
+
+  // Store the players who need to be shifted (those from lastNextPosition up to but not including targetPosition)
   const playersToShift = [];
-  for (let i = 0; i < targetIndex; i++) {
+  const lastNextIndex = substitutePositions.indexOf(lastNextPosition);
+  for (let i = lastNextIndex; i < targetIndex; i++) {
     const position = substitutePositions[i];
     const playerId = formation[position];
     if (playerId) {
       playersToShift.push({ playerId, currentPosition: position });
     }
   }
-  
-  // Move target player to substitute_1
-  newFormation.substitute_1 = targetPlayerId;
-  
-  // Shift all players who were ahead of target down one position
+
+  // Move target player to the last "next to go in" position
+  newFormation[lastNextPosition] = targetPlayerId;
+
+  // Shift all players who were at or after lastNextPosition down one position
   for (let i = 0; i < playersToShift.length; i++) {
-    const nextPosition = substitutePositions[i + 1];
+    const nextPosition = substitutePositions[lastNextIndex + i + 1];
     newFormation[nextPosition] = playersToShift[i].playerId;
   }
   
   // Update player stats with new positions
   const newAllPlayers = allPlayers.map(p => {
-    // Target player moves to substitute_1
+    // Target player moves to lastNextPosition
     if (p.id === targetPlayerId) {
-      return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+      return { ...p, stats: { ...p.stats, currentPairKey: lastNextPosition } };
     }
-    
+
     // Update shifted players
     const shiftedPlayer = playersToShift.find(shifted => shifted.playerId === p.id);
     if (shiftedPlayer) {
@@ -944,7 +949,7 @@ export const calculateSubstituteReorder = (gameState, targetPosition) => {
       const newPosition = substitutePositions[currentIndex + 1];
       return { ...p, stats: { ...p.stats, currentPairKey: newPosition } };
     }
-    
+
     return p;
   });
   
