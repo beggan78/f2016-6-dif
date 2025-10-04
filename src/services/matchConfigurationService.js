@@ -15,6 +15,7 @@ import {
   saveInitialMatchConfig 
 } from './matchStateManager';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
+import { FORMATS, getMinimumPlayersForFormat, GAME_CONSTANTS } from '../constants/teamConfiguration';
 
 /**
  * Transforms team configuration to the database format using flat structure
@@ -302,16 +303,27 @@ export async function saveMatchConfiguration(params) {
  * @param {Array} params.selectedSquadIds - Selected squad player IDs
  * @param {number} params.numPeriods - Number of periods
  * @param {Object} params.periodGoalieIds - Period goalie assignments
+ * @param {string} [params.format] - Team format identifier used to derive minimum players
+ * @param {number} [params.maxPlayersAllowed] - Maximum players permitted (defaults to global max)
  * @returns {{isValid: boolean, error?: string}} Validation result
  */
 export function validateConfiguration(params) {
-  const { selectedSquadIds, numPeriods, periodGoalieIds } = params;
+  const {
+    selectedSquadIds = [],
+    numPeriods = 0,
+    periodGoalieIds = {},
+    format = FORMATS.FORMAT_5V5,
+    maxPlayersAllowed = GAME_CONSTANTS.MAX_SQUAD_SIZE
+  } = params;
+
+  const minimumPlayersRequired = getMinimumPlayersForFormat(format);
+  const maximumPlayersAllowed = Math.max(minimumPlayersRequired, maxPlayersAllowed);
 
   // Validate squad size
-  if (selectedSquadIds.length < 5 || selectedSquadIds.length > 10) {
+  if (selectedSquadIds.length < minimumPlayersRequired || selectedSquadIds.length > maximumPlayersAllowed) {
     return {
       isValid: false,
-      error: "Please select 5-10 players for the squad."
+      error: `Please select between ${minimumPlayersRequired} and ${maximumPlayersAllowed} players for the squad.`
     };
   }
 

@@ -1451,7 +1451,7 @@ export function ConfigurationScreen({
           disabled={
             saveConfigStatus.loading ||
             selectedSquadIds.length < minPlayersRequired ||
-            selectedSquadIds.length > 10
+            selectedSquadIds.length > maxPlayersAllowed
           }
           variant="secondary"
           Icon={Save}
@@ -1462,7 +1462,10 @@ export function ConfigurationScreen({
 
       <Button 
         onClick={handleStartPeriodSetup} 
-        disabled={(selectedSquadIds.length < minPlayersRequired || selectedSquadIds.length > 10) || !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)} 
+        disabled={
+          (selectedSquadIds.length < minPlayersRequired || selectedSquadIds.length > maxPlayersAllowed) ||
+          !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)
+        } 
         Icon={Play}
       >
         Proceed to Period Setup
