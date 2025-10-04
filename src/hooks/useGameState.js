@@ -17,7 +17,7 @@ import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig, FORMATS, getMinimumPlayersForFormat } from '../constants/teamConfiguration';
+import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, GAME_CONSTANTS } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
@@ -160,7 +160,7 @@ export function useGameState(navigateToView = null) {
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const minimumPlayersForFormat = useMemo(() => getMinimumPlayersForFormat(currentFormat), [currentFormat]);
-  const maximumPlayersForMatch = 10;
+  const maximumPlayersForMatch = GAME_CONSTANTS.MAX_SQUAD_SIZE;
 
   // Match events and scoring - extracted to useMatchEvents hook
   const matchEventsHook = useMatchEvents(initialState);
@@ -478,7 +478,7 @@ export function useGameState(navigateToView = null) {
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, venueType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
       setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated,
-      getFormationAwareTeamConfig, minimumPlayersForFormat]);
+      getFormationAwareTeamConfig, minimumPlayersForFormat, maximumPlayersForMatch]);
 
   const handleStartGame = () => {
     // Validate formation based on team mode
@@ -1430,7 +1430,7 @@ export function useGameState(navigateToView = null) {
     }
   }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
       periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentMatchId, matchCreated,
-      formation, allPlayers, minimumPlayersForFormat]);
+      formation, allPlayers, minimumPlayersForFormat, maximumPlayersForMatch]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
   // Shared function for saving match configuration (used by both handleStartGame and handleSavePeriodConfiguration)

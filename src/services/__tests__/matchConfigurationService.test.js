@@ -20,6 +20,7 @@ import {
   updateExistingMatch,
   saveInitialMatchConfig
 } from '../matchStateManager';
+import { FORMATS, GAME_CONSTANTS, getMinimumPlayersForFormat } from '../../constants/teamConfiguration';
 
 // Mock dependencies
 jest.mock('../matchStateManager', () => ({
@@ -482,6 +483,10 @@ describe('matchConfigurationService', () => {
   });
 
   describe('validateConfiguration', () => {
+    const baseMinPlayers = getMinimumPlayersForFormat(FORMATS.FORMAT_5V5);
+    const baseMaxPlayers = GAME_CONSTANTS.MAX_SQUAD_SIZE;
+    const baseRangeError = `Please select between ${baseMinPlayers} and ${baseMaxPlayers} players for the squad.`;
+
     it('should validate correct configuration', () => {
       const params = {
         selectedSquadIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'],
@@ -507,13 +512,13 @@ describe('matchConfigurationService', () => {
 
       expect(result).toEqual({
         isValid: false,
-        error: 'Please select 5-10 players for the squad.'
+        error: baseRangeError
       });
     });
 
     it('should fail with too many players', () => {
       const params = {
-        selectedSquadIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11'], // 11 players
+        selectedSquadIds: Array.from({ length: baseMaxPlayers + 1 }, (_, index) => `p${index + 1}`),
         numPeriods: 3,
         periodGoalieIds: { 1: 'p1', 2: 'p2', 3: 'p3' }
       };
@@ -522,7 +527,40 @@ describe('matchConfigurationService', () => {
 
       expect(result).toEqual({
         isValid: false,
-        error: 'Please select 5-10 players for the squad.'
+        error: baseRangeError
+      });
+    });
+
+    it('should enforce format-specific minimum players', () => {
+      const minPlayersFor7v7 = getMinimumPlayersForFormat(FORMATS.FORMAT_7V7);
+      const params = {
+        selectedSquadIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'], // Missing required players for 7v7
+        numPeriods: 2,
+        periodGoalieIds: { 1: 'p1', 2: 'p2' },
+        format: FORMATS.FORMAT_7V7
+      };
+
+      const result = validateConfiguration(params);
+
+      expect(result).toEqual({
+        isValid: false,
+        error: `Please select between ${minPlayersFor7v7} and ${baseMaxPlayers} players for the squad.`
+      });
+    });
+
+    it('should respect custom max players when provided', () => {
+      const params = {
+        selectedSquadIds: Array.from({ length: 13 }, (_, index) => `p${index + 1}`),
+        numPeriods: 3,
+        periodGoalieIds: { 1: 'p1', 2: 'p2', 3: 'p3' },
+        maxPlayersAllowed: 12
+      };
+
+      const result = validateConfiguration(params);
+
+      expect(result).toEqual({
+        isValid: false,
+        error: `Please select between ${baseMinPlayers} and 12 players for the squad.`
       });
     });
 
