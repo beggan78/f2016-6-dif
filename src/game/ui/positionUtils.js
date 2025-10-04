@@ -1,7 +1,7 @@
 import React from 'react';
 import { Shield, Sword, RotateCcw, Hand, ArrowDownUp } from 'lucide-react';
 import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
-import { supportsInactiveUsers, supportsNextNextIndicators } from '../../constants/gameModes';
+import { supportsInactiveUsers } from '../../constants/gameModes';
 import { getPositionRole } from '../logic/positionUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 
@@ -59,22 +59,69 @@ export function getPositionDisplayName(position, player, teamConfig, substituteP
 }
 
 /**
- * Get indicator properties for next/nextNext logic
+ * Get indicator properties for N-player substitution logic
  */
-export function getIndicatorProps(player, position, teamConfig, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions) {
+export function getIndicatorProps(
+  player,
+  position,
+  teamConfig,
+  nextPlayerIdToSubOut,
+  nextNextPlayerIdToSubOut,
+  substitutePositions,
+  substitutionCount = 1,
+  rotationQueue = []
+) {
   const playerId = player?.id;
   const isSubstitutePosition = substitutePositions.includes(position);
-  const supportsNextNext = supportsNextNextIndicators(teamConfig);
-  
+
+  // Get first N players from rotation queue (these are next to sub out)
+  const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+
+  // Get first N substitute positions (these are next to sub in)
+  const nextNSubstitutePositions = substitutePositions.slice(0, substitutionCount);
+
   const indicators = {
-    isNextOff: playerId === nextPlayerIdToSubOut,
-    isNextOn: isSubstitutePosition && position === substitutePositions[0], // First substitute is "next on"
-    isNextNextOff: supportsNextNext ? playerId === nextNextPlayerIdToSubOut : false,
-    isNextNextOn: supportsNextNext && isSubstitutePosition && position === substitutePositions[1] // Second substitute is "next next on"
+    isNextOff: nextNToSubOut.includes(playerId),
+    isNextOn: isSubstitutePosition && nextNSubstitutePositions.includes(position),
+    isNextNextOff: false, // Removed: no next-next indicators
+    isNextNextOn: false   // Removed: no next-next indicators
   };
-  
-  
+
   return indicators;
+}
+
+/**
+ * Maps substitute positions to their target field positions based on rotation queue
+ * @param {Array} rotationQueue - Current rotation queue (on-field players in substitution order)
+ * @param {Object} formation - Current formation object
+ * @param {Array} fieldPositions - Array of field position keys
+ * @param {Array} substitutePositions - Array of substitute position keys
+ * @param {number} substitutionCount - Number of players to substitute
+ * @returns {Object} Mapping of substitute position → target field position name
+ */
+export function getSubstituteTargetPositions(rotationQueue, formation, fieldPositions, substitutePositions, substitutionCount) {
+  const mapping = {};
+
+  // Get first N players from rotation queue (next to sub out)
+  const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+
+  // For each substitute position in the first N substitutes
+  const nextNSubstitutePositions = substitutePositions.slice(0, substitutionCount);
+
+  nextNSubstitutePositions.forEach((subPosition, index) => {
+    if (index < nextNToSubOut.length) {
+      const playerIdToSubOut = nextNToSubOut[index];
+
+      // Find which field position this player currently occupies
+      const targetFieldPosition = fieldPositions.find(pos => formation[pos] === playerIdToSubOut);
+
+      if (targetFieldPosition) {
+        mapping[subPosition] = targetFieldPosition;
+      }
+    }
+  });
+
+  return mapping;
 }
 
 /**
@@ -83,9 +130,3 @@ export function getIndicatorProps(player, position, teamConfig, nextPlayerIdToSu
 export function getPositionEvents(quickTapHandlers, position) {
   return quickTapHandlers[`${position}Events`] || {};
 }
-
-
-/**
- * Re-export supportsNextNextIndicators from gameModes for backward compatibility
- */
-export { supportsNextNextIndicators } from '../../constants/gameModes';

@@ -9,6 +9,7 @@ import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { calculateMatchTime } from '../../utils/gameEventLogger';
+import { getExpectedOutfieldPlayerCount } from '../../game/logic/positionUtils';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -107,9 +108,18 @@ export function GameScreen({
   const [substitutionCount, setSubstitutionCount] = React.useState(1);
 
   const maxSubstitutionCount = React.useMemo(() => {
-    const eligibleCount = eligiblePlayers.length || 0;
-    return Math.max(1, eligibleCount);
-  }, [eligiblePlayers]);
+    // Get number of outfield positions from team config (4 for 5v5, 6 for 7v7)
+    const outfieldCount = getExpectedOutfieldPlayerCount(teamConfig);
+
+    // Count active substitutes (non-inactive players not on field)
+    const activeSubstitutes = allPlayers.filter(p =>
+      p.stats?.currentStatus === PLAYER_STATUS.SUBSTITUTE &&
+      !p.stats?.isInactive
+    ).length;
+
+    // Max is the smaller of: outfield positions OR active substitutes
+    return Math.max(1, Math.min(outfieldCount, activeSubstitutes));
+  }, [teamConfig, allPlayers]);
 
   React.useEffect(() => {
     if (substitutionCount > maxSubstitutionCount) {
@@ -536,6 +546,8 @@ export function GameScreen({
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
+          substitutionCount={substitutionCount}
+          rotationQueue={rotationQueue}
           quickTapHandlers={quickTapHandlers}
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
@@ -591,6 +603,8 @@ export function GameScreen({
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
+          substitutionCount={substitutionCount}
+          rotationQueue={rotationQueue}
           quickTapHandlers={quickTapHandlers}
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
