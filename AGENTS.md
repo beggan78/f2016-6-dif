@@ -17,6 +17,13 @@ Follow the Create React App ESLint config with two-space indentation. Components
 - **Minimal Props**: Pass only necessary data; avoid prop drilling by using Context API when appropriate
 - **Presentational vs Container**: Separate UI rendering (presentational) from logic/state (container)
 
+## Modal Usage Guidelines
+- Prefer the shared modal primitives in `src/components/shared/UI.js` instead of ad-hoc `window.confirm` dialogs. They include `ConfirmationModal` for binary choices and `ThreeOptionModal` when a tertiary action is required.
+- Always render modals from within the component that owns the triggering control. Manage open/close state locally with React state so the modal respects React lifecycles and testing best practices.
+- Tailor copy, button labels, and visual variant to the action severity (e.g., `variant="danger"` for destructive actions) and keep messaging concise and actionable.
+- Ensure destructive flows (delete, irreversible reset, sign-out during match, etc.) prompt the user via `ConfirmationModal` or `ThreeOptionModal` before executing the action.
+- When adding a new flow that needs confirmation, follow existing examples in `App.js` and `PeriodSetupScreen.js` for layout, accessibility, and button ordering.
+
 ## Pure Function Requirements
 **Game logic functions MUST be pure**:
 - **Definition**: Same input always produces same output with no side effects

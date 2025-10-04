@@ -15,6 +15,47 @@ import { FORMATS, FORMAT_CONFIGS, FORMATIONS } from '../constants/teamConfigurat
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 import { normalizeFormationStructure } from '../utils/formationUtils';
 
+const DISPLAY_ROLE_TO_DB_ROLE_MAP = {
+  Goalkeeper: roleToDatabase(PLAYER_ROLES.GOALIE),
+  Goalie: roleToDatabase(PLAYER_ROLES.GOALIE),
+  Defender: roleToDatabase(PLAYER_ROLES.DEFENDER),
+  Midfielder: roleToDatabase(PLAYER_ROLES.MIDFIELDER),
+  Attacker: roleToDatabase(PLAYER_ROLES.ATTACKER),
+  Substitute: roleToDatabase(PLAYER_ROLES.SUBSTITUTE)
+};
+
+const DB_ROLE_TO_DISPLAY_ROLE_MAP = {
+  goalie: 'Goalkeeper',
+  defender: 'Defender',
+  midfielder: 'Midfielder',
+  attacker: 'Attacker',
+  substitute: 'Substitute'
+};
+
+function mapDisplayRoleToDatabaseRole(displayRole) {
+  if (!displayRole) {
+    return null;
+  }
+
+  if (DISPLAY_ROLE_TO_DB_ROLE_MAP[displayRole]) {
+    return DISPLAY_ROLE_TO_DB_ROLE_MAP[displayRole];
+  }
+
+  return mapStartingRoleToDBRole(displayRole);
+}
+
+function formatDatabaseRoleForDisplay(dbRole) {
+  if (!dbRole) {
+    return 'Unknown';
+  }
+
+  if (DB_ROLE_TO_DISPLAY_ROLE_MAP[dbRole]) {
+    return DB_ROLE_TO_DISPLAY_ROLE_MAP[dbRole];
+  }
+
+  return dbRole.charAt(0).toUpperCase() + dbRole.slice(1);
+}
+
 /**
  * Create a new match record when the first period starts and insert initial player stats
  * @param {Object} matchData - Match configuration and team data
@@ -101,6 +142,163 @@ export async function createMatch(matchData, allPlayers = [], selectedSquadIds =
 
   } catch (error) {
     console.error('❌ Exception while creating match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Create a fully confirmed match record directly from manual input.
+ * Inserts both the match metadata and optional player statistics so the entry
+ * appears immediately in match history.
+ * @param {Object} matchData - Manual match details collected from the UI
+ * @param {string} matchData.teamId - Team ID (required)
+ * @param {string} matchData.date - Match date in YYYY-MM-DD (required)
+ * @param {string} matchData.time - Match start time in HH:MM (required)
+ * @param {string} matchData.type - Match type enum value (required)
+ * @param {string} matchData.venueType - Venue type enum value (required)
+ * @param {string} matchData.format - Match format (required)
+ * @param {string} matchData.formation - Formation identifier (required)
+ * @param {number} matchData.periods - Number of periods (required)
+ * @param {number} matchData.periodDuration - Period duration in minutes (required)
+ * @param {number} [matchData.goalsScored=0] - Goals scored by the team
+ * @param {number} [matchData.goalsConceded=0] - Goals conceded by the opponent
+ * @param {number} [matchData.matchDurationSeconds] - Total match duration in seconds
+ * @param {string} [matchData.opponent] - Opponent name
+ * @param {string} [matchData.captainId] - Captain player ID
+ * @param {Array} playerStats - Optional player stat objects from the edit view
+ * @returns {Promise<{success: boolean, matchId?: string, error?: string}>}
+ */
+export async function createManualMatch(matchData, playerStats = []) {
+  try {
+    const requiredFields = [
+      'teamId',
+      'date',
+      'time',
+      'type',
+      'venueType',
+      'format',
+      'formation',
+      'periods',
+      'periodDuration'
+    ];
+
+    const missingFields = requiredFields.filter((field) => {
+      const value = matchData[field];
+      return value === undefined || value === null || value === '';
+    });
+
+    if (missingFields.length > 0) {
+      return {
+        success: false,
+        error: `Missing required fields: ${missingFields.join(', ')}`
+      };
+    }
+
+    const goalsScored = typeof matchData.goalsScored === 'number' ? matchData.goalsScored : 0;
+    const goalsConceded = typeof matchData.goalsConceded === 'number' ? matchData.goalsConceded : 0;
+    const outcome = calculateMatchOutcome(goalsScored, goalsConceded);
+
+    // Default duration: total minutes from periods * period duration
+    const computedDurationSeconds = (Number(matchData.periods) || 0) * (Number(matchData.periodDuration) || 0) * 60;
+    const matchDurationSeconds = typeof matchData.matchDurationSeconds === 'number'
+      ? matchData.matchDurationSeconds
+      : computedDurationSeconds;
+
+    // Compose ISO timestamp from provided date and time (falls back to UTC midnight if parsing fails)
+    let startedAt;
+    try {
+      const isoString = `${matchData.date}T${matchData.time}:00`;
+      startedAt = new Date(isoString).toISOString();
+    } catch (error) {
+      startedAt = new Date().toISOString();
+    }
+
+    const nowIso = new Date().toISOString();
+
+    const fairPlayAwardPlayerId = matchData.fairPlayAwardPlayerId
+      || playerStats.find((player) => player?.receivedFairPlayAward)?.playerId
+      || null;
+
+    const captainId = matchData.captainId
+      || playerStats.find((player) => player?.wasCaptain)?.playerId
+      || null;
+
+    const insertData = {
+      team_id: matchData.teamId,
+      opponent: matchData.opponent || null,
+      goals_scored: goalsScored,
+      goals_conceded: goalsConceded,
+      outcome,
+      venue_type: matchData.venueType,
+      type: typeof matchData.type === 'string' ? matchData.type.toLowerCase() : matchData.type,
+      format: matchData.format,
+      formation: matchData.formation,
+      periods: Number(matchData.periods) || 0,
+      period_duration_minutes: Number(matchData.periodDuration) || 0,
+      match_duration_seconds: matchDurationSeconds,
+      started_at: startedAt,
+      finished_at: startedAt,
+      updated_at: nowIso,
+      state: 'confirmed',
+      fair_play_award: fairPlayAwardPlayerId,
+      captain: captainId
+    };
+
+    const { data: matchInsertResult, error: matchInsertError } = await supabase
+      .from('match')
+      .insert(insertData)
+      .select('id')
+      .single();
+
+    if (matchInsertError) {
+      console.error('❌ Failed to create manual match:', matchInsertError);
+      return {
+        success: false,
+        error: `Database error: ${matchInsertError.message}`
+      };
+    }
+
+    const createdMatchId = matchInsertResult?.id;
+
+    if (!createdMatchId) {
+      return {
+        success: false,
+        error: 'Failed to create match: Missing match identifier from database response.'
+      };
+    }
+
+    const hasPlayerStats = Array.isArray(playerStats) && playerStats.length > 0;
+
+    if (hasPlayerStats) {
+      const statRows = playerStats
+        .filter((player) => player?.playerId)
+        .map((player) => buildPlayerMatchStatUpdateRow(createdMatchId, player.playerId, player));
+
+      if (statRows.length > 0) {
+        const { error: statsError } = await supabase
+          .from('player_match_stats')
+          .upsert(statRows, { onConflict: 'match_id,player_id' });
+
+        if (statsError) {
+          console.error('❌ Failed to insert manual player stats:', statsError);
+          return {
+            success: false,
+            error: `Database error: ${statsError.message}`
+          };
+        }
+      }
+    }
+
+    return {
+      success: true,
+      matchId: createdMatchId
+    };
+
+  } catch (error) {
+    console.error('❌ Exception while creating manual match:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`
@@ -647,7 +845,7 @@ export async function getMatchDetails(matchId) {
         timeAsMidfielder: (stat.midfielder_time_seconds || 0) / 60,
         timeAsAttacker: (stat.attacker_time_seconds || 0) / 60,
         timeAsGoalkeeper: (stat.goalie_time_seconds || 0) / 60,
-        startingRole: stat.started_as ? stat.started_as.charAt(0).toUpperCase() + stat.started_as.slice(1) : 'Unknown',
+        startingRole: formatDatabaseRoleForDisplay(stat.started_as),
         wasCaptain: stat.was_captain || false,
         receivedFairPlayAward: stat.got_fair_play_award || false
       }));
@@ -1672,6 +1870,68 @@ export async function discardPendingMatch(matchId) {
   }
 }
 
+export async function deleteConfirmedMatch(matchId) {
+  try {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+
+    const statsResult = await supabase
+      .from('player_match_stats')
+      .delete()
+      .eq('match_id', matchId);
+
+    if (statsResult.error) {
+      console.error('❌ Failed to delete player match stats:', statsResult.error);
+      return {
+        success: false,
+        error: `Database error: ${statsResult.error.message}`
+      };
+    }
+
+    const matchResult = await supabase
+      .from('match')
+      .update(
+        {
+          deleted_at: nowIso
+        },
+        { returning: 'minimal' }
+      )
+      .eq('id', matchId)
+      .is('deleted_at', null)
+      .in('state', ['finished', 'confirmed']);
+
+    if (matchResult.error) {
+      console.error('❌ Failed to delete confirmed match:', matchResult.error);
+      return {
+        success: false,
+        error: `Database error: ${matchResult.error.message}`
+      };
+    }
+
+    if (!matchResult.data || matchResult.data.length === 0) {
+      return {
+        success: false,
+        error: 'Match not found or already deleted'
+      };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Exception while deleting confirmed match:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
 /**
  * Update match details from the edit view
  * @param {string} matchId - Match ID
@@ -1769,7 +2029,7 @@ function buildPlayerMatchStatUpdateRow(matchId, playerId, statUpdates) {
 
   const totalFieldTimeSeconds = defenderSeconds + midfielderSeconds + attackerSeconds;
 
-  const startedAs = statUpdates.startingRole ? statUpdates.startingRole.toLowerCase() : null;
+  const startedAs = statUpdates.startingRole ? mapDisplayRoleToDatabaseRole(statUpdates.startingRole) : null;
 
   return {
     match_id: matchId,

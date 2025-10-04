@@ -19,23 +19,59 @@ const STATS_TABS = {
 export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   const [activeTab, setActiveTab] = useState(STATS_TABS.TEAM);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [isCreatingMatch, setIsCreatingMatch] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [timeRangeStart, setTimeRangeStart] = useState(null);
   const [timeRangeEnd, setTimeRangeEnd] = useState(null);
   const { loading: authLoading, isAuthenticated } = useAuth();
-  const { loading: teamLoading, currentTeam, userTeams, canViewStatistics } = useTeam();
+  const {
+    loading: teamLoading,
+    currentTeam,
+    userTeams,
+    canViewStatistics,
+    teamPlayers
+  } = useTeam();
   const authModal = useAuthModalIntegration(authModalProp);
 
   const handleMatchSelect = (matchId) => {
     setSelectedMatchId(matchId);
+    setIsCreatingMatch(false);
   };
 
   const handleBackToHistory = () => {
     setSelectedMatchId(null);
+    setIsCreatingMatch(false);
   };
 
   const handleTimeRangeChange = (startDate, endDate) => {
     setTimeRangeStart(startDate);
     setTimeRangeEnd(endDate);
+  };
+
+  const handleCreateMatch = () => {
+    setSelectedMatchId(null);
+    setIsCreatingMatch(true);
+  };
+
+  const triggerHistoryRefresh = () => {
+    setHistoryRefreshKey((prev) => prev + 1);
+  };
+
+  const handleManualMatchCreated = (newMatchId) => {
+    triggerHistoryRefresh();
+    if (newMatchId) {
+      setSelectedMatchId(newMatchId);
+      setIsCreatingMatch(false);
+    } else {
+      setSelectedMatchId(null);
+      setIsCreatingMatch(false);
+    }
+  };
+
+  const handleMatchDeleted = () => {
+    triggerHistoryRefresh();
+    setSelectedMatchId(null);
+    setIsCreatingMatch(false);
   };
 
   const tabs = [
@@ -60,11 +96,17 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   ];
 
   const renderActiveView = () => {
-    if (selectedMatchId) {
+    if (selectedMatchId || isCreatingMatch) {
       return (
         <MatchDetailsView
-          matchId={selectedMatchId}
+          matchId={isCreatingMatch ? null : selectedMatchId}
+          mode={isCreatingMatch ? 'create' : 'view'}
+          teamId={currentTeam?.id}
+          teamPlayers={teamPlayers}
           onNavigateBack={handleBackToHistory}
+          onManualMatchCreated={handleManualMatchCreated}
+          onMatchUpdated={triggerHistoryRefresh}
+          onMatchDeleted={handleMatchDeleted}
         />
       );
     }
@@ -75,7 +117,15 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
       case STATS_TABS.PLAYER:
         return <PlayerStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
       case STATS_TABS.HISTORY:
-        return <MatchHistoryView onMatchSelect={handleMatchSelect} startDate={timeRangeStart} endDate={timeRangeEnd} />;
+        return (
+          <MatchHistoryView
+            onMatchSelect={handleMatchSelect}
+            onCreateMatch={handleCreateMatch}
+            startDate={timeRangeStart}
+            endDate={timeRangeEnd}
+            refreshKey={historyRefreshKey}
+          />
+        );
       default:
         return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} onMatchSelect={handleMatchSelect} />;
     }

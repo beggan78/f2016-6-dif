@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, History } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { Calendar, MapPin, Trophy, History, PlusCircle } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { getOutcomeBadgeClasses, getMatchTypeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
+import { Button } from '../shared/UI';
 
-export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
+export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endDate, refreshKey = 0 }) {
   const { currentTeam } = useTeam();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -55,7 +57,7 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     }
 
     fetchMatches();
-  }, [currentTeam?.id, startDate, endDate]);
+  }, [currentTeam?.id, startDate, endDate, refreshKey]);
 
   // Detect screen size for responsive layout
   useEffect(() => {
@@ -145,9 +147,16 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
 
       {/* Match List */}
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <div className="flex items-center space-x-2 mb-4">
-          <History className="h-5 w-5 text-sky-400" />
-          <h3 className="text-lg font-semibold text-sky-400">Match History</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <History className="h-5 w-5 text-sky-400" />
+            <h3 className="text-lg font-semibold text-sky-400">Match History</h3>
+          </div>
+          {onCreateMatch && (
+            <Button onClick={onCreateMatch} Icon={PlusCircle} size="sm">
+              Add Match
+            </Button>
+          )}
         </div>
         <p className="text-slate-400 text-sm mb-4">
           {filteredMatches.length} matches found. Click on a match to view detailed statistics.
@@ -227,3 +236,11 @@ export function MatchHistoryView({ onMatchSelect, startDate, endDate }) {
     </div>
   );
 }
+
+MatchHistoryView.propTypes = {
+  onMatchSelect: PropTypes.func.isRequired,
+  onCreateMatch: PropTypes.func,
+  startDate: PropTypes.instanceOf(Date),
+  endDate: PropTypes.instanceOf(Date),
+  refreshKey: PropTypes.number
+};

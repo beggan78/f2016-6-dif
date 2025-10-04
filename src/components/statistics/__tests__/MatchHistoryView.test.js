@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { MatchHistoryView } from '../MatchHistoryView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../../services/matchStateManager';
@@ -208,6 +208,43 @@ describe('MatchHistoryView', () => {
     fireEvent.click(option);
 
     await screen.findByText(/4 matches found/i);
+  });
+
+  test('renders Add Match button when handler provided', async () => {
+    const handleCreateMatch = jest.fn();
+
+    render(
+      <MatchHistoryView
+        onMatchSelect={mockOnMatchSelect}
+        onCreateMatch={handleCreateMatch}
+      />
+    );
+
+    await screen.findByText(/10 matches found/i);
+
+    const addButton = screen.getByRole('button', { name: /Add Match/i });
+    fireEvent.click(addButton);
+
+    expect(handleCreateMatch).toHaveBeenCalledTimes(1);
+  });
+
+  test('refetches matches when refreshKey changes', async () => {
+    const { rerender } = render(
+      <MatchHistoryView onMatchSelect={mockOnMatchSelect} refreshKey={0} />
+    );
+
+    await screen.findByText(/10 matches found/i);
+    expect(getConfirmedMatches).toHaveBeenCalledTimes(1);
+
+    getConfirmedMatches.mockClear();
+
+    rerender(
+      <MatchHistoryView onMatchSelect={mockOnMatchSelect} refreshKey={1} />
+    );
+
+    await waitFor(() => {
+      expect(getConfirmedMatches).toHaveBeenCalledTimes(1);
+    });
   });
 
   test('component renders without errors', async () => {
