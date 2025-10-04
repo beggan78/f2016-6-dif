@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { act } from 'react-dom/test-utils';
+import userEvent from '@testing-library/user-event';
 import { MatchDetailsView } from '../MatchDetailsView';
 import {
   createManualMatch,
@@ -179,9 +179,7 @@ describe('MatchDetailsView - existing match mode', () => {
     const modal = await screen.findByRole('dialog');
     const confirmButton = within(modal).getByRole('button', { name: /Delete Match/i });
 
-    await act(async () => {
-      fireEvent.click(confirmButton);
-    });
+    await userEvent.click(confirmButton);
 
     await waitFor(() => expect(deleteConfirmedMatch).toHaveBeenCalledWith('match-1'));
     await waitFor(() => expect(handleMatchDeleted).toHaveBeenCalledWith('match-1'));
@@ -209,12 +207,58 @@ describe('MatchDetailsView - existing match mode', () => {
     const modal = await screen.findByRole('dialog');
     const cancelButton = within(modal).getByRole('button', { name: /Cancel/i });
 
-    await act(async () => {
-      fireEvent.click(cancelButton);
-    });
+    await userEvent.click(cancelButton);
 
     expect(deleteConfirmedMatch).not.toHaveBeenCalled();
     expect(handleMatchDeleted).not.toHaveBeenCalled();
     expect(handleNavigateBack).not.toHaveBeenCalled();
+  });
+
+  it('preserves total match time when period count changes during edit', async () => {
+    getMatchDetails.mockResolvedValueOnce({
+      success: true,
+      match: {
+        id: 'match-1',
+        opponent: 'Opponents',
+        goalsScored: 2,
+        goalsConceded: 1,
+        venueType: 'home',
+        type: 'league',
+        format: '5v5',
+        formation: '2-2',
+        periods: 3,
+        periodDuration: 15,
+        matchDurationSeconds: 2772,
+        date: '2024-03-10',
+        time: '14:00',
+        outcome: 'W'
+      },
+      playerStats: []
+    });
+
+    render(
+      <MatchDetailsView
+        matchId="match-1"
+        teamId="team-xyz"
+        onNavigateBack={jest.fn()}
+      />
+    );
+
+    const editButton = await screen.findByRole('button', { name: /Edit Match/i });
+    await userEvent.click(editButton);
+
+    const totalTimeInput = await screen.findByDisplayValue('46:12');
+    const periodsInput = screen.getByDisplayValue('3');
+
+    fireEvent.change(periodsInput, { target: { value: '4' } });
+    fireEvent.blur(periodsInput);
+
+    expect(totalTimeInput.value).toBe('46:12');
+
+    await userEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
+
+    await waitFor(() => expect(updateMatchDetails).toHaveBeenCalled());
+    const [, payload] = updateMatchDetails.mock.calls[0];
+    expect(payload.matchDurationSeconds).toBe(2772);
   });
 });

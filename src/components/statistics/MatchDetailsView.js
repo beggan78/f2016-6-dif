@@ -93,6 +93,28 @@ const DEFAULT_PERIOD_DURATION = 15;
 const DEFAULT_FORMAT = FORMATS.FORMAT_5V5;
 const DEFAULT_STARTING_ROLE = STARTING_ROLES[4];
 
+const normalizeIntegerValue = (value, fallback = 0) => {
+  if (value === '' || value === null || value === undefined) {
+    return fallback;
+  }
+  const parsed = parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return Math.max(0, parsed);
+};
+
+const normalizeFloatValue = (value, fallback = 0) => {
+  if (value === '' || value === null || value === undefined) {
+    return fallback;
+  }
+  const parsed = parseFloat(value);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return Math.max(0, parsed);
+};
+
 // Helper function to get formation options for selected format
 const getFormationOptionsForFormat = (format) => {
   const validFormations = getValidFormations(format, 15); // Use max squad size to get all formations
@@ -326,30 +348,30 @@ export function MatchDetailsView({
     setSaveError(null);
 
     try {
+      const sanitizedMatch = sanitizeMatchDetailsForSave(editData);
+      const sanitizedPlayerStats = sanitizedMatch.playerStats;
+
       if (isCreateMode || !matchId) {
         if (!teamId) {
           throw new Error('A team must be selected before adding a match.');
         }
 
-        const fairPlayAwardPlayerId = editData.playerStats?.find((player) => player.receivedFairPlayAward)?.playerId || null;
-        const captainPlayerId = editData.playerStats?.find((player) => player.wasCaptain)?.playerId || null;
-        const durationSeconds = typeof editData.matchDurationSeconds === 'number'
-          ? editData.matchDurationSeconds
-          : (editData.periods || 0) * (editData.periodDuration || 0) * 60;
+        const fairPlayAwardPlayerId = sanitizedPlayerStats.find((player) => player.receivedFairPlayAward)?.playerId || null;
+        const captainPlayerId = sanitizedPlayerStats.find((player) => player.wasCaptain)?.playerId || null;
 
         const manualResult = await createManualMatch({
-          ...editData,
+          ...sanitizedMatch,
           teamId,
           fairPlayAwardPlayerId,
-          captainId: captainPlayerId,
-          matchDurationSeconds: durationSeconds
-        }, editData.playerStats || []);
+          captainId: captainPlayerId
+        }, sanitizedPlayerStats);
 
         if (!manualResult.success) {
           throw new Error(manualResult.error || 'Failed to create match');
         }
 
-        setMatchData(editData);
+        setMatchData(sanitizedMatch);
+        setEditData(sanitizedMatch);
         setIsEditing(false);
 
         if (onManualMatchCreated) {
@@ -360,25 +382,25 @@ export function MatchDetailsView({
       }
 
       const matchResult = await updateMatchDetails(matchId, {
-        opponent: editData.opponent,
-        goalsScored: editData.goalsScored,
-        goalsConceded: editData.goalsConceded,
-        venueType: editData.venueType,
-        type: editData.type,
-        format: editData.format,
-        formation: editData.formation,
-        periods: editData.periods,
-        periodDuration: editData.periodDuration,
-        matchDurationSeconds: editData.matchDurationSeconds,
-        date: editData.date,
-        time: editData.time
+        opponent: sanitizedMatch.opponent,
+        goalsScored: sanitizedMatch.goalsScored,
+        goalsConceded: sanitizedMatch.goalsConceded,
+        venueType: sanitizedMatch.venueType,
+        type: sanitizedMatch.type,
+        format: sanitizedMatch.format,
+        formation: sanitizedMatch.formation,
+        periods: sanitizedMatch.periods,
+        periodDuration: sanitizedMatch.periodDuration,
+        matchDurationSeconds: sanitizedMatch.matchDurationSeconds,
+        date: sanitizedMatch.date,
+        time: sanitizedMatch.time
       });
 
       if (!matchResult.success) {
         throw new Error(matchResult.error || 'Failed to update match details');
       }
 
-      const playerResult = await updatePlayerMatchStatsBatch(matchId, editData.playerStats);
+      const playerResult = await updatePlayerMatchStatsBatch(matchId, sanitizedPlayerStats);
 
       if (!playerResult.success) {
         throw new Error(playerResult.error || 'Failed to update player stats');
@@ -451,12 +473,6 @@ export function MatchDetailsView({
         }
       }
 
-      if (field === 'periods' || field === 'periodDuration') {
-        const periods = field === 'periods' ? value : updated.periods;
-        const periodDuration = field === 'periodDuration' ? value : updated.periodDuration;
-        updated.matchDurationSeconds = (periods || 0) * (periodDuration || 0) * 60;
-      }
-
       if (field === 'goalsScored' || field === 'goalsConceded') {
         const goalsFor = field === 'goalsScored' ? value : updated.goalsScored;
         const goalsAgainst = field === 'goalsConceded' ? value : updated.goalsConceded;
@@ -466,6 +482,101 @@ export function MatchDetailsView({
 
       return updated;
     });
+  };
+
+  const handleMatchIntegerChange = (field) => (event) => {
+    const { value } = event.target;
+    if (value === '') {
+      updateMatchDetail(field, '');
+      return;
+    }
+
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) {
+      updateMatchDetail(field, '');
+      return;
+    }
+
+    updateMatchDetail(field, Math.max(0, parsed));
+  };
+
+  const handleMatchIntegerBlur = (field, fallback = 0) => () => {
+    if (!editData) {
+      return;
+    }
+
+    const normalized = normalizeIntegerValue(editData[field], fallback);
+    updateMatchDetail(field, normalized);
+  };
+
+  const handlePlayerIntegerChange = (playerId, field) => (event) => {
+    const { value } = event.target;
+    if (value === '') {
+      updatePlayerStat(playerId, field, '');
+      return;
+    }
+
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) {
+      updatePlayerStat(playerId, field, '');
+      return;
+    }
+
+    updatePlayerStat(playerId, field, Math.max(0, parsed));
+  };
+
+  const handlePlayerIntegerBlur = (playerId, field, fallback = 0) => () => {
+    const player = editData?.playerStats?.find((p) => p.id === playerId);
+    if (!player) {
+      return;
+    }
+
+    const normalized = normalizeIntegerValue(player[field], fallback);
+    updatePlayerStat(playerId, field, normalized);
+  };
+
+  const sanitizePlayerStatsForSave = (stats = []) => {
+    return (stats || []).map((player) => {
+      const timeAsDefender = normalizeFloatValue(player.timeAsDefender, 0);
+      const timeAsMidfielder = normalizeFloatValue(player.timeAsMidfielder, 0);
+      const timeAsAttacker = normalizeFloatValue(player.timeAsAttacker, 0);
+      const timeAsGoalkeeper = normalizeFloatValue(player.timeAsGoalkeeper, 0);
+      const totalTimePlayed = timeAsDefender + timeAsMidfielder + timeAsAttacker;
+
+      return {
+        ...player,
+        goalsScored: normalizeIntegerValue(player.goalsScored, 0),
+        timeAsDefender,
+        timeAsMidfielder,
+        timeAsAttacker,
+        timeAsGoalkeeper,
+        totalTimePlayed,
+        wasCaptain: Boolean(player.wasCaptain),
+        receivedFairPlayAward: Boolean(player.receivedFairPlayAward)
+      };
+    });
+  };
+
+  const sanitizeMatchDetailsForSave = (data) => {
+    const sanitizedPlayerStats = sanitizePlayerStatsForSave(data.playerStats);
+    const sanitizedPeriods = normalizeIntegerValue(data.periods, DEFAULT_PERIODS);
+    const sanitizedPeriodDuration = normalizeIntegerValue(data.periodDuration, DEFAULT_PERIOD_DURATION);
+    const sanitizedGoalsScored = normalizeIntegerValue(data.goalsScored, 0);
+    const sanitizedGoalsConceded = normalizeIntegerValue(data.goalsConceded, 0);
+    const sanitizedMatchDurationSeconds = normalizeFloatValue(
+      data.matchDurationSeconds,
+      sanitizedPeriods * sanitizedPeriodDuration * 60
+    );
+
+    return {
+      ...data,
+      goalsScored: sanitizedGoalsScored,
+      goalsConceded: sanitizedGoalsConceded,
+      periods: sanitizedPeriods,
+      periodDuration: sanitizedPeriodDuration,
+      matchDurationSeconds: sanitizedMatchDurationSeconds,
+      playerStats: sanitizedPlayerStats
+    };
   };
 
   const updatePlayerStat = (playerRowId, field, value) => {
@@ -773,16 +884,18 @@ export function MatchDetailsView({
                 <div className="flex items-center justify-center space-x-2">
                   <Input
                     type="number"
-                    value={editData.goalsScored}
-                    onChange={(e) => updateMatchDetail('goalsScored', parseInt(e.target.value) || 0)}
+                    value={editData.goalsScored === '' ? '' : editData.goalsScored}
+                    onChange={handleMatchIntegerChange('goalsScored')}
+                    onBlur={handleMatchIntegerBlur('goalsScored', 0)}
                     className="w-16 text-center"
                     min="0"
                   />
                   <span className="text-slate-400 text-xl">-</span>
                   <Input
                     type="number"
-                    value={editData.goalsConceded}
-                    onChange={(e) => updateMatchDetail('goalsConceded', parseInt(e.target.value) || 0)}
+                    value={editData.goalsConceded === '' ? '' : editData.goalsConceded}
+                    onChange={handleMatchIntegerChange('goalsConceded')}
+                    onBlur={handleMatchIntegerBlur('goalsConceded', 0)}
                     className="w-16 text-center"
                     min="0"
                   />
@@ -907,8 +1020,9 @@ export function MatchDetailsView({
                 {isEditing ? (
                   <Input
                     type="number"
-                    value={editData.periods}
-                    onChange={(e) => updateMatchDetail('periods', parseInt(e.target.value) || 0)}
+                    value={editData.periods === '' ? '' : editData.periods}
+                    onChange={handleMatchIntegerChange('periods')}
+                    onBlur={handleMatchIntegerBlur('periods', 1)}
                     className="text-sm"
                     min="1"
                   />
@@ -1015,8 +1129,9 @@ export function MatchDetailsView({
                     {isEditing ? (
                       <Input
                         type="number"
-                        value={player.goalsScored}
-                        onChange={(e) => updatePlayerStat(player.id, 'goalsScored', parseInt(e.target.value) || 0)}
+                        value={player.goalsScored === '' ? '' : player.goalsScored}
+                        onChange={handlePlayerIntegerChange(player.id, 'goalsScored')}
+                        onBlur={handlePlayerIntegerBlur(player.id, 'goalsScored', 0)}
                         className="w-16 text-center"
                         min="0"
                       />
