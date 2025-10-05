@@ -351,7 +351,7 @@ export function FieldPlayerModal({
                       disabled={!canSubstitute}
                       title={canSubstitute ? "Set as next to substitute" : "All substitutes are inactive - cannot set as next"}
                     >
-                      Set as next sub
+                      Set to go off next
                     </Button>
                     <Button 
                       onClick={onSubNow} 
