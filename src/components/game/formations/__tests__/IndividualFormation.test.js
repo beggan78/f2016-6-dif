@@ -38,7 +38,7 @@ const createDefaultProps = (overrides = {}) => {
 };
 
 describe('IndividualFormation - substitute position indicators', () => {
-  it('shows the target position for the next substitute when substitutionCount is 1', () => {
+  it('shows the target position and player name for the next substitute when substitutionCount is 1', () => {
     const formation = createMockFormation(TEAM_CONFIGS.INDIVIDUAL_7);
     const rotationQueue = [formation.leftDefender, formation.rightDefender, formation.leftAttacker, formation.rightAttacker];
     const props = createDefaultProps({
@@ -49,12 +49,14 @@ describe('IndividualFormation - substitute position indicators', () => {
 
     render(<IndividualFormation {...props} />);
 
+    // Should show "Substitute (Player X - Left Defender)" where X is the player ID at leftDefender
+    const leftDefenderPlayerId = formation.leftDefender;
     expect(
-      screen.getByRole('heading', { name: 'Substitute (Next: Left Defender)' })
+      screen.getByRole('heading', { name: `Substitute (Player ${leftDefenderPlayerId} - Left Defender)` })
     ).toBeInTheDocument();
   });
 
-  it('shows target positions for N substitutes when substitutionCount is 2', () => {
+  it('shows target positions and player names for N substitutes when substitutionCount is 2', () => {
     const formation = createMockFormation(TEAM_CONFIGS.INDIVIDUAL_7);
     const rotationQueue = [formation.leftDefender, formation.rightDefender, formation.leftAttacker, formation.rightAttacker];
     const props = createDefaultProps({
@@ -65,14 +67,16 @@ describe('IndividualFormation - substitute position indicators', () => {
 
     render(<IndividualFormation {...props} />);
 
-    // First substitute should show "Next: Left Defender"
+    // First substitute should show player name and position
+    const leftDefenderPlayerId = formation.leftDefender;
     expect(
-      screen.getByRole('heading', { name: 'Substitute (Next: Left Defender)' })
+      screen.getByRole('heading', { name: `Substitute (Player ${leftDefenderPlayerId} - Left Defender)` })
     ).toBeInTheDocument();
 
-    // Second substitute should show "Next: Right Defender"
+    // Second substitute should show player name and position
+    const rightDefenderPlayerId = formation.rightDefender;
     expect(
-      screen.getByRole('heading', { name: 'Substitute (Next: Right Defender)' })
+      screen.getByRole('heading', { name: `Substitute (Player ${rightDefenderPlayerId} - Right Defender)` })
     ).toBeInTheDocument();
   });
 

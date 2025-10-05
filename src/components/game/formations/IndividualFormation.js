@@ -68,21 +68,30 @@ export function IndividualFormation({
     [rotationQueue, formation, fieldPositions, substitutePositions, substitutionCount]
   );
 
-  // Create display labels for target positions
+  // Create display labels for target positions with player names
   const incomingPositionLabels = React.useMemo(
     () => {
       const labels = {};
       Object.entries(substituteTargetMapping).forEach(([subPosition, targetFieldPosition]) => {
-        labels[subPosition] = getPositionDisplayName(
+        const positionName = getPositionDisplayName(
           targetFieldPosition,
           null,
           formationAwareTeamConfig,
           substitutePositions
         );
+
+        // Find the player at the target field position
+        const playerIdAtPosition = formation?.[targetFieldPosition];
+        const playerName = playerIdAtPosition && getPlayerNameById
+          ? getPlayerNameById(playerIdAtPosition)
+          : null;
+
+        // Format: "PlayerName - Position"
+        labels[subPosition] = playerName ? `${playerName} - ${positionName}` : positionName;
       });
       return labels;
     },
-    [substituteTargetMapping, formationAwareTeamConfig, substitutePositions]
+    [substituteTargetMapping, formationAwareTeamConfig, substitutePositions, formation, getPlayerNameById]
   );
 
   // Handle null/undefined formation after hook definitions to satisfy rules of hooks
@@ -174,7 +183,7 @@ export function IndividualFormation({
             </span>
             {shouldShowIncomingPosition && (
               <span className="text-[11px] font-normal text-slate-200">
-                (Next: {incomingPositionLabel})
+                ({incomingPositionLabel})
               </span>
             )}
             {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
