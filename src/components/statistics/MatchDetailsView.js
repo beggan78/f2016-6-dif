@@ -254,12 +254,6 @@ export function MatchDetailsView({
     return (teamPlayers || []).filter(player => !assignedPlayerIds.has(player.id));
   }, [teamPlayers, assignedPlayerIds]);
 
-  useEffect(() => {
-    if (!isEditing) {
-      setGoalWarning(null);
-    }
-  }, [isEditing]);
-
   // Initialise create mode defaults when roster data becomes available
   useEffect(() => {
     if (!isCreateMode) {
@@ -362,6 +356,16 @@ export function MatchDetailsView({
       setGoalWarning(null);
     }
   }, [isEditing]);
+
+  // Check for goal inconsistencies when entering/leaving edit mode
+  useEffect(() => {
+    if (!isEditing) {
+      setGoalWarning(null);
+    } else {
+      // When entering edit mode, check for goal inconsistencies
+      evaluateGoalConsistency(editData);
+    }
+  }, [isEditing, editData, evaluateGoalConsistency]);
 
   if (loading) {
     return (

@@ -310,6 +310,81 @@ describe('MatchDetailsView - existing match mode', () => {
     expect(payload.periodDuration).toBe(20);
   });
 
+  it('shows warning immediately when entering edit mode if player goals exceed team total', async () => {
+    getMatchDetails.mockResolvedValueOnce({
+      success: true,
+      match: {
+        id: 'match-1',
+        opponent: 'Opponents',
+        goalsScored: 2,
+        goalsConceded: 1,
+        venueType: 'home',
+        type: 'league',
+        format: '5v5',
+        formation: '2-2',
+        periods: 3,
+        periodDuration: 15,
+        matchDurationSeconds: 2700,
+        date: '2024-03-10',
+        time: '14:00',
+        outcome: 'W'
+      },
+      playerStats: [
+        {
+          id: 'player-stat-1',
+          playerId: 'player-1',
+          name: 'Player One',
+          goalsScored: 2,
+          totalTimePlayed: 0,
+          timeAsDefender: 0,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 0,
+          timeAsGoalkeeper: 0,
+          startingRole: 'defender',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-stat-2',
+          playerId: 'player-2',
+          name: 'Player Two',
+          goalsScored: 2,
+          totalTimePlayed: 0,
+          timeAsDefender: 0,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 0,
+          timeAsGoalkeeper: 0,
+          startingRole: 'defender',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        }
+      ]
+    });
+
+    render(
+      <MatchDetailsView
+        matchId="match-1"
+        teamId="team-xyz"
+        onNavigateBack={jest.fn()}
+      />
+    );
+
+    const editButton = await screen.findByRole('button', { name: /Edit Match/i });
+
+    // Warning should not be visible before entering edit mode
+    expect(screen.queryByText(/Player goals \(4\) exceed team total \(2\)/)).not.toBeInTheDocument();
+
+    await userEvent.click(editButton);
+
+    // Warning should appear immediately upon entering edit mode
+    await screen.findByText('Player goals (4) exceed team total (2).');
+
+    const saveButton = await screen.findByRole('button', { name: /Save Changes/i });
+    await userEvent.click(saveButton);
+
+    await waitFor(() => expect(updateMatchDetails).toHaveBeenCalled());
+  });
+
   it('shows a warning when player goals exceed the team total but allows saving', async () => {
     getMatchDetails.mockResolvedValueOnce({
       success: true,
