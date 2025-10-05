@@ -328,17 +328,21 @@ export const createSubstitutionHandlers = (
         return;
       }
 
-      // Find the designated substitute for this field position (if the field player is already next to sub off)
+      // Find the designated substitute for this field position
+      // When a field player is next to sub off, there's a substitute designated to take their position.
+      // That substitute should appear first in the selection list for "Substitute Now".
       const fieldPositions = getFieldPositions(teamConfig);
       const rotationQueue = gameState.rotationQueue || [];
+      const currentSubstitutionCount = getSubstitutionCount();
 
       // Use getSubstituteTargetPositions to find which substitute is mapped to this field position
+      // We use the current substitutionCount to get all relevant mappings
       const substituteTargetMapping = getSubstituteTargetPositions(
         rotationQueue,
         gameState.formation,
         fieldPositions,
         definition.substitutePositions,
-        1 // Just need the first substitute position mapping
+        currentSubstitutionCount
       );
 
       // Find which substitute position maps to the selected field player's position
@@ -351,8 +355,8 @@ export const createSubstitutionHandlers = (
         : null;
 
       // Sort substitutes with 3 tiers:
-      // 1. Designated substitute (if field player is already next to sub off) - FIRST
-      // 2. Other substitutes in rotation queue order - follow queue
+      // 1. Designated substitute (substitute set to replace this field player) - FIRST
+      // 2. Other substitutes in rotation queue order - maintain queue sequence
       // 3. Substitutes not in queue - at the end
       const sortedSubstitutes = [...substitutes].sort((a, b) => {
         // Designated substitute always first
