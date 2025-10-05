@@ -7,6 +7,7 @@
 
 import {
   createMatch,
+  createManualMatch,
   updateMatchToRunning,
   updateMatchToFinished,
   updateMatchToConfirmed,
@@ -17,7 +18,8 @@ import {
   formatPlayerMatchStats,
   countPlayerGoals,
   mapFormationPositionToRole,
-  mapStartingRoleToDBRole
+  mapStartingRoleToDBRole,
+  deleteConfirmedMatch
 } from '../matchStateManager';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { supabase } from '../../lib/supabase';
@@ -36,6 +38,12 @@ const createUpdateChain = ({ finalResult = { data: null, error: null }, selectRe
   const firstEq = jest.fn(() => ({ is }));
   const update = jest.fn(() => ({ eq: firstEq }));
   return { update, firstEq, is, finalEq, select };
+};
+
+const createDeleteChain = ({ finalResult = { data: null, error: null } } = {}) => {
+  const eq = jest.fn().mockResolvedValue(finalResult);
+  const deleteFn = jest.fn(() => ({ eq }));
+  return { delete: deleteFn, eq };
 };
 
 describe('matchStateManager', () => {
@@ -181,6 +189,179 @@ describe('matchStateManager', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Database error: Database error');
+    });
+  });
+
+  describe('createManualMatch', () => {
+    const baseManualPayload = {
+      teamId: 'team-123',
+      date: '2024-03-10',
+      time: '14:30',
+      type: 'league',
+      venueType: 'home',
+      format: '5v5',
+      formation: '2-2',
+      periods: 3,
+      periodDuration: 15,
+      goalsScored: 2,
+      goalsConceded: 1
+    };
+
+    it('should create a confirmed match and insert player stats', async () => {
+      const mockInsert = jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn().mockResolvedValue({ data: { id: 'match-manual-1' }, error: null })
+        }))
+      }));
+
+      const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+
+      supabase.from
+        .mockReturnValueOnce({ insert: mockInsert })
+        .mockReturnValueOnce({ upsert: mockUpsert });
+
+      const playerStats = [
+        {
+          id: 1,
+          playerId: 'player-1',
+          name: 'Player One',
+          goalsScored: 1,
+          timeAsDefender: 12,
+          timeAsMidfielder: 6,
+          timeAsAttacker: 0,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Goalkeeper',
+          wasCaptain: true,
+          receivedFairPlayAward: true
+        }
+      ];
+
+      const result = await createManualMatch(baseManualPayload, playerStats);
+
+      expect(result.success).toBe(true);
+      expect(result.matchId).toBe('match-manual-1');
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        team_id: baseManualPayload.teamId,
+        state: 'confirmed',
+        goals_scored: baseManualPayload.goalsScored,
+        goals_conceded: baseManualPayload.goalsConceded
+      }));
+      expect(mockUpsert).toHaveBeenCalledWith(expect.any(Array), { onConflict: 'match_id,player_id' });
+      const upsertPayload = mockUpsert.mock.calls[0][0];
+      expect(upsertPayload).toHaveLength(1);
+      expect(upsertPayload[0]).toMatchObject({
+        match_id: 'match-manual-1',
+        player_id: 'player-1',
+        goals_scored: 1,
+        started_as: 'goalie',
+        was_captain: true,
+        got_fair_play_award: true
+      });
+    });
+
+    it('should validate required fields', async () => {
+      const result = await createManualMatch({ teamId: 'team-123' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Missing required fields');
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it('should handle database error when inserting match', async () => {
+      const failingInsert = jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn().mockResolvedValue({ data: null, error: { message: 'Insert failed' } })
+        }))
+      }));
+
+      supabase.from.mockReturnValueOnce({ insert: failingInsert });
+
+      const result = await createManualMatch(baseManualPayload, []);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error: Insert failed');
+    });
+
+    it('should handle player stats insertion error gracefully', async () => {
+      const mockInsert = jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn().mockResolvedValue({ data: { id: 'match-manual-2' }, error: null })
+        }))
+      }));
+
+      const failingUpsert = jest.fn().mockResolvedValue({ error: { message: 'Stats upsert failed' } });
+
+      supabase.from
+        .mockReturnValueOnce({ insert: mockInsert })
+        .mockReturnValueOnce({ upsert: failingUpsert });
+
+      const result = await createManualMatch(baseManualPayload, [
+        {
+          id: 1,
+          playerId: 'player-2',
+          name: 'Player Two',
+          goalsScored: 0,
+          timeAsDefender: 10,
+          timeAsMidfielder: 5,
+          timeAsAttacker: 5,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Midfielder',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        }
+      ]);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error: Stats upsert failed');
+    });
+  });
+
+  describe('deleteConfirmedMatch', () => {
+    it('soft deletes confirmed match and related stats', async () => {
+      const deleteChain = createDeleteChain();
+      const updateMock = jest.fn(() => ({
+        eq: jest.fn(() => ({
+          is: jest.fn(() => ({
+            in: jest.fn(() => Promise.resolve({ data: [{ id: 'match-1' }], error: null }))
+          }))
+        }))
+      }));
+
+      supabase.from
+        .mockReturnValueOnce({ delete: deleteChain.delete })
+        .mockReturnValueOnce({ update: updateMock });
+
+      const result = await deleteConfirmedMatch('match-1');
+
+      expect(result.success).toBe(true);
+      expect(deleteChain.delete).toHaveBeenCalled();
+      expect(updateMock).toHaveBeenCalled();
+    });
+
+    it('returns error when matchId missing', async () => {
+      const result = await deleteConfirmedMatch();
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Match ID is required');
+    });
+
+    it('propagates supabase errors', async () => {
+      const deleteChain = createDeleteChain();
+      const updateMock = jest.fn(() => ({
+        eq: jest.fn(() => ({
+          is: jest.fn(() => ({
+            in: jest.fn(() => Promise.resolve({ data: null, error: { message: 'Failed' } }))
+          }))
+        }))
+      }));
+
+      supabase.from
+        .mockReturnValueOnce({ delete: deleteChain.delete })
+        .mockReturnValueOnce({ update: updateMock });
+
+      const result = await deleteConfirmedMatch('match-err');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error: Failed');
     });
   });
 
