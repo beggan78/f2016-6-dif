@@ -8,7 +8,8 @@ export const createFieldPositionHandlers = (
   nextPlayerIdToSubOut,
   modalHandlers,
   selectedFormation = null,  // Add selectedFormation parameter for formation-aware callbacks
-  substitutionCount = 1      // NEW: Add substitutionCount parameter for multi-sub logic
+  substitutionCount = 1,     // NEW: Add substitutionCount parameter for multi-sub logic
+  rotationQueue = []         // NEW: Add rotationQueue parameter for multi-sub player detection
 ) => {
   const { openFieldPlayerModal, openSubstituteModal } = modalHandlers;
 
@@ -46,20 +47,26 @@ export const createFieldPositionHandlers = (
         playerName: pairName,
         sourcePlayerId: null,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false // Pairs mode doesn't use individual player rotation tracking
       });
     } else {
       // Individual modes - handle individual player interactions
       const playerId = formation[position];
       const playerName = getPlayerNameById(playerId);
-      
+
+      // Check if this player is in the first N players of rotation queue (about to sub off)
+      const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+      const isPlayerAboutToSubOff = nextNToSubOut.includes(playerId);
+
       openFieldPlayerModal({
         type: 'player',
         target: position,
         playerName: playerName,
         sourcePlayerId: playerId,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: isPlayerAboutToSubOff
       });
     }
   };

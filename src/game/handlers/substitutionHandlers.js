@@ -5,7 +5,9 @@ import {
   calculatePlayerToggleInactive,
   calculateUndo,
   calculatePairPositionSwap,
-  calculateSubstituteReorder
+  calculateSubstituteReorder,
+  calculateRemovePlayerFromNextToGoOff,
+  calculateSetPlayerAsNextToGoOff
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
@@ -163,7 +165,54 @@ export const createSubstitutionHandlers = (
     if (fieldPlayerModal.type === 'pair') {
       setNextPhysicalPairToSubOut(fieldPlayerModal.target);
     } else if (fieldPlayerModal.type === 'player') {
-      setNextPlayerToSubOut(fieldPlayerModal.target, false); // Manual user selection
+      // In multi-sub mode, use rotation queue logic
+      const substitutionCount = getSubstitutionCount();
+      if (substitutionCount > 1 && isIndividualMode(teamConfig)) {
+        const gameState = gameStateFactory();
+        const playerId = fieldPlayerModal.sourcePlayerId;
+
+        if (playerId) {
+          animateStateChange(
+            gameState,
+            (state) => calculateSetPlayerAsNextToGoOff(state, playerId, substitutionCount),
+            (newGameState) => {
+              setRotationQueue(newGameState.rotationQueue);
+              setAllPlayers(newGameState.allPlayers);
+            },
+            setAnimationState,
+            setHideNextOffIndicator,
+            setRecentlySubstitutedPlayers
+          );
+        }
+      } else {
+        // Single-sub mode: use existing logic
+        setNextPlayerToSubOut(fieldPlayerModal.target, false); // Manual user selection
+      }
+    }
+    closeFieldPlayerModal();
+  };
+
+  const handleRemoveFromNextSubstitution = (fieldPlayerModal) => {
+    if (fieldPlayerModal.type === 'player') {
+      const substitutionCount = getSubstitutionCount();
+      if (substitutionCount > 1 && isIndividualMode(teamConfig)) {
+        const gameState = gameStateFactory();
+        const playerId = fieldPlayerModal.sourcePlayerId;
+
+        if (playerId) {
+          animateStateChange(
+            gameState,
+            (state) => calculateRemovePlayerFromNextToGoOff(state, playerId, substitutionCount),
+            (newGameState) => {
+              setRotationQueue(newGameState.rotationQueue);
+              setAllPlayers(newGameState.allPlayers);
+            },
+            setAnimationState,
+            setHideNextOffIndicator,
+            setRecentlySubstitutedPlayers
+          );
+        }
+      }
     }
     closeFieldPlayerModal();
   };
@@ -869,6 +918,7 @@ export const createSubstitutionHandlers = (
 
   return {
     handleSetNextSubstitution,
+    handleRemoveFromNextSubstitution,
     handleSubstituteNow,
     handleCancelFieldPlayerModal,
     handleSetAsNextToGoIn,

@@ -285,19 +285,21 @@ export function ThreeOptionModal({
   );
 }
 
-export function FieldPlayerModal({ 
-  isOpen, 
-  onSetNext, 
-  onSubNow, 
-  onCancel, 
-  onChangePosition, 
-  playerName, 
+export function FieldPlayerModal({
+  isOpen,
+  onSetNext,
+  onRemoveFromNext,
+  onSubNow,
+  onCancel,
+  onChangePosition,
+  playerName,
   availablePlayers = [],
   showPositionChange = false,
   showPositionOptions = false,
   showSwapPositions = false,
   showSubstitutionOptions = true,
-  canSubstitute = true
+  canSubstitute = true,
+  isPlayerAboutToSubOff = false
 }) {
   if (!isOpen) return null;
 
@@ -345,17 +347,28 @@ export function FieldPlayerModal({
                 </Button>
                 {showSubstitutionOptions && (
                   <>
-                    <Button 
-                      onClick={onSetNext} 
-                      variant="primary"
-                      disabled={!canSubstitute}
-                      title={canSubstitute ? "Set as next to substitute" : "All substitutes are inactive - cannot set as next"}
-                    >
-                      Set to go off next
-                    </Button>
-                    <Button 
-                      onClick={onSubNow} 
-                      variant="danger" 
+                    {isPlayerAboutToSubOff ? (
+                      <Button
+                        onClick={onRemoveFromNext}
+                        variant="primary"
+                        disabled={!canSubstitute}
+                        title={canSubstitute ? "Remove from next to go off" : "All substitutes are inactive - cannot modify rotation"}
+                      >
+                        Remove from next to go off
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={onSetNext}
+                        variant="primary"
+                        disabled={!canSubstitute}
+                        title={canSubstitute ? "Set as next to substitute" : "All substitutes are inactive - cannot set as next"}
+                      >
+                        Set to go off next
+                      </Button>
+                    )}
+                    <Button
+                      onClick={onSubNow}
+                      variant="danger"
                       disabled={!canSubstitute}
                       title={canSubstitute ? "Substitute this player now" : "All substitutes are inactive - cannot substitute"}
                     >

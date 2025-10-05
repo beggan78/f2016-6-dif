@@ -229,8 +229,9 @@ export function GameScreen({
       nextPlayerIdToSubOut,
       modalHandlers,
       selectedFormation,  // Pass selectedFormation for formation-aware position callbacks
-      substitutionCount   // Pass substitutionCount for multi-sub logic
-    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation, substitutionCount]
+      substitutionCount,  // Pass substitutionCount for multi-sub logic
+      rotationQueue       // Pass rotationQueue for multi-sub player detection
+    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation, substitutionCount, rotationQueue]
   );
 
   const quickTapHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
@@ -628,6 +629,7 @@ export function GameScreen({
       <FieldPlayerModal
         isOpen={modalHandlers.modals.fieldPlayer.isOpen}
         onSetNext={() => substitutionHandlers.handleSetNextSubstitution(modalHandlers.modals.fieldPlayer)}
+        onRemoveFromNext={() => substitutionHandlers.handleRemoveFromNextSubstitution(modalHandlers.modals.fieldPlayer)}
         onSubNow={() => substitutionHandlers.handleSubstituteNow(modalHandlers.modals.fieldPlayer)}
         onCancel={substitutionHandlers.handleCancelFieldPlayerModal}
         onChangePosition={substitutionHandlers.handleChangePosition}
@@ -637,10 +639,11 @@ export function GameScreen({
         showPositionOptions={modalHandlers.modals.fieldPlayer.showPositionOptions}
         showSwapPositions={isPairsMode && modalHandlers.modals.fieldPlayer.type === 'pair'}
         showSubstitutionOptions={
-          modalHandlers.modals.fieldPlayer.type === 'player' || 
+          modalHandlers.modals.fieldPlayer.type === 'player' ||
           (modalHandlers.modals.fieldPlayer.type === 'pair' && modalHandlers.modals.fieldPlayer.target !== 'subPair')
         }
         canSubstitute={teamConfig?.substitutionType === 'individual' ? canSubstitute : true}
+        isPlayerAboutToSubOff={modalHandlers.modals.fieldPlayer.isPlayerAboutToSubOff || false}
       />
 
       {/* Substitute Player Modal */}

@@ -982,6 +982,87 @@ export const calculateNextSubstitutionTarget = (gameState, target, targetType) =
       nextPlayerIdToSubOut: newNextPlayerIdToSubOut
     };
   }
-  
+
   return gameState;
+};
+
+/**
+ * Calculate the result of removing a player from the "next to go off" group
+ * The player is moved to just after the last player in the "next to go off" group
+ * The next player in the queue who is not already in the group takes their place
+ */
+export const calculateRemovePlayerFromNextToGoOff = (gameState, playerId, substitutionCount = 1) => {
+  const { rotationQueue } = gameState;
+
+  if (!rotationQueue || rotationQueue.length === 0) {
+    return gameState;
+  }
+
+  // Get players in the "next to go off" group
+  const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+
+  // Check if player is in the next group
+  if (!nextNToSubOut.includes(playerId)) {
+    return gameState; // Player is not in next group, nothing to do
+  }
+
+  // Remove the player from the queue
+  const queueWithoutPlayer = rotationQueue.filter(id => id !== playerId);
+
+  // After removal, the new "next to go off" group will automatically include:
+  // - The remaining players from the original group (substitutionCount - 1 players)
+  // - Plus the next player in the queue (who was at index substitutionCount before removal)
+
+  // Place the removed player immediately after the new "next to go off" group
+  // That position is at index substitutionCount (0-indexed, so after substitutionCount players)
+  const insertPosition = Math.min(substitutionCount, queueWithoutPlayer.length);
+
+  // Insert the player at the calculated position
+  const newQueue = [
+    ...queueWithoutPlayer.slice(0, insertPosition),
+    playerId,
+    ...queueWithoutPlayer.slice(insertPosition)
+  ];
+
+  return {
+    ...gameState,
+    rotationQueue: newQueue,
+    playersToHighlight: [playerId]
+  };
+};
+
+/**
+ * Calculate the result of setting a player as next to go off
+ * The player is moved to the front of the rotation queue
+ * The player previously last in the "next to go off" group is moved to just after the group
+ */
+export const calculateSetPlayerAsNextToGoOff = (gameState, playerId, substitutionCount = 1) => {
+  const { rotationQueue } = gameState;
+
+  if (!rotationQueue || rotationQueue.length === 0) {
+    return gameState;
+  }
+
+  // Get players in the "next to go off" group
+  const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+
+  // Check if player is already in the next group
+  if (nextNToSubOut.includes(playerId)) {
+    return gameState; // Player is already in next group, nothing to do
+  }
+
+  const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
+  queueManager.initialize();
+
+  // Remove player from their current position
+  queueManager.removePlayer(playerId);
+
+  // Insert player at the front of the queue (position 0)
+  queueManager.addPlayer(playerId, 0);
+
+  return {
+    ...gameState,
+    rotationQueue: queueManager.toArray(),
+    playersToHighlight: [playerId]
+  };
 };
