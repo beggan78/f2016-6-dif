@@ -460,4 +460,255 @@ describe('MatchDetailsView - existing match mode', () => {
 
     await waitFor(() => expect(updateMatchDetails).toHaveBeenCalled());
   });
+
+  it('shows role validation warning when entering edit mode with invalid starting roles', async () => {
+    getMatchDetails.mockResolvedValue({
+      success: true,
+      match: {
+        id: 'match-1',
+        opponent: 'Opponent Team',
+        goalsScored: 2,
+        goalsConceded: 1,
+        date: '2024-01-15',
+        time: '10:00',
+        type: 'league',
+        venueType: 'home',
+        outcome: 'W',
+        format: '5v5',
+        formation: '2-2',
+        periods: 3,
+        periodDuration: 15,
+        matchDurationSeconds: 2700
+      },
+      playerStats: [
+        {
+          id: 'player-1',
+          playerId: 'player-1',
+          name: 'Player One',
+          goalsScored: 1,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Goalkeeper',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-2',
+          playerId: 'player-2',
+          name: 'Player Two',
+          goalsScored: 1,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Goalkeeper',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        }
+      ]
+    });
+
+    render(
+      <MatchDetailsView
+        matchId="match-1"
+        teamId="team-xyz"
+        onNavigateBack={jest.fn()}
+      />
+    );
+
+    const editButton = await screen.findByRole('button', { name: /Edit Match/i });
+    await userEvent.click(editButton);
+
+    await screen.findByText(/Starting role inconsistency: 2 goalkeepers \(expected 1\), 0 outfield players \(expected 4 for 5v5\)/i);
+  });
+
+  it('shows role validation warning when changing starting roles', async () => {
+    getMatchDetails.mockResolvedValue({
+      success: true,
+      match: {
+        id: 'match-1',
+        opponent: 'Opponent Team',
+        goalsScored: 2,
+        goalsConceded: 1,
+        date: '2024-01-15',
+        time: '10:00',
+        type: 'league',
+        venueType: 'home',
+        outcome: 'W',
+        format: '5v5',
+        formation: '2-2',
+        periods: 3,
+        periodDuration: 15,
+        matchDurationSeconds: 2700
+      },
+      playerStats: [
+        {
+          id: 'player-1',
+          playerId: 'player-1',
+          name: 'Player One',
+          goalsScored: 1,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Goalkeeper',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-2',
+          playerId: 'player-2',
+          name: 'Player Two',
+          goalsScored: 1,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Defender',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-3',
+          playerId: 'player-3',
+          name: 'Player Three',
+          goalsScored: 0,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Defender',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-4',
+          playerId: 'player-4',
+          name: 'Player Four',
+          goalsScored: 0,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Attacker',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-5',
+          playerId: 'player-5',
+          name: 'Player Five',
+          goalsScored: 0,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Attacker',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        }
+      ]
+    });
+
+    render(
+      <MatchDetailsView
+        matchId="match-1"
+        teamId="team-xyz"
+        onNavigateBack={jest.fn()}
+      />
+    );
+
+    const editButton = await screen.findByRole('button', { name: /Edit Match/i });
+    await userEvent.click(editButton);
+
+    const playerTwoRow = screen.getByText('Player Two').closest('tr');
+    const roleSelect = within(playerTwoRow).getByRole('combobox');
+
+    await userEvent.selectOptions(roleSelect, 'Goalkeeper');
+
+    await screen.findByText(/Starting role inconsistency: 2 goalkeepers \(expected 1\), 3 outfield players \(expected 4 for 5v5\)/i);
+  });
+
+  it('allows saving match with role inconsistencies', async () => {
+    getMatchDetails.mockResolvedValue({
+      success: true,
+      match: {
+        id: 'match-1',
+        opponent: 'Opponent Team',
+        goalsScored: 2,
+        goalsConceded: 1,
+        date: '2024-01-15',
+        time: '10:00',
+        type: 'league',
+        venueType: 'home',
+        outcome: 'W',
+        format: '5v5',
+        formation: '2-2',
+        periods: 3,
+        periodDuration: 15,
+        matchDurationSeconds: 2700
+      },
+      playerStats: [
+        {
+          id: 'player-1',
+          playerId: 'player-1',
+          name: 'Player One',
+          goalsScored: 1,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Goalkeeper',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-2',
+          playerId: 'player-2',
+          name: 'Player Two',
+          goalsScored: 1,
+          totalTimePlayed: 30,
+          timeAsDefender: 15,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 15,
+          timeAsGoalkeeper: 0,
+          startingRole: 'Goalkeeper',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        }
+      ]
+    });
+
+    updateMatchDetails.mockResolvedValue({ success: true });
+    updatePlayerMatchStatsBatch.mockResolvedValue({ success: true });
+
+    render(
+      <MatchDetailsView
+        matchId="match-1"
+        teamId="team-xyz"
+        onNavigateBack={jest.fn()}
+      />
+    );
+
+    const editButton = await screen.findByRole('button', { name: /Edit Match/i });
+    await userEvent.click(editButton);
+
+    await screen.findByText(/Starting role inconsistency/i);
+
+    const saveButton = await screen.findByRole('button', { name: /Save Changes/i });
+    await userEvent.click(saveButton);
+
+    await waitFor(() => expect(updateMatchDetails).toHaveBeenCalled());
+    await waitFor(() => expect(updatePlayerMatchStatsBatch).toHaveBeenCalled());
+  });
 });

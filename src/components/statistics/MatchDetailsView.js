@@ -246,6 +246,7 @@ export function MatchDetailsView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [goalWarning, setGoalWarning] = useState(null);
+  const [roleWarning, setRoleWarning] = useState(null);
   const assignedPlayerIds = useMemo(() => {
     return new Set((editData?.playerStats || []).map(player => player.playerId));
   }, [editData?.playerStats]);
@@ -357,15 +358,54 @@ export function MatchDetailsView({
     }
   }, [isEditing]);
 
-  // Check for goal inconsistencies when entering/leaving edit mode
+  const evaluateRoleConsistency = useCallback((data) => {
+    if (!isEditing || !data) {
+      setRoleWarning(null);
+      return;
+    }
+
+    const playerStats = data.playerStats || [];
+
+    // Count goalies
+    const goalieCount = playerStats.filter(p => p.startingRole === 'Goalkeeper').length;
+
+    // Count outfield players (Defender, Midfielder, Attacker)
+    const outfieldCount = playerStats.filter(p =>
+      ['Defender', 'Midfielder', 'Attacker'].includes(p.startingRole)
+    ).length;
+
+    // Determine expected outfield count based on format
+    const format = data.format || DEFAULT_FORMAT;
+    const expectedOutfieldCount = format === FORMATS.FORMAT_5V5 ? 4 : 6;
+
+    const issues = [];
+
+    if (goalieCount !== 1) {
+      issues.push(`${goalieCount} goalkeeper${goalieCount !== 1 ? 's' : ''} (expected 1)`);
+    }
+
+    if (outfieldCount !== expectedOutfieldCount) {
+      issues.push(`${outfieldCount} outfield player${outfieldCount !== 1 ? 's' : ''} (expected ${expectedOutfieldCount} for ${format})`);
+    }
+
+    if (issues.length > 0) {
+      setRoleWarning({ issues });
+    } else {
+      setRoleWarning(null);
+    }
+  }, [isEditing]);
+
+  // Check for goal and role inconsistencies when entering/leaving edit mode
   useEffect(() => {
     if (!isEditing) {
       setGoalWarning(null);
+      setRoleWarning(null);
     } else {
-      // When entering edit mode, check for goal inconsistencies
+      // When entering edit mode, check for inconsistencies
       evaluateGoalConsistency(editData);
+      evaluateRoleConsistency(editData);
     }
-  }, [isEditing, editData, evaluateGoalConsistency]);
+  }, [isEditing, editData, evaluateGoalConsistency, evaluateRoleConsistency]);
 
   if (loading) {
     return (
@@ -637,7 +677,7 @@ export function MatchDetailsView({
   };
 
   const updatePlayerStat = (playerRowId, field, value, options = {}) => {
-    const { validateGoals = false } = options;
+    const { validateGoals = false, validateRoles = false } = options;
 
     setEditData(prev => {
       if (!prev) {
@@ -671,6 +711,10 @@ export function MatchDetailsView({
 
       if (validateGoals && field === 'goalsScored') {
         evaluateGoalConsistency(updated);
+      }
+
+      if (validateRoles && field === 'startingRole') {
+        evaluateRoleConsistency(updated);
       }
 
       return updated;
@@ -1036,6 +1080,17 @@ export function MatchDetailsView({
           </div>
         )}
 
+        {isEditing && roleWarning && (
+          <div className="px-4 py-2 bg-slate-800 border-t border-slate-600 text-xs text-red-300" role="status">
+            <div className="flex items-center justify-center gap-2">
+              <span aria-hidden="true">⚠️</span>
+              <span>
+                Starting role inconsistency: {roleWarning.issues.join(', ')}.
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Secondary Details Row */}
         <div className="px-4 py-3 border-t border-slate-600">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
@@ -1315,7 +1370,7 @@ export function MatchDetailsView({
                     {isEditing ? (
                       <Select
                         value={player.startingRole}
-                        onChange={(value) => updatePlayerStat(player.id, 'startingRole', value)}
+                        onChange={(value) => updatePlayerStat(player.id, 'startingRole', value, { validateRoles: true })}
                         options={STARTING_ROLES}
                       />
                     ) : (
