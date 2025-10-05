@@ -104,8 +104,25 @@ export function GameScreen({
     const filteredPlayers = selectedSquadPlayers.filter(p => p.stats && !p.stats.isInactive);
     return sortPlayersByGoalScoringRelevance(filteredPlayers);
   }, [selectedSquadPlayers]);
-  
-  const [substitutionCount, setSubstitutionCount] = React.useState(1);
+
+  // Load substitution count from localStorage, default to 1
+  const SUBSTITUTION_COUNT_STORAGE_KEY = 'sport-wizard-substitution-count';
+  const loadSubstitutionCount = () => {
+    try {
+      const stored = localStorage.getItem(SUBSTITUTION_COUNT_STORAGE_KEY);
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && parsed >= 1) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      // Ignore errors and use default
+    }
+    return 1;
+  };
+
+  const [substitutionCount, setSubstitutionCount] = React.useState(loadSubstitutionCount);
 
   const maxSubstitutionCount = React.useMemo(() => {
     // Get number of outfield positions from team config (4 for 5v5, 6 for 7v7)
@@ -126,6 +143,15 @@ export function GameScreen({
       setSubstitutionCount(maxSubstitutionCount);
     }
   }, [substitutionCount, maxSubstitutionCount]);
+
+  // Save substitution count to localStorage whenever it changes
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(SUBSTITUTION_COUNT_STORAGE_KEY, substitutionCount.toString());
+    } catch (error) {
+      // Ignore localStorage errors (e.g., quota exceeded, private browsing)
+    }
+  }, [substitutionCount, SUBSTITUTION_COUNT_STORAGE_KEY]);
 
   const handleSubstitutionCountChange = React.useCallback((nextValue) => {
     setSubstitutionCount(nextValue);
