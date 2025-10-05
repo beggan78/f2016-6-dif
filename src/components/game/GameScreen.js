@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw, ArrowLeft } from 'lucide-react';
-import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
+import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal, SubstituteSelectionModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
@@ -742,6 +742,15 @@ export function GameScreen({
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}
         goalType={modalHandlers.modals.goalScorer.team}
+      />
+
+      {/* Substitute Selection Modal */}
+      <SubstituteSelectionModal
+        isOpen={modalHandlers.modals.substituteSelection.isOpen}
+        onCancel={substitutionHandlers.handleCancelSubstituteSelection}
+        onSelectSubstitute={(substituteId) => substitutionHandlers.handleSelectSubstituteForImmediate(modalHandlers.modals.substituteSelection, substituteId)}
+        fieldPlayerName={modalHandlers.modals.substituteSelection.fieldPlayerName}
+        availableSubstitutes={modalHandlers.modals.substituteSelection.availableSubstitutes}
       />
     </div>
   );

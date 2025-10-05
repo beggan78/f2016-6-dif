@@ -830,9 +830,49 @@ export function ScoreManagerModal({
   );
 }
 
+export function SubstituteSelectionModal({
+  isOpen,
+  onCancel,
+  onSelectSubstitute,
+  fieldPlayerName,
+  availableSubstitutes = []
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">Select Substitute</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-slate-200 mb-6">
+            Select which substitute to bring on for {fieldPlayerName}:
+          </p>
+          <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+            <Button onClick={onCancel} variant="secondary">
+              Cancel
+            </Button>
+            {availableSubstitutes.map((substitute) => (
+              <Button
+                key={substitute.id}
+                onClick={() => onSelectSubstitute(substitute.id)}
+                variant="primary"
+                className="text-left"
+              >
+                {formatPlayerName(substitute)}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Slider({ value, onChange, min = 0, max = 1, step = 0.1, className = '', disabled = false, id }) {
   const percentage = ((value - min) / (max - min)) * 100;
-  
+
   return (
     <div className={`relative ${className}`}>
       <input

@@ -218,15 +218,72 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSubstituteNow = (fieldPlayerModal) => {
-    // First set as next substitution
+    const gameState = gameStateFactory();
+
+    // For pairs mode, immediately substitute the pair
     if (fieldPlayerModal.type === 'pair') {
       setNextPhysicalPairToSubOut(fieldPlayerModal.target);
-    } else if (fieldPlayerModal.type === 'player') {
-      setNextPlayerToSubOut(fieldPlayerModal.target, false); // Manual user selection
+      setShouldSubstituteNow(true);
+      closeFieldPlayerModal();
+      return;
     }
-    // Set flag to trigger substitution after state update
-    setShouldSubstituteNow(true);
-    closeFieldPlayerModal();
+
+    // For individual mode, show substitute selection modal
+    if (fieldPlayerModal.type === 'player') {
+      const definition = getDefinition(teamConfig);
+      if (!definition) {
+        closeFieldPlayerModal();
+        return;
+      }
+
+      // Get the field player info
+      const fieldPlayerId = gameState.formation[fieldPlayerModal.target];
+      const fieldPlayer = findPlayerById(gameState.allPlayers, fieldPlayerId);
+
+      if (!fieldPlayer) {
+        closeFieldPlayerModal();
+        return;
+      }
+
+      // Get all active substitutes
+      const substitutes = gameState.allPlayers.filter(p =>
+        definition.substitutePositions.includes(p.stats?.currentPairKey) &&
+        !p.stats?.isInactive
+      );
+
+      // Sort substitutes based on rotation queue order
+      // The player at the top of the queue (about to come on) should be first
+      const rotationQueue = gameState.rotationQueue || [];
+      const sortedSubstitutes = [...substitutes].sort((a, b) => {
+        const aIndex = rotationQueue.indexOf(a.id);
+        const bIndex = rotationQueue.indexOf(b.id);
+
+        // If both are in queue, sort by queue order
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
+
+        // If only one is in queue, it comes first
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+
+        // If neither in queue, maintain current order
+        return 0;
+      });
+
+      // Close field player modal and open substitute selection modal
+      closeFieldPlayerModal();
+
+      // Use modalHandlers to open the substitute selection modal
+      if (modalHandlers.openSubstituteSelectionModal) {
+        modalHandlers.openSubstituteSelectionModal({
+          fieldPlayerName: fieldPlayerModal.playerName,
+          fieldPlayerId: fieldPlayerId,
+          fieldPlayerPosition: fieldPlayerModal.target,
+          availableSubstitutes: sortedSubstitutes
+        });
+      }
+    }
   };
 
   const handleCancelFieldPlayerModal = () => {
@@ -774,6 +831,121 @@ export const createSubstitutionHandlers = (
     );
   };
 
+  const handleSelectSubstituteForImmediate = (substituteSelectionModal, selectedSubstituteId) => {
+    if (!substituteSelectionModal.fieldPlayerId || !selectedSubstituteId) {
+      if (modalHandlers.closeSubstituteSelectionModal) {
+        modalHandlers.closeSubstituteSelectionModal();
+      }
+      return;
+    }
+
+    const gameState = gameStateFactory();
+
+    // Find the substitute's position in the formation
+    const definition = getDefinition(teamConfig);
+    if (!definition) {
+      if (modalHandlers.closeSubstituteSelectionModal) {
+        modalHandlers.closeSubstituteSelectionModal();
+      }
+      return;
+    }
+
+    const substitutePosition = Object.keys(gameState.formation).find(
+      pos => gameState.formation[pos] === selectedSubstituteId
+    );
+
+    if (!substitutePosition) {
+      if (modalHandlers.closeSubstituteSelectionModal) {
+        modalHandlers.closeSubstituteSelectionModal();
+      }
+      return;
+    }
+
+    // If the selected substitute is not already about to come on, reorder substitutes
+    // so the selected substitute becomes the next to come on
+    const firstSubstitutePosition = definition.substitutePositions[0];
+    if (substitutePosition !== firstSubstitutePosition) {
+      // Swap the selected substitute with the first substitute
+      const currentTime = getCurrentTimestamp();
+
+      animateStateChange(
+        gameState,
+        (state) => {
+          const newFormation = { ...state.formation };
+          const firstSubstituteId = newFormation[firstSubstitutePosition];
+
+          // Swap positions
+          newFormation[firstSubstitutePosition] = selectedSubstituteId;
+          newFormation[substitutePosition] = firstSubstituteId;
+
+          return {
+            ...state,
+            formation: newFormation,
+            playersToHighlight: [selectedSubstituteId, firstSubstituteId]
+          };
+        },
+        (newGameState) => {
+          setFormation(newGameState.formation);
+
+          // Log the position swap
+          try {
+            const selectedPlayer = gameState.allPlayers.find(p => p.id === selectedSubstituteId);
+            const firstPlayer = gameState.allPlayers.find(p => p.id === gameState.formation[firstSubstitutePosition]);
+
+            if (selectedPlayer && firstPlayer) {
+              logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                type: 'immediate_substitute_reorder',
+                playerId: selectedSubstituteId,
+                playerName: selectedPlayer.name,
+                swapPlayerId: firstPlayer.id,
+                swapPlayerName: firstPlayer.name,
+                fromPosition: substitutePosition,
+                toPosition: firstSubstitutePosition,
+                description: `${selectedPlayer.name} moved to next-in for immediate substitution`,
+                beforeFormation: getFormationDescription(gameState.formation, teamConfig),
+                afterFormation: getFormationDescription(newGameState.formation, teamConfig),
+                teamConfig,
+                matchTime: calculateMatchTime(currentTime),
+                timestamp: currentTime,
+                periodNumber: gameState.currentPeriodNumber || 1
+              });
+            }
+          } catch (error) {
+            // Logging error should not prevent the swap
+          }
+
+          // Now set the field player as next to sub out and trigger immediate substitution
+          setNextPlayerToSubOut(substituteSelectionModal.fieldPlayerPosition, false);
+          setShouldSubstituteNow(true);
+        },
+        setAnimationState,
+        setHideNextOffIndicator,
+        setRecentlySubstitutedPlayers
+      );
+    } else {
+      // Selected substitute is already next to come on, just trigger the substitution
+      setNextPlayerToSubOut(substituteSelectionModal.fieldPlayerPosition, false);
+      setShouldSubstituteNow(true);
+    }
+
+    // Close modal
+    if (modalHandlers.closeSubstituteSelectionModal) {
+      modalHandlers.closeSubstituteSelectionModal();
+    }
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
+    }
+  };
+
+  const handleCancelSubstituteSelection = () => {
+    if (modalHandlers.closeSubstituteSelectionModal) {
+      modalHandlers.closeSubstituteSelectionModal();
+    }
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
+    }
+  };
+
   const handleChangeNextPosition = (substituteModal, targetPosition) => {
     if (!substituteModal.playerId) return;
 
@@ -928,6 +1100,8 @@ export const createSubstitutionHandlers = (
     handleSubstitutionWithHighlight,
     handleChangePosition,
     handleChangeNextPosition,
-    handleUndo
+    handleUndo,
+    handleSelectSubstituteForImmediate,
+    handleCancelSubstituteSelection
   };
 };
