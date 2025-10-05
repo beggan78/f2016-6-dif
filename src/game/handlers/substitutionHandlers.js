@@ -15,7 +15,7 @@ import { formatPlayerName } from '../../utils/formatUtils';
 import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { getSubstituteTargetPositions, getPositionDisplayName } from '../ui/positionUtils';
-import { getPositionRole } from '../logic/positionUtils';
+import { getPositionRole, getFieldPositions } from '../logic/positionUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 
 export const createSubstitutionHandlers = (
@@ -251,10 +251,115 @@ export const createSubstitutionHandlers = (
         !p.stats?.isInactive
       );
 
-      // Sort substitutes based on rotation queue order
-      // The player at the top of the queue (about to come on) should be first
+      // Special case: If there's only one active substitute, perform immediate substitution
+      if (substitutes.length === 1) {
+        const onlySubstituteId = substitutes[0].id;
+        const substitutePosition = Object.keys(gameState.formation).find(
+          pos => gameState.formation[pos] === onlySubstituteId
+        );
+
+        const firstSubstitutePosition = definition.substitutePositions[0];
+
+        // If the only substitute is not already first, swap to first position
+        if (substitutePosition !== firstSubstitutePosition) {
+          const currentTime = getCurrentTimestamp();
+
+          animateStateChange(
+            gameState,
+            (state) => {
+              const newFormation = { ...state.formation };
+              const firstSubstituteId = newFormation[firstSubstitutePosition];
+
+              // Swap positions
+              newFormation[firstSubstitutePosition] = onlySubstituteId;
+              newFormation[substitutePosition] = firstSubstituteId;
+
+              return {
+                ...state,
+                formation: newFormation,
+                playersToHighlight: [onlySubstituteId, firstSubstituteId]
+              };
+            },
+            (newGameState) => {
+              setFormation(newGameState.formation);
+
+              // Log the position swap
+              try {
+                const selectedPlayer = gameState.allPlayers.find(p => p.id === onlySubstituteId);
+                const firstPlayer = gameState.allPlayers.find(p => p.id === gameState.formation[firstSubstitutePosition]);
+
+                if (selectedPlayer && firstPlayer) {
+                  logEvent(EVENT_TYPES.POSITION_CHANGE, {
+                    type: 'immediate_substitute_reorder',
+                    playerId: onlySubstituteId,
+                    playerName: selectedPlayer.name,
+                    swapPlayerId: firstPlayer.id,
+                    swapPlayerName: firstPlayer.name,
+                    fromPosition: substitutePosition,
+                    toPosition: firstSubstitutePosition,
+                    description: `${selectedPlayer.name} moved to next-in for immediate substitution`,
+                    beforeFormation: getFormationDescription(gameState.formation, teamConfig),
+                    afterFormation: getFormationDescription(newGameState.formation, teamConfig),
+                    teamConfig,
+                    matchTime: calculateMatchTime(currentTime),
+                    timestamp: currentTime,
+                    periodNumber: gameState.currentPeriodNumber || 1
+                  });
+                }
+              } catch (error) {
+                // Logging error should not prevent the swap
+              }
+
+              // Now set the field player as next to sub out and trigger immediate substitution
+              setNextPlayerToSubOut(fieldPlayerModal.target, false);
+              setShouldSubstituteNow(true);
+            },
+            setAnimationState,
+            setHideNextOffIndicator,
+            setRecentlySubstitutedPlayers
+          );
+        } else {
+          // Only substitute is already first, just trigger the substitution
+          setNextPlayerToSubOut(fieldPlayerModal.target, false);
+          setShouldSubstituteNow(true);
+        }
+
+        closeFieldPlayerModal();
+        return;
+      }
+
+      // Find the designated substitute for this field position (if the field player is already next to sub off)
+      const fieldPositions = getFieldPositions(teamConfig);
       const rotationQueue = gameState.rotationQueue || [];
+
+      // Use getSubstituteTargetPositions to find which substitute is mapped to this field position
+      const substituteTargetMapping = getSubstituteTargetPositions(
+        rotationQueue,
+        gameState.formation,
+        fieldPositions,
+        definition.substitutePositions,
+        1 // Just need the first substitute position mapping
+      );
+
+      // Find which substitute position maps to the selected field player's position
+      const designatedSubstitutePosition = Object.keys(substituteTargetMapping).find(
+        subPos => substituteTargetMapping[subPos] === fieldPlayerModal.target
+      );
+
+      const designatedSubstituteId = designatedSubstitutePosition
+        ? gameState.formation[designatedSubstitutePosition]
+        : null;
+
+      // Sort substitutes with 3 tiers:
+      // 1. Designated substitute (if field player is already next to sub off) - FIRST
+      // 2. Other substitutes in rotation queue order - follow queue
+      // 3. Substitutes not in queue - at the end
       const sortedSubstitutes = [...substitutes].sort((a, b) => {
+        // Designated substitute always first
+        if (a.id === designatedSubstituteId) return -1;
+        if (b.id === designatedSubstituteId) return 1;
+
+        // Then sort by rotation queue order
         const aIndex = rotationQueue.indexOf(a.id);
         const bIndex = rotationQueue.indexOf(b.id);
 
