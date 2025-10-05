@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { Button, Input, Select, ConfirmationModal } from '../shared/UI';
@@ -78,6 +78,23 @@ const SmartTimeInput = ({ value, onChange, className = '' }) => {
       placeholder="0:00:00"
     />
   );
+};
+
+const getSafeGoalValue = (value) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? Math.max(0, value) : 0;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      return 0;
+    }
+    const parsed = parseInt(trimmed, 10);
+    return Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
+  }
+
+  return 0;
 };
 
 
@@ -228,6 +245,7 @@ export function MatchDetailsView({
   const [deleteError, setDeleteError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [goalWarning, setGoalWarning] = useState(null);
   const assignedPlayerIds = useMemo(() => {
     return new Set((editData?.playerStats || []).map(player => player.playerId));
   }, [editData?.playerStats]);
@@ -235,6 +253,12 @@ export function MatchDetailsView({
   const availablePlayers = useMemo(() => {
     return (teamPlayers || []).filter(player => !assignedPlayerIds.has(player.id));
   }, [teamPlayers, assignedPlayerIds]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setGoalWarning(null);
+    }
+  }, [isEditing]);
 
   // Initialise create mode defaults when roster data becomes available
   useEffect(() => {
@@ -319,6 +343,25 @@ export function MatchDetailsView({
       setPlayerToAdd('');
     }
   }, [availablePlayers, playerToAdd]);
+
+  const evaluateGoalConsistency = useCallback((data) => {
+    if (!isEditing || !data) {
+      setGoalWarning(null);
+      return;
+    }
+
+    const teamGoals = getSafeGoalValue(data.goalsScored);
+    const playerGoals = (data.playerStats || []).reduce(
+      (sum, player) => sum + getSafeGoalValue(player?.goalsScored),
+      0
+    );
+
+    if (playerGoals > teamGoals) {
+      setGoalWarning({ teamGoals, playerGoals });
+    } else {
+      setGoalWarning(null);
+    }
+  }, [isEditing]);
 
   if (loading) {
     return (
@@ -455,7 +498,9 @@ export function MatchDetailsView({
     setIsEditing(false);
   };
 
-  const updateMatchDetail = (field, value) => {
+  const updateMatchDetail = (field, value, options = {}) => {
+    const { validateGoals = false } = options;
+
     setEditData((prev) => {
       if (!prev) {
         return prev;
@@ -478,6 +523,10 @@ export function MatchDetailsView({
         const goalsAgainst = field === 'goalsConceded' ? value : updated.goalsConceded;
         const outcome = calculateMatchOutcome(goalsFor || 0, goalsAgainst || 0);
         updated.outcome = outcome === 'win' ? 'W' : outcome === 'draw' ? 'D' : 'L';
+      }
+
+      if (validateGoals && field === 'goalsScored') {
+        evaluateGoalConsistency(updated);
       }
 
       return updated;
@@ -506,7 +555,9 @@ export function MatchDetailsView({
     }
 
     const normalized = normalizeIntegerValue(editData[field], fallback);
-    updateMatchDetail(field, normalized);
+    updateMatchDetail(field, normalized, {
+      validateGoals: field === 'goalsScored'
+    });
   };
 
   const handlePlayerIntegerChange = (playerId, field) => (event) => {
@@ -532,7 +583,9 @@ export function MatchDetailsView({
     }
 
     const normalized = normalizeIntegerValue(player[field], fallback);
-    updatePlayerStat(playerId, field, normalized);
+    updatePlayerStat(playerId, field, normalized, {
+      validateGoals: field === 'goalsScored'
+    });
   };
 
   const sanitizePlayerStatsForSave = (stats = []) => {
@@ -579,35 +632,66 @@ export function MatchDetailsView({
     };
   };
 
-  const updatePlayerStat = (playerRowId, field, value) => {
-    setEditData(prev => ({
-      ...prev,
-      playerStats: Array.isArray(prev.playerStats) ? prev.playerStats.map(player => {
-        if (player.id === playerRowId) {
-          const updatedPlayer = { ...player, [field]: value };
+  const updatePlayerStat = (playerRowId, field, value, options = {}) => {
+    const { validateGoals = false } = options;
 
-          // If updating role times, recalculate total time (excluding goalie time)
-          if (['timeAsDefender', 'timeAsMidfielder', 'timeAsAttacker', 'timeAsGoalkeeper'].includes(field)) {
-            updatedPlayer.totalTimePlayed =
-              (updatedPlayer.timeAsDefender || 0) +
-              (updatedPlayer.timeAsMidfielder || 0) +
-              (updatedPlayer.timeAsAttacker || 0);
-          }
+    setEditData(prev => {
+      if (!prev) {
+        return prev;
+      }
 
-          return updatedPlayer;
-        }
-        return player;
-      }) : []
-    }));
+      const nextPlayerStats = Array.isArray(prev.playerStats)
+        ? prev.playerStats.map(player => {
+            if (player.id !== playerRowId) {
+              return player;
+            }
+
+            const updatedPlayer = { ...player, [field]: value };
+
+            // If updating role times, recalculate total time (excluding goalie time)
+            if (['timeAsDefender', 'timeAsMidfielder', 'timeAsAttacker', 'timeAsGoalkeeper'].includes(field)) {
+              updatedPlayer.totalTimePlayed =
+                (updatedPlayer.timeAsDefender || 0) +
+                (updatedPlayer.timeAsMidfielder || 0) +
+                (updatedPlayer.timeAsAttacker || 0);
+            }
+
+            return updatedPlayer;
+          })
+        : [];
+
+      const updated = {
+        ...prev,
+        playerStats: nextPlayerStats
+      };
+
+      if (validateGoals && field === 'goalsScored') {
+        evaluateGoalConsistency(updated);
+      }
+
+      return updated;
+    });
   };
 
   const handleRemovePlayer = (playerRowId) => {
-    setEditData(prev => ({
-      ...prev,
-      playerStats: Array.isArray(prev.playerStats)
+    setEditData(prev => {
+      if (!prev) {
+        return prev;
+      }
+
+      const nextPlayerStats = Array.isArray(prev.playerStats)
         ? prev.playerStats.filter(player => player.id !== playerRowId)
-        : []
-    }));
+        : [];
+
+      const updated = {
+        ...prev,
+        playerStats: nextPlayerStats
+      };
+
+      evaluateGoalConsistency(updated);
+
+      return updated;
+    });
   };
 
   const handleAddPlayer = () => {
@@ -937,9 +1021,20 @@ export function MatchDetailsView({
           </div>
         </div>
 
+        {isEditing && goalWarning && (
+          <div className="px-4 py-2 bg-slate-800 border-t border-slate-600 text-xs text-red-300" role="status">
+            <div className="flex items-center justify-center gap-2">
+              <span aria-hidden="true">⚠️</span>
+              <span>
+                Player goals ({goalWarning.playerGoals}) exceed team total ({goalWarning.teamGoals}).
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Secondary Details Row */}
         <div className="px-4 py-3 border-t border-slate-600">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
             <div className="flex items-center space-x-2">
               <Trophy className="h-4 w-4 text-slate-400" />
               <div>
@@ -1028,6 +1123,25 @@ export function MatchDetailsView({
                   />
                 ) : (
                   <div className="text-sm text-slate-100 font-medium">{editData.periods}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-slate-400" />
+              <div>
+                <div className="text-xs text-slate-400 tracking-wide">Period Duration</div>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editData.periodDuration === '' ? '' : editData.periodDuration}
+                    onChange={handleMatchIntegerChange('periodDuration')}
+                    onBlur={handleMatchIntegerBlur('periodDuration', DEFAULT_PERIOD_DURATION)}
+                    className="text-sm w-16"
+                    min="1"
+                  />
+                ) : (
+                  <div className="text-sm text-slate-100 font-medium">{editData.periodDuration} min</div>
                 )}
               </div>
             </div>

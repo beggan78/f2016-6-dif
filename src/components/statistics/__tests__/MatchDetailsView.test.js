@@ -261,4 +261,128 @@ describe('MatchDetailsView - existing match mode', () => {
     const [, payload] = updateMatchDetails.mock.calls[0];
     expect(payload.matchDurationSeconds).toBe(2772);
   });
+
+  it('displays and allows editing of period duration', async () => {
+    getMatchDetails.mockResolvedValueOnce({
+      success: true,
+      match: {
+        id: 'match-1',
+        opponent: 'Opponents',
+        goalsScored: 2,
+        goalsConceded: 1,
+        venueType: 'home',
+        type: 'league',
+        format: '5v5',
+        formation: '2-2',
+        periods: 3,
+        periodDuration: 15,
+        matchDurationSeconds: 2700,
+        date: '2024-03-10',
+        time: '14:00',
+        outcome: 'W'
+      },
+      playerStats: []
+    });
+
+    render(
+      <MatchDetailsView
+        matchId="match-1"
+        teamId="team-xyz"
+        onNavigateBack={jest.fn()}
+      />
+    );
+
+    await screen.findByRole('button', { name: /Edit Match/i });
+
+    expect(screen.getByText('15 min')).toBeInTheDocument();
+
+    const editButton = screen.getByRole('button', { name: /Edit Match/i });
+    await userEvent.click(editButton);
+
+    const periodDurationInput = screen.getByDisplayValue('15');
+    fireEvent.change(periodDurationInput, { target: { value: '20' } });
+    fireEvent.blur(periodDurationInput);
+
+    await userEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
+
+    await waitFor(() => expect(updateMatchDetails).toHaveBeenCalled());
+    const [, payload] = updateMatchDetails.mock.calls[0];
+    expect(payload.periodDuration).toBe(20);
+  });
+
+  it('shows a warning when player goals exceed the team total but allows saving', async () => {
+    getMatchDetails.mockResolvedValueOnce({
+      success: true,
+      match: {
+        id: 'match-1',
+        opponent: 'Opponents',
+        goalsScored: 2,
+        goalsConceded: 1,
+        venueType: 'home',
+        type: 'league',
+        format: '5v5',
+        formation: '2-2',
+        periods: 3,
+        periodDuration: 15,
+        matchDurationSeconds: 2700,
+        date: '2024-03-10',
+        time: '14:00',
+        outcome: 'W'
+      },
+      playerStats: [
+        {
+          id: 'player-stat-1',
+          playerId: 'player-1',
+          name: 'Player One',
+          goalsScored: 2,
+          totalTimePlayed: 0,
+          timeAsDefender: 0,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 0,
+          timeAsGoalkeeper: 0,
+          startingRole: 'defender',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        },
+        {
+          id: 'player-stat-2',
+          playerId: 'player-2',
+          name: 'Player Two',
+          goalsScored: 2,
+          totalTimePlayed: 0,
+          timeAsDefender: 0,
+          timeAsMidfielder: 0,
+          timeAsAttacker: 0,
+          timeAsGoalkeeper: 0,
+          startingRole: 'defender',
+          wasCaptain: false,
+          receivedFairPlayAward: false
+        }
+      ]
+    });
+
+    render(
+      <MatchDetailsView
+        matchId="match-1"
+        teamId="team-xyz"
+        onNavigateBack={jest.fn()}
+      />
+    );
+
+    const editButton = await screen.findByRole('button', { name: /Edit Match/i });
+    await userEvent.click(editButton);
+
+    const playerOneRow = screen.getByText('Player One').closest('tr');
+    expect(playerOneRow).not.toBeNull();
+
+    const playerGoalsInput = within(playerOneRow).getByDisplayValue('2');
+    fireEvent.blur(playerGoalsInput);
+
+    await screen.findByText('Player goals (4) exceed team total (2).');
+
+    const saveButton = await screen.findByRole('button', { name: /Save Changes/i });
+    await userEvent.click(saveButton);
+
+    await waitFor(() => expect(updateMatchDetails).toHaveBeenCalled());
+  });
 });
