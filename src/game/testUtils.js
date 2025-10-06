@@ -305,6 +305,8 @@ export const createMockDependencies = () => ({
     closeFieldPlayerModal: jest.fn(),
     openSubstituteModal: jest.fn(),
     closeSubstituteModal: jest.fn(),
+    openSubstituteSelectionModal: jest.fn(),
+    closeSubstituteSelectionModal: jest.fn(),
     openGoalieModal: jest.fn(),
     closeGoalieModal: jest.fn(),
     removeFromNavigationStack: jest.fn()

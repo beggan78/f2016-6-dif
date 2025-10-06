@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw, ArrowLeft } from 'lucide-react';
-import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal } from '../shared/UI';
+import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal, SubstituteSelectionModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
@@ -9,6 +9,7 @@ import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { calculateMatchTime } from '../../utils/gameEventLogger';
+import { getExpectedOutfieldPlayerCount } from '../../game/logic/positionUtils';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -23,6 +24,7 @@ import { createTimerHandlers } from '../../game/handlers/timerHandlers';
 import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
 import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtils';
+import { SubstitutionCountInlineControl } from './SubstitutionCountControls';
 
 // Animation timing constants are now imported from animationSupport
 
@@ -102,7 +104,59 @@ export function GameScreen({
     const filteredPlayers = selectedSquadPlayers.filter(p => p.stats && !p.stats.isInactive);
     return sortPlayersByGoalScoringRelevance(filteredPlayers);
   }, [selectedSquadPlayers]);
-  
+
+  // Load substitution count from localStorage, default to 1
+  const SUBSTITUTION_COUNT_STORAGE_KEY = 'sport-wizard-substitution-count';
+  const loadSubstitutionCount = () => {
+    try {
+      const stored = localStorage.getItem(SUBSTITUTION_COUNT_STORAGE_KEY);
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && parsed >= 1) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      // Ignore errors and use default
+    }
+    return 1;
+  };
+
+  const [substitutionCount, setSubstitutionCount] = React.useState(loadSubstitutionCount);
+
+  const maxSubstitutionCount = React.useMemo(() => {
+    // Get number of outfield positions from team config (4 for 5v5, 6 for 7v7)
+    const outfieldCount = getExpectedOutfieldPlayerCount(teamConfig);
+
+    // Count active substitutes (non-inactive players not on field)
+    const activeSubstitutes = allPlayers.filter(p =>
+      p.stats?.currentStatus === PLAYER_STATUS.SUBSTITUTE &&
+      !p.stats?.isInactive
+    ).length;
+
+    // Max is the smaller of: outfield positions OR active substitutes
+    return Math.max(1, Math.min(outfieldCount, activeSubstitutes));
+  }, [teamConfig, allPlayers]);
+
+  React.useEffect(() => {
+    if (substitutionCount > maxSubstitutionCount) {
+      setSubstitutionCount(maxSubstitutionCount);
+    }
+  }, [substitutionCount, maxSubstitutionCount]);
+
+  // Save substitution count to localStorage whenever it changes
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(SUBSTITUTION_COUNT_STORAGE_KEY, substitutionCount.toString());
+    } catch (error) {
+      // Ignore localStorage errors (e.g., quota exceeded, private browsing)
+    }
+  }, [substitutionCount, SUBSTITUTION_COUNT_STORAGE_KEY]);
+
+  const handleSubstitutionCountChange = React.useCallback((nextValue) => {
+    setSubstitutionCount(nextValue);
+  }, []);
+
   // Determine which formation mode we're using
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
 
@@ -127,16 +181,18 @@ export function GameScreen({
       currentPeriodNumber,
       matchTimerSeconds,
       ownScore,
-      opponentScore
+      opponentScore,
+      substitutionCount
     };
-    
-    
+
+
     return gameState;
   }, [
     formation, allPlayers, teamConfig, selectedFormation, nextPhysicalPairToSubOut,
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
-    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore
+    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore,
+    substitutionCount
   ]);
 
   // State updaters object for handlers
@@ -186,8 +242,9 @@ export function GameScreen({
       stateUpdaters,
       animationHooks,
       modalHandlers,
-      teamConfig
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig]
+      teamConfig,
+      () => substitutionCount
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, substitutionCount]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>
@@ -197,8 +254,10 @@ export function GameScreen({
       allPlayers,
       nextPlayerIdToSubOut,
       modalHandlers,
-      selectedFormation  // NEW: Pass selectedFormation for formation-aware position callbacks
-    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation]
+      selectedFormation,  // Pass selectedFormation for formation-aware position callbacks
+      substitutionCount,  // Pass substitutionCount for multi-sub logic
+      rotationQueue       // Pass rotationQueue for multi-sub player detection
+    ), [teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation, substitutionCount, rotationQueue]
   );
 
   const quickTapHandlers = useFieldPositionHandlers(fieldPositionCallbacks, teamConfig);
@@ -242,6 +301,13 @@ export function GameScreen({
   const canSubstitute = React.useMemo(() => {
     return hasActiveSubstitutes(allPlayers, teamConfig);
   }, [allPlayers, teamConfig]);
+
+  const substitutionButtonLabel = React.useMemo(() => {
+    if (substitutionCount === 1) {
+      return 'SUB 1 PLAYER';
+    }
+    return `SUB ${substitutionCount} PLAYERS`;
+  }, [substitutionCount]);
 
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
@@ -511,6 +577,8 @@ export function GameScreen({
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
+          substitutionCount={substitutionCount}
+          rotationQueue={rotationQueue}
           quickTapHandlers={quickTapHandlers}
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
@@ -519,7 +587,18 @@ export function GameScreen({
         />
 
       {/* SUB NOW Button - positioned between field and substitute players */}
-      <div className="flex gap-2 mt-4 z-30 relative">
+      <div
+        className="flex gap-2 mt-4 z-30 relative"
+        data-testid="substitution-action-row"
+      >
+        <SubstitutionCountInlineControl
+          value={substitutionCount}
+          min={1}
+          max={maxSubstitutionCount}
+          onChange={handleSubstitutionCountChange}
+          disabled={!canSubstitute}
+          className="flex-shrink-0"
+        />
         <Button
           onClick={substitutionHandlers.handleSubstitutionWithHighlight}
           Icon={RefreshCcw}
@@ -527,7 +606,7 @@ export function GameScreen({
           disabled={!canSubstitute}
           title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}
         >
-          SUB NOW
+          {substitutionButtonLabel}
         </Button>
         <button
           onClick={handleUndoSubstitutionClick}
@@ -555,6 +634,8 @@ export function GameScreen({
           nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
+          substitutionCount={substitutionCount}
+          rotationQueue={rotationQueue}
           quickTapHandlers={quickTapHandlers}
           goalieHandlers={goalieHandlers}
           getPlayerNameById={getPlayerNameById}
@@ -574,6 +655,7 @@ export function GameScreen({
       <FieldPlayerModal
         isOpen={modalHandlers.modals.fieldPlayer.isOpen}
         onSetNext={() => substitutionHandlers.handleSetNextSubstitution(modalHandlers.modals.fieldPlayer)}
+        onRemoveFromNext={() => substitutionHandlers.handleRemoveFromNextSubstitution(modalHandlers.modals.fieldPlayer)}
         onSubNow={() => substitutionHandlers.handleSubstituteNow(modalHandlers.modals.fieldPlayer)}
         onCancel={substitutionHandlers.handleCancelFieldPlayerModal}
         onChangePosition={substitutionHandlers.handleChangePosition}
@@ -583,10 +665,11 @@ export function GameScreen({
         showPositionOptions={modalHandlers.modals.fieldPlayer.showPositionOptions}
         showSwapPositions={isPairsMode && modalHandlers.modals.fieldPlayer.type === 'pair'}
         showSubstitutionOptions={
-          modalHandlers.modals.fieldPlayer.type === 'player' || 
+          modalHandlers.modals.fieldPlayer.type === 'player' ||
           (modalHandlers.modals.fieldPlayer.type === 'pair' && modalHandlers.modals.fieldPlayer.target !== 'subPair')
         }
         canSubstitute={teamConfig?.substitutionType === 'individual' ? canSubstitute : true}
+        isPlayerAboutToSubOff={modalHandlers.modals.fieldPlayer.isPlayerAboutToSubOff || false}
       />
 
       {/* Substitute Player Modal */}
@@ -596,9 +679,13 @@ export function GameScreen({
         onActivate={() => substitutionHandlers.handleActivatePlayer(modalHandlers.modals.substitute)}
         onCancel={substitutionHandlers.handleCancelSubstituteModal}
         onSetAsNextToGoIn={() => substitutionHandlers.handleSetAsNextToGoIn(modalHandlers.modals.substitute, formation)}
+        onChangeNextPosition={(targetPosition) => substitutionHandlers.handleChangeNextPosition(modalHandlers.modals.substitute, targetPosition)}
         playerName={modalHandlers.modals.substitute.playerName}
         isCurrentlyInactive={modalHandlers.modals.substitute.isCurrentlyInactive}
         canSetAsNextToGoIn={modalHandlers.modals.substitute.canSetAsNextToGoIn}
+        canChangeNextPosition={modalHandlers.modals.substitute.canChangeNextPosition}
+        availableNextPositions={modalHandlers.modals.substitute.availableNextPositions}
+        showPositionSelection={modalHandlers.modals.substitute.showPositionSelection}
       />
 
       {/* Goalie Replacement Modal */}
@@ -655,6 +742,15 @@ export function GameScreen({
         existingGoalData={modalHandlers.modals.goalScorer.existingGoalData}
         matchTime={modalHandlers.modals.goalScorer.matchTime}
         goalType={modalHandlers.modals.goalScorer.team}
+      />
+
+      {/* Substitute Selection Modal */}
+      <SubstituteSelectionModal
+        isOpen={modalHandlers.modals.substituteSelection.isOpen}
+        onCancel={substitutionHandlers.handleCancelSubstituteSelection}
+        onSelectSubstitute={(substituteId) => substitutionHandlers.handleSelectSubstituteForImmediate(modalHandlers.modals.substituteSelection, substituteId)}
+        fieldPlayerName={modalHandlers.modals.substituteSelection.fieldPlayerName}
+        availableSubstitutes={modalHandlers.modals.substituteSelection.availableSubstitutes}
       />
     </div>
   );

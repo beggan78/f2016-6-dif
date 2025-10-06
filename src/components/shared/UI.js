@@ -290,19 +290,21 @@ export function ThreeOptionModal({
   );
 }
 
-export function FieldPlayerModal({ 
-  isOpen, 
-  onSetNext, 
-  onSubNow, 
-  onCancel, 
-  onChangePosition, 
-  playerName, 
+export function FieldPlayerModal({
+  isOpen,
+  onSetNext,
+  onRemoveFromNext,
+  onSubNow,
+  onCancel,
+  onChangePosition,
+  playerName,
   availablePlayers = [],
   showPositionChange = false,
   showPositionOptions = false,
   showSwapPositions = false,
   showSubstitutionOptions = true,
-  canSubstitute = true
+  canSubstitute = true,
+  isPlayerAboutToSubOff = false
 }) {
   if (!isOpen) return null;
 
@@ -350,17 +352,28 @@ export function FieldPlayerModal({
                 </Button>
                 {showSubstitutionOptions && (
                   <>
-                    <Button 
-                      onClick={onSetNext} 
-                      variant="primary"
-                      disabled={!canSubstitute}
-                      title={canSubstitute ? "Set as next to substitute" : "All substitutes are inactive - cannot set as next"}
-                    >
-                      Set as next sub
-                    </Button>
-                    <Button 
-                      onClick={onSubNow} 
-                      variant="danger" 
+                    {isPlayerAboutToSubOff ? (
+                      <Button
+                        onClick={onRemoveFromNext}
+                        variant="primary"
+                        disabled={!canSubstitute}
+                        title={canSubstitute ? "Remove from next to go off" : "All substitutes are inactive - cannot modify rotation"}
+                      >
+                        Remove from next to go off
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={onSetNext}
+                        variant="primary"
+                        disabled={!canSubstitute}
+                        title={canSubstitute ? "Set as next to substitute" : "All substitutes are inactive - cannot set as next"}
+                      >
+                        Set to go off next
+                      </Button>
+                    )}
+                    <Button
+                      onClick={onSubNow}
+                      variant="danger"
                       disabled={!canSubstitute}
                       title={canSubstitute ? "Substitute this player now" : "All substitutes are inactive - cannot substitute"}
                     >
@@ -388,45 +401,86 @@ export function FieldPlayerModal({
 }
 
 
-export function SubstitutePlayerModal({ 
-  isOpen, 
-  onInactivate, 
-  onActivate, 
-  onCancel, 
+export function SubstitutePlayerModal({
+  isOpen,
+  onInactivate,
+  onActivate,
+  onCancel,
   onSetAsNextToGoIn,
-  playerName, 
+  onChangeNextPosition,
+  playerName,
   isCurrentlyInactive,
-  canSetAsNextToGoIn = false
+  canSetAsNextToGoIn = false,
+  canChangeNextPosition = false,
+  availableNextPositions = [],
+  showPositionSelection = false
 }) {
   if (!isOpen) return null;
+
+  const handleBack = () => {
+    // Call onChangeNextPosition with null to go back to main options
+    onChangeNextPosition && onChangeNextPosition(null);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">Substitute Options</h3>
+          <h3 className="text-lg font-semibold text-sky-300">
+            {showPositionSelection ? 'Change Next Position' : 'Substitute Options'}
+          </h3>
         </div>
         <div className="p-4">
-          <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
-          <div className="flex flex-col gap-3">
-            <Button onClick={onCancel} variant="secondary">
-              Cancel
-            </Button>
-            {canSetAsNextToGoIn && !isCurrentlyInactive && (
-              <Button onClick={onSetAsNextToGoIn} variant="accent">
-                Set as next to go in
-              </Button>
-            )}
-            {isCurrentlyInactive ? (
-              <Button onClick={onActivate} variant="primary">
-                Put {playerName} back into rotation
-              </Button>
-            ) : (
-              <Button onClick={onInactivate} variant="danger">
-                Take {playerName} out of rotation
-              </Button>
-            )}
-          </div>
+          {showPositionSelection ? (
+            <>
+              <p className="text-slate-200 mb-6">
+                Select which position {playerName} should take when coming in:
+              </p>
+              <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+                <Button onClick={handleBack} variant="secondary">
+                  Back
+                </Button>
+                {availableNextPositions.map((position) => (
+                  <Button
+                    key={position.value}
+                    onClick={() => onChangeNextPosition && onChangeNextPosition(position.value)}
+                    variant="primary"
+                    className="text-left"
+                  >
+                    {position.label}
+                  </Button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
+              <div className="flex flex-col gap-3">
+                <Button onClick={onCancel} variant="secondary">
+                  Cancel
+                </Button>
+                {canChangeNextPosition && !isCurrentlyInactive && (
+                  <Button onClick={() => onChangeNextPosition && onChangeNextPosition('show-options')} variant="accent">
+                    Change next position
+                  </Button>
+                )}
+                {canSetAsNextToGoIn && !isCurrentlyInactive && (
+                  <Button onClick={onSetAsNextToGoIn} variant="accent">
+                    Set to go in next
+                  </Button>
+                )}
+                {isCurrentlyInactive ? (
+                  <Button onClick={onActivate} variant="primary">
+                    Put {playerName} back into rotation
+                  </Button>
+                ) : (
+                  <Button onClick={onInactivate} variant="danger">
+                    Take {playerName} out of rotation
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -781,9 +835,49 @@ export function ScoreManagerModal({
   );
 }
 
+export function SubstituteSelectionModal({
+  isOpen,
+  onCancel,
+  onSelectSubstitute,
+  fieldPlayerName,
+  availableSubstitutes = []
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
+        <div className="p-4 border-b border-slate-600">
+          <h3 className="text-lg font-semibold text-sky-300">Select Substitute</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-slate-200 mb-6">
+            Select which substitute to bring on for {fieldPlayerName}:
+          </p>
+          <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+            <Button onClick={onCancel} variant="secondary">
+              Cancel
+            </Button>
+            {availableSubstitutes.map((substitute) => (
+              <Button
+                key={substitute.id}
+                onClick={() => onSelectSubstitute(substitute.id)}
+                variant="primary"
+                className="text-left"
+              >
+                {formatPlayerName(substitute)}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Slider({ value, onChange, min = 0, max = 1, step = 0.1, className = '', disabled = false, id }) {
   const percentage = ((value - min) / (max - min)) * 100;
-  
+
   return (
     <div className={`relative ${className}`}>
       <input

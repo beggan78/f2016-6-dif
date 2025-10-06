@@ -20,7 +20,17 @@ export function useGameModals(pushNavigationState, removeFromNavigationStack) {
       playerId: null,
       playerName: '',
       isCurrentlyInactive: false,
-      canSetAsNextToGoIn: false
+      canSetAsNextToGoIn: false,
+      canChangeNextPosition: false,
+      availableNextPositions: [],
+      showPositionSelection: false
+    },
+    substituteSelection: {
+      isOpen: false,
+      fieldPlayerName: '',
+      fieldPlayerId: null,
+      fieldPlayerPosition: null,
+      availableSubstitutes: []
     },
     goalie: {
       isOpen: false,
@@ -137,16 +147,24 @@ export function useGameModals(pushNavigationState, removeFromNavigationStack) {
   const closeGoalScorerModal = useCallback(() => {
     closeModal('goalScorer');
   }, [closeModal]);
-  
+
+  const openSubstituteSelectionModal = useCallback((modalData) => {
+    openModal('substituteSelection', modalData);
+  }, [openModal]);
+
+  const closeSubstituteSelectionModal = useCallback(() => {
+    closeModal('substituteSelection');
+  }, [closeModal]);
+
   // Pending goal management functions
   const setPendingGoalData = useCallback((goalData) => {
     setPendingGoal(goalData);
   }, []);
-  
+
   const getPendingGoalData = useCallback(() => {
     return pendingGoal;
   }, [pendingGoal]);
-  
+
   const clearPendingGoal = useCallback(() => {
     setPendingGoal(null);
   }, []);
@@ -163,6 +181,8 @@ export function useGameModals(pushNavigationState, removeFromNavigationStack) {
     closeFieldPlayerModal,
     openSubstituteModal,
     closeSubstituteModal,
+    openSubstituteSelectionModal,
+    closeSubstituteSelectionModal,
     openGoalieModal,
     closeGoalieModal,
     openScoreEditModal,

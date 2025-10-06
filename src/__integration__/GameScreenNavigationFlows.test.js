@@ -37,6 +37,8 @@ import {
 import { VIEWS } from '../constants/viewConstants';
 import { TEAM_CONFIGS } from '../game/testUtils';
 
+const originalConsoleError = console.error;
+
 // Mock GameScreen dependencies
 jest.mock('../hooks/useGameModals');
 jest.mock('../hooks/useGameUIState');  
@@ -97,9 +99,11 @@ describe('GameScreen Navigation Integration Tests', () => {
     
     // Suppress console warnings for testing
     jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation((message) => {
-      if (message.includes('React does not recognize')) return;
-      console.error(message);
+    jest.spyOn(console, 'error').mockImplementation((message, ...args) => {
+      if (typeof message === 'string' && message.includes('React does not recognize')) {
+        return;
+      }
+      originalConsoleError(message, ...args);
     });
   });
 
@@ -109,6 +113,12 @@ describe('GameScreen Navigation Integration Tests', () => {
       modals: {
         fieldPlayer: { isOpen: false, type: null, target: null, playerName: '', sourcePlayerId: null, availablePlayers: [], showPositionOptions: false },
         substitute: { isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false, canSetAsNextToGoIn: false },
+        substituteSelection: {
+          isOpen: false,
+          fieldPlayerName: '',
+          fieldPlayerId: null,
+          availableSubstitutes: []
+        },
         goalie: { isOpen: false, currentGoalieName: '', availablePlayers: [] },
         scoreEdit: { isOpen: false },
         undoConfirm: { isOpen: false },

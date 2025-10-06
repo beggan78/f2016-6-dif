@@ -44,14 +44,15 @@ export const calculateSubstitution = (gameState) => {
     rotationQueue,
     teamConfig,
     selectedFormation,
-    isSubTimerPaused = false
+    isSubTimerPaused = false,
+    substitutionCount = 1
   } = gameState;
 
 
   const currentTimeEpoch = getCurrentTimestamp();
   const substitutionManager = createSubstitutionManager(teamConfig, selectedFormation);
-  
-  
+
+
   const context = {
     formation,
     nextPhysicalPairToSubOut,
@@ -59,7 +60,8 @@ export const calculateSubstitution = (gameState) => {
     allPlayers,
     rotationQueue,
     currentTimeEpoch,
-    isSubTimerPaused
+    isSubTimerPaused,
+    substitutionCount
   };
 
   try {
@@ -879,64 +881,69 @@ export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPositi
  * Calculate the result of reordering substitutes when setting a player as next to go in
  * The target player moves to substitute_1, all players ahead of them move down one position
  */
-export const calculateSubstituteReorder = (gameState, targetPosition) => {
+export const calculateSubstituteReorder = (gameState, targetPosition, substitutionCount = 1) => {
   const { allPlayers, formation, teamConfig, selectedFormation } = gameState;
-  
+
   if (!supportsNextNextIndicators(teamConfig)) {
     return gameState;
   }
-  
+
   const definition = getDefinitionForGameLogic(teamConfig, selectedFormation);
   if (!definition || !definition.substitutePositions.includes(targetPosition)) {
     return gameState;
   }
-  
-  // Cannot reorder substitute_1 (already next to go in)
-  if (targetPosition === 'substitute_1') {
+
+  const substitutePositions = definition.substitutePositions;
+
+  // Determine the last "next to go in" position based on substitutionCount
+  // If substitutionCount is 3, the last "next" position is substitute_3
+  const lastNextPosition = substitutePositions[Math.min(substitutionCount - 1, substitutePositions.length - 1)];
+
+  // Cannot reorder if already in a "next to go in" position
+  const targetIndex = substitutePositions.indexOf(targetPosition);
+  if (targetIndex < substitutionCount) {
     return gameState;
   }
-  
+
   const targetPlayerId = formation[targetPosition];
   if (!targetPlayerId) {
     return gameState;
   }
-  
-  const substitutePositions = definition.substitutePositions;
-  const targetIndex = substitutePositions.indexOf(targetPosition);
-  
+
   if (targetIndex === -1) {
     return gameState;
   }
-  
+
   // Create new formation with reordered positions
   const newFormation = { ...formation };
-  
-  // Store the players who need to be shifted
+
+  // Store the players who need to be shifted (those from lastNextPosition up to but not including targetPosition)
   const playersToShift = [];
-  for (let i = 0; i < targetIndex; i++) {
+  const lastNextIndex = substitutePositions.indexOf(lastNextPosition);
+  for (let i = lastNextIndex; i < targetIndex; i++) {
     const position = substitutePositions[i];
     const playerId = formation[position];
     if (playerId) {
       playersToShift.push({ playerId, currentPosition: position });
     }
   }
-  
-  // Move target player to substitute_1
-  newFormation.substitute_1 = targetPlayerId;
-  
-  // Shift all players who were ahead of target down one position
+
+  // Move target player to the last "next to go in" position
+  newFormation[lastNextPosition] = targetPlayerId;
+
+  // Shift all players who were at or after lastNextPosition down one position
   for (let i = 0; i < playersToShift.length; i++) {
-    const nextPosition = substitutePositions[i + 1];
+    const nextPosition = substitutePositions[lastNextIndex + i + 1];
     newFormation[nextPosition] = playersToShift[i].playerId;
   }
   
   // Update player stats with new positions
   const newAllPlayers = allPlayers.map(p => {
-    // Target player moves to substitute_1
+    // Target player moves to lastNextPosition
     if (p.id === targetPlayerId) {
-      return { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' } };
+      return { ...p, stats: { ...p.stats, currentPairKey: lastNextPosition } };
     }
-    
+
     // Update shifted players
     const shiftedPlayer = playersToShift.find(shifted => shifted.playerId === p.id);
     if (shiftedPlayer) {
@@ -944,7 +951,7 @@ export const calculateSubstituteReorder = (gameState, targetPosition) => {
       const newPosition = substitutePositions[currentIndex + 1];
       return { ...p, stats: { ...p.stats, currentPairKey: newPosition } };
     }
-    
+
     return p;
   });
   
@@ -977,6 +984,87 @@ export const calculateNextSubstitutionTarget = (gameState, target, targetType) =
       nextPlayerIdToSubOut: newNextPlayerIdToSubOut
     };
   }
-  
+
   return gameState;
+};
+
+/**
+ * Calculate the result of removing a player from the "next to go off" group
+ * The player is moved to just after the last player in the "next to go off" group
+ * The next player in the queue who is not already in the group takes their place
+ */
+export const calculateRemovePlayerFromNextToGoOff = (gameState, playerId, substitutionCount = 1) => {
+  const { rotationQueue } = gameState;
+
+  if (!rotationQueue || rotationQueue.length === 0) {
+    return gameState;
+  }
+
+  // Get players in the "next to go off" group
+  const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+
+  // Check if player is in the next group
+  if (!nextNToSubOut.includes(playerId)) {
+    return gameState; // Player is not in next group, nothing to do
+  }
+
+  // Remove the player from the queue
+  const queueWithoutPlayer = rotationQueue.filter(id => id !== playerId);
+
+  // After removal, the new "next to go off" group will automatically include:
+  // - The remaining players from the original group (substitutionCount - 1 players)
+  // - Plus the next player in the queue (who was at index substitutionCount before removal)
+
+  // Place the removed player immediately after the new "next to go off" group
+  // That position is at index substitutionCount (0-indexed, so after substitutionCount players)
+  const insertPosition = Math.min(substitutionCount, queueWithoutPlayer.length);
+
+  // Insert the player at the calculated position
+  const newQueue = [
+    ...queueWithoutPlayer.slice(0, insertPosition),
+    playerId,
+    ...queueWithoutPlayer.slice(insertPosition)
+  ];
+
+  return {
+    ...gameState,
+    rotationQueue: newQueue,
+    playersToHighlight: [playerId]
+  };
+};
+
+/**
+ * Calculate the result of setting a player as next to go off
+ * The player is moved to the front of the rotation queue
+ * The player previously last in the "next to go off" group is moved to just after the group
+ */
+export const calculateSetPlayerAsNextToGoOff = (gameState, playerId, substitutionCount = 1) => {
+  const { rotationQueue } = gameState;
+
+  if (!rotationQueue || rotationQueue.length === 0) {
+    return gameState;
+  }
+
+  // Get players in the "next to go off" group
+  const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+
+  // Check if player is already in the next group
+  if (nextNToSubOut.includes(playerId)) {
+    return gameState; // Player is already in next group, nothing to do
+  }
+
+  const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
+  queueManager.initialize();
+
+  // Remove player from their current position
+  queueManager.removePlayer(playerId);
+
+  // Insert player at the front of the queue (position 0)
+  queueManager.addPlayer(playerId, 0);
+
+  return {
+    ...gameState,
+    rotationQueue: queueManager.toArray(),
+    playersToHighlight: [playerId]
+  };
 };

@@ -3,12 +3,12 @@ import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { findPlayerById } from '../../../utils/playerUtils';
 import { getFieldPositions, getSubstitutePositions, getPositionRole } from '../../../game/logic/positionUtils';
 import { getAllPositions, supportsInactiveUsers } from '../../../constants/gameModes';
-import { 
-  getPositionIcon, 
-  getPositionDisplayName, 
-  getIndicatorProps, 
+import {
+  getPositionIcon,
+  getPositionDisplayName,
+  getIndicatorProps,
   getPositionEvents,
-  supportsNextNextIndicators
+  getSubstituteTargetPositions
 } from '../../../game/ui/positionUtils';
 import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPlayerAnimation } from '../../../game/ui/playerAnimation';
@@ -32,6 +32,8 @@ export function IndividualFormation({
   nextPhysicalPairToSubOut, // Filter out React-specific props
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
+  substitutionCount = 1,
+  rotationQueue = [],
   renderSection = 'all',
   ...domProps
 }) {
@@ -53,46 +55,43 @@ export function IndividualFormation({
 
   // Mode capabilities
   const modeSupportsInactive = supportsInactiveUsers(formationAwareTeamConfig);
-  const modeSupportsNextNext = supportsNextNextIndicators(formationAwareTeamConfig);
 
-  // Map upcoming outgoing players to their field positions for substitute indicators
-  const formationPositionsToCheck = React.useMemo(
-    () => ['goalie', ...fieldPositions],
-    [fieldPositions]
+  // Map substitute positions to their target field positions
+  const substituteTargetMapping = React.useMemo(
+    () => getSubstituteTargetPositions(
+      rotationQueue,
+      formation || EMPTY_FORMATION,
+      fieldPositions,
+      substitutePositions,
+      substitutionCount
+    ),
+    [rotationQueue, formation, fieldPositions, substitutePositions, substitutionCount]
   );
 
-  const findFieldPositionForPlayer = React.useCallback(
-    (playerId) => {
-      if (!playerId) return null;
-      const sourceFormation = formation || EMPTY_FORMATION;
-      for (const positionKey of formationPositionsToCheck) {
-        if (sourceFormation[positionKey] === playerId) {
-          return positionKey;
-        }
-      }
-      return null;
-    },
-    [formation, formationPositionsToCheck]
-  );
-
-  const upcomingFieldAssignments = React.useMemo(
-    () => ({
-      next: findFieldPositionForPlayer(nextPlayerIdToSubOut),
-      nextNext: findFieldPositionForPlayer(nextNextPlayerIdToSubOut)
-    }),
-    [findFieldPositionForPlayer, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut]
-  );
-
+  // Create display labels for target positions with player names
   const incomingPositionLabels = React.useMemo(
-    () => ({
-      next: upcomingFieldAssignments.next
-        ? getPositionDisplayName(upcomingFieldAssignments.next, null, formationAwareTeamConfig, substitutePositions)
-        : null,
-      nextNext: upcomingFieldAssignments.nextNext
-        ? getPositionDisplayName(upcomingFieldAssignments.nextNext, null, formationAwareTeamConfig, substitutePositions)
-        : null
-    }),
-    [upcomingFieldAssignments, formationAwareTeamConfig, substitutePositions]
+    () => {
+      const labels = {};
+      Object.entries(substituteTargetMapping).forEach(([subPosition, targetFieldPosition]) => {
+        const positionName = getPositionDisplayName(
+          targetFieldPosition,
+          null,
+          formationAwareTeamConfig,
+          substitutePositions
+        );
+
+        // Find the player at the target field position
+        const playerIdAtPosition = formation?.[targetFieldPosition];
+        const playerName = playerIdAtPosition && getPlayerNameById
+          ? getPlayerNameById(playerIdAtPosition)
+          : null;
+
+        // Format: "PlayerName - Position"
+        labels[subPosition] = playerName ? `${playerName} - ${positionName}` : positionName;
+      });
+      return labels;
+    },
+    [substituteTargetMapping, formationAwareTeamConfig, substitutePositions, formation, getPlayerNameById]
   );
 
   // Handle null/undefined formation after hook definitions to satisfy rules of hooks
@@ -132,8 +131,15 @@ export function IndividualFormation({
     const isInactive = modeSupportsInactive ? (player?.stats.isInactive || false) : false;
 
     // Get indicator props using utility
-    const { isNextOff, isNextOn, isNextNextOff, isNextNextOn } = getIndicatorProps(
-      player, position, formationAwareTeamConfig, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions
+    const { isNextOff, isNextOn } = getIndicatorProps(
+      player,
+      position,
+      formationAwareTeamConfig,
+      nextPlayerIdToSubOut,
+      nextNextPlayerIdToSubOut,
+      substitutePositions,
+      substitutionCount,
+      rotationQueue
     );
     
 
@@ -158,12 +164,7 @@ export function IndividualFormation({
     const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(quickTapHandlers, position);
     const positionDisplayName = getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
     const icon = getPositionIcon(position, substitutePositions);
-    const substituteIndex = substitutePositions.indexOf(position);
-    const incomingPositionLabel = substituteIndex === 0
-      ? incomingPositionLabels.next
-      : substituteIndex === 1
-        ? incomingPositionLabels.nextNext
-        : null;
+    const incomingPositionLabel = incomingPositionLabels[position] || null;
     const shouldShowIncomingPosition = isSubstitutePosition && incomingPositionLabel && (!modeSupportsInactive || !isInactive);
     const playerName = getPlayerNameById ? getPlayerNameById(playerId) : playerId;
 
@@ -182,7 +183,7 @@ export function IndividualFormation({
             </span>
             {shouldShowIncomingPosition && (
               <span className="text-[11px] font-normal text-slate-200">
-                (Next: {incomingPositionLabel})
+                ({incomingPositionLabel})
               </span>
             )}
             {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
@@ -191,9 +192,6 @@ export function IndividualFormation({
             {/* Primary indicators (full opacity) - only show for active players */}
             {(!modeSupportsInactive || !isInactive) && isNextOff && !hideNextOffIndicator && <ArrowDownCircle className={`${ICON_STYLES.large} ${ICON_STYLES.indicators.nextOff} inline-block`} />}
             {(!modeSupportsInactive || !isInactive) && isNextOn && !hideNextOffIndicator && <ArrowUpCircle className={`${ICON_STYLES.large} ${ICON_STYLES.indicators.nextOn} inline-block`} />}
-            {/* Secondary indicators (very dimmed) - only show for active players and modes that support it */}
-            {modeSupportsNextNext && (!isInactive) && isNextNextOff && !hideNextOffIndicator && <ArrowDownCircle className={`${ICON_STYLES.medium} ${ICON_STYLES.indicators.nextNextOff} inline-block`} />}
-            {modeSupportsNextNext && (!isInactive) && isNextNextOn && !hideNextOffIndicator && <ArrowUpCircle className={`${ICON_STYLES.medium} ${ICON_STYLES.indicators.nextNextOn} inline-block`} />}
           </div>
         </h3>
         <div className="flex items-center justify-between">

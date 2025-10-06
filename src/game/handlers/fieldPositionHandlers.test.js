@@ -55,7 +55,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 1',
         sourcePlayerId: '1',
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -74,7 +75,10 @@ describe('createFieldPositionHandlers', () => {
         playerId: '5',
         playerName: 'Player 5',
         isCurrentlyInactive: false,
-        canSetAsNextToGoIn: false
+        canSetAsNextToGoIn: false,
+        canChangeNextPosition: false,
+        availableNextPositions: [],
+        showPositionSelection: false
       });
     });
 
@@ -93,7 +97,10 @@ describe('createFieldPositionHandlers', () => {
         playerId: '6',
         playerName: 'Player 6',
         isCurrentlyInactive: false,
-        canSetAsNextToGoIn: true
+        canSetAsNextToGoIn: true,
+        canChangeNextPosition: false,
+        availableNextPositions: [],
+        showPositionSelection: false
       });
     });
 
@@ -112,12 +119,15 @@ describe('createFieldPositionHandlers', () => {
         playerId: '6',
         playerName: 'Player 6',
         isCurrentlyInactive: false,
-        canSetAsNextToGoIn: false
+        canSetAsNextToGoIn: false,
+        canChangeNextPosition: false,
+        availableNextPositions: [],
+        showPositionSelection: false
       });
     });
 
     it('should handle inactive player correctly', () => {
-      const inactivePlayers = mockPlayers.map(p => 
+      const inactivePlayers = mockPlayers.map(p =>
         p.id === '5' ? { ...p, stats: { ...p.stats, isInactive: true } } : p
       );
 
@@ -135,7 +145,10 @@ describe('createFieldPositionHandlers', () => {
         playerId: '5',
         playerName: 'Player 5',
         isCurrentlyInactive: true,
-        canSetAsNextToGoIn: false
+        canSetAsNextToGoIn: false,
+        canChangeNextPosition: false,
+        availableNextPositions: [],
+        showPositionSelection: false
       });
     });
   });
@@ -178,7 +191,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 1 / Player 2',
         sourcePlayerId: null,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -199,7 +213,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 3 / Player 4',
         sourcePlayerId: null,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -260,7 +275,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 1',
         sourcePlayerId: '1',
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -279,7 +295,10 @@ describe('createFieldPositionHandlers', () => {
         playerId: '5',
         playerName: 'Player 5',
         isCurrentlyInactive: false,
-        canSetAsNextToGoIn: false // 6-player mode doesn't support next-next indicators
+        canSetAsNextToGoIn: false, // 6-player mode doesn't support next-next indicators
+        canChangeNextPosition: false,
+        availableNextPositions: [],
+        showPositionSelection: false
       });
       expect(mockModalHandlers.openFieldPlayerModal).not.toHaveBeenCalled();
     });
@@ -303,7 +322,10 @@ describe('createFieldPositionHandlers', () => {
         playerId: '6',
         playerName: 'N/A',
         isCurrentlyInactive: false,
-        canSetAsNextToGoIn: true
+        canSetAsNextToGoIn: true,
+        canChangeNextPosition: false,
+        availableNextPositions: [],
+        showPositionSelection: false
       });
     });
 
@@ -324,7 +346,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'N/A',
         sourcePlayerId: undefined,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
   });

@@ -9,8 +9,8 @@ This directory contains reusable UI components that are shared across different 
   - **`Select`**: A styled dropdown selection component.
   - **`Button`**: A versatile button component with different variants (primary, secondary, danger, accent), sizes, and optional icons.
   - **`ConfirmationModal`**: A generic modal for displaying confirmation messages and capturing user decisions.
-  - **`FieldPlayerModal`**: A modal specifically for displaying options related to field players (e.g., set as next sub, substitute now, change position).
-  - **`SubstitutePlayerModal`**: A modal for options related to substitute players (e.g., activate/inactivate, set as next to go in).
+  - **`FieldPlayerModal`**: A modal specifically for displaying options related to field players (e.g., set to go off next, substitute now, change position).
+  - **`SubstitutePlayerModal`**: A modal for options related to substitute players (e.g., activate/inactivate, set to go in next).
   - **`GoalieModal`**: A modal for selecting a new goalie.
   - **`ScoreEditModal`**: A modal for manually editing the game score.
 

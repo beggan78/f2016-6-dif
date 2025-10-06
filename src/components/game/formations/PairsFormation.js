@@ -22,6 +22,8 @@ export function PairsFormation({
   selectedFormation, // Extract this prop to prevent it from being passed to DOM
   nextPlayerIdToSubOut, // Extract this prop to prevent it from being passed to DOM
   nextNextPlayerIdToSubOut, // Extract this prop to prevent it from being passed to DOM
+  substitutionCount, // Extract this prop to prevent it from being passed to DOM
+  rotationQueue, // Extract this prop to prevent it from being passed to DOM
   ...domProps
 }) {
   // Handle null/undefined formation
