@@ -44,14 +44,15 @@ export const calculateSubstitution = (gameState) => {
     rotationQueue,
     teamConfig,
     selectedFormation,
-    isSubTimerPaused = false
+    isSubTimerPaused = false,
+    substitutionCount = 1
   } = gameState;
 
 
   const currentTimeEpoch = getCurrentTimestamp();
   const substitutionManager = createSubstitutionManager(teamConfig, selectedFormation);
-  
-  
+
+
   const context = {
     formation,
     nextPhysicalPairToSubOut,
@@ -59,7 +60,8 @@ export const calculateSubstitution = (gameState) => {
     allPlayers,
     rotationQueue,
     currentTimeEpoch,
-    isSubTimerPaused
+    isSubTimerPaused,
+    substitutionCount
   };
 
   try {

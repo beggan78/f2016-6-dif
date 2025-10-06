@@ -5,46 +5,7 @@ import { createRotationQueue } from '../queue/rotationQueue';
 import { findPlayerById, createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
-import { getCarouselMapping } from './carouselPatterns';
 import { handleError, createError, ERROR_SEVERITY } from '../../utils/errorHandler';
-
-/**
- * Creates a cascade mapping for active substitutes when inactive players are present
- * @param {Array} activeSubstitutes - Array of active substitute positions
- * @param {Object} formation - Current formation
- * @param {string} outgoingPlayer - Player coming off the field
- * @param {string} bottomActivePosition - Bottom-most active substitute position
- * @returns {Object} Mapping of player moves
- */
-const createActiveSubstituteCascade = (activeSubstitutes, formation, outgoingPlayer, bottomActivePosition) => {
-  const cascade = {};
-  
-  // Outgoing player goes to bottom-most active substitute position
-  cascade[outgoingPlayer] = bottomActivePosition;
-  
-  // All active substitutes move up one position
-  for (let i = activeSubstitutes.length - 1; i > 0; i--) {
-    const currentPosition = activeSubstitutes[i];
-    const nextPosition = activeSubstitutes[i - 1];
-    const playerId = formation[currentPosition];
-    if (playerId) {
-      cascade[playerId] = nextPosition;
-    }
-  }
-  
-  return cascade;
-};
-
-/**
- * Applies the active cascade mapping to the formation
- * @param {Object} formation - Formation object to modify
- * @param {Object} cascade - Cascade mapping from createActiveSubstituteCascade
- */
-const applyActiveCascade = (formation, cascade) => {
-  Object.entries(cascade).forEach(([playerId, newPosition]) => {
-    formation[newPosition] = playerId;
-  });
-};
 
 /**
  * Manages substitution logic for different team modes
@@ -212,7 +173,8 @@ export class SubstitutionManager {
       allPlayers,
       rotationQueue,
       currentTimeEpoch,
-      isSubTimerPaused
+      isSubTimerPaused,
+      substitutionCount = 1
     } = context;
 
     // Validate rotation queue integrity
@@ -228,7 +190,7 @@ export class SubstitutionManager {
       handleError(error);
       throw error;
     }
-    
+
     if (!nextPlayerIdToSubOut) {
       const error = createError.gameLogic('nextPlayerIdToSubOut cannot be null during substitution', {
         operation: 'handleIndividualModeSubstitution',
@@ -242,259 +204,250 @@ export class SubstitutionManager {
 
     const modeConfig = this.getModeConfig();
     const { substitutePositions, supportsInactiveUsers, substituteRotationPattern } = modeConfig;
-    
-    // Validate that nextPlayerIdToSubOut is actually in a field position
-    const fieldPositions = modeConfig.fieldPositions;
-    const nextPlayerPosition = fieldPositions.find(pos => formation[pos] === nextPlayerIdToSubOut);
-    
-    if (!nextPlayerPosition) {
-      const error = createError.gameLogic('Player to substitute out must be in a field position, not a substitute position', {
-        operation: 'handleIndividualModeSubstitution',
-        nextPlayerIdToSubOut,
-        fieldPositions,
-        currentFormation: Object.keys(formation).reduce((acc, key) => {
-          if (fieldPositions.includes(key)) {
-            acc[key] = formation[key];
-          }
-          return acc;
-        }, {}),
-        substitutePositions: substitutePositions.reduce((acc, key) => {
-          acc[key] = formation[key];
-          return acc;
-        }, {}),
-        severity: ERROR_SEVERITY.CRITICAL
-      });
-      handleError(error);
-      throw error;
-    }
-    
 
-    const playerGoingOffId = nextPlayerIdToSubOut;
-    const firstSubstitutePosition = substitutePositions[0]; // Get first substitute position dynamically
-    const playerComingOnId = formation[firstSubstitutePosition];
+    // Get N players from rotation queue (players to substitute out)
+    const playersToSubOutIds = rotationQueue.slice(0, substitutionCount);
+
+    // Get N substitute positions (players to bring on)
+    const substitutePositionsToUse = substitutePositions.slice(0, substitutionCount);
+
+    // Validate that all players to sub out are in field positions
+    const fieldPositions = modeConfig.fieldPositions;
+
+    // Build substitution pairs: map each field player to their substitute
+    const substitutionPairs = [];
+    for (let i = 0; i < playersToSubOutIds.length; i++) {
+      const playerGoingOffId = playersToSubOutIds[i];
+      const substitutePosition = substitutePositionsToUse[i];
+      const playerComingOnId = formation[substitutePosition];
+
+      // Find field position of outgoing player
+      const fieldPosition = fieldPositions.find(pos => formation[pos] === playerGoingOffId);
+
+      if (!fieldPosition) {
+        const error = createError.gameLogic('Player to substitute out must be in a field position, not a substitute position', {
+          operation: 'handleIndividualModeSubstitution',
+          playerGoingOffId,
+          fieldPositions,
+          currentFormation: Object.keys(formation).reduce((acc, key) => {
+            if (fieldPositions.includes(key)) {
+              acc[key] = formation[key];
+            }
+            return acc;
+          }, {}),
+          severity: ERROR_SEVERITY.CRITICAL
+        });
+        handleError(error);
+        throw error;
+      }
+
+      // Safety check for inactive substitute
+      if (supportsInactiveUsers) {
+        const substitutePlayer = findPlayerById(allPlayers, playerComingOnId);
+        if (substitutePlayer?.stats.isInactive) {
+          throw new Error(`Substitute at ${substitutePosition} is inactive but was selected for substitution`);
+        }
+      }
+
+      const newRole = this.getPositionRole(fieldPosition);
+
+      substitutionPairs.push({
+        playerGoingOffId,
+        playerComingOnId,
+        fieldPosition,
+        substitutePosition,
+        newRole
+      });
+    }
 
     // Create rotation queue helper
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     queueManager.initialize(); // Separate active and inactive players
 
-    // Safety check for inactive substitute (7-player mode only)
-    if (supportsInactiveUsers) {
-      const substitute_1Player = findPlayerById(allPlayers, playerComingOnId);
-      if (substitute_1Player?.stats.isInactive) {
-        throw new Error('substitute_1 is inactive but was selected for substitution');
-      }
-    }
-
-    // Find position of outgoing player - use substitutePositions for filtering
-    const playerToSubOutKey = Object.keys(formation).find(key =>
-      formation[key] === playerGoingOffId && 
-      !substitutePositions.includes(key) && 
-      key !== 'goalie'
-    );
-
-    const newRole = this.getPositionRole(playerToSubOutKey);
-
-    // Calculate new formation
+    // Calculate new formation by applying all substitution pairs
     const newFormation = JSON.parse(JSON.stringify(formation));
-    newFormation[playerToSubOutKey] = playerComingOnId;
 
-    // Handle substitute rotation based on pattern using generalized carousel system
+    // Step 1: Put all substitutes onto the field in their designated positions
+    substitutionPairs.forEach(pair => {
+      newFormation[pair.fieldPosition] = pair.playerComingOnId;
+    });
+
+    // Step 2: Handle substitute position rotation for players going off
+    // For N-player substitution, we need to place N field players into substitute positions
+    // The logic depends on the rotation pattern and presence of inactive players
+
     if (substituteRotationPattern === 'simple') {
-      // 6-player: Simple swap
-      newFormation[firstSubstitutePosition] = playerGoingOffId;
+      // 6-player: Simple swap - just put field players into substitute positions
+      substitutionPairs.forEach((pair, index) => {
+        newFormation[pair.substitutePosition] = pair.playerGoingOffId;
+      });
     } else {
-      // All carousel patterns (7-player, 8-player, future modes)
+      // 7+ player carousel patterns
       // Check for inactive players that would break the carousel
       const hasInactiveInCarousel = substitutePositions.some(position => {
         const player = findPlayerById(allPlayers, formation[position]);
         return player?.stats.isInactive === true;
       });
-      
+
       if (hasInactiveInCarousel) {
-        // NEW: Active cascade logic - field player goes to bottom-most active substitute position
+        // Active cascade logic for N players
+        // Field players fill in from the top, existing active substitutes cascade down
         const activeSubstitutes = substitutePositions.filter(position => {
           const player = findPlayerById(allPlayers, formation[position]);
           return player && !player.stats.isInactive;
         });
-        
-        if (activeSubstitutes.length > 0) {
-          const bottomActivePosition = activeSubstitutes[activeSubstitutes.length - 1];
-          
-          // Create cascade mapping for active substitutes
-          const activeSubstituteCascade = createActiveSubstituteCascade(
-            activeSubstitutes,
-            formation,
-            playerGoingOffId,
-            bottomActivePosition
-          );
-          
-          // Apply cascade to formation
-          applyActiveCascade(newFormation, activeSubstituteCascade);
-        } else {
-          // Fallback: if no active substitutes, use simple logic
-          newFormation[firstSubstitutePosition] = playerGoingOffId;
-        }
+
+        // Players coming off go to the end of active substitute positions
+        // We need to shift existing active substitutes that didn't come on
+        const playersComingOnIds = substitutionPairs.map(p => p.playerComingOnId);
+        const remainingActiveSubstitutes = activeSubstitutes.filter(position => {
+          const playerId = formation[position];
+          return !playersComingOnIds.includes(playerId);
+        });
+
+        // Place field players going off at the end of the active substitute chain
+        const playersGoingOffIds = substitutionPairs.map(p => p.playerGoingOffId);
+        let nextAvailableIndex = remainingActiveSubstitutes.length;
+
+        playersGoingOffIds.forEach(playerId => {
+          if (nextAvailableIndex < activeSubstitutes.length) {
+            newFormation[activeSubstitutes[nextAvailableIndex]] = playerId;
+            nextAvailableIndex++;
+          }
+        });
       } else {
-        // Apply generalized carousel pattern
-        const carouselMapping = getCarouselMapping(
-          substituteRotationPattern,
-          playerGoingOffId,
-          substitutePositions,
-          formation
-        );
-        
-        // Apply the mapping to formation
-        Object.entries(carouselMapping).forEach(([playerId, newPosition]) => {
-          if (substitutePositions.includes(newPosition)) {
-            newFormation[newPosition] = playerId;
-          } else {
-            // Player going to field position (outgoing player's position)
-            newFormation[playerToSubOutKey] = playerId;
+        // Standard carousel - for N-player substitution, we rotate N positions
+        // The carousel needs to handle multiple players moving at once
+
+        // For simplicity with N-player substitution:
+        // - Substitutes that came on have already been placed on field
+        // - Field players going off should fill the substitute positions from position 0
+        // - Any remaining substitutes should shift down
+
+        // Get all substitute player IDs that didn't come on (they need to shift)
+        const playersComingOnIds = substitutionPairs.map(p => p.playerComingOnId);
+        const remainingSubstitutes = substitutePositions
+          .map(pos => ({ pos, id: formation[pos] }))
+          .filter(sub => !playersComingOnIds.includes(sub.id))
+          .map(sub => sub.id);
+
+        // Fill substitute positions:
+        // First N positions: field players going off
+        // Remaining positions: existing substitutes (shifted)
+        const playersGoingOffIds = substitutionPairs.map(p => p.playerGoingOffId);
+
+        playersGoingOffIds.forEach((playerId, index) => {
+          if (index < substitutePositions.length) {
+            newFormation[substitutePositions[substitutePositions.length - substitutionCount + index]] = playerId;
+          }
+        });
+
+        // Shift remaining substitutes to earlier positions
+        remainingSubstitutes.forEach((playerId, index) => {
+          if (index < substitutePositions.length - substitutionCount) {
+            newFormation[substitutePositions[index]] = playerId;
           }
         });
       }
     }
 
+    // Create maps for fast lookups
+    const playersGoingOffIds = substitutionPairs.map(p => p.playerGoingOffId);
+    const playersComingOnIds = substitutionPairs.map(p => p.playerComingOnId);
+
+    // Create lookup maps for substitution pairs
+    const goingOffMap = new Map();
+    const comingOnMap = new Map();
+
+    substitutionPairs.forEach(pair => {
+      goingOffMap.set(pair.playerGoingOffId, pair);
+      comingOnMap.set(pair.playerComingOnId, pair);
+    });
+
     // Calculate updated players
     const updatedPlayers = allPlayers.map(p => {
-      if (p.id === playerGoingOffId) {
+      // Check if this player is going off the field
+      if (goingOffMap.has(p.id)) {
+        const pair = goingOffMap.get(p.id);
+
         // Use conditional time tracking based on timer pause state
-        const timeResult = isSubTimerPaused 
+        const timeResult = isSubTimerPaused
           ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
           : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
-        
-        // Determine new substitute position using carousel or cascade mapping
-        let newPairKey = firstSubstitutePosition; // Default fallback
-        if (substituteRotationPattern !== 'simple') {
-          const hasInactiveInCarousel = substitutePositions.some(position => {
-            const player = findPlayerById(allPlayers, formation[position]);
-            return player?.stats.isInactive === true;
-          });
-          
-          if (hasInactiveInCarousel) {
-            // Use active cascade logic
-            const activeSubstitutes = substitutePositions.filter(position => {
-              const player = findPlayerById(allPlayers, formation[position]);
-              return player && !player.stats.isInactive;
-            });
-            
-            if (activeSubstitutes.length > 0) {
-              const bottomActivePosition = activeSubstitutes[activeSubstitutes.length - 1];
-              newPairKey = bottomActivePosition;
-            }
-          } else {
-            const carouselMapping = getCarouselMapping(
-              substituteRotationPattern,
-              playerGoingOffId,
-              substitutePositions,
-              formation
-            );
-            // Find where this player is going in the carousel
-            newPairKey = carouselMapping[playerGoingOffId] || firstSubstitutePosition;
-          }
-        }
-        
+
+        // Find where this player ended up in the new formation
+        const newSubstitutePosition = Object.keys(newFormation).find(
+          pos => newFormation[pos] === p.id && substitutePositions.includes(pos)
+        );
+
         return {
           ...p,
           stats: {
             ...timeResult.stats,
             currentStatus: 'substitute',
-            currentPairKey: newPairKey,
+            currentPairKey: newSubstitutePosition || pair.substitutePosition,
             currentRole: PLAYER_ROLES.SUBSTITUTE
           }
         };
       }
-      if (p.id === playerComingOnId) {
+
+      // Check if this player is coming on the field
+      if (comingOnMap.has(p.id)) {
+        const pair = comingOnMap.get(p.id);
+
         // Use conditional time tracking based on timer pause state
-        const timeResult = isSubTimerPaused 
+        const timeResult = isSubTimerPaused
           ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
           : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
-        
+
         return {
           ...p,
           stats: {
             ...timeResult.stats,
             currentStatus: 'on_field',
-            currentPairKey: playerToSubOutKey,
-            currentRole: newRole
+            currentPairKey: pair.fieldPosition,
+            currentRole: pair.newRole
           }
         };
       }
-      // Handle substitute position changes in carousel or cascade patterns
+
+      // Check if this player's substitute position changed (for carousel/cascade patterns)
       if (substituteRotationPattern !== 'simple') {
-        const hasInactiveInCarousel = substitutePositions.some(position => {
-          const player = findPlayerById(allPlayers, formation[position]);
-          return player?.stats.isInactive === true;
-        });
-        
-        if (hasInactiveInCarousel) {
-          // Use active cascade logic for substitute position changes
-          const activeSubstitutes = substitutePositions.filter(position => {
-            const player = findPlayerById(allPlayers, formation[position]);
-            return player && !player.stats.isInactive;
-          });
-          
-          if (activeSubstitutes.length > 0) {
-            const bottomActivePosition = activeSubstitutes[activeSubstitutes.length - 1];
-            const activeSubstituteCascade = createActiveSubstituteCascade(
-              activeSubstitutes,
-              formation,
-              playerGoingOffId,
-              bottomActivePosition
-            );
-            
-            // Check if this player is being moved in the cascade
-            if (activeSubstituteCascade[p.id] && substitutePositions.includes(activeSubstituteCascade[p.id])) {
-              return {
-                ...p,
-                stats: {
-                  ...p.stats,
-                  currentPairKey: activeSubstituteCascade[p.id],
-                  currentRole: PLAYER_ROLES.SUBSTITUTE
-                }
-              };
+        // Find if this player's position changed in the formation
+        const oldPosition = Object.keys(formation).find(pos => formation[pos] === p.id);
+        const newPosition = Object.keys(newFormation).find(pos => newFormation[pos] === p.id);
+
+        if (oldPosition !== newPosition && substitutePositions.includes(newPosition)) {
+          return {
+            ...p,
+            stats: {
+              ...p.stats,
+              currentPairKey: newPosition,
+              currentRole: PLAYER_ROLES.SUBSTITUTE
             }
-          }
-        } else {
-          const carouselMapping = getCarouselMapping(
-            substituteRotationPattern,
-            playerGoingOffId,
-            substitutePositions,
-            formation
-          );
-          
-          // Check if this player is being moved in the carousel
-          if (carouselMapping[p.id] && substitutePositions.includes(carouselMapping[p.id])) {
-            return {
-              ...p,
-              stats: {
-                ...p.stats,
-                currentPairKey: carouselMapping[p.id],
-                currentRole: PLAYER_ROLES.SUBSTITUTE
-              }
-            };
-          }
+          };
         }
       }
+
       return p;
     });
 
-    // For individual modes, just rotate the current queue (no rebuilding during gameplay)
+    // For individual modes, rotate all N substituted players to the end of the queue
     const rotationQueueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
     rotationQueueManager.initialize(); // Separate active and inactive players
-    
-    
-    // Move the substituted player to the end of the queue
-    rotationQueueManager.rotatePlayer(playerGoingOffId);
+
+    // Rotate all players who went off (in order) to the end of the queue
+    playersGoingOffIds.forEach(playerId => {
+      rotationQueueManager.rotatePlayer(playerId);
+    });
+
     const newRotationQueue = rotationQueueManager.toArray();
     const nextPlayerToSubOutId = newRotationQueue[0];
-    
-    
+
     // Use formation-aware field positions (already declared in validation section above)
-    const nextPlayerPositionInNewFormation = fieldPositions.find(pos => 
+    const nextPlayerPositionInNewFormation = fieldPositions.find(pos =>
       newFormation[pos] === nextPlayerToSubOutId
     );
-
 
     // Build return object with mode-specific fields
     const result = {
@@ -503,15 +456,14 @@ export class SubstitutionManager {
       newRotationQueue: newRotationQueue,
       newNextPlayerIdToSubOut: nextPlayerToSubOutId,
       newNextPlayerToSubOut: nextPlayerPositionInNewFormation || 'leftDefender',
-      playersComingOnIds: [playerComingOnId],
-      playersGoingOffIds: [playerGoingOffId]
+      playersComingOnIds: playersComingOnIds,
+      playersGoingOffIds: playersGoingOffIds
     };
 
     // Add next-next tracking for modes that support it
     if (substituteRotationPattern === 'carousel' || substituteRotationPattern === 'advanced_carousel') {
       result.newNextNextPlayerIdToSubOut = newRotationQueue[1] || null;
     }
-
 
     return result;
   }
