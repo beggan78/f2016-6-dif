@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Sport Wizard</title>
+    <script>
+      // Store the path and redirect to index.html
+      try {
+        sessionStorage.setItem('redirect', location.pathname + location.search + location.hash);
+      } catch (e) {
+        // Fallback for browsers with disabled storage - will redirect to homepage
+      }
+      location.replace(location.origin + location.pathname.split('/').slice(0, -1).join('/') + '/index.html');
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
