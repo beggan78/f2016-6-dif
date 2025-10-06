@@ -169,7 +169,7 @@ describe('createSubstitutionHandlers', () => {
   });
 
   describe('handleSubstituteNow', () => {
-    it('should set next substitution and trigger immediate substitution', () => {
+    it('should open substitute selection modal for individual mode player', () => {
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
         mockDependencies.stateUpdaters,
@@ -178,10 +178,27 @@ describe('createSubstitutionHandlers', () => {
         TEAM_CONFIGS.INDIVIDUAL_7
       );
 
-      const fieldPlayerModal = { type: 'player', target: 'leftDefender' };
+      const fieldPlayerModal = { type: 'player', target: 'leftDefender', sourcePlayerId: '1' };
       handlers.handleSubstituteNow(fieldPlayerModal);
 
-      expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith('leftDefender', false);
+      // Should open substitute selection modal instead of direct substitution
+      expect(mockDependencies.modalHandlers.openSubstituteSelectionModal).toHaveBeenCalled();
+      expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
+    });
+
+    it('should trigger immediate substitution for pairs mode', () => {
+      const handlers = createSubstitutionHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.PAIRS_7
+      );
+
+      const fieldPlayerModal = { type: 'pair', target: 'leftPair' };
+      handlers.handleSubstituteNow(fieldPlayerModal);
+
+      expect(mockDependencies.stateUpdaters.setNextPhysicalPairToSubOut).toHaveBeenCalledWith('leftPair');
       expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });

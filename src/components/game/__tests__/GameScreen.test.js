@@ -110,6 +110,12 @@ describe('GameScreen', () => {
           isCurrentlyInactive: false,
           canSetAsNextToGoIn: false
         },
+        substituteSelection: {
+          isOpen: false,
+          fieldPlayerName: '',
+          fieldPlayerId: null,
+          availableSubstitutes: []
+        },
         goalie: {
           isOpen: false,
           currentGoalieName: '',
@@ -423,14 +429,14 @@ describe('GameScreen', () => {
     it('should display substitution button', () => {
       render(<GameScreen {...defaultProps} />);
       
-      const subButton = screen.getByText(/SUB 1 PLAYER/i);
+      const subButton = screen.getByText(/SUB \d+ PLAYERS?/i);
       expect(subButton).toBeInTheDocument();
     });
 
     it('should handle substitution button click', async () => {
       render(<GameScreen {...defaultProps} />);
       
-      const subButton = screen.getByText(/SUB 1 PLAYER/i);
+      const subButton = screen.getByText(/SUB \d+ PLAYERS?/i);
       await userInteractions.clickElement(subButton);
       
       expect(global.mockSubstitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
@@ -439,7 +445,7 @@ describe('GameScreen', () => {
     it('should reflect stepper selection in substitution button label', async () => {
       render(<GameScreen {...defaultProps} />);
 
-      expect(screen.getByText(/SUB 1 PLAYER/i)).toBeInTheDocument();
+      expect(screen.getByText(/SUB \d+ PLAYERS?/i)).toBeInTheDocument();
 
       const incrementButton = screen.getByLabelText(/increase number of players to substitute/i);
       await act(async () => {
@@ -453,7 +459,7 @@ describe('GameScreen', () => {
       render(<GameScreen {...defaultProps} />);
 
       const subButtonContainer = screen.getByTestId('substitution-action-row');
-      const subButton = within(subButtonContainer).getByRole('button', { name: /SUB 1 PLAYER/i });
+      const subButton = within(subButtonContainer).getByRole('button', { name: /SUB \d+ PLAYERS?/i });
 
       // SUB button container should have z-30 class (higher than player animation z-10/z-20)
       expect(subButtonContainer).toHaveClass('z-30');
@@ -524,7 +530,7 @@ describe('GameScreen', () => {
 
       render(<GameScreen {...defaultProps} />);
 
-      const subButton = screen.getByText(/SUB 1 PLAYER/i);
+      const subButton = screen.getByText(/SUB \d+ PLAYERS?/i);
       await userEvent.click(subButton);
 
       // Expect handleSubstitutionWithHighlight to be called

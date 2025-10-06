@@ -101,6 +101,12 @@ describe('GameScreen Back Navigation Tests', () => {
       modals: {
         fieldPlayer: { isOpen: false, type: null, target: null, playerName: '', sourcePlayerId: null, availablePlayers: [], showPositionOptions: false },
         substitute: { isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false, canSetAsNextToGoIn: false },
+        substituteSelection: {
+          isOpen: false,
+          fieldPlayerName: '',
+          fieldPlayerId: null,
+          availableSubstitutes: []
+        },
         goalie: { isOpen: false, currentGoalieName: '', availablePlayers: [] },
         scoreEdit: { isOpen: false },
         undoConfirm: { isOpen: false },

@@ -55,7 +55,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 1',
         sourcePlayerId: '1',
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -190,7 +191,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 1 / Player 2',
         sourcePlayerId: null,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -211,7 +213,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 3 / Player 4',
         sourcePlayerId: null,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -272,7 +275,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'Player 1',
         sourcePlayerId: '1',
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
 
@@ -342,7 +346,8 @@ describe('createFieldPositionHandlers', () => {
         playerName: 'N/A',
         sourcePlayerId: undefined,
         availablePlayers: [],
-        showPositionOptions: false
+        showPositionOptions: false,
+        isPlayerAboutToSubOff: false
       });
     });
   });
