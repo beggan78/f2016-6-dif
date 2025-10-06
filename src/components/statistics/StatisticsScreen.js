@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, BarChart3, Users, History } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,8 +16,13 @@ const STATS_TABS = {
   HISTORY: 'history'
 };
 
+const STORAGE_KEY = 'statistics-active-tab';
+
 export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
-  const [activeTab, setActiveTab] = useState(STATS_TABS.TEAM);
+  const [activeTab, setActiveTab] = useState(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored && Object.values(STATS_TABS).includes(stored) ? stored : STATS_TABS.TEAM;
+  });
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [isCreatingMatch, setIsCreatingMatch] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -32,6 +37,10 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     teamPlayers
   } = useTeam();
   const authModal = useAuthModalIntegration(authModalProp);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, activeTab);
+  }, [activeTab]);
 
   const handleMatchSelect = (matchId) => {
     setSelectedMatchId(matchId);
