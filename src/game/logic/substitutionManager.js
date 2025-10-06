@@ -8,6 +8,28 @@ import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../
 import { handleError, createError, ERROR_SEVERITY } from '../../utils/errorHandler';
 
 /**
+ * Deep clone formation object efficiently
+ * Formations can have nested pair objects (e.g., {leftPair: {defender: 'p1', attacker: 'p2'}})
+ * This handles 1-level nesting which is sufficient for all current formation types
+ *
+ * @param {Object} formation - Formation object to clone
+ * @returns {Object} Deep cloned formation
+ */
+function cloneFormation(formation) {
+  const cloned = {};
+  for (const key in formation) {
+    const value = formation[key];
+    // Handle nested pair objects (shallow clone the pair)
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      cloned[key] = { ...value };
+    } else {
+      cloned[key] = value;
+    }
+  }
+  return cloned;
+}
+
+/**
  * Manages substitution logic for different team modes
  */
 export class SubstitutionManager {
@@ -74,7 +96,7 @@ export class SubstitutionManager {
     const shouldSwapRoles = this.teamConfig?.pairRoleRotation === PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION;
 
     // Calculate new formation with role rotation support
-    const newFormation = JSON.parse(JSON.stringify(formation));
+    const newFormation = cloneFormation(formation);
     
     if (shouldSwapRoles) {
       // Keep incoming pair roles (they already have the swapped roles from when they went out)
@@ -265,7 +287,7 @@ export class SubstitutionManager {
     queueManager.initialize(); // Separate active and inactive players
 
     // Calculate new formation by applying all substitution pairs
-    const newFormation = JSON.parse(JSON.stringify(formation));
+    const newFormation = cloneFormation(formation);
 
     // Step 1: Put all substitutes onto the field in their designated positions
     substitutionPairs.forEach(pair => {
