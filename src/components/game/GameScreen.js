@@ -26,9 +26,10 @@ import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
 import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtils';
 import { SubstitutionCountInlineControl } from './SubstitutionCountControls';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 // Create persistence manager for substitution count
-const substitutionCountPersistence = createPersistenceManager('sport-wizard-substitution-count', { count: 1 });
+const substitutionCountPersistence = createPersistenceManager(STORAGE_KEYS.SUBSTITUTION_COUNT, { count: 1 });
 
 // Animation timing constants are now imported from animationSupport
 

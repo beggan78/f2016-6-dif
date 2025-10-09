@@ -10,6 +10,7 @@ import { MatchHistoryView } from './MatchHistoryView';
 import { MatchDetailsView } from './MatchDetailsView';
 import { TimeFilter } from './TimeFilter';
 import { createPersistenceManager } from '../../utils/persistenceManager';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 const STATS_TABS = {
   TEAM: 'team',
@@ -19,7 +20,7 @@ const STATS_TABS = {
 
 export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   const tabPersistence = useMemo(
-    () => createPersistenceManager('statistics-active-tab', { tab: STATS_TABS.TEAM }),
+    () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
     []
   );
 

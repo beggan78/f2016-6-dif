@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, removeFromNavigationStack, fromView }) {
   // Memoize the persistence manager to prevent re-creation on every render
-  const persistenceManager = useMemo(() => createPersistenceManager('sport-wizard-tactical-preferences', {
+  const persistenceManager = useMemo(() => createPersistenceManager(STORAGE_KEYS.TACTICAL_PREFERENCES, {
     pitchMode: 'full',
     fullModeChips: [],
     halfModeChips: [],

@@ -5,10 +5,11 @@
  * Follows the same pattern as AuthContext for consistency.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { DEFAULT_PREFERENCES, PREFERENCE_STORAGE_KEY } from '../constants/audioAlerts';
 import { audioAlertService } from '../services/audioAlertService';
 import { createPersistenceManager } from '../utils/persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const PreferencesContext = createContext({
   // All preferences state
@@ -44,7 +45,7 @@ export const usePreferences = () => {
 
 // Create persistence managers
 const preferencesPersistence = createPersistenceManager(PREFERENCE_STORAGE_KEY, DEFAULT_PREFERENCES);
-const oldPreferencesPersistence = createPersistenceManager('sport-wizard-audio-preferences', {});
+const oldPreferencesPersistence = createPersistenceManager(STORAGE_KEYS.AUDIO_PREFERENCES_LEGACY, {});
 
 /**
  * PreferencesProvider component

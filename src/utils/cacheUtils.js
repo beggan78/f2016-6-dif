@@ -1,6 +1,18 @@
 /**
  * Local Storage Cache Utilities
  * Provides caching functionality for user data during auth recovery
+ *
+ * ⚠️ DIRECT LOCALSTORAGE ACCESS JUSTIFICATION:
+ * This file intentionally uses direct localStorage access instead of PersistenceManager because:
+ * 1. TTL-based expiration: Implements time-to-live (TTL) with automatic cleanup
+ * 2. Quota management: Special handling for quota exceeded errors with auto-cleanup
+ * 3. Metadata tracking: Maintains separate metadata structure for cache entries
+ * 4. Size limits: Enforces per-item size restrictions to prevent cache bloat
+ * 5. Specialized cache layer: This is a cache abstraction layer, not application state
+ *
+ * PersistenceManager is designed for application state persistence, while this is
+ * designed specifically for temporary caching of Supabase API responses with
+ * automatic expiration and cleanup.
  */
 
 // Cache configuration

@@ -21,9 +21,10 @@ import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, GAME_CONSTANTS }
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // PersistenceManager for handling localStorage operations
-const persistenceManager = createGamePersistenceManager('sport-wizard-game-state');
+const persistenceManager = createGamePersistenceManager(STORAGE_KEYS.GAME_STATE);
 
 // Migration utilities no longer needed - working exclusively with teamConfig objects
 

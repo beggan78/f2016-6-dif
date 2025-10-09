@@ -3,29 +3,25 @@
  * Preserves user preferences while clearing session-specific data
  */
 
-/**
- * Keys that should be preserved across sessions (user preferences)
- */
-const PRESERVED_KEYS = [
-  'sport-wizard-timeline-preferences',
-  'sport-wizard-preferences', 
-  'sport-wizard-tactical-preferences'
-];
+import {
+  PRESERVED_STORAGE_KEYS,
+  SESSION_STORAGE_KEYS,
+  SESSION_STORAGE_PREFIXES
+} from '../constants/storageKeys';
+
+// Export preserved keys for backward compatibility
+const PRESERVED_KEYS = PRESERVED_STORAGE_KEYS;
 
 /**
  * Key patterns that should be cleaned up (session-specific data)
+ * Includes exact match keys and prefix patterns
  */
 const CLEANUP_PATTERNS = [
-  'sport-wizard-game-state',
-  'currentTeamId',
-  'sport-wizard-match-history',
-  'sport-wizard-match-events',
-  'sport-wizard-match-events-backup',
-  'sport-wizard-match-events-emergency',
-  'sport-wizard-timer-',
-  'sport-wizard-dismissedModals-',
-  'pendingInvitation',
-  'sport-wizard-navigation-history'
+  ...SESSION_STORAGE_KEYS,
+  ...SESSION_STORAGE_PREFIXES,
+  'currentTeamId', // Legacy key not yet in constants
+  'pendingInvitation', // Legacy key not yet in constants
+  'sport-wizard-match-history' // Legacy key not yet in constants
 ];
 
 /**

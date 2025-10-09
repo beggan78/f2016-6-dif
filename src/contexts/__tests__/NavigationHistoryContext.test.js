@@ -379,13 +379,10 @@ describe('NavigationHistoryContext', () => {
         wrapper: TestWrapper
       });
 
-      // Should start with empty history and clear corrupted data
+      // Should start with empty history
       expect(result.current.navigationHistory).toEqual([]);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('sport-wizard-navigation-history');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to load navigation history from localStorage:',
-        expect.any(Error)
-      );
+      // PersistenceManager handles corrupted data by returning default state
+      // It doesn't automatically clear invalid data - waits for next write
     });
 
     it('should handle localStorage failures gracefully', () => {
@@ -407,10 +404,7 @@ describe('NavigationHistoryContext', () => {
 
       // Should still work despite storage failure
       expect(result.current.currentView).toBe(VIEWS.PROFILE);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to save navigation history to localStorage:',
-        expect.any(Error)
-      );
+      // PersistenceManager handles storage failures internally without logging to console
     });
 
     it('should clear localStorage when clearHistory is called', () => {

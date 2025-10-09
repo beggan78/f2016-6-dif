@@ -3,10 +3,11 @@ import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 import { FORMATS } from '../constants/teamConfiguration';
 import { createPersistenceManager } from './persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Create persistence managers
-const matchHistoryPersistence = createPersistenceManager('sport-wizard-match-history', { matches: [] });
-const teamIdPersistence = createPersistenceManager('currentTeamId', { teamId: null });
+const matchHistoryPersistence = createPersistenceManager(STORAGE_KEYS.MATCH_HISTORY, { matches: [] });
+const teamIdPersistence = createPersistenceManager(STORAGE_KEYS.CURRENT_TEAM_ID, { teamId: null });
 
 /**
  * DataSyncManager - Handles synchronization between localStorage and Supabase database

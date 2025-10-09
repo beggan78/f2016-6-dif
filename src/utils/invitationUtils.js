@@ -3,9 +3,10 @@
  */
 
 import { createPersistenceManager } from './persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Create persistence manager for pending invitations
-const invitationPersistence = createPersistenceManager('pendingInvitation', { invitation: null });
+const invitationPersistence = createPersistenceManager(STORAGE_KEYS.PENDING_INVITATION, { invitation: null });
 
 /**
  * Detect invitation parameters in the current URL

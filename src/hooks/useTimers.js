@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logEvent, EVENT_TYPES, calculateMatchTime } from '../utils/gameEventLogger';
-import { ErrorRecovery } from '../utils/errorHandler';
 import { createPersistenceManager } from '../utils/persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Create persistence manager for timer state
-const timerPersistence = createPersistenceManager('sport-wizard-timer-state', null);
+const timerPersistence = createPersistenceManager(STORAGE_KEYS.TIMER_STATE, null);
 
 const loadTimerState = () => {
   const stored = timerPersistence.loadState();

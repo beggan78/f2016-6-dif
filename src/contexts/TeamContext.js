@@ -6,6 +6,7 @@ import { getCachedTeamData, cacheTeamData } from '../utils/cacheUtils';
 import { sanitizeSearchInput } from '../utils/inputSanitization';
 import { syncTeamRosterToGameState } from '../utils/playerSyncUtils';
 import { createPersistenceManager } from '../utils/persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const TeamContext = createContext({});
 
@@ -24,7 +25,7 @@ export const TeamProvider = ({ children }) => {
 
   // Create persistence manager for currentTeamId
   const teamIdPersistence = useMemo(
-    () => createPersistenceManager('currentTeamId', { teamId: null }),
+    () => createPersistenceManager(STORAGE_KEYS.CURRENT_TEAM_ID, { teamId: null }),
     []
   );
 

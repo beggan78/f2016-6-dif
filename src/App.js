@@ -49,9 +49,10 @@ import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { updateMatchToConfirmed } from './services/matchStateManager';
 import { createPersistenceManager } from './utils/persistenceManager';
+import { STORAGE_KEYS } from './constants/storageKeys';
 
 // Create persistence manager for dismissed modals
-const dismissedModalsPersistence = createPersistenceManager('sport-wizard-dismissed-modals', {});
+const dismissedModalsPersistence = createPersistenceManager(STORAGE_KEYS.DISMISSED_MODALS, {});
 
 const getDismissedModals = () => {
   return dismissedModalsPersistence.loadState();

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { VIEWS } from '../constants/viewConstants';
 import { createPersistenceManager } from '../utils/persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const NavigationHistoryContext = createContext({
   // Core state
@@ -17,7 +18,7 @@ const NavigationHistoryContext = createContext({
 });
 
 // Create persistence manager for navigation history
-const navigationPersistence = createPersistenceManager('sport-wizard-navigation-history', {
+const navigationPersistence = createPersistenceManager(STORAGE_KEYS.NAVIGATION_HISTORY, {
   history: [],
   timestamp: Date.now()
 });

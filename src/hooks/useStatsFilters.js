@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { createPersistenceManager } from '../utils/persistenceManager';
-
-const STORAGE_KEY = 'sport-wizard-stats-filter';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const createDefaultFilters = () => ({
   typeFilter: [],
@@ -27,7 +26,7 @@ const ensureFilterArrays = (filters) => {
 
 export function useStatsFilters() {
   const filtersPersistence = useMemo(
-    () => createPersistenceManager(STORAGE_KEY, createDefaultFilters()),
+    () => createPersistenceManager(STORAGE_KEYS.STATS_FILTERS, createDefaultFilters()),
     []
   );
 
@@ -72,5 +71,3 @@ export function useStatsFilters() {
     clearFilters
   };
 }
-
-export const STATS_FILTERS_STORAGE_KEY = STORAGE_KEY;
