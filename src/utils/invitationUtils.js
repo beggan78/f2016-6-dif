@@ -2,6 +2,11 @@
  * Utility functions for handling team invitations via URL parameters
  */
 
+import { createPersistenceManager } from './persistenceManager';
+
+// Create persistence manager for pending invitations
+const invitationPersistence = createPersistenceManager('pendingInvitation', { invitation: null });
+
 /**
  * Detect invitation parameters in the current URL
  * Handles both custom invitation parameters and Supabase auth tokens
@@ -215,12 +220,8 @@ const formatRoleForDisplay = (role) => {
  */
 export const storePendingInvitation = (invitationDetails) => {
   if (typeof window === 'undefined') return;
-  
-  try {
-    localStorage.setItem('pendingInvitation', JSON.stringify(invitationDetails));
-  } catch (error) {
-    console.error('Failed to store pending invitation:', error);
-  }
+
+  invitationPersistence.saveState({ invitation: invitationDetails });
 };
 
 /**
@@ -229,20 +230,14 @@ export const storePendingInvitation = (invitationDetails) => {
  */
 export const retrievePendingInvitation = () => {
   if (typeof window === 'undefined') return null;
-  
-  try {
-    const stored = localStorage.getItem('pendingInvitation');
-    if (stored) {
-      const invitation = JSON.parse(stored);
-      localStorage.removeItem('pendingInvitation'); // Clear after retrieval
-      return invitation;
-    }
-  } catch (error) {
-    console.error('Failed to retrieve pending invitation:', error);
-    // Clear corrupted data
-    localStorage.removeItem('pendingInvitation');
+
+  const stored = invitationPersistence.loadState();
+  if (stored.invitation) {
+    const invitation = stored.invitation;
+    invitationPersistence.clearState(); // Clear after retrieval
+    return invitation;
   }
-  
+
   return null;
 };
 
@@ -252,10 +247,6 @@ export const retrievePendingInvitation = () => {
  */
 export const hasPendingInvitation = () => {
   if (typeof window === 'undefined') return false;
-  
-  try {
-    return !!localStorage.getItem('pendingInvitation');
-  } catch (error) {
-    return false;
-  }
+
+  return invitationPersistence.hasStoredState();
 };

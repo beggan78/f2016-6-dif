@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logEvent, EVENT_TYPES, calculateMatchTime } from '../utils/gameEventLogger';
 import { ErrorRecovery } from '../utils/errorHandler';
+import { createPersistenceManager } from '../utils/persistenceManager';
 
-// localStorage utilities for timers - NOTE: Essential for preventing timer loss on page refresh
-const TIMER_STORAGE_KEY = 'dif-coach-timer-state';
+// Create persistence manager for timer state
+const timerPersistence = createPersistenceManager('dif-coach-timer-state', null);
 
 const loadTimerState = () => {
-  return ErrorRecovery.safeLocalStorage.get(TIMER_STORAGE_KEY, null);
+  const stored = timerPersistence.loadState();
+  // Return null if default state, otherwise return the stored state
+  return stored && Object.keys(stored).length > 0 ? stored : null;
 };
 
 const saveTimerState = (state) => {
-  return ErrorRecovery.safeLocalStorage.set(TIMER_STORAGE_KEY, state);
+  return timerPersistence.saveState(state);
 };
 
 // Timer calculation utilities
@@ -469,11 +472,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
 
   // Clear stored timer state - useful for starting fresh
   const clearTimerState = useCallback(() => {
-    try {
-      localStorage.removeItem(TIMER_STORAGE_KEY);
-    } catch (error) {
-      console.warn('Failed to clear timer state:', error);
-    }
+    timerPersistence.clearState();
   }, []);
 
   // Clear all timer state and reset system for new game

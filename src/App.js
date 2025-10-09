@@ -48,32 +48,23 @@ import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { updateMatchToConfirmed } from './services/matchStateManager';
+import { createPersistenceManager } from './utils/persistenceManager';
 
-// Dismissed modals localStorage utilities
-const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
+// Create persistence manager for dismissed modals
+const dismissedModalsPersistence = createPersistenceManager('dif-coach-dismissed-modals', {});
 
 const getDismissedModals = () => {
-  try {
-    const stored = localStorage.getItem(DISMISSED_MODALS_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch (error) {
-    console.warn('Failed to load dismissed modals:', error);
-    return {};
-  }
+  return dismissedModalsPersistence.loadState();
 };
 
 const markModalDismissed = (modalType, teamId) => {
-  try {
-    const dismissed = getDismissedModals();
-    const key = `${modalType}_${teamId}`;
-    dismissed[key] = {
-      dismissedAt: Date.now(),
-      teamId: teamId
-    };
-    localStorage.setItem(DISMISSED_MODALS_KEY, JSON.stringify(dismissed));
-  } catch (error) {
-    console.warn('Failed to mark modal as dismissed:', error);
-  }
+  const dismissed = getDismissedModals();
+  const key = `${modalType}_${teamId}`;
+  dismissed[key] = {
+    dismissedAt: Date.now(),
+    teamId: teamId
+  };
+  dismissedModalsPersistence.saveState(dismissed);
 };
 
 const isModalDismissed = (modalType, teamId) => {
@@ -83,11 +74,7 @@ const isModalDismissed = (modalType, teamId) => {
 };
 
 const clearDismissedModals = () => {
-  try {
-    localStorage.removeItem(DISMISSED_MODALS_KEY);
-  } catch (error) {
-    console.warn('Failed to clear dismissed modals:', error);
-  }
+  dismissedModalsPersistence.clearState();
 };
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)

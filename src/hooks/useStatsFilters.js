@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
+import { createPersistenceManager } from '../utils/persistenceManager';
 
 const STORAGE_KEY = 'sport-wizard-stats-filter';
 
@@ -10,9 +11,6 @@ const createDefaultFilters = () => ({
   playerFilter: [],
   formatFilter: []
 });
-
-const canUsePersistentStorage = () =>
-  typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' && process.env.NODE_ENV !== 'test';
 
 const ensureFilterArrays = (filters) => {
   const safeFilters = filters && typeof filters === 'object' ? filters : {};
@@ -27,72 +25,20 @@ const ensureFilterArrays = (filters) => {
   };
 };
 
-const readStoredFilters = () => {
-  if (!canUsePersistentStorage()) {
-    return createDefaultFilters();
-  }
-
-  try {
-    const storedValue = window.localStorage.getItem(STORAGE_KEY);
-    if (!storedValue) {
-      return createDefaultFilters();
-    }
-
-    const parsed = JSON.parse(storedValue);
-    return ensureFilterArrays(parsed);
-  } catch (error) {
-    console.error('Failed to parse stored stats filters', error);
-    return createDefaultFilters();
-  }
-};
-
-const persistFilters = (filters) => {
-  if (!canUsePersistentStorage()) {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
-  } catch (error) {
-    console.error('Failed to persist stats filters', error);
-  }
-};
-
 export function useStatsFilters() {
-  const [filters, setFilters] = useState(() => readStoredFilters());
+  const filtersPersistence = useMemo(
+    () => createPersistenceManager(STORAGE_KEY, createDefaultFilters()),
+    []
+  );
+
+  const [filters, setFilters] = useState(() => {
+    const stored = filtersPersistence.loadState();
+    return ensureFilterArrays(stored);
+  });
 
   useEffect(() => {
-    persistFilters(filters);
-  }, [filters]);
-
-  useEffect(() => {
-    if (!canUsePersistentStorage()) {
-      return undefined;
-    }
-
-    const handleStorageChange = (event) => {
-      if (event.key !== STORAGE_KEY) {
-        return;
-      }
-
-      try {
-        const nextFilters = event.newValue
-          ? ensureFilterArrays(JSON.parse(event.newValue))
-          : createDefaultFilters();
-
-        setFilters(nextFilters);
-      } catch (storageError) {
-        console.error('Failed to sync stats filters from storage event', storageError);
-        setFilters(createDefaultFilters());
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+    filtersPersistence.saveState(filters);
+  }, [filters, filtersPersistence]);
 
   const updateFilter = useCallback((key, value) => {
     setFilters((prev) => {

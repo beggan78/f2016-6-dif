@@ -10,6 +10,7 @@ import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { calculateMatchTime } from '../../utils/gameEventLogger';
 import { getExpectedOutfieldPlayerCount } from '../../game/logic/positionUtils';
+import { createPersistenceManager } from '../../utils/persistenceManager';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -25,6 +26,9 @@ import { createScoreHandlers } from '../../game/handlers/scoreHandlers';
 import { createGoalieHandlers } from '../../game/handlers/goalieHandlers';
 import { sortPlayersByGoalScoringRelevance } from '../../utils/playerSortingUtils';
 import { SubstitutionCountInlineControl } from './SubstitutionCountControls';
+
+// Create persistence manager for substitution count
+const substitutionCountPersistence = createPersistenceManager('sport-wizard-substitution-count', { count: 1 });
 
 // Animation timing constants are now imported from animationSupport
 
@@ -105,24 +109,12 @@ export function GameScreen({
     return sortPlayersByGoalScoringRelevance(filteredPlayers);
   }, [selectedSquadPlayers]);
 
-  // Load substitution count from localStorage, default to 1
-  const SUBSTITUTION_COUNT_STORAGE_KEY = 'sport-wizard-substitution-count';
-  const loadSubstitutionCount = () => {
-    try {
-      const stored = localStorage.getItem(SUBSTITUTION_COUNT_STORAGE_KEY);
-      if (stored) {
-        const parsed = parseInt(stored, 10);
-        if (!isNaN(parsed) && parsed >= 1) {
-          return parsed;
-        }
-      }
-    } catch (error) {
-      // Ignore errors and use default
-    }
-    return 1;
-  };
-
-  const [substitutionCount, setSubstitutionCount] = React.useState(loadSubstitutionCount);
+  // Load substitution count from PersistenceManager, default to 1
+  const [substitutionCount, setSubstitutionCount] = React.useState(() => {
+    const stored = substitutionCountPersistence.loadState();
+    const count = parseInt(stored.count, 10);
+    return !isNaN(count) && count >= 1 ? count : 1;
+  });
 
   const maxSubstitutionCount = React.useMemo(() => {
     // Get number of outfield positions from team config (4 for 5v5, 6 for 7v7)
@@ -144,14 +136,10 @@ export function GameScreen({
     }
   }, [substitutionCount, maxSubstitutionCount]);
 
-  // Save substitution count to localStorage whenever it changes
+  // Save substitution count to PersistenceManager whenever it changes
   React.useEffect(() => {
-    try {
-      localStorage.setItem(SUBSTITUTION_COUNT_STORAGE_KEY, substitutionCount.toString());
-    } catch (error) {
-      // Ignore localStorage errors (e.g., quota exceeded, private browsing)
-    }
-  }, [substitutionCount, SUBSTITUTION_COUNT_STORAGE_KEY]);
+    substitutionCountPersistence.saveState({ count: substitutionCount });
+  }, [substitutionCount]);
 
   const handleSubstitutionCountChange = React.useCallback((nextValue) => {
     setSubstitutionCount(nextValue);

@@ -1,13 +1,14 @@
 /**
  * Preferences Context
- * 
+ *
  * Manages user preferences including audio alert settings with localStorage persistence.
  * Follows the same pattern as AuthContext for consistency.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { DEFAULT_PREFERENCES, PREFERENCE_STORAGE_KEY } from '../constants/audioAlerts';
 import { audioAlertService } from '../services/audioAlertService';
+import { createPersistenceManager } from '../utils/persistenceManager';
 
 const PreferencesContext = createContext({
   // All preferences state
@@ -41,64 +42,9 @@ export const usePreferences = () => {
 };
 
 
-/**
- * Load preferences from localStorage with backward compatibility
- */
-const loadPreferencesFromStorage = () => {
-  try {
-    // Try to load new format first
-    const newStoredPrefs = localStorage.getItem(PREFERENCE_STORAGE_KEY);
-    if (newStoredPrefs) {
-      const parsed = JSON.parse(newStoredPrefs);
-      if (typeof parsed === 'object' && parsed !== null && parsed.audio) {
-        // New format found - merge with defaults to ensure completeness
-        const preferences = {
-          audio: { ...DEFAULT_PREFERENCES.audio, ...parsed.audio },
-          language: parsed.language || DEFAULT_PREFERENCES.language,
-          theme: parsed.theme || DEFAULT_PREFERENCES.theme
-        };
-        return preferences;
-      }
-    }
-
-    // Try to load old format for backward compatibility
-    const oldKey = 'sport-wizard-audio-preferences';
-    const oldStoredPrefs = localStorage.getItem(oldKey);
-    if (oldStoredPrefs) {
-      const parsed = JSON.parse(oldStoredPrefs);
-      if (typeof parsed === 'object' && parsed !== null) {
-        // Old format found - migrate to new structure
-        const migratedPreferences = {
-          audio: { ...DEFAULT_PREFERENCES.audio, ...parsed },
-          language: DEFAULT_PREFERENCES.language,
-          theme: DEFAULT_PREFERENCES.theme
-        };
-        
-        // Save in new format and remove old key
-        localStorage.setItem(PREFERENCE_STORAGE_KEY, JSON.stringify(migratedPreferences));
-        localStorage.removeItem(oldKey);
-        
-        return migratedPreferences;
-      }
-    }
-
-    return DEFAULT_PREFERENCES;
-  } catch (error) {
-    return DEFAULT_PREFERENCES;
-  }
-};
-
-/**
- * Save preferences to localStorage with error handling
- */
-const savePreferencesToStorage = (preferences) => {
-  try {
-    localStorage.setItem(PREFERENCE_STORAGE_KEY, JSON.stringify(preferences));
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
+// Create persistence managers
+const preferencesPersistence = createPersistenceManager(PREFERENCE_STORAGE_KEY, DEFAULT_PREFERENCES);
+const oldPreferencesPersistence = createPersistenceManager('sport-wizard-audio-preferences', {});
 
 /**
  * PreferencesProvider component
@@ -108,12 +54,41 @@ export function PreferencesProvider({ children }) {
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [preferencesLoading, setPreferencesLoading] = useState(true);
 
-  // Load preferences from localStorage on mount
+  // Load preferences from PersistenceManager on mount with migration support
   useEffect(() => {
     const loadPreferences = () => {
       try {
-        const storedPreferences = loadPreferencesFromStorage();
-        setPreferences(storedPreferences);
+        // Try to load new format first
+        const stored = preferencesPersistence.loadState();
+        if (stored && stored.audio) {
+          // New format found - merge with defaults to ensure completeness
+          const preferences = {
+            audio: { ...DEFAULT_PREFERENCES.audio, ...stored.audio },
+            language: stored.language || DEFAULT_PREFERENCES.language,
+            theme: stored.theme || DEFAULT_PREFERENCES.theme
+          };
+          setPreferences(preferences);
+        } else {
+          // Try to load old format for backward compatibility
+          const oldStored = oldPreferencesPersistence.loadState();
+          if (oldStored && Object.keys(oldStored).length > 0) {
+            // Old format found - migrate to new structure
+            const migratedPreferences = {
+              audio: { ...DEFAULT_PREFERENCES.audio, ...oldStored },
+              language: DEFAULT_PREFERENCES.language,
+              theme: DEFAULT_PREFERENCES.theme
+            };
+
+            // Save in new format and remove old key
+            preferencesPersistence.saveState(migratedPreferences);
+            oldPreferencesPersistence.clearState();
+
+            setPreferences(migratedPreferences);
+          } else {
+            // No stored preferences, use defaults
+            setPreferences(DEFAULT_PREFERENCES);
+          }
+        }
       } catch (error) {
         // Keep default preferences on error
       } finally {
@@ -124,10 +99,10 @@ export function PreferencesProvider({ children }) {
     loadPreferences();
   }, []);
 
-  // Save preferences to localStorage whenever they change (after initial load)
+  // Save preferences to PersistenceManager whenever they change (after initial load)
   useEffect(() => {
     if (!preferencesLoading) {
-      const saveSuccess = savePreferencesToStorage(preferences);
+      const saveSuccess = preferencesPersistence.saveState(preferences);
       if (!saveSuccess) {
         console.warn('⚠️  Failed to save preferences to localStorage. Preferences may not persist between sessions.');
       }

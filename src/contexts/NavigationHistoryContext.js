@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { VIEWS } from '../constants/viewConstants';
+import { createPersistenceManager } from '../utils/persistenceManager';
 
 const NavigationHistoryContext = createContext({
   // Core state
   currentView: null,
   previousView: null,
   navigationHistory: [],
-  
+
   // Navigation methods
   navigateTo: () => {},
   navigateBack: () => {},
@@ -15,51 +16,11 @@ const NavigationHistoryContext = createContext({
   canNavigateBack: false
 });
 
-// localStorage key for persisting navigation history
-const NAVIGATION_HISTORY_KEY = 'sport-wizard-navigation-history';
-
-// Helper functions for localStorage operations
-const saveHistoryToStorage = (history) => {
-  try {
-    localStorage.setItem(NAVIGATION_HISTORY_KEY, JSON.stringify({
-      history,
-      timestamp: Date.now()
-    }));
-  } catch (error) {
-    console.warn('Failed to save navigation history to localStorage:', error);
-  }
-};
-
-const loadHistoryFromStorage = () => {
-  try {
-    const stored = localStorage.getItem(NAVIGATION_HISTORY_KEY);
-    if (!stored) return [];
-    
-    const { history, timestamp } = JSON.parse(stored);
-    
-    // Clear history if it's older than 1 hour to prevent stale navigation
-    const maxAge = 60 * 60 * 1000; // 1 hour in milliseconds
-    if (Date.now() - timestamp > maxAge) {
-      localStorage.removeItem(NAVIGATION_HISTORY_KEY);
-      return [];
-    }
-    
-    return Array.isArray(history) ? history : [];
-  } catch (error) {
-    console.warn('Failed to load navigation history from localStorage:', error);
-    // Clear corrupted data
-    localStorage.removeItem(NAVIGATION_HISTORY_KEY);
-    return [];
-  }
-};
-
-const clearHistoryFromStorage = () => {
-  try {
-    localStorage.removeItem(NAVIGATION_HISTORY_KEY);
-  } catch (error) {
-    console.warn('Failed to clear navigation history from localStorage:', error);
-  }
-};
+// Create persistence manager for navigation history
+const navigationPersistence = createPersistenceManager('sport-wizard-navigation-history', {
+  history: [],
+  timestamp: Date.now()
+});
 
 // Valid views for navigation (prevent navigation to invalid views)
 const VALID_VIEWS = Object.values(VIEWS);
@@ -93,13 +54,24 @@ const getContextAwareFallback = (currentView) => {
 };
 
 export function NavigationHistoryProvider({ children }) {
-  // Initialize history from localStorage
-  const [navigationHistory, setNavigationHistory] = useState(() => loadHistoryFromStorage());
+  // Initialize history from PersistenceManager
+  const [navigationHistory, setNavigationHistory] = useState(() => {
+    const stored = navigationPersistence.loadState();
+
+    // Clear history if it's older than 1 hour to prevent stale navigation
+    const maxAge = 60 * 60 * 1000; // 1 hour in milliseconds
+    if (stored.timestamp && Date.now() - stored.timestamp > maxAge) {
+      navigationPersistence.clearState();
+      return [];
+    }
+
+    return Array.isArray(stored.history) ? stored.history : [];
+  });
   const [currentView, setCurrentView] = useState(null);
-  
+
   // Use ref to track if we're in the middle of a navigation operation
   const isNavigating = useRef(false);
-  
+
   // Track the last programmatic navigation to prevent sync conflicts
   const lastProgrammaticNavigation = useRef({ view: null, timestamp: 0 });
 
@@ -107,9 +79,12 @@ export function NavigationHistoryProvider({ children }) {
   const previousView = navigationHistory.length > 0 ? navigationHistory[navigationHistory.length - 1] : null;
   const canNavigateBack = navigationHistory.length > 0;
 
-  // Persist history changes to localStorage
+  // Persist history changes to localStorage via PersistenceManager
   useEffect(() => {
-    saveHistoryToStorage(navigationHistory);
+    navigationPersistence.saveState({
+      history: navigationHistory,
+      timestamp: Date.now()
+    });
   }, [navigationHistory]);
 
   const navigateTo = useCallback((view, data = null, options = {}) => {
@@ -231,7 +206,7 @@ export function NavigationHistoryProvider({ children }) {
   const clearHistory = useCallback(() => {
     setNavigationHistory([]);
     setCurrentView(null);
-    clearHistoryFromStorage();
+    navigationPersistence.clearState();
   }, []);
 
   // Method to sync current view from external sources (like gameState.view)
