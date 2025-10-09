@@ -1,10 +1,11 @@
-import { 
-  PersistenceManager, 
+import {
+  PersistenceManager,
   GamePersistenceManager,
   createPersistenceManager,
   createGamePersistenceManager 
 } from '../persistenceManager';
 import { DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 describe('PersistenceManager', () => {
   let manager;
@@ -569,7 +570,7 @@ describe('Factory functions', () => {
 
     it('should use default key when none provided', () => {
       const manager = createGamePersistenceManager();
-      expect(manager.storageKey).toBe('sport-wizard-game-state');
+      expect(manager.storageKey).toBe(STORAGE_KEYS.GAME_STATE);
     });
   });
 });

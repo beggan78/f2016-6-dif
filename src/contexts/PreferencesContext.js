@@ -9,7 +9,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { DEFAULT_PREFERENCES, PREFERENCE_STORAGE_KEY } from '../constants/audioAlerts';
 import { audioAlertService } from '../services/audioAlertService';
 import { createPersistenceManager } from '../utils/persistenceManager';
-import { STORAGE_KEYS } from '../constants/storageKeys';
+import { DEPRECATED_KEYS } from '../constants/storageKeys';
 
 const PreferencesContext = createContext({
   // All preferences state
@@ -45,7 +45,7 @@ export const usePreferences = () => {
 
 // Create persistence managers
 const preferencesPersistence = createPersistenceManager(PREFERENCE_STORAGE_KEY, DEFAULT_PREFERENCES);
-const oldPreferencesPersistence = createPersistenceManager(STORAGE_KEYS.AUDIO_PREFERENCES_LEGACY, {});
+const oldPreferencesPersistence = createPersistenceManager(DEPRECATED_KEYS.AUDIO_PREFERENCES_LEGACY, {});
 
 /**
  * PreferencesProvider component

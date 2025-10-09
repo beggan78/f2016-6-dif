@@ -16,6 +16,7 @@ import {
   retrievePendingInvitation,
   hasPendingInvitation
 } from '../invitationUtils';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 describe('invitationUtils', () => {
   let originalLocation;
@@ -617,7 +618,7 @@ describe('invitationUtils', () => {
 
         // PersistenceManager wraps the data with an 'invitation' key
         expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-          'pendingInvitation',
+          STORAGE_KEYS.PENDING_INVITATION,
           JSON.stringify({ invitation: invitationDetails })
         );
       });
@@ -665,8 +666,8 @@ describe('invitationUtils', () => {
 
         const result = retrievePendingInvitation();
 
-        expect(mockLocalStorage.getItem).toHaveBeenCalledWith('pendingInvitation');
-        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('pendingInvitation');
+        expect(mockLocalStorage.getItem).toHaveBeenCalledWith(STORAGE_KEYS.PENDING_INVITATION);
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEYS.PENDING_INVITATION);
         expect(result).toEqual(storedInvitation);
       });
 
@@ -728,7 +729,7 @@ describe('invitationUtils', () => {
         mockLocalStorage.getItem.mockReturnValue('{"invitation": {"invitationId": "inv-123"}}');
 
         expect(hasPendingInvitation()).toBe(true);
-        expect(mockLocalStorage.getItem).toHaveBeenCalledWith('pendingInvitation');
+        expect(mockLocalStorage.getItem).toHaveBeenCalledWith(STORAGE_KEYS.PENDING_INVITATION);
       });
 
       it('should return false when no pending invitation', () => {

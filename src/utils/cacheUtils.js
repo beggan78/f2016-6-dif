@@ -15,9 +15,11 @@
  * automatic expiration and cleanup.
  */
 
+import { STORAGE_KEYS } from '../constants/storageKeys';
+
 // Cache configuration
 const CACHE_CONFIG = {
-  PREFIX: 'supabase_app_',
+  PREFIX: STORAGE_KEYS.CACHE_PREFIX,
   DEFAULT_TTL: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   MAX_STORAGE_SIZE: 4 * 1024 * 1024, // 4MB limit (localStorage is ~5-10MB)
 };

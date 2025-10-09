@@ -6,7 +6,8 @@
 import {
   PRESERVED_STORAGE_KEYS,
   SESSION_STORAGE_KEYS,
-  SESSION_STORAGE_PREFIXES
+  SESSION_STORAGE_PREFIXES,
+  DEPRECATED_KEYS
 } from '../constants/storageKeys';
 
 // Export preserved keys for backward compatibility
@@ -19,9 +20,8 @@ const PRESERVED_KEYS = PRESERVED_STORAGE_KEYS;
 const CLEANUP_PATTERNS = [
   ...SESSION_STORAGE_KEYS,
   ...SESSION_STORAGE_PREFIXES,
-  'currentTeamId', // Legacy key not yet in constants
-  'pendingInvitation', // Legacy key not yet in constants
-  'sport-wizard-match-history' // Legacy key not yet in constants
+  // Include deprecated/legacy keys for cleanup
+  ...Object.values(DEPRECATED_KEYS),
 ];
 
 /**

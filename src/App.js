@@ -49,7 +49,18 @@ import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { updateMatchToConfirmed } from './services/matchStateManager';
 import { createPersistenceManager } from './utils/persistenceManager';
-import { STORAGE_KEYS } from './constants/storageKeys';
+import { STORAGE_KEYS, migrateStorageKeys } from './constants/storageKeys';
+
+// Migrate old storage keys to new standardized names on app load
+// This runs once per page load to ensure smooth transition
+try {
+  const migrationResults = migrateStorageKeys();
+  if (migrationResults.migrated.length > 0 && process.env.NODE_ENV === 'development') {
+    console.log('✅ Storage keys migrated:', migrationResults.migrated);
+  }
+} catch (error) {
+  console.error('Storage key migration error:', error);
+}
 
 // Create persistence manager for dismissed modals
 const dismissedModalsPersistence = createPersistenceManager(STORAGE_KEYS.DISMISSED_MODALS, {});

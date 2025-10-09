@@ -33,11 +33,12 @@ Object.defineProperty(global, 'localStorage', {
   value: mockLocalStorage
 });
 
-import { 
-  cleanupPreviousSession, 
-  getCleanupInfo, 
-  clearAllLocalStorage 
+import {
+  cleanupPreviousSession,
+  getCleanupInfo,
+  clearAllLocalStorage
 } from '../sessionCleanupUtils';
+import { STORAGE_KEYS, DEPRECATED_KEYS } from '../../constants/storageKeys';
 
 describe('sessionCleanupUtils', () => {
   beforeEach(() => {
@@ -51,20 +52,20 @@ describe('sessionCleanupUtils', () => {
       // Setup localStorage with mixed data
       const testData = {
         // Keys to preserve (user preferences)
-        'sport-wizard-timeline-preferences': '{"showDetails":true}',
-        'sport-wizard-preferences': '{"sound":"enabled"}',
-        'sport-wizard-tactical-preferences': '{"formation":"2-2"}',
-        
+        [STORAGE_KEYS.TIMELINE_PREFERENCES]: '{"showDetails":true}',
+        [STORAGE_KEYS.PREFERENCES]: '{"sound":"enabled"}',
+        [STORAGE_KEYS.TACTICAL_PREFERENCES]: '{"formation":"2-2"}',
+
         // Keys to clean up (session-specific)
-        'sport-wizard-game-state': '{"currentMatchId":"123"}',
-        'currentTeamId': 'team-456',
-        'sport-wizard-match-history': '[{"id":1}]',
-        'sport-wizard-match-events': '{"events":[]}',
-        'sport-wizard-match-events-backup': '{"events":[]}',
-        'sport-wizard-timer-12345': '{"startTime":1000}',
-        'sport-wizard-dismissedModals-team123': '{"welcome":true}',
-        'pendingInvitation': '{"teamId":"abc"}',
-        'sport-wizard-navigation-history': '{"stack":[]}'
+        [STORAGE_KEYS.GAME_STATE]: '{"currentMatchId":"123"}',
+        [DEPRECATED_KEYS.CURRENT_TEAM_ID_OLD]: 'team-456',
+        [STORAGE_KEYS.MATCH_HISTORY]: '[{"id":1}]',
+        [STORAGE_KEYS.MATCH_EVENTS]: '{"events":[]}',
+        [DEPRECATED_KEYS.MATCH_EVENTS_BACKUP]: '{"events":[]}',
+        [`${DEPRECATED_KEYS.TIMER_PREFIX}12345`]: '{"startTime":1000}',
+        [`${DEPRECATED_KEYS.DISMISSED_MODALS_PREFIX}team123`]: '{"welcome":true}',
+        [DEPRECATED_KEYS.PENDING_INVITATION_OLD]: '{"teamId":"abc"}',
+        [STORAGE_KEYS.NAVIGATION_HISTORY]: '{"stack":[]}'
       };
 
       // Populate localStorage
@@ -79,26 +80,26 @@ describe('sessionCleanupUtils', () => {
       const store = mockLocalStorage.__getStore();
       
       // Verify preserved keys still exist
-      expect(store['sport-wizard-timeline-preferences']).toBeDefined();
-      expect(store['sport-wizard-preferences']).toBeDefined();
-      expect(store['sport-wizard-tactical-preferences']).toBeDefined();
+      expect(store[STORAGE_KEYS.TIMELINE_PREFERENCES]).toBeDefined();
+      expect(store[STORAGE_KEYS.PREFERENCES]).toBeDefined();
+      expect(store[STORAGE_KEYS.TACTICAL_PREFERENCES]).toBeDefined();
       
       // Verify cleaned up keys are gone
-      expect(store['sport-wizard-game-state']).toBeUndefined();
-      expect(store['currentTeamId']).toBeUndefined();
-      expect(store['sport-wizard-match-history']).toBeUndefined();
-      expect(store['sport-wizard-match-events']).toBeUndefined();
-      expect(store['sport-wizard-timer-12345']).toBeUndefined();
-      expect(store['pendingInvitation']).toBeUndefined();
+      expect(store[STORAGE_KEYS.GAME_STATE]).toBeUndefined();
+      expect(store[DEPRECATED_KEYS.CURRENT_TEAM_ID_OLD]).toBeUndefined();
+      expect(store[STORAGE_KEYS.MATCH_HISTORY]).toBeUndefined();
+      expect(store[STORAGE_KEYS.MATCH_EVENTS]).toBeUndefined();
+      expect(store[`${DEPRECATED_KEYS.TIMER_PREFIX}12345`]).toBeUndefined();
+      expect(store[DEPRECATED_KEYS.PENDING_INVITATION_OLD]).toBeUndefined();
     });
 
     it('should handle pattern matching for keys with suffixes', () => {
       mockLocalStorage.__setStore({
-        'sport-wizard-timer-match123': '{"time":100}',
-        'sport-wizard-timer-game456': '{"time":200}',
-        'sport-wizard-dismissedModals-team1': '{"modal":true}',
-        'sport-wizard-dismissedModals-team2': '{"modal":false}',
-        'sport-wizard-preferences': '{"sound":true}' // Should be preserved
+        [`${DEPRECATED_KEYS.TIMER_PREFIX}match123`]: '{"time":100}',
+        [`${DEPRECATED_KEYS.TIMER_PREFIX}game456`]: '{"time":200}',
+        [`${DEPRECATED_KEYS.DISMISSED_MODALS_PREFIX}team1`]: '{"modal":true}',
+        [`${DEPRECATED_KEYS.DISMISSED_MODALS_PREFIX}team2`]: '{"modal":false}',
+        [STORAGE_KEYS.PREFERENCES]: '{"sound":true}' // Should be preserved
       });
 
       const result = cleanupPreviousSession();
@@ -107,9 +108,9 @@ describe('sessionCleanupUtils', () => {
       expect(result.removedKeys).toHaveLength(4); // Should clean up 4 pattern-matched keys
       
       const store = mockLocalStorage.__getStore();
-      expect(store['sport-wizard-preferences']).toBeDefined(); // Preserved
-      expect(store['sport-wizard-timer-match123']).toBeUndefined(); // Cleaned
-      expect(store['sport-wizard-dismissedModals-team1']).toBeUndefined(); // Cleaned
+      expect(store[STORAGE_KEYS.PREFERENCES]).toBeDefined(); // Preserved
+      expect(store[`${DEPRECATED_KEYS.TIMER_PREFIX}match123`]).toBeUndefined(); // Cleaned
+      expect(store[`${DEPRECATED_KEYS.DISMISSED_MODALS_PREFIX}team1`]).toBeUndefined(); // Cleaned
     });
 
     it('should handle empty localStorage gracefully', () => {
@@ -128,7 +129,7 @@ describe('sessionCleanupUtils', () => {
       };
 
       mockLocalStorage.__setStore({
-        'sport-wizard-game-state': '{"test":true}'
+        [STORAGE_KEYS.GAME_STATE]: '{"test":true}'
       });
 
       // Should not throw, but handle errors gracefully
@@ -136,7 +137,7 @@ describe('sessionCleanupUtils', () => {
       
       expect(result.success).toBe(true);
       // The key should still be in removedKeys even if removal failed
-      expect(result.removedKeys).toContain('sport-wizard-game-state');
+      expect(result.removedKeys).toContain(STORAGE_KEYS.GAME_STATE);
       
       // Restore original method
       mockLocalStorage.removeItem = originalRemoveItem;
@@ -146,17 +147,17 @@ describe('sessionCleanupUtils', () => {
   describe('getCleanupInfo', () => {
     it('should correctly categorize localStorage keys', () => {
       mockLocalStorage.__setStore({
-        'sport-wizard-preferences': '{"test":true}',
-        'sport-wizard-game-state': '{"test":true}',
+        [STORAGE_KEYS.PREFERENCES]: '{"test":true}',
+        [STORAGE_KEYS.GAME_STATE]: '{"test":true}',
         'unknown-key': '{"test":true}',
-        'sport-wizard-timer-123': '{"test":true}'
+        [`${DEPRECATED_KEYS.TIMER_PREFIX}123`]: '{"test":true}'
       });
 
       const info = getCleanupInfo();
 
-      expect(info.toPreserve).toContain('sport-wizard-preferences');
-      expect(info.toCleanup).toContain('sport-wizard-game-state');
-      expect(info.toCleanup).toContain('sport-wizard-timer-123');
+      expect(info.toPreserve).toContain(STORAGE_KEYS.PREFERENCES);
+      expect(info.toCleanup).toContain(STORAGE_KEYS.GAME_STATE);
+      expect(info.toCleanup).toContain(`${DEPRECATED_KEYS.TIMER_PREFIX}123`);
       expect(info.unknown).toContain('unknown-key');
     });
   });

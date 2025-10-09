@@ -1,4 +1,5 @@
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 /**
  * Manages localStorage operations for game state persistence
@@ -197,7 +198,7 @@ export class PersistenceManager {
  * Game-specific persistence manager with predefined default state
  */
 export class GamePersistenceManager extends PersistenceManager {
-  constructor(storageKey = 'sport-wizard-game-state') {
+  constructor(storageKey = STORAGE_KEYS.GAME_STATE) {
     // Import here to avoid circular dependency
     const { getInitialFormationTemplate } = require('../constants/gameModes');
     const { createDefaultTeamConfig, FORMATS } = require('../constants/teamConfiguration');
@@ -307,6 +308,6 @@ export function createPersistenceManager(storageKey, defaultState = {}) {
   return new PersistenceManager(storageKey, defaultState);
 }
 
-export function createGamePersistenceManager(storageKey = 'sport-wizard-game-state') {
+export function createGamePersistenceManager(storageKey = STORAGE_KEYS.GAME_STATE) {
   return new GamePersistenceManager(storageKey);
 }

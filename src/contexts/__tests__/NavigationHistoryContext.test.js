@@ -18,6 +18,7 @@ import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { NavigationHistoryProvider, useNavigationHistoryContext } from '../NavigationHistoryContext';
 import { VIEWS } from '../../constants/viewConstants';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 // Mock localStorage
 const mockLocalStorage = (() => {
@@ -315,7 +316,7 @@ describe('NavigationHistoryContext', () => {
 
       // Check that localStorage was called
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'sport-wizard-navigation-history',
+        STORAGE_KEYS.NAVIGATION_HISTORY,
         expect.stringContaining('"history":[')
       );
     });
@@ -328,7 +329,7 @@ describe('NavigationHistoryContext', () => {
         timestamp: Date.now()
       });
       mockLocalStorage._setStore({
-        'sport-wizard-navigation-history': testData
+        [STORAGE_KEYS.NAVIGATION_HISTORY]: testData
       });
       
       // Mock getItem to return our test data
@@ -350,7 +351,7 @@ describe('NavigationHistoryContext', () => {
         timestamp: staleTimestamp
       });
       mockLocalStorage._setStore({
-        'sport-wizard-navigation-history': staleData
+        [STORAGE_KEYS.NAVIGATION_HISTORY]: staleData
       });
       
       // Mock getItem to return stale data
@@ -362,14 +363,14 @@ describe('NavigationHistoryContext', () => {
 
       // Should start with empty history
       expect(result.current.navigationHistory).toEqual([]);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('sport-wizard-navigation-history');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEYS.NAVIGATION_HISTORY);
     });
 
     it('should handle corrupted localStorage data gracefully', () => {
       // Set corrupted data
       const corruptedData = 'invalid-json-data';
       mockLocalStorage._setStore({
-        'sport-wizard-navigation-history': corruptedData
+        [STORAGE_KEYS.NAVIGATION_HISTORY]: corruptedData
       });
       
       // Mock getItem to return corrupted data
@@ -416,7 +417,7 @@ describe('NavigationHistoryContext', () => {
         result.current.clearHistory();
       });
 
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('sport-wizard-navigation-history');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEYS.NAVIGATION_HISTORY);
     });
   });
 
