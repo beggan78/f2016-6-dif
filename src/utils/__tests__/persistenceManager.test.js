@@ -140,6 +140,20 @@ describe('PersistenceManager', () => {
         expect.any(Error)
       );
     });
+
+    it('should return stored state when default state is null', () => {
+      const nullDefaultManager = new PersistenceManager(TEST_KEY, null);
+      const storedState = {
+        isPeriodActive: true,
+        periodStartTime: 1234567890,
+        lastSubstitutionTime: 1234567800
+      };
+
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(storedState));
+
+      const result = nullDefaultManager.loadState();
+      expect(result).toEqual(storedState);
+    });
   });
 
   describe('saveState', () => {

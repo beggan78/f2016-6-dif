@@ -166,14 +166,24 @@ export class PersistenceManager {
    * Merge loaded state with default state to ensure all fields exist
    */
   _mergeWithDefaults(loadedState) {
+    // When no default state is provided (null/undefined) just return the stored state
+    if (!this.defaultState || typeof this.defaultState !== 'object' || Array.isArray(this.defaultState)) {
+      if (Array.isArray(loadedState)) {
+        return [...loadedState];
+      }
+      return { ...loadedState };
+    }
+
     const merged = { ...this.defaultState };
-    
+
     // Deep merge for nested objects
-    Object.keys(loadedState).forEach(key => {
+    Object.keys(loadedState).forEach((key) => {
       if (key in this.defaultState) {
-        if (typeof this.defaultState[key] === 'object' && 
-            this.defaultState[key] !== null && 
-            !Array.isArray(this.defaultState[key])) {
+        if (
+          typeof this.defaultState[key] === 'object' &&
+          this.defaultState[key] !== null &&
+          !Array.isArray(this.defaultState[key])
+        ) {
           // Deep merge for objects (but not arrays)
           merged[key] = { ...this.defaultState[key], ...loadedState[key] };
         } else {
