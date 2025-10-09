@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { TeamStatsView } from '../TeamStatsView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../../services/matchStateManager';
+import { STORAGE_KEYS } from '../../../constants/storageKeys';
 
 // Mock dependencies
 jest.mock('../../../contexts/TeamContext');
@@ -78,6 +79,8 @@ describe('TeamStatsView', () => {
 
   beforeEach(() => {
     mockOnMatchSelect.mockClear();
+
+    window.localStorage.removeItem(STORAGE_KEYS.STATS_FILTERS);
 
     useTeam.mockReturnValue({
       currentTeam: { id: 'team-123', name: 'Test Team' }

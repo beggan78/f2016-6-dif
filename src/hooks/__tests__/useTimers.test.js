@@ -18,6 +18,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useTimers } from '../useTimers';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 // Mock gameEventLogger functions
 jest.mock('../../utils/gameEventLogger', () => ({
@@ -790,7 +791,7 @@ describe('useTimers', () => {
 
         // CRITICAL: localStorage should be called immediately with correct timestamp
         expect(setItemSpy).toHaveBeenCalledWith(
-          'dif-coach-timer-state',
+          STORAGE_KEYS.TIMER_STATE,
           expect.stringContaining('"lastSubstitutionTime":1010000')
         );
 
@@ -841,7 +842,7 @@ describe('useTimers', () => {
         });
 
         expect(setItemSpy).toHaveBeenCalledWith(
-          'dif-coach-timer-state',
+          STORAGE_KEYS.TIMER_STATE,
           expect.stringContaining('"pauseStartTime":1005000')
         );
 
@@ -854,7 +855,7 @@ describe('useTimers', () => {
         });
 
         expect(setItemSpy).toHaveBeenCalledWith(
-          'dif-coach-timer-state',
+          STORAGE_KEYS.TIMER_STATE,
           expect.stringContaining('"pauseStartTime":null')
         );
 

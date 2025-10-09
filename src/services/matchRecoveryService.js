@@ -1,15 +1,16 @@
 import { supabase } from '../lib/supabase';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 /**
  * Service for detecting and managing recoverable matches on login
- * 
+ *
  * Helps users recover finished matches that weren't saved to history
  * by detecting them from localStorage and offering recovery options.
  */
 
 // Initialize persistence manager for accessing localStorage
-const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+const persistenceManager = createGamePersistenceManager(STORAGE_KEYS.GAME_STATE);
 
 /**
  * Check if there's a recoverable match for the current user

@@ -1,10 +1,11 @@
-import { 
-  PersistenceManager, 
+import {
+  PersistenceManager,
   GamePersistenceManager,
   createPersistenceManager,
   createGamePersistenceManager 
 } from '../persistenceManager';
 import { DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 describe('PersistenceManager', () => {
   let manager;
@@ -138,6 +139,20 @@ describe('PersistenceManager', () => {
         'Failed to load state from localStorage:', 
         expect.any(Error)
       );
+    });
+
+    it('should return stored state when default state is null', () => {
+      const nullDefaultManager = new PersistenceManager(TEST_KEY, null);
+      const storedState = {
+        isPeriodActive: true,
+        periodStartTime: 1234567890,
+        lastSubstitutionTime: 1234567800
+      };
+
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(storedState));
+
+      const result = nullDefaultManager.loadState();
+      expect(result).toEqual(storedState);
     });
   });
 
@@ -322,7 +337,7 @@ describe('PersistenceManager', () => {
       const manager = new PersistenceManager(TEST_KEY, defaultState);
       
       const result = manager._mergeWithDefaults(loadedState);
-      expect(result).toEqual({ a: 1, b: 20, c: 3 });
+      expect(result).toEqual({ a: 1, b: 20, c: 3, d: 4 });
     });
 
     it('should deep merge objects', () => {
@@ -569,7 +584,7 @@ describe('Factory functions', () => {
 
     it('should use default key when none provided', () => {
       const manager = createGamePersistenceManager();
-      expect(manager.storageKey).toBe('dif-coach-game-state');
+      expect(manager.storageKey).toBe(STORAGE_KEYS.GAME_STATE);
     });
   });
 });

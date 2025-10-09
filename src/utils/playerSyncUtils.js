@@ -1,14 +1,15 @@
 /**
  * Player Synchronization Utilities
- * 
- * Manages synchronization between team roster data (from Supabase) and 
+ *
+ * Manages synchronization between team roster data (from Supabase) and
  * game state player data (stored in localStorage). Ensures that players
  * added/updated in Team Management are immediately available in game configuration.
  */
 
 import { createGamePersistenceManager } from './persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
-const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+const persistenceManager = createGamePersistenceManager(STORAGE_KEYS.GAME_STATE);
 
 /**
  * Convert a team roster player (from Supabase) to game state player format

@@ -162,6 +162,20 @@ Modern composite team configuration system using four components:
 - `captureAllPlayerPositions()` - Snapshot player positions
 - `calculateAllPlayerAnimations()` - Determine movement animations
 
+### LocalStorage Management (`/src/utils/persistenceManager.js`)
+**ALWAYS use PersistenceManager for localStorage operations** - provides error handling, validation, and quota management.
+
+**When to use PersistenceManager**:
+- ✅ **Complex state objects**: Use `createPersistenceManager(key, defaultState)` for objects with multiple fields
+- ✅ **Game state**: Use `GamePersistenceManager` for game-specific state (already configured with defaults)
+- ✅ **Simple values**: Use `createPersistenceManager(key, { value: default })` even for single values
+
+**Why use PersistenceManager**:
+- Automatic error handling (corrupted data, quota exceeded, unsupported browsers)
+- Built-in validation and sanitization
+- Support detection (works in SSR, test environments)
+- Consistent behavior across the app
+
 ## Debugging Tips
 - **Time issues**: Check `lastStintStartTimeEpoch` and time field initialization
 - **Queue problems**: Use `createRotationQueue()` utilities and verify position tracking

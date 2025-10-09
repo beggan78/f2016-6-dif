@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { DETECTION_TYPES } from '../services/sessionDetectionService';
 import { getCachedTeamData, cacheTeamData } from '../utils/cacheUtils';
 import { sanitizeSearchInput } from '../utils/inputSanitization';
 import { syncTeamRosterToGameState } from '../utils/playerSyncUtils';
+import { createPersistenceManager } from '../utils/persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const TeamContext = createContext({});
 
@@ -20,6 +22,13 @@ export const useTeam = () => {
 
 export const TeamProvider = ({ children }) => {
   const { user, userProfile, sessionDetectionResult } = useAuth();
+
+  // Create persistence manager for currentTeamId
+  const teamIdPersistence = useMemo(
+    () => createPersistenceManager(STORAGE_KEYS.CURRENT_TEAM_ID, { teamId: null }),
+    []
+  );
+
   const [currentTeam, setCurrentTeam] = useState(null);
   const [userTeams, setUserTeams] = useState([]);
   const [userClubs, setUserClubs] = useState([]);
@@ -353,14 +362,14 @@ export const TeamProvider = ({ children }) => {
     }
 
     // Cache the current team and players
-    cacheTeamData({ 
+    cacheTeamData({
       currentTeam: team,
-      teamPlayers: players 
+      teamPlayers: players
     });
 
-    // Store in localStorage for persistence
-    localStorage.setItem('currentTeamId', teamId);
-  }, [userTeams, getTeamPlayers]);
+    // Store in localStorage for persistence via PersistenceManager
+    teamIdPersistence.saveState({ teamId });
+  }, [userTeams, getTeamPlayers, teamIdPersistence]);
 
   // Get user's club memberships
   const getClubMemberships = useCallback(async () => {
@@ -470,9 +479,9 @@ export const TeamProvider = ({ children }) => {
       setUserClubs([]);
       setTeamPlayers([]);
       setPendingRequests([]);
-      localStorage.removeItem('currentTeamId');
+      teamIdPersistence.clearState();
     }
-  }, [user, getUserTeams, getClubMemberships, sessionDetectionResult]);
+  }, [user, getUserTeams, getClubMemberships, sessionDetectionResult, teamIdPersistence]);
 
   useEffect(() => {
     return () => {
@@ -487,16 +496,17 @@ export const TeamProvider = ({ children }) => {
   useEffect(() => {
     if (userTeams.length > 0 && !currentTeam) {
       // Try to restore previously selected team
-      const savedTeamId = localStorage.getItem('currentTeamId');
+      const stored = teamIdPersistence.loadState();
+      const savedTeamId = stored.teamId;
       const savedTeam = savedTeamId ? userTeams.find(t => t.id === savedTeamId) : null;
-      
+
       if (savedTeam) {
         // Restore saved team
         setCurrentTeam(savedTeam);
         getTeamPlayers(savedTeam.id).then(players => {
           setTeamPlayers(players);
         });
-        localStorage.setItem('currentTeamId', savedTeam.id);
+        teamIdPersistence.saveState({ teamId: savedTeam.id });
       } else if (userTeams.length === 1) {
         // Auto-select if user has only one team
         const team = userTeams[0];
@@ -504,7 +514,7 @@ export const TeamProvider = ({ children }) => {
         getTeamPlayers(team.id).then(players => {
           setTeamPlayers(players);
         });
-        localStorage.setItem('currentTeamId', team.id);
+        teamIdPersistence.saveState({ teamId: team.id });
       }
     } else if (userTeams.length === 0 && initializationDone.current) {
       // Explicitly handle no teams case - ensure loading is false
@@ -512,7 +522,7 @@ export const TeamProvider = ({ children }) => {
       setCurrentTeam(null);
       setTeamPlayers([]);
     }
-  }, [userTeams, currentTeam, getTeamPlayers]);
+  }, [userTeams, currentTeam, getTeamPlayers, teamIdPersistence]);
 
   // Get team access requests for a team (for team coaches)
   const getTeamAccessRequests = useCallback(async (teamId) => {

@@ -6,6 +6,8 @@
 import { EVENT_TYPES, getMatchEvents, calculateMatchTime } from './gameEventLogger';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { normalizeRole } from '../constants/roleConstants';
+import { createPersistenceManager } from './persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 /**
  * Validation error types
@@ -436,16 +438,22 @@ export const recoverCorruptedEvents = (events) => {
   return uniqueEvents;
 };
 
+// Create persistence manager for reading match events
+const eventsPersistence = createPersistenceManager(STORAGE_KEYS.MATCH_EVENTS, {
+  events: [],
+  matchId: null,
+  version: '1.0.0'
+});
+
 /**
- * Attempt crash recovery from localStorage
+ * Attempt crash recovery from localStorage using PersistenceManager
  */
 export const recoverFromCrash = () => {
   try {
+    // Try primary storage first using PersistenceManager
+    const primaryData = eventsPersistence.loadState();
 
-    // Try primary storage first
-    const primary = localStorage.getItem('dif-coach-match-events');
-    if (primary) {
-      const primaryData = JSON.parse(primary);
+    if (primaryData && primaryData.events && primaryData.events.length > 0) {
       const validationErrors = validateMatchData(primaryData.events);
 
       if (validationErrors.length === 0) {

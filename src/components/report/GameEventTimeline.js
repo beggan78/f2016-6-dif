@@ -17,9 +17,10 @@ import {
 import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { formatPlayerName } from '../../utils/formatUtils';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 // Timeline preferences persistence manager
-const timelinePrefsManager = createPersistenceManager('dif-coach-timeline-preferences', {
+const timelinePrefsManager = createPersistenceManager(STORAGE_KEYS.TIMELINE_PREFERENCES, {
   sortOrder: 'asc'
 });
 

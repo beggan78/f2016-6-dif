@@ -244,7 +244,7 @@ describe('sessionDetectionService', () => {
       mockSessionStorage.storage['sport-wizard-last-activity'] = 'test';
       mockSessionStorage.storage['sport-wizard-page-load-count'] = 'test';
       mockSessionStorage.storage['auth_session_initialized'] = 'true';
-      mockSessionStorage.storage['dif-coach-settings'] = 'test';
+      mockSessionStorage.storage['sport-wizard-settings'] = 'test';
 
       const result = clearAllSessionData();
 

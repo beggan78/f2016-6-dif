@@ -48,32 +48,35 @@ import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { updateMatchToConfirmed } from './services/matchStateManager';
+import { createPersistenceManager } from './utils/persistenceManager';
+import { STORAGE_KEYS, migrateStorageKeys } from './constants/storageKeys';
 
-// Dismissed modals localStorage utilities
-const DISMISSED_MODALS_KEY = 'dif-coach-dismissed-modals';
+// Migrate old storage keys to new standardized names on app load
+// This runs once per page load to ensure smooth transition
+try {
+  const migrationResults = migrateStorageKeys();
+  if (migrationResults.migrated.length > 0 && process.env.NODE_ENV === 'development') {
+    console.log('✅ Storage keys migrated:', migrationResults.migrated);
+  }
+} catch (error) {
+  console.error('Storage key migration error:', error);
+}
+
+// Create persistence manager for dismissed modals
+const dismissedModalsPersistence = createPersistenceManager(STORAGE_KEYS.DISMISSED_MODALS, {});
 
 const getDismissedModals = () => {
-  try {
-    const stored = localStorage.getItem(DISMISSED_MODALS_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch (error) {
-    console.warn('Failed to load dismissed modals:', error);
-    return {};
-  }
+  return dismissedModalsPersistence.loadState();
 };
 
 const markModalDismissed = (modalType, teamId) => {
-  try {
-    const dismissed = getDismissedModals();
-    const key = `${modalType}_${teamId}`;
-    dismissed[key] = {
-      dismissedAt: Date.now(),
-      teamId: teamId
-    };
-    localStorage.setItem(DISMISSED_MODALS_KEY, JSON.stringify(dismissed));
-  } catch (error) {
-    console.warn('Failed to mark modal as dismissed:', error);
-  }
+  const dismissed = getDismissedModals();
+  const key = `${modalType}_${teamId}`;
+  dismissed[key] = {
+    dismissedAt: Date.now(),
+    teamId: teamId
+  };
+  dismissedModalsPersistence.saveState(dismissed);
 };
 
 const isModalDismissed = (modalType, teamId) => {
@@ -83,11 +86,7 @@ const isModalDismissed = (modalType, teamId) => {
 };
 
 const clearDismissedModals = () => {
-  try {
-    localStorage.removeItem(DISMISSED_MODALS_KEY);
-  } catch (error) {
-    console.warn('Failed to clear dismissed modals:', error);
-  }
+  dismissedModalsPersistence.clearState();
 };
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)

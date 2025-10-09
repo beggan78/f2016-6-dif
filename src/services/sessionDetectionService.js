@@ -6,6 +6,8 @@
  * - PAGE_REFRESH: User refreshed the browser page
  */
 
+import { STORAGE_KEYS } from '../constants/storageKeys';
+
 // Detection result types - simplified to binary decision
 export const DETECTION_TYPES = {
   NEW_SIGN_IN: 'NEW_SIGN_IN',
@@ -32,7 +34,7 @@ const SESSION_KEYS = {
 const SUPABASE_TOKEN_KEY_PATTERN = /^sb-.*-auth-token$/;
 
 const SESSION_GUARD_KEYS = {
-  LAST_SIGN_OUT: 'sport-wizard-last-sign-out'
+  LAST_SIGN_OUT: STORAGE_KEYS.SESSION_LAST_SIGN_OUT,
 };
 
 const SIGN_OUT_SUPPRESS_WINDOW_MS = 10000;

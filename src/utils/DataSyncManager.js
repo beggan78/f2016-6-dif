@@ -2,6 +2,12 @@ import { supabase } from '../lib/supabase';
 import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 import { FORMATS } from '../constants/teamConfiguration';
+import { createPersistenceManager } from './persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+
+// Create persistence managers
+const matchHistoryPersistence = createPersistenceManager(STORAGE_KEYS.MATCH_HISTORY, { matches: [] });
+const teamIdPersistence = createPersistenceManager(STORAGE_KEYS.CURRENT_TEAM_ID, { teamId: null });
 
 /**
  * DataSyncManager - Handles synchronization between localStorage and Supabase database
@@ -54,11 +60,11 @@ export class DataSyncManager {
       };
       
       matches.push(newMatch);
-      
+
       // Keep only last 10 matches for anonymous users
       const recentMatches = matches.slice(-10);
-      localStorage.setItem('dif-coach-match-history', JSON.stringify(recentMatches));
-      
+      matchHistoryPersistence.saveState({ matches: recentMatches });
+
       return { success: true, match: newMatch, storage: 'local' };
     } catch (error) {
       console.error('Error saving match to localStorage:', error);
@@ -317,7 +323,7 @@ export class DataSyncManager {
 
       // Clear localStorage after successful migration
       if (migratedCount > 0 && errors.length === 0) {
-        localStorage.removeItem('dif-coach-match-history');
+        matchHistoryPersistence.clearState();
       }
 
       return {
@@ -336,20 +342,15 @@ export class DataSyncManager {
   // Helper methods
 
   getLocalMatches() {
-    try {
-      const stored = localStorage.getItem('dif-coach-match-history');
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Error parsing local match history:', error);
-      return [];
-    }
+    const stored = matchHistoryPersistence.loadState();
+    return Array.isArray(stored.matches) ? stored.matches : [];
   }
 
   async getCurrentTeamId() {
-    // Get current team from TeamContext or localStorage
-    const savedTeamId = localStorage.getItem('currentTeamId');
-    if (savedTeamId) {
-      return savedTeamId;
+    // Get current team from TeamContext via PersistenceManager
+    const stored = teamIdPersistence.loadState();
+    if (stored.teamId) {
+      return stored.teamId;
     }
     
     // If no team is selected, try to get user's first team

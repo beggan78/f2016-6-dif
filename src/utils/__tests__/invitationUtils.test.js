@@ -16,6 +16,7 @@ import {
   retrievePendingInvitation,
   hasPendingInvitation
 } from '../invitationUtils';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 describe('invitationUtils', () => {
   let originalLocation;
@@ -615,9 +616,10 @@ describe('invitationUtils', () => {
 
         storePendingInvitation(invitationDetails);
 
+        // PersistenceManager wraps the data with an 'invitation' key
         expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-          'pendingInvitation',
-          JSON.stringify(invitationDetails)
+          STORAGE_KEYS.PENDING_INVITATION,
+          JSON.stringify({ invitation: invitationDetails })
         );
       });
 
@@ -630,7 +632,8 @@ describe('invitationUtils', () => {
         const invitationDetails = { invitationId: 'inv-123' };
 
         expect(() => storePendingInvitation(invitationDetails)).not.toThrow();
-        expect(console.error).toHaveBeenCalledWith('Failed to store pending invitation:', error);
+        // PersistenceManager handles errors internally, so no console.error is expected
+        // The function completes silently when localStorage fails
       });
 
       it('should not do anything when window is undefined', () => {
@@ -658,12 +661,13 @@ describe('invitationUtils', () => {
           teamName: 'Test Team',
           role: 'player'
         };
-        mockLocalStorage.getItem.mockReturnValue(JSON.stringify(storedInvitation));
+        // PersistenceManager wraps data with 'invitation' key
+        mockLocalStorage.getItem.mockReturnValue(JSON.stringify({ invitation: storedInvitation }));
 
         const result = retrievePendingInvitation();
 
-        expect(mockLocalStorage.getItem).toHaveBeenCalledWith('pendingInvitation');
-        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('pendingInvitation');
+        expect(mockLocalStorage.getItem).toHaveBeenCalledWith(STORAGE_KEYS.PENDING_INVITATION);
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEYS.PENDING_INVITATION);
         expect(result).toEqual(storedInvitation);
       });
 
@@ -683,11 +687,8 @@ describe('invitationUtils', () => {
         const result = retrievePendingInvitation();
 
         expect(result).toBeNull();
-        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('pendingInvitation');
-        expect(console.error).toHaveBeenCalledWith(
-          'Failed to retrieve pending invitation:',
-          expect.any(Error)
-        );
+        // PersistenceManager handles invalid JSON internally by returning default state
+        // Invalid data doesn't get cleared automatically - it's left for future writes to overwrite
       });
 
       it('should handle localStorage access errors', () => {
@@ -699,7 +700,7 @@ describe('invitationUtils', () => {
         const result = retrievePendingInvitation();
 
         expect(result).toBeNull();
-        expect(console.error).toHaveBeenCalledWith('Failed to retrieve pending invitation:', error);
+        // PersistenceManager handles errors internally
       });
 
       it('should return null when window is undefined', () => {
@@ -724,10 +725,11 @@ describe('invitationUtils', () => {
 
     describe('hasPendingInvitation', () => {
       it('should return true when pending invitation exists', () => {
-        mockLocalStorage.getItem.mockReturnValue('{"invitationId": "inv-123"}');
+        // PersistenceManager wraps data with 'invitation' key
+        mockLocalStorage.getItem.mockReturnValue('{"invitation": {"invitationId": "inv-123"}}');
 
         expect(hasPendingInvitation()).toBe(true);
-        expect(mockLocalStorage.getItem).toHaveBeenCalledWith('pendingInvitation');
+        expect(mockLocalStorage.getItem).toHaveBeenCalledWith(STORAGE_KEYS.PENDING_INVITATION);
       });
 
       it('should return false when no pending invitation', () => {

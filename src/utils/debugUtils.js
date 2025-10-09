@@ -1,11 +1,17 @@
 /**
  * Debug Utility Functions
- * 
+ *
  * Utility functions for randomizing configurations and formations during development/testing.
  * These functions help speed up testing by automatically populating selections.
- * 
+ *
  * Also includes debug timing and logging utilities for troubleshooting performance issues.
  */
+
+import { createPersistenceManager } from './persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+
+// Create persistence manager for debug mode
+const debugModePersistence = createPersistenceManager(STORAGE_KEYS.DEBUG_MODE, { enabled: false });
 
 /**
  * Format current time for human-readable debug logs
@@ -188,7 +194,6 @@ export const randomizeFormationPositions = (availablePlayers, teamConfig) => {
   return formation;
 };
 
-
 /**
  * Check if debug mode is enabled
  * @returns {boolean} True if debug mode is enabled
@@ -199,17 +204,18 @@ export const isDebugMode = () => {
   if (urlParams.get('debug') === 'true') {
     return true;
   }
-  
-  // Check localStorage
-  if (localStorage.getItem('debug-mode') === 'true') {
+
+  // Check localStorage via PersistenceManager
+  const debugState = debugModePersistence.loadState();
+  if (debugState && debugState.enabled === true) {
     return true;
   }
-  
+
   // Check environment variable (for development builds)
   if (process.env.REACT_APP_DEBUG === 'true') {
     return true;
   }
-  
+
   return false;
 };
 

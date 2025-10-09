@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within, waitFor } from '@testing-library/rea
 import { MatchHistoryView } from '../MatchHistoryView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getConfirmedMatches } from '../../../services/matchStateManager';
+import { STORAGE_KEYS } from '../../../constants/storageKeys';
 
 /* eslint-disable testing-library/no-node-access */
 function openFilterToggle(labelText) {
@@ -150,6 +151,8 @@ describe('MatchHistoryView', () => {
 
   beforeEach(() => {
     mockOnMatchSelect.mockClear();
+
+    window.localStorage.removeItem(STORAGE_KEYS.STATS_FILTERS);
 
     // Mock useTeam hook
     useTeam.mockReturnValue({

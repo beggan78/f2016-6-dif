@@ -1,4 +1,5 @@
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 /**
  * Manages localStorage operations for game state persistence
@@ -165,19 +166,32 @@ export class PersistenceManager {
    * Merge loaded state with default state to ensure all fields exist
    */
   _mergeWithDefaults(loadedState) {
+    // When no default state is provided (null/undefined) just return the stored state
+    if (!this.defaultState || typeof this.defaultState !== 'object' || Array.isArray(this.defaultState)) {
+      if (Array.isArray(loadedState)) {
+        return [...loadedState];
+      }
+      return { ...loadedState };
+    }
+
     const merged = { ...this.defaultState };
-    
+
     // Deep merge for nested objects
-    Object.keys(loadedState).forEach(key => {
+    Object.keys(loadedState).forEach((key) => {
       if (key in this.defaultState) {
-        if (typeof this.defaultState[key] === 'object' && 
-            this.defaultState[key] !== null && 
-            !Array.isArray(this.defaultState[key])) {
+        if (
+          typeof this.defaultState[key] === 'object' &&
+          this.defaultState[key] !== null &&
+          !Array.isArray(this.defaultState[key])
+        ) {
           // Deep merge for objects (but not arrays)
           merged[key] = { ...this.defaultState[key], ...loadedState[key] };
         } else {
           merged[key] = loadedState[key];
         }
+      } else {
+        // Preserve additional keys found in stored state to avoid losing new data fields
+        merged[key] = loadedState[key];
       }
     });
 
@@ -197,7 +211,7 @@ export class PersistenceManager {
  * Game-specific persistence manager with predefined default state
  */
 export class GamePersistenceManager extends PersistenceManager {
-  constructor(storageKey = 'dif-coach-game-state') {
+  constructor(storageKey = STORAGE_KEYS.GAME_STATE) {
     // Import here to avoid circular dependency
     const { getInitialFormationTemplate } = require('../constants/gameModes');
     const { createDefaultTeamConfig, FORMATS } = require('../constants/teamConfiguration');
@@ -307,6 +321,6 @@ export function createPersistenceManager(storageKey, defaultState = {}) {
   return new PersistenceManager(storageKey, defaultState);
 }
 
-export function createGamePersistenceManager(storageKey = 'dif-coach-game-state') {
+export function createGamePersistenceManager(storageKey = STORAGE_KEYS.GAME_STATE) {
   return new GamePersistenceManager(storageKey);
 }

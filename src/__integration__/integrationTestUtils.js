@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { initialRoster } from '../constants/defaultData';
 import { initializePlayers } from '../utils/playerUtils';
@@ -179,7 +180,7 @@ export const simulateErrorScenarios = async (errorConfig) => {
   
   if (invalidData) {
     // Inject invalid data into localStorage
-    localStorage.setItem('dif-coach-game-state', JSON.stringify({
+    localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify({
       invalidField: 'corrupted',
       formation: null,
       allPlayers: 'not_an_array'
@@ -260,7 +261,7 @@ export const simulatePerformanceScenarios = async (performanceConfig) => {
  */
 export const validateDataPersistence = async (beforeState, afterRefreshCallback) => {
   // Store current state
-  const persistedData = localStorage.getItem('dif-coach-game-state');
+  const persistedData = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
   
   // Simulate browser refresh by clearing in-memory state and reloading from storage
   if (afterRefreshCallback) {
@@ -510,12 +511,12 @@ export const simulateLocalStorageScenarios = {
     localStorage.clear();
   },
   
-  corrupt: (key = 'dif-coach-game-state') => {
+  corrupt: (key = STORAGE_KEYS.GAME_STATE) => {
     localStorage.setItem(key, 'invalid-json-data');
   },
   
   restore: (gameState) => {
-    localStorage.setItem('dif-coach-game-state', JSON.stringify(gameState));
+    localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify(gameState));
   }
 };
 

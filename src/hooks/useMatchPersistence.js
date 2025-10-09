@@ -1,6 +1,6 @@
 /**
  * Match Persistence Hook
- * 
+ *
  * Handles database operations, auto-save logic, and localStorage persistence.
  * Extracted from useGameState to follow Single Responsibility Principle.
  */
@@ -8,9 +8,10 @@
 import { useCallback } from 'react';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // PersistenceManager for handling localStorage operations
-const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+const persistenceManager = createGamePersistenceManager(STORAGE_KEYS.GAME_STATE);
 
 /**
  * Hook for handling database operations and persistence
