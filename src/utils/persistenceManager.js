@@ -197,7 +197,7 @@ export class PersistenceManager {
  * Game-specific persistence manager with predefined default state
  */
 export class GamePersistenceManager extends PersistenceManager {
-  constructor(storageKey = 'dif-coach-game-state') {
+  constructor(storageKey = 'sport-wizard-game-state') {
     // Import here to avoid circular dependency
     const { getInitialFormationTemplate } = require('../constants/gameModes');
     const { createDefaultTeamConfig, FORMATS } = require('../constants/teamConfiguration');
@@ -307,6 +307,6 @@ export function createPersistenceManager(storageKey, defaultState = {}) {
   return new PersistenceManager(storageKey, defaultState);
 }
 
-export function createGamePersistenceManager(storageKey = 'dif-coach-game-state') {
+export function createGamePersistenceManager(storageKey = 'sport-wizard-game-state') {
   return new GamePersistenceManager(storageKey);
 }

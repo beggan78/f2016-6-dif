@@ -167,7 +167,7 @@ export const assertUIStateConsistency = (gameState, options = {}) => {
 /**
  * Asserts that data is properly persisted to localStorage
  */
-export const assertDataPersistence = (expectedData, storageKey = 'dif-coach-game-state') => {
+export const assertDataPersistence = (expectedData, storageKey = 'sport-wizard-game-state') => {
   const storedData = localStorage.getItem(storageKey);
   expect(storedData).not.toBeNull();
   

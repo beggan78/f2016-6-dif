@@ -51,7 +51,7 @@ import { updateMatchToConfirmed } from './services/matchStateManager';
 import { createPersistenceManager } from './utils/persistenceManager';
 
 // Create persistence manager for dismissed modals
-const dismissedModalsPersistence = createPersistenceManager('dif-coach-dismissed-modals', {});
+const dismissedModalsPersistence = createPersistenceManager('sport-wizard-dismissed-modals', {});
 
 const getDismissedModals = () => {
   return dismissedModalsPersistence.loadState();

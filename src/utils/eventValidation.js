@@ -443,7 +443,7 @@ export const recoverFromCrash = () => {
   try {
 
     // Try primary storage first
-    const primary = localStorage.getItem('dif-coach-match-events');
+    const primary = localStorage.getItem('sport-wizard-match-events');
     if (primary) {
       const primaryData = JSON.parse(primary);
       const validationErrors = validateMatchData(primaryData.events);

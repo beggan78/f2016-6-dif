@@ -10,7 +10,7 @@ import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
 
 // PersistenceManager for handling localStorage operations
-const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+const persistenceManager = createGamePersistenceManager('sport-wizard-game-state');
 
 /**
  * Hook for handling database operations and persistence

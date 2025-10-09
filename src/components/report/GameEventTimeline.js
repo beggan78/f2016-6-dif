@@ -19,7 +19,7 @@ import { createPersistenceManager } from '../../utils/persistenceManager';
 import { formatPlayerName } from '../../utils/formatUtils';
 
 // Timeline preferences persistence manager
-const timelinePrefsManager = createPersistenceManager('dif-coach-timeline-preferences', {
+const timelinePrefsManager = createPersistenceManager('sport-wizard-timeline-preferences', {
   sortOrder: 'asc'
 });
 

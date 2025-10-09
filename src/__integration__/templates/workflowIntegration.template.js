@@ -368,7 +368,7 @@ describe('WORKFLOW_NAME Integration Tests', () => {
         await navigateToSavePoint(savePoint);
         
         // Assert - verify auto-save occurred
-        const savedData = localStorage.getItem('dif-coach-game-state');
+        const savedData = localStorage.getItem('sport-wizard-game-state');
         expect(savedData).not.toBeNull();
         
         const parsedData = JSON.parse(savedData);

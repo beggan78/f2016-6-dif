@@ -7,7 +7,7 @@
  * Keys that should be preserved across sessions (user preferences)
  */
 const PRESERVED_KEYS = [
-  'dif-coach-timeline-preferences',
+  'sport-wizard-timeline-preferences',
   'sport-wizard-preferences', 
   'sport-wizard-tactical-preferences'
 ];
@@ -16,13 +16,13 @@ const PRESERVED_KEYS = [
  * Key patterns that should be cleaned up (session-specific data)
  */
 const CLEANUP_PATTERNS = [
-  'dif-coach-game-state',
+  'sport-wizard-game-state',
   'currentTeamId',
-  'dif-coach-match-history', 
-  'dif-coach-match-events',
-  'dif-coach-match-events-backup',
-  'dif-coach-match-events-emergency',
-  'dif-coach-timer-',
+  'sport-wizard-match-history',
+  'sport-wizard-match-events',
+  'sport-wizard-match-events-backup',
+  'sport-wizard-match-events-emergency',
+  'sport-wizard-timer-',
   'sport-wizard-dismissedModals-',
   'pendingInvitation',
   'sport-wizard-navigation-history'
@@ -41,7 +41,7 @@ function shouldPreserveKey(key) {
 function shouldCleanupKey(key) {
   return CLEANUP_PATTERNS.some(pattern => {
     if (pattern.endsWith('-')) {
-      // Pattern matching (e.g., 'dif-coach-timer-' matches 'dif-coach-timer-12345')
+      // Pattern matching (e.g., 'sport-wizard-timer-' matches 'sport-wizard-timer-12345')
       return key.startsWith(pattern);
     } else {
       // Exact match

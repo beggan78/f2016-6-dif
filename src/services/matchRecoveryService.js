@@ -9,7 +9,7 @@ import { createGamePersistenceManager } from '../utils/persistenceManager';
  */
 
 // Initialize persistence manager for accessing localStorage
-const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+const persistenceManager = createGamePersistenceManager('sport-wizard-game-state');
 
 /**
  * Check if there's a recoverable match for the current user

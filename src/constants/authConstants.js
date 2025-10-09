@@ -92,10 +92,10 @@ export const AUTH_TIMINGS = {
  * Local storage keys for authentication data
  */
 export const AUTH_STORAGE_KEYS = {
-  SESSION_DATA: 'dif-coach-session',
-  USER_PREFERENCES: 'dif-coach-user-prefs',
-  REMEMBER_EMAIL: 'dif-coach-remember-email',
-  LAST_LOGIN: 'dif-coach-last-login',
+  SESSION_DATA: 'sport-wizard-session',
+  USER_PREFERENCES: 'sport-wizard-user-prefs',
+  REMEMBER_EMAIL: 'sport-wizard-remember-email',
+  LAST_LOGIN: 'sport-wizard-last-login',
   CURRENT_TEAM_ID: 'currentTeamId'
 };
 

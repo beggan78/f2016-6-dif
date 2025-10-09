@@ -8,7 +8,7 @@
 
 import { createGamePersistenceManager } from './persistenceManager';
 
-const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+const persistenceManager = createGamePersistenceManager('sport-wizard-game-state');
 
 /**
  * Convert a team roster player (from Supabase) to game state player format

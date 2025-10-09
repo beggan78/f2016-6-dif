@@ -5,7 +5,7 @@ import { FORMATS } from '../constants/teamConfiguration';
 import { createPersistenceManager } from './persistenceManager';
 
 // Create persistence managers
-const matchHistoryPersistence = createPersistenceManager('dif-coach-match-history', { matches: [] });
+const matchHistoryPersistence = createPersistenceManager('sport-wizard-match-history', { matches: [] });
 const teamIdPersistence = createPersistenceManager('currentTeamId', { teamId: null });
 
 /**

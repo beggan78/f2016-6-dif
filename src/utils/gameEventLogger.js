@@ -40,7 +40,7 @@ export const EVENT_TYPES = {
 
 // localStorage keys
 const STORAGE_KEYS = {
-  PRIMARY: 'dif-coach-match-events'
+  PRIMARY: 'sport-wizard-match-events'
 };
 
 // Global state for event tracking
@@ -472,8 +472,8 @@ export const clearAllEvents = () => {
 
     localStorage.removeItem(STORAGE_KEYS.PRIMARY);
     // Remove legacy backup keys if they exist
-    localStorage.removeItem('dif-coach-match-events-backup');
-    localStorage.removeItem('dif-coach-match-events-emergency');
+    localStorage.removeItem('sport-wizard-match-events-backup');
+    localStorage.removeItem('sport-wizard-match-events-emergency');
 
     notifyEventListeners('events_cleared', {});
 

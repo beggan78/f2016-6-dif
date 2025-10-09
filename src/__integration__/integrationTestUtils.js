@@ -179,7 +179,7 @@ export const simulateErrorScenarios = async (errorConfig) => {
   
   if (invalidData) {
     // Inject invalid data into localStorage
-    localStorage.setItem('dif-coach-game-state', JSON.stringify({
+    localStorage.setItem('sport-wizard-game-state', JSON.stringify({
       invalidField: 'corrupted',
       formation: null,
       allPlayers: 'not_an_array'
@@ -260,7 +260,7 @@ export const simulatePerformanceScenarios = async (performanceConfig) => {
  */
 export const validateDataPersistence = async (beforeState, afterRefreshCallback) => {
   // Store current state
-  const persistedData = localStorage.getItem('dif-coach-game-state');
+  const persistedData = localStorage.getItem('sport-wizard-game-state');
   
   // Simulate browser refresh by clearing in-memory state and reloading from storage
   if (afterRefreshCallback) {
@@ -510,12 +510,12 @@ export const simulateLocalStorageScenarios = {
     localStorage.clear();
   },
   
-  corrupt: (key = 'dif-coach-game-state') => {
+  corrupt: (key = 'sport-wizard-game-state') => {
     localStorage.setItem(key, 'invalid-json-data');
   },
   
   restore: (gameState) => {
-    localStorage.setItem('dif-coach-game-state', JSON.stringify(gameState));
+    localStorage.setItem('sport-wizard-game-state', JSON.stringify(gameState));
   }
 };
 

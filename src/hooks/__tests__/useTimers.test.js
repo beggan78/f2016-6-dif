@@ -790,7 +790,7 @@ describe('useTimers', () => {
 
         // CRITICAL: localStorage should be called immediately with correct timestamp
         expect(setItemSpy).toHaveBeenCalledWith(
-          'dif-coach-timer-state',
+          'sport-wizard-timer-state',
           expect.stringContaining('"lastSubstitutionTime":1010000')
         );
 
@@ -841,7 +841,7 @@ describe('useTimers', () => {
         });
 
         expect(setItemSpy).toHaveBeenCalledWith(
-          'dif-coach-timer-state',
+          'sport-wizard-timer-state',
           expect.stringContaining('"pauseStartTime":1005000')
         );
 
@@ -854,7 +854,7 @@ describe('useTimers', () => {
         });
 
         expect(setItemSpy).toHaveBeenCalledWith(
-          'dif-coach-timer-state',
+          'sport-wizard-timer-state',
           expect.stringContaining('"pauseStartTime":null')
         );
 

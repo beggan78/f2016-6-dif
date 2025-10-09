@@ -4,7 +4,7 @@ import { ErrorRecovery } from '../utils/errorHandler';
 import { createPersistenceManager } from '../utils/persistenceManager';
 
 // Create persistence manager for timer state
-const timerPersistence = createPersistenceManager('dif-coach-timer-state', null);
+const timerPersistence = createPersistenceManager('sport-wizard-timer-state', null);
 
 const loadTimerState = () => {
   const stored = timerPersistence.loadState();

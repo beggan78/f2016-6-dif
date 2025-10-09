@@ -23,7 +23,7 @@ import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 
 // PersistenceManager for handling localStorage operations
-const persistenceManager = createGamePersistenceManager('dif-coach-game-state');
+const persistenceManager = createGamePersistenceManager('sport-wizard-game-state');
 
 // Migration utilities no longer needed - working exclusively with teamConfig objects
 

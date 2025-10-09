@@ -569,7 +569,7 @@ describe('Factory functions', () => {
 
     it('should use default key when none provided', () => {
       const manager = createGamePersistenceManager();
-      expect(manager.storageKey).toBe('dif-coach-game-state');
+      expect(manager.storageKey).toBe('sport-wizard-game-state');
     });
   });
 });
