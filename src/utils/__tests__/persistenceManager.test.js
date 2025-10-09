@@ -337,7 +337,7 @@ describe('PersistenceManager', () => {
       const manager = new PersistenceManager(TEST_KEY, defaultState);
       
       const result = manager._mergeWithDefaults(loadedState);
-      expect(result).toEqual({ a: 1, b: 20, c: 3 });
+      expect(result).toEqual({ a: 1, b: 20, c: 3, d: 4 });
     });
 
     it('should deep merge objects', () => {

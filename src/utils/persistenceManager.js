@@ -189,6 +189,9 @@ export class PersistenceManager {
         } else {
           merged[key] = loadedState[key];
         }
+      } else {
+        // Preserve additional keys found in stored state to avoid losing new data fields
+        merged[key] = loadedState[key];
       }
     });
 
