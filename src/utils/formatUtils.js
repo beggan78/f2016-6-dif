@@ -22,6 +22,32 @@ export const formatTime = (totalSeconds) => {
 };
 
 /**
+ * Formats a time duration expressed in minutes to mm:ss or hh:mm:ss.
+ * @param {number} totalMinutes - Total minutes to format.
+ * @returns {string} Formatted duration string.
+ */
+export const formatMinutesAsTime = (totalMinutes) => {
+  if (totalMinutes === undefined || totalMinutes === null || isNaN(totalMinutes)) {
+    console.warn('formatMinutesAsTime received invalid value:', totalMinutes, 'returning "00:00"');
+    return '00:00';
+  }
+
+  const totalSeconds = Math.max(0, Math.round(totalMinutes * 60));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const twoDigitMinutes = String(minutes).padStart(2, '0');
+  const twoDigitSeconds = String(seconds).padStart(2, '0');
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, '0')}:${twoDigitMinutes}:${twoDigitSeconds}`;
+  }
+
+  return `${twoDigitMinutes}:${twoDigitSeconds}`;
+};
+
+/**
  * Formats time difference with +/- sign
  * @param {number} diffSeconds - Time difference in seconds
  * @returns {string} Formatted time difference (e.g., "+02:30" or "-01:15")

@@ -1,6 +1,7 @@
 import {
   formatTime,
   formatTimeDifference,
+  formatMinutesAsTime,
   getPlayerLabel,
   formatPoints,
   generateStatsText
@@ -40,6 +41,29 @@ describe('formatTime', () => {
   it('should handle edge cases', () => {
     expect(formatTime(1)).toBe('00:01');
     expect(formatTime(61)).toBe('01:01');
+  });
+});
+
+describe('formatMinutesAsTime', () => {
+  it('formats zero minutes as 00:00', () => {
+    expect(formatMinutesAsTime(0)).toBe('00:00');
+  });
+
+  it('formats fractional minutes to include seconds', () => {
+    expect(formatMinutesAsTime(7.5)).toBe('07:30');
+    expect(formatMinutesAsTime(12.25)).toBe('12:15');
+  });
+
+  it('formats durations equal to or over an hour with hours included', () => {
+    expect(formatMinutesAsTime(60)).toBe('01:00:00');
+    expect(formatMinutesAsTime(75)).toBe('01:15:00');
+    expect(formatMinutesAsTime(90.5)).toBe('01:30:30');
+  });
+
+  it('gracefully handles invalid values', () => {
+    expect(formatMinutesAsTime(undefined)).toBe('00:00');
+    expect(formatMinutesAsTime(null)).toBe('00:00');
+    expect(formatMinutesAsTime(-5)).toBe('00:00');
   });
 });
 

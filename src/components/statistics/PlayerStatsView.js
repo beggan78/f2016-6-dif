@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronUp, ChevronDown, User, Award, Clock, Users, Target } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getPlayerStats } from '../../services/matchStateManager';
+import { formatMinutesAsTime } from '../../utils/formatUtils';
 
 const SORT_COLUMNS = {
   NAME: 'name',
@@ -89,7 +90,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       className: 'text-center',
       render: (player) => (
         <div className="flex items-center justify-center space-x-1">
-          <span className="text-slate-300 font-mono">{player.averageTimePerMatch.toFixed(1)}min</span>
+          <span className="text-slate-300 font-mono">{formatMinutesAsTime(player.averageTimePerMatch)}</span>
         </div>
       )
     },
@@ -284,7 +285,7 @@ export function PlayerStatsView({ startDate, endDate }) {
         <StatCard
           icon={Clock}
           title="Avg. Playing Time"
-          value={`${summaryStats.averageFieldTime.toFixed(1)}min`}
+          value={formatMinutesAsTime(summaryStats.averageFieldTime)}
           subtitle={`Per match`}
         />
 
