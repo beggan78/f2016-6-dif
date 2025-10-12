@@ -15,6 +15,7 @@ import happyBellsAudio from '../assets/audio/mixkit-happy-bells-notification-937
 import magicMarimbaAudio from '../assets/audio/mixkit-magic-marimba-2820.wav';
 import magicRingAudio from '../assets/audio/mixkit-magic-notification-ring-2344.wav';
 import positiveNoteAudio from '../assets/audio/mixkit-positive-notification-951.wav';
+import { STORAGE_KEYS } from './storageKeys';
 
 export const AUDIO_ALERT_OPTIONS = [
   { 
@@ -112,4 +113,4 @@ export const DEFAULT_PREFERENCES = {
 /**
  * localStorage key for persisting preferences (updated for new structure)
  */
-export const PREFERENCE_STORAGE_KEY = 'sport-wizard-preferences';
+export const PREFERENCE_STORAGE_KEY = STORAGE_KEYS.PREFERENCES;

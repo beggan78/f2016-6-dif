@@ -152,9 +152,22 @@ export const ErrorRecovery = {
 
   /**
    * Safe localStorage operations
+   *
+   * @deprecated Use PersistenceManager instead for all localStorage operations.
+   * PersistenceManager provides better error handling, validation, and quota management.
+   *
+   * Example:
+   *   import { createPersistenceManager } from '../utils/persistenceManager';
+   *   import { STORAGE_KEYS } from '../constants/storageKeys';
+   *   const manager = createPersistenceManager(STORAGE_KEYS.YOUR_KEY, defaultValue);
+   *   const data = manager.loadState();
+   *   manager.saveState(newData);
+   *
+   * These methods are kept for backward compatibility but should not be used in new code.
    */
   safeLocalStorage: {
     get: (key, fallback = null) => {
+      console.warn('ErrorRecovery.safeLocalStorage.get is deprecated. Use PersistenceManager instead.');
       return ErrorRecovery.withFallback(
         () => {
           const item = localStorage.getItem(key);
@@ -164,8 +177,9 @@ export const ErrorRecovery = {
         { category: ERROR_CATEGORIES.STORAGE, operation: 'get', key }
       );
     },
-    
+
     set: (key, value) => {
+      console.warn('ErrorRecovery.safeLocalStorage.set is deprecated. Use PersistenceManager instead.');
       return ErrorRecovery.withFallback(
         () => {
           localStorage.setItem(key, JSON.stringify(value));

@@ -7,7 +7,8 @@
  */
 
 import { screen, within } from '@testing-library/react';
-import {PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 // ===================================================================
 // GAME STATE ASSERTIONS
@@ -167,7 +168,7 @@ export const assertUIStateConsistency = (gameState, options = {}) => {
 /**
  * Asserts that data is properly persisted to localStorage
  */
-export const assertDataPersistence = (expectedData, storageKey = 'dif-coach-game-state') => {
+export const assertDataPersistence = (expectedData, storageKey = STORAGE_KEYS.GAME_STATE) => {
   const storedData = localStorage.getItem(storageKey);
   expect(storedData).not.toBeNull();
   

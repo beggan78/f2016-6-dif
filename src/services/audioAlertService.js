@@ -1,11 +1,17 @@
 /**
  * Audio Alert Service
- * 
+ *
  * Manages audio playback for substitution alerts with preloading and error handling.
  * Provides methods for playing, stopping, and managing audio alert sounds.
  */
 
-import { AUDIO_ALERT_OPTIONS } from '../constants/audioAlerts';
+import { AUDIO_ALERT_OPTIONS, PREFERENCE_STORAGE_KEY } from '../constants/audioAlerts';
+import { createPersistenceManager } from '../utils/persistenceManager';
+
+// Create persistence manager for preferences (read-only for this service)
+const preferencesPersistence = createPersistenceManager(PREFERENCE_STORAGE_KEY, {
+  audio: { selectedSound: null }
+});
 
 /**
  * Service class for handling audio alert playback with lazy loading optimization
@@ -28,21 +34,11 @@ class AudioAlertService {
   initializeWithLazyLoading() {
     // Get user's currently selected sound from preferences (if available)
     const defaultSound = AUDIO_ALERT_OPTIONS.find(option => option.isDefault)?.value || 'bells-echo';
-    
-    try {
-      // Try to get user's selected sound from localStorage
-      const stored = localStorage.getItem('dif-coach-preferences');
-      if (stored) {
-        const preferences = JSON.parse(stored);
-        this.selectedSound = preferences.audio?.selectedSound || defaultSound;
-      } else {
-        this.selectedSound = defaultSound;
-      }
-    } catch (error) {
-      // Fallback to default if preferences can't be read
-      this.selectedSound = defaultSound;
-    }
-    
+
+    // Try to get user's selected sound from PersistenceManager
+    const preferences = preferencesPersistence.loadState();
+    this.selectedSound = preferences.audio?.selectedSound || defaultSound;
+
     // Preload only the selected sound and default (if different)
     this.preloadEssentialSounds();
   }

@@ -3,6 +3,8 @@
  * Handles all match events with validation, integrity checking, and crash recovery
  */
 
+import { createPersistenceManager } from './persistenceManager';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Event types enumeration with comprehensive coverage
 export const EVENT_TYPES = {
@@ -38,10 +40,24 @@ export const EVENT_TYPES = {
   TECHNICAL_TIMEOUT: 'technical_timeout'
 };
 
-// localStorage keys
-const STORAGE_KEYS = {
-  PRIMARY: 'dif-coach-match-events'
-};
+// Create persistence manager for match events
+const eventsPersistence = createPersistenceManager(
+  STORAGE_KEYS.MATCH_EVENTS,
+  {
+    matchId: null,
+    version: '1.0.0',
+    created: null,
+    lastUpdated: null,
+    checksum: '',
+    events: [],
+    goalScorers: {},
+    corrections: {},
+    metadata: {
+      eventCount: 0,
+      lastSequence: 0
+    }
+  }
+);
 
 // Global state for event tracking
 let eventSequenceNumber = 0;
@@ -154,15 +170,19 @@ const createEventStorage = (events = [], metadata = {}) => {
 };
 
 /**
- * Save events to localStorage
+ * Save events to localStorage using PersistenceManager
  */
 const saveEvents = (events, metadata = {}) => {
   try {
     const storage = createEventStorage(events, metadata);
     storage.checksum = calculateChecksum(storage);
 
-    // Save primary
-    localStorage.setItem(STORAGE_KEYS.PRIMARY, JSON.stringify(storage));
+    // Save using PersistenceManager
+    const saveSuccess = eventsPersistence.saveState(storage);
+
+    if (!saveSuccess) {
+      throw new Error('PersistenceManager failed to save events');
+    }
 
     // Update current state
     currentEvents = [...events];
@@ -178,15 +198,14 @@ const saveEvents = (events, metadata = {}) => {
 };
 
 /**
- * Load events from localStorage with validation
+ * Load events from localStorage with validation using PersistenceManager
  */
 export const loadEvents = () => {
   try {
-    const primary = localStorage.getItem(STORAGE_KEYS.PRIMARY);
+    const storage = eventsPersistence.loadState();
 
-    if (primary) {
-      const storage = JSON.parse(primary);
-
+    // Check if we have valid stored data (not just defaults)
+    if (storage && storage.events && storage.events.length > 0) {
       // Validate checksum
       const expectedChecksum = storage.checksum;
       const actualChecksum = calculateChecksum({
@@ -462,7 +481,7 @@ const notifyEventListeners = (eventType, data) => {
 };
 
 /**
- * Clear all events (for testing or reset)
+ * Clear all events (for testing or reset) using PersistenceManager
  */
 export const clearAllEvents = () => {
   try {
@@ -470,10 +489,16 @@ export const clearAllEvents = () => {
     eventSequenceNumber = 0;
     matchStartTime = null;
 
-    localStorage.removeItem(STORAGE_KEYS.PRIMARY);
-    // Remove legacy backup keys if they exist
-    localStorage.removeItem('dif-coach-match-events-backup');
-    localStorage.removeItem('dif-coach-match-events-emergency');
+    // Clear using PersistenceManager
+    eventsPersistence.clearState();
+
+    // Remove legacy backup keys if they exist (direct access needed for cleanup)
+    try {
+      localStorage.removeItem(STORAGE_KEYS.MATCH_EVENTS_BACKUP);
+      localStorage.removeItem(STORAGE_KEYS.MATCH_EVENTS_EMERGENCY);
+    } catch (legacyError) {
+      // Ignore errors cleaning up legacy keys
+    }
 
     notifyEventListeners('events_cleared', {});
 

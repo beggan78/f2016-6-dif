@@ -89,17 +89,6 @@ export const AUTH_TIMINGS = {
 };
 
 /**
- * Local storage keys for authentication data
- */
-export const AUTH_STORAGE_KEYS = {
-  SESSION_DATA: 'dif-coach-session',
-  USER_PREFERENCES: 'dif-coach-user-prefs',
-  REMEMBER_EMAIL: 'dif-coach-remember-email',
-  LAST_LOGIN: 'dif-coach-last-login',
-  CURRENT_TEAM_ID: 'currentTeamId'
-};
-
-/**
  * Feature flags for authentication features
  */
 export const AUTH_FEATURES = {

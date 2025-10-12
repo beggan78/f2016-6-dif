@@ -29,6 +29,7 @@ import {
   simulateErrorScenarios,
   validateDataConsistency
 } from '../integrationTestUtils';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 import {
   executeAndWaitForAsync,
   waitForMultipleConditions,
@@ -368,7 +369,7 @@ describe('WORKFLOW_NAME Integration Tests', () => {
         await navigateToSavePoint(savePoint);
         
         // Assert - verify auto-save occurred
-        const savedData = localStorage.getItem('dif-coach-game-state');
+        const savedData = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
         expect(savedData).not.toBeNull();
         
         const parsedData = JSON.parse(savedData);

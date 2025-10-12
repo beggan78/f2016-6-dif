@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, BarChart3, Users, History } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,6 +9,8 @@ import { PlayerStatsView } from './PlayerStatsView';
 import { MatchHistoryView } from './MatchHistoryView';
 import { MatchDetailsView } from './MatchDetailsView';
 import { TimeFilter } from './TimeFilter';
+import { createPersistenceManager } from '../../utils/persistenceManager';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 const STATS_TABS = {
   TEAM: 'team',
@@ -17,7 +19,15 @@ const STATS_TABS = {
 };
 
 export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
-  const [activeTab, setActiveTab] = useState(STATS_TABS.TEAM);
+  const tabPersistence = useMemo(
+    () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
+    []
+  );
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const stored = tabPersistence.loadState();
+    return stored.tab && Object.values(STATS_TABS).includes(stored.tab) ? stored.tab : STATS_TABS.TEAM;
+  });
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [isCreatingMatch, setIsCreatingMatch] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -32,6 +42,10 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     teamPlayers
   } = useTeam();
   const authModal = useAuthModalIntegration(authModalProp);
+
+  useEffect(() => {
+    tabPersistence.saveState({ tab: activeTab });
+  }, [activeTab, tabPersistence]);
 
   const handleMatchSelect = (matchId) => {
     setSelectedMatchId(matchId);

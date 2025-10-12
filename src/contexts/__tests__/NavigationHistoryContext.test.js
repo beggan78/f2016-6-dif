@@ -18,6 +18,7 @@ import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { NavigationHistoryProvider, useNavigationHistoryContext } from '../NavigationHistoryContext';
 import { VIEWS } from '../../constants/viewConstants';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 // Mock localStorage
 const mockLocalStorage = (() => {
@@ -315,7 +316,7 @@ describe('NavigationHistoryContext', () => {
 
       // Check that localStorage was called
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'sport-wizard-navigation-history',
+        STORAGE_KEYS.NAVIGATION_HISTORY,
         expect.stringContaining('"history":[')
       );
     });
@@ -328,7 +329,7 @@ describe('NavigationHistoryContext', () => {
         timestamp: Date.now()
       });
       mockLocalStorage._setStore({
-        'sport-wizard-navigation-history': testData
+        [STORAGE_KEYS.NAVIGATION_HISTORY]: testData
       });
       
       // Mock getItem to return our test data
@@ -350,7 +351,7 @@ describe('NavigationHistoryContext', () => {
         timestamp: staleTimestamp
       });
       mockLocalStorage._setStore({
-        'sport-wizard-navigation-history': staleData
+        [STORAGE_KEYS.NAVIGATION_HISTORY]: staleData
       });
       
       // Mock getItem to return stale data
@@ -362,14 +363,14 @@ describe('NavigationHistoryContext', () => {
 
       // Should start with empty history
       expect(result.current.navigationHistory).toEqual([]);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('sport-wizard-navigation-history');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEYS.NAVIGATION_HISTORY);
     });
 
     it('should handle corrupted localStorage data gracefully', () => {
       // Set corrupted data
       const corruptedData = 'invalid-json-data';
       mockLocalStorage._setStore({
-        'sport-wizard-navigation-history': corruptedData
+        [STORAGE_KEYS.NAVIGATION_HISTORY]: corruptedData
       });
       
       // Mock getItem to return corrupted data
@@ -379,13 +380,10 @@ describe('NavigationHistoryContext', () => {
         wrapper: TestWrapper
       });
 
-      // Should start with empty history and clear corrupted data
+      // Should start with empty history
       expect(result.current.navigationHistory).toEqual([]);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('sport-wizard-navigation-history');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to load navigation history from localStorage:',
-        expect.any(Error)
-      );
+      // PersistenceManager handles corrupted data by returning default state
+      // It doesn't automatically clear invalid data - waits for next write
     });
 
     it('should handle localStorage failures gracefully', () => {
@@ -407,10 +405,7 @@ describe('NavigationHistoryContext', () => {
 
       // Should still work despite storage failure
       expect(result.current.currentView).toBe(VIEWS.PROFILE);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to save navigation history to localStorage:',
-        expect.any(Error)
-      );
+      // PersistenceManager handles storage failures internally without logging to console
     });
 
     it('should clear localStorage when clearHistory is called', () => {
@@ -422,7 +417,7 @@ describe('NavigationHistoryContext', () => {
         result.current.clearHistory();
       });
 
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('sport-wizard-navigation-history');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEYS.NAVIGATION_HISTORY);
     });
   });
 
