@@ -23,6 +23,25 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
     []
   );
+  const timeRangePersistence = useMemo(
+    () => createPersistenceManager(STORAGE_KEYS.STATISTICS_TIME_RANGE, { startDate: null, endDate: null }),
+    []
+  );
+
+  const initialTimeRange = useMemo(() => {
+    const stored = timeRangePersistence.loadState();
+
+    const parseDate = (value) => {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    return {
+      start: parseDate(stored?.startDate),
+      end: parseDate(stored?.endDate)
+    };
+  }, [timeRangePersistence]);
 
   const [activeTab, setActiveTab] = useState(() => {
     const stored = tabPersistence.loadState();
@@ -31,8 +50,8 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [isCreatingMatch, setIsCreatingMatch] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
-  const [timeRangeStart, setTimeRangeStart] = useState(null);
-  const [timeRangeEnd, setTimeRangeEnd] = useState(null);
+  const [timeRangeStart, setTimeRangeStart] = useState(initialTimeRange.start);
+  const [timeRangeEnd, setTimeRangeEnd] = useState(initialTimeRange.end);
   const { loading: authLoading, isAuthenticated } = useAuth();
   const {
     loading: teamLoading,
@@ -47,6 +66,13 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     tabPersistence.saveState({ tab: activeTab });
   }, [activeTab, tabPersistence]);
 
+  useEffect(() => {
+    timeRangePersistence.saveState({
+      startDate: timeRangeStart ? timeRangeStart.toISOString() : null,
+      endDate: timeRangeEnd ? timeRangeEnd.toISOString() : null
+    });
+  }, [timeRangeStart, timeRangeEnd, timeRangePersistence]);
+
   const handleMatchSelect = (matchId) => {
     setSelectedMatchId(matchId);
     setIsCreatingMatch(false);
@@ -58,8 +84,14 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   };
 
   const handleTimeRangeChange = (startDate, endDate) => {
-    setTimeRangeStart(startDate);
-    setTimeRangeEnd(endDate);
+    const normalizeDate = (value) => {
+      if (!value) return null;
+      const parsed = value instanceof Date ? value : new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    setTimeRangeStart(normalizeDate(startDate));
+    setTimeRangeEnd(normalizeDate(endDate));
   };
 
   const handleCreateMatch = () => {
