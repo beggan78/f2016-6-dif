@@ -312,29 +312,28 @@ export class SubstitutionManager {
       });
 
       if (hasInactiveInCarousel) {
-        // Active cascade logic for N players
-        // Field players fill in from the top, existing active substitutes cascade down
-        const activeSubstitutes = substitutePositions.filter(position => {
+        // Active cascade logic for N players with inactive substitutes present
+        // Compress remaining active substitutes to the front, then append players going off
+        const activeSubstitutePositions = substitutePositions.filter(position => {
           const player = findPlayerById(allPlayers, formation[position]);
           return player && !player.stats.isInactive;
         });
 
-        // Players coming off go to the end of active substitute positions
-        // We need to shift existing active substitutes that didn't come on
         const playersComingOnIds = substitutionPairs.map(p => p.playerComingOnId);
-        const remainingActiveSubstitutes = activeSubstitutes.filter(position => {
-          const playerId = formation[position];
-          return !playersComingOnIds.includes(playerId);
-        });
-
-        // Place field players going off at the end of the active substitute chain
         const playersGoingOffIds = substitutionPairs.map(p => p.playerGoingOffId);
-        let nextAvailableIndex = remainingActiveSubstitutes.length;
 
-        playersGoingOffIds.forEach(playerId => {
-          if (nextAvailableIndex < activeSubstitutes.length) {
-            newFormation[activeSubstitutes[nextAvailableIndex]] = playerId;
-            nextAvailableIndex++;
+        // Keep active substitutes who did not enter the field, preserving their relative order
+        const remainingActivePlayerIds = activeSubstitutePositions
+          .map(position => formation[position])
+          .filter(playerId => playerId && !playersComingOnIds.includes(playerId));
+
+        // Build the new ordering for active substitute slots
+        const reorderedActiveAssignments = [...remainingActivePlayerIds, ...playersGoingOffIds];
+
+        activeSubstitutePositions.forEach((position, index) => {
+          const playerId = reorderedActiveAssignments[index];
+          if (playerId !== undefined) {
+            newFormation[position] = playerId;
           }
         });
       } else {
