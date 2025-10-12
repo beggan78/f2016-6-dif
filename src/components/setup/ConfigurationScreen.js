@@ -480,10 +480,10 @@ export function ConfigurationScreen({
         jerseyNumber: player.jersey_number
       }))
     : allPlayers;
-  const cappedPlayersForSelectAll = playersToShow.slice(0, maxPlayersAllowed);
-  const areAllEligibleSelected = cappedPlayersForSelectAll.length > 0 &&
-    cappedPlayersForSelectAll.every(player => selectedSquadIds.includes(player.id)) &&
-    selectedSquadIds.length === cappedPlayersForSelectAll.length;
+  const selectedIdsSet = React.useMemo(() => new Set(selectedSquadIds), [selectedSquadIds]);
+  const areAllEligibleSelected = playersToShow.length > 0 &&
+    playersToShow.every(player => selectedIdsSet.has(player.id)) &&
+    selectedSquadIds.length === playersToShow.length;
   
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
   // Only clear on NEW_SIGN_IN to preserve squad selection on page refresh
@@ -724,41 +724,40 @@ export function ConfigurationScreen({
     setSelectedSquadIds(prev => {
       const proposedIds = typeof updater === 'function' ? updater(prev) : updater;
       const uniqueIds = Array.isArray(proposedIds) ? Array.from(new Set(proposedIds)) : [];
-      const cappedIds = uniqueIds.slice(0, maxPlayersAllowed);
-      const isSameSelection = cappedIds.length === prev.length && cappedIds.every(id => prev.includes(id));
+      const isSameSelection = uniqueIds.length === prev.length && uniqueIds.every(id => prev.includes(id));
 
       if (isSameSelection) {
         return prev;
       }
 
       // Mark as active configuration when squad selection changes
-      if (cappedIds.length > 0) {
+      if (uniqueIds.length > 0) {
         setHasActiveConfiguration(true);
       }
 
       // Auto-create team configuration based on squad size
       // GUARD: Skip auto-configuration during resume data processing to prevent override
-      if (cappedIds.length >= minPlayersRequired && cappedIds.length <= maxPlayersAllowed && !isProcessingResumeDataRef.current) {
+      if (uniqueIds.length >= minPlayersRequired && uniqueIds.length <= maxPlayersAllowed && !isProcessingResumeDataRef.current) {
         const formatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
         const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
-          ? formatConfig.getDefaultSubstitutionType(cappedIds.length)
+          ? formatConfig.getDefaultSubstitutionType(uniqueIds.length)
           : SUBSTITUTION_TYPES.INDIVIDUAL;
         console.log('⚡ AUTO-CONFIG: Squad selection changed, triggering createTeamConfigFromSquadSize:', {
-          squadSize: cappedIds.length,
+          squadSize: uniqueIds.length,
           defaultSubstitutionType,
           currentTeamConfig: teamConfig
         });
-        createTeamConfigFromSquadSize(cappedIds.length, defaultSubstitutionType, currentFormat);
+        createTeamConfigFromSquadSize(uniqueIds.length, defaultSubstitutionType, currentFormat);
       } else if (isProcessingResumeDataRef.current) {
         console.log('🛡️ AUTO-CONFIG: Skipped during resume processing to prevent override');
       }
 
       // Clear captain if the captain is being deselected
-      if (captainId && !cappedIds.includes(captainId)) {
+      if (captainId && !uniqueIds.includes(captainId)) {
         setCaptain(null);
       }
 
-      return cappedIds;
+      return uniqueIds;
     });
   }, [setSelectedSquadIds, maxPlayersAllowed, setHasActiveConfiguration, minPlayersRequired, isProcessingResumeDataRef, createTeamConfigFromSquadSize, currentFormat, teamConfig, captainId, setCaptain]);
 
@@ -774,11 +773,9 @@ export function ConfigurationScreen({
       return;
     }
 
-    const rosterIds = playersToShow
-      .map(player => player.id)
-      .slice(0, maxPlayersAllowed);
+    const rosterIds = playersToShow.map(player => player.id);
     applySquadSelection(rosterIds);
-  }, [areAllEligibleSelected, playersToShow, maxPlayersAllowed, applySquadSelection]);
+  }, [areAllEligibleSelected, playersToShow, applySquadSelection]);
 
   const handleGoalieChange = (period, playerId) => {
     // Mark as active configuration when goalie assignments change
@@ -1242,7 +1239,7 @@ export function ConfigurationScreen({
                 onClick={handleSelectAllPlayers}
                 variant="secondary"
                 size="sm"
-                disabled={areAllEligibleSelected || cappedPlayersForSelectAll.length === 0}
+                disabled={areAllEligibleSelected || playersToShow.length === 0}
               >
                 {areAllEligibleSelected ? 'All Selected' : 'Select All'}
               </Button>
