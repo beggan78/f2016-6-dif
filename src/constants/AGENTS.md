@@ -1,56 +1,108 @@
-# Gemini Project Brief: src/constants
+# AI Agent Guide: src/constants
 
-This directory centralizes all static, unchanging values and configurations used throughout the application. It serves as a single source of truth for game rules, player roles, formation structures, and UI options, promoting consistency and ease of modification.
+This directory centralizes domain constants, configuration values, and enums used throughout the application. These constants define game rules, player roles, team configurations, formations, and match settings.
 
-## 1. Key Constant Modules
+## Critical Constants Files
 
-- **`gameModes.js`**: This is the most critical constant file, defining the complete structure and properties of all supported team configurations. It includes:
-  - Dynamic mode generation from team configuration objects
-  - `POSITION_ROLE_MAP`: A lookup table that maps specific position keys (e.g., `leftDefender`, `substitute_1`) to their corresponding `PLAYER_ROLES`.
-  - Helper functions (`getFormationPositions`, `getFormationPositionsWithGoalie`) to easily retrieve position lists based on team configuration.
+### playerConstants.js
+**PLAYER_ROLES** - Business logic and database roles:
+- `GOALIE`, `DEFENDER`, `ATTACKER`, `MIDFIELDER` - Tactical roles
+- `SUBSTITUTE` - Initial status only
+- `FIELD_PLAYER` - Generic field role when specific role unknown
+- `UNKNOWN` - Fallback when position mapping fails
 
-- **`playerConstants.js`**: Defines fundamental constants related to players and their status:
-  - `PLAYER_ROLES`: Enumerates the different roles a player can have (e.g., `GOALIE`, `DEFENDER`, `ATTACKER`, `SUBSTITUTE`).
-  - `PLAYER_STATUS`: Defines the possible in-game statuses for a player (e.g., `ON_FIELD`, `SUBSTITUTE`, `GOALIE`).
+**PLAYER_STATUS** - Current game state:
+- `ON_FIELD`, `SUBSTITUTE`, `GOALIE` - In-game status values
+- Never mix PLAYER_ROLES with PLAYER_STATUS
 
-- **`positionConstants.js`**: Contains raw string values for all unique position keys used across different formations. These are low-level identifiers that are then mapped to roles and display names in `formations.js` and UI components.
+### roleConstants.js
+Central role value management system preventing case sensitivity bugs:
+- `DB_ROLE_VALUES` - Lowercase values for Supabase operations
+- `DISPLAY_ROLE_VALUES` - Title case for UI display
+- Conversion functions: `roleToDatabase()`, `roleFromDatabase()`, `roleToDisplay()`, `normalizeRole()`
+- `GOAL_SCORING_PRIORITY` - Priority mapping for goal attribution
 
-- **`gameConfig.js`**: Stores configurable options for the game setup, such as:
-  - `PERIOD_OPTIONS`: Available number of periods.
-  - `DURATION_OPTIONS`: Available period durations in minutes.
-  - `ALERT_OPTIONS`: Configuration for substitution timer alerts.
-  - `TIME_CONSTANTS`: General time-related constants.
+### teamConfiguration.js
+Modern composite team configuration architecture with four components:
 
-- **`defaultData.js`**: Provides initial default data, such as the `initialRoster` of players.
+**Core Constants:**
+- `FORMATS`: Field formats (`5v5`, `7v7`)
+- `FORMATIONS`: Tactical formations (`2-2`, `1-2-1`, `2-2-2`, `2-3-1`, etc.)
+- `SUBSTITUTION_TYPES`: Substitution styles (`individual`, `pairs`)
+- `GAME_CONSTANTS`: Squad size limits (5-15 players), field player counts
 
-- **`teamConstants.js`**: Defines constants related to team names, like `HOME_TEAM_NAME` and `DEFAULT_AWAY_TEAM_NAME`.
+**Key Functions:**
+- `createTeamConfig()` - Build team configuration objects
+- `validateTeamConfig()` - Validate configuration with business rules
+- `getValidFormations()` - Get formations for format and squad size
 
-## 2. Core Architectural Concepts
+**Business Rules:**
+- Pairs substitution: Only 5v5, 2-2 formation, 7 players
+- Each format has specific field player counts and allowed formations
 
-### a. Single Source of Truth
-By centralizing these values, the application ensures that all parts of the codebase refer to the same definitions, preventing inconsistencies and errors that can arise from duplicated or hardcoded values.
+### gameModes.js
+Dynamic mode definition generator from team configurations:
+- `getModeDefinition()` - Returns complete mode definition (memoized)
+- `getFormationPositions()` - Field positions for configuration
+- `initializePlayerRoleAndStatus()` - Map formation position to role/status
+- Formation layouts define position-to-role mappings
 
-### b. Configuration over Code
-Many aspects of the game's behavior and UI are driven by these constants. This makes the application highly configurable; changes to game rules or UI options can often be made by simply modifying a constant value rather than altering complex logic.
+**Critical Pattern:**
+Formation positions (UI-specific) differ from database roles. Always use role mapping functions when persisting data.
 
-### c. Readability and Maintainability
-Using named constants instead of magic strings or numbers improves code readability. When a value needs to be updated, it only needs to be changed in one place, simplifying maintenance.
+### positionConstants.js
+Raw position string constants for all formations:
+- Position keys: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker` (2-2)
+- Position keys: `defender`, `left`, `right`, `attacker` (1-2-1)
+- Substitute positions: `substitute_1` through `substitute_5`
+- Helper functions: `isPairPosition()`, `isFieldPosition()`, `isSubstitutePosition()`
 
-### d. Type Safety (Implicit)
-While JavaScript doesn't enforce strict types at runtime, using constants for enumerated values (like `PLAYER_ROLES`) provides a form of implicit type safety, guiding developers to use only predefined valid options.
+### matchTypes.js
+Match type enumeration matching database enum:
+- `MATCH_TYPES`: `league`, `friendly`, `cup`, `tournament`, `internal`
+- `MATCH_TYPE_OPTIONS`: Options with labels and descriptions
+- `DEFAULT_MATCH_TYPE`: Defaults to `league`
 
-## 3. Key Data Flows
+### matchVenues.js
+Match venue types for analytics and persistence:
+- `VENUE_TYPES`: `home`, `away`, `neutral`
+- `DEFAULT_VENUE_TYPE`: Defaults to `home`
 
-- **Global Access**: Constants are imported and used directly by almost every module in the application, including React components, hooks, game logic, and utility functions.
+### gameConfig.js
+Game setup configuration options:
+- `PERIOD_OPTIONS`: [1, 2, 3] periods
+- `DURATION_OPTIONS`: [10, 15, 20, 25, 30] minutes
+- `ALERT_OPTIONS`: Substitution timer alerts (0-5 minutes)
 
-- **Configuration-Driven Logic**: The dynamic mode generation in `gameModes.js` is particularly influential, dictating how players are positioned, how substitutions occur, and how recommendations are generated across the entire game logic.
+## Key Patterns for AI Agents
 
-## 4. How to Make Changes
+### Role vs Status Distinction
+**CRITICAL:** Never mix PLAYER_ROLES with PLAYER_STATUS:
+- Use `FIELD_PLAYER` for generic field assignments
+- Use specific roles (`DEFENDER`, `ATTACKER`, `MIDFIELDER`) for tactical positions
+- Use `PLAYER_STATUS` only for current game state
 
-- **Modifying Game Rules**: To change the number of periods, duration options, or player roles, update the relevant constants in `gameConfig.js` or `playerConstants.js`.
+### Database Persistence
+When persisting player data:
+1. Map formation positions to roles using `initializePlayerRoleAndStatus()`
+2. Convert roles to database format using `roleToDatabase()`
+3. Never persist UI-specific position keys directly
 
-- **Adding New Team Configurations**: To introduce a new team configuration, extend the dynamic mode generation logic in `gameModes.js`, ensuring all necessary properties (positions, counts, order) are defined for the new configuration pattern.
+### Team Configuration
+All game logic works with team configuration objects created by `createTeamConfig()`:
+- Pass team config to `getModeDefinition()` for complete mode properties
+- Use validation functions before persisting configurations
+- Respect business rules (pairs mode restrictions, squad size limits)
 
-- **Updating Player Roster**: Modify the `initialRoster` array in `defaultData.js`.
+### Formation-Specific Logic
+Different formations have different position keys and role mappings:
+- 2-2: Two defenders, two attackers
+- 1-2-1: One defender, two midfielders, one attacker
+- Check formation in team config before assuming position structure
 
-- **Changing Position Keys**: If new positions are introduced, add their keys to `positionConstants.js` and then define their properties and roles in `formations.js`.
+## Architecture Principles
+
+- **Single Source of Truth**: All domain constants defined once, imported everywhere
+- **Configuration-Driven**: Game behavior driven by constants, not hardcoded values
+- **Type Safety**: Constants provide implicit type safety through enums
+- **Separation of Concerns**: Database values, display values, and constants kept separate

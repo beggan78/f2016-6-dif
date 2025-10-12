@@ -1,62 +1,101 @@
-# Repository Guidelines
+# Repository Guidelines for AI Agents
 
-## Project Structure & Module Organization
-Source lives in `src/`, organized by domain: UI under `components/`, gameplay utilities in `game/`, shared hooks in `hooks/`, data calls in `services/`, and helpers inside `utils/`. Store static media in `src/assets/`, while generated Supabase types belong to `src/types/supabase.ts`. Jest specs sit alongside features inside `src/__tests__/` for units and `src/__integration__/` for broader flows. Runtime assets stay in `public/`, CLI helpers in `scripts/`, and Supabase migrations plus seeds in `supabase/`.
+## Project Overview
+Sport Wizard is a mobile-first React 18 web application for coaching youth soccer teams (5v5 and 7v7 formats) with Supabase backend for authentication, database persistence, and real-time features.
 
-## Build, Test, and Development Commands
-Use `npm start` for the hot-reloading React dev server and `npm run build` for the production bundle. Run `npm test -- --watchAll=false` before pushing to execute the Jest suite once, or add `--coverage` when you need reports. Performance-focused checks live behind `npm run test:performance` (set `RUN_PERFORMANCE_TESTS=true`). The local database stack is managed with `npm run db:start|stop|reset|migrate|seed`; keep it running when you touch features that depend on Postgres.
+## Directory Structure
 
-## Coding Style & Naming Conventions
-Follow the Create React App ESLint config with two-space indentation. Components use PascalCase (`TeamManagement.js`), hooks start with `use*`, utilities stay camelCase, and constants collect under `src/constants/`. Favor functional React components, Tailwind utility classes, and TypeScript-friendly patterns even in plain JS. Run `npx eslint src` whenever you need a manual lint check.
+### Root Level
+- **`.claude/`** - Agent documentation and session guidelines
+- **`.github/`** - GitHub Actions CI/CD workflows
+- **`public/`** - Static assets served directly (HTML, icons, manifests)
+- **`scripts/`** - Build and test utilities (Jest reporters, test runners)
+- **`screenshots/`** - UI screenshots for visual changes
+- **`src/`** - Application source code (see below)
+- **`supabase/`** - Database migrations, seeds, and Edge Functions
+- **Key files**: `package.json`, `tailwind.config.js`, `postcss.config.js`
 
-## Component Design Principles
-**Follow these principles when building components**:
-- **Single Responsibility**: Each component has one clear, focused purpose
-- **Composition over Props**: Break complex components into smaller, composable pieces
-- **Props Validation**: Always define PropTypes or TypeScript interfaces for all components
-- **Minimal Props**: Pass only necessary data; avoid prop drilling by using Context API when appropriate
-- **Presentational vs Container**: Separate UI rendering (presentational) from logic/state (container)
+### Source Organization (`src/`)
+- **`components/`** - React UI components (setup, game, stats, team, auth, tactical, shared)
+- **`game/`** - Pure game logic functions (animation, logic, queue, recommendations, time)
+- **`hooks/`** - Custom React hooks for state and side effects
+- **`services/`** - Database operations and external API calls (see `src/services/README.md`)
+- **`utils/`** - Cross-cutting utilities (formatting, validation, persistence)
+- **`constants/`** - Application constants (configurations, enums, defaults)
+- **`contexts/`** - React Context providers (Auth, Team, Preferences, Navigation)
+- **`types/`** - TypeScript type definitions (`supabase.ts` is auto-generated)
+- **`__tests__/`** - Unit tests
+- **`__integration__/`** - Integration tests
+- **`App.js`** - Main application component and routing
 
-## Modal Usage Guidelines
-- Prefer the shared modal primitives in `src/components/shared/UI.js` instead of ad-hoc `window.confirm` dialogs. They include `ConfirmationModal` for binary choices and `ThreeOptionModal` when a tertiary action is required.
-- Always render modals from within the component that owns the triggering control. Manage open/close state locally with React state so the modal respects React lifecycles and testing best practices.
-- Tailor copy, button labels, and visual variant to the action severity (e.g., `variant="danger"` for destructive actions) and keep messaging concise and actionable.
-- Ensure destructive flows (delete, irreversible reset, sign-out during match, etc.) prompt the user via `ConfirmationModal` or `ThreeOptionModal` before executing the action.
-- When adding a new flow that needs confirmation, follow existing examples in `App.js` and `PeriodSetupScreen.js` for layout, accessibility, and button ordering.
+### Database (`supabase/`)
+- **`migrations/`** - Timestamped SQL migration files
+- **`functions/`** - Supabase Edge Functions
+- **`seed.sql`** - Development seed data
+- **`config.toml`** - Supabase configuration
 
-## Pure Function Requirements
-**Game logic functions MUST be pure**:
-- **Definition**: Same input always produces same output with no side effects
-- **No Mutations**: Return new state objects/arrays; never modify parameters directly
-- **No I/O Operations**: Pure functions cannot call APIs, read localStorage, use Date.now(), or perform any side effects
-- **Testability**: Pure functions are easily unit testable with predictable, deterministic outputs
-- **Location**: All game state transitions in `/src/game/` must follow pure function principles
+## Essential Commands
 
-## Agent Pre-Completion Checklist
-**Before returning control to the user, verify**:
-- [ ] No direct state mutations (check for `.push()`, `.splice()`, direct assignments to state)
-- [ ] All `useEffect`/`useMemo`/`useCallback` hooks have correct exhaustive dependencies
-- [ ] PropTypes or TypeScript types defined for all components touched
-- [ ] ESLint passes: `npx eslint src` (or narrowed path if appropriate)
-- [ ] Relevant tests pass for modified code
-- [ ] No console.logs in production code (use debug flags or remove)
-- [ ] Functions in `/src/game/` are pure (no side effects, no mutations)
+### Development
+```bash
+npm start              # Start dev server (assumes app not already running)
+npm run build          # Production build
+CI=true npm run build  # Build with ESLint error checking
+```
 
-## Testing Guidelines
-Jest plus React Testing Library power the suite. Target at least 90% coverage for new or updated modules and group fast specs as `*.test.js` in `__tests__/`. Larger flows move to `src/__integration__/`. Mock Supabase calls with the existing helpers, reset timers and storage between specs, and add UI screenshots to `screenshots/` for visual changes.
+### Testing
+```bash
+npm test                         # Run tests in watch mode
+npm test -- --watchAll=false     # Run tests once
+npm test -- --coverage           # Generate coverage report (target: 90%+)
+npm run test:performance         # Run performance tests
+```
 
-## Commit & Pull Request Guidelines
-Write concise, imperative commit messages (e.g., `Add invitation notifications`) and reference issues with `#123` when relevant. PRs should explain the problem, outline the solution, list manual or automated test results, and link Supabase migration IDs when schema changes ship. Include regenerated assets—such as `src/types/supabase.ts` or screenshots—in the same PR so reviewers stay current.
+### Database (Local Only)
+```bash
+npm run db:start    # Start local Supabase stack
+npm run db:stop     # Stop local Supabase
+npm run db:reset    # Apply all migrations and seed data
+npm run db:types    # Generate TypeScript types from schema
+npm run db:diff     # Create migration from schema changes
+```
 
-## Security & Configuration Tips
-Store Supabase keys in your local `.env` file and never commit secrets. After pulling migration changes, run `npm run db:migrate` followed by `npm run db:seed` to sync your environment. If you update database types, commit the refreshed `src/types/supabase.ts` snapshot with the associated API changes.
+**CRITICAL**: Never deploy migrations or Edge Functions to remote Supabase. All remote deployments handled via GitHub Actions.
 
-### Supabase Operations
-- When developing locally, migrations and Supabase edge function deployments are **only** run against the local Supabase instance. Never push schema or function changes to the remote project from your workstation; production updates happen exclusively via CI.
-- The user makes all changes, prompt the user to run the commands for you:
-  - `supabase db push --local` – apply pending SQL migrations to the local Supabase database.
+## Code Architecture Principles
 
-## Game Configuration Notes
-- Formats currently supported: `5v5` (pairs or individual) and `7v7` (individual only). Use the metadata in `src/constants/teamConfiguration.js` when adding new modes so validation and defaults update automatically.
-- 7v7 formations (`2-2-2`, `2-3-1`) add dedicated midfielder positions. UI/helpers should source position lists from `getModeDefinition` rather than hard-coding keys.
-- When persisting team configs or match data, always include the `format`, `type`, and `venueType` fields so Supabase records reflect the correct ruleset, fixture classification, and location context.
+### Pure Functions
+- All game logic in `/src/game/` must be pure functions
+- No side effects, no mutations, no I/O operations
+- Same input always produces same output
+
+### State Immutability
+- Never mutate state directly
+- Use spread syntax for objects: `{...obj, field: newValue}`
+- Use immutable array methods: `.map()`, `.filter()`, `.slice()`
+- Forbidden: `.push()`, `.splice()`, direct property assignment
+
+### React Patterns
+- Functional components with hooks
+- Exhaustive dependencies in `useEffect`/`useMemo`/`useCallback`
+- Store interval IDs in `useRef`, never `useState`
+- PropTypes or TypeScript for all components
+
+## Key Documentation Files
+
+Before making changes, review:
+- **`CLAUDE.md`** - Comprehensive project memory and guidelines
+- **`README.md`** - Feature overview and user documentation
+- **`DATABASE.md`** - Schema management and Supabase operations
+- **`src/game/README.md`** - Game logic architecture
+- **`src/services/README.md`** - Database patterns and match lifecycle
+- **`.claude/testing-guidelines.md`** - Testing patterns and best practices
+
+## Pre-Completion Checklist
+
+Before finishing any task:
+- [ ] No direct state mutations
+- [ ] All hook dependencies are exhaustive
+- [ ] ESLint passes: `CI=true npm run build`
+- [ ] Relevant tests pass
+- [ ] Pure functions remain pure

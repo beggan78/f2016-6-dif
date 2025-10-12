@@ -1,288 +1,223 @@
-# Game Handlers Module - Claude Code Memory
+# Game Handlers Module - AI Agent Memory
 
 ## Purpose
-Coordinates UI event handling with game logic and animation systems. Provides clean separation between user interactions and core game state calculations while ensuring all state changes are properly applied to React components.
+Coordinates UI event handling with game logic and animation systems. Handlers bridge user interactions with pure game logic functions, applying calculated state changes to React state setters.
 
-## Key Files
+## Handler Files Overview
 
 ### `goalieHandlers.js` - Goalie Management
-**Main Functions**:
-- `handleGoalieQuickTap()`: Opens goalie replacement modal with available players
-- `handleSelectNewGoalie()`: Executes goalie switch with animation and state updates
-- `handleCancelGoalieModal()`: Closes modal and cleans up state
-
-**Key Features**:
-- Animation integration via `animateStateChange()`
-- Complete state application: formation, players, and rotation queue
-- Modal management with stack support
-- Proper cleanup and error handling
+- `handleGoalieQuickTap()`: Opens goalie modal with available outfield players
+- `handleSelectNewGoalie()`: Executes goalie switch using `calculateGoalieSwitch()`
+- `handleCancelGoalieModal()`: Modal cleanup
+- Logs goalie assignment events for match history
 
 ### `substitutionHandlers.js` - Player Substitutions
-**Responsibilities**:
-- Regular player substitutions across all team configurations
-- Timer integration and pause/resume logic (preserves pause state during substitutions)
-- Animation coordination
-- Queue rotation management
-- Undo functionality with timer restoration
+- Regular substitutions via `calculateSubstitution()`
+- Position switches via `calculatePositionSwitch()`
+- Player inactive/active toggles via `calculatePlayerToggleInactive()`
+- Substitute reordering via `calculateSubstituteReorder()`
+- Undo via `calculateUndo()` with event removal and timer restoration
+- Multi-sub support with rotation queue management
+- Immediate substitution with substitute selection modal
+- Comprehensive event logging for all operations
 
-### `fieldPositionHandlers.js` - Position Management
-**Responsibilities**:
-- Player position switches and swaps
-- Field position validation
-- Animation for position changes
-- Role transition management
+### `fieldPositionHandlers.js` - Position Callbacks
+- Returns position-specific callbacks (not action handlers)
+- `handleFieldPlayerQuickTap()`: Opens modal for field players
+- `handleSubstituteQuickTap()`: Opens modal for substitutes (inactive support)
+- Differentiates pairs mode vs individual mode
+- Multi-sub aware: detects if player is in "next N to sub out"
+
+### `timerHandlers.js` - Timer Control
+- `handlePauseTimer()`: Pauses substitution timer and player time tracking
+- `handleResumeTimer()`: Resumes timer and updates stint start times
+- Delegates to `handlePauseResumeTime()` from stint manager
+
+### `scoreHandlers.js` - Score and Goal Management
+- `handleAddGoalScored()`: Opens goal scorer modal for own team goals
+- `handleAddGoalConceded()`: Immediately logs opponent goals (no modal)
+- `handleSelectGoalScorer()`: Confirms pending goal with scorer attribution
+- `handleCorrectGoalScorer()`: Updates existing goal event with new scorer
+- `handleDeleteGoal()`: Marks goal as undone and recomputes score history
+- Maintains chronological score integrity across deletions
 
 ## Handler Architecture Pattern
 
-All handlers follow this consistent pattern:
+**Factory Pattern**: All handlers use factory functions that accept dependencies and return handler functions.
 
-```javascript
-export const createHandlerType = (
-  gameStateFactory,      // Function that returns current game state
-  stateUpdaters,         // Object with React state setters
-  animationHooks,        // Animation state management
-  modalHandlers,         // Modal stack management
-  ...additionalParams    // Handler-specific dependencies
-) => {
-  // Extract required state updaters
-  const {
-    setFormation,
-    setAllPlayers,
-    setRotationQueue,
-    // ... other updaters as needed
-  } = stateUpdaters;
+**Common Parameters**:
+- `gameStateFactory`: Function returning current game state object
+- `stateUpdaters`: Object containing React state setter functions
+- `animationHooks`: Animation state setters (when animations needed)
+- `modalHandlers`: Modal open/close functions and navigation stack
+- Additional: teamConfig, allPlayers, formation, etc. (handler-specific)
 
-  // Extract animation hooks
-  const {
-    setAnimationState,
-    setHideNextOffIndicator,
-    setRecentlySubstitutedPlayers
-  } = animationHooks;
-
-  const handleOperation = (params) => {
-    animateStateChange(
-      gameStateFactory(),
-      (gameState) => calculateOperation(gameState, params),
-      (newGameState) => {
-        // CRITICAL: Apply ALL relevant state changes
-        setFormation(newGameState.formation);
-        setAllPlayers(newGameState.allPlayers);
-        setRotationQueue(newGameState.rotationQueue);
-        // Apply other state updates as needed
-      },
-      setAnimationState,
-      setHideNextOffIndicator,
-      setRecentlySubstitutedPlayers
-    );
-  };
-
-  return { handleOperation };
-};
-```
+**Typical Flow**:
+1. Handler receives user action
+2. Calls `animateStateChange()` (or direct state update for non-animated)
+3. Passes `gameStateFactory()` for current state
+4. Provides pure calculation function (e.g., `calculateSubstitution`)
+5. Applies all calculated changes via state setters in callback
+6. Logs events for match history (when applicable)
 
 ## State Updater Requirements
 
-### Critical State Updaters
-Every handler must include these core updaters:
-- `setFormation`: Updates player positions and formation
-- `setAllPlayers`: Updates player stats, roles, and status
-- `setRotationQueue`: Updates rotation order (CRITICAL for queue operations)
+**Critical Rule**: Always apply ALL state changes returned by logic functions. Missing state updates cause UI desync.
 
-### Conditional State Updaters
-Include based on handler functionality:
-- `setNextPlayerIdToSubOut`: For substitution tracking
-- `setNextNextPlayerIdToSubOut`: For 7-player individual configuration rotation
-- `setNextPhysicalPairToSubOut`: For pairs configuration substitution
-- `resetSubTimer`: For timer-related operations
-- `setScore`: For score-related handlers
+**Core Updaters** (most handlers need these):
+- `setFormation`: Player positions
+- `setAllPlayers`: Player stats, roles, time tracking
+- `setRotationQueue`: Rotation order (queue-based modes)
 
-### Animation State Updaters
-Required for all animated operations:
-- `setAnimationState`: Controls animation timing and state
-- `setHideNextOffIndicator`: Hides indicators during transitions
-- `setRecentlySubstitutedPlayers`: Manages glow effects
+**Next-to-sub-out Updaters** (substitution handlers):
+- `setNextPlayerIdToSubOut`: Individual mode single-sub
+- `setNextNextPlayerIdToSubOut`: Individual mode 7-player
+- `setNextPhysicalPairToSubOut`: Pairs mode
+
+**Timer Updaters** (substitution/timer handlers):
+- `resetSubTimer`: Reset after substitution
+- `handleUndoSubstitutionTimer`: Restore timer on undo
+
+**Animation Updaters** (animated operations):
+- `setAnimationState`: Animation timing
+- `setHideNextOffIndicator`: Hide indicators during transitions
+- `setRecentlySubstitutedPlayers`: Glow effects
+
+**Score Updaters** (score handlers):
+- `setScore`: Direct score update
+- `addGoalScored`: Increment own score
+- `addGoalConceded`: Increment opponent score
 
 ## Integration Points
 
-### Game State Factory
-```javascript
-const gameStateFactory = () => ({
-  formation,
-  allPlayers,
-  teamConfig,
-  rotationQueue,
-  // ... all current state
-});
-```
-
 ### Animation System
-All state changes use `animateStateChange()`:
-1. Captures current positions
-2. Calculates new state via pure functions
-3. Determines animation requirements
-4. Applies animations and state updates
+Handlers use `animateStateChange()` from `animation/animationSupport.js`:
+- Captures player positions before state change
+- Calls pure calculation function
+- Compares before/after positions
+- Applies smooth transitions with highlight effects
+- Executes state setter callback
 
-### Modal Management
-```javascript
-const modalHandlers = {
-  openModal: (data) => pushNavigationState(modalType, data),
-  closeModal: () => removeFromNavigationStack(),
-  removeFromNavigationStack
-};
-```
+### Modal Stack
+Handlers open/close modals and manage navigation stack:
+- `openFieldPlayerModal()`: Field player actions
+- `openSubstituteModal()`: Substitute actions
+- `openGoalieModal()`: Goalie replacement
+- `openGoalScorerModal()`: Goal scorer attribution
+- `openSubstituteSelectionModal()`: Immediate substitution
+- `closeModal()` / `removeFromNavigationStack()`: Cleanup
 
-## Error Handling Strategy
+### Event Logging
+Handlers log events for match history via `gameEventLogger.js`:
+- Substitutions: Before/after formation, players in/out, timestamps
+- Position changes: Player positions, role swaps
+- Goalie assignments: Current and previous goalie
+- Goals: Score state, scorer attribution, period
+- Undo operations: Original event removal, undo logging
 
-### Graceful Degradation
-- Handlers return unchanged state on errors
-- Animation system handles failed state transitions
-- Modal stack provides consistent cleanup
+## Key Handler Patterns
 
-### Debug Support
-- Comprehensive logging for state transitions
-- Queue position tracking for debugging
-- Animation state inspection
+### Animated State Changes
+Most user actions use animations. Pattern:
+1. Get current state via `gameStateFactory()`
+2. Call `animateStateChange()` with pure logic function
+3. Apply all state changes in callback
+4. Close modals if opened
 
-## Common Patterns
+### Direct State Updates
+Simple updates without animation (e.g., modal opening):
+1. Call state setters directly
+2. No animation coordination needed
 
-### Simple State Update
-```javascript
-const handleSimpleUpdate = (params) => {
-  const newState = calculateSimpleUpdate(gameStateFactory(), params);
-  setFormation(newState.formation);
-  setAllPlayers(newState.allPlayers);
-  // No animation needed
-};
-```
+### Undo Operations
+Undo pattern (substitutions):
+1. Store before-state and event ID on action
+2. On undo: call `calculateUndo()` with stored data
+3. Remove original event from timeline
+4. Log undo event
+5. Restore timer state
 
-### Animated State Change
-```javascript
-const handleAnimatedChange = (params) => {
-  animateStateChange(
-    gameStateFactory(),
-    (state) => calculateAnimatedChange(state, params),
-    (newState) => {
-      setFormation(newState.formation);
-      setAllPlayers(newState.allPlayers);
-      setRotationQueue(newState.rotationQueue);
-    },
-    setAnimationState,
-    setHideNextOffIndicator,
-    setRecentlySubstitutedPlayers
-  );
-};
-```
-
-### Modal-Triggered Operations
-```javascript
-const handleModalAction = (selectionData) => {
-  // Perform operation
-  animateStateChange(/* ... */);
-  
-  // Close modal
-  closeModal();
-  
-  // Clean up modal stack if needed
-  if (removeFromNavigationStack) {
-    removeFromNavigationStack();
-  }
-};
-```
-
-## Testing Patterns
-
-### Handler Unit Tests
-```javascript
-const mockStateUpdaters = {
-  setFormation: jest.fn(),
-  setAllPlayers: jest.fn(),
-  setRotationQueue: jest.fn()
-};
-
-const handlers = createHandlers(
-  () => mockGameState,
-  mockStateUpdaters,
-  mockAnimationHooks,
-  mockModalHandlers
-);
-
-handlers.handleOperation(params);
-
-expect(mockStateUpdaters.setRotationQueue).toHaveBeenCalledWith(expectedQueue);
-```
-
-### Integration Testing
-- Verify complete flow from user action to state application
-- Test animation coordination and timing
-- Validate modal stack management
+### Pending Actions
+Goal scorer modal uses pending pattern:
+1. User clicks goal button
+2. Store pending goal data (score not incremented)
+3. Open modal for scorer selection
+4. On confirm: increment score and log event
+5. On cancel: discard pending data
 
 ## Common Issues and Solutions
 
 ### Missing State Updates
 **Problem**: Logic calculates correct state but UI doesn't update
-**Solution**: Ensure all relevant state updaters are called in handler
-**Example**: Missing `setRotationQueue()` call caused queue changes to be ignored
+**Solution**: Ensure ALL state updaters called for fields returned by logic function
+**Prevention**: Check what logic function returns and apply every field
 
-### Animation Desync
-**Problem**: Animation timing doesn't match state updates
-**Solution**: Use `animateStateChange()` for all animated operations
-**Prevention**: Never manually manage animation timing
+### Modal Not Closing
+**Problem**: Modal stays open after action
+**Solution**: Call both `closeModal()` AND `removeFromNavigationStack()` if available
+**Prevention**: Follow existing modal closure patterns
 
-### Modal Stack Corruption
-**Problem**: Modals don't close properly or stack incorrectly
-**Solution**: Always call appropriate modal cleanup functions
-**Prevention**: Use consistent modal handling patterns
+### Event Logging Failures
+**Problem**: Events not appearing in match history
+**Solution**: Wrap `logEvent()` in try-catch to prevent operation failure
+**Prevention**: Event logging should never block user actions
 
-## Handler Dependencies
+### Rotation Queue Desync
+**Problem**: Next-to-sub indicators wrong after substitution
+**Solution**: Always call `setRotationQueue()` when logic returns updated queue
+**Prevention**: Queue updates are critical for multi-sub modes
 
-### Required Parameters
-- `gameStateFactory`: Current state accessor
-- `stateUpdaters`: React state setter functions
-- `animationHooks`: Animation state management
-- `modalHandlers`: Modal stack operations
+## Handler Composition
 
-### Optional Parameters
-- Handler-specific dependencies (player lists, team config, etc.)
-- External service integrations
-- Validation functions
+### Per-Handler Dependencies
+Each handler factory accepts different parameters based on needs:
+- **goalieHandlers**: gameStateFactory, stateUpdaters, animationHooks, modalHandlers, allPlayers, selectedSquadPlayers
+- **substitutionHandlers**: gameStateFactory, stateUpdaters, animationHooks, modalHandlers, teamConfig, getSubstitutionCount
+- **fieldPositionHandlers**: teamConfig, formation, allPlayers, nextPlayerIdToSubOut, modalHandlers, selectedFormation, substitutionCount, rotationQueue
+- **timerHandlers**: selectedSquadPlayers, stateUpdaters, timerControls, gameStateFactory
+- **scoreHandlers**: stateUpdaters, modalHandlers
 
-## Performance Considerations
+### Creating Handler Instances
+Handlers are instantiated in parent components (e.g., `TacticalBoard`):
+1. Prepare all dependencies
+2. Call factory function with deps
+3. Destructure returned handler functions
+4. Pass to child components or use in callbacks
 
-### State Update Batching
-- React automatically batches state updates in event handlers
-- Animation system coordinates timing to prevent UI thrashing
-- State updaters should be called in logical order
+## When Modifying Handlers
 
-### Pure Function Benefits
-- Logic functions can be tested in isolation
-- State transitions are predictable and debuggable
-- Animation calculations work with any state combination
+### Adding New Handlers
+- Identify which handler module (or create new if needed)
+- Follow factory pattern with dependency injection
+- Use `animateStateChange()` for visual changes
+- Apply all state updates returned by logic
+- Add event logging for match history
+- Test with all affected team configurations
 
-## When to Create New Handlers
+### Extending Existing Handlers
+- Add new parameters at end to maintain compatibility
+- Check if logic function needs updates first
+- Ensure new state fields are applied
+- Update tests to cover new behavior
 
-### New User Interactions
-- Add new handler functions to existing handler modules
-- Follow established patterns for consistency
-- Ensure all state changes are properly applied
+## Critical Reminders
 
-### New Game Features
-- Create new handler modules for major feature areas
-- Maintain separation of concerns
-- Integrate with existing animation and modal systems
+### State Application
+- ALWAYS call state setters for ALL fields returned by logic functions
+- Missing updates cause UI desync that's hard to debug
+- Check `rotationQueue`, `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`, etc.
 
-### Handler Modifications
-- Always preserve existing API contracts
-- Add new parameters to end of parameter lists
-- Maintain backward compatibility with existing usage
+### Animation Coordination
+- Use `animateStateChange()` for all position changes
+- Never manually manage animation state
+- Animation callback is where state updates happen
 
-## Future Enhancements
+### Modal Stack Management
+- Always clean up modal stack on close
+- Call both specific close function AND `removeFromNavigationStack()`
+- Prevents navigation stack corruption
 
-### Middleware Support
-- Consider adding middleware for logging, analytics, etc.
-- Maintain handler simplicity and performance
-- Preserve pure function architecture
-
-### Advanced Animation
-- Extend animation system for complex transitions
-- Add support for concurrent animations
-- Maintain consistent timing and state coordination
+### Event Logging
+- Log events for user actions (substitutions, goals, position changes)
+- Use try-catch to prevent logging failures from blocking actions
+- Store event IDs for undo operations

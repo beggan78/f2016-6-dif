@@ -1,131 +1,146 @@
-# Game Module - Claude Code Memory
+# Game Module - AI Agent Memory
 
 ## Purpose
-The game module contains all game-specific logic, state management, and systems for the GameScreen functionality. It provides pure functions for state transitions, animation orchestration, time tracking, and player rotation management.
+Contains all game-specific logic, state management, and systems for GameScreen. Provides pure functions for state transitions, animation orchestration, time tracking, and player rotation management.
 
 ## Key Architecture Principles
 
 ### Pure Functions
-All state transition logic is implemented as pure functions that:
-- Take current state as input
-- Return new state as output
-- Have no side effects
-- Are predictable and testable
-- Enable features like undo, preview, and animation calculation
+All state transition logic is pure:
+- Input → output with no side effects
+- Predictable and testable
+- Enable undo, preview, and animation calculation
 
-### Separation of Concerns
-- **Logic**: Pure business rules and state calculations (`/logic/`)
-- **Animation**: Visual transition management and timing (`/animation/`)
-- **Queue**: Player rotation and ordering algorithms (`/queue/`)
-- **Time**: Stint tracking and time allocation (`/time/`)
-- **Handlers**: UI event coordination (`/handlers/`)
+### Module Organization
+- **`/logic/`**: Pure game state calculations (substitutions, position changes, role transitions)
+- **`/animation/`**: Visual transition orchestration and timing
+- **`/queue/`**: Player rotation order management with inactive player support
+- **`/time/`**: Stint-based time tracking and allocation
+- **`/handlers/`**: UI event coordination with dependency injection
+- **`/ui/`**: Position display utilities, styling, and animation props
 
 ### Animation-Logic Separation
-The animation system works by:
-1. Capturing "before" state positions
-2. Calculating "after" state using pure logic functions
-3. Computing visual differences and animation requirements
-4. Orchestrating timing and applying state changes
+1. Capture "before" positions → 2. Calculate new state → 3. Calculate animations → 4. Apply state changes
 
 ## Team Configuration System
 
-### Configuration Architecture
-Modern composite system with four components:
-- **Format**: Field format (`5v5`, future: `7v7`)
-- **Squad Size**: Total players (5-15 supported)  
-- **Formation**: Tactical formation (`2-2`, `1-2-1`, future formations)
-- **Substitution Type**: Substitution style (`individual`, `pairs`)
+### Configuration Components
+- **Format**: `5v5` (future: `7v7`)
+- **Squad Size**: 5-15 players
+- **Formation**: `2-2` or `1-2-1` (fully implemented)
+- **Substitution Type**: `individual` or `pairs`
 
-### Formation Support
+### Formations
+**2-2**: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`, `goalie` (Defender/Attacker roles)
+**1-2-1**: `defender`, `left`, `right`, `attacker`, `goalie` (Defender/Midfielder/Attacker roles)
 
-#### 2-2 Formation (Fully Implemented)
-- **Positions**: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`, `goalie`
-- **Roles**: Defender (left/right), Attacker (left/right), Goalie
-- **Supports**: All squad sizes and both substitution types
-
-#### 1-2-1 Formation (Fully Implemented) 
-- **Positions**: `defender`, `left`, `right`, `attacker`, `goalie`
-- **Roles**: Defender, Midfielder (left/right), Attacker, Goalie
-- **Time Tracking**: Includes `timeAsMidfielderSeconds` support
-- **Supports**: All squad sizes and both substitution types
-
-### Substitution Type Support
-
-#### Individual Mode (`substitutionType: 'individual'`)
-- Used with 6+ player squads
-- Individual field positions based on active formation
-- Substitute positions: `substitute` or `substitute_1`/`substitute_2`
-- Simple rotation with inactive player support for 7+ squads
-
-#### Pairs Mode (`substitutionType: 'pairs'`)
-- Typically used with 7-player squads
-- Field pairs: `leftPair`, `rightPair` (formation-aware positioning)
-- Substitute pair: `subPair`
-- Substitutions swap entire pairs while maintaining formation roles
+### Substitution Types
+**Individual**: 6+ players, individual positions, `substitute` or `substitute_1`/`substitute_2`, inactive player support (7+)
+**Pairs**: 7 players typical, `leftPair`/`rightPair`/`subPair`, swaps entire pairs
 
 ## Game State Structure
-The central `gameState` object contains:
-- `formation`: Current player positions and formation structure
-- `allPlayers`: Complete player data with stats and status
-- `rotationQueue`: Order of players for substitutions
-- `teamConfig`: Team configuration object with format, squadSize, formation, and substitutionType
+Core fields in `gameState`:
+- `formation`: Player position assignments
+- `allPlayers`: Player data with stats (time tracking, roles, status)
+- `rotationQueue`: Substitution order (array of player IDs)
+- `teamConfig`: Configuration object
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
-- `playersToHighlight`: Players to show glow effects
-- Various timing and metadata fields
+- `playersToHighlight`: For glow effects
 
 ## Module Structure
 ```
 /game/
-├── logic/         # Core game state calculations and business logic
-├── time/          # Stint tracking and time management
-├── animation/     # Visual transition orchestration
-├── queue/         # Player rotation and ordering
-└── handlers/      # UI event coordination
+├── logic/          # gameStateLogic.js, substitutionManager.js, positionUtils.js
+├── time/           # timeCalculator.js (pure), stintManager.js (game state integration)
+├── animation/      # animationSupport.js (main orchestrator)
+├── queue/          # rotationQueue.js (RotationQueue class with inactive support)
+├── handlers/       # Event handler factories (field, goalie, substitution, score, timer)
+└── ui/             # positionUtils.js, playerStyling.js, playerAnimation.js
 ```
 
-## Integration Points
+## Critical Usage Pattern
 
-### Components
-- `GameScreen.js`: Main consumer, orchestrates UI and game state
-- Setup screens: Initialize game state and player data
-- Stats screens: Read game state for reporting
-
-### Cross-Module Dependencies
-- Uses constants from `/constants/` for domain rules
-- Uses utilities from `/utils/` for player operations
-- Integrates with React hooks for state management
-
-## Usage Pattern
-Most game operations follow this pattern:
+### Standard Animated Operation
 ```javascript
 import { animateStateChange } from './animation/animationSupport';
 import { calculateOperation } from './logic/gameStateLogic';
 
-const handleOperation = () => {
-  animateStateChange(
-    createGameState(),
-    (state) => calculateOperation(state, ...params),
-    (newState) => {
-      // Apply state updates
-      setFormation(newState.formation);
-      setAllPlayers(newState.allPlayers);
-      setRotationQueue(newState.rotationQueue);
-      // Apply other state updates as needed
-    },
-    setAnimationState,
-    setHideNextOffIndicator,
-    setRecentlySubstitutedPlayers
-  );
+animateStateChange(
+  createGameState(),
+  (state) => calculateOperation(state, ...params),
+  (newState) => {
+    setFormation(newState.formation);
+    setAllPlayers(newState.allPlayers);
+    setRotationQueue(newState.rotationQueue); // CRITICAL: Don't forget queue updates
+  },
+  setAnimationState,
+  setHideNextOffIndicator,
+  setRecentlySubstitutedPlayers
+);
+```
+
+## Time Tracking (Stint-Based)
+- **Stint**: Time period in a single role/status
+- **Current stint**: Tracked via `lastStintStartTimeEpoch`
+- **Time fields**: `timeOnFieldSeconds`, `timeAsDefenderSeconds`, `timeAsAttackerSeconds`, `timeAsMidfielderSeconds`, `timeAsGoalieSeconds`, `timeAsSubSeconds`
+- **Pause handling**: Skip calculations when `isSubTimerPaused = true`
+- **Role changes**: Use `handleRoleChange()` from `logic/substitutionManager.js`
+
+## Queue Management
+- **RotationQueue class**: Manages active/inactive player separation
+- **Initialize**: Call `queueManager.initialize()` after creation to separate active/inactive
+- **Key operations**: `rotatePlayer()`, `deactivatePlayer()`, `reactivatePlayer()`, `toArray()`
+- **Queue updates**: Always apply via `setRotationQueue(queueManager.toArray())`
+
+## Handler Pattern
+Handlers use dependency injection:
+```javascript
+export const createHandlers = (gameStateFactory, stateUpdaters, animationHooks, modalHandlers) => {
+  const handleOperation = () => {
+    animateStateChange(
+      gameStateFactory(),
+      calculateOperation,
+      (newState) => { /* Apply state updates */ },
+      setAnimationState, setHideNextOffIndicator, setRecentlySubstitutedPlayers
+    );
+  };
+  return { handleOperation };
 };
 ```
 
-## Debugging Tips
-- **State inconsistency**: Verify pure functions return consistent results
-- **Animation timing**: Ensure duration matches CSS animation timing
-- **Queue desync**: Ensure initialize() called after loading state
-- **Time issues**: Check `lastStintStartTimeEpoch` and time field initialization
+## Common Issues
 
-## Key Files
-- `index.js`: Main barrel exports for the entire game module
-- `README.md`: Comprehensive technical architecture documentation
-- Each subdirectory has its own CLAUDE.md for module-specific details
+### Missing State Updates
+**Problem**: Queue changes not applied
+**Solution**: Always call `setRotationQueue(newState.rotationQueue)` in handlers
+
+### Time Calculation Errors
+**Problem**: Incorrect time accumulation
+**Solution**: Verify `isSubTimerPaused` passed correctly, check stint initialization
+
+### Queue Desync
+**Problem**: Active/inactive players mixed
+**Solution**: Call `queueManager.initialize()` after creating queue
+
+### Animation Glitches
+**Problem**: Wrong movement or z-index
+**Solution**: Ensure position indices match formation type, check `selectedFormation` parameter
+
+## Key Functions Reference
+
+### Logic (`/logic/`)
+- `calculateSubstitution()`, `calculatePositionSwitch()`, `calculateGoalieSwitch()`, `calculateUndo()`, `calculatePlayerToggleInactive()`, `calculatePairPositionSwap()`
+
+### Animation (`/animation/`)
+- `animateStateChange()` (main entry), `captureAllPlayerPositions()`, `calculateAllPlayerAnimations()`, `getPlayerAnimationProps()`
+
+### Time (`/time/`)
+- `updatePlayerTimeStats()`, `startNewStint()`, `completeCurrentStint()`, `handlePauseResumeTime()`
+
+### Queue (`/queue/`)
+- `createRotationQueue()`, `RotationQueue.initialize()`, `rotatePlayer()`, `deactivatePlayer()`, `reactivatePlayer()`
+
+## Additional Documentation
+- `README.md`: Comprehensive technical architecture
+- Each subdirectory has `CLAUDE.md` or `AGENTS.md` for module details
+- Handler tests demonstrate integration patterns

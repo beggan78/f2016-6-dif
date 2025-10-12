@@ -1,51 +1,142 @@
-# Gemini Project Brief: src/utils
+# AI Agent Guide: src/utils
 
-This directory contains various utility functions that provide common functionalities used across different parts of the application. These utilities are designed to be pure, reusable, and independent of React components or core game logic, promoting modularity and testability.
+This directory contains cross-cutting utility functions for data transformation, validation, persistence, and common operations. All utilities are designed to be pure, reusable, and independent of React components.
 
-## 1. Key Utility Modules
+## Core Utility Modules
 
-- **`formationGenerator.js`**: This module is crucial for the application's intelligent recommendation system. It contains the logic for generating optimal player formations for subsequent periods, ensuring fair playing time and role distribution.
-  - **`generateRecommendedFormation`**: Used for Pairs mode, it prioritizes maintaining existing partnerships while balancing roles and playing time.
-  - **`generateBalancedFormationForPeriod3`**: A specialized function for Period 3 in Pairs mode, enforcing stricter role balance based on accumulated attacker/defender time.
-  - **`generateIndividualFormationRecommendation`**: Used for Individual modes (6-player and 7-player), it builds a rotation queue and assigns field positions based on players' accumulated playing time, ensuring those with less time play more.
+### Persistence & Data Management
+- **`persistenceManager.js`**: ALWAYS use PersistenceManager for localStorage operations
+  - `PersistenceManager`: Generic class with error handling, validation, quota management, support detection
+  - `GamePersistenceManager`: Game-specific extension with default state and field filtering
+  - `createPersistenceManager(key, defaultState)`: Factory function for custom managers
+  - Handles corrupted data, quota exceeded, SSR/test environments automatically
 
-- **`persistenceManager.js`**: Manages all interactions with `localStorage` for saving, loading, and backing up the game state. It provides a robust and centralized way to ensure data persistence across sessions.
-  - **`PersistenceManager` class**: A generic class for `localStorage` operations, including support checks, error handling, and state sanitization.
-  - **`GamePersistenceManager` class**: Extends `PersistenceManager` with game-specific default state and methods for saving only relevant game state fields and performing auto-backups.
+- **`DataSyncManager.js`**: Synchronizes data between localStorage and Supabase
+  - Routes storage based on authentication state (anonymous = local, authenticated = cloud)
+  - Handles match saving, player stats, match events, and migration from local to cloud
+  - Maps application roles to database enums using `roleToDatabase()` and `normalizeRole()`
 
-- **`playerUtils.js`**: Provides helper functions for common player-related operations, such as initializing player objects, finding players by ID, getting player names, and filtering players by status or squad.
+### Player Operations
+- **`playerUtils.js`**: Player data queries and transformations
+  - `findPlayerById()`, `findPlayerByIdWithValidation()`: Safe player lookups
+  - `createPlayerLookup()`, `createPlayerLookupFunction()`: Lookup function factories
+  - `getPlayerName()`: Includes captain designation "(C)"
+  - `hasPlayerParticipated()`: Determines if player played (for database persistence)
+  - `resetPlayerMatchStartState()`: Clears match-start markers without affecting cumulative stats
+  - `setCaptain()`, `isPlayerCaptain()`, `getCaptainPlayer()`: Captain management
+  - `hasActiveSubstitutes()`: Checks for active (non-inactive) substitutes
 
-- **`formatUtils.js`**: Contains functions for formatting various data types for display, such as time (MM:SS), time differences (with +/- signs), and player statistics for export.
+### Formation & Rotation
+- **`formationGenerator.js`**: Generates optimal formations based on playing time balance
+  - `generateRecommendedFormation()`: Pairs mode (periods 2+) with role swapping
+  - `generateBalancedFormationForPeriod3()`: Period 3 with strict role balance enforcement (timeRatio thresholds)
+  - `generateIndividualFormationRecommendation()`: Individual modes (6/7/8+ players) with time-based rotation
+  - Supports 2-2 and 1-2-1 formations with role-specific time tracking
+  - Returns `{formation, rotationQueue, nextToRotateOff}` structure
 
-- **`inputSanitization.js`**: Offers utilities for sanitizing and validating user input, primarily for player names, to prevent invalid characters or excessive length.
+- **`formationConfigUtils.js`**: Formation validation and compatibility
+  - `getFormationDefinition()`: Gets mode definition for team config
+  - `isFormationCompatible()`: Validates formation compatibility
+  - `isValidTeamConfig()`: Checks team config structure
 
-- **`formationUtils.js`**: Provides general utilities related to formation structures, such as getting all positions for a given team mode.
+- **`queueUtils.js`**: Rotation queue manipulation
+  - `getNextActivePlayer()`, `getNextNextActivePlayer()`: Safe queue access
+  - `rotatePlayerToEnd()`, `removePlayerFromQueue()`, `addPlayerToQueue()`: Queue operations
+  - `isPlayerNextInQueue()`, `getPlayerPositionInQueue()`: Queue queries
+  - `validateRotationQueue()`: Structure and content validation
 
-- **`rolePointUtils.js`**: Contains the logic for calculating player role points based on their time spent as goalie, defender, and attacker, used for statistical analysis and fair play tracking.
+### Data Formatting
+- **`formatUtils.js`**: Display formatting
+  - `formatTime()`: MM:SS format with NaN protection
+  - `formatTimeDifference()`: +/- time difference format
+  - `getPlayerLabel()`: Player name with time stats for periods 2+
+  - `formatPlayerName()`: Adds captain "(C)" designation
+  - `generateStatsText()`: Tab-delimited statistics export format
 
-## 2. Core Architectural Concepts
+- **`rolePointUtils.js`**: Role point calculations
+  - `calculateRolePoints()`: Proportional 3-point system across goalie/defender/midfielder/attacker
+  - Rounds to nearest 0.5, handles goalie-only players, distributes rounding differences
 
-### a. Pure Functions
-Most utility functions in this directory are pure: they take inputs and produce outputs without causing side effects or relying on external mutable state. This makes them highly testable and predictable.
+### Input Validation & Sanitization
+- **`inputSanitization.js`**: XSS and SQL injection protection
+  - `sanitizeNameInput()`, `isValidNameInput()`: Names (50 char max, allowed pattern)
+  - `sanitizeEmailInput()`, `isValidEmailInput()`: Email addresses (320 char max, RFC 5321)
+  - `sanitizeMessageInput()`, `isValidMessageInput()`: Messages (500 char max)
+  - `sanitizeSearchInput()`: Search terms with SQL wildcard removal
+  - Removes script tags, HTML tags, javascript: URLs, event handlers, SQL patterns
 
-### b. Reusability
-These utilities are designed to be used across different components and modules (e.g., `useGameState`, UI components, other game logic modules), reducing code duplication and promoting a consistent approach to common tasks.
+- **`authValidation.js`**: Authentication form validation
+  - `validateEmail()`, `validatePassword()`, `validatePasswordConfirmation()`: Field validators
+  - `validateLoginForm()`, `validateSignupForm()`, `validateResetPasswordForm()`: Form validators
+  - `validateOtpCode()`: 6-digit numeric verification codes
+  - PASSWORD_REQUIREMENTS: min 8 chars, requires number (Supabase requirement)
 
-### c. Decoupling
-Utilities are generally decoupled from the React component lifecycle and specific game state management. They operate on raw data, making them flexible and easy to integrate into various contexts.
+### Time & Timing
+- **`timeUtils.js`**: Time operations and constants
+  - `getCurrentTimestamp()`: Centralized Date.now() replacement
+  - `isTimerPaused()`, `getCurrentTimestampIfActive()`: Timer state checks
+  - `getTimeTrackingParams()`: Standard params for substitution operations
+  - `formatTimeMMSS()`: Alternative MM:SS formatter
+  - `calculateDurationInSeconds()`: Duration between timestamps
+  - TIMEOUT_CONSTANTS: Command timeouts, animation delays, highlight durations
 
-## 3. Key Data Flows
+### Formation Structure & Validation
+- **`formationUtils.js`**: Cross-screen formation structure operations
+  - `getAllPositions()`: Gets all positions including goalie for a team config
+  - `getModeDefinition()`: Gets formation definition (wraps gameModes.getModeDefinition)
+  - `getExpectedFormationStructure()`: Returns clean formation template with null values
+  - `validateFormationStructure()`: Validates formation matches expected structure
+  - `normalizeFormationStructure()`: Cleans messy formation data to expected structure
+  - Handles pairs mode vs individual mode structures
 
-- **Formation Generation**: `useGameState` calls functions from `formationGenerator.js` during period setup to get recommended formations. These functions take player stats and previous formation data as input and return a new formation structure and rotation queue.
+### Error Handling & Recovery
+- **`errorHandler.js`**: Structured error framework
+  - `handleError()`: Centralized error logging with categories and severity
+  - `GameError` class: Structured errors with category, severity, context, timestamp
+  - ERROR_CATEGORIES: game_logic, timer, storage, formation, player, validation, network, ui
+  - ERROR_SEVERITY: low, medium, high, critical
+  - ErrorRecovery.withFallback(): Try operation with fallback value
+  - ErrorRecovery.withRetry(): Retry with exponential backoff
+  - ErrorRecovery.safeLocalStorage: DEPRECATED - use PersistenceManager instead
+  - `useErrorHandler()`: React hook for component error handling
+  - `logErrorBoundary()`: Error boundary logging
 
-- **State Persistence**: `useGameState` interacts with `persistenceManager.js` to save the entire game state to `localStorage` whenever it changes and to load it on application startup. It also uses `persistenceManager` for creating and restoring backups.
+### Match Report & Analytics
+- **`matchReportUtils.js`**: Match report data processing
+  - `generateMatchSummary()`: Creates comprehensive summary from events and game log
+  - `processPlayerStatistics()`: Processes player stats with time breakdowns and percentages
+  - `formatEventTimeline()`: Formats events for display with filtering options
+  - `calculateEffectivePlayingTime()`: Total time minus paused time
+  - `determinePlayerStartingRoles()`: Determines starting roles from game log and stats
+  - Includes event categorization, severity levels, human-readable descriptions
 
-- **Player Data Handling**: `playerUtils.js` functions are used extensively by `useGameState`, UI components, and other game logic modules to manipulate and query player data.
+## Architecture Principles
 
-## 4. How to Make Changes
+### Pure Functions
+Most utilities are pure functions with no side effects, making them predictable and testable.
 
-- **Modifying Recommendation Logic**: Changes to how formations are recommended should be made in `formationGenerator.js`. Ensure that the new logic correctly processes player stats and produces valid formation structures.
+### Error Handling
+Utilities include defensive coding with null checks, default values, and fallbacks to prevent runtime errors.
 
-- **Changing Persistence Behavior**: Adjustments to how data is saved, loaded, or backed up should be made in `persistenceManager.js`. Be cautious with changes here, as they can affect data integrity.
+### Immutability
+All data transformation functions return new objects/arrays, never mutating inputs.
 
-- **Adding New Utility**: If a new, reusable piece of logic is needed, create a new file in this directory. Ensure it is a pure function or a well-encapsulated class, and that it has no side effects unless explicitly intended and documented.
+### Validation First
+Input validation utilities check data before processing to prevent injection attacks and invalid state.
+
+## Critical Patterns
+
+### PersistenceManager Usage
+Always use PersistenceManager instead of direct localStorage:
+- Complex state: `createPersistenceManager(key, defaultState)`
+- Game state: Use `GamePersistenceManager` (pre-configured with defaults)
+- Automatic: Error handling, quota management, SSR/test support
+
+### Player Role Mapping
+Always use `mapFormationPositionToRole()` before database persistence to convert UI positions to database enums (prevents constraint errors).
+
+### Time Tracking
+Use `getCurrentTimestamp()` for all time operations; supports timer pause state via `getTimeTrackingParams()`.
+
+### Formation Definitions
+Use `getFormationDefinition()` from formationConfigUtils to get mode definitions; supports formation overrides for preview/recommendation scenarios.
