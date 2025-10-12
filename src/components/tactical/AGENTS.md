@@ -1,81 +1,97 @@
 # Tactical Board Component
 
-## 1. Overview
+## Overview
 
-The Tactical Board is a highly interactive, drag-and-drop interface that allows coaches to visualize formations, plan strategies, and demonstrate plays. It provides a digital canvas representing a soccer pitch where coaches can place and move player and ball chips.
+Interactive drag-and-drop interface for coaches to visualize formations and demonstrate plays on a digital soccer pitch. Supports player and ball chip placement with persistent state and browser back integration.
 
-This component is designed to be flexible and reusable, with a clear separation between the board's state management and its UI representation.
+## Component Architecture
 
-## 2. Core Components & Architecture
+**TacticalBoardScreen.js** - Main container component
+- Manages pitch mode state (full/half)
+- Handles chip placement, movement, and deletion callbacks
+- Persists state via `PersistenceManager` (pitch mode + chips per mode)
+- Integrates with `useBrowserBackIntercept` for browser back button handling
+- Tracks `fromView` for persistent back navigation after reloads
 
-The tactical board is composed of several key components that work together:
+**TacticalBoard.js** - Board rendering component
+- Renders pitch background (full: 16/23 ratio, half: 5/4 ratio)
+- Uses `useDragAndDrop` hook for all drag interactions
+- Tracks chip numbers by color for auto-incrementing
+- Renders placed chips with conditional opacity (hidden during drag)
+- Displays ghost chip preview during drag operations
 
-- **`TacticalBoardScreen.js`**: The main container component that manages the overall state of the tactical board, including the pitch mode (`full` or `half`) and the list of placed chips. It also handles user interactions like switching the pitch mode and navigating back.
+**BaseChip.js** - Generic chip component
+- Handles positioning (percentage-based: 0-100%)
+- Manages drag events via pointer events
+- Uses `useDoubleClick` hook for deletion (double-tap/double-click)
+- Supports both palette and board positioning modes
 
-- **`TacticalBoard.js`**: This component is the heart of the tactical board. It renders the soccer pitch, the placed chips, and the chip palette. It uses the `useDragAndDrop` hook to manage all drag-and-drop interactions.
+**ChipPalette.js** - Chip selection palette
+- Displays available player colors and ball variations
+- Initiates drag operations with `isNewChip: true` flag
 
-- **`ChipPalette.js`**: A component that displays the available player and soccer ball chips that can be dragged onto the board.
+**useDragAndDrop.js** - Drag-and-drop logic hook
+- Distinguishes between new chips (from palette) and existing chips (on board)
+- Creates ghost chip for visual feedback during drag
+- Uses pointer events for cross-platform support (mouse + touch)
+- Clamps positions to board boundaries (3%-97%)
+- Calculates drag offset for smooth existing chip movement
 
-- **`PlayerChip.js` & `SoccerBallChip.js`**: These components represent the individual player and ball chips on the board. They are built upon a generic `BaseChip.js` component.
+**useDoubleClick.js** - Double-tap detection hook
+- Provides consistent double-click behavior across touch and mouse
+- Default timeout: 300ms between clicks
 
-- **`BaseChip.js`**: A foundational component that encapsulates common chip behaviors, such as positioning, styling, and handling double-click events for deletion.
+## Key Features
 
-- **`useDragAndDrop.js` hook**: A custom hook that abstracts the complex logic of drag-and-drop functionality. It tracks the state of the dragged chip, calculates its position on the board, and provides handlers for drag start, move, and end events.
+**Dual Pitch Modes**
+- Full pitch and half pitch views with different aspect ratios
+- Separate chip storage per mode (persisted independently)
+- Toggle between modes without losing chip placements
 
-## 3. Key Features & Functionality
+**State Persistence**
+- Uses `PersistenceManager` with `STORAGE_KEYS.TACTICAL_PREFERENCES`
+- Persists: pitch mode, chips per mode, fromView navigation
+- Loads saved state on mount, saves on every change
 
-- **Drag-and-Drop Interface**: Users can drag player and ball chips from the palette and drop them onto the tactical board. Existing chips on the board can also be moved around.
+**Browser Back Integration**
+- Registers handler via `pushNavigationState` on mount
+- Cleanup via `removeFromNavigationStack` on unmount
+- `handleBackPress` retrieves `fromView` from saved state and calls `onNavigateBack`
+- Browser back button behaves identically to on-screen Back button
 
-- **Full and Half Pitch Modes**: The board can be toggled between a full-pitch view and a half-pitch view. The background image and aspect ratio of the board adapt to the selected mode.
+**Drag-and-Drop Behavior**
+- Pointer events (not mouse events) for cross-platform support
+- Ghost chip follows cursor during drag
+- Original chip hidden during drag (opacity: 0)
+- New chips: ghost appears at cursor position
+- Existing chips: ghost uses drag offset for smooth movement
+- Position bounds: 3%-97% (prevents chips from touching edges)
 
-- **Chip Customization**: Player chips can have different colors and are automatically assigned incremental numbers.
+**Chip Management**
+- Player chips: auto-increment numbers per color
+- Multiple ball variations available
+- Double-click/double-tap to delete chips
+- Clear board button removes all chips from current mode
 
-- **Chip Deletion**: Chips can be removed from the board by double-clicking on them.
+## Important Implementation Details
 
-- **State Persistence**: The selected pitch mode is persisted in `localStorage`, so the user's preference is remembered across sessions.
+**Coordinate System**
+- Positions stored as percentages (0-100% of board dimensions)
+- Conversion: `((clientX - rect.left) / rect.width) * 100`
+- Transform: `translate(-50%, -50%)` centers chips on coordinates
 
-- **Ghost Chip Preview**: When a chip is being dragged, a semi-transparent "ghost" chip is displayed to provide a visual preview of where the chip will be placed.
+**Chip Identification**
+- IDs: `chip-${Date.now()}-${randomString}` for uniqueness
+- `isNewChip` flag distinguishes palette vs. board chips
+- Ghost chip uses ID `ghost-chip`
 
-## 4. How It Works
+**State Updates**
+- All chip updates use `updateAndPersistChips` helper
+- Immutable state updates (spread syntax for arrays/objects)
+- Persistence occurs on every state change
 
-1.  **Initialization**: `TacticalBoardScreen.js` initializes the state, loading the persisted pitch mode from `localStorage`.
-
-2.  **Rendering**: `TacticalBoard.js` renders the pitch image, the `ChipPalette`, and any chips that are in the `placedChips` array.
-
-3.  **Dragging from Palette**:
-    - The user clicks and starts dragging a chip from the `ChipPalette`.
-    - `ChipPalette.js` calls the `handlePointerStart` function provided by the `useDragAndDrop` hook, passing the chip's data.
-    - The hook creates a "ghost" chip that follows the user's cursor.
-
-4.  **Dragging on the Board**:
-    - As the user moves a chip on the board, the `useDragAndDrop` hook continuously updates the chip's position.
-    - The `onChipMove` callback is triggered, and `TacticalBoardScreen.js` updates the state with the new coordinates.
-
-5.  **Dropping a Chip**:
-    - When the user releases the chip, the `useDragAndDrop` hook determines if it's a new chip from the palette or an existing one being moved.
-    - If it's a new chip, the `onChipPlace` callback is called. If it's an existing chip, `onChipMove` is called with the final position.
-    - `TacticalBoardScreen.js` updates the `placedChips` state accordingly.
-
-6.  **Deleting a Chip**:
-    - A user double-clicks on a chip.
-    - The `onDoubleClick` handler in `BaseChip.js` is triggered.
-    - This calls the `onChipDelete` callback, and `TacticalBoardScreen.js` removes the chip from the `placedChips` array.
-
-## 5. Usage
-
-To use the tactical board, you can embed the `TacticalBoardScreen` component in your application. It requires the following props:
-
-- `onNavigateBack`: A function to be called when the user clicks the "Back" button or when browser back is pressed.
-- `pushNavigationState`: A function to push a navigation handler onto the navigation stack (from `useBrowserBackIntercept`).
-- `removeFromNavigationStack`: A function to remove a navigation handler from the navigation stack.
-
-## 6. Browser Back Integration
-
-The Tactical Board automatically registers for browser back button interception when the component mounts. When the browser back button is pressed:
-
-1. The global navigation handler in `App.js` detects the TACTICAL_BOARD view
-2. It calls the same `handleBackPress` function used by the on-screen "Back" button
-3. The component properly navigates back to the previous view (typically CONFIG)
-4. The navigation handler is cleaned up when the component unmounts
-
-This ensures that the browser back button behaves identically to the on-screen "Back" button, providing a seamless user experience across all navigation methods.
+**Props Required by TacticalBoardScreen**
+- `onNavigateBack(fromView)` - navigation callback
+- `pushNavigationState(handler)` - browser back registration
+- `removeFromNavigationStack()` - browser back cleanup
+- `fromView` - optional, persisted for reload recovery

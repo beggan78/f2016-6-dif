@@ -1,55 +1,165 @@
-# Gemini Project Brief: src/hooks
+# AGENTS.md - Custom React Hooks
 
-This directory contains custom React hooks that encapsulate reusable stateful logic and side effects for the application. These hooks are central to managing the application's complex state and interactions.
+Custom React hooks for managing game state, UI interactions, timers, and database persistence.
 
-## 1. Core Hooks
+## Core State Management Hooks
 
-- **`useGameState.js`**: This is the primary hook for managing the entire game's core state. It handles:
-  - Initialization of game state from `localStorage` via `persistenceManager`.
-  - All game-related data: players, squad selection, period configuration, current formation, scores, game log, and the rotation queue.
-  - Actions that modify the game state: `handleSubstitution`, `handleEndPeriod`, `switchPlayerPositions`, `switchGoalie`, `togglePlayerInactive`, etc.
-  - Integration with `persistenceManager` for saving/loading state and managing backups.
-  - Logic for preparing periods and starting the game, including formation recommendations.
-  - Wake lock and alert timer management.
+### useGameState.js
+Primary hook for game state management. Delegates to specialized hooks for separation of concerns.
 
-- **`useGameUIState.js`**: Manages UI-specific state that is not part of the core game logic but affects how the UI is rendered and animated. It handles:
-  - Animation coordination (`animationState`).
-  - Tracking recently substituted players for visual highlighting.
-  - Managing the `lastSubstitution` for undo functionality.
-  - A flag (`shouldSubstituteNow`) to coordinate immediate substitution actions.
+**Key Responsibilities:**
+- Player management (via `usePlayerState`)
+- Team configuration (via `useTeamConfig`)
+- Match events and scoring (via `useMatchEvents`)
+- Database persistence (via `useMatchPersistence`)
+- Formation management and rotation queues
+- Game actions: substitutions, period transitions, goalie switches
 
-- **`useTimers.js`**: Encapsulates all logic related to the match timer and substitution timer. It handles:
-  - Starting, stopping, pausing, and resuming timers.
-  - Persisting timer state to `localStorage` to survive page refreshes.
-  - Calculating elapsed time for both timers.
-  - Providing functions to reset and restore timer values.
+**Critical Patterns:**
+- Composition over monolithic state (delegates to 6+ specialized hooks)
+- Match lifecycle tracking: `matchState` ('not_started', 'pending', 'running', 'finished', 'confirmed')
+- Match ID management: `currentMatchId` and `matchCreated` flags prevent duplicate database records
+- Immutable state updates (never mutate, always return new objects/arrays)
 
-## 2. Utility Hooks
+**Database Integration:**
+- Uses `matchStateManager` service for match CRUD operations
+- Tracks match lifecycle with three-state pattern: running → finished → confirmed
+- Upserts player stats during substitutions and period transitions
 
-- **`useBrowserBackIntercept.js`**: Intercepts the browser's back button functionality for both modal management and view navigation. Maintains a navigation stack and supports global navigation handlers for application-wide back button behavior.
+### useTimers.js
+Manages match timer and substitution timer with real-time updates.
 
-- **`useFieldPositionHandlers.js`**: A helper hook that simplifies the integration of `useQuickTapWithScrollDetection` for various field positions, adapting to different team modes.
+**Critical Patterns:**
+- Timer calculation: `forceUpdateCounter` triggers `useMemo` recalculation for real-time UI updates
+- Interval storage: Use `useRef` for interval IDs (never `useState` - prevents infinite loops)
+- Timer state persistence to localStorage survives page refreshes
+- Audio alerts trigger when `subTimerSeconds >= alertMinutes * 60`
 
-- **`useGameModals.js`**: Manages the state and actions for various modals used throughout the game UI (e.g., player selection, substitute options, goalie switch). It integrates with `useBrowserBackIntercept`.
+**Key Functions:**
+- `startTimers()` - Initialize timers for period start
+- `stopTimers()` - Stop timers for period end
+- `pauseSubTimer()` / `resumeSubTimer()` - Pause/resume substitution timer
+- `resetSubTimer()` - Reset substitution timer after substitution
 
-- **`useQuickTapWithScrollDetection.js`**: Provides responsive quick tap detection (callbacks trigger only on taps <150ms) for touch and mouse events, with scroll cancellation to prevent accidental actions during scrolling. Prevents accidental activation when users rest their finger on screen or perform slow actions.
+### useGameUIState.js
+Manages UI-specific state separate from game logic.
 
-- **`useTeamNameAbbreviation.js`**: Handles the dynamic abbreviation of team names in the score display based on available screen width, ensuring the UI remains responsive.
+**Key State:**
+- `animationState` - Coordinates substitution/position animations
+- `recentlySubstitutedPlayers` - Set of player IDs for visual highlighting
+- `lastSubstitution` - Undo functionality data
+- `shouldSubstituteNow` - Flag to coordinate immediate substitutions
 
-## 3. Key Interactions & Data Flow
+### useMatchState.js
+Centralized match state detection for abandonment warnings and navigation guards.
 
-- **Centralized State (`useGameState`)**: Almost all application state flows through `useGameState`. Components interact with the game state by calling functions provided by this hook (e.g., `handleSubstitution`, `switchPlayerPositions`).
+**Returns:**
+- `hasActiveMatch` - True if match is running or finished (not saved)
+- `hasUnsavedMatch` - True if match is finished but not confirmed
+- `isMatchRunning` - True if match state is 'running'
+- `matchState` - Explicit state: 'not_started', 'running', 'finished', 'saved'
 
-- **UI State Separation (`useGameUIState`)**: `useGameUIState` manages visual feedback and temporary UI states, keeping them separate from the core game logic in `useGameState`. This separation allows for independent development and testing of UI behaviors.
+## Specialized Hooks
 
-- **Timer Integration (`useTimers`)**: `useTimers` provides the current time values to the UI and also exposes functions (`pauseSubTimer`, `resumeSubTimer`) that `useGameState` can call to update player time statistics when the timer state changes.
+### usePlayerState.js
+Extracts player management logic from useGameState.
 
-- **Persistence**: Both `useGameState` and `useTimers` leverage `localStorage` for state persistence, ensuring that the game state and timers are preserved across browser sessions or accidental refreshes.
+**Key Functions:**
+- `syncPlayersFromTeamRoster()` - Sync with database roster
+- `togglePlayerInactive()` - Mark players inactive during match
+- `updatePlayerRolesFromFormation()` - Sync player roles with formation
+- `addTemporaryPlayer()` - Add temporary player for match
 
-## 4. How to Make Changes
+### useTeamConfig.js
+Manages team configuration and formation selection.
 
-- **Modifying Game Logic**: Changes to core game rules (e.g., how substitutions work, how time is calculated for stats) should primarily be implemented in the `src/game/` directory. `useGameState` would then call these updated pure functions.
+**Key State:**
+- `teamConfig` - Composite config (format, squadSize, formation, substitutionType)
+- `selectedFormation` - User-selected formation ('2-2', '1-2-1')
+- Formation-aware config resolution for position utilities
 
-- **Adding New UI Features**: If a new UI feature requires new state or interactions, consider whether it belongs in `useGameState` (core game data) or `useGameUIState` (visual/temporary UI state). Create new utility hooks if the logic is reusable across multiple components.
+### useMatchEvents.js
+Manages match events, goals, and event log.
 
-- **Debugging State Issues**: When debugging, inspect the state managed by `useGameState` and `useTimers` to understand the current application state. Pay attention to how actions modify this state and how effects (`useEffect`) synchronize data or trigger side effects.
+**Key Functions:**
+- `addGoalScored()` / `addGoalConceded()` - Record goals
+- `syncMatchDataFromEventLogger()` - Sync events from event logger
+- `clearAllMatchEvents()` - Clear all match events
+
+### useMatchPersistence.js
+Database operations and localStorage persistence.
+
+**Key Functions:**
+- `saveMatchConfiguration()` - Save match config to database
+- `loadPersistedState()` - Load state from localStorage
+- `clearPersistedState()` - Clear localStorage state
+
+### useMatchRecovery.js
+Handles recovery of finished matches not saved to history.
+
+**Recovery Flow:**
+1. Check for recoverable match on login (1.5s delay)
+2. Show recovery modal if found
+3. User choice: save to history or delete match
+4. Update match state to 'confirmed' or delete from database
+
+## Browser Interaction Hooks
+
+### useBrowserBackIntercept.js
+Intercepts browser back button for modal/view navigation.
+
+**Key Functions:**
+- `pushNavigationState(callback, handlerName)` - Add handler to stack
+- `popNavigationState()` - Remove handler and trigger browser back
+- `clearNavigationStack()` - Clear all handlers
+- Supports global navigation handler for fallback
+
+**Critical Pattern:**
+- Maintains navigation stack in `useRef` (survives re-renders)
+- Pushes browser history state with each handler registration
+- Executes topmost handler on popstate event
+
+### useQuickTapWithScrollDetection.js
+Responsive quick tap detection with scroll cancellation.
+
+**Key Features:**
+- Triggers callback only on taps <150ms (configurable)
+- Cancels on scroll movement >10px threshold
+- Prevents accidental activation during scrolling or long press
+- Supports both touch and mouse events
+
+### useFieldPositionHandlers.js
+Simplifies integration of `useQuickTapWithScrollDetection` for field positions.
+
+### useGameModals.js
+Manages modal state for player selection, substitution, goalie switch, etc.
+
+## Supporting Hooks
+
+### useMatchAudio.js
+Audio alert and wake lock management.
+
+**Key Functions:**
+- `playAlertSounds()` - Play substitution alert sounds
+- `requestWakeLock()` - Keep screen active during match
+- `releaseWakeLock()` - Release wake lock after match
+
+### useTeamNameAbbreviation.js
+Dynamic team name abbreviation based on screen width.
+
+### useStatsFilters.js
+Statistics screen filter state management.
+
+### useStatisticsRouting.js
+Statistics tab routing and navigation.
+
+## Critical Rules for AI Agents
+
+1. **Immutability**: Never mutate state - always use spread operators or immutable methods
+2. **Hook Dependencies**: Follow exhaustive-deps rule - include ALL values used in useEffect/useMemo/useCallback
+3. **Interval Storage**: Use `useRef` for interval IDs (never `useState`)
+4. **Timer Pattern**: `forceUpdateCounter` in dependencies triggers real-time updates
+5. **Match Lifecycle**: Always update both `currentMatchId` and `matchCreated` together
+6. **Database Operations**: Use service layer functions (matchStateManager, matchConfigurationService)
+7. **Null Safety**: Guard against undefined data with optional chaining and default values
+8. **Separation of Concerns**: Keep game logic in `/src/game/`, hooks manage state and side effects only

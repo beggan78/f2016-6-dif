@@ -1,262 +1,187 @@
-# Report Components - Claude Code Memory
+# Report Components - AI Agent Guide
 
 ## Purpose
-The report components provide comprehensive post-match analysis and reporting capabilities for the Sport Wizard application. This module transforms raw game data into structured, visual reports that coaches can use to analyze team performance, track player statistics, and review match events.
+Post-match analysis and reporting system that transforms game data into visual reports for coaches. Displays match summary, player statistics, event timeline, and export capabilities.
 
 ## Component Architecture
 
 ### Main Orchestrator
-- **MatchReportScreen.js**: Primary screen component that coordinates all report functionality
-  - Manages local UI state (filters, visibility toggles)
-  - Handles error states and missing data scenarios
-  - Provides navigation between report sections
-  - Coordinates data flow to sub-components
+- **MatchReportScreen.js**: Coordinates all report functionality
+  - Manages UI state (filters, player selection, substitution visibility)
+  - Filters squad players by participation and selectedSquadIds
+  - Provides error handling for missing data
+  - Uses ReportSection wrapper for consistent layout
 
-### Focused Sub-Components
-- **GameEventTimeline.js**: Complex timeline visualization for match events
-- **MatchSummaryHeader.js**: Match metadata and score display
-- **PlayerStatsTable.js**: Sortable player statistics table
-- **ReportControls.js**: Navigation and export controls
+### Core Components
+- **GameEventTimeline.js**: Chronological event visualization with filtering
+- **MatchSummaryHeader.js**: Match metadata, scores, and winner display
+- **PlayerStatsTable.js**: Sortable statistics table with dynamic columns
+- **ReportControls.js**: Print/share functionality
+- **ReportSection.js**: Standardized section wrapper with icon and header
+- **EventToggleButton.js**: Toggle for substitution event visibility
+- **ReportNavigation.js**: Back navigation button
 
 ## Key Features
 
 ### Game Event Timeline
-- **Chronological Display**: Events organized by periods with visual timeline
-- **Event Filtering**: Filter by player, event type, or substitution visibility
-- **Period Grouping**: Automatic grouping with intermission display
-- **Event Details**: Expandable event information with technical details
-- **Sort Control**: Toggle between newest-first and oldest-first ordering
-- **Goal Integration**: Clickable goal events for scorer editing
+- **Period Grouping**: Events grouped by period with intermission displays
+- **Player Filtering**: Dropdown to filter events by specific player
+- **Substitution Toggle**: Show/hide substitution events (controlled by parent)
+- **Sort Order**: Persistent preference (oldest-first/newest-first) via PersistenceManager
+- **Expandable Details**: Click chevron to view event metadata (period, score, undo info)
+- **Clickable Goals**: Click goal events to edit scorer (if onGoalClick provided)
+- **Debug Mode**: Shows SUBSTITUTION_UNDONE events when enabled
 
-### Player Statistics
-- **Sortable Columns**: All time-based statistics sortable ascending/descending
-- **Role Tracking**: Starting roles (Goalie, Field, Substitute)
-- **Time Breakdown**: Field time, attacker time, defender time, goalie time
-- **Responsive Design**: Mobile-optimized table with hover effects
-- **Missing Data Handling**: Graceful display of incomplete statistics
+### Player Statistics Table
+- **Dynamic Columns**: Shows midfielder column only if any player has midfielder time
+- **Sortable**: Click column headers to sort (name, times, goals)
+- **Starting Role**: Displays role player started match with (from stats.startedMatchAs)
+- **Time Tracking**: Field, attacker, defender, midfielder, goalie, substitute times
+- **Goals Column**: Counts goals from matchEvents using goalScorers mapping
+- **Memoized**: React.memo prevents unnecessary re-renders
 
 ### Match Summary
-- **Visual Hierarchy**: Clear display of match outcome with winner highlighting
-- **Metadata Display**: Match date, time, duration, and period information
-- **Team Comparison**: Side-by-side team names and scores
-- **Status Indicators**: Win/loss/tie status with visual cues
+- **Winner Highlighting**: Green text for winner, neutral for tie
+- **Date/Time**: ISO format (YYYY-MM-DD HH:MM) using Swedish locale
+- **Match Duration**: Formatted time display
+- **Period Info**: Shows count and duration (e.g., "3 × 12min")
 
 ### Report Controls
-- **Navigation**: Links to stats screen and other app sections
-- **Export Options**: Print and share functionality
-- **Filtering Controls**: Toggle visibility of substitution events
-- **Sorting Options**: Timeline ordering preferences
+- **Print**: window.print() or custom onPrint callback
+- **Share**: Uses native share API or clipboard fallback
+- **Options Section**: Currently only used for display, substitution toggle in parent
 
 ## Data Flow
 
-### Input Data Sources
-```javascript
-// Main data inputs to MatchReportScreen
-{
-  matchEvents: [],           // From gameEventLogger
-  allPlayers: [],           // Player data with stats
-  gameLog: [],              // Period-by-period data
-  goalScorers: {},          // Event ID to player ID mapping
-  goalsScored: 0,             // Final scores
-  goalsConceded: 0,
-  matchStartTime: timestamp  // Match timing data
-}
-```
+### MatchReportScreen Props
+- **matchEvents**: Events from gameEventLogger (filtered by MatchReportScreen)
+- **allPlayers**: All player data (filtered to squad players internally)
+- **selectedSquadIds**: Array of player IDs to include in report
+- **goalScorers**: Object mapping event.id → playerId for goal attribution
+- **ownScore, opponentScore**: Final scores
+- **matchStartTime**: Timestamp for duration calculation
+- **formation**: Used by PlayerStatsTable for starting roles
+- **debugMode**: Shows SUBSTITUTION_UNDONE events in timeline
 
-### Data Transformations
-1. **Event Processing**: Raw events → filtered and sorted timeline
-2. **Player Filtering**: All players → squad players with statistics
-3. **Time Calculations**: Timestamps → match time and duration
-4. **Score Attribution**: Goal events → scorer identification
+### Key Transformations
+1. **Squad Filtering**: allPlayers → squadPlayers (participantSet + hasPlayerParticipated check)
+2. **Event Filtering**: matchEvents → filteredEvents (removes substitution events if toggle off)
+3. **Match Duration**: Calculate from matchStartTime to last event timestamp
+4. **Player Names**: getPlayerName adds "(C)" suffix for captains
 
-### Component Communication
-- **Props Down**: Data flows from MatchReportScreen to sub-components
-- **Callbacks Up**: User interactions bubble up through callback props
-- **State Management**: Local UI state managed in MatchReportScreen
-
-### Performance Optimization
-- **useMemo** for expensive filtering/sorting operations in timeline and table components
-- **useCallback** for stable event handler references to prevent unnecessary re-renders
-- **Component-level memoization** for pure display components with complex prop structures
-- **State persistence** using PersistenceManager for timeline preferences and user experience
+### Performance
+- **useMemo**: Squad filtering, event filtering, match duration, participantSet
+- **useCallback**: getPlayerName, handlePlayerFilterChange (auto-enables substitutions)
+- **React.memo**: PlayerStatsTable export memoized to prevent re-renders
+- **PersistenceManager**: Timeline sort order persisted to localStorage
 
 ## Integration Points
 
-### Game Event Logger
-```javascript
-import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
-```
-- Consumes events from match logging system
-- Handles event filtering and undone event logic
-- Calculates match time for timeline display
+### Event System
+- **EVENT_TYPES**: Constants from `utils/gameEventLogger` for event type checking
+- **calculateMatchTime**: Converts timestamp to match time string (MM:SS)
+- **Event Filtering**: Removes undone events (except GOAL_CORRECTED), filters SUBSTITUTION_UNDONE unless debugMode
 
-### Player Data System
-```javascript
-import { PLAYER_ROLES } from '../../constants/playerConstants';
-```
-- Integrates with player statistics tracking
-- Displays time spent in different roles
-- Handles player name resolution
+### Player System
+- **PLAYER_ROLES**: Uses GOALIE, SUBSTITUTE, FIELD_PLAYER constants
+- **hasPlayerParticipated**: Utility from `utils/playerUtils` to check if player has stats
+- **stats.startedMatchAs**: Player's starting role for the match (from Period 1)
+- **stats.isCaptain**: Boolean flag for captain designation in player names
 
-### Navigation System
-- **App-level Navigation**: Callbacks to navigate between screens
-- **Browser Back Support**: Integrates with browser history management
-- **Deep Linking**: Supports direct navigation to report sections
+### Storage
+- **STORAGE_KEYS.TIMELINE_PREFERENCES**: Key for timeline sort order persistence
+- **createPersistenceManager**: Creates manager for loading/saving sort order
 
-### Formatting Utilities
-```javascript
-import { formatTime } from '../../utils/formatUtils';
-```
-- Consistent time formatting across all components
-- Handles various time display formats
-- Responsive to different duration ranges
+### Formatting
+- **formatTime**: From `utils/formatUtils` for time display (seconds → MM:SS)
+- **formatPlayerName**: Formats player name, adds "(C)" for captains
+- **Swedish locale**: Date/time formatting uses 'sv-SE' (ISO format)
 
-## Component Responsibilities
+## Critical Implementation Details
 
-### MatchReportScreen
-- **State Management**: Controls visibility, filtering, and UI state
-- **Data Preparation**: Transforms raw data for sub-components
-- **Error Handling**: Manages missing data and loading states
-- **Layout Orchestration**: Coordinates responsive layout sections
+### GameEventTimeline Event Formatting
+- **Goal Events**: Format as "3-2 TeamName Scored - PlayerName" (uses goalScorers mapping)
+- **Substitution Events**: Handles both single player and pairs mode (playersOff/playersOn arrays)
+- **Period Grouping**: Groups by event.periodNumber, displays intermissions between periods
+- **Intermission Calculation**: Matches start/end events by precedingPeriodNumber/followingPeriodNumber
+- **Timeline Visuals**: Uses Lucide icons (Play, Square, Trophy, Shield, etc.)
 
-### GameEventTimeline
-- **Event Visualization**: Renders chronological event timeline
-- **Complex Filtering**: Multi-dimensional event filtering system
-- **Period Management**: Groups events by periods with intermissions
-- **User Interaction**: Handles event expansion and goal editing
+### PlayerStatsTable Starting Roles
+- **Critical**: Only uses stats.startedMatchAs (not stats.startedAs or formation)
+- **Values**: GOALIE → "Goalie", SUBSTITUTE → "Sub", FIELD_PLAYER → "Field", undefined → "--"
+- **Dynamic Columns**: Midfielder column only shown if any player has timeAsMidfielderSeconds > 0
+- **Sort Logic**: Default sort by name ascending, persists in component state
 
-### MatchSummaryHeader
-- **Match Metadata**: Displays date, time, and match information
-- **Score Presentation**: Visual hierarchy for match outcomes
-- **Winner Determination**: Calculates and displays match results
+### Event Filtering Logic
+- **Undone Events**: Filter out events with undone=true (except GOAL_CORRECTED)
+- **Debug Events**: SUBSTITUTION_UNDONE only shown when debugMode=true
+- **Player Filter**: When selectedPlayerId set, shows only events involving that player + period markers
+- **Auto-enable**: Selecting a player automatically enables substitution visibility
 
-### PlayerStatsTable
-- **Data Presentation**: Sortable table with responsive design
-- **Statistics Display**: Time-based statistics with proper formatting
-- **User Interface**: Sorting indicators and hover effects
+### ReportSection Pattern
+- **Usage**: Wrap all report sections for consistent styling
+- **Props**: icon (Lucide component), title, children, optional headerExtra
+- **Styling**: bg-slate-800 rounded-lg with sky-colored headers
 
-### ReportControls
-- **Navigation**: Provides navigation to other app sections
-- **Export Functions**: Print and share functionality
-- **Report Options**: Filtering and sorting controls
+## Testing
 
-## Testing Architecture
+### Test Files
+- Individual component tests for each component in `__tests__/`
+- **eventOrderingFix.test.js**: Tests for event ordering edge cases
+- Components use React Testing Library patterns
 
-### Component Testing
-- **Isolated Testing**: Each component tested in isolation
-- **Props Validation**: Comprehensive prop testing
-- **User Interactions**: Event handling and state changes
-- **Edge Cases**: Missing data and error scenarios
+## Common Modifications
 
-### Integration Testing
-- **Data Flow**: End-to-end data flow testing
-- **Event Ordering**: Complex event ordering scenarios (`eventOrderingFix.test.js`)
-- **Cross-Component**: Component interaction testing
+### Adding New Event Types to Timeline
+1. Update `getEventIcon()` - map event type to Lucide icon
+2. Update `getEventColor()` - set icon and text color
+3. Update `getEventBackgroundColor()` - set container background
+4. Update `formatEventDescription()` - format display text
+5. Update player filter logic in `filteredAndSortedEvents` if event involves players
 
-### Test Utilities
-- **Mock Data**: Shared test data utilities
-- **Component Helpers**: Common testing patterns
-- **Event Simulation**: User interaction simulation
+### Adding Statistics Columns
+1. Add column definition to `columns` array in PlayerStatsTable
+2. Add sort case in `sortedPlayers` useMemo switch statement
+3. Ensure player.stats contains the required field
+4. For conditional columns, check data existence in columns useMemo (like midfielder column)
 
-## Usage Guidelines
+### Modifying Event Filtering
+- **MatchReportScreen**: Controls high-level filtering (substitution visibility toggle)
+- **GameEventTimeline**: Controls granular filtering (player filter, debug mode, undone events)
+- Both use useMemo for performance on filter changes
 
-### Code Conventions
-- **Component Names**: PascalCase with descriptive, domain-specific names
-- **Function Names**: camelCase using verb-noun patterns for clarity
-- **Defensive Programming**: Comprehensive null checks and default parameter values
-- **Pure Functions**: All data transformations use pure functions without side effects
-
-### Adding New Event Types
-1. **Update EVENT_TYPES**: Add new event type to gameEventLogger
-2. **Icon Mapping**: Add icon in `getEventIcon()` function
-3. **Color Mapping**: Add colors in `getEventColor()` and `getEventBackgroundColor()`
-4. **Description**: Add formatting in `formatEventDescription()`
-
-### Extending Statistics
-1. **Column Configuration**: Add new column to `columns` array in PlayerStatsTable
-2. **Sorting Logic**: Update sorting logic in `sortedPlayers` useMemo
-3. **Data Access**: Ensure new stat fields are available in player data
-
-### Customizing Timeline
-1. **Filtering**: Extend `filteredAndSortedEvents` logic
-2. **Grouping**: Modify `groupedEventsByPeriod` for new grouping rules
-3. **Rendering**: Update `renderEvent()` for new display formats
-
-### Report Export
-1. **Print Styles**: Add print-specific CSS classes
-2. **Data Export**: Extend ReportControls for new export formats
-3. **Share Integration**: Customize share functionality
-
-## Common Issues & Debugging
-
-### Timeline Event Ordering
-- **Problem**: Events appear in wrong chronological order
-- **Solution**: Check timestamp consistency and sort logic
-- **Debug**: Use expanded event details to verify timestamps
+## Common Issues
 
 ### Missing Player Names
-- **Problem**: "Unknown" appears instead of player names
-- **Solution**: Verify `getPlayerName` function and player data integrity
-- **Debug**: Check player ID consistency between events and player data
+- Check goalScorers mapping contains correct event.id → playerId
+- Verify allPlayers array includes all referenced player IDs
+- getPlayerName returns null for unknown players (handled gracefully)
 
-### Statistics Display
-- **Problem**: Time statistics show "--" instead of values
-- **Solution**: Verify player stats structure and time field initialization
-- **Debug**: Check `player.stats` object structure and time calculations
+### Statistics Show "--"
+- PlayerStatsTable shows "--" when time values are 0 or undefined
+- This is expected behavior for players with no time in specific roles
+- Check player.stats object structure if all columns show "--"
 
-### Performance Issues
-- **Problem**: Slow rendering with large event lists
-- **Solution**: Optimize filtering and sorting with proper memoization
-- **Debug**: Use React DevTools Profiler to identify bottlenecks
+### Events Not Appearing
+- Check event.undone flag (undone events filtered except GOAL_CORRECTED)
+- Verify debugMode prop if looking for SUBSTITUTION_UNDONE events
+- Check selectedPlayerId filter - restricts to events involving that player
 
-### Mobile Responsiveness
-- **Problem**: Layout breaks on mobile devices
-- **Solution**: Check responsive classes and table overflow handling
-- **Debug**: Test on various screen sizes and orientations
-
-## Future Enhancements
-
-### Potential Features
-- **Export to PDF**: Generate PDF reports
-- **Advanced Filtering**: Multiple filter criteria
-- **Statistical Analysis**: Trend analysis and insights
-- **Custom Reporting**: User-defined report templates
-- **Real-time Updates**: Live event streaming during matches
-
-### Technical Improvements
-- **Performance**: Virtualized timeline for large datasets
-- **Accessibility**: Enhanced keyboard navigation and screen reader support
-- **Internationalization**: Multi-language support
-- **Offline Support**: Local storage for report caching
-
-## Dependencies
-
-### External Libraries
-- **React**: Core framework with hooks
-- **Lucide React**: Icon library for consistent iconography
-- **Tailwind CSS**: Utility-first styling
-
-### Internal Dependencies
-- **Game Event Logger**: Event tracking and time calculations
-- **Player Utilities**: Player data access and formatting
-- **Shared UI Components**: Button, Modal, and other UI elements
-- **Format Utilities**: Time formatting and display helpers
+### Intermissions Not Displaying
+- Requires matching INTERMISSION start/end events with precedingPeriodNumber/followingPeriodNumber
+- Check event.data.intermissionType ('start' or 'end')
+- Duration calculated from timestamp difference
 
 ## File Structure
 ```
 /src/components/report/
-├── MatchReportScreen.js     # Main orchestrator component
-├── GameEventTimeline.js     # Event timeline visualization
-├── MatchSummaryHeader.js    # Match metadata display
-├── PlayerStatsTable.js      # Player statistics table
-├── ReportControls.js        # Navigation and export controls
-└── __tests__/               # Comprehensive test suite
-    ├── MatchReportScreen.test.js
-    ├── GameEventTimeline.test.js
-    ├── MatchSummaryHeader.test.js
-    ├── PlayerStatsTable.test.js
-    ├── ReportControls.test.js
-    └── eventOrderingFix.test.js
+├── MatchReportScreen.js      # Main orchestrator
+├── GameEventTimeline.js      # Event timeline with filtering
+├── MatchSummaryHeader.js     # Match metadata and scores
+├── PlayerStatsTable.js       # Sortable statistics table
+├── ReportControls.js         # Print/share controls
+├── ReportSection.js          # Section wrapper component
+├── EventToggleButton.js      # Substitution visibility toggle
+├── ReportNavigation.js       # Back button navigation
+└── __tests__/                # Test files
 ```
-
-This module represents a sophisticated reporting system that transforms raw match data into actionable insights for coaches, with comprehensive testing and mobile-first design principles.

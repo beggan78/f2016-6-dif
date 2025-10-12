@@ -1,57 +1,137 @@
-# Gemini Project Brief: src/components/setup
+# AGENTS.md - src/components/setup
 
-This directory contains the React components responsible for the initial game configuration and period setup. These components guide the user through selecting a squad, assigning goalies, setting game parameters, and defining the starting formation for each period.
+Setup components for pre-game configuration and period setup. Handles squad selection, formation assignment, and goalie management.
 
-## 1. Key Components
+## Key Components
 
-- **`ConfigurationScreen.js`**: This is the initial screen where users configure a new game. It allows:
-  - **Squad Selection**: Choosing 6 or 7 players from the full roster.
-  - **Game Settings**: Setting the number of periods, period duration, and substitution alert times.
-  - **Team Configuration**: Selecting between Pairs or Individual configurations for 7-player squads.
-  - **Goalie Assignment**: Assigning a goalie for each period.
-  - **Opponent Team Name**: Input for the opponent's team name.
+### ConfigurationScreen.js
+Initial game configuration screen with comprehensive state management:
 
-- **`PeriodSetupScreen.js`**: This screen is displayed before each period (or after the initial configuration). It allows the user to:
-  - **Assign Players to Positions**: Manually assign players to specific field positions (defender, attacker) and substitute roles based on the chosen team configuration.
-  - **Review Current Score**: Displays the current score before starting a new period.
-  - **Goalie Confirmation**: Confirms or allows changing the goalie for the current period.
-  - **Formation Validation**: Ensures that all required positions are filled before starting the period.
+**Core Configuration**:
+- **Squad Selection**: 5-15 players supported (min varies by format)
+- **Match Details**: Opponent name (optional, 50 char max), match type (league/friendly/cup/tournament/internal), venue type (home/away/neutral)
+- **Game Settings**: Periods (1-4), duration (5-40 min), substitution alerts (0-5 min)
+- **Format & Formation**: Format selection (5v5, future 7v7) with formation-specific options (2-2, 1-2-1)
+- **Substitution Mode**: Individual vs Pairs (for 7-player 2-2 squads only)
+- **Goalie Assignment**: Pre-assign goalies for each period
+- **Captain Selection**: Optional captain assignment
 
-- **`PairSelectionCard.js`**: A reusable sub-component used within `PeriodSetupScreen` to facilitate player assignment for a specific pair (Left, Right, or Substitutes) in Pairs mode.
+**Team Configuration System**:
+- Uses `createTeamConfig()` to create composite configuration with format, squadSize, formation, substitutionType, and pairRoleRotation
+- Auto-creates team config when squad size is selected (uses `createTeamConfigFromSquadSize()`)
+- Pairs mode available only for 7-player 2-2 formation with role rotation options (fixed/alternating/period-alternating)
 
-- **`IndividualPositionCard.js`**: A reusable sub-component used within `PeriodSetupScreen` to facilitate player assignment for a specific individual position (e.g., Left Defender, Substitute) in Individual modes.
+**State Management**:
+- Integrates with `useGameState` hook for all configuration state
+- Sets `hasActiveConfiguration` flag when user makes changes
+- Manages `resumeData` for pending match restoration
+- Uses refs to prevent infinite loops in resume processing (`isProcessingResumeDataRef`, `resumeDataAppliedRef`)
 
-## 2. Core Architectural Concepts
+**Pending Match Handling**:
+- Detects pending matches via `checkForPendingMatches()`
+- Shows `PendingMatchResumeModal` for NEW_SIGN_IN detection
+- Resume flow: Creates resume data → applies to state → sets `currentMatchId` and `matchCreated`
+- Discard flow: Calls `discardPendingMatch()` → clears state via `clearStoredState()`
 
-### a. Controlled Components
-All input fields and selection dropdowns are controlled components, meaning their values are managed by React state (specifically, the state within `useGameState`). Changes are propagated via `onChange` handlers that update the `useGameState` hook.
+**Authentication & Team Context**:
+- Shows `TeamManagement` component if user has no clubs/teams
+- Syncs team roster to game state via `syncPlayersFromTeamRoster()`
+- Clears squad selection on NEW_SIGN_IN if team has no players
 
-### b. Progressive Disclosure
-The UI adapts based on user selections. For example, goalie assignment options only appear once a squad size is selected, and team mode selection is only available for 7-player squads.
+### PeriodSetupScreen.js
+Formation and position assignment for each period:
 
-### c. Configuration-Specific UI
-The `PeriodSetupScreen` dynamically renders different player assignment interfaces (`PairSelectionCard` vs. `IndividualPositionCard`) based on the team configuration selected in `ConfigurationScreen`. This ensures the UI is always relevant to the chosen configuration.
+**Formation Modes**:
+- **Pairs Mode**: Left pair, right pair, substitute pair (defender + attacker each)
+- **Individual Mode**: Position-specific assignments (2-2: leftDefender, rightDefender, leftAttacker, rightAttacker; 1-2-1: defender, left, right, attacker; plus substitutes)
 
-### d. Input Validation & Feedback
-Basic input validation (e.g., squad size, goalie assignments) is performed before proceeding to the next step, providing immediate feedback to the user.
+**Dynamic UI Rendering**:
+- Renders `PairSelectionCard` components for pairs mode
+- Renders `IndividualPositionCard` components for individual mode
+- Uses `POSITION_CONFIG` map to define position titles and keys
+- Uses `getModeDefinition()` to get field and substitute positions
 
-### e. Integration with `useGameState`
-These components heavily rely on the `useGameState` hook to read and update the global game state. Functions like `setSelectedSquadIds`, `setNumPeriods`, `setPeriodGoalieIds`, `setFormation`, `handleStartPeriodSetup`, and `handleStartGame` are all provided by `useGameState`.
+**Player Assignment Logic**:
+- Supports swapping when formation is complete (direct position swaps)
+- Validates no duplicate assignments during initial setup
+- Shows confirmation modal when activating inactive players
+- Detects direct and indirect inactive player scenarios
 
-## 3. Key Data Flows
+**Inactive Player Handling**:
+- Detects inactive players via `isPlayerInactive()` helper
+- Direct scenario: User selects inactive player for field position
+- Indirect scenario: Swap would place inactive player from substitute into field position
+- Inactive goalie scenario: Auto-shows confirmation modal on mount if goalie is inactive
+- Confirmation modal allows activation or cancellation (restores dropdown)
 
-1.  **Configuration to Game State**: User selections in `ConfigurationScreen` (squad, periods, duration, team configuration, goalies) directly update the corresponding state variables in `useGameState`.
+**Goalie Changes**:
+- Period 1: Simple goalie assignment
+- Period 2+: Offers to re-run recommendations when goalie changes
+- Supports goalie swapping with current field player
+- Updates `periodGoalieIds` and rotation queue
 
-2.  **Period Setup to Game State**: Player assignments in `PeriodSetupScreen` update the `formation` state in `useGameState`. When `handleStartGame` is called, `useGameState` finalizes the formation and transitions the view to the game screen.
+**Formation Validation**:
+- `isFormationComplete()` checks all positions filled and no duplicates
+- Disables "Enter Game" button until formation is valid
+- Supports both pairs and individual mode validation
 
-3.  **Recommendations**: For periods 2 and 3, `useGameState` pre-populates the `formation` based on intelligent recommendations from `formationGenerator.js`, which `PeriodSetupScreen` then displays for review and optional manual adjustment.
+**Resume Support**:
+- Accepts `resumeFormationData` prop to restore saved formations
+- Applied via `useEffect` on mount
 
-## 4. How to Make Changes
+### FormationPreview.js
+Visual preview component for tactical formations:
 
--   **Adding New Configuration Options**: If new game settings are introduced, add them to `ConfigurationScreen.js`, ensure they are managed by `useGameState`, and update `gameConfig.js` if they are fixed options.
+**Purpose**: Shows position layout on field with role icons for different formations
 
--   **Modifying Player Assignment Logic**: Changes to how players are assigned to positions (e.g., new validation rules, different assignment methods) would primarily involve modifying `handlePlayerAssignment`, `handleIndividualPlayerAssignment`, or `handleIndividual7PlayerAssignment` functions within `PeriodSetupScreen.js`.
+**Supported Formations**:
+- 2-2: 2 defenders, 2 attackers
+- 1-2-1: 1 defender, 2 midfielders, 1 attacker
+- 2-2-2: 2 defenders, 2 midfielders, 2 attackers (7v7)
+- 2-3-1: 2 defenders, 3 midfielders, 1 attacker (7v7)
 
--   **Updating Formation Display**: If the visual layout or interaction for assigning players within a formation changes, modify `PairSelectionCard.js` or `IndividualPositionCard.js` accordingly.
+**Rendering**: Uses field background image with absolute-positioned role icons (Shield, Sword, ArrowDownUp, Hand)
 
--   **Enhancing Recommendations**: While the display is here, the core recommendation logic resides in `src/utils/formationGenerator.js`. Changes to how recommendations are generated should be made there, and `PeriodSetupScreen` will automatically reflect them.
+## Critical Patterns
+
+### Configuration State Sequence
+1. User selects squad → auto-creates team config
+2. User selects formation → updates team config
+3. User changes substitution mode → recreates team config with new substitution type
+4. All changes set `hasActiveConfiguration` to true
+
+### Resume Data Processing
+1. Check if `resumeData` exists and not already processed
+2. Set `isProcessingResumeDataRef` to prevent concurrent execution
+3. Apply team config, formation, squad, goalies, match details
+4. Set `isResumedMatch` and `hasActiveConfiguration` flags
+5. Reset processing refs
+
+### Guard Clauses for State Updates
+- Skip auto-config when `isProcessingResumeDataRef` is true
+- Skip team sync when resume processing is active
+- Skip NEW_SIGN_IN cleanup when `hasActiveConfiguration` or `isResumedMatch` is true
+
+### Player Assignment Flow (PeriodSetupScreen)
+1. User selects player from dropdown
+2. Check if player is inactive and target is field position → show confirmation
+3. Check if swap would place inactive player in field position → show confirmation
+4. Otherwise proceed with assignment/swap logic
+
+## Key Dependencies
+
+- **State Management**: `useGameState` hook provides all state and handlers
+- **Team Context**: `useTeam` hook provides team roster and club info
+- **Auth Context**: `useAuth` hook provides user and session detection
+- **Constants**: `teamConfiguration.js`, `gameModes.js`, `gameConfig.js`, `matchTypes.js`, `matchVenues.js`
+- **Services**: `matchStateManager.js`, `pendingMatchService.js`, `sessionDetectionService.js`
+- **Utilities**: `formationGenerator.js` for period recommendations
+
+## Important Notes
+
+- ConfigurationScreen must render before PeriodSetupScreen in game flow
+- Formation data structure differs between pairs and individual modes
+- Goalie is always excluded from field/substitute position options
+- Resume data processing uses refs to prevent race conditions and infinite loops
+- Inactive player handling requires user confirmation before activation
+- Team sync completion is coordinated with resume data processing via refs

@@ -1,54 +1,66 @@
-# Gemini Project Brief: src/components/shared
+# AI Agent Guide: src/components/shared
 
-This directory contains reusable UI components that are shared across different screens and features of the application. These components are designed to be generic, highly configurable through props, and adhere to the application's visual design system, promoting consistency and reducing development effort.
+This directory contains reusable UI components shared across the application. All components follow Tailwind CSS styling and are props-driven for maximum flexibility.
 
-## 1. Key Components
+## Core UI Components (UI.js)
 
-- **`UI.js`**: This file serves as a central hub for basic, atomic UI elements. It exports:
-  - **`Input`**: A styled text input field.
-  - **`Select`**: A styled dropdown selection component.
-  - **`Button`**: A versatile button component with different variants (primary, secondary, danger, accent), sizes, and optional icons.
-  - **`ConfirmationModal`**: A generic modal for displaying confirmation messages and capturing user decisions.
-  - **`FieldPlayerModal`**: A modal specifically for displaying options related to field players (e.g., set to go off next, substitute now, change position).
-  - **`SubstitutePlayerModal`**: A modal for options related to substitute players (e.g., activate/inactivate, set to go in next).
-  - **`GoalieModal`**: A modal for selecting a new goalie.
-  - **`ScoreEditModal`**: A modal for manually editing the game score.
+### Form Controls
+- **`Input`**: Styled text input with focus states and ref forwarding. Dark theme with sky-400 focus ring.
+- **`Select`**: Dropdown with custom chevron icon. Supports object options `{value, label}` or simple string arrays.
+- **`MultiSelect`**: Multi-selection dropdown with checkboxes, clear function, and smart label display (shows count when >2 selected).
+- **`Slider`**: Range input with visual fill and custom thumb styling. Used for volume controls.
 
-- **`AddPlayerModal.js`**: A dedicated modal for adding temporary players to the roster during game configuration.
+### Buttons and Modals
+- **`Button`**: Variants: `primary` (sky-600), `secondary` (slate-600), `danger` (rose-600), `accent` (emerald-600). Sizes: `sm`, `md`, `lg`. Optional Icon prop.
+- **`ConfirmationModal`**: Two-button modal (confirm/cancel) with configurable variant for confirm button.
+- **`ThreeOptionModal`**: Three-button modal with individual variants for each option.
 
-- **`HamburgerMenu.js`**: The navigation menu component, typically found in the header. It provides options like adding players, switching team modes (for 7-player squads), and starting a new game.
+### Game-Specific Modals
+- **`FieldPlayerModal`**: Options for on-field players - set next to sub off, substitute now, change position. Supports position swap UI flow with back button. Conditional options based on `showPositionChange`, `showSwapPositions`, `showSubstitutionOptions`.
+- **`SubstitutePlayerModal`**: Options for bench players - activate/inactivate, set as next to go in, change next position. Dynamic UI flow for position selection.
+- **`GoalieModal`**: Scrollable list of players to replace current goalie. Marks inactive players as disabled.
+- **`ScoreEditModal`**: Increment/decrement controls for own and opponent score.
+- **`ScoreManagerModal`**: Comprehensive score management - view goal timeline, add goals scored/conceded, edit/delete goal events. Uses `goalScorers` map to resolve scorer IDs.
+- **`SubstituteSelectionModal`**: Select which substitute to bring on for a specific field player.
 
-## 2. Core Architectural Concepts
+## Specialized Components
 
-### a. Reusability
-Each component is built to be highly reusable. They accept props to customize their appearance and behavior, allowing them to be used in various contexts without modification.
+- **`AddPlayerModal`**: Add temporary player with name input. Uses `sanitizeNameInput` utility (50 char max).
+- **`GoalScorerModal`**: Three modes - `new` (select scorer), `correct` (update existing), `view` (read-only). Shows position icons (Sword/Shield/ArrowDownUp/Hand) with role-specific colors. Supports "No specific scorer" option for new goals.
+- **`FeatureVoteModal`**: Feature voting UI with loading/success/error states. Shows auth prompt for unauthenticated users.
+- **`PreferencesModal`**: User preferences with audio alert settings (enable/disable, sound selection, volume slider, test preview). Uses `PreferencesContext` and `audioAlertService`. Preloads sounds on open.
+- **`PairRoleRotationHelpModal`**: Informational modal explaining pair rotation strategies (keep roles vs swap roles).
+- **`HamburgerMenu`**: Main navigation menu with authentication state, profile, team management, statistics, tactical board, add player, pair management. Shows pending requests badge for team managers.
 
-### b. Design System Adherence
-These components embody the application's visual design system (primarily driven by Tailwind CSS). By using these shared components, the application maintains a consistent look and feel across all its screens.
+## Key Patterns
 
-### c. Accessibility
-Components are designed with accessibility in mind, including proper use of HTML elements (e.g., `label` for `Input` and `Select`), ARIA attributes where necessary, and focus management for modals.
+### Modal Pattern
+- All modals return `null` when `!isOpen`
+- Fixed overlay with `z-50` (except ScoreManagerModal at `z-50`)
+- Slate-800 background with slate-600 borders
+- Close button with X icon in header
+- Use `onClose` callback for cancellation
 
-### d. Modularity
-Each component is self-contained and focuses on a single responsibility (e.g., `Button` only renders a button, `Select` only renders a dropdown). This modularity makes them easier to understand, test, and maintain.
+### Player Name Display
+- Use `formatPlayerName(player)` from `utils/formatUtils` for consistent display
+- `GoalScorerModal` uses `getPlayerName(players, playerId)` for ID resolution
 
-### e. Controlled Components
-Input and Select components are designed to be controlled components, meaning their state is managed by their parent component, ensuring a predictable data flow.
+### Position/Role Mapping
+- Position icons: `Sword` (attacker), `Shield` (defender), `ArrowDownUp` (midfielder), `Hand` (goalie), `RotateCcw` (substitute)
+- Position colors: red (attacker), blue (defender), yellow (midfielder), green (goalie), gray (substitute)
+- Use `getPlayerCurrentRole(player)` from `utils/playerSortingUtils`
 
-## 3. Key Data Flows
+### Input Sanitization
+- Always use `sanitizeNameInput` for user-entered player names
+- Max length: 50 characters
 
-- **Props-Driven Configuration**: Parent components pass data and callback functions as props to these shared components. For example, a `Button` receives an `onClick` handler, and a `Select` receives `options` and an `onChange` handler.
+### Authentication Context
+- `HamburgerMenu` integrates with `AuthContext` and `TeamContext`
+- Conditionally shows protected features (team management, statistics)
+- Auth modal integration via `authModal.openLogin()` / `authModal.openSignup()`
 
-- **Modal Interactions**: Modals (like `FieldPlayerModal` or `ScoreEditModal`) are typically opened by handlers (from `src/game/handlers/`) or other UI components. They then use callbacks (e.g., `onConfirm`, `onSave`) to communicate user actions back to the parent logic.
-
-- **Input Sanitization**: The `AddPlayerModal` uses `sanitizeNameInput` from `src/utils/inputSanitization.js` to ensure user input adheres to defined rules before being processed.
-
-## 4. How to Make Changes
-
-- **Modifying Component Appearance**: To change the visual style of a shared component (e.g., button colors, input borders), modify its Tailwind CSS classes directly within its JSX. For global changes, consider updating the `tailwind.config.js` file.
-
-- **Adding New Shared Component**: If a new UI element is needed that will be used in multiple places, create a new file in this directory. Design it to be generic and configurable through props.
-
-- **Enhancing Existing Component**: To add new functionality (e.g., a new button variant, an additional prop for an input), modify the component's code and update its prop types/documentation.
-
-- **Debugging UI Issues**: When a shared component isn't behaving as expected, check the props it's receiving from its parent. Ensure the data is correct and that the callback functions are being triggered as intended.
+## Component Exports
+All components exported via `index.js`:
+- `UI.js` exports all form/modal components via barrel export
+- `HamburgerMenu`, `AddPlayerModal` exported individually
+- Other modals imported directly from their files
