@@ -23,6 +23,7 @@ export const STORAGE_KEYS = {
   NAVIGATION_HISTORY: 'sport-wizard-navigation-history',
   STATS_FILTERS: 'sport-wizard-stats-filter',
   STATISTICS_ACTIVE_TAB: 'sport-wizard-statistics-active-tab', // Updated from 'statistics-active-tab'
+  STATISTICS_TIME_RANGE: 'sport-wizard-statistics-time-range',
   DISMISSED_MODALS: 'sport-wizard-dismissed-modals',
 
   // Authentication
