@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { ChevronUp, ChevronDown, User, Award, Clock, Users, Target } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches, getPlayerStats } from '../../services/matchStateManager';
@@ -6,6 +6,8 @@ import { formatMinutesAsTime, formatSecondsAsTime } from '../../utils/formatUtil
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
+import { PersistenceManager } from '../../utils/persistenceManager';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 const SORT_COLUMNS = {
   NAME: 'name',
@@ -144,121 +146,372 @@ export function PlayerStatsView({ startDate, endDate }) {
 
   const clearAllFilters = clearFilters;
 
-  const columns = [
-    {
-      key: SORT_COLUMNS.NAME,
-      label: 'Player',
-      sortable: true,
-      className: 'text-left font-medium',
-      render: (player) => (
-        <div className="flex items-center space-x-2">
-          <User className="h-4 w-4 text-slate-400" />
-          <span className="text-slate-100">{player.name}</span>
-        </div>
-      )
-    },
-    {
-      key: SORT_COLUMNS.MATCHES,
-      label: 'Matches',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.matchesPlayed}</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.GOALS,
-      label: 'Goals',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.goalsScored}</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.AVG_TIME,
-      label: 'Avg Time',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <div className="flex items-center justify-center space-x-1">
-          <span className="text-slate-300 font-mono">{formatMinutesAsTime(player.averageTimePerMatch)}</span>
-        </div>
-      )
-    },
-    {
-      key: SORT_COLUMNS.TOTAL_TIME,
-      label: 'Total Time',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{formatSecondsAsTime(player.totalFieldTimeSeconds)}</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.SUB_START,
-      label: 'Started as Sub',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.percentStartedAsSubstitute}%</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.DEFENDER,
-      label: 'Defender',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.percentTimeAsDefender}%</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.MIDFIELDER,
-      label: 'Midfielder',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.percentTimeAsMidfielder}%</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.ATTACKER,
-      label: 'Attacker',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.percentTimeAsAttacker}%</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.GOALKEEPER,
-      label: 'Goalkeeper',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.percentTimeAsGoalkeeper}%</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.CAPTAIN,
-      label: 'Captain',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.matchesAsCaptain}</span>
-      )
-    },
-    {
-      key: SORT_COLUMNS.FAIR_PLAY,
-      label: 'Fair Play',
-      sortable: true,
-      className: 'text-center',
-      render: (player) => (
-        <span className="text-slate-300 font-mono">{player.fairPlayAwards}</span>
-      )
+  const baseColumns = useMemo(
+    () => [
+      {
+        key: SORT_COLUMNS.NAME,
+        label: 'Player',
+        sortable: true,
+        className: 'text-left font-medium',
+        render: (player) => (
+          <div className="flex items-center space-x-2">
+            <User className="h-4 w-4 text-slate-400" />
+            <span className="text-slate-100">{player.name}</span>
+          </div>
+        )
+      },
+      {
+        key: SORT_COLUMNS.MATCHES,
+        label: 'Matches',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.matchesPlayed}</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.GOALS,
+        label: 'Goals',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.goalsScored}</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.AVG_TIME,
+        label: 'Avg Time',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <div className="flex items-center justify-center space-x-1">
+            <span className="text-slate-300 font-mono">{formatMinutesAsTime(player.averageTimePerMatch)}</span>
+          </div>
+        )
+      },
+      {
+        key: SORT_COLUMNS.TOTAL_TIME,
+        label: 'Total Time',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{formatSecondsAsTime(player.totalFieldTimeSeconds)}</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.SUB_START,
+        label: 'Started as Sub',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.percentStartedAsSubstitute}%</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.DEFENDER,
+        label: 'Defender',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.percentTimeAsDefender}%</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.MIDFIELDER,
+        label: 'Midfielder',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.percentTimeAsMidfielder}%</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.ATTACKER,
+        label: 'Attacker',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.percentTimeAsAttacker}%</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.GOALKEEPER,
+        label: 'Goalkeeper',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.percentTimeAsGoalkeeper}%</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.CAPTAIN,
+        label: 'Captain',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.matchesAsCaptain}</span>
+        )
+      },
+      {
+        key: SORT_COLUMNS.FAIR_PLAY,
+        label: 'Fair Play',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">{player.fairPlayAwards}</span>
+        )
+      }
+    ],
+    []
+  );
+
+  const defaultColumnOrder = useMemo(
+    () => baseColumns.map((column) => column.key),
+    [baseColumns]
+  );
+
+  const columnOrderManager = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return null;
     }
-  ];
+
+    return new PersistenceManager(STORAGE_KEYS.STATISTICS_PLAYER_COLUMN_ORDER, {
+      order: defaultColumnOrder
+    });
+  }, [defaultColumnOrder]);
+
+  const mergeColumnOrder = useCallback((order) => {
+    const sanitizedOrder = Array.isArray(order)
+      ? order.filter((key) => defaultColumnOrder.includes(key))
+      : [];
+    const missingKeys = defaultColumnOrder.filter((key) => !sanitizedOrder.includes(key));
+    return [...sanitizedOrder, ...missingKeys];
+  }, [defaultColumnOrder]);
+
+  const [columnOrder, setColumnOrder] = useState(() => {
+    if (!columnOrderManager) {
+      return [...defaultColumnOrder];
+    }
+
+    const savedState = columnOrderManager.loadState();
+    return mergeColumnOrder(savedState?.order);
+  });
+  const [draggingColumn, setDraggingColumn] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const activePointerIdRef = useRef(null);
+  const draggingColumnRef = useRef(null);
+  const dragOverColumnRef = useRef(null);
+  const pointerMoveListenerRef = useRef(null);
+  const pointerUpListenerRef = useRef(null);
+  const pointerCancelListenerRef = useRef(null);
+
+  useEffect(() => {
+    draggingColumnRef.current = draggingColumn;
+  }, [draggingColumn]);
+
+  useEffect(() => {
+    dragOverColumnRef.current = dragOverColumn;
+  }, [dragOverColumn]);
+
+  useEffect(() => {
+    if (!columnOrderManager) {
+      return;
+    }
+
+    columnOrderManager.saveState({ order: columnOrder });
+  }, [columnOrderManager, columnOrder]);
+
+  const orderedColumns = useMemo(() => {
+    const columnMap = new Map(baseColumns.map((column) => [column.key, column]));
+    return columnOrder.map((key) => columnMap.get(key)).filter(Boolean);
+  }, [baseColumns, columnOrder]);
+
+  const cleanupPointerListeners = useCallback(() => {
+    if (pointerMoveListenerRef.current) {
+      window.removeEventListener('pointermove', pointerMoveListenerRef.current);
+      pointerMoveListenerRef.current = null;
+    }
+
+    if (pointerUpListenerRef.current) {
+      window.removeEventListener('pointerup', pointerUpListenerRef.current);
+      pointerUpListenerRef.current = null;
+    }
+
+    if (pointerCancelListenerRef.current) {
+      window.removeEventListener('pointercancel', pointerCancelListenerRef.current);
+      pointerCancelListenerRef.current = null;
+    }
+
+    activePointerIdRef.current = null;
+    draggingColumnRef.current = null;
+    dragOverColumnRef.current = null;
+  }, []);
+
+  const resetReorderState = useCallback(() => {
+    setDraggingColumn(null);
+    setDragOverColumn(null);
+    setIsReordering(false);
+    draggingColumnRef.current = null;
+    dragOverColumnRef.current = null;
+  }, []);
+
+  const reorderColumns = useCallback(
+    (sourceKey, targetKey) => {
+      if (!sourceKey || !targetKey || sourceKey === targetKey) {
+        resetReorderState();
+        return;
+      }
+
+      setColumnOrder((prevOrder) => {
+        const nextOrder = [...prevOrder];
+        const sourceIndex = nextOrder.indexOf(sourceKey);
+        const targetIndex = nextOrder.indexOf(targetKey);
+
+        if (sourceIndex === -1 || targetIndex === -1) {
+          return mergeColumnOrder(nextOrder);
+        }
+
+        nextOrder.splice(sourceIndex, 1);
+        nextOrder.splice(targetIndex, 0, sourceKey);
+
+        return mergeColumnOrder(nextOrder);
+      });
+
+      resetReorderState();
+    },
+    [mergeColumnOrder, resetReorderState]
+  );
+
+  const handleDragStart = (event, columnKey) => {
+    setDraggingColumn(columnKey);
+    draggingColumnRef.current = columnKey;
+    setIsReordering(true);
+    setDragOverColumn(null);
+    if (event?.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', columnKey);
+    }
+  };
+
+  const handleDragOver = (event, columnKey) => {
+    event.preventDefault();
+    if (draggingColumn === null || draggingColumn === columnKey) {
+      return;
+    }
+
+    if (event?.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+
+    if (dragOverColumn !== columnKey) {
+      setDragOverColumn(columnKey);
+    }
+  };
+
+  const handleDragLeave = (columnKey) => {
+    if (dragOverColumn === columnKey) {
+      setDragOverColumn(null);
+    }
+  };
+
+  const handleDrop = (event, columnKey) => {
+    event.preventDefault();
+
+    if (draggingColumn === null || draggingColumn === columnKey) {
+      resetReorderState();
+      return;
+    }
+
+    reorderColumns(draggingColumn, columnKey);
+  };
+
+  const handleDragEnd = () => {
+    resetReorderState();
+  };
+
+  useEffect(() => {
+    return () => {
+      cleanupPointerListeners();
+    };
+  }, [cleanupPointerListeners]);
+
+  const handlePointerDown = (event, columnKey) => {
+    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') {
+      return;
+    }
+
+    event.preventDefault();
+    cleanupPointerListeners();
+    activePointerIdRef.current = event.pointerId;
+    draggingColumnRef.current = columnKey;
+    dragOverColumnRef.current = columnKey;
+    setDraggingColumn(columnKey);
+    setDragOverColumn(columnKey);
+    setIsReordering(true);
+
+    const handleMove = (moveEvent) => {
+      if (moveEvent.pointerId !== activePointerIdRef.current) {
+        return;
+      }
+
+      moveEvent.preventDefault();
+      const element = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+      const header = element?.closest?.('th[data-column-key]');
+
+      if (!header) {
+        return;
+      }
+
+      const targetKey = header.getAttribute('data-column-key');
+
+      if (!targetKey || targetKey === dragOverColumnRef.current) {
+        return;
+      }
+
+      dragOverColumnRef.current = targetKey;
+      setDragOverColumn((current) => {
+        if (current === targetKey) {
+          return current;
+        }
+        return targetKey;
+      });
+    };
+
+    const handleEnd = (endEvent) => {
+      if (endEvent.pointerId !== activePointerIdRef.current) {
+        return;
+      }
+
+      endEvent.preventDefault();
+      const element = document.elementFromPoint(endEvent.clientX, endEvent.clientY);
+      const header = element?.closest?.('th[data-column-key]');
+      const targetKey =
+        header?.getAttribute('data-column-key') ||
+        dragOverColumnRef.current ||
+        draggingColumnRef.current;
+
+      reorderColumns(draggingColumnRef.current, targetKey);
+      cleanupPointerListeners();
+    };
+
+    const handleCancel = (cancelEvent) => {
+      if (cancelEvent.pointerId !== activePointerIdRef.current) {
+        return;
+      }
+
+      resetReorderState();
+      cleanupPointerListeners();
+    };
+
+    pointerMoveListenerRef.current = handleMove;
+    pointerUpListenerRef.current = handleEnd;
+    pointerCancelListenerRef.current = handleCancel;
+
+    window.addEventListener('pointermove', handleMove, { passive: false });
+    window.addEventListener('pointerup', handleEnd, { passive: false });
+    window.addEventListener('pointercancel', handleCancel, { passive: false });
+  };
 
   const sortedPlayers = useMemo(() => {
     const sorted = [...players].sort((a, b) => {
@@ -314,6 +567,10 @@ export function PlayerStatsView({ startDate, endDate }) {
   }, [players]);
 
   const handleSort = (columnKey) => {
+    if (isReordering) {
+      return;
+    }
+
     if (sortBy === columnKey) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -464,7 +721,7 @@ export function PlayerStatsView({ startDate, endDate }) {
             <span>Player Statistics</span>
           </h3>
           <p className="text-slate-400 text-sm mt-1">
-            Click column headers to sort. Statistics are calculated across all matches.
+            Click column headers to sort or drag to reorder. Statistics are calculated across all matches.
           </p>
         </div>
 
@@ -472,16 +729,28 @@ export function PlayerStatsView({ startDate, endDate }) {
           <table className="min-w-full">
             <thead className="bg-slate-800">
               <tr>
-                {columns.map((column) => (
+                {orderedColumns.map((column) => (
                   <th
                     key={column.key}
                     scope="col"
-                    className={`px-3 py-2 text-xs font-medium text-sky-200 tracking-wider ${
+                    draggable
+                    data-column-key={column.key}
+                    className={`px-3 py-2 text-xs font-medium text-sky-200 tracking-wider select-none touch-none ${
                       column.sortable ? 'cursor-pointer hover:bg-slate-700 transition-colors' : ''
+                    } ${sortBy === column.key ? 'bg-slate-700' : ''} ${
+                      draggingColumn === column.key ? 'opacity-60' : ''
                     } ${
-                      sortBy === column.key ? 'bg-slate-700' : ''
+                      dragOverColumn === column.key && draggingColumn !== column.key
+                        ? 'ring-1 ring-sky-400 ring-inset'
+                        : ''
                     }`}
                     onClick={column.sortable ? () => handleSort(column.key) : undefined}
+                    onDragStart={(event) => handleDragStart(event, column.key)}
+                    onDragOver={(event) => handleDragOver(event, column.key)}
+                    onDragLeave={() => handleDragLeave(column.key)}
+                    onDrop={(event) => handleDrop(event, column.key)}
+                    onDragEnd={handleDragEnd}
+                    onPointerDown={(event) => handlePointerDown(event, column.key)}
                   >
                     <div className="flex items-center justify-between">
                       <span>{column.label}</span>
@@ -499,7 +768,7 @@ export function PlayerStatsView({ startDate, endDate }) {
                     index % 2 === 0 ? 'bg-slate-700' : 'bg-slate-800'
                   } hover:bg-slate-600 transition-colors`}
                 >
-                  {columns.map((column) => (
+                  {orderedColumns.map((column) => (
                     <td
                       key={column.key}
                       className={`px-3 py-2 whitespace-nowrap text-sm ${column.className}`}
