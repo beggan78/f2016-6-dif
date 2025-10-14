@@ -29,7 +29,14 @@ export const GAME_CONSTANTS = {
   FIELD_PLAYERS_5V5: 4,        // Number of field players in 5v5 format (legacy reference)
   GOALIE_COUNT: 1,             // Number of goalies
   MIN_SQUAD_SIZE: 5,           // Minimum squad size
-  MAX_SQUAD_SIZE: 15           // Maximum squad size
+  DEFAULT_MAX_SQUAD_SIZE: 15   // Fallback maximum squad size when format metadata is absent
+};
+
+// Maximum squad sizes per supported format (defaulting to fallback above when missing)
+export const MAX_SQUAD_SIZE_BY_FORMAT = {
+  [FORMATS.FORMAT_5V5]: 11,
+  [FORMATS.FORMAT_7V7]: 15,
+  '9v9': 19 // Placeholder for future introduction of 9v9 format
 };
 
 // Tactical formations available for different formats
@@ -169,6 +176,21 @@ export function getMinimumPlayersForFormat(format) {
   return Math.max(GAME_CONSTANTS.MIN_SQUAD_SIZE, minimumPlayers);
 }
 
+/**
+ * Determine maximum players allowed for a given format
+ * Falls back to global default when format-specific limit is not defined
+ * @param {string} format - Team format identifier (e.g., 5v5, 7v7)
+ * @returns {number} Maximum players allowed for the format
+ */
+export function getMaximumPlayersForFormat(format) {
+  const formatCap = MAX_SQUAD_SIZE_BY_FORMAT[format];
+  if (typeof formatCap === 'number') {
+    return Math.max(GAME_CONSTANTS.MIN_SQUAD_SIZE, formatCap);
+  }
+
+  return Math.max(GAME_CONSTANTS.MIN_SQUAD_SIZE, GAME_CONSTANTS.DEFAULT_MAX_SQUAD_SIZE);
+}
+
 // Pair role rotation styles (for pairs substitution mode)
 export const PAIR_ROLE_ROTATION_TYPES = {
   KEEP_THROUGHOUT_PERIOD: 'keep_throughout_period',
@@ -253,10 +275,11 @@ export const validateTeamConfig = (teamConfig) => {
   }
 
   const formatConfig = FORMAT_CONFIGS[format];
+  const maximumPlayersForFormat = getMaximumPlayersForFormat(format);
 
   // Validate squad size
-  if (squadSize < GAME_CONSTANTS.MIN_SQUAD_SIZE || squadSize > GAME_CONSTANTS.MAX_SQUAD_SIZE) {
-    throw new Error(`Invalid squad size: ${squadSize}. Must be between ${GAME_CONSTANTS.MIN_SQUAD_SIZE} and ${GAME_CONSTANTS.MAX_SQUAD_SIZE} players`);
+  if (squadSize < GAME_CONSTANTS.MIN_SQUAD_SIZE || squadSize > maximumPlayersForFormat) {
+    throw new Error(`Invalid squad size: ${squadSize}. Must be between ${GAME_CONSTANTS.MIN_SQUAD_SIZE} and ${maximumPlayersForFormat} players for ${format}`);
   }
 
   // Validate formation for the given format

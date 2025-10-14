@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS, getMinimumPlayersForFormat, GAME_CONSTANTS } from '../../constants/teamConfiguration';
+import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
@@ -94,7 +94,11 @@ export function ConfigurationScreen({
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const effectiveVenueType = venueType ?? DEFAULT_VENUE_TYPE;
   const minPlayersRequired = React.useMemo(() => getMinimumPlayersForFormat(currentFormat), [currentFormat]);
-  const maxPlayersAllowed = GAME_CONSTANTS.MAX_SQUAD_SIZE;
+  const maxPlayersAllowed = React.useMemo(() => getMaximumPlayersForFormat(currentFormat), [currentFormat]);
+  const formatLabel = FORMAT_CONFIGS[currentFormat]?.label || currentFormat;
+  const meetsMinimumSelection = selectedSquadIds.length >= minPlayersRequired;
+  const exceedsFormatMaximum = selectedSquadIds.length > maxPlayersAllowed;
+  const withinFormatBounds = meetsMinimumSelection && !exceedsFormatMaximum;
 
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
@@ -1252,12 +1256,16 @@ export function ConfigurationScreen({
                     checked={selectedSquadIds.includes(player.id)}
                     onChange={() => togglePlayerSelection(player.id)}
                     className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
-                    disabled={selectedSquadIds.length >= maxPlayersAllowed && !selectedSquadIds.includes(player.id)}
                   />
                   <span>{formatPlayerName(player)}</span>
                 </label>
               ))}
             </div>
+            {exceedsFormatMaximum && (
+              <p className="mt-2 text-xs text-amber-300">
+                You have selected {selectedSquadIds.length} players, which exceeds the {formatLabel} limit of {maxPlayersAllowed}. Update the match format or adjust the squad selection.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -1337,7 +1345,7 @@ export function ConfigurationScreen({
             />
           </div>
 
-          {selectedSquadIds.length >= minPlayersRequired && selectedSquadIds.length <= maxPlayersAllowed ? (
+          {withinFormatBounds ? (
             <div className="space-y-3">
               <div>
                 <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
@@ -1357,8 +1365,10 @@ export function ConfigurationScreen({
               <FormationPreview formation={selectedFormation} className="mt-3" />
             </div>
           ) : (
-            <p className="text-xs text-slate-400">
-              Add between {minPlayersRequired} and {maxPlayersAllowed} players to configure a tactical formation.
+            <p className={`text-xs ${meetsMinimumSelection ? 'text-amber-300' : 'text-slate-400'}`}>
+              {meetsMinimumSelection
+                ? `You have selected ${selectedSquadIds.length} players, which exceeds the ${formatLabel} limit of ${maxPlayersAllowed}. Update the match format or adjust the squad before configuring formations.`
+                : `Add between ${minPlayersRequired} and ${maxPlayersAllowed} players to configure a tactical formation.`}
             </p>
           )}
         </div>
@@ -1440,7 +1450,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Goalie Assignment */}
-      {(selectedSquadIds.length >= minPlayersRequired && selectedSquadIds.length <= maxPlayersAllowed) && (
+      {withinFormatBounds && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">
@@ -1486,8 +1496,7 @@ export function ConfigurationScreen({
           onClick={handleSaveConfigClick}
           disabled={
             saveConfigStatus.loading ||
-            selectedSquadIds.length < minPlayersRequired ||
-            selectedSquadIds.length > maxPlayersAllowed
+            !withinFormatBounds
           }
           variant="secondary"
           Icon={Save}
@@ -1499,7 +1508,7 @@ export function ConfigurationScreen({
       <Button 
         onClick={handleStartPeriodSetup} 
         disabled={
-          (selectedSquadIds.length < minPlayersRequired || selectedSquadIds.length > maxPlayersAllowed) ||
+          (!withinFormatBounds) ||
           !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)
         } 
         Icon={Play}

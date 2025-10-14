@@ -17,7 +17,7 @@ import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, GAME_CONSTANTS } from '../constants/teamConfiguration';
+import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
@@ -161,7 +161,7 @@ export function useGameState(navigateToView = null) {
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const minimumPlayersForFormat = useMemo(() => getMinimumPlayersForFormat(currentFormat), [currentFormat]);
-  const maximumPlayersForMatch = GAME_CONSTANTS.MAX_SQUAD_SIZE;
+  const maximumPlayersForMatch = useMemo(() => getMaximumPlayersForFormat(currentFormat), [currentFormat]);
 
   // Match events and scoring - extracted to useMatchEvents hook
   const matchEventsHook = useMatchEvents(initialState);

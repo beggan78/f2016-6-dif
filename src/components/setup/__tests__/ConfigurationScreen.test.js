@@ -240,6 +240,38 @@ describe('ConfigurationScreen squad selection', () => {
     const allSelectedButton = screen.getByRole('button', { name: /all selected/i });
     expect(allSelectedButton).toBeDisabled();
   });
+
+  it('shows a warning when selection exceeds the current format maximum', () => {
+    const players = Array.from({ length: 12 }).map((_, index) => ({
+      id: `player-${index + 1}`,
+      name: `Player ${index + 1}`,
+      jersey_number: index + 1
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: players,
+      hasTeams: true,
+      hasClubs: true,
+      loading: false
+    }));
+
+    const props = buildProps({
+      allPlayers: players,
+      selectedSquadIds: players.map(player => player.id),
+      selectedSquadPlayers: players
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(players.length);
+    checkboxes.forEach(checkbox => {
+      expect(checkbox).toBeEnabled();
+    });
+
+    expect(screen.getByText(/exceeds the 5v5 limit of 11/i)).toBeInTheDocument();
+  });
 });
 
 describe('ConfigurationScreen venue selection', () => {
