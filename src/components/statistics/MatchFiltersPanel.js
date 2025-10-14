@@ -32,6 +32,7 @@ export function MatchFiltersPanel({
   opponentFilter,
   playerFilter,
   formatFilter,
+  showPlayerFilter = true,
   onTypeFilterChange,
   onOutcomeFilterChange,
   onVenueFilterChange,
@@ -100,6 +101,12 @@ export function MatchFiltersPanel({
   }, [matches]);
 
   const shouldShowFormatFilter = formats.length > 1;
+  const filterColumnLayout = useMemo(() => {
+    if (showPlayerFilter) {
+      return shouldShowFormatFilter ? 'lg:grid-cols-6' : 'lg:grid-cols-5';
+    }
+    return shouldShowFormatFilter ? 'lg:grid-cols-5' : 'lg:grid-cols-4';
+  }, [showPlayerFilter, shouldShowFormatFilter]);
 
   return (
     <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
@@ -140,9 +147,7 @@ export function MatchFiltersPanel({
           ? (isFilterCollapsed ? 'hidden' : 'block mt-4')
           : 'mt-4'
       }`}>
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
-          shouldShowFormatFilter ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
-        }`}>
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${filterColumnLayout}`}>
           <div className="flex flex-col">
             <label className="text-slate-300 text-sm mb-2">Type</label>
             <MultiSelect
@@ -183,15 +188,17 @@ export function MatchFiltersPanel({
             />
           </div>
 
-          <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">With Player</label>
-            <MultiSelect
-              value={playerFilter}
-              onChange={onPlayerFilterChange}
-              options={players}
-              placeholder="All"
-            />
-          </div>
+          {showPlayerFilter && (
+            <div className="flex flex-col">
+              <label className="text-slate-300 text-sm mb-2">With Player</label>
+              <MultiSelect
+                value={playerFilter}
+                onChange={onPlayerFilterChange}
+                options={players}
+                placeholder="All"
+              />
+            </div>
+          )}
 
           {shouldShowFormatFilter && (
             <div className="flex flex-col">

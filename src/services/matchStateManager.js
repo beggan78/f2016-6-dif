@@ -14,6 +14,7 @@ import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 import { FORMATS, FORMAT_CONFIGS, FORMATIONS } from '../constants/teamConfiguration';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 import { normalizeFormationStructure } from '../utils/formationUtils';
+import { matchPassesFilters } from '../utils/matchFilterUtils';
 
 const DISPLAY_ROLE_TO_DB_ROLE_MAP = {
   Goalkeeper: roleToDatabase(PLAYER_ROLES.GOALIE),
@@ -870,9 +871,10 @@ export async function getMatchDetails(matchId) {
  * @param {string} teamId - Team ID
  * @param {Date} startDate - Optional start date filter
  * @param {Date} endDate - Optional end date filter
+ * @param {Object} filters - Additional match filters (type, outcome, venue, opponent, player, format)
  * @returns {Promise<{success: boolean, players?: Array, error?: string}>}
  */
-export async function getPlayerStats(teamId, startDate = null, endDate = null) {
+export async function getPlayerStats(teamId, startDate = null, endDate = null, filters = {}) {
   try {
     if (!teamId) {
       return {
@@ -880,6 +882,43 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null) {
         error: 'Team ID is required'
       };
     }
+
+    const toStartOfDay = (date) => {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    };
+
+    const toEndOfDay = (date) => {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+    };
+
+    const normalizeFilterArray = (value) => (Array.isArray(value) ? value : []);
+
+    const normalizedFilters = {
+      typeFilter: normalizeFilterArray(filters.typeFilter),
+      outcomeFilter: normalizeFilterArray(filters.outcomeFilter),
+      venueFilter: normalizeFilterArray(filters.venueFilter),
+      opponentFilter: normalizeFilterArray(filters.opponentFilter),
+      playerFilter: normalizeFilterArray(filters.playerFilter),
+      formatFilter: normalizeFilterArray(filters.formatFilter)
+    };
+
+    const normalizedStartDate = toStartOfDay(startDate);
+    const normalizedEndDate = toEndOfDay(endDate);
+
+    const formatMatchType = (type) => {
+      if (!type || typeof type !== 'string') return null;
+      return type.charAt(0).toUpperCase() + type.slice(1);
+    };
+
+    const mapOutcomeToDisplay = (outcome) => {
+      if (!outcome) return null;
+      if (outcome === 'win') return 'W';
+      if (outcome === 'draw') return 'D';
+      if (outcome === 'loss') return 'L';
+      return outcome;
+    };
 
     // Query to get all player match stats for the team's confirmed matches
     let query = supabase
@@ -900,7 +939,12 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null) {
           team_id,
           state,
           deleted_at,
-          started_at
+          started_at,
+          type,
+          outcome,
+          venue_type,
+          opponent,
+          format
         ),
         player:player_id (
           id,
@@ -921,7 +965,40 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null) {
       };
     }
 
-    // Filter for confirmed matches of this team only
+    // Build helper maps for filtering
+    const matchDetailsMap = new Map();
+
+    (allStats || []).forEach((stat) => {
+      if (!stat.match || stat.match.team_id !== teamId || stat.match.state !== 'confirmed' || stat.match.deleted_at !== null) {
+        return;
+      }
+
+      const matchId = stat.match.id;
+      if (!matchId) {
+        return;
+      }
+
+      const existingDetails = matchDetailsMap.get(matchId);
+
+      const matchDetails = existingDetails || {
+        id: matchId,
+        date: stat.match.started_at,
+        type: formatMatchType(stat.match.type),
+        outcome: mapOutcomeToDisplay(stat.match.outcome),
+        venueType: stat.match.venue_type,
+        opponent: stat.match.opponent || 'Unknown',
+        format: stat.match.format,
+        players: new Set()
+      };
+
+      if (stat.player?.name) {
+        matchDetails.players.add(stat.player.name);
+      }
+
+      matchDetailsMap.set(matchId, matchDetails);
+    });
+
+    // Filter for confirmed matches of this team only and apply match filters
     const filteredStats = (allStats || []).filter(stat => {
       if (!stat.match || !stat.player) return false;
       if (stat.match.team_id !== teamId) return false;
@@ -929,15 +1006,28 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null) {
       if (stat.match.deleted_at !== null) return false;
 
       // Apply date filters if provided
-      if (startDate || endDate) {
+      if (normalizedStartDate || normalizedEndDate) {
         const matchDate = new Date(stat.match.started_at);
-        if (startDate && matchDate < startDate) return false;
-        if (endDate) {
-          // Add one day to include the entire end date
-          const endDatePlusOne = new Date(endDate);
-          endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-          if (matchDate >= endDatePlusOne) return false;
-        }
+        if (normalizedStartDate && matchDate < normalizedStartDate) return false;
+        if (normalizedEndDate && matchDate > normalizedEndDate) return false;
+      }
+
+      const matchDetails = matchDetailsMap.get(stat.match.id);
+      if (!matchDetails) {
+        return false;
+      }
+
+      const matchForFilters = {
+        ...matchDetails,
+        players: Array.from(matchDetails.players)
+      };
+
+      if (!matchPassesFilters(matchForFilters, {
+        ...normalizedFilters,
+        startDate: normalizedStartDate,
+        endDate: normalizedEndDate
+      })) {
+        return false;
       }
 
       return true;

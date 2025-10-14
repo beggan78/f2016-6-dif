@@ -1,8 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronUp, ChevronDown, User, Award, Clock, Users, Target } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
-import { getPlayerStats } from '../../services/matchStateManager';
+import { getConfirmedMatches, getPlayerStats } from '../../services/matchStateManager';
 import { formatMinutesAsTime, formatSecondsAsTime } from '../../utils/formatUtils';
+import { MatchFiltersPanel } from './MatchFiltersPanel';
+import { useStatsFilters } from '../../hooks/useStatsFilters';
+import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 
 const SORT_COLUMNS = {
   NAME: 'name',
@@ -22,10 +25,56 @@ const SORT_COLUMNS = {
 export function PlayerStatsView({ startDate, endDate }) {
   const { currentTeam } = useTeam();
   const [players, setPlayers] = useState([]);
+  const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [matchesLoading, setMatchesLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [matchesError, setMatchesError] = useState(null);
   const [sortBy, setSortBy] = useState(SORT_COLUMNS.NAME);
   const [sortOrder, setSortOrder] = useState('asc');
+  const {
+    typeFilter,
+    outcomeFilter,
+    venueFilter,
+    opponentFilter,
+    playerFilter,
+    formatFilter,
+    setTypeFilter,
+    setOutcomeFilter,
+    setVenueFilter,
+    setOpponentFilter,
+    setPlayerFilter,
+    setFormatFilter,
+    clearFilters
+  } = useStatsFilters();
+
+  // Fetch matches for populating filter options
+  useEffect(() => {
+    async function fetchMatches() {
+      if (!currentTeam?.id) {
+        setMatches([]);
+        setMatchesError(null);
+        setMatchesLoading(false);
+        return;
+      }
+
+      setMatchesLoading(true);
+      setMatchesError(null);
+
+      const result = await getConfirmedMatches(currentTeam.id, startDate, endDate);
+
+      if (result.success) {
+        setMatches(result.matches || []);
+      } else {
+        setMatchesError(result.error || 'Failed to load matches');
+        setMatches([]);
+      }
+
+      setMatchesLoading(false);
+    }
+
+    fetchMatches();
+  }, [currentTeam?.id, startDate, endDate]);
 
   // Fetch player stats from database
   useEffect(() => {
@@ -38,7 +87,14 @@ export function PlayerStatsView({ startDate, endDate }) {
       setLoading(true);
       setError(null);
 
-      const result = await getPlayerStats(currentTeam.id, startDate, endDate);
+      const result = await getPlayerStats(currentTeam.id, startDate, endDate, {
+        typeFilter,
+        outcomeFilter,
+        venueFilter,
+        opponentFilter,
+        playerFilter,
+        formatFilter
+      });
 
       if (result.success) {
         setPlayers(result.players || []);
@@ -51,7 +107,42 @@ export function PlayerStatsView({ startDate, endDate }) {
     }
 
     fetchPlayerStats();
-  }, [currentTeam?.id, startDate, endDate]);
+  }, [
+    currentTeam?.id,
+    startDate,
+    endDate,
+    typeFilter,
+    outcomeFilter,
+    venueFilter,
+    opponentFilter,
+    playerFilter,
+    formatFilter
+  ]);
+
+  const filteredMatches = useMemo(() => {
+    return filterMatchesByCriteria(matches, {
+      typeFilter,
+      outcomeFilter,
+      venueFilter,
+      opponentFilter,
+      playerFilter,
+      formatFilter,
+      startDate,
+      endDate
+    });
+  }, [
+    matches,
+    typeFilter,
+    outcomeFilter,
+    venueFilter,
+    opponentFilter,
+    playerFilter,
+    formatFilter,
+    startDate,
+    endDate
+  ]);
+
+  const clearAllFilters = clearFilters;
 
   const columns = [
     {
@@ -281,8 +372,59 @@ export function PlayerStatsView({ startDate, endDate }) {
     );
   }
 
+  const hasPlayerData = sortedPlayers.length > 0;
+  const noMatchesAvailable = !matchesLoading && matches.length === 0;
+  const noMatchesForFilters = !matchesLoading && matches.length > 0 && filteredMatches.length === 0;
+
   return (
     <div className="space-y-6">
+      {/* Filters */}
+      <MatchFiltersPanel
+        matches={matches}
+        typeFilter={typeFilter}
+        outcomeFilter={outcomeFilter}
+        venueFilter={venueFilter}
+        opponentFilter={opponentFilter}
+        playerFilter={playerFilter}
+        formatFilter={formatFilter}
+        showPlayerFilter={false}
+        onTypeFilterChange={setTypeFilter}
+        onOutcomeFilterChange={setOutcomeFilter}
+        onVenueFilterChange={setVenueFilter}
+        onOpponentFilterChange={setOpponentFilter}
+        onPlayerFilterChange={setPlayerFilter}
+        onFormatFilterChange={setFormatFilter}
+        onClearAllFilters={clearAllFilters}
+      />
+
+      {matchesError && (
+        <div className="bg-amber-900/40 border border-amber-600/50 text-amber-200 text-sm rounded-lg p-4">
+          {matchesError}
+        </div>
+      )}
+
+      {noMatchesAvailable && (
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">No player statistics available</div>
+          <p className="text-slate-500 text-sm mt-2">Add matches or adjust the selected time range.</p>
+        </div>
+      )}
+
+      {!noMatchesAvailable && noMatchesForFilters && (
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">No matches found with the selected filters</div>
+          <p className="text-slate-500 text-sm mt-2">Try adjusting the filter criteria.</p>
+        </div>
+      )}
+
+      {!noMatchesAvailable && !noMatchesForFilters && !hasPlayerData && !matchesLoading && (
+        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
+          <div className="text-slate-400">No player statistics recorded for the selected filters</div>
+        </div>
+      )}
+
+      {hasPlayerData && (
+        <>
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -371,6 +513,8 @@ export function PlayerStatsView({ startDate, endDate }) {
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
