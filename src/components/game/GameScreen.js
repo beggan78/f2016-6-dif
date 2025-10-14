@@ -9,7 +9,7 @@ import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { calculateMatchTime } from '../../utils/gameEventLogger';
-import { getExpectedOutfieldPlayerCount } from '../../game/logic/positionUtils';
+import { getExpectedOnFieldPlayerCount } from '../../game/logic/positionUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 
 // New modular imports
@@ -118,8 +118,8 @@ export function GameScreen({
   });
 
   const maxSubstitutionCount = React.useMemo(() => {
-    // Get number of outfield positions from team config (4 for 5v5, 6 for 7v7)
-    const outfieldCount = getExpectedOutfieldPlayerCount(teamConfig);
+    // Get number of on-field outfield positions from team config (4 for 5v5, 6 for 7v7)
+    const onFieldOutfieldCount = Math.max(1, getExpectedOnFieldPlayerCount(teamConfig) || 0);
 
     // Count active substitutes (non-inactive players not on field)
     const activeSubstitutes = allPlayers.filter(p =>
@@ -127,8 +127,8 @@ export function GameScreen({
       !p.stats?.isInactive
     ).length;
 
-    // Max is the smaller of: outfield positions OR active substitutes
-    return Math.max(1, Math.min(outfieldCount, activeSubstitutes));
+    // Max is the smaller of: on-field outfield positions OR active substitutes
+    return Math.max(1, Math.min(onFieldOutfieldCount, activeSubstitutes));
   }, [teamConfig, allPlayers]);
 
   React.useEffect(() => {

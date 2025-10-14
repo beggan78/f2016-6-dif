@@ -455,6 +455,51 @@ describe('GameScreen', () => {
       expect(screen.getByText(/SUB 2 PLAYERS/i)).toBeInTheDocument();
     });
 
+    it('should not allow selecting more than four substitutes in 5v5 format', async () => {
+      window.localStorage.clear();
+
+      const teamConfig = { ...TEAM_CONFIGS.INDIVIDUAL_10 };
+      const props = createMockGameScreenProps({ teamConfig });
+
+      render(<GameScreen {...props} />);
+
+      const incrementButton = screen.getByLabelText(/increase number of players to substitute/i);
+
+      for (let i = 0; i < 5; i += 1) {
+        await act(async () => {
+          await userInteractions.clickElement(incrementButton);
+        });
+      }
+
+      expect(screen.getByText('SUB 4 PLAYERS')).toBeInTheDocument();
+      expect(incrementButton).toBeDisabled();
+    });
+
+    it('should not allow selecting more than six substitutes in 7v7 format', async () => {
+      window.localStorage.clear();
+
+      const teamConfig = {
+        format: '7v7',
+        squadSize: 14,
+        formation: '2-2-2',
+        substitutionType: 'individual'
+      };
+      const props = createMockGameScreenProps({ teamConfig });
+
+      render(<GameScreen {...props} />);
+
+      const incrementButton = screen.getByLabelText(/increase number of players to substitute/i);
+
+      for (let i = 0; i < 7; i += 1) {
+        await act(async () => {
+          await userInteractions.clickElement(incrementButton);
+        });
+      }
+
+      expect(screen.getByText('SUB 6 PLAYERS')).toBeInTheDocument();
+      expect(incrementButton).toBeDisabled();
+    });
+
     it('should have SUB NOW button with higher z-index than player cards', () => {
       render(<GameScreen {...defaultProps} />);
 
