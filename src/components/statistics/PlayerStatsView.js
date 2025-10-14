@@ -9,6 +9,10 @@ import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { PersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 
+const SNAP_THRESHOLD_PX = 18;
+const COLUMN_SHIFT_PX = 12;
+const DRAG_ACTIVATION_THRESHOLD = 6;
+
 const SORT_COLUMNS = {
   NAME: 'name',
   MATCHES: 'matchesPlayed',
@@ -298,13 +302,19 @@ export function PlayerStatsView({ startDate, endDate }) {
   });
   const [draggingColumn, setDraggingColumn] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [dropIndicator, setDropIndicator] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
   const activePointerIdRef = useRef(null);
   const draggingColumnRef = useRef(null);
   const dragOverColumnRef = useRef(null);
+  const dropIndicatorRef = useRef(null);
   const pointerMoveListenerRef = useRef(null);
   const pointerUpListenerRef = useRef(null);
   const pointerCancelListenerRef = useRef(null);
+  const headerRowRef = useRef(null);
+  const dragGhostRef = useRef(null);
+  const dragGhostOffsetRef = useRef({ x: 0, y: 0 });
+  const dragSessionRef = useRef(null);
 
   useEffect(() => {
     draggingColumnRef.current = draggingColumn;
@@ -313,6 +323,10 @@ export function PlayerStatsView({ startDate, endDate }) {
   useEffect(() => {
     dragOverColumnRef.current = dragOverColumn;
   }, [dragOverColumn]);
+
+  useEffect(() => {
+    dropIndicatorRef.current = dropIndicator;
+  }, [dropIndicator]);
 
   useEffect(() => {
     if (!columnOrderManager) {
@@ -326,6 +340,188 @@ export function PlayerStatsView({ startDate, endDate }) {
     const columnMap = new Map(baseColumns.map((column) => [column.key, column]));
     return columnOrder.map((key) => columnMap.get(key)).filter(Boolean);
   }, [baseColumns, columnOrder]);
+
+  const removeDragGhost = useCallback(() => {
+    if (dragGhostRef.current) {
+      dragGhostRef.current.remove();
+      dragGhostRef.current = null;
+    }
+  }, []);
+
+  const updateDragGhostPosition = useCallback((clientX, clientY) => {
+    const ghost = dragGhostRef.current;
+    if (!ghost) {
+      return;
+    }
+
+    const x = clientX - dragGhostOffsetRef.current.x;
+    const y = clientY - dragGhostOffsetRef.current.y;
+    ghost.style.transform = `translate(${x}px, ${y}px)`;
+  }, []);
+
+  const createDragGhost = useCallback(
+    (headerElement, columnLabel, clientX, clientY) => {
+      removeDragGhost();
+
+      if (!headerElement) {
+        return;
+      }
+
+      const rect = headerElement.getBoundingClientRect();
+      dragGhostOffsetRef.current = {
+        x: Math.min(Math.max(clientX - rect.left, 0), rect.width),
+        y: Math.min(Math.max(clientY - rect.top, 0), rect.height)
+      };
+
+      const ghost = document.createElement('div');
+      ghost.textContent = columnLabel;
+      ghost.style.position = 'fixed';
+      ghost.style.top = '0';
+      ghost.style.left = '0';
+      ghost.style.pointerEvents = 'none';
+      ghost.style.zIndex = '9999';
+      ghost.style.padding = '0.5rem 0.75rem';
+      ghost.style.borderRadius = '0.5rem';
+      ghost.style.border = '1px solid rgba(56, 189, 248, 0.6)';
+      ghost.style.background = 'rgba(15, 23, 42, 0.95)';
+      ghost.style.color = 'rgb(224, 242, 254)';
+      ghost.style.fontSize = '0.75rem';
+      ghost.style.fontWeight = '600';
+      ghost.style.letterSpacing = '0.08em';
+      ghost.style.textTransform = 'uppercase';
+      ghost.style.boxShadow = '0 10px 25px rgba(14, 165, 233, 0.35)';
+      ghost.style.opacity = '0.95';
+      ghost.style.minWidth = `${Math.max(rect.width, 60)}px`;
+      ghost.style.textAlign = 'center';
+      ghost.style.transition = 'transform 0.08s ease-out';
+
+      document.body.appendChild(ghost);
+      dragGhostRef.current = ghost;
+      updateDragGhostPosition(clientX, clientY);
+    },
+    [removeDragGhost, updateDragGhostPosition]
+  );
+
+  const startDragSession = useCallback(
+    (event) => {
+      const session = dragSessionRef.current;
+
+      if (!session || session.started) {
+        return false;
+      }
+
+      session.started = true;
+
+      setDraggingColumn(session.columnKey);
+      setIsReordering(true);
+      setDragOverColumn(null);
+      dragOverColumnRef.current = null;
+      setDropIndicator(null);
+      dropIndicatorRef.current = null;
+
+      draggingColumnRef.current = session.columnKey;
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      createDragGhost(session.headerElement, session.columnLabel, event.clientX, event.clientY);
+
+      return true;
+    },
+    [createDragGhost]
+  );
+
+  const determineDropPosition = useCallback((clientX, columnKey, rect) => {
+    const currentIndicator = dropIndicatorRef.current;
+    let transformOffset = 0;
+
+    if (currentIndicator?.columnKey === columnKey) {
+      transformOffset = currentIndicator.position === 'before'
+        ? COLUMN_SHIFT_PX
+        : currentIndicator.position === 'after'
+        ? -COLUMN_SHIFT_PX
+        : 0;
+    }
+
+    const effectiveLeft = rect.left - transformOffset;
+    const effectiveRight = rect.right - transformOffset;
+    const center = (effectiveLeft + effectiveRight) / 2;
+    const threshold = Math.min(rect.width * 0.2, SNAP_THRESHOLD_PX);
+
+    if (clientX <= center - threshold) {
+      return 'before';
+    }
+
+    if (clientX >= center + threshold) {
+      return 'after';
+    }
+
+    if (currentIndicator?.columnKey === columnKey) {
+      return currentIndicator.position;
+    }
+
+    return clientX < center ? 'before' : 'after';
+  }, []);
+
+  const resolvePointerTarget = useCallback(
+    (clientX) => {
+      const headerRow = headerRowRef.current;
+      if (!headerRow) {
+        return null;
+      }
+
+      const headers = Array.from(headerRow.querySelectorAll('th[data-column-key]'));
+      if (headers.length === 0) {
+        return null;
+      }
+
+      for (let index = 0; index < headers.length; index += 1) {
+        const headerElement = headers[index];
+        const rect = headerElement.getBoundingClientRect();
+        const columnKey = headerElement.getAttribute('data-column-key');
+        const indicator = dropIndicatorRef.current;
+        let transformOffset = 0;
+
+        if (indicator?.columnKey === columnKey) {
+          transformOffset = indicator.position === 'before'
+            ? COLUMN_SHIFT_PX
+            : indicator.position === 'after'
+            ? -COLUMN_SHIFT_PX
+            : 0;
+        }
+
+        const effectiveLeft = rect.left - transformOffset;
+        const effectiveRight = rect.right - transformOffset;
+
+        if (!columnKey) {
+          continue;
+        }
+
+        if (columnKey === draggingColumnRef.current) {
+          continue;
+        }
+
+        if (clientX < effectiveLeft) {
+          return { columnKey, position: 'before' };
+        }
+
+        if (clientX >= effectiveLeft && clientX <= effectiveRight) {
+          const position = determineDropPosition(clientX, columnKey, rect);
+          return { columnKey, position };
+        }
+      }
+
+      const lastHeader = headers[headers.length - 1];
+      const lastKey = lastHeader.getAttribute('data-column-key');
+
+      if (!lastKey) {
+        return null;
+      }
+
+      return { columnKey: lastKey, position: 'after' };
+    },
+    [determineDropPosition]
+  );
 
   const cleanupPointerListeners = useCallback(() => {
     if (pointerMoveListenerRef.current) {
@@ -346,34 +542,40 @@ export function PlayerStatsView({ startDate, endDate }) {
     activePointerIdRef.current = null;
     draggingColumnRef.current = null;
     dragOverColumnRef.current = null;
-  }, []);
+    dropIndicatorRef.current = null;
+    removeDragGhost();
+    dragSessionRef.current = null;
+  }, [removeDragGhost]);
 
   const resetReorderState = useCallback(() => {
     setDraggingColumn(null);
     setDragOverColumn(null);
+    setDropIndicator(null);
     setIsReordering(false);
     draggingColumnRef.current = null;
     dragOverColumnRef.current = null;
+    dropIndicatorRef.current = null;
+    dragSessionRef.current = null;
   }, []);
 
   const reorderColumns = useCallback(
-    (sourceKey, targetKey) => {
+    (sourceKey, targetKey, position = 'before') => {
       if (!sourceKey || !targetKey || sourceKey === targetKey) {
         resetReorderState();
         return;
       }
 
       setColumnOrder((prevOrder) => {
-        const nextOrder = [...prevOrder];
-        const sourceIndex = nextOrder.indexOf(sourceKey);
-        const targetIndex = nextOrder.indexOf(targetKey);
+        const withoutSource = prevOrder.filter((key) => key !== sourceKey);
+        const targetIndex = withoutSource.indexOf(targetKey);
 
-        if (sourceIndex === -1 || targetIndex === -1) {
-          return mergeColumnOrder(nextOrder);
+        if (targetIndex === -1) {
+          return mergeColumnOrder(prevOrder);
         }
 
-        nextOrder.splice(sourceIndex, 1);
-        nextOrder.splice(targetIndex, 0, sourceKey);
+        const insertionIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+        const nextOrder = [...withoutSource];
+        nextOrder.splice(insertionIndex, 0, sourceKey);
 
         return mergeColumnOrder(nextOrder);
       });
@@ -383,53 +585,6 @@ export function PlayerStatsView({ startDate, endDate }) {
     [mergeColumnOrder, resetReorderState]
   );
 
-  const handleDragStart = (event, columnKey) => {
-    setDraggingColumn(columnKey);
-    draggingColumnRef.current = columnKey;
-    setIsReordering(true);
-    setDragOverColumn(null);
-    if (event?.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', columnKey);
-    }
-  };
-
-  const handleDragOver = (event, columnKey) => {
-    event.preventDefault();
-    if (draggingColumn === null || draggingColumn === columnKey) {
-      return;
-    }
-
-    if (event?.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
-    }
-
-    if (dragOverColumn !== columnKey) {
-      setDragOverColumn(columnKey);
-    }
-  };
-
-  const handleDragLeave = (columnKey) => {
-    if (dragOverColumn === columnKey) {
-      setDragOverColumn(null);
-    }
-  };
-
-  const handleDrop = (event, columnKey) => {
-    event.preventDefault();
-
-    if (draggingColumn === null || draggingColumn === columnKey) {
-      resetReorderState();
-      return;
-    }
-
-    reorderColumns(draggingColumn, columnKey);
-  };
-
-  const handleDragEnd = () => {
-    resetReorderState();
-  };
-
   useEffect(() => {
     return () => {
       cleanupPointerListeners();
@@ -437,45 +592,86 @@ export function PlayerStatsView({ startDate, endDate }) {
   }, [cleanupPointerListeners]);
 
   const handlePointerDown = (event, columnKey) => {
-    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
 
-    event.preventDefault();
     cleanupPointerListeners();
     activePointerIdRef.current = event.pointerId;
-    draggingColumnRef.current = columnKey;
-    dragOverColumnRef.current = columnKey;
-    setDraggingColumn(columnKey);
-    setDragOverColumn(columnKey);
-    setIsReordering(true);
+
+    const columnDefinition = orderedColumns.find((column) => column.key === columnKey);
+
+    dragSessionRef.current = {
+      started: false,
+      columnKey,
+      columnLabel: columnDefinition?.label || columnKey,
+      headerElement: event.currentTarget,
+      pointerType: event.pointerType,
+      startClientX: event.clientX,
+      startClientY: event.clientY
+    };
 
     const handleMove = (moveEvent) => {
       if (moveEvent.pointerId !== activePointerIdRef.current) {
         return;
       }
 
-      moveEvent.preventDefault();
-      const element = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
-      const header = element?.closest?.('th[data-column-key]');
+      const session = dragSessionRef.current;
 
-      if (!header) {
+      if (!session) {
         return;
       }
 
-      const targetKey = header.getAttribute('data-column-key');
+      if (!session.started) {
+        if (session.pointerType === 'mouse') {
+          const deltaX = Math.abs(moveEvent.clientX - session.startClientX);
+          const deltaY = Math.abs(moveEvent.clientY - session.startClientY);
 
-      if (!targetKey || targetKey === dragOverColumnRef.current) {
-        return;
-      }
-
-      dragOverColumnRef.current = targetKey;
-      setDragOverColumn((current) => {
-        if (current === targetKey) {
-          return current;
+          if (Math.max(deltaX, deltaY) < DRAG_ACTIVATION_THRESHOLD) {
+            return;
+          }
         }
-        return targetKey;
-      });
+
+        const started = startDragSession(moveEvent);
+
+        if (!started) {
+          return;
+        }
+      }
+
+      if (moveEvent.cancelable) {
+        moveEvent.preventDefault();
+      }
+      updateDragGhostPosition(moveEvent.clientX, moveEvent.clientY);
+
+      const target = resolvePointerTarget(moveEvent.clientX);
+
+      if (!target || target.columnKey === draggingColumnRef.current) {
+        if (dragOverColumnRef.current !== null) {
+          dragOverColumnRef.current = null;
+          setDragOverColumn(null);
+        }
+        dropIndicatorRef.current = null;
+        setDropIndicator(null);
+        return;
+      }
+
+      const { columnKey: targetKey, position } = target;
+
+      if (dragOverColumnRef.current !== targetKey) {
+        dragOverColumnRef.current = targetKey;
+        setDragOverColumn(targetKey);
+      }
+
+      if (
+        dropIndicatorRef.current?.columnKey === targetKey &&
+        dropIndicatorRef.current?.position === position
+      ) {
+        return;
+      }
+
+      dropIndicatorRef.current = { columnKey: targetKey, position };
+      setDropIndicator({ columnKey: targetKey, position });
     };
 
     const handleEnd = (endEvent) => {
@@ -483,15 +679,26 @@ export function PlayerStatsView({ startDate, endDate }) {
         return;
       }
 
-      endEvent.preventDefault();
-      const element = document.elementFromPoint(endEvent.clientX, endEvent.clientY);
-      const header = element?.closest?.('th[data-column-key]');
-      const targetKey =
-        header?.getAttribute('data-column-key') ||
-        dragOverColumnRef.current ||
-        draggingColumnRef.current;
+      const session = dragSessionRef.current;
 
-      reorderColumns(draggingColumnRef.current, targetKey);
+      if (!session?.started) {
+        cleanupPointerListeners();
+        return;
+      }
+
+      if (endEvent.cancelable) {
+        endEvent.preventDefault();
+      }
+      updateDragGhostPosition(endEvent.clientX, endEvent.clientY);
+
+      const resolvedTarget = resolvePointerTarget(endEvent.clientX);
+      const indicator = dropIndicatorRef.current;
+      const finalTarget = resolvedTarget || indicator;
+      const targetKey =
+        finalTarget?.columnKey || dragOverColumnRef.current || draggingColumnRef.current;
+      const position = finalTarget?.position || indicator?.position || 'before';
+
+      reorderColumns(draggingColumnRef.current, targetKey, position);
       cleanupPointerListeners();
     };
 
@@ -500,7 +707,12 @@ export function PlayerStatsView({ startDate, endDate }) {
         return;
       }
 
-      resetReorderState();
+      const session = dragSessionRef.current;
+
+      if (session?.started) {
+        resetReorderState();
+      }
+
       cleanupPointerListeners();
     };
 
@@ -511,6 +723,10 @@ export function PlayerStatsView({ startDate, endDate }) {
     window.addEventListener('pointermove', handleMove, { passive: false });
     window.addEventListener('pointerup', handleEnd, { passive: false });
     window.addEventListener('pointercancel', handleCancel, { passive: false });
+
+    if (event.pointerType !== 'mouse') {
+      startDragSession(event);
+    }
   };
 
   const sortedPlayers = useMemo(() => {
@@ -728,36 +944,61 @@ export function PlayerStatsView({ startDate, endDate }) {
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-slate-800">
-              <tr>
-                {orderedColumns.map((column) => (
-                  <th
-                    key={column.key}
-                    scope="col"
-                    draggable
-                    data-column-key={column.key}
-                    className={`px-3 py-2 text-xs font-medium text-sky-200 tracking-wider select-none touch-none ${
-                      column.sortable ? 'cursor-pointer hover:bg-slate-700 transition-colors' : ''
-                    } ${sortBy === column.key ? 'bg-slate-700' : ''} ${
-                      draggingColumn === column.key ? 'opacity-60' : ''
-                    } ${
-                      dragOverColumn === column.key && draggingColumn !== column.key
-                        ? 'ring-1 ring-sky-400 ring-inset'
-                        : ''
-                    }`}
-                    onClick={column.sortable ? () => handleSort(column.key) : undefined}
-                    onDragStart={(event) => handleDragStart(event, column.key)}
-                    onDragOver={(event) => handleDragOver(event, column.key)}
-                    onDragLeave={() => handleDragLeave(column.key)}
-                    onDrop={(event) => handleDrop(event, column.key)}
-                    onDragEnd={handleDragEnd}
-                    onPointerDown={(event) => handlePointerDown(event, column.key)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>{column.label}</span>
-                      {column.sortable && renderSortIndicator(column.key)}
-                    </div>
-                  </th>
-                ))}
+              <tr ref={headerRowRef}>
+                {orderedColumns.map((column) => {
+                  const indicator =
+                    dropIndicator?.columnKey === column.key ? dropIndicator.position : null;
+                  const transformValue =
+                    indicator === 'before'
+                      ? `translateX(${COLUMN_SHIFT_PX}px)`
+                      : indicator === 'after'
+                      ? `translateX(-${COLUMN_SHIFT_PX}px)`
+                      : undefined;
+                  const headerStyle = {
+                    transform: transformValue,
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    boxShadow:
+                      indicator && draggingColumn !== column.key
+                        ? '0 0 0 2px rgba(56, 189, 248, 0.3)'
+                        : undefined
+                  };
+
+                  return (
+                    <th
+                      key={column.key}
+                      scope="col"
+                      data-column-key={column.key}
+                      className={`relative px-3 py-2 text-xs font-medium text-sky-200 tracking-wider select-none touch-none ${
+                        column.sortable ? 'cursor-grab active:cursor-grabbing hover:bg-slate-700 transition-colors' : ''
+                      } ${sortBy === column.key ? 'bg-slate-700' : ''} ${
+                        draggingColumn === column.key ? 'opacity-60' : ''
+                      } ${
+                        dragOverColumn === column.key && draggingColumn !== column.key
+                          ? 'ring-1 ring-sky-400 ring-inset'
+                          : ''
+                      }`}
+                      style={headerStyle}
+                      onClick={column.sortable ? () => handleSort(column.key) : undefined}
+                      onPointerDown={(event) => handlePointerDown(event, column.key)}
+                    >
+                      <div className="relative flex w-full items-center justify-between">
+                        {indicator && draggingColumn !== column.key && (
+                          <span
+                            className="pointer-events-none absolute top-1/2 h-8 w-1 rounded-full bg-sky-400/80 -translate-y-1/2"
+                            style={{
+                              left: indicator === 'before' ? '-0.4rem' : undefined,
+                              right: indicator === 'after' ? '-0.4rem' : undefined,
+                              boxShadow: '0 0 12px rgba(56, 189, 248, 0.6)'
+                            }}
+                            aria-hidden="true"
+                          />
+                        )}
+                        <span>{column.label}</span>
+                        {column.sortable && renderSortIndicator(column.key)}
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-600">
@@ -768,14 +1009,30 @@ export function PlayerStatsView({ startDate, endDate }) {
                     index % 2 === 0 ? 'bg-slate-700' : 'bg-slate-800'
                   } hover:bg-slate-600 transition-colors`}
                 >
-                  {orderedColumns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`px-3 py-2 whitespace-nowrap text-sm ${column.className}`}
-                    >
-                      {column.render(player)}
-                    </td>
-                  ))}
+                  {orderedColumns.map((column) => {
+                    const indicator =
+                      dropIndicator?.columnKey === column.key ? dropIndicator.position : null;
+                    const transformValue =
+                      indicator === 'before'
+                        ? `translateX(${COLUMN_SHIFT_PX}px)`
+                        : indicator === 'after'
+                        ? `translateX(-${COLUMN_SHIFT_PX}px)`
+                        : undefined;
+                    const cellStyle = {
+                      transform: transformValue,
+                      transition: 'transform 0.15s ease'
+                    };
+
+                    return (
+                      <td
+                        key={column.key}
+                        className={`px-3 py-2 whitespace-nowrap text-sm ${column.className}`}
+                        style={cellStyle}
+                      >
+                        {column.render(player)}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
