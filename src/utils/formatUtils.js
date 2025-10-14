@@ -48,6 +48,27 @@ export const formatMinutesAsTime = (totalMinutes) => {
 };
 
 /**
+ * Formats a time duration expressed in seconds to hh:mm:ss.
+ * @param {number} totalSeconds - Total seconds to format.
+ * @returns {string} Formatted duration string.
+ */
+export const formatSecondsAsTime = (totalSeconds) => {
+  if (totalSeconds === undefined || totalSeconds === null || isNaN(totalSeconds)) {
+    console.warn('formatSecondsAsTime received invalid value:', totalSeconds, 'returning "00:00:00"');
+    return '00:00:00';
+  }
+
+  const validSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(validSeconds / 3600);
+  const minutes = Math.floor((validSeconds % 3600) / 60);
+  const seconds = validSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+};
+
+/**
  * Formats time difference with +/- sign
  * @param {number} diffSeconds - Time difference in seconds
  * @returns {string} Formatted time difference (e.g., "+02:30" or "-01:15")

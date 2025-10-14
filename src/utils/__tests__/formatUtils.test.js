@@ -2,6 +2,7 @@ import {
   formatTime,
   formatTimeDifference,
   formatMinutesAsTime,
+  formatSecondsAsTime,
   getPlayerLabel,
   formatPoints,
   generateStatsText
@@ -64,6 +65,27 @@ describe('formatMinutesAsTime', () => {
     expect(formatMinutesAsTime(undefined)).toBe('00:00');
     expect(formatMinutesAsTime(null)).toBe('00:00');
     expect(formatMinutesAsTime(-5)).toBe('00:00');
+  });
+});
+
+describe('formatSecondsAsTime', () => {
+  it('formats zero seconds as 00:00:00', () => {
+    expect(formatSecondsAsTime(0)).toBe('00:00:00');
+  });
+
+  it('formats under a minute correctly', () => {
+    expect(formatSecondsAsTime(45)).toBe('00:00:45');
+  });
+
+  it('formats mixed hours, minutes, and seconds', () => {
+    expect(formatSecondsAsTime(3661)).toBe('01:01:01');
+    expect(formatSecondsAsTime(7325)).toBe('02:02:05');
+  });
+
+  it('gracefully handles invalid values', () => {
+    expect(formatSecondsAsTime(undefined)).toBe('00:00:00');
+    expect(formatSecondsAsTime(null)).toBe('00:00:00');
+    expect(formatSecondsAsTime(-90)).toBe('00:00:00');
   });
 });
 

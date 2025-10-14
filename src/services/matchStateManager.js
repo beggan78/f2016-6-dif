@@ -1019,6 +1019,7 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null) {
         name: player.name,
         matchesPlayed: player.matchesPlayed,
         goalsScored: player.goalsScored,
+        totalFieldTimeSeconds: player.totalFieldTimeSeconds,
         averageTimePerMatch: averageTimePerMatch,
         percentStartedAsSubstitute: Math.round(percentStartedAsSubstitute * 10) / 10, // 1 decimal
         percentTimeAsDefender: Math.round(percentTimeAsDefender * 10) / 10,

@@ -2,13 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronUp, ChevronDown, User, Award, Clock, Users, Target } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getPlayerStats } from '../../services/matchStateManager';
-import { formatMinutesAsTime } from '../../utils/formatUtils';
+import { formatMinutesAsTime, formatSecondsAsTime } from '../../utils/formatUtils';
 
 const SORT_COLUMNS = {
   NAME: 'name',
   MATCHES: 'matchesPlayed',
   GOALS: 'goalsScored',
   AVG_TIME: 'averageTimePerMatch',
+  TOTAL_TIME: 'totalFieldTimeSeconds',
   SUB_START: 'percentStartedAsSubstitute',
   DEFENDER: 'percentTimeAsDefender',
   MIDFIELDER: 'percentTimeAsMidfielder',
@@ -92,6 +93,15 @@ export function PlayerStatsView({ startDate, endDate }) {
         <div className="flex items-center justify-center space-x-1">
           <span className="text-slate-300 font-mono">{formatMinutesAsTime(player.averageTimePerMatch)}</span>
         </div>
+      )
+    },
+    {
+      key: SORT_COLUMNS.TOTAL_TIME,
+      label: 'Total Time',
+      sortable: true,
+      className: 'text-center',
+      render: (player) => (
+        <span className="text-slate-300 font-mono">{formatSecondsAsTime(player.totalFieldTimeSeconds)}</span>
       )
     },
     {
