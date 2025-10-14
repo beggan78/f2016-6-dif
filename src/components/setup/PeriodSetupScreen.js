@@ -33,6 +33,26 @@ const POSITION_CONFIG = {
   substitute_5: { title: 'Substitute', position: 'substitute_5' }
 };
 
+const humanizePositionKey = (positionKey) => {
+  return positionKey
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^./, (char) => char.toUpperCase());
+};
+
+const getPositionConfig = (positionKey) => {
+  const presetConfig = POSITION_CONFIG[positionKey];
+  if (presetConfig) {
+    return presetConfig;
+  }
+
+  if (positionKey.startsWith('substitute_')) {
+    return { title: 'Substitute', position: positionKey };
+  }
+
+  return { title: humanizePositionKey(positionKey), position: positionKey };
+};
+
 // Dynamic component for rendering individual position cards
 function IndividualPositionCards({ teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
   const modeDefinition = getModeDefinition(teamConfig);
@@ -46,10 +66,7 @@ function IndividualPositionCards({ teamConfig, formation, onPlayerAssign, getAva
   return (
     <>
       {allPositions.map(position => {
-        const config = POSITION_CONFIG[position];
-        if (!config) {
-          return null;
-        }
+        const config = getPositionConfig(position);
 
         return (
           <IndividualPositionCard

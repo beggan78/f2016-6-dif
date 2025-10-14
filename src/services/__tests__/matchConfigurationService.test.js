@@ -20,7 +20,7 @@ import {
   updateExistingMatch,
   saveInitialMatchConfig
 } from '../matchStateManager';
-import { FORMATS, GAME_CONSTANTS, getMinimumPlayersForFormat } from '../../constants/teamConfiguration';
+import { FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 
 // Mock dependencies
 jest.mock('../matchStateManager', () => ({
@@ -484,8 +484,9 @@ describe('matchConfigurationService', () => {
 
   describe('validateConfiguration', () => {
     const baseMinPlayers = getMinimumPlayersForFormat(FORMATS.FORMAT_5V5);
-    const baseMaxPlayers = GAME_CONSTANTS.MAX_SQUAD_SIZE;
+    const baseMaxPlayers = getMaximumPlayersForFormat(FORMATS.FORMAT_5V5);
     const baseRangeError = `Please select between ${baseMinPlayers} and ${baseMaxPlayers} players for the squad.`;
+    const maxPlayersFor7v7 = getMaximumPlayersForFormat(FORMATS.FORMAT_7V7);
 
     it('should validate correct configuration', () => {
       const params = {
@@ -544,23 +545,39 @@ describe('matchConfigurationService', () => {
 
       expect(result).toEqual({
         isValid: false,
-        error: `Please select between ${minPlayersFor7v7} and ${baseMaxPlayers} players for the squad.`
+        error: `Please select between ${minPlayersFor7v7} and ${maxPlayersFor7v7} players for the squad.`
       });
     });
 
     it('should respect custom max players when provided', () => {
       const params = {
-        selectedSquadIds: Array.from({ length: 13 }, (_, index) => `p${index + 1}`),
+        selectedSquadIds: Array.from({ length: 11 }, (_, index) => `p${index + 1}`),
         numPeriods: 3,
         periodGoalieIds: { 1: 'p1', 2: 'p2', 3: 'p3' },
-        maxPlayersAllowed: 12
+        maxPlayersAllowed: 10
       };
 
       const result = validateConfiguration(params);
 
       expect(result).toEqual({
         isValid: false,
-        error: `Please select between ${baseMinPlayers} and 12 players for the squad.`
+        error: `Please select between ${baseMinPlayers} and 10 players for the squad.`
+      });
+    });
+
+    it('should not exceed the format maximum when custom max is higher', () => {
+      const params = {
+        selectedSquadIds: Array.from({ length: baseMaxPlayers + 1 }, (_, index) => `p${index + 1}`),
+        numPeriods: 3,
+        periodGoalieIds: { 1: 'p1', 2: 'p2', 3: 'p3' },
+        maxPlayersAllowed: baseMaxPlayers + 5
+      };
+
+      const result = validateConfiguration(params);
+
+      expect(result).toEqual({
+        isValid: false,
+        error: baseRangeError
       });
     });
 

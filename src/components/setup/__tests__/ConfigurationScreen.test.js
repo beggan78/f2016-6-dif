@@ -5,6 +5,20 @@ import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
 
+const mockUseAuth = jest.fn(() => ({
+  isAuthenticated: true,
+  user: { id: 'user-1' },
+  sessionDetectionResult: null
+}));
+
+const mockUseTeam = jest.fn(() => ({
+  currentTeam: { id: 'team-1' },
+  teamPlayers: [],
+  hasTeams: true,
+  hasClubs: true,
+  loading: false
+}));
+
 jest.mock('lucide-react', () => ({
   Settings: (props) => <svg data-testid="icon-settings" {...props} />,
   Play: (props) => <svg data-testid="icon-play" {...props} />,
@@ -31,8 +45,15 @@ jest.mock('../../shared/UI', () => ({
       ))}
     </select>
   ),
-  Button: ({ children, onClick, disabled, type = 'button', ...props }) => (
-    <button data-testid="mock-button" type={type} onClick={onClick} disabled={disabled} {...props}>
+  Button: ({ children, onClick, disabled, type = 'button', Icon: IconComponent, ...props }) => (
+    <button
+      data-testid="mock-button"
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {IconComponent ? <IconComponent data-testid="mock-button-icon" /> : null}
       {children}
     </button>
   ),
@@ -42,17 +63,11 @@ jest.mock('../../shared/UI', () => ({
 }));
 
 jest.mock('../../../contexts/AuthContext', () => ({
-  useAuth: () => ({ isAuthenticated: true, user: { id: 'user-1' }, sessionDetectionResult: null })
+  useAuth: () => mockUseAuth()
 }));
 
 jest.mock('../../../contexts/TeamContext', () => ({
-  useTeam: () => ({
-    currentTeam: { id: 'team-1' },
-    teamPlayers: [],
-    hasTeams: true,
-    hasClubs: true,
-    loading: false
-  })
+  useTeam: () => mockUseTeam()
 }));
 
 jest.mock('../../../hooks/useFormationVotes', () => ({
@@ -108,6 +123,24 @@ jest.mock('../../match/PendingMatchResumeModal', () => ({
   PendingMatchResumeModal: () => null
 }));
 
+beforeEach(() => {
+  mockUseAuth.mockReset();
+  mockUseAuth.mockImplementation(() => ({
+    isAuthenticated: true,
+    user: { id: 'user-1' },
+    sessionDetectionResult: null
+  }));
+
+  mockUseTeam.mockReset();
+  mockUseTeam.mockImplementation(() => ({
+    currentTeam: { id: 'team-1' },
+    teamPlayers: [],
+    hasTeams: true,
+    hasClubs: true,
+    loading: false
+  }));
+});
+
 const buildProps = (overrides = {}) => ({
   allPlayers: [],
   setAllPlayers: jest.fn(),
@@ -156,6 +189,89 @@ const buildProps = (overrides = {}) => ({
   clearStoredState: jest.fn(),
   configurationSessionId: 0,
   ...overrides
+});
+
+describe('ConfigurationScreen squad selection', () => {
+  it('selects the full roster when Select All is pressed', () => {
+    mockUseAuth.mockImplementation(() => ({
+      isAuthenticated: false,
+      user: null,
+      sessionDetectionResult: null
+    }));
+
+    const allPlayers = Array.from({ length: 6 }).map((_, index) => ({
+      id: `player-${index + 1}`,
+      name: `Player ${index + 1}`
+    }));
+
+    const props = buildProps({
+      allPlayers,
+      selectedSquadIds: []
+    });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    const selectAllButton = screen.getByRole('button', { name: /select all/i });
+    expect(selectAllButton).toBeEnabled();
+
+    const initialHasActiveCalls = props.setHasActiveConfiguration.mock.calls.length;
+    const initialConfigCalls = props.createTeamConfigFromSquadSize.mock.calls.length;
+
+    fireEvent.click(selectAllButton);
+
+    expect(props.setSelectedSquadIds).toHaveBeenCalledTimes(1);
+    const updater = props.setSelectedSquadIds.mock.calls[0][0];
+    expect(typeof updater).toBe('function');
+
+    const nextSelection = updater([]);
+    const expectedIds = allPlayers.map(player => player.id);
+    expect(nextSelection).toEqual(expectedIds);
+
+    expect(props.setHasActiveConfiguration.mock.calls.length).toBeGreaterThan(initialHasActiveCalls);
+    const lastHasActiveCall = props.setHasActiveConfiguration.mock.calls[props.setHasActiveConfiguration.mock.calls.length - 1];
+    expect(lastHasActiveCall[0]).toBe(true);
+
+    expect(props.createTeamConfigFromSquadSize.mock.calls.length).toBeGreaterThan(initialConfigCalls);
+    const lastConfigCall = props.createTeamConfigFromSquadSize.mock.calls[props.createTeamConfigFromSquadSize.mock.calls.length - 1];
+    expect(lastConfigCall).toEqual([expectedIds.length, SUBSTITUTION_TYPES.INDIVIDUAL, FORMATS.FORMAT_5V5]);
+
+    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: nextSelection }} />);
+
+    const allSelectedButton = screen.getByRole('button', { name: /all selected/i });
+    expect(allSelectedButton).toBeDisabled();
+  });
+
+  it('shows a warning when selection exceeds the current format maximum', () => {
+    const players = Array.from({ length: 12 }).map((_, index) => ({
+      id: `player-${index + 1}`,
+      name: `Player ${index + 1}`,
+      jersey_number: index + 1
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: players,
+      hasTeams: true,
+      hasClubs: true,
+      loading: false
+    }));
+
+    const props = buildProps({
+      allPlayers: players,
+      selectedSquadIds: players.map(player => player.id),
+      selectedSquadPlayers: players
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(players.length);
+    checkboxes.forEach(checkbox => {
+      expect(checkbox).toBeEnabled();
+    });
+
+    expect(screen.getByText(/exceeds the 5v5 limit of 11/i)).toBeInTheDocument();
+  });
 });
 
 describe('ConfigurationScreen venue selection', () => {

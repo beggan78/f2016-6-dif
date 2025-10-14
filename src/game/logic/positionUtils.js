@@ -107,3 +107,13 @@ export function getExpectedOutfieldPlayerCount(teamConfig) {
   const counts = getExpectedCounts(teamConfig);
   return counts.outfield;
 }
+
+/**
+ * Gets the expected number of on-field outfield players (excludes goalie)
+ * @param {Object} teamConfig - Team configuration object
+ * @returns {number} Expected on-field outfield player count
+ */
+export function getExpectedOnFieldPlayerCount(teamConfig) {
+  const counts = getExpectedCounts(teamConfig);
+  return counts.onField;
+}

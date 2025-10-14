@@ -15,7 +15,7 @@ import {
   saveInitialMatchConfig 
 } from './matchStateManager';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
-import { FORMATS, getMinimumPlayersForFormat, GAME_CONSTANTS } from '../constants/teamConfiguration';
+import { FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../constants/teamConfiguration';
 
 /**
  * Transforms team configuration to the database format using flat structure
@@ -313,11 +313,16 @@ export function validateConfiguration(params) {
     numPeriods = 0,
     periodGoalieIds = {},
     format = FORMATS.FORMAT_5V5,
-    maxPlayersAllowed = GAME_CONSTANTS.MAX_SQUAD_SIZE
+    maxPlayersAllowed
   } = params;
 
   const minimumPlayersRequired = getMinimumPlayersForFormat(format);
-  const maximumPlayersAllowed = Math.max(minimumPlayersRequired, maxPlayersAllowed);
+  const formatMaximum = getMaximumPlayersForFormat(format);
+  const normalizedMax = typeof maxPlayersAllowed === 'number' ? maxPlayersAllowed : formatMaximum;
+  const maximumPlayersAllowed = Math.max(
+    minimumPlayersRequired,
+    Math.min(formatMaximum, normalizedMax)
+  );
 
   // Validate squad size
   if (selectedSquadIds.length < minimumPlayersRequired || selectedSquadIds.length > maximumPlayersAllowed) {

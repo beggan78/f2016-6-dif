@@ -17,6 +17,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PeriodSetupScreen } from '../PeriodSetupScreen';
 import { TEAM_CONFIGS } from '../../../game/testUtils';
+import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
 import {
   createMockPlayers,
   createMockFormation,
@@ -90,53 +91,8 @@ jest.mock('../../../utils/debugUtils', () => ({
 }));
 
 jest.mock('../../../constants/gameModes', () => ({
-  getOutfieldPositions: jest.fn((teamConfig) => {
-    if (!teamConfig) return [];
-    
-    // Use the same logic as the real getModeDefinition mock
-    let definition = null;
-    
-    if (teamConfig.substitutionType === 'pairs') {
-      definition = {
-        fieldPositions: ['leftPair', 'rightPair'],
-        substitutePositions: ['subPair']
-      };
-    } else if (teamConfig.formation === '1-2-1') {
-      definition = {
-        fieldPositions: ['defender', 'left', 'right', 'attacker'],
-        substitutePositions: teamConfig.squadSize > 5 ? ['substitute_1', 'substitute_2'].slice(0, teamConfig.squadSize - 5) : []
-      };
-    } else {
-      definition = {
-        fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
-        substitutePositions: teamConfig.squadSize > 5 ? ['substitute_1', 'substitute_2'].slice(0, teamConfig.squadSize - 5) : []
-      };
-    }
-    
-    return definition ? [...definition.fieldPositions, ...definition.substitutePositions] : [];
-  }),
-  getModeDefinition: jest.fn((teamConfig) => {
-    if (!teamConfig) return null;
-    
-    if (teamConfig.substitutionType === 'pairs') {
-      return {
-        fieldPositions: ['leftPair', 'rightPair'],
-        substitutePositions: ['subPair']
-      };
-    }
-    
-    if (teamConfig.formation === '1-2-1') {
-      return {
-        fieldPositions: ['defender', 'left', 'right', 'attacker'],
-        substitutePositions: teamConfig.squadSize > 5 ? ['substitute_1', 'substitute_2'].slice(0, teamConfig.squadSize - 5) : []
-      };
-    }
-    
-    return {
-      fieldPositions: ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'],
-      substitutePositions: teamConfig.squadSize > 5 ? ['substitute_1', 'substitute_2'].slice(0, teamConfig.squadSize - 5) : []
-    };
-  })
+  getOutfieldPositions: jest.fn(),
+  getModeDefinition: jest.fn()
 }));
 
 describe('PeriodSetupScreen', () => {
@@ -145,6 +101,63 @@ describe('PeriodSetupScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    const { getOutfieldPositions, getModeDefinition } = require('../../../constants/gameModes');
+
+    const buildFieldPositions = (teamConfig) => {
+      if (!teamConfig) return [];
+
+      if (teamConfig.substitutionType === 'pairs') {
+        return ['leftPair', 'rightPair'];
+      }
+
+      if (teamConfig.formation === FORMATIONS.FORMATION_1_2_1) {
+        return ['defender', 'left', 'right', 'attacker'];
+      }
+
+      if (teamConfig.format === FORMATS.FORMAT_7V7) {
+        return ['leftDefender', 'rightDefender', 'leftMidfielder', 'rightMidfielder', 'leftAttacker', 'rightAttacker'];
+      }
+
+      return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+    };
+
+    const buildSubstitutePositions = (teamConfig) => {
+      if (!teamConfig || teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+        return teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS ? ['subPair'] : [];
+      }
+
+      const format = teamConfig.format === FORMATS.FORMAT_7V7 ? FORMATS.FORMAT_7V7 : FORMATS.FORMAT_5V5;
+      const fieldPlayers = format === FORMATS.FORMAT_7V7 ? 6 : 4;
+      const goalieCount = 1;
+      const substituteCount = Math.max(0, (teamConfig.squadSize || 0) - (fieldPlayers + goalieCount));
+      return Array.from({ length: substituteCount }, (_, i) => `substitute_${i + 1}`);
+    };
+
+    const buildDefinition = (teamConfig) => {
+      if (!teamConfig) return null;
+
+      const fieldPositions = buildFieldPositions(teamConfig);
+      const substitutePositions = buildSubstitutePositions(teamConfig);
+
+      if (teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+        return {
+          fieldPositions,
+          substitutePositions: ['subPair']
+        };
+      }
+
+      return {
+        fieldPositions,
+        substitutePositions
+      };
+    };
+
+    getModeDefinition.mockImplementation(buildDefinition);
+    getOutfieldPositions.mockImplementation((teamConfig) => {
+      const definition = buildDefinition(teamConfig);
+      return definition ? [...definition.fieldPositions, ...definition.substitutePositions] : [];
+    });
 
     // Create realistic mock players for 7-player team
     mockPlayers = createMockPlayers(7, TEAM_CONFIGS.PAIRS_7);
@@ -223,6 +236,49 @@ describe('PeriodSetupScreen', () => {
       // Should render individual position cards instead of pairs
       expect(screen.queryByText('Left')).not.toBeInTheDocument();
       expect(screen.queryByText('Right')).not.toBeInTheDocument();
+    });
+
+    it('should render all substitute slots for an 11-player 5v5 squad', () => {
+      const teamConfig = {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 11,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      };
+
+      const players = Array.from({ length: teamConfig.squadSize }, (_, index) => ({
+        id: `${index + 1}`,
+        name: `Player ${index + 1}`,
+        stats: { isInactive: false }
+      }));
+      const fieldPositions = ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+      const substitutePositions = Array.from({ length: teamConfig.squadSize - (fieldPositions.length + 1) }, (_, index) => `substitute_${index + 1}`);
+
+      const formation = {
+        goalie: players[fieldPositions.length + substitutePositions.length]?.id
+      };
+
+      fieldPositions.forEach((position, index) => {
+        formation[position] = players[index]?.id;
+      });
+
+      substitutePositions.forEach((position, index) => {
+        formation[position] = players[fieldPositions.length + index]?.id;
+      });
+      const props = {
+        ...mockProps,
+        teamConfig,
+        formation,
+        allPlayers: players,
+        selectedSquadPlayers: players,
+        availableForPairing: players,
+        periodGoalieIds: { 1: formation.goalie }
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      expect(screen.getAllByText('Substitute')).toHaveLength(substitutePositions.length);
+      expect(screen.getAllByTestId('select')).toHaveLength(1 + fieldPositions.length + substitutePositions.length);
     });
   });
 

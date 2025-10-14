@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS, getMinimumPlayersForFormat, GAME_CONSTANTS } from '../../constants/teamConfiguration';
+import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
@@ -94,7 +94,11 @@ export function ConfigurationScreen({
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const effectiveVenueType = venueType ?? DEFAULT_VENUE_TYPE;
   const minPlayersRequired = React.useMemo(() => getMinimumPlayersForFormat(currentFormat), [currentFormat]);
-  const maxPlayersAllowed = GAME_CONSTANTS.MAX_SQUAD_SIZE;
+  const maxPlayersAllowed = React.useMemo(() => getMaximumPlayersForFormat(currentFormat), [currentFormat]);
+  const formatLabel = FORMAT_CONFIGS[currentFormat]?.label || currentFormat;
+  const meetsMinimumSelection = selectedSquadIds.length >= minPlayersRequired;
+  const exceedsFormatMaximum = selectedSquadIds.length > maxPlayersAllowed;
+  const withinFormatBounds = meetsMinimumSelection && !exceedsFormatMaximum;
 
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
@@ -480,6 +484,10 @@ export function ConfigurationScreen({
         jerseyNumber: player.jersey_number
       }))
     : allPlayers;
+  const selectedIdsSet = React.useMemo(() => new Set(selectedSquadIds), [selectedSquadIds]);
+  const areAllEligibleSelected = playersToShow.length > 0 &&
+    playersToShow.every(player => selectedIdsSet.has(player.id)) &&
+    selectedSquadIds.length === playersToShow.length;
   
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
   // Only clear on NEW_SIGN_IN to preserve squad selection on page refresh
@@ -716,42 +724,62 @@ export function ConfigurationScreen({
       }
     }
   }, [resumeData]);
-  
-
-  const togglePlayerSelection = (playerId) => {
+  const applySquadSelection = React.useCallback((updater) => {
     setSelectedSquadIds(prev => {
-      const newIds = prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId];
+      const proposedIds = typeof updater === 'function' ? updater(prev) : updater;
+      const uniqueIds = Array.isArray(proposedIds) ? Array.from(new Set(proposedIds)) : [];
+      const isSameSelection = uniqueIds.length === prev.length && uniqueIds.every(id => prev.includes(id));
+
+      if (isSameSelection) {
+        return prev;
+      }
 
       // Mark as active configuration when squad selection changes
-      if (newIds.length > 0) {
+      if (uniqueIds.length > 0) {
         setHasActiveConfiguration(true);
       }
 
       // Auto-create team configuration based on squad size
       // GUARD: Skip auto-configuration during resume data processing to prevent override
-      if (newIds.length >= minPlayersRequired && newIds.length <= maxPlayersAllowed && !isProcessingResumeDataRef.current) {
+      if (uniqueIds.length >= minPlayersRequired && uniqueIds.length <= maxPlayersAllowed && !isProcessingResumeDataRef.current) {
         const formatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
         const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
-          ? formatConfig.getDefaultSubstitutionType(newIds.length)
+          ? formatConfig.getDefaultSubstitutionType(uniqueIds.length)
           : SUBSTITUTION_TYPES.INDIVIDUAL;
         console.log('⚡ AUTO-CONFIG: Squad selection changed, triggering createTeamConfigFromSquadSize:', {
-          squadSize: newIds.length,
+          squadSize: uniqueIds.length,
           defaultSubstitutionType,
           currentTeamConfig: teamConfig
         });
-        createTeamConfigFromSquadSize(newIds.length, defaultSubstitutionType, currentFormat);
+        createTeamConfigFromSquadSize(uniqueIds.length, defaultSubstitutionType, currentFormat);
       } else if (isProcessingResumeDataRef.current) {
         console.log('🛡️ AUTO-CONFIG: Skipped during resume processing to prevent override');
       }
 
       // Clear captain if the captain is being deselected
-      if (captainId && !newIds.includes(captainId)) {
+      if (captainId && !uniqueIds.includes(captainId)) {
         setCaptain(null);
       }
 
-      return newIds;
+      return uniqueIds;
     });
+  }, [setSelectedSquadIds, maxPlayersAllowed, setHasActiveConfiguration, minPlayersRequired, isProcessingResumeDataRef, createTeamConfigFromSquadSize, currentFormat, teamConfig, captainId, setCaptain]);
+
+
+  const togglePlayerSelection = (playerId) => {
+    applySquadSelection(prev => prev.includes(playerId)
+      ? prev.filter(id => id !== playerId)
+      : [...prev, playerId]);
   };
+
+  const handleSelectAllPlayers = React.useCallback(() => {
+    if (areAllEligibleSelected || playersToShow.length === 0) {
+      return;
+    }
+
+    const rosterIds = playersToShow.map(player => player.id);
+    applySquadSelection(rosterIds);
+  }, [areAllEligibleSelected, playersToShow, applySquadSelection]);
 
   const handleGoalieChange = (period, playerId) => {
     // Mark as active configuration when goalie assignments change
@@ -1209,20 +1237,36 @@ export function ConfigurationScreen({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {playersToShow.map(player => (
-              <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
-                <input
-                  type="checkbox"
-                  checked={selectedSquadIds.includes(player.id)}
-                  onChange={() => togglePlayerSelection(player.id)}
-                  className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
-                  disabled={selectedSquadIds.length >= 15 && !selectedSquadIds.includes(player.id)}
-                />
-                <span>{formatPlayerName(player)}</span>
-              </label>
-            ))}
-          </div>
+          <>
+            <div className="flex justify-end mb-2">
+              <Button
+                onClick={handleSelectAllPlayers}
+                variant="secondary"
+                size="sm"
+                disabled={areAllEligibleSelected || playersToShow.length === 0}
+              >
+                {areAllEligibleSelected ? 'All Selected' : 'Select All'}
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {playersToShow.map(player => (
+                <label key={player.id} className={`flex items-center space-x-2 p-1.5 rounded-md cursor-pointer transition-all ${selectedSquadIds.includes(player.id) ? 'bg-sky-600 text-white' : 'bg-slate-600 hover:bg-slate-500'}`}>
+                  <input
+                    type="checkbox"
+                    checked={selectedSquadIds.includes(player.id)}
+                    onChange={() => togglePlayerSelection(player.id)}
+                    className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
+                  />
+                  <span>{formatPlayerName(player)}</span>
+                </label>
+              ))}
+            </div>
+            {exceedsFormatMaximum && (
+              <p className="mt-2 text-xs text-amber-300">
+                You have selected {selectedSquadIds.length} players, which exceeds the {formatLabel} limit of {maxPlayersAllowed}. Update the match format or adjust the squad selection.
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -1301,7 +1345,7 @@ export function ConfigurationScreen({
             />
           </div>
 
-          {selectedSquadIds.length >= minPlayersRequired && selectedSquadIds.length <= maxPlayersAllowed ? (
+          {withinFormatBounds ? (
             <div className="space-y-3">
               <div>
                 <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
@@ -1321,8 +1365,10 @@ export function ConfigurationScreen({
               <FormationPreview formation={selectedFormation} className="mt-3" />
             </div>
           ) : (
-            <p className="text-xs text-slate-400">
-              Add between {minPlayersRequired} and {maxPlayersAllowed} players to configure a tactical formation.
+            <p className={`text-xs ${meetsMinimumSelection ? 'text-amber-300' : 'text-slate-400'}`}>
+              {meetsMinimumSelection
+                ? `You have selected ${selectedSquadIds.length} players, which exceeds the ${formatLabel} limit of ${maxPlayersAllowed}. Update the match format or adjust the squad before configuring formations.`
+                : `Add between ${minPlayersRequired} and ${maxPlayersAllowed} players to configure a tactical formation.`}
             </p>
           )}
         </div>
@@ -1404,7 +1450,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Goalie Assignment */}
-      {(selectedSquadIds.length >= minPlayersRequired && selectedSquadIds.length <= maxPlayersAllowed) && (
+      {withinFormatBounds && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
           <div className="space-y-2">
@@ -1450,8 +1496,7 @@ export function ConfigurationScreen({
           onClick={handleSaveConfigClick}
           disabled={
             saveConfigStatus.loading ||
-            selectedSquadIds.length < minPlayersRequired ||
-            selectedSquadIds.length > maxPlayersAllowed
+            !withinFormatBounds
           }
           variant="secondary"
           Icon={Save}
@@ -1463,7 +1508,7 @@ export function ConfigurationScreen({
       <Button 
         onClick={handleStartPeriodSetup} 
         disabled={
-          (selectedSquadIds.length < minPlayersRequired || selectedSquadIds.length > maxPlayersAllowed) ||
+          (!withinFormatBounds) ||
           !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)
         } 
         Icon={Play}
