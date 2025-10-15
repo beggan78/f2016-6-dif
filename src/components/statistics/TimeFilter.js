@@ -173,6 +173,8 @@ export function TimeFilter({
     return formatTimeRangeLabel(startDate, endDate, currentPresetLabel);
   }, [startDate, endDate, currentPresetLabel]);
 
+  const hasActiveRange = useMemo(() => Boolean(startDate || endDate), [startDate, endDate]);
+
   const handlePresetSelect = (presetId) => {
     setSelectedPreset(presetId);
     setShowCustomRange(false);
@@ -265,19 +267,12 @@ export function TimeFilter({
       {/* Time Picker Control */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`
-          cursor-pointer select-none
-          bg-slate-700 border rounded-lg
-          px-4 py-2.5
-          flex items-center space-x-3
-          transition-all duration-200 ease-in-out
-          min-w-0
-          ${isOpen
-            ? 'border-sky-500 bg-slate-600'
-            : 'border-slate-600 hover:border-slate-500 hover:bg-slate-600'
-          }
-          focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800
-        `}
+        className={[
+          'cursor-pointer select-none bg-slate-700 border rounded-lg px-4 py-2.5 flex items-center space-x-3 transition-all duration-200 ease-in-out min-w-0',
+          isOpen ? 'border-sky-500 bg-slate-600' : 'border-slate-600 hover:border-slate-500 hover:bg-slate-600',
+          hasActiveRange ? 'shadow-[0_0_16px_rgba(125,211,252,0.65),0_0_32px_rgba(56,189,248,0.4)] ring-2 ring-sky-300/80 ring-offset-2 ring-offset-slate-800 border-sky-300' : '',
+          'focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800'
+        ].join(' ')}
         role="button"
         tabIndex={0}
         aria-haspopup="listbox"

@@ -72,6 +72,8 @@ export function MultiSelect({
     return normalizedOptions.filter(opt => selectedValues.has(opt.value));
   }, [normalizedOptions, selectedValues]);
 
+  const hasSelection = selectedOptions.length > 0;
+
   const displayLabel = useMemo(() => {
     if (selectedOptions.length === 0) {
       return placeholder;
@@ -135,9 +137,9 @@ export function MultiSelect({
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`w-full bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors flex items-center justify-between gap-2 ${
+        className={`w-full bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors transition-shadow flex items-center justify-between gap-2 ${
           disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-        }`}
+        } ${hasSelection ? 'border-sky-300 shadow-[0_0_14px_rgba(125,211,252,0.65),0_0_28px_rgba(56,189,248,0.45)] ring-2 ring-sky-300/80 ring-offset-2 ring-offset-slate-800' : ''}`}
       >
         <span className="truncate text-left flex-1">{displayLabel}</span>
         <ChevronDown size={18} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
