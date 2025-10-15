@@ -1,6 +1,8 @@
 import {
   formatTime,
   formatTimeDifference,
+  formatMinutesAsTime,
+  formatSecondsAsTime,
   getPlayerLabel,
   formatPoints,
   generateStatsText
@@ -40,6 +42,50 @@ describe('formatTime', () => {
   it('should handle edge cases', () => {
     expect(formatTime(1)).toBe('00:01');
     expect(formatTime(61)).toBe('01:01');
+  });
+});
+
+describe('formatMinutesAsTime', () => {
+  it('formats zero minutes as 00:00', () => {
+    expect(formatMinutesAsTime(0)).toBe('00:00');
+  });
+
+  it('formats fractional minutes to include seconds', () => {
+    expect(formatMinutesAsTime(7.5)).toBe('07:30');
+    expect(formatMinutesAsTime(12.25)).toBe('12:15');
+  });
+
+  it('formats durations equal to or over an hour with hours included', () => {
+    expect(formatMinutesAsTime(60)).toBe('01:00:00');
+    expect(formatMinutesAsTime(75)).toBe('01:15:00');
+    expect(formatMinutesAsTime(90.5)).toBe('01:30:30');
+  });
+
+  it('gracefully handles invalid values', () => {
+    expect(formatMinutesAsTime(undefined)).toBe('00:00');
+    expect(formatMinutesAsTime(null)).toBe('00:00');
+    expect(formatMinutesAsTime(-5)).toBe('00:00');
+  });
+});
+
+describe('formatSecondsAsTime', () => {
+  it('formats zero seconds as 00:00:00', () => {
+    expect(formatSecondsAsTime(0)).toBe('00:00:00');
+  });
+
+  it('formats under a minute correctly', () => {
+    expect(formatSecondsAsTime(45)).toBe('00:00:45');
+  });
+
+  it('formats mixed hours, minutes, and seconds', () => {
+    expect(formatSecondsAsTime(3661)).toBe('01:01:01');
+    expect(formatSecondsAsTime(7325)).toBe('02:02:05');
+  });
+
+  it('gracefully handles invalid values', () => {
+    expect(formatSecondsAsTime(undefined)).toBe('00:00:00');
+    expect(formatSecondsAsTime(null)).toBe('00:00:00');
+    expect(formatSecondsAsTime(-90)).toBe('00:00:00');
   });
 });
 
