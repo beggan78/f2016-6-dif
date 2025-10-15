@@ -22,9 +22,9 @@ export const STORAGE_KEYS = {
   // UI state
   NAVIGATION_HISTORY: 'sport-wizard-navigation-history',
   STATS_FILTERS: 'sport-wizard-stats-filter',
-  STATISTICS_ACTIVE_TAB: 'sport-wizard-statistics-active-tab', // Updated from 'statistics-active-tab'
-  STATISTICS_TIME_RANGE: 'sport-wizard-statistics-time-range',
-  STATISTICS_PLAYER_COLUMN_ORDER: 'sport-wizard-statistics-player-column-order',
+  STATISTICS_ACTIVE_TAB: 'sport-wizard-stats-active-tab', // Updated from 'stats-active-tab'
+  STATISTICS_TIME_RANGE: 'sport-wizard-stats-time-range',
+  STATISTICS_PLAYER_COLUMN_ORDER: 'sport-wizard-stats-player-column-order',
   DISMISSED_MODALS: 'sport-wizard-dismissed-modals',
 
   // Authentication
