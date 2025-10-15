@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PeriodSetupScreen } from '../PeriodSetupScreen';
 import { TEAM_CONFIGS } from '../../../game/testUtils';
 import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
@@ -95,6 +95,14 @@ jest.mock('../../../constants/gameModes', () => ({
   getModeDefinition: jest.fn()
 }));
 
+jest.mock('../../../contexts/TeamContext', () => ({
+  useTeam: jest.fn()
+}));
+
+jest.mock('../../../services/matchStateManager', () => ({
+  getPlayerStats: jest.fn()
+}));
+
 describe('PeriodSetupScreen', () => {
   let mockProps;
   let mockPlayers;
@@ -103,6 +111,11 @@ describe('PeriodSetupScreen', () => {
     jest.clearAllMocks();
 
     const { getOutfieldPositions, getModeDefinition } = require('../../../constants/gameModes');
+    const { useTeam } = require('../../../contexts/TeamContext');
+    const { getPlayerStats } = require('../../../services/matchStateManager');
+
+    useTeam.mockReturnValue({ currentTeam: { id: 'team-123' } });
+    getPlayerStats.mockImplementation(() => new Promise(() => {}));
 
     const buildFieldPositions = (teamConfig) => {
       if (!teamConfig) return [];
@@ -279,6 +292,111 @@ describe('PeriodSetupScreen', () => {
 
       expect(screen.getAllByText('Substitute')).toHaveLength(substitutePositions.length);
       expect(screen.getAllByTestId('select')).toHaveLength(1 + fieldPositions.length + substitutePositions.length);
+    });
+  });
+
+  describe('Substitute Recommendations', () => {
+    it('recommends players with the lowest started-as-sub percentages for period 1', async () => {
+      const { getPlayerStats } = require('../../../services/matchStateManager');
+      getPlayerStats.mockResolvedValue({
+        success: true,
+        players: [
+          { id: '1', percentStartedAsSubstitute: 40 },
+          { id: '2', percentStartedAsSubstitute: 15 },
+          { id: '3', percentStartedAsSubstitute: 5 },
+          { id: '4', percentStartedAsSubstitute: 25 },
+          { id: '5', percentStartedAsSubstitute: 0 },
+          { id: '6', percentStartedAsSubstitute: 55 },
+          { id: '7', percentStartedAsSubstitute: 0 }
+        ]
+      });
+
+      render(<PeriodSetupScreen {...mockProps} />);
+
+      const list = await screen.findByTestId('substitute-recommendations-list');
+      const items = within(list).getAllByRole('listitem');
+
+      expect(items).toHaveLength(2);
+      expect(items[0]).toHaveTextContent('Player 5');
+      expect(items[0]).toHaveTextContent('0.0%');
+      expect(items[1]).toHaveTextContent('Player 3');
+      expect(items[1]).toHaveTextContent('5.0%');
+      expect(within(list).queryByText('Player 7')).not.toBeInTheDocument();
+    });
+
+    it('populates substitutes and hides recommendations when accepted', async () => {
+      const { getPlayerStats } = require('../../../services/matchStateManager');
+      getPlayerStats.mockResolvedValue({
+        success: true,
+        players: [
+          { id: '1', percentStartedAsSubstitute: 40 },
+          { id: '2', percentStartedAsSubstitute: 15 },
+          { id: '3', percentStartedAsSubstitute: 5 },
+          { id: '4', percentStartedAsSubstitute: 25 },
+          { id: '5', percentStartedAsSubstitute: 0 },
+          { id: '6', percentStartedAsSubstitute: 55 }
+        ]
+      });
+
+      render(<PeriodSetupScreen {...mockProps} />);
+
+      await screen.findByTestId('substitute-recommendations-list');
+      fireEvent.click(screen.getByRole('button', { name: /accept/i }));
+      await waitFor(() => {
+        expect(screen.queryByTestId('substitute-recommendations')).not.toBeInTheDocument();
+      });
+
+      expect(mockProps.setFormation).toHaveBeenCalled();
+      const updater = mockProps.setFormation.mock.calls.pop()[0];
+      expect(typeof updater).toBe('function');
+
+      const initialFormation = {
+        goalie: '7',
+        leftPair: { defender: null, attacker: null },
+        rightPair: { defender: null, attacker: null },
+        subPair: { defender: null, attacker: null }
+      };
+      const updatedFormation = updater(initialFormation);
+
+      expect(updatedFormation.subPair.defender).toBe('5');
+      expect(updatedFormation.subPair.attacker).toBe('3');
+      expect(updatedFormation.leftPair.defender).toBeNull();
+      expect(updatedFormation.leftPair.attacker).toBeNull();
+    });
+
+    it('dismisses recommendations without changing formation', async () => {
+      const { getPlayerStats } = require('../../../services/matchStateManager');
+      getPlayerStats.mockResolvedValue({
+        success: true,
+        players: [
+          { id: '1', percentStartedAsSubstitute: 40 },
+          { id: '2', percentStartedAsSubstitute: 15 }
+        ]
+      });
+
+      render(<PeriodSetupScreen {...mockProps} />);
+
+      await screen.findByTestId('substitute-recommendations-list');
+      fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));
+      await waitFor(() => {
+        expect(screen.queryByTestId('substitute-recommendations')).not.toBeInTheDocument();
+      });
+      expect(mockProps.setFormation).not.toHaveBeenCalled();
+    });
+
+    it('shows an error message when recommendation loading fails', async () => {
+      const { getPlayerStats } = require('../../../services/matchStateManager');
+      getPlayerStats.mockResolvedValue({
+        success: false,
+        error: 'Network error'
+      });
+
+      render(<PeriodSetupScreen {...mockProps} />);
+
+      const recommendationCard = await screen.findByTestId('substitute-recommendations');
+      await waitFor(() => {
+        expect(recommendationCard).toHaveTextContent('Unable to load substitute recommendations right now.');
+      });
     });
   });
 
