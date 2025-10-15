@@ -141,7 +141,7 @@ export function MultiSelect({
           disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
         } ${hasSelection ? 'border-sky-300 shadow-[0_0_14px_rgba(125,211,252,0.65),0_0_28px_rgba(56,189,248,0.45)] ring-2 ring-sky-300/80 ring-offset-2 ring-offset-slate-800' : ''}`}
       >
-        <span className="truncate text-left flex-1">{displayLabel}</span>
+        <span className={`truncate text-left flex-1 ${hasSelection ? 'text-sky-300' : ''}`}>{displayLabel}</span>
         <ChevronDown size={18} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 

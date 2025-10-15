@@ -285,7 +285,7 @@ export function TimeFilter({
         }}
       >
         <Clock className="h-4 w-4 text-sky-400 flex-shrink-0" />
-        <span className="text-slate-100 text-sm font-medium truncate max-w-[200px] whitespace-nowrap">
+        <span className={`text-sm font-medium truncate max-w-[200px] whitespace-nowrap ${hasActiveRange ? 'text-sky-300' : 'text-slate-100'}`}>
           {displayLabel}
         </span>
         <ChevronDown className={`h-4 w-4 text-sky-400 flex-shrink-0 transition-transform duration-200 ${
