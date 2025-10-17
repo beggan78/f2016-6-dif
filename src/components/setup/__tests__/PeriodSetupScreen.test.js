@@ -324,6 +324,64 @@ describe('PeriodSetupScreen', () => {
       expect(within(list).queryByText('Player 7')).not.toBeInTheDocument();
     });
 
+    it('does not display recommendations when all substitutes are populated', () => {
+      const props = {
+        ...mockProps,
+        formation: {
+          ...mockProps.formation,
+          subPair: { defender: '5', attacker: '6' }
+        }
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      expect(screen.queryByTestId('substitute-recommendations')).not.toBeInTheDocument();
+    });
+
+    it('suggests only open substitute slots and preserves filled slots', async () => {
+      const { getPlayerStats } = require('../../../services/matchStateManager');
+      getPlayerStats.mockResolvedValue({
+        success: true,
+        players: [
+          { id: '1', percentStartedAsSubstitute: 40 },
+          { id: '2', percentStartedAsSubstitute: 15 },
+          { id: '3', percentStartedAsSubstitute: 5 },
+          { id: '4', percentStartedAsSubstitute: 25 },
+          { id: '5', percentStartedAsSubstitute: 0 },
+          { id: '6', percentStartedAsSubstitute: 55 }
+        ]
+      });
+
+      const props = {
+        ...mockProps,
+        formation: {
+          ...mockProps.formation,
+          subPair: { defender: '5', attacker: null }
+        },
+        setFormation: jest.fn()
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      const list = await screen.findByTestId('substitute-recommendations-list');
+      const items = within(list).getAllByRole('listitem');
+
+      expect(items).toHaveLength(1);
+      expect(items[0]).toHaveTextContent('Player 3');
+      expect(items[0]).toHaveTextContent('5.0%');
+      expect(within(list).queryByText('Player 5')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /accept/i }));
+
+      const updater = props.setFormation.mock.calls.pop()[0];
+      const updatedFormation = updater({
+        ...props.formation
+      });
+
+      expect(updatedFormation.subPair.defender).toBe('5');
+      expect(updatedFormation.subPair.attacker).toBe('3');
+    });
+
     it('populates substitutes and hides recommendations when accepted', async () => {
       const { getPlayerStats } = require('../../../services/matchStateManager');
       getPlayerStats.mockResolvedValue({

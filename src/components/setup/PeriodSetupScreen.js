@@ -121,19 +121,45 @@ export function PeriodSetupScreen({
   const [subRecommendationLoading, setSubRecommendationLoading] = useState(false);
   const [subRecommendationError, setSubRecommendationError] = useState(null);
   const modeDefinition = useMemo(() => getModeDefinition(teamConfig), [teamConfig]);
-  const substituteSlotCount = useMemo(() => {
+  const openSubstituteSlotCount = useMemo(() => {
     if (!teamConfig) return 0;
+
     if (isPairsMode) {
-      return 2;
+      const subPair = formation?.subPair || {};
+      let openSlots = 0;
+      if (!subPair.defender) openSlots += 1;
+      if (!subPair.attacker) openSlots += 1;
+      return openSlots;
     }
-    return modeDefinition?.substitutePositions?.length || 0;
-  }, [teamConfig, isPairsMode, modeDefinition]);
+
+    if (!modeDefinition) {
+      return 0;
+    }
+
+    const substitutePositions = modeDefinition.substitutePositions || [];
+    return substitutePositions.reduce((count, position) => {
+      return !formation?.[position] ? count + 1 : count;
+    }, 0);
+  }, [teamConfig, formation, isPairsMode, modeDefinition]);
   const substituteRecommendations = useMemo(() => {
     if (currentPeriodNumber !== 1) return [];
     if (!Array.isArray(selectedSquadPlayers)) return [];
     const goalieId = formation?.goalie;
+    const substitutePositions = modeDefinition?.substitutePositions || [];
+    const subPair = formation?.subPair;
+
     return [...selectedSquadPlayers]
-      .filter(player => player?.id && player.id !== goalieId)
+      .filter(player => {
+        if (!player?.id || player.id === goalieId) {
+          return false;
+        }
+
+        if (isPairsMode) {
+          return !subPair || (subPair.defender !== player.id && subPair.attacker !== player.id);
+        }
+
+        return !substitutePositions.some(position => formation?.[position] === player.id);
+      })
       .map(player => ({
         id: player.id,
         name: player.name,
@@ -147,16 +173,23 @@ export function PeriodSetupScreen({
         }
         return a.percentStartedAsSub - b.percentStartedAsSub;
       });
-  }, [currentPeriodNumber, selectedSquadPlayers, formation?.goalie, subRecommendationPercentages]);
+  }, [
+    currentPeriodNumber,
+    selectedSquadPlayers,
+    formation,
+    subRecommendationPercentages,
+    isPairsMode,
+    modeDefinition
+  ]);
   const displayedSubstituteRecommendations = useMemo(() => {
-    if (substituteSlotCount <= 0) return [];
-    return substituteRecommendations.slice(0, substituteSlotCount);
-  }, [substituteRecommendations, substituteSlotCount]);
+    if (openSubstituteSlotCount <= 0) return [];
+    return substituteRecommendations.slice(0, openSubstituteSlotCount);
+  }, [substituteRecommendations, openSubstituteSlotCount]);
   const formatSubstitutePercentage = (value) => {
     const numericValue = Number.isFinite(value) ? value : 0;
     return `${numericValue.toFixed(1)}%`;
   };
-  const shouldShowRecommendations = currentPeriodNumber === 1 && substituteSlotCount > 0 && !recommendationHandled;
+  const shouldShowRecommendations = currentPeriodNumber === 1 && openSubstituteSlotCount > 0 && !recommendationHandled;
   
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
@@ -187,7 +220,8 @@ export function PeriodSetupScreen({
   const recommendationDependenciesRef = useRef({
     teamId: null,
     period: null,
-    signature: null
+    signature: null,
+    openSlotCount: null
   });
 
   useEffect(() => {
@@ -207,10 +241,19 @@ export function PeriodSetupScreen({
       recommendationDependenciesRef.current.teamId !== teamId ||
       recommendationDependenciesRef.current.period !== period ||
       recommendationDependenciesRef.current.signature !== signature;
+    const openSlotCountChanged =
+      recommendationDependenciesRef.current.openSlotCount !== openSubstituteSlotCount;
 
-    if (depsChanged) {
-      recommendationDependenciesRef.current = { teamId, period, signature };
-      setRecommendationHandled(false);
+    if (depsChanged || openSlotCountChanged) {
+      recommendationDependenciesRef.current = {
+        teamId,
+        period,
+        signature,
+        openSlotCount: openSubstituteSlotCount
+      };
+      if (openSubstituteSlotCount > 0 && recommendationHandled) {
+        setRecommendationHandled(false);
+      }
     }
 
     if (
@@ -219,6 +262,15 @@ export function PeriodSetupScreen({
       !Array.isArray(selectedSquadPlayers) ||
       selectedSquadPlayers.length === 0
     ) {
+      setSubRecommendationPercentages({});
+      setSubRecommendationError(null);
+      setSubRecommendationLoading(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (openSubstituteSlotCount === 0) {
       setSubRecommendationPercentages({});
       setSubRecommendationError(null);
       setSubRecommendationLoading(false);
@@ -288,7 +340,7 @@ export function PeriodSetupScreen({
     return () => {
       isActive = false;
     };
-  }, [currentPeriodNumber, currentTeam?.id, selectedSquadPlayers, recommendationHandled]);
+  }, [currentPeriodNumber, currentTeam?.id, selectedSquadPlayers, recommendationHandled, openSubstituteSlotCount]);
 
   const handleDismissSubRecommendations = useCallback(() => {
     setRecommendationHandled(true);
@@ -300,10 +352,16 @@ export function PeriodSetupScreen({
       return;
     }
 
-    const recommendedIds = new Set(displayedSubstituteRecommendations.map(player => player.id));
-
     if (isPairsMode) {
       setFormation(prev => {
+        const subPair = prev.subPair || { defender: null, attacker: null };
+        const openRoles = ['defender', 'attacker'].filter(role => !subPair[role]);
+        if (openRoles.length === 0) {
+          return prev;
+        }
+
+        const playersToAssign = displayedSubstituteRecommendations.slice(0, openRoles.length);
+        const recommendedIds = new Set(playersToAssign.map(player => player.id));
         const updatedFormation = {
           ...prev,
           leftPair: { ...prev.leftPair },
@@ -319,23 +377,26 @@ export function PeriodSetupScreen({
           });
         });
 
-        const defenderRecommendation = displayedSubstituteRecommendations[0];
-        const attackerRecommendation = displayedSubstituteRecommendations[1];
-
-        if (defenderRecommendation) {
-          updatedFormation.subPair.defender = defenderRecommendation.id;
-        }
-        if (attackerRecommendation) {
-          updatedFormation.subPair.attacker = attackerRecommendation.id;
-        }
+        openRoles.forEach((role, index) => {
+          const recommendation = playersToAssign[index];
+          if (recommendation) {
+            updatedFormation.subPair[role] = recommendation.id;
+          }
+        });
 
         return updatedFormation;
       });
     } else if (modeDefinition) {
       setFormation(prev => {
+        const substitutePositions = (modeDefinition.substitutePositions || []).filter(position => !prev[position]);
+        if (substitutePositions.length === 0) {
+          return prev;
+        }
+
+        const playersToAssign = displayedSubstituteRecommendations.slice(0, substitutePositions.length);
+        const recommendedIds = new Set(playersToAssign.map(player => player.id));
         const updatedFormation = { ...prev };
         const fieldPositions = modeDefinition.fieldPositions || [];
-        const substitutePositions = modeDefinition.substitutePositions || [];
 
         fieldPositions.forEach(position => {
           if (recommendedIds.has(updatedFormation[position])) {
@@ -344,8 +405,10 @@ export function PeriodSetupScreen({
         });
 
         substitutePositions.forEach((position, index) => {
-          const recommendation = displayedSubstituteRecommendations[index];
-          updatedFormation[position] = recommendation ? recommendation.id : null;
+          const recommendation = playersToAssign[index];
+          if (recommendation) {
+            updatedFormation[position] = recommendation.id;
+          }
         });
 
         return updatedFormation;
