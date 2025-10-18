@@ -9,3 +9,10 @@ Object.defineProperty(window, 'scrollTo', {
   value: jest.fn(),
   writable: true
 });
+
+// Clean up after all tests to prevent hanging
+// This is especially important for Supabase client which creates timers
+afterAll(async () => {
+  // Give async cleanup operations a chance to complete
+  await new Promise(resolve => setTimeout(resolve, 100));
+});
