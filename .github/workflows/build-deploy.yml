@@ -44,7 +44,8 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: CI=true npm test -- --verbose=false --silent --reporters=default
+        timeout-minutes: 5
+        run: CI=true npm test
 
       - name: Build static files
         run: CI=true && PUBLIC_URL="/sportwizard" npm run build
@@ -61,3 +62,4 @@ jobs:
           publish_branch: main
           publish_dir: ./build
           force_orphan: true
+π
