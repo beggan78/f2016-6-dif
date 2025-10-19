@@ -276,12 +276,18 @@ describe('createSubstitutionHandlers', () => {
       const fieldPlayerModal = { type: 'player', target: 'leftDefender', sourcePlayerId: '1', playerName: 'Player 1' };
       handlers.handleSubstituteNow(fieldPlayerModal);
 
+      expect(mockDependencies.stateUpdaters.setShouldResetSubTimerOnNextSub).toHaveBeenCalledWith(false);
       expect(mockDependencies.stateUpdaters.setSubstitutionCountOverride).toHaveBeenCalledWith(1);
       expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
+
+      mockGameState.shouldResetSubTimerOnNextSub = false;
+      mockDependencies.stateUpdaters.resetSubTimer.mockClear();
 
       handlers.handleSubstitutionWithHighlight();
 
       expect(mockDependencies.stateUpdaters.clearSubstitutionCountOverride).toHaveBeenCalled();
+      expect(mockDependencies.stateUpdaters.setShouldResetSubTimerOnNextSub).toHaveBeenCalledWith(true);
+      expect(mockDependencies.stateUpdaters.resetSubTimer).not.toHaveBeenCalled();
     });
   });
 
@@ -494,6 +500,27 @@ describe('createSubstitutionHandlers', () => {
         })
       );
       expect(mockDependencies.stateUpdaters.resetSubTimer).toHaveBeenCalled();
+    });
+
+    it('should skip resetting timer when configured to skip next reset', () => {
+      const mockGameStateNoReset = {
+        ...mockGameState,
+        shouldResetSubTimerOnNextSub: false
+      };
+      mockGameStateFactory.mockReturnValue(mockGameStateNoReset);
+      mockDependencies.stateUpdaters.resetSubTimer.mockClear();
+
+      const handlers = createSubstitutionHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7
+      );
+
+      handlers.handleSubstitutionWithHighlight();
+
+      expect(mockDependencies.stateUpdaters.resetSubTimer).not.toHaveBeenCalled();
     });
   });
 

@@ -23,6 +23,9 @@ export function useGameUIState() {
   // Override for immediate substitution count
   const [substitutionCountOverride, setSubstitutionCountOverride] = useState(null);
 
+  // Control whether to reset substitution timer after next substitution
+  const [shouldResetSubTimerOnNextSub, setShouldResetSubTimerOnNextSub] = useState(true);
+
   // Integration with existing animation system
   const resetAnimationState = useCallback(() => {
     setAnimationState({ type: 'none', phase: 'idle', data: {} });
@@ -88,6 +91,8 @@ export function useGameUIState() {
     substitutionCountOverride,
     setSubstitutionCountOverride: updateSubstitutionCountOverride,
     clearSubstitutionCountOverride,
+    shouldResetSubTimerOnNextSub,
+    setShouldResetSubTimerOnNextSub,
     
     // Utilities
     resetAnimationState

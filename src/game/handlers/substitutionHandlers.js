@@ -49,7 +49,8 @@ export const createSubstitutionHandlers = (
     resetSubTimer,
     handleUndoSubstitutionTimer,
     setSubstitutionCountOverride,
-    clearSubstitutionCountOverride
+    clearSubstitutionCountOverride,
+    setShouldResetSubTimerOnNextSub
   } = stateUpdaters;
 
   const {
@@ -71,11 +72,17 @@ export const createSubstitutionHandlers = (
     if (typeof setSubstitutionCountOverride === 'function') {
       setSubstitutionCountOverride(1);
     }
+    if (typeof setShouldResetSubTimerOnNextSub === 'function') {
+      setShouldResetSubTimerOnNextSub(false);
+    }
   };
 
   const clearImmediateSubstitutionOverride = () => {
     if (typeof clearSubstitutionCountOverride === 'function') {
       clearSubstitutionCountOverride();
+    }
+    if (typeof setShouldResetSubTimerOnNextSub === 'function') {
+      setShouldResetSubTimerOnNextSub(true);
     }
   };
 
@@ -718,8 +725,10 @@ export const createSubstitutionHandlers = (
         setLastSubstitution(lastSubstitutionData);
         setLastSubstitutionTimestamp(substitutionTimestamp);
         
-        // Reset substitution timer after successful substitution
-        resetSubTimer();
+        // Reset substitution timer only when configured to do so
+        if (gameState.shouldResetSubTimerOnNextSub !== false) {
+          resetSubTimer();
+        }
         clearImmediateSubstitutionOverride();
       },
       setAnimationState,
