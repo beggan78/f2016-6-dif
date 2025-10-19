@@ -171,7 +171,8 @@ export function GameScreen({
       matchTimerSeconds,
       ownScore,
       opponentScore,
-      substitutionCount
+      substitutionCount,
+      substitutionOverride: uiState.substitutionOverride
     };
 
 
@@ -181,7 +182,7 @@ export function GameScreen({
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore,
-    substitutionCount
+    substitutionCount, uiState.substitutionOverride
   ]);
 
   // State updaters object for handlers
@@ -194,6 +195,8 @@ export function GameScreen({
     setNextNextPlayerIdToSubOut,
     setRotationQueue,
     setShouldSubstituteNow: uiState.setShouldSubstituteNow,
+    setSubstitutionOverride: uiState.setSubstitutionOverride,
+    clearSubstitutionOverride: uiState.clearSubstitutionOverride,
     setLastSubstitution: uiState.setLastSubstitution,
     setLastSubstitutionTimestamp: () => {}, // Legacy - not used in new architecture
     setScore, // Direct access for atomic updates
@@ -206,7 +209,8 @@ export function GameScreen({
   }), [
     setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
-    setRotationQueue, uiState.setShouldSubstituteNow, uiState.setLastSubstitution,
+    setRotationQueue, uiState.setShouldSubstituteNow, uiState.setSubstitutionOverride,
+    uiState.clearSubstitutionOverride, uiState.setLastSubstitution,
     setScore, ownScore, opponentScore, addGoalScored, addGoalConceded, resetSubTimer,
     handleUndoSubstitutionTimer
   ]);

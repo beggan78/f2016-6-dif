@@ -4,27 +4,28 @@ import {
   validateAndCorrectTeamConfig,
   createDefaultTeamConfig,
   SUBSTITUTION_TYPES,
-  PAIR_ROLE_ROTATION_TYPES,
-  PAIR_ROLE_ROTATION_DEFINITIONS,
+  PAIRED_ROLE_STRATEGY_TYPES,
+  PAIRED_ROLE_STRATEGY_DEFINITIONS,
   FORMATIONS,
   FORMATS,
   FORMAT_CONFIGS,
-  FORMATION_DEFINITIONS
+  FORMATION_DEFINITIONS,
+  canUsePairedRoleStrategy
 } from '../teamConfiguration';
 
-describe('Team Configuration with Pair Role Rotation', () => {
-  describe('PAIR_ROLE_ROTATION_TYPES and DEFINITIONS', () => {
-    test('should have correct pair role rotation constants', () => {
-      expect(PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD).toBe('keep_throughout_period');
-      expect(PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION).toBe('swap_every_rotation');
+describe('Team Configuration with Paired Role Strategy', () => {
+  describe('PAIRED_ROLE_STRATEGY_TYPES and DEFINITIONS', () => {
+    test('should have correct paired role strategy constants', () => {
+      expect(PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD).toBe('keep_throughout_period');
+      expect(PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION).toBe('swap_every_rotation');
     });
 
-    test('should have definitions for all role rotation types', () => {
-      expect(PAIR_ROLE_ROTATION_DEFINITIONS).toHaveProperty(PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD);
-      expect(PAIR_ROLE_ROTATION_DEFINITIONS).toHaveProperty(PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION);
+    test('should have definitions for all paired role strategy types', () => {
+      expect(PAIRED_ROLE_STRATEGY_DEFINITIONS).toHaveProperty(PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD);
+      expect(PAIRED_ROLE_STRATEGY_DEFINITIONS).toHaveProperty(PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION);
       
       // Check that definitions have required properties
-      Object.values(PAIR_ROLE_ROTATION_DEFINITIONS).forEach(definition => {
+      Object.values(PAIRED_ROLE_STRATEGY_DEFINITIONS).forEach(definition => {
         expect(definition).toHaveProperty('label');
         expect(definition).toHaveProperty('description');
         expect(definition).toHaveProperty('shortDescription');
@@ -32,7 +33,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
     });
   });
 
-  describe('createTeamConfig with pairRoleRotation', () => {
+  describe('createTeamConfig with pairedRoleStrategy', () => {
     test('should create team config for pairs mode with default role rotation', () => {
       const config = createTeamConfig('5v5', 7, '2-2', SUBSTITUTION_TYPES.PAIRS);
       
@@ -41,23 +42,35 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: '2-2',
         substitutionType: 'pairs',
-        pairRoleRotation: 'keep_throughout_period'
+        pairedRoleStrategy: 'keep_throughout_period'
       });
     });
 
     test('should create team config for pairs mode with specific role rotation', () => {
-      const config = createTeamConfig('5v5', 7, '2-2', SUBSTITUTION_TYPES.PAIRS, PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION);
+      const config = createTeamConfig('5v5', 7, '2-2', SUBSTITUTION_TYPES.PAIRS, PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION);
       
       expect(config).toEqual({
         format: '5v5',
         squadSize: 7,
         formation: '2-2',
         substitutionType: 'pairs',
-        pairRoleRotation: 'swap_every_rotation'
+        pairedRoleStrategy: 'swap_every_rotation'
       });
     });
 
-    test('should not include pairRoleRotation for individual mode', () => {
+    test('should include pairedRoleStrategy for eligible individual configurations', () => {
+      const config = createTeamConfig('5v5', 9, '2-2', SUBSTITUTION_TYPES.INDIVIDUAL);
+      
+      expect(config).toEqual({
+        format: '5v5',
+        squadSize: 9,
+        formation: '2-2',
+        substitutionType: 'individual',
+        pairedRoleStrategy: 'keep_throughout_period'
+      });
+    });
+
+    test('should not include pairedRoleStrategy for ineligible individual mode', () => {
       const config = createTeamConfig('5v5', 6, '2-2', SUBSTITUTION_TYPES.INDIVIDUAL);
       
       expect(config).toEqual({
@@ -67,20 +80,32 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: 'individual'
       });
       
-      expect(config).not.toHaveProperty('pairRoleRotation');
+      expect(config).not.toHaveProperty('pairedRoleStrategy');
     });
   });
 
-  describe('validateTeamConfig with pairRoleRotation', () => {
+  describe('validateTeamConfig with pairedRoleStrategy', () => {
     test('should validate pairs config with valid role rotation', () => {
       const config = {
         format: '5v5',
         squadSize: 7,
         formation: '2-2',
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
       };
       
+      expect(() => validateTeamConfig(config)).not.toThrow();
+    });
+
+    test('should validate individual config with paired role strategy when eligible', () => {
+      const config = {
+        format: '5v5',
+        squadSize: 9,
+        formation: '2-2',
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+      };
+
       expect(() => validateTeamConfig(config)).not.toThrow();
     });
 
@@ -101,22 +126,22 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: '2-2',
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: 'invalid_rotation_type'
+        pairedRoleStrategy: 'invalid_rotation_type'
       };
       
-      expect(() => validateTeamConfig(config)).toThrow('Invalid pair role rotation');
+      expect(() => validateTeamConfig(config)).toThrow('Invalid paired role strategy');
     });
 
-    test('should throw error for role rotation in non-pairs mode', () => {
+    test('should throw error for role rotation in non-eligible configuration', () => {
       const config = {
         format: '5v5',
         squadSize: 6,
         formation: '2-2',
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
       };
       
-      expect(() => validateTeamConfig(config)).toThrow("pairRoleRotation can only be set when substitutionType is 'pairs'");
+      expect(() => validateTeamConfig(config)).toThrow('pairedRoleStrategy can only be set when the configuration supports paired rotations');
     });
 
     test('should validate individual config without role rotation', () => {
@@ -131,7 +156,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
     });
   });
 
-  describe('createDefaultTeamConfig with pair role rotation', () => {
+  describe('createDefaultTeamConfig with paired role strategy', () => {
     test('should create default config for 7-player squad with pairs and default role rotation', () => {
       const config = createDefaultTeamConfig(7);
       
@@ -140,7 +165,19 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: '2-2',
         substitutionType: 'pairs',
-        pairRoleRotation: 'keep_throughout_period'
+        pairedRoleStrategy: 'keep_throughout_period'
+      });
+    });
+
+    test('should create default config for 9-player squad with individual substitutions and paired strategy', () => {
+      const config = createDefaultTeamConfig(9);
+
+      expect(config).toEqual({
+        format: '5v5',
+        squadSize: 9,
+        formation: '2-2',
+        substitutionType: 'individual',
+        pairedRoleStrategy: 'keep_throughout_period'
       });
     });
 
@@ -154,7 +191,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         substitutionType: 'individual'
       });
       
-      expect(config).not.toHaveProperty('pairRoleRotation');
+      expect(config).not.toHaveProperty('pairedRoleStrategy');
     });
   });
 
@@ -165,7 +202,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: FORMATIONS.FORMATION_1_2_1,
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
       };
 
       expect(() => validateTeamConfig(config)).toThrow('Pairs substitution is only supported with 2-2 formation');
@@ -177,7 +214,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 6,
         formation: FORMATIONS.FORMATION_2_2,
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
       };
 
       expect(() => validateTeamConfig(config)).toThrow('Pairs substitution is only supported with 7 players');
@@ -189,7 +226,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: FORMATIONS.FORMATION_2_2,
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
       };
 
       expect(() => validateTeamConfig(config)).not.toThrow();
@@ -203,7 +240,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: FORMATIONS.FORMATION_2_2,
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
       };
 
       const result = validateAndCorrectTeamConfig(validConfig);
@@ -219,7 +256,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: FORMATIONS.FORMATION_1_2_1,
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
       };
 
       const result = validateAndCorrectTeamConfig(invalidConfig);
@@ -230,12 +267,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 7,
         formation: FORMATIONS.FORMATION_1_2_1,
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
-        pairRoleRotation: null
+        pairedRoleStrategy: null
       });
       expect(result.corrections).toEqual(
         expect.arrayContaining([
           expect.stringContaining('pairs to individual'),
-          expect.stringContaining('pairRoleRotation')
+          expect.stringContaining('pairedRoleStrategy')
         ])
       );
     });
@@ -246,7 +283,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 6,
         formation: FORMATIONS.FORMATION_2_2,
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
       };
 
       const result = validateAndCorrectTeamConfig(invalidConfig);
@@ -257,12 +294,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 6,
         formation: FORMATIONS.FORMATION_2_2,
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
-        pairRoleRotation: null
+        pairedRoleStrategy: null
       });
       expect(result.corrections).toEqual(
         expect.arrayContaining([
           expect.stringContaining('pairs to individual'),
-          expect.stringContaining('pairRoleRotation')
+          expect.stringContaining('pairedRoleStrategy')
         ])
       );
     });
@@ -273,7 +310,7 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 6,
         formation: FORMATIONS.FORMATION_1_2_1,
         substitutionType: SUBSTITUTION_TYPES.PAIRS,
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
       };
 
       const result = validateAndCorrectTeamConfig(invalidConfig);
@@ -284,12 +321,12 @@ describe('Team Configuration with Pair Role Rotation', () => {
         squadSize: 6,
         formation: FORMATIONS.FORMATION_1_2_1,
         substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
-        pairRoleRotation: null
+        pairedRoleStrategy: null
       });
       expect(result.corrections).toEqual(
         expect.arrayContaining([
           expect.stringContaining('pairs to individual'),
-          expect.stringContaining('pairRoleRotation')
+          expect.stringContaining('pairedRoleStrategy')
         ])
       );
     });
@@ -342,6 +379,50 @@ describe('Team Configuration with Pair Role Rotation', () => {
 
       expect(FORMATION_DEFINITIONS[FORMATIONS.FORMATION_2_2_2].status).toBe('available');
       expect(FORMATION_DEFINITIONS[FORMATIONS.FORMATION_2_3_1].status).toBe('available');
+    });
+  });
+
+  describe('canUsePairedRoleStrategy helper', () => {
+    test('returns true for 7-player pairs mode', () => {
+      expect(
+        canUsePairedRoleStrategy({
+          format: FORMATS.FORMAT_5V5,
+          squadSize: 7,
+          formation: FORMATIONS.FORMATION_2_2,
+          substitutionType: SUBSTITUTION_TYPES.PAIRS
+        })
+      ).toBe(true);
+    });
+
+    test('returns true for 9-player individual mode with 2-2 formation', () => {
+      expect(
+        canUsePairedRoleStrategy({
+          format: FORMATS.FORMAT_5V5,
+          squadSize: 9,
+          formation: FORMATIONS.FORMATION_2_2,
+          substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        })
+      ).toBe(true);
+    });
+
+    test('returns false for unsupported formations or squad sizes', () => {
+      expect(
+        canUsePairedRoleStrategy({
+          format: FORMATS.FORMAT_5V5,
+          squadSize: 6,
+          formation: FORMATIONS.FORMATION_2_2,
+          substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        })
+      ).toBe(false);
+
+      expect(
+        canUsePairedRoleStrategy({
+          format: FORMATS.FORMAT_5V5,
+          squadSize: 9,
+          formation: FORMATIONS.FORMATION_1_2_1,
+          substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        })
+      ).toBe(false);
     });
   });
 });

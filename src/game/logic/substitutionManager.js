@@ -1,11 +1,12 @@
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
-import { PAIR_ROLE_ROTATION_TYPES } from '../../constants/teamConfiguration';
+import { PAIRED_ROLE_STRATEGY_TYPES, canUsePairedRoleStrategy } from '../../constants/teamConfiguration';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { findPlayerById, createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
 import { handleError, createError, ERROR_SEVERITY } from '../../utils/errorHandler';
+import { analyzeOutgoingPair } from '../utils/pairedRotationUtils';
 
 /**
  * Deep clone formation object efficiently
@@ -93,7 +94,7 @@ export class SubstitutionManager {
     const playersComingOnIds = [pairComingIn.defender, pairComingIn.attacker].filter(Boolean);
 
     // Determine role rotation behavior from team configuration
-    const shouldSwapRoles = this.teamConfig?.pairRoleRotation === PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION;
+    const shouldSwapRoles = this.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION;
 
     // Calculate new formation with role rotation support
     const newFormation = cloneFormation(formation);
@@ -227,11 +228,32 @@ export class SubstitutionManager {
     const modeConfig = this.getModeConfig();
     const { substitutePositions, supportsInactiveUsers, substituteRotationPattern } = modeConfig;
 
-    // Get N players from rotation queue (players to substitute out)
-    const playersToSubOutIds = rotationQueue.slice(0, substitutionCount);
+    const configForPairedStrategy = {
+      format: this.teamConfig?.format,
+      squadSize: this.teamConfig?.squadSize,
+      formation: this.teamConfig?.formation || this.selectedFormation,
+      substitutionType: this.teamConfig?.substitutionType
+    };
+
+    let isPairedRotationActive = substitutionCount === 2 && canUsePairedRoleStrategy(configForPairedStrategy);
+    let playersToSubOutIds = rotationQueue.slice(0, substitutionCount);
+    let pairedPairMeta = null;
+
+    if (isPairedRotationActive) {
+      pairedPairMeta = analyzeOutgoingPair(formation, playersToSubOutIds);
+      if (!pairedPairMeta) {
+        isPairedRotationActive = false;
+      } else {
+        playersToSubOutIds = [pairedPairMeta.defenderId, pairedPairMeta.attackerId];
+      }
+    }
 
     // Get N substitute positions (players to bring on)
-    const substitutePositionsToUse = substitutePositions.slice(0, substitutionCount);
+    let substitutePositionsToUse = substitutePositions.slice(0, substitutionCount);
+    const shouldSwapRoles = isPairedRotationActive && this.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION;
+    if (shouldSwapRoles) {
+      substitutePositionsToUse = [...substitutePositionsToUse].reverse();
+    }
 
     // Validate that all players to sub out are in field positions
     const fieldPositions = modeConfig.fieldPositions;

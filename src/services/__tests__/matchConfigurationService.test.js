@@ -66,13 +66,13 @@ describe('matchConfigurationService', () => {
       });
     });
 
-    it('should include pairRoleRotation when present', () => {
+    it('should include pairedRoleStrategy when present', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
         squadSize: 7,
         substitutionType: 'pairs',
-        pairRoleRotation: { enabled: true, rotationOrder: ['left', 'right'] }
+        pairedRoleStrategy: 'keep_throughout_period'
       };
 
       const result = formatTeamConfigForDatabase(teamConfig);
@@ -82,11 +82,11 @@ describe('matchConfigurationService', () => {
         formation: '2-2',
         squadSize: 7,
         substitutionType: 'pairs',
-        pairRoleRotation: { enabled: true, rotationOrder: ['left', 'right'] }
+        pairedRoleStrategy: 'keep_throughout_period'
       });
     });
 
-    it('should exclude pairRoleRotation when not present', () => {
+    it('should exclude pairedRoleStrategy when not present', () => {
       const teamConfig = {
         format: '5v5',
         formation: '1-2-1',
@@ -102,7 +102,7 @@ describe('matchConfigurationService', () => {
         squadSize: 6,
         substitutionType: 'individual'
       });
-      expect(result).not.toHaveProperty('pairRoleRotation');
+      expect(result).not.toHaveProperty('pairedRoleStrategy');
     });
   });
 

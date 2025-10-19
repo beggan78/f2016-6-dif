@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
 import { Select, Button, Input } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIR_ROLE_ROTATION_DEFINITIONS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
+import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIRED_ROLE_STRATEGY_DEFINITIONS, PAIRED_ROLE_STRATEGY_TYPES, getMinimumPlayersForFormat, getMaximumPlayersForFormat, canUsePairedRoleStrategy } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
@@ -99,6 +99,20 @@ export function ConfigurationScreen({
   const meetsMinimumSelection = selectedSquadIds.length >= minPlayersRequired;
   const exceedsFormatMaximum = selectedSquadIds.length > maxPlayersAllowed;
   const withinFormatBounds = meetsMinimumSelection && !exceedsFormatMaximum;
+  const currentSquadSize = teamConfig?.squadSize || selectedSquadIds.length;
+  const formationForEligibility = teamConfig?.formation || selectedFormation;
+  const substitutionTypeForEligibility = teamConfig?.substitutionType || SUBSTITUTION_TYPES.INDIVIDUAL;
+  const showSubstitutionModeSelector =
+    currentFormat === FORMATS.FORMAT_5V5 &&
+    formationForEligibility === FORMATIONS.FORMATION_2_2 &&
+    currentSquadSize === 7;
+  const showPairedRoleStrategySelector = canUsePairedRoleStrategy({
+    format: currentFormat,
+    squadSize: currentSquadSize,
+    formation: formationForEligibility,
+    substitutionType: substitutionTypeForEligibility
+  });
+  const activePairedRoleStrategy = teamConfig?.pairedRoleStrategy || PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD;
 
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
@@ -325,23 +339,32 @@ export function ConfigurationScreen({
       teamConfig.squadSize || selectedSquadIds.length,
       teamConfig.formation || selectedFormation,
       newSubstitutionType,
-      teamConfig.pairRoleRotation
+      teamConfig.pairedRoleStrategy
     );
 
     updateTeamConfig(newTeamConfig);
     setHasActiveConfiguration(true);
   }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, setHasActiveConfiguration]);
 
-  // Handle pair role rotation changes
-  const handlePairRoleRotationChange = React.useCallback((newPairRoleRotation) => {
-    if (!teamConfig || teamConfig.substitutionType !== SUBSTITUTION_TYPES.PAIRS) return;
+  // Handle paired role strategy changes
+  const handlePairedRoleStrategyChange = React.useCallback((newStrategy) => {
+    if (!teamConfig) return;
+
+    const format = teamConfig.format || FORMATS.FORMAT_5V5;
+    const squadSize = teamConfig.squadSize || selectedSquadIds.length;
+    const formation = teamConfig.formation || selectedFormation;
+    const substitutionType = teamConfig.substitutionType || SUBSTITUTION_TYPES.INDIVIDUAL;
+
+    if (!canUsePairedRoleStrategy({ format, squadSize, formation, substitutionType })) {
+      return;
+    }
 
     const newTeamConfig = createTeamConfig(
-      teamConfig.format || FORMATS.FORMAT_5V5,
-      teamConfig.squadSize || selectedSquadIds.length,
-      teamConfig.formation || selectedFormation,
-      teamConfig.substitutionType,
-      newPairRoleRotation
+      format,
+      squadSize,
+      formation,
+      substitutionType,
+      newStrategy
     );
 
     updateTeamConfig(newTeamConfig);
@@ -615,7 +638,7 @@ export function ConfigurationScreen({
         if (resumeData.teamConfig) {
           console.log('🔄 RESUME: Restoring team config:', {
             substitutionType: resumeData.teamConfig.substitutionType,
-            pairRoleRotation: resumeData.teamConfig.pairRoleRotation,
+            pairedRoleStrategy: resumeData.teamConfig.pairedRoleStrategy,
             fullConfig: resumeData.teamConfig
           });
           updateTeamConfig(resumeData.teamConfig);
@@ -850,7 +873,7 @@ export function ConfigurationScreen({
         : SUBSTITUTION_TYPES.INDIVIDUAL);
 
     const nextPairRotation = nextSubstitutionType === SUBSTITUTION_TYPES.PAIRS
-      ? teamConfig.pairRoleRotation
+      ? teamConfig.pairedRoleStrategy
       : null;
 
     const newTeamConfig = createTeamConfig(
@@ -1374,8 +1397,8 @@ export function ConfigurationScreen({
         </div>
       </div>
 
-      {/* Substitution Mode Selection - only when format supports pairs */}
-      {teamConfig?.format === FORMATS.FORMAT_5V5 && selectedSquadIds.length === 7 && selectedFormation === FORMATIONS.FORMATION_2_2 && (
+      {/* Substitution Mode Selection - 7 player squads */}
+      {showSubstitutionModeSelector && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
           <div className="space-y-3">
@@ -1396,55 +1419,58 @@ export function ConfigurationScreen({
             </label>
 
             {/* Pairs Option */}
-            <div>
-              <label className="flex items-center space-x-2 cursor-pointer">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="substitutionMode"
+                value={SUBSTITUTION_TYPES.PAIRS}
+                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS}
+                onChange={e => handleSubstitutionModeChange(e.target.value)}
+                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+              />
+              <div>
+                <span className="text-sky-100 font-medium">Pairs</span>
+                <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Paired role strategy selection */}
+      {showPairedRoleStrategySelector && (
+        <div className="p-3 bg-slate-700 rounded-md">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-medium text-sky-200">Role Rotation</h3>
+            <button
+              type="button"
+              onClick={() => setIsPairRoleHelpModalOpen(true)}
+              className="text-slate-400 hover:text-sky-300 transition-colors"
+              title="Learn about role rotation options"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">
+            Choose how paired players rotate roles when you substitute two players at a time.
+          </p>
+          <div className="space-y-2">
+            {Object.entries(PAIRED_ROLE_STRATEGY_DEFINITIONS).map(([value, definition]) => (
+              <label key={value} className="flex items-start space-x-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="substitutionMode"
-                  value={SUBSTITUTION_TYPES.PAIRS}
-                  checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS}
-                  onChange={e => handleSubstitutionModeChange(e.target.value)}
-                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
+                  name="pairedRoleStrategy"
+                  value={value}
+                  checked={activePairedRoleStrategy === value}
+                  onChange={e => handlePairedRoleStrategyChange(e.target.value)}
+                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400 mt-0.5"
                 />
                 <div>
-                  <span className="text-sky-100 font-medium">Pairs</span>
-                  <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
+                  <span className="text-sky-50 text-sm font-medium">{definition.label}</span>
+                  <p className="text-xs text-slate-300">{definition.shortDescription}</p>
                 </div>
               </label>
-
-              {/* Pair Role Rotation Sub-options - Only show when Pairs is selected */}
-              {teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS && (
-                <div className="ml-6 mt-3 space-y-2">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-sm font-medium text-sky-100">Role Rotation:</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsPairRoleHelpModalOpen(true)}
-                      className="text-slate-400 hover:text-sky-300 transition-colors"
-                      title="Learn about pair role rotation options"
-                    >
-                      <HelpCircle className="h-4 w-4" />
-                    </button>
-                  </div>
-                  {Object.entries(PAIR_ROLE_ROTATION_DEFINITIONS).map(([value, definition]) => (
-                    <label key={value} className="flex items-start space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="pairRoleRotation"
-                        value={value}
-                        checked={teamConfig?.pairRoleRotation === value}
-                        onChange={e => handlePairRoleRotationChange(e.target.value)}
-                        className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400 mt-0.5"
-                      />
-                      <div>
-                        <span className="text-sky-50 text-sm font-medium">{definition.label}</span>
-                        <p className="text-xs text-slate-300">{definition.shortDescription}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+            ))}
           </div>
         </div>
       )}

@@ -1,7 +1,8 @@
-import { FORMATIONS } from '../constants/teamConfiguration';
+import { FORMATIONS, canUsePairedRoleStrategy } from '../constants/teamConfiguration';
 import { getFormationDefinition } from './formationConfigUtils';
 import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase } from '../constants/roleConstants';
+import { buildPairedRotationQueueFromFormation } from '../game/utils/pairedRotationUtils';
 
 // Role constants for formation logic (database format for consistency)
 const DB_DEFENDER = roleToDatabase(PLAYER_ROLES.DEFENDER);
@@ -406,13 +407,21 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   const substitutePositions = modeConfig?.substitutePositions || [];
   addSubstitutePositions(formationResult, substitutePositions, substitutesOrdered, inactivePlayers);
 
-  // Ensure nextToRotateOff is always a field player (never a substitute)
-  const nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
+  let rotationQueueIds;
+  let nextToRotateOff;
+
+  if (canUsePairedRoleStrategy(teamConfig)) {
+    rotationQueueIds = buildPairedRotationQueueFromFormation(formationResult, substitutePositions);
+    nextToRotateOff = rotationQueueIds[0] || null;
+  } else {
+    rotationQueueIds = rotationQueue.map(p => p.id);
+    nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
+  }
 
   return {
     formation: formationResult,
-    rotationQueue: rotationQueue.map(p => p.id),
-    nextToRotateOff: nextToRotateOff
+    rotationQueue: rotationQueueIds,
+    nextToRotateOff
   };
 };
 

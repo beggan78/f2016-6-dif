@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
-import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
+import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES, PAIRED_ROLE_STRATEGY_TYPES } from '../../../constants/teamConfiguration';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
 
 const mockUseAuth = jest.fn(() => ({
@@ -271,6 +271,65 @@ describe('ConfigurationScreen squad selection', () => {
     });
 
     expect(screen.getByText(/exceeds the 5v5 limit of 11/i)).toBeInTheDocument();
+  });
+});
+
+describe('paired role strategy selector', () => {
+  it('renders selector for eligible individual configurations', () => {
+    const selectedIds = Array.from({ length: 9 }).map((_, index) => `player-${index + 1}`);
+    const props = buildProps({
+      selectedSquadIds: selectedIds,
+      teamConfig: {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 9,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
+      }
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    expect(screen.getByText(/Role Rotation/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Keep roles throughout period/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Swap roles every rotation/i)).toBeInTheDocument();
+  });
+
+  it('renders substitution mode selector for 7-player squads', () => {
+    const selectedIds = Array.from({ length: 7 }).map((_, index) => `player-${index + 1}`);
+    const props = buildProps({
+      selectedSquadIds: selectedIds,
+      teamConfig: {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
+      }
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    expect(screen.getByText(/Substitution Mode/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Individual/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Pairs/i)).toBeInTheDocument();
+  });
+
+  it('hides role strategy selector for ineligible configurations', () => {
+    const selectedIds = Array.from({ length: 6 }).map((_, index) => `player-${index + 1}`);
+    const props = buildProps({
+      selectedSquadIds: selectedIds,
+      teamConfig: {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_2_2,
+        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      }
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    expect(screen.queryByText(/Role Rotation/i)).not.toBeInTheDocument();
   });
 });
 

@@ -112,7 +112,7 @@ Modern composite team configuration system using four components:
 - **Venue Type**: Defaults to `home`; stored alongside match data for analytics and pending-match recovery.
 - **Alert Minutes**: `ALERT_OPTIONS` control substitution reminders (0-5 minutes). Values propagate to `useTimers` for rotation cues.
 - **Goalie Assignments**: Each period must specify a goalie before period setup or saving is enabled.
-- **Substitution Mode**: 7-player 5v5 squads in 2-2 formation can switch between `individual` and `pairs`; pairs mode exposes `PAIR_ROLE_ROTATION_DEFINITIONS` settings.
+- **Substitution Mode**: 7-player 5v5 squads in 2-2 formation can switch between `individual` and `pairs`; pairs mode exposes `PAIRED_ROLE_STRATEGY_DEFINITIONS` settings.
 - **Captain Selection**: Optional dropdown stored in match state and persisted with configuration saves.
 
 ### Common Configurations
