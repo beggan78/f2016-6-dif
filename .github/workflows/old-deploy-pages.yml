@@ -44,6 +44,7 @@ jobs:
         run: CI=true npm test -- --verbose=false --silent --reporters=default
 
       - name: Build
+        timeout-minutes: 5
         run: CI=true && npm run build
         env:
           REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}

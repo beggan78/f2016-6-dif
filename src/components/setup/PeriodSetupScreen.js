@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Users, Play, ArrowLeft, Shuffle, Save } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
+import { useTeam } from '../../contexts/TeamContext';
+import { getPlayerStats } from '../../services/matchStateManager';
 
 
 // Position configuration map for individual modes
@@ -111,8 +113,83 @@ export function PeriodSetupScreen({
   debugMode = false,
   resumeFormationData = null
 }) {
+  const { currentTeam } = useTeam();
   // Determine formation mode
   const isPairsMode = teamConfig?.substitutionType === 'pairs';
+  const [recommendationHandled, setRecommendationHandled] = useState(false);
+  const [subRecommendationPercentages, setSubRecommendationPercentages] = useState({});
+  const [subRecommendationLoading, setSubRecommendationLoading] = useState(false);
+  const [subRecommendationError, setSubRecommendationError] = useState(null);
+  const modeDefinition = useMemo(() => getModeDefinition(teamConfig), [teamConfig]);
+  const openSubstituteSlotCount = useMemo(() => {
+    if (!teamConfig) return 0;
+
+    if (isPairsMode) {
+      const subPair = formation?.subPair || {};
+      let openSlots = 0;
+      if (!subPair.defender) openSlots += 1;
+      if (!subPair.attacker) openSlots += 1;
+      return openSlots;
+    }
+
+    if (!modeDefinition) {
+      return 0;
+    }
+
+    const substitutePositions = modeDefinition.substitutePositions || [];
+    return substitutePositions.reduce((count, position) => {
+      return !formation?.[position] ? count + 1 : count;
+    }, 0);
+  }, [teamConfig, formation, isPairsMode, modeDefinition]);
+  const substituteRecommendations = useMemo(() => {
+    if (currentPeriodNumber !== 1) return [];
+    if (!Array.isArray(selectedSquadPlayers)) return [];
+    const goalieId = formation?.goalie;
+    const substitutePositions = modeDefinition?.substitutePositions || [];
+    const subPair = formation?.subPair;
+
+    return [...selectedSquadPlayers]
+      .filter(player => {
+        if (!player?.id || player.id === goalieId) {
+          return false;
+        }
+
+        if (isPairsMode) {
+          return !subPair || (subPair.defender !== player.id && subPair.attacker !== player.id);
+        }
+
+        return !substitutePositions.some(position => formation?.[position] === player.id);
+      })
+      .map(player => ({
+        id: player.id,
+        name: player.name,
+        percentStartedAsSub: typeof subRecommendationPercentages[player.id] === 'number'
+          ? subRecommendationPercentages[player.id]
+          : 0
+      }))
+      .sort((a, b) => {
+        if (a.percentStartedAsSub === b.percentStartedAsSub) {
+          return a.name.localeCompare(b.name);
+        }
+        return a.percentStartedAsSub - b.percentStartedAsSub;
+      });
+  }, [
+    currentPeriodNumber,
+    selectedSquadPlayers,
+    formation,
+    subRecommendationPercentages,
+    isPairsMode,
+    modeDefinition
+  ]);
+  const displayedSubstituteRecommendations = useMemo(() => {
+    if (openSubstituteSlotCount <= 0) return [];
+    return substituteRecommendations.slice(0, openSubstituteSlotCount);
+  }, [substituteRecommendations, openSubstituteSlotCount]);
+  const formatSubstitutePercentage = (value) => {
+    const numericValue = Number.isFinite(value) ? value : 0;
+    return `${numericValue.toFixed(1)}%`;
+  };
+  const shouldShowRecommendations = currentPeriodNumber === 1 && openSubstituteSlotCount > 0 && !recommendationHandled;
   
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
@@ -139,6 +216,207 @@ export function PeriodSetupScreen({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const recommendationDependenciesRef = useRef({
+    teamId: null,
+    period: null,
+    signature: null,
+    openSlotCount: null
+  });
+
+  useEffect(() => {
+    let isActive = true;
+
+    const teamId = currentTeam?.id || '';
+    const period = currentPeriodNumber;
+    const signature = Array.isArray(selectedSquadPlayers)
+      ? selectedSquadPlayers
+          .map(player => player?.id)
+          .filter(Boolean)
+          .sort()
+          .join('|')
+      : '';
+
+    const depsChanged =
+      recommendationDependenciesRef.current.teamId !== teamId ||
+      recommendationDependenciesRef.current.period !== period ||
+      recommendationDependenciesRef.current.signature !== signature;
+    const openSlotCountChanged =
+      recommendationDependenciesRef.current.openSlotCount !== openSubstituteSlotCount;
+
+    if (depsChanged || openSlotCountChanged) {
+      recommendationDependenciesRef.current = {
+        teamId,
+        period,
+        signature,
+        openSlotCount: openSubstituteSlotCount
+      };
+      if (openSubstituteSlotCount > 0 && recommendationHandled) {
+        setRecommendationHandled(false);
+      }
+    }
+
+    if (
+      period !== 1 ||
+      !teamId ||
+      !Array.isArray(selectedSquadPlayers) ||
+      selectedSquadPlayers.length === 0
+    ) {
+      setSubRecommendationPercentages({});
+      setSubRecommendationError(null);
+      setSubRecommendationLoading(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (openSubstituteSlotCount === 0) {
+      setSubRecommendationPercentages({});
+      setSubRecommendationError(null);
+      setSubRecommendationLoading(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (!depsChanged && recommendationHandled) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const loadSubstituteRecommendations = async () => {
+      setSubRecommendationLoading(true);
+      setSubRecommendationError(null);
+
+      try {
+        const endDate = new Date();
+        const startDate = new Date(endDate);
+        startDate.setMonth(startDate.getMonth() - 6);
+
+        const response = await getPlayerStats(teamId, startDate, endDate);
+
+        if (!isActive) {
+          return;
+        }
+
+        if (!response?.success) {
+          setSubRecommendationPercentages({});
+          setSubRecommendationError(response?.error || 'Failed to load substitute recommendations');
+          return;
+        }
+
+        const percentageMap = {};
+        (response.players || []).forEach(playerStat => {
+          if (!playerStat?.id) {
+            return;
+          }
+
+          const percentageValue = typeof playerStat.percentStartedAsSubstitute === 'number'
+            ? playerStat.percentStartedAsSubstitute
+            : 0;
+
+          percentageMap[playerStat.id] = percentageValue;
+        });
+
+        setSubRecommendationPercentages(percentageMap);
+        setSubRecommendationError(null);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setSubRecommendationPercentages({});
+        setSubRecommendationError(error.message || 'Failed to load substitute recommendations');
+      } finally {
+        if (isActive) {
+          setSubRecommendationLoading(false);
+        }
+      }
+    };
+
+    loadSubstituteRecommendations();
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentPeriodNumber, currentTeam?.id, selectedSquadPlayers, recommendationHandled, openSubstituteSlotCount]);
+
+  const handleDismissSubRecommendations = useCallback(() => {
+    setRecommendationHandled(true);
+  }, []);
+
+  const handleAcceptSubRecommendations = useCallback(() => {
+    if (displayedSubstituteRecommendations.length === 0) {
+      setRecommendationHandled(true);
+      return;
+    }
+
+    if (isPairsMode) {
+      setFormation(prev => {
+        const subPair = prev.subPair || { defender: null, attacker: null };
+        const openRoles = ['defender', 'attacker'].filter(role => !subPair[role]);
+        if (openRoles.length === 0) {
+          return prev;
+        }
+
+        const playersToAssign = displayedSubstituteRecommendations.slice(0, openRoles.length);
+        const recommendedIds = new Set(playersToAssign.map(player => player.id));
+        const updatedFormation = {
+          ...prev,
+          leftPair: { ...prev.leftPair },
+          rightPair: { ...prev.rightPair },
+          subPair: { ...prev.subPair }
+        };
+
+        ['leftPair', 'rightPair'].forEach(pairKey => {
+          ['defender', 'attacker'].forEach(role => {
+            if (updatedFormation[pairKey]?.[role] && recommendedIds.has(updatedFormation[pairKey][role])) {
+              updatedFormation[pairKey][role] = null;
+            }
+          });
+        });
+
+        openRoles.forEach((role, index) => {
+          const recommendation = playersToAssign[index];
+          if (recommendation) {
+            updatedFormation.subPair[role] = recommendation.id;
+          }
+        });
+
+        return updatedFormation;
+      });
+    } else if (modeDefinition) {
+      setFormation(prev => {
+        const substitutePositions = (modeDefinition.substitutePositions || []).filter(position => !prev[position]);
+        if (substitutePositions.length === 0) {
+          return prev;
+        }
+
+        const playersToAssign = displayedSubstituteRecommendations.slice(0, substitutePositions.length);
+        const recommendedIds = new Set(playersToAssign.map(player => player.id));
+        const updatedFormation = { ...prev };
+        const fieldPositions = modeDefinition.fieldPositions || [];
+
+        fieldPositions.forEach(position => {
+          if (recommendedIds.has(updatedFormation[position])) {
+            updatedFormation[position] = null;
+          }
+        });
+
+        substitutePositions.forEach((position, index) => {
+          const recommendation = playersToAssign[index];
+          if (recommendation) {
+            updatedFormation[position] = recommendation.id;
+          }
+        });
+
+        return updatedFormation;
+      });
+    }
+
+    setRecommendationHandled(true);
+  }, [displayedSubstituteRecommendations, isPairsMode, modeDefinition, setFormation]);
 
   // Handle resume formation data from pending match
   useEffect(() => {
@@ -858,6 +1136,59 @@ export function PeriodSetupScreen({
           </div>
         </div>
       </div>
+
+      {shouldShowRecommendations && (
+        <div
+          data-testid="substitute-recommendations"
+          className="p-2 bg-slate-700 rounded-lg space-y-2"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-sky-200">Recommended Substitutes</h3>
+            <span className="text-xs text-slate-300">Last 6 months</span>
+          </div>
+          {subRecommendationLoading ? (
+            <p className="text-xs text-slate-300">Loading substitute recommendations...</p>
+          ) : subRecommendationError ? (
+            <p className="text-xs text-rose-300">Unable to load substitute recommendations right now.</p>
+          ) : displayedSubstituteRecommendations.length > 0 ? (
+            <>
+              <p className="text-xs text-slate-300">
+                Players who have rarely started as substitutes recently. Consider giving them a substitute start.
+              </p>
+              <ul className="space-y-1" data-testid="substitute-recommendations-list">
+                {displayedSubstituteRecommendations.map(player => (
+                  <li
+                    key={player.id}
+                    className="flex items-center justify-between rounded-md bg-slate-800/60 px-2 py-1 text-sm text-slate-100"
+                  >
+                    <span>{player.name}</span>
+                    <span className="text-xs text-slate-300">
+                      {formatSubstitutePercentage(player.percentStartedAsSub)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-xs text-slate-300">No eligible substitutes to recommend.</p>
+          )}
+          <div className="flex items-center justify-end space-x-2 pt-1">
+            <Button
+              variant="secondary"
+              onClick={handleDismissSubRecommendations}
+            >
+              Dismiss
+            </Button>
+            <Button
+              variant="accent"
+              onClick={handleAcceptSubRecommendations}
+              disabled={subRecommendationLoading || displayedSubstituteRecommendations.length === 0}
+            >
+              Accept
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Save Period Configuration Status Messages */}
       {savePeriodConfigStatus.message && (

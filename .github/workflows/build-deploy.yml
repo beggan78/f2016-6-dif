@@ -44,6 +44,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
+        timeout-minutes: 5
         run: CI=true npm test -- --verbose=false --silent --reporters=default
 
       - name: Build static files
