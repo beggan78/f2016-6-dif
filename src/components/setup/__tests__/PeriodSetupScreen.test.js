@@ -115,7 +115,7 @@ describe('PeriodSetupScreen', () => {
     const { getPlayerStats } = require('../../../services/matchStateManager');
 
     useTeam.mockReturnValue({ currentTeam: { id: 'team-123' } });
-    getPlayerStats.mockResolvedValue({ success: true, players: [] });
+    getPlayerStats.mockImplementation(() => new Promise(() => {}));
 
     const buildFieldPositions = (teamConfig) => {
       if (!teamConfig) return [];
