@@ -90,6 +90,7 @@ export function GameScreen({
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
   const uiState = useGameUIState();
+  const { setShouldResetSubTimerOnNextSub } = uiState;
   
   // Team name management
   const ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME;
@@ -207,14 +208,14 @@ export function GameScreen({
     handleUndoSubstitutionTimer,
     setSubstitutionCountOverride: uiState.setSubstitutionCountOverride,
     clearSubstitutionCountOverride: uiState.clearSubstitutionCountOverride,
-    setShouldResetSubTimerOnNextSub: uiState.setShouldResetSubTimerOnNextSub
+    setShouldResetSubTimerOnNextSub
   }), [
     setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setLastSubstitution,
     setScore, ownScore, opponentScore, addGoalScored, addGoalConceded, resetSubTimer,
     handleUndoSubstitutionTimer, uiState.setSubstitutionCountOverride, uiState.clearSubstitutionCountOverride,
-    uiState.setShouldResetSubTimerOnNextSub
+    setShouldResetSubTimerOnNextSub
   ]);
 
   // Animation hooks object for handlers
@@ -358,9 +359,9 @@ export function GameScreen({
   }, [uiState.shouldSubstituteNow, uiState.setShouldSubstituteNow, substitutionHandlers, uiState]);
 
   const handleRegularSubstitutionClick = React.useCallback(() => {
-    uiState.setShouldResetSubTimerOnNextSub(true);
+    setShouldResetSubTimerOnNextSub(true);
     substitutionHandlers.handleSubstitutionWithHighlight();
-  }, [uiState.setShouldResetSubTimerOnNextSub, substitutionHandlers]);
+  }, [setShouldResetSubTimerOnNextSub, substitutionHandlers]);
   // Handle undo substitution using handler pattern
   const handleUndoSubstitutionClick = () => {
     if (uiState.lastSubstitution) {
