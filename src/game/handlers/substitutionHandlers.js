@@ -47,7 +47,9 @@ export const createSubstitutionHandlers = (
     setLastSubstitution,
     setLastSubstitutionTimestamp,
     resetSubTimer,
-    handleUndoSubstitutionTimer
+    handleUndoSubstitutionTimer,
+    setSubstitutionCountOverride,
+    clearSubstitutionCountOverride
   } = stateUpdaters;
 
   const {
@@ -64,6 +66,18 @@ export const createSubstitutionHandlers = (
   } = modalHandlers;
 
   const supportsInactive = supportsInactiveUsers(teamConfig);
+
+  const applyImmediateSubstitutionOverride = () => {
+    if (typeof setSubstitutionCountOverride === 'function') {
+      setSubstitutionCountOverride(1);
+    }
+  };
+
+  const clearImmediateSubstitutionOverride = () => {
+    if (typeof clearSubstitutionCountOverride === 'function') {
+      clearSubstitutionCountOverride();
+    }
+  };
 
   /**
    * Generate unique event ID for substitution tracking
@@ -305,24 +319,26 @@ export const createSubstitutionHandlers = (
                     timestamp: currentTime,
                     periodNumber: gameState.currentPeriodNumber || 1
                   });
-                }
-              } catch (error) {
-                // Logging error should not prevent the swap
               }
+            } catch (error) {
+              // Logging error should not prevent the swap
+            }
 
-              // Now set the field player as next to sub out and trigger immediate substitution
-              setNextPlayerToSubOut(fieldPlayerModal.target, false);
-              setShouldSubstituteNow(true);
-            },
-            setAnimationState,
-            setHideNextOffIndicator,
-            setRecentlySubstitutedPlayers
-          );
-        } else {
-          // Only substitute is already first, just trigger the substitution
-          setNextPlayerToSubOut(fieldPlayerModal.target, false);
-          setShouldSubstituteNow(true);
-        }
+            // Now set the field player as next to sub out and trigger immediate substitution
+            setNextPlayerToSubOut(fieldPlayerModal.target, false);
+            applyImmediateSubstitutionOverride();
+            setShouldSubstituteNow(true);
+          },
+          setAnimationState,
+          setHideNextOffIndicator,
+          setRecentlySubstitutedPlayers
+        );
+      } else {
+        // Only substitute is already first, just trigger the substitution
+        setNextPlayerToSubOut(fieldPlayerModal.target, false);
+        applyImmediateSubstitutionOverride();
+        setShouldSubstituteNow(true);
+      }
 
         closeFieldPlayerModal();
         return;
@@ -629,6 +645,7 @@ export const createSubstitutionHandlers = (
 
     // Check if substitution is possible (at least one active substitute)
     if (!hasActiveSubstitutes(gameState.allPlayers, gameState.teamConfig)) {
+      clearImmediateSubstitutionOverride();
       return;
     }
     
@@ -703,6 +720,7 @@ export const createSubstitutionHandlers = (
         
         // Reset substitution timer after successful substitution
         resetSubTimer();
+        clearImmediateSubstitutionOverride();
       },
       setAnimationState,
       setHideNextOffIndicator,
@@ -1025,6 +1043,7 @@ export const createSubstitutionHandlers = (
 
           // Now set the field player as next to sub out and trigger immediate substitution
           setNextPlayerToSubOut(substituteSelectionModal.fieldPlayerPosition, false);
+          applyImmediateSubstitutionOverride();
           setShouldSubstituteNow(true);
         },
         setAnimationState,
@@ -1034,6 +1053,7 @@ export const createSubstitutionHandlers = (
     } else {
       // Selected substitute is already next to come on, just trigger the substitution
       setNextPlayerToSubOut(substituteSelectionModal.fieldPlayerPosition, false);
+      applyImmediateSubstitutionOverride();
       setShouldSubstituteNow(true);
     }
 
@@ -1053,6 +1073,7 @@ export const createSubstitutionHandlers = (
     if (removeFromNavigationStack) {
       removeFromNavigationStack();
     }
+    clearImmediateSubstitutionOverride();
   };
 
   const handleChangeNextPosition = (substituteModal, targetPosition) => {

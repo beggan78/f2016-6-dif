@@ -20,6 +20,9 @@ export function useGameUIState() {
   // State for "substitute now" flag
   const [shouldSubstituteNow, setShouldSubstituteNow] = useState(false);
 
+  // Override for immediate substitution count
+  const [substitutionCountOverride, setSubstitutionCountOverride] = useState(null);
+
   // Integration with existing animation system
   const resetAnimationState = useCallback(() => {
     setAnimationState({ type: 'none', phase: 'idle', data: {} });
@@ -51,6 +54,14 @@ export function useGameUIState() {
     setRecentlySubstitutedPlayers(new Set());
   }, []);
 
+  const updateSubstitutionCountOverride = useCallback((overrideCount) => {
+    setSubstitutionCountOverride(overrideCount);
+  }, []);
+
+  const clearSubstitutionCountOverride = useCallback(() => {
+    setSubstitutionCountOverride(null);
+  }, []);
+
   return {
     // Animation state
     animationState,
@@ -74,6 +85,9 @@ export function useGameUIState() {
     // Substitution coordination
     shouldSubstituteNow,
     setShouldSubstituteNow,
+    substitutionCountOverride,
+    setSubstitutionCountOverride: updateSubstitutionCountOverride,
+    clearSubstitutionCountOverride,
     
     // Utilities
     resetAnimationState

@@ -293,7 +293,9 @@ export const createMockDependencies = () => ({
     setNextPlayerIdToSubOut: jest.fn(),
     setNextNextPlayerIdToSubOut: jest.fn(),
     setNextPhysicalPairToSubOut: jest.fn(),
-    setNextPlayerToSubOut: jest.fn()
+    setNextPlayerToSubOut: jest.fn(),
+    setSubstitutionCountOverride: jest.fn(),
+    clearSubstitutionCountOverride: jest.fn()
   },
   animationHooks: {
     setAnimationState: jest.fn(),

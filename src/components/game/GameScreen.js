@@ -152,6 +152,7 @@ export function GameScreen({
 
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => {
+    const effectiveSubstitutionCount = uiState.substitutionCountOverride ?? substitutionCount;
     const gameState = {
       formation,
       allPlayers,
@@ -171,7 +172,7 @@ export function GameScreen({
       matchTimerSeconds,
       ownScore,
       opponentScore,
-      substitutionCount
+      substitutionCount: effectiveSubstitutionCount
     };
 
 
@@ -181,7 +182,7 @@ export function GameScreen({
     nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
     rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
     subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore,
-    substitutionCount
+    substitutionCount, uiState.substitutionCountOverride
   ]);
 
   // State updaters object for handlers
@@ -202,13 +203,15 @@ export function GameScreen({
     addGoalScored,
     addGoalConceded,
     resetSubTimer,
-    handleUndoSubstitutionTimer
+    handleUndoSubstitutionTimer,
+    setSubstitutionCountOverride: uiState.setSubstitutionCountOverride,
+    clearSubstitutionCountOverride: uiState.clearSubstitutionCountOverride
   }), [
     setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setLastSubstitution,
     setScore, ownScore, opponentScore, addGoalScored, addGoalConceded, resetSubTimer,
-    handleUndoSubstitutionTimer
+    handleUndoSubstitutionTimer, uiState.setSubstitutionCountOverride, uiState.clearSubstitutionCountOverride
   ]);
 
   // Animation hooks object for handlers
