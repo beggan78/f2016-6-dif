@@ -243,6 +243,7 @@ export const createMockGameState = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7, over
     isSubTimerPaused: false,
     lastSubstitution: null,
     subTimerSeconds: 120,
+    shouldResetSubTimerOnNextSub: true,
     ...overrides
   };
 };
@@ -293,7 +294,10 @@ export const createMockDependencies = () => ({
     setNextPlayerIdToSubOut: jest.fn(),
     setNextNextPlayerIdToSubOut: jest.fn(),
     setNextPhysicalPairToSubOut: jest.fn(),
-    setNextPlayerToSubOut: jest.fn()
+    setNextPlayerToSubOut: jest.fn(),
+    setSubstitutionCountOverride: jest.fn(),
+    clearSubstitutionCountOverride: jest.fn(),
+    setShouldResetSubTimerOnNextSub: jest.fn()
   },
   animationHooks: {
     setAnimationState: jest.fn(),

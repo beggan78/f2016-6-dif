@@ -134,6 +134,57 @@ describe('createSubstitutionHandlers', () => {
     });
   });
 
+  describe('handleSelectSubstituteForImmediate', () => {
+    it('should apply substitution count override when a specific substitute is selected', () => {
+      const getSubstitutionCount = jest.fn(() => 2);
+
+      const handlers = createSubstitutionHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7,
+        getSubstitutionCount
+      );
+
+      const substitutePositions = Object.keys(mockGameState.formation).filter(key => key.startsWith('substitute'));
+      const fieldPosition = Object.keys(mockGameState.formation).find(
+        key => key !== 'goalie' && !key.startsWith('substitute')
+      );
+
+      const substituteSelectionModal = {
+        fieldPlayerId: mockGameState.formation[fieldPosition],
+        fieldPlayerPosition: fieldPosition
+      };
+
+      const selectedSubstituteId = mockGameState.formation[substitutePositions[1] || substitutePositions[0]];
+
+      handlers.handleSelectSubstituteForImmediate(substituteSelectionModal, selectedSubstituteId);
+
+      expect(mockDependencies.stateUpdaters.setSubstitutionCountOverride).toHaveBeenCalledWith(1);
+      expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
+
+      handlers.handleSubstitutionWithHighlight();
+
+      expect(mockDependencies.stateUpdaters.clearSubstitutionCountOverride).toHaveBeenCalled();
+    });
+
+    it('should clear substitution count override when selection is cancelled', () => {
+      const handlers = createSubstitutionHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7
+      );
+
+      handlers.handleCancelSubstituteSelection();
+
+      expect(mockDependencies.stateUpdaters.clearSubstitutionCountOverride).toHaveBeenCalled();
+      expect(mockDependencies.modalHandlers.closeSubstituteSelectionModal).toHaveBeenCalled();
+    });
+  });
+
   describe('handleSetNextSubstitution', () => {
     it('should set next pair substitution for pairs mode', () => {
       const handlers = createSubstitutionHandlers(
@@ -201,6 +252,42 @@ describe('createSubstitutionHandlers', () => {
       expect(mockDependencies.stateUpdaters.setNextPhysicalPairToSubOut).toHaveBeenCalledWith('leftPair');
       expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
+    });
+
+    it('should override substitution count when immediate substitution is triggered with a single active substitute', () => {
+      const getSubstitutionCount = jest.fn(() => 3);
+
+      const handlers = createSubstitutionHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7,
+        getSubstitutionCount
+      );
+
+      const substitutePlayers = mockGameState.allPlayers.filter(
+        player => player.stats.currentStatus === 'substitute'
+      );
+      substitutePlayers.slice(1).forEach(player => {
+        player.stats.isInactive = true;
+      });
+
+      const fieldPlayerModal = { type: 'player', target: 'leftDefender', sourcePlayerId: '1', playerName: 'Player 1' };
+      handlers.handleSubstituteNow(fieldPlayerModal);
+
+      expect(mockDependencies.stateUpdaters.setShouldResetSubTimerOnNextSub).toHaveBeenCalledWith(false);
+      expect(mockDependencies.stateUpdaters.setSubstitutionCountOverride).toHaveBeenCalledWith(1);
+      expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
+
+      mockGameState.shouldResetSubTimerOnNextSub = false;
+      mockDependencies.stateUpdaters.resetSubTimer.mockClear();
+
+      handlers.handleSubstitutionWithHighlight();
+
+      expect(mockDependencies.stateUpdaters.clearSubstitutionCountOverride).toHaveBeenCalled();
+      expect(mockDependencies.stateUpdaters.setShouldResetSubTimerOnNextSub).toHaveBeenCalledWith(true);
+      expect(mockDependencies.stateUpdaters.resetSubTimer).not.toHaveBeenCalled();
     });
   });
 
@@ -413,6 +500,27 @@ describe('createSubstitutionHandlers', () => {
         })
       );
       expect(mockDependencies.stateUpdaters.resetSubTimer).toHaveBeenCalled();
+    });
+
+    it('should skip resetting timer when configured to skip next reset', () => {
+      const mockGameStateNoReset = {
+        ...mockGameState,
+        shouldResetSubTimerOnNextSub: false
+      };
+      mockGameStateFactory.mockReturnValue(mockGameStateNoReset);
+      mockDependencies.stateUpdaters.resetSubTimer.mockClear();
+
+      const handlers = createSubstitutionHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7
+      );
+
+      handlers.handleSubstitutionWithHighlight();
+
+      expect(mockDependencies.stateUpdaters.resetSubTimer).not.toHaveBeenCalled();
     });
   });
 
