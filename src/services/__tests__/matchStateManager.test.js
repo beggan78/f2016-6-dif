@@ -70,7 +70,7 @@ describe('matchStateManager', () => {
         startedMatchAs: PLAYER_ROLES.GOALIE,
         startedAtRole: PLAYER_ROLES.GOALIE,
         startedAtPosition: 'goalie',
-        timeOnFieldSeconds: 1200,
+        timeOnFieldSeconds: 0,
         timeAsGoalieSeconds: 1200,
         timeAsDefenderSeconds: 0,
         timeAsMidfielderSeconds: 0,

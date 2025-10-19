@@ -51,7 +51,7 @@ player.started_as = 'leftDefender'; // Will cause database errors
 Player statistics track time in multiple dimensions:
 
 **Time Fields**:
-- `timeOnFieldSeconds` - Total time on field (including all roles)
+- `timeOnFieldSeconds` - Total time on field as an outfielder (goalie time excluded)
 - `timeAsGoalieSeconds` - Time spent as goalie
 - `timeAsDefenderSeconds` - Time spent as defender
 - `timeAsMidfielderSeconds` - Time spent as midfielder (1-2-1 formation)
@@ -59,7 +59,7 @@ Player statistics track time in multiple dimensions:
 - `timeAsSubSeconds` - Time spent as substitute
 
 **Calculated Field**:
-- `total_field_time_seconds` = `timeOnFieldSeconds` - `timeAsGoalieSeconds` (outfield time only)
+- `total_field_time_seconds` mirrors `timeOnFieldSeconds` (both represent outfield time only)
 
 #### 4. Goal Tracking Integration
 The system integrates with the event logging system for accurate goal attribution:
