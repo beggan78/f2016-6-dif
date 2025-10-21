@@ -139,7 +139,7 @@ export const FORMAT_CONFIGS = {
       FORMATIONS.FORMATION_2_1_1
     ],
     allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL, SUBSTITUTION_TYPES.PAIRS],
-    getDefaultSubstitutionType: (squadSize) => (squadSize === 7 ? SUBSTITUTION_TYPES.PAIRS : SUBSTITUTION_TYPES.INDIVIDUAL)
+    getDefaultSubstitutionType: () => SUBSTITUTION_TYPES.INDIVIDUAL
   },
   [FORMATS.FORMAT_7V7]: {
     label: '7v7',

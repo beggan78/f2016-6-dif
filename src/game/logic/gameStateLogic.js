@@ -18,7 +18,7 @@ import { getPositionRole } from './positionUtils';
 import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { getFormationDefinition } from '../../utils/formationConfigUtils';
 import { handleError, ERROR_CATEGORIES } from '../../utils/errorHandler';
-import { canUsePairedRoleStrategy } from '../../constants/teamConfiguration';
+import { canUsePairedRoleStrategy, PAIRED_ROLE_STRATEGY_TYPES } from '../../constants/teamConfiguration';
 import { FIELD_PAIR_POSITIONS, getPairKeyForFieldPosition, analyzeOutgoingPair } from '../utils/pairedRotationUtils';
 
 /**
@@ -34,7 +34,31 @@ const getDefinitionForGameLogic = (teamConfig, selectedFormation = null) => {
   return getFormationDefinition(teamConfig, selectedFormation);
 };
 
-const getPairedPlayerIdsFromFormation = (formation, playerId) => {
+const ROLE_GROUP_POSITIONS = {
+  defender: ['leftDefender', 'rightDefender'],
+  attacker: ['leftAttacker', 'rightAttacker']
+};
+
+const getRoleGroupForPosition = (positionKey) => {
+  if (!positionKey) {
+    return null;
+  }
+
+  const lowerPosition = positionKey.toLowerCase();
+
+  if (lowerPosition.includes('defender')) {
+    return 'defender';
+  }
+  if (lowerPosition.includes('attacker')) {
+    return 'attacker';
+  }
+
+  return null;
+};
+
+const getPairedPlayerIdsFromFormation = (formation, playerId, options = {}) => {
+  const { strategy = 'pair' } = options;
+
   if (!formation || !playerId) {
     return null;
   }
@@ -42,6 +66,19 @@ const getPairedPlayerIdsFromFormation = (formation, playerId) => {
   const positionKey = Object.keys(formation).find(key => formation[key] === playerId);
   if (!positionKey) {
     return null;
+  }
+
+  if (strategy === 'role_group') {
+    const roleGroup = getRoleGroupForPosition(positionKey);
+    const rolePositions = roleGroup ? ROLE_GROUP_POSITIONS[roleGroup] : null;
+
+    if (rolePositions) {
+      const rolePlayerIds = rolePositions.map(pos => formation[pos]).filter(Boolean);
+      if (rolePlayerIds.length === rolePositions.length) {
+        return rolePlayerIds;
+      }
+    }
+    // Fall back to pair strategy when the role group is incomplete
   }
 
   const pairKey = getPairKeyForFieldPosition(positionKey);
@@ -1032,13 +1069,22 @@ export const calculateRemovePlayerFromNextToGoOff = (gameState, playerId, substi
   const supportsPairedRotation = substitutionCount === 2 && canUsePairedRoleStrategy(gameState.teamConfig);
 
   if (supportsPairedRotation) {
-    const pairIds = getPairedPlayerIdsFromFormation(gameState.formation, playerId);
+    const pairingStrategy =
+      gameState.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+        ? 'role_group'
+        : 'pair';
+
+    const pairIds = getPairedPlayerIdsFromFormation(
+      gameState.formation,
+      playerId,
+      { strategy: pairingStrategy }
+    );
     if (!pairIds) {
       return gameState;
     }
 
     const pairMeta = analyzeOutgoingPair(gameState.formation, pairIds);
-    const orderedPairIds = pairMeta ? [pairMeta.defenderId, pairMeta.attackerId] : pairIds;
+    const orderedPairIds = pairMeta?.playerIds || pairIds;
 
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
     queueManager.initialize();
@@ -1095,13 +1141,22 @@ export const calculateSetPlayerAsNextToGoOff = (gameState, playerId, substitutio
   const supportsPairedRotation = substitutionCount === 2 && canUsePairedRoleStrategy(gameState.teamConfig);
 
   if (supportsPairedRotation) {
-    const pairIds = getPairedPlayerIdsFromFormation(gameState.formation, playerId);
+    const pairingStrategy =
+      gameState.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+        ? 'role_group'
+        : 'pair';
+
+    const pairIds = getPairedPlayerIdsFromFormation(
+      gameState.formation,
+      playerId,
+      { strategy: pairingStrategy }
+    );
     if (!pairIds) {
       return gameState;
     }
 
     const pairMeta = analyzeOutgoingPair(gameState.formation, pairIds);
-    const orderedPairIds = pairMeta ? [pairMeta.defenderId, pairMeta.attackerId] : pairIds;
+    const orderedPairIds = pairMeta?.playerIds || pairIds;
 
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
     queueManager.initialize();

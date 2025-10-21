@@ -295,7 +295,7 @@ describe('paired role strategy selector', () => {
     expect(screen.getByLabelText(/Swap roles every rotation/i)).toBeInTheDocument();
   });
 
-  it('renders substitution mode selector for 7-player squads', () => {
+  it('renders role strategy selector for eligible 7-player squads', () => {
     const selectedIds = Array.from({ length: 7 }).map((_, index) => `player-${index + 1}`);
     const props = buildProps({
       selectedSquadIds: selectedIds,
@@ -310,9 +310,10 @@ describe('paired role strategy selector', () => {
 
     render(<ConfigurationScreen {...props} />);
 
-    expect(screen.getByText(/Substitution Mode/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Individual/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Pairs/i)).toBeInTheDocument();
+    expect(screen.getByText(/Role Rotation/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Keep roles throughout period/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Swap roles every rotation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Available for 5v5 2-2 lineups with 7 or 9 players/i)).toBeInTheDocument();
   });
 
   it('hides role strategy selector for ineligible configurations', () => {

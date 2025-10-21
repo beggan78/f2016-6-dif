@@ -18,7 +18,7 @@ import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat, canUsePairedRoleStrategy } from '../constants/teamConfiguration';
+import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat, canUsePairedRoleStrategy, PAIRED_ROLE_STRATEGY_TYPES } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
@@ -323,7 +323,8 @@ export function useGameState(navigateToView = null) {
           playersWithLastPeriodStats,
           selectedSquadIds.map(id => allPlayers.find(p => p.id === id)),
           teamConfig,
-          selectedFormation
+          selectedFormation,
+          lastPeriodLog.formation
         );
         
         // Create formation using the template and result data
@@ -563,7 +564,12 @@ export function useGameState(navigateToView = null) {
       let nextPlayerToRotateOff = null;
 
       if (pairedRotationEligible) {
-        initialQueue = buildPairedRotationQueueFromFormation(formation, substitutePositions);
+        const orderingStrategy =
+          formationAwareTeamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+            ? 'role_groups'
+            : 'pair';
+
+        initialQueue = buildPairedRotationQueueFromFormation(formation, substitutePositions, { orderingStrategy });
         nextPlayerToRotateOff = initialQueue[0] || null;
       } else {
         const fieldPlayersInFormation = fieldPositions.map(pos => formation[pos]).filter(Boolean);

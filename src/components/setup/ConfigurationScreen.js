@@ -102,10 +102,6 @@ export function ConfigurationScreen({
   const currentSquadSize = teamConfig?.squadSize || selectedSquadIds.length;
   const formationForEligibility = teamConfig?.formation || selectedFormation;
   const substitutionTypeForEligibility = teamConfig?.substitutionType || SUBSTITUTION_TYPES.INDIVIDUAL;
-  const showSubstitutionModeSelector =
-    currentFormat === FORMATS.FORMAT_5V5 &&
-    formationForEligibility === FORMATIONS.FORMATION_2_2 &&
-    currentSquadSize === 7;
   const showPairedRoleStrategySelector = canUsePairedRoleStrategy({
     format: currentFormat,
     squadSize: currentSquadSize,
@@ -327,6 +323,10 @@ export function ConfigurationScreen({
   const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
     if (!teamConfig) return;
 
+    if (teamConfig?.substitutionType === newSubstitutionType) {
+      return;
+    }
+
     const format = teamConfig.format || FORMATS.FORMAT_5V5;
     const formatConfig = FORMAT_CONFIGS[format] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
     if (!formatConfig.allowedSubstitutionTypes.includes(newSubstitutionType)) {
@@ -371,19 +371,14 @@ export function ConfigurationScreen({
     setHasActiveConfiguration(true);
   }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, setHasActiveConfiguration]);
 
-  // Auto-select "Pairs" substitution mode when 7 players + 2-2 formation is selected
+  // Ensure new configurations default to individual substitution mode
   React.useEffect(() => {
-    if (
-      teamConfig?.format === FORMATS.FORMAT_5V5 &&
-      selectedSquadIds.length === 7 &&
-      selectedFormation === FORMATIONS.FORMATION_2_2
-    ) {
-      // If no substitution type is set or if we need to default to pairs
-      if (!teamConfig?.substitutionType) {
-        handleSubstitutionModeChange(SUBSTITUTION_TYPES.PAIRS);
-      }
+    if (!teamConfig) return;
+
+    if (!teamConfig?.substitutionType || teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+      handleSubstitutionModeChange(SUBSTITUTION_TYPES.INDIVIDUAL);
     }
-  }, [teamConfig?.format, selectedSquadIds.length, selectedFormation, teamConfig?.substitutionType, handleSubstitutionModeChange]);
+  }, [teamConfig, teamConfig?.substitutionType, handleSubstitutionModeChange]);
 
   // Sync team roster to game state on mount and when team/players change
   React.useEffect(() => {
@@ -872,16 +867,14 @@ export function ConfigurationScreen({
         ? formatConfig.getDefaultSubstitutionType(squadSize)
         : SUBSTITUTION_TYPES.INDIVIDUAL);
 
-    const nextPairRotation = nextSubstitutionType === SUBSTITUTION_TYPES.PAIRS
-      ? teamConfig.pairedRoleStrategy
-      : null;
+    const nextPairedRoleStrategy = teamConfig.pairedRoleStrategy;
 
     const newTeamConfig = createTeamConfig(
       newFormat,
       squadSize,
       nextFormation,
       nextSubstitutionType,
-      nextPairRotation
+      nextPairedRoleStrategy
     );
 
     setSelectedFormation(nextFormation);
@@ -924,9 +917,9 @@ export function ConfigurationScreen({
         : FORMAT_CONFIGS[FORMATS.FORMAT_7V7].defaultFormation;
       substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL; // 7v7 only supports individual
     } else {
-      // 5v5: Always select 2-2 formation with pairs substitution
+      // 5v5: Always select 2-2 formation with individual substitution (paired rotation handled separately)
       randomFormation = FORMATIONS.FORMATION_2_2;
-      substitutionType = SUBSTITUTION_TYPES.PAIRS;
+      substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL;
     }
 
     handleFormatChange(format);
@@ -1397,46 +1390,6 @@ export function ConfigurationScreen({
         </div>
       </div>
 
-      {/* Substitution Mode Selection - 7 player squads */}
-      {showSubstitutionModeSelector && (
-        <div className="p-3 bg-slate-700 rounded-md">
-          <h3 className="text-base font-medium text-sky-200 mb-2">Substitution Mode</h3>
-          <div className="space-y-3">
-            {/* Individual Option */}
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="substitutionMode"
-                value={SUBSTITUTION_TYPES.INDIVIDUAL}
-                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL}
-                onChange={e => handleSubstitutionModeChange(e.target.value)}
-                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
-              />
-              <div>
-                <span className="text-sky-100 font-medium">Individual</span>
-                <p className="text-xs text-slate-400">Individual positions with 2 substitutes. Dual next/next-next visual indicators.</p>
-              </div>
-            </label>
-
-            {/* Pairs Option */}
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="substitutionMode"
-                value={SUBSTITUTION_TYPES.PAIRS}
-                checked={teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS}
-                onChange={e => handleSubstitutionModeChange(e.target.value)}
-                className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400"
-              />
-              <div>
-                <span className="text-sky-100 font-medium">Pairs</span>
-                <p className="text-xs text-slate-400">Players organized in defender-attacker pairs. Substitutions happen at pair level.</p>
-              </div>
-            </label>
-          </div>
-        </div>
-      )}
-
       {/* Paired role strategy selection */}
       {showPairedRoleStrategySelector && (
         <div className="p-3 bg-slate-700 rounded-md">
@@ -1452,7 +1405,7 @@ export function ConfigurationScreen({
             </button>
           </div>
           <p className="text-xs text-slate-400 mb-3">
-            Choose how paired players rotate roles when you substitute two players at a time.
+            Choose how paired players rotate roles when you substitute two players at a time. Available for 5v5 2-2 lineups with 7 or 9 players.
           </p>
           <div className="space-y-2">
             {Object.entries(PAIRED_ROLE_STRATEGY_DEFINITIONS).map(([value, definition]) => (

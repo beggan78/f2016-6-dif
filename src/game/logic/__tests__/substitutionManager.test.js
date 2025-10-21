@@ -329,8 +329,8 @@ describe('SubstitutionManager', () => {
 
       const result = manager.handleIndividualModeSubstitution(context);
 
-      expect(result.newFormation.leftDefender).toBe('s2');
-      expect(result.newFormation.leftAttacker).toBe('s1');
+      expect(result.newFormation.leftDefender).toBe('s1');
+      expect(result.newFormation.leftAttacker).toBe('s2');
 
       expect(result.newRotationQueue).toEqual(['f2', 'f4', 's1', 's2', 's3', 's4', 'f1', 'f3']);
     });

@@ -8,6 +8,9 @@ import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../
 import { handleError, createError, ERROR_SEVERITY } from '../../utils/errorHandler';
 import { analyzeOutgoingPair } from '../utils/pairedRotationUtils';
 
+const LEFT = 'left';
+const RIGHT = 'right';
+
 /**
  * Deep clone formation object efficiently
  * Formations can have nested pair objects (e.g., {leftPair: {defender: 'p1', attacker: 'p2'}})
@@ -29,6 +32,22 @@ function cloneFormation(formation) {
   }
   return cloned;
 }
+
+const getSideFromPosition = (position) => {
+  if (!position || typeof position !== 'string') {
+    return null;
+  }
+  const lower = position.toLowerCase();
+  if (lower.includes(LEFT)) {
+    return LEFT;
+  }
+  if (lower.includes(RIGHT)) {
+    return RIGHT;
+  }
+  return null;
+};
+
+const getPreferredSideForPlayer = (player) => player?.stats?.preferredSide || null;
 
 /**
  * Manages substitution logic for different team modes
@@ -244,26 +263,41 @@ export class SubstitutionManager {
       if (!pairedPairMeta) {
         isPairedRotationActive = false;
       } else {
-        playersToSubOutIds = [pairedPairMeta.defenderId, pairedPairMeta.attackerId];
+        const orderedPairedIds = pairedPairMeta.playerIds
+          ? [...pairedPairMeta.playerIds]
+          : [pairedPairMeta.defenderId, pairedPairMeta.attackerId].filter(Boolean);
+
+        if (orderedPairedIds.length < substitutionCount) {
+          isPairedRotationActive = false;
+        } else {
+          playersToSubOutIds = orderedPairedIds.slice(0, substitutionCount);
+        }
       }
     }
 
     // Get N substitute positions (players to bring on)
     let substitutePositionsToUse = substitutePositions.slice(0, substitutionCount);
     const shouldSwapRoles = isPairedRotationActive && this.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION;
-    if (shouldSwapRoles) {
-      substitutePositionsToUse = [...substitutePositionsToUse].reverse();
-    }
 
     // Validate that all players to sub out are in field positions
     const fieldPositions = modeConfig.fieldPositions;
+
+    const availableSubstitutes = substitutePositions.map(position => {
+      const playerId = formation[position];
+      const player = findPlayerById(allPlayers, playerId);
+      return {
+        position,
+        playerId,
+        preferredSide: getPreferredSideForPlayer(player)
+      };
+    });
+    const usedSubstitutePositions = new Set();
 
     // Build substitution pairs: map each field player to their substitute
     const substitutionPairs = [];
     for (let i = 0; i < playersToSubOutIds.length; i++) {
       const playerGoingOffId = playersToSubOutIds[i];
-      const substitutePosition = substitutePositionsToUse[i];
-      const playerComingOnId = formation[substitutePosition];
+      let substitutePosition = substitutePositionsToUse[i];
 
       // Find field position of outgoing player
       const fieldPosition = fieldPositions.find(pos => formation[pos] === playerGoingOffId);
@@ -285,6 +319,30 @@ export class SubstitutionManager {
         throw error;
       }
 
+      const side = getSideFromPosition(fieldPosition);
+
+      if (shouldSwapRoles && substitutionCount > 1) {
+        let chosenSubstitute = null;
+
+        if (side) {
+          chosenSubstitute = availableSubstitutes.find(sub =>
+            !usedSubstitutePositions.has(sub.position) &&
+            sub.preferredSide === side
+          );
+        }
+
+        if (!chosenSubstitute) {
+          chosenSubstitute = availableSubstitutes.find(sub => !usedSubstitutePositions.has(sub.position));
+        }
+
+        if (chosenSubstitute) {
+          substitutePosition = chosenSubstitute.position;
+        }
+      }
+
+      usedSubstitutePositions.add(substitutePosition);
+      const playerComingOnId = formation[substitutePosition];
+
       // Safety check for inactive substitute
       if (supportsInactiveUsers) {
         const substitutePlayer = findPlayerById(allPlayers, playerComingOnId);
@@ -300,7 +358,8 @@ export class SubstitutionManager {
         playerComingOnId,
         fieldPosition,
         substitutePosition,
-        newRole
+        newRole,
+        side
       });
     }
 
@@ -429,7 +488,8 @@ export class SubstitutionManager {
             ...timeResult.stats,
             currentStatus: 'substitute',
             currentPairKey: newSubstitutePosition || pair.substitutePosition,
-            currentRole: PLAYER_ROLES.SUBSTITUTE
+            currentRole: PLAYER_ROLES.SUBSTITUTE,
+            ...(pair.side ? { preferredSide: pair.side } : {})
           }
         };
       }
@@ -449,7 +509,8 @@ export class SubstitutionManager {
             ...timeResult.stats,
             currentStatus: 'on_field',
             currentPairKey: pair.fieldPosition,
-            currentRole: pair.newRole
+            currentRole: pair.newRole,
+            ...(pair.side ? { preferredSide: pair.side } : {})
           }
         };
       }
