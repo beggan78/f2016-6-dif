@@ -157,14 +157,14 @@ describe('Team Configuration with Paired Role Strategy', () => {
   });
 
   describe('createDefaultTeamConfig with paired role strategy', () => {
-    test('should create default config for 7-player squad with pairs and default role rotation', () => {
+    test('should create default config for 7-player squad with individual and default paired strategy', () => {
       const config = createDefaultTeamConfig(7);
-      
+
       expect(config).toEqual({
         format: '5v5',
         squadSize: 7,
         formation: '2-2',
-        substitutionType: 'pairs',
+        substitutionType: 'individual',
         pairedRoleStrategy: 'keep_throughout_period'
       });
     });
