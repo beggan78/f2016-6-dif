@@ -252,6 +252,11 @@ export function GameScreen({
   }), [pauseSubTimer, resumeSubTimer]);
 
   // Create handlers using the new handler factories
+  const getEffectiveSubstitutionCount = React.useCallback(
+    () => uiState.substitutionCountOverride ?? substitutionCount,
+    [uiState.substitutionCountOverride, substitutionCount]
+  );
+
   const substitutionHandlers = React.useMemo(() => 
     createSubstitutionHandlers(
       createGameState,
@@ -259,8 +264,8 @@ export function GameScreen({
       animationHooks,
       modalHandlers,
       teamConfig,
-      () => uiState.substitutionCountOverride ?? substitutionCount
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, substitutionCount, uiState.substitutionCountOverride]
+      getEffectiveSubstitutionCount
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, getEffectiveSubstitutionCount]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>
