@@ -350,6 +350,10 @@ export function ConfigurationScreen({
   const handlePairedRoleStrategyChange = React.useCallback((newStrategy) => {
     if (!teamConfig) return;
 
+    if (teamConfig?.pairedRoleStrategy === newStrategy) {
+      return;
+    }
+
     const format = teamConfig.format || FORMATS.FORMAT_5V5;
     const squadSize = teamConfig.squadSize || selectedSquadIds.length;
     const formation = teamConfig.formation || selectedFormation;
