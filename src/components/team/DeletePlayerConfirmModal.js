@@ -38,11 +38,11 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-sky-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-lg">
-                  {player.name.charAt(0).toUpperCase()}
+                  {(player.display_name || player.name || '?').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="flex-1">
-                <h3 className="text-slate-100 font-medium">{player.name}</h3>
+                <h3 className="text-slate-100 font-medium">{player.display_name || player.name}</h3>
                 <div className="flex items-center space-x-4 text-sm text-slate-400">
                   {player.jersey_number && (
                     <span className="flex items-center">

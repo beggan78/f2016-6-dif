@@ -611,11 +611,19 @@ function RosterManagement({ team, onRefresh }) {
     }
   }, [successMessage]);
 
-  // Filter roster based on visibility settings, then sort by name
+  // Helper function to get player's full name for sorting/display
+  const getPlayerFullName = (player) => {
+    if (player.first_name || player.last_name) {
+      return `${player.first_name || ''} ${player.last_name || ''}`.trim();
+    }
+    return player.display_name || player.name || '';
+  };
+
+  // Filter roster based on visibility settings, then sort by full name
   const filteredRoster = roster.filter(player => {
     // Show active players by default, include former players when toggle is enabled
     return player.on_roster || showInactive;
-  }).sort((a, b) => a.name.localeCompare(b.name));
+  }).sort((a, b) => getPlayerFullName(a).localeCompare(getPlayerFullName(b)));
 
   // Handle add player
   const handleAddPlayer = () => {
@@ -797,13 +805,13 @@ function RosterManagement({ team, onRefresh }) {
                           player.on_roster ? 'bg-sky-600' : 'bg-slate-500'
                         }`}>
                           <span className="text-white text-sm font-medium">
-                            {player.name.charAt(0).toUpperCase()}
+                            {(player.first_name || player.display_name || player.name || '?').charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <span className={`font-medium ${
                           player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
                         }`}>
-                          {player.name}
+                          {getPlayerFullName(player)}
                           {!player.on_roster && <span className="text-slate-400 ml-2">(Former)</span>}
                         </span>
                       </div>

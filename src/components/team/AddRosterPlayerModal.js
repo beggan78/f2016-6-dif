@@ -4,7 +4,9 @@ import { UserPlus, X } from 'lucide-react';
 
 export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailableJerseyNumbers }) {
   const [playerData, setPlayerData] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
+    display_name: '',
     jersey_number: '',
     on_roster: true
   });
@@ -27,15 +29,28 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
   // Validation
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!playerData.name.trim()) {
-      newErrors.name = 'Player name is required';
-    } else if (playerData.name.trim().length < 2) {
-      newErrors.name = 'Player name must be at least 2 characters';
+
+    // Display name is required
+    if (!playerData.display_name.trim()) {
+      newErrors.display_name = 'Display name is required';
+    } else if (playerData.display_name.trim().length < 1) {
+      newErrors.display_name = 'Display name must be at least 1 character';
+    } else if (playerData.display_name.trim().length > 50) {
+      newErrors.display_name = 'Display name must be 50 characters or less';
+    }
+
+    // First name validation (optional, but if provided must be valid)
+    if (playerData.first_name && playerData.first_name.trim().length > 50) {
+      newErrors.first_name = 'First name must be 50 characters or less';
+    }
+
+    // Last name validation (optional, but if provided must be valid)
+    if (playerData.last_name && playerData.last_name.trim().length > 50) {
+      newErrors.last_name = 'Last name must be 50 characters or less';
     }
 
     if (playerData.jersey_number && (
-      playerData.jersey_number < 1 || 
+      playerData.jersey_number < 1 ||
       playerData.jersey_number > 100 ||
       !availableNumbers.includes(parseInt(playerData.jersey_number))
     )) {
@@ -49,41 +64,46 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
     try {
       await onPlayerAdded({
-        name: playerData.name.trim(),
+        first_name: playerData.first_name.trim() || null,
+        last_name: playerData.last_name.trim() || null,
+        display_name: playerData.display_name.trim(),
+        name: playerData.display_name.trim(), // Keep legacy name field in sync
         jersey_number: playerData.jersey_number ? parseInt(playerData.jersey_number) : null,
         on_roster: playerData.on_roster
       });
-      
+
       // Reset form for next player
       setPlayerData({
-        name: '',
+        first_name: '',
+        last_name: '',
+        display_name: '',
         jersey_number: '',
         on_roster: true
       });
       setErrors({});
-      
+
       // Show success message briefly
-      setSuccessMessage(`${playerData.name.trim()} added successfully!`);
+      setSuccessMessage(`${playerData.display_name.trim()} added successfully!`);
       setTimeout(() => setSuccessMessage(''), 2000);
-      
+
       // Refresh available jersey numbers
       if (team?.id && getAvailableJerseyNumbers) {
         const numbers = await getAvailableJerseyNumbers(team.id);
         setAvailableNumbers(numbers);
       }
-      
-      // Focus back to name input
+
+      // Focus back to first name input
       setTimeout(() => {
-        const nameInput = document.querySelector('input[placeholder="Enter player name"]');
-        if (nameInput) nameInput.focus();
+        const firstNameInput = document.querySelector('input[placeholder="Enter first name"]');
+        if (firstNameInput) firstNameInput.focus();
       }, 100);
-      
+
     } catch (error) {
       console.error('Error adding player:', error);
       setErrors({ general: error.message || 'Failed to add player' });
@@ -98,6 +118,13 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
+    }
+  };
+
+  // Handle first name blur - auto-populate display name if empty
+  const handleFirstNameBlur = () => {
+    if (playerData.first_name.trim() && !playerData.display_name.trim()) {
+      setPlayerData(prev => ({ ...prev, display_name: prev.first_name.trim() }));
     }
   };
 
@@ -147,21 +174,59 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               <p className="text-rose-200 text-sm">{errors.general}</p>
             </div>
           )}
-          {/* Player Name */}
+          {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Player Name *
+              First Name
             </label>
             <Input
-              value={playerData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="Enter player name"
+              value={playerData.first_name}
+              onChange={(e) => handleInputChange('first_name', e.target.value)}
+              onBlur={handleFirstNameBlur}
+              placeholder="Enter first name"
               disabled={loading}
-              className={errors.name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              className={errors.first_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
-            {errors.name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.name}</p>
+            {errors.first_name && (
+              <p className="mt-1 text-sm text-rose-400">{errors.first_name}</p>
             )}
+          </div>
+
+          {/* Last Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Last Name
+            </label>
+            <Input
+              value={playerData.last_name}
+              onChange={(e) => handleInputChange('last_name', e.target.value)}
+              placeholder="Enter last name"
+              disabled={loading}
+              className={errors.last_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            />
+            {errors.last_name && (
+              <p className="mt-1 text-sm text-rose-400">{errors.last_name}</p>
+            )}
+          </div>
+
+          {/* Display Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Display Name *
+            </label>
+            <Input
+              value={playerData.display_name}
+              onChange={(e) => handleInputChange('display_name', e.target.value)}
+              placeholder="Name shown in app"
+              disabled={loading}
+              className={errors.display_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            />
+            {errors.display_name && (
+              <p className="mt-1 text-sm text-rose-400">{errors.display_name}</p>
+            )}
+            <p className="mt-1 text-xs text-slate-400">
+              This name will be displayed throughout the application
+            </p>
           </div>
 
           {/* Jersey Number */}

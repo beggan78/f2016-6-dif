@@ -34,11 +34,28 @@ export const createEmptyPlayerStats = () => ({
 });
 
 // Helper to initialize player objects
-export const initializePlayers = (roster) => roster.map((name, index) => ({
-  id: `p${index + 1}`,
-  name,
-  stats: createEmptyPlayerStats()
-}));
+// Accepts either string names or player objects with name fields
+export const initializePlayers = (roster) => roster.map((item, index) => {
+  // Handle both string names and player objects
+  if (typeof item === 'string') {
+    return {
+      id: `p${index + 1}`,
+      name: item,
+      display_name: item,
+      stats: createEmptyPlayerStats()
+    };
+  }
+
+  // Handle player objects
+  return {
+    id: item.id || `p${index + 1}`,
+    name: item.name || item.display_name, // Keep name for backward compatibility
+    display_name: item.display_name || item.name,
+    first_name: item.first_name,
+    last_name: item.last_name,
+    stats: item.stats || createEmptyPlayerStats()
+  };
+});
 
 /**
  * Reset match-start participation markers for a player.
@@ -168,12 +185,18 @@ export const createPlayerLookupFunction = (allPlayers, options = {}) => {
  */
 export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
   const player = findPlayerById(allPlayers, playerId);
-  if (!player || !player.name) {
+  if (!player) {
     return fallback;
   }
-  
+
+  // Use display_name, fallback to name for backward compatibility
+  const playerName = player.display_name || player.name;
+  if (!playerName) {
+    return fallback;
+  }
+
   const isCaptain = player.stats?.isCaptain;
-  return isCaptain ? `${player.name} (C)` : player.name;
+  return isCaptain ? `${playerName} (C)` : playerName;
 };
 
 /**
