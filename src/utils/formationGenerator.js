@@ -1,12 +1,16 @@
-import { FORMATIONS } from '../constants/teamConfiguration';
+import { FORMATIONS, canUsePairedRoleStrategy, PAIRED_ROLE_STRATEGY_TYPES } from '../constants/teamConfiguration';
 import { getFormationDefinition } from './formationConfigUtils';
 import { PLAYER_ROLES } from '../constants/playerConstants';
 import { roleToDatabase } from '../constants/roleConstants';
+import { buildPairedRotationQueueFromFormation } from '../game/utils/pairedRotationUtils';
 
 // Role constants for formation logic (database format for consistency)
 const DB_DEFENDER = roleToDatabase(PLAYER_ROLES.DEFENDER);
 const DB_ATTACKER = roleToDatabase(PLAYER_ROLES.ATTACKER);
 const DB_MIDFIELDER = roleToDatabase(PLAYER_ROLES.MIDFIELDER);
+
+const SIDE_LEFT = 'left';
+const SIDE_RIGHT = 'right';
 
 // Helper to get mode definition - uses centralized formation utilities
 const getDefinition = (teamConfig, selectedFormation = null) => {
@@ -261,6 +265,264 @@ function determineSubstituteRecommendations(finalPairs, outfieldersWithStats) {
   };
 }
 
+const determinePreferredSideForPlayer = (playerId, squadLookup, previousFormation) => {
+  const player = squadLookup.get(playerId);
+  const preferredSide = player?.stats?.preferredSide;
+
+  if (preferredSide === SIDE_LEFT || preferredSide === SIDE_RIGHT) {
+    return preferredSide;
+  }
+
+  if (previousFormation) {
+    if (
+      previousFormation.leftDefender === playerId ||
+      previousFormation.leftAttacker === playerId
+    ) {
+      return SIDE_LEFT;
+    }
+
+    if (
+      previousFormation.rightDefender === playerId ||
+      previousFormation.rightAttacker === playerId
+    ) {
+      return SIDE_RIGHT;
+    }
+  }
+
+  return null;
+};
+
+const createSideCandidate = (playerId, side, statsLookup, squadLookup) => {
+  const statsEntry = statsLookup.get(playerId);
+  const squadEntry = squadLookup.get(playerId);
+
+  const totalOutfieldTime =
+    statsEntry?.stats?.timeOnFieldSeconds ??
+    squadEntry?.stats?.timeOnFieldSeconds ??
+    0;
+
+  const isInactive = Boolean(
+    statsEntry?.stats?.isInactive ?? squadEntry?.stats?.isInactive
+  );
+
+  return {
+    id: playerId,
+    side,
+    totalTime: totalOutfieldTime,
+    isInactive
+  };
+};
+
+const assignSideGroup = ({ candidates, previousDefender, previousAttacker }) => {
+  const available = [...candidates].sort((a, b) => a.totalTime - b.totalTime);
+
+  const pickById = (playerId) => {
+    if (!playerId) return null;
+    const index = available.findIndex(candidate => candidate.id === playerId);
+    if (index === -1) {
+      return null;
+    }
+    return available.splice(index, 1)[0];
+  };
+
+  const pickBestCandidate = () => {
+    const activeIndex = available.findIndex(candidate => !candidate.isInactive);
+    if (activeIndex !== -1) {
+      return available.splice(activeIndex, 1)[0];
+    }
+    return available.shift() || null;
+  };
+
+  let defenderCandidate = null;
+  let attackerCandidate = null;
+
+  const previousAttackerCandidate = pickById(previousAttacker);
+  const previousDefenderCandidate = pickById(previousDefender);
+
+  if (previousDefenderCandidate && previousAttackerCandidate) {
+    defenderCandidate = previousAttackerCandidate;
+    attackerCandidate = previousDefenderCandidate;
+  } else if (previousAttackerCandidate) {
+    defenderCandidate = previousAttackerCandidate;
+    attackerCandidate = pickBestCandidate();
+  } else if (previousDefenderCandidate) {
+    attackerCandidate = previousDefenderCandidate;
+    defenderCandidate = pickBestCandidate();
+  } else {
+    defenderCandidate = pickBestCandidate();
+    attackerCandidate = pickBestCandidate();
+  }
+
+  if (!defenderCandidate && available.length) {
+    defenderCandidate = pickBestCandidate();
+  }
+
+  if (!attackerCandidate && available.length) {
+    attackerCandidate = pickBestCandidate();
+  }
+
+  return {
+    defenderCandidate,
+    attackerCandidate,
+    remaining: available
+  };
+};
+
+const generatePairedIndividualFormationRecommendation = ({
+  currentGoalieId,
+  previousFormation,
+  playerStats,
+  squad,
+  teamConfig
+}) => {
+  if (!previousFormation) {
+    return null;
+  }
+
+  const modeDefinition = getDefinition(teamConfig, FORMATIONS.FORMATION_2_2);
+  if (!modeDefinition) {
+    return null;
+  }
+
+  const substitutePositions = modeDefinition.substitutePositions || [];
+
+  const formation = {
+    goalie: currentGoalieId,
+    leftDefender: null,
+    rightDefender: null,
+    leftAttacker: null,
+    rightAttacker: null
+  };
+
+  const statsLookup = new Map(
+    (playerStats || []).map(player => [player.id, player])
+  );
+  const squadLookup = new Map(
+    (squad || [])
+      .filter(player => player && player.id)
+      .map(player => [player.id, player])
+  );
+
+  const candidatesBySide = {
+    [SIDE_LEFT]: [],
+    [SIDE_RIGHT]: []
+  };
+
+  (squad || []).forEach(player => {
+    if (!player || player.id === currentGoalieId) {
+      return;
+    }
+
+    let side = determinePreferredSideForPlayer(player.id, squadLookup, previousFormation);
+    if (side !== SIDE_LEFT && side !== SIDE_RIGHT) {
+      side = candidatesBySide[SIDE_LEFT].length <= candidatesBySide[SIDE_RIGHT].length
+        ? SIDE_LEFT
+        : SIDE_RIGHT;
+    }
+
+    const candidate = createSideCandidate(player.id, side, statsLookup, squadLookup);
+    candidatesBySide[side].push(candidate);
+  });
+
+  const normalizePrevPlayer = (playerId) => {
+    if (!playerId || playerId === currentGoalieId) {
+      return null;
+    }
+    return playerId;
+  };
+
+  const previousLeftDefender = normalizePrevPlayer(previousFormation.leftDefender);
+  const previousLeftAttacker = normalizePrevPlayer(previousFormation.leftAttacker);
+  const previousRightDefender = normalizePrevPlayer(previousFormation.rightDefender);
+  const previousRightAttacker = normalizePrevPlayer(previousFormation.rightAttacker);
+
+  const leftAssignment = assignSideGroup({
+    candidates: candidatesBySide[SIDE_LEFT],
+    previousDefender: previousLeftDefender,
+    previousAttacker: previousLeftAttacker
+  });
+
+  const rightAssignment = assignSideGroup({
+    candidates: candidatesBySide[SIDE_RIGHT],
+    previousDefender: previousRightDefender,
+    previousAttacker: previousRightAttacker
+  });
+
+  formation.leftDefender = leftAssignment.defenderCandidate?.id || null;
+  formation.leftAttacker = leftAssignment.attackerCandidate?.id || null;
+  formation.rightDefender = rightAssignment.defenderCandidate?.id || null;
+  formation.rightAttacker = rightAssignment.attackerCandidate?.id || null;
+
+  let benchCandidates = [
+    ...leftAssignment.remaining,
+    ...rightAssignment.remaining
+  ];
+
+  const pullCandidateForSide = (side) => {
+    const preferredIndex = benchCandidates.findIndex(candidate =>
+      candidate.side === side && !candidate.isInactive
+    );
+
+    if (preferredIndex !== -1) {
+      return benchCandidates.splice(preferredIndex, 1)[0];
+    }
+
+    const fallbackIndex = benchCandidates.findIndex(candidate => candidate.side === side);
+    if (fallbackIndex !== -1) {
+      return benchCandidates.splice(fallbackIndex, 1)[0];
+    }
+
+    if (benchCandidates.length > 0) {
+      return benchCandidates.shift();
+    }
+
+    return null;
+  };
+
+  if (!formation.leftDefender) {
+    const candidate = pullCandidateForSide(SIDE_LEFT);
+    formation.leftDefender = candidate?.id || null;
+  }
+
+  if (!formation.leftAttacker) {
+    const candidate = pullCandidateForSide(SIDE_LEFT);
+    formation.leftAttacker = candidate?.id || null;
+  }
+
+  if (!formation.rightDefender) {
+    const candidate = pullCandidateForSide(SIDE_RIGHT);
+    formation.rightDefender = candidate?.id || null;
+  }
+
+  if (!formation.rightAttacker) {
+    const candidate = pullCandidateForSide(SIDE_RIGHT);
+    formation.rightAttacker = candidate?.id || null;
+  }
+
+  benchCandidates = benchCandidates.sort((a, b) => a.totalTime - b.totalTime);
+
+  substitutePositions.forEach(positionKey => {
+    const candidate = benchCandidates.shift();
+    formation[positionKey] = candidate?.id || null;
+  });
+
+  const orderingStrategy = teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+    ? 'role_groups'
+    : 'pair';
+
+  const rotationQueue = buildPairedRotationQueueFromFormation(
+    formation,
+    substitutePositions,
+    { orderingStrategy }
+  );
+
+  return {
+    formation,
+    rotationQueue,
+    nextToRotateOff: rotationQueue[0] || null
+  };
+};
+
 /**
  * Generates formation recommendations for individual modes (6, 7, or 8+ players)
  * For Period 1 (no stats), creates basic positional rotation queue
@@ -273,7 +535,14 @@ function determineSubstituteRecommendations(finalPairs, outfieldersWithStats) {
  * @param {string} selectedFormation - Formation type (2-2, 1-2-1, etc.)
  * @returns {Object} Formation recommendation with formation, rotationQueue, and nextToRotateOff
  */
-const generateIndividualFormationRecommendation = (currentGoalieId, playerStats, squad, teamConfig, selectedFormation = null) => {
+const generateIndividualFormationRecommendation = (
+  currentGoalieId,
+  playerStats,
+  squad,
+  teamConfig,
+  selectedFormation = null,
+  previousFormation = null
+) => {
   const modeDefinition = getDefinition(teamConfig, selectedFormation || teamConfig?.formation);
   if (!modeDefinition) {
     return {
@@ -287,6 +556,25 @@ const generateIndividualFormationRecommendation = (currentGoalieId, playerStats,
 
   if (formationKey === FORMATIONS.FORMATION_1_2_1) {
     return generate121FormationRecommendation(currentGoalieId, playerStats, squad, teamConfig);
+  }
+
+  if (
+    formationKey === FORMATIONS.FORMATION_2_2 &&
+    canUsePairedRoleStrategy(teamConfig) &&
+    previousFormation &&
+    teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+  ) {
+    const pairedResult = generatePairedIndividualFormationRecommendation({
+      currentGoalieId,
+      previousFormation,
+      playerStats,
+      squad,
+      teamConfig
+    });
+
+    if (pairedResult) {
+      return pairedResult;
+    }
   }
 
   if (formationKey === FORMATIONS.FORMATION_2_2) {
@@ -406,13 +694,26 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   const substitutePositions = modeConfig?.substitutePositions || [];
   addSubstitutePositions(formationResult, substitutePositions, substitutesOrdered, inactivePlayers);
 
-  // Ensure nextToRotateOff is always a field player (never a substitute)
-  const nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
+  let rotationQueueIds;
+  let nextToRotateOff;
+
+  if (canUsePairedRoleStrategy(teamConfig)) {
+    const orderingStrategy =
+      teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+        ? 'role_groups'
+        : 'pair';
+
+    rotationQueueIds = buildPairedRotationQueueFromFormation(formationResult, substitutePositions, { orderingStrategy });
+    nextToRotateOff = rotationQueueIds[0] || null;
+  } else {
+    rotationQueueIds = rotationQueue.map(p => p.id);
+    nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
+  }
 
   return {
     formation: formationResult,
-    rotationQueue: rotationQueue.map(p => p.id),
-    nextToRotateOff: nextToRotateOff
+    rotationQueue: rotationQueueIds,
+    nextToRotateOff
   };
 };
 

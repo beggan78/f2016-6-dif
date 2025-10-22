@@ -19,11 +19,8 @@ export function useGameUIState() {
 
   // State for "substitute now" flag
   const [shouldSubstituteNow, setShouldSubstituteNow] = useState(false);
-
-  // Override for immediate substitution count
+  const [substitutionOverride, setSubstitutionOverrideState] = useState(null);
   const [substitutionCountOverride, setSubstitutionCountOverride] = useState(null);
-
-  // Control whether to reset substitution timer after next substitution
   const [shouldResetSubTimerOnNextSub, setShouldResetSubTimerOnNextSub] = useState(true);
 
   // Integration with existing animation system
@@ -57,6 +54,14 @@ export function useGameUIState() {
     setRecentlySubstitutedPlayers(new Set());
   }, []);
 
+  const setSubstitutionOverride = useCallback((override) => {
+    setSubstitutionOverrideState(override);
+  }, []);
+
+  const clearSubstitutionOverride = useCallback(() => {
+    setSubstitutionOverrideState(null);
+  }, []);
+
   const updateSubstitutionCountOverride = useCallback((overrideCount) => {
     setSubstitutionCountOverride(overrideCount);
   }, []);
@@ -88,6 +93,9 @@ export function useGameUIState() {
     // Substitution coordination
     shouldSubstituteNow,
     setShouldSubstituteNow,
+    substitutionOverride,
+    setSubstitutionOverride,
+    clearSubstitutionOverride,
     substitutionCountOverride,
     setSubstitutionCountOverride: updateSubstitutionCountOverride,
     clearSubstitutionCountOverride,

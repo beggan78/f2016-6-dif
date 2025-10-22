@@ -9,6 +9,7 @@ import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig } from '../services/matchStateManager';
 import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
 import { createRotationQueue } from '../game/queue/rotationQueue';
+import { buildPairedRotationQueueFromFormation } from '../game/utils/pairedRotationUtils';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { useMatchPersistence } from './useMatchPersistence';
@@ -17,7 +18,7 @@ import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../constants/teamConfiguration';
+import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat, canUsePairedRoleStrategy, PAIRED_ROLE_STRATEGY_TYPES } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
@@ -322,7 +323,8 @@ export function useGameState(navigateToView = null) {
           playersWithLastPeriodStats,
           selectedSquadIds.map(id => allPlayers.find(p => p.id === id)),
           teamConfig,
-          selectedFormation
+          selectedFormation,
+          lastPeriodLog.formation
         );
         
         // Create formation using the template and result data
@@ -552,60 +554,58 @@ export function useGameState(navigateToView = null) {
     // Initialize rotation queue for individual modes only if not already set by formation generator
     // For Period 1 or when formation generator hasn't provided a queue
     if ((teamConfig.substitutionType === 'individual') && rotationQueue.length === 0) {
-      
-      // Get field positions with formation awareness
       const formationAwareTeamConfig = getFormationAwareTeamConfig();
-      
       const definition = getModeDefinition(formationAwareTeamConfig);
       const fieldPositions = definition?.fieldPositions || [];
       const substitutePositions = definition?.substitutePositions || [];
-      
-      
-      // Get all outfield players from formation
-      const fieldPlayersInFormation = fieldPositions.map(pos => formation[pos]).filter(Boolean);
-      const substitutePlayersInFormation = substitutePositions.map(pos => formation[pos]).filter(Boolean);
-      
-      // Build proper rotation queue: field players first (ordered by time), then substitutes
-      const allOutfieldPlayers = [...fieldPlayersInFormation, ...substitutePlayersInFormation];
-      const outfieldPlayersWithTime = allOutfieldPlayers.map(playerId => {
-        const player = allPlayers.find(p => p.id === playerId);
-        return {
-          id: playerId,
-          totalOutfieldTime: player?.stats?.timeOnFieldSeconds || 0
-        };
-      });
-      
-      // Sort field players by most time first (ready to rotate off)
-      const fieldPlayersSorted = outfieldPlayersWithTime
-        .filter(p => fieldPlayersInFormation.includes(p.id))
-        .sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
-      
-      // Sort substitutes by least time first (ready to come on)
-      const substitutePlayersSorted = outfieldPlayersWithTime
-        .filter(p => substitutePlayersInFormation.includes(p.id))
-        .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-      
-      // Create rotation queue: field players first, then substitutes
-      const initialQueue = [...fieldPlayersSorted.map(p => p.id), ...substitutePlayersSorted.map(p => p.id)];
-      
-      // The first field player (most time) is next to rotate off
-      const nextPlayerToRotateOff = fieldPlayersSorted[0]?.id || null;
-      
-      
-      // Only set values if we have a complete formation
+      const pairedRotationEligible = canUsePairedRoleStrategy(formationAwareTeamConfig);
+
+      let initialQueue = [];
+      let nextPlayerToRotateOff = null;
+
+      if (pairedRotationEligible) {
+        const orderingStrategy =
+          formationAwareTeamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+            ? 'role_groups'
+            : 'pair';
+
+        initialQueue = buildPairedRotationQueueFromFormation(formation, substitutePositions, { orderingStrategy });
+        nextPlayerToRotateOff = initialQueue[0] || null;
+      } else {
+        const fieldPlayersInFormation = fieldPositions.map(pos => formation[pos]).filter(Boolean);
+        const substitutePlayersInFormation = substitutePositions.map(pos => formation[pos]).filter(Boolean);
+
+        const allOutfieldPlayers = [...fieldPlayersInFormation, ...substitutePlayersInFormation];
+        const outfieldPlayersWithTime = allOutfieldPlayers.map(playerId => {
+          const player = allPlayers.find(p => p.id === playerId);
+          return {
+            id: playerId,
+            totalOutfieldTime: player?.stats?.timeOnFieldSeconds || 0
+          };
+        });
+
+        const fieldPlayersSorted = outfieldPlayersWithTime
+          .filter(p => fieldPlayersInFormation.includes(p.id))
+          .sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
+
+        const substitutePlayersSorted = outfieldPlayersWithTime
+          .filter(p => substitutePlayersInFormation.includes(p.id))
+          .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
+
+        initialQueue = [...fieldPlayersSorted.map(p => p.id), ...substitutePlayersSorted.map(p => p.id)];
+        nextPlayerToRotateOff = fieldPlayersSorted[0]?.id || null;
+      }
+
       if (nextPlayerToRotateOff && initialQueue.length >= fieldPositions.length) {
         setNextPlayerIdToSubOut(nextPlayerToRotateOff);
         setRotationQueue(initialQueue);
-        
-        // Update nextPlayerToSubOut to match the position of the nextPlayerIdToSubOut
+
         const nextPlayerPosition = fieldPositions.find(pos => formation[pos] === nextPlayerToRotateOff);
         if (nextPlayerPosition) {
           setNextPlayerToSubOut(nextPlayerPosition);
         }
-        
-        // Set next-next player using unified logic
+
         updateNextNextPlayerIfSupported(teamConfig, initialQueue, setNextNextPlayerIdToSubOut);
-        
       } else {
         console.warn('🔧 [handleStartGame] Could not initialize rotation queue - incomplete formation');
       }
@@ -1549,7 +1549,7 @@ export function useGameState(navigateToView = null) {
           formation: formationAwareTeamConfig.formation,
           squadSize: formationAwareTeamConfig.squadSize,
           substitutionType: formationAwareTeamConfig.substitutionType,
-          pairRoleRotation: formationAwareTeamConfig.pairRoleRotation || "keep_throughout_period"
+          pairedRoleStrategy: formationAwareTeamConfig.pairedRoleStrategy || "keep_throughout_period"
         },
         matchConfig: {
           format: formationAwareTeamConfig.format,

@@ -1,5 +1,5 @@
 import { SubstitutionManager, createSubstitutionManager } from '../substitutionManager';
-import { PAIR_ROLE_ROTATION_TYPES, FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
+import { PAIRED_ROLE_STRATEGY_TYPES, FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
 import { PLAYER_ROLES } from '../../../constants/playerConstants';
 import { getCurrentTimestamp } from '../../../utils/timeUtils';
 
@@ -98,13 +98,37 @@ describe('SubstitutionManager', () => {
     return players;
   };
 
+  const createFiveVFiveFormation = () => ({
+    goalie: 'g1',
+    leftDefender: 'f1',
+    rightDefender: 'f2',
+    leftAttacker: 'f3',
+    rightAttacker: 'f4',
+    substitute_1: 's1',
+    substitute_2: 's2',
+    substitute_3: 's3',
+    substitute_4: 's4'
+  });
+
+  const createFiveVFivePlayers = () => [
+    createTestPlayer('g1', PLAYER_ROLES.GOALIE, 'goalie', 'goalie'),
+    createTestPlayer('f1', PLAYER_ROLES.DEFENDER, 'leftDefender'),
+    createTestPlayer('f2', PLAYER_ROLES.DEFENDER, 'rightDefender'),
+    createTestPlayer('f3', PLAYER_ROLES.ATTACKER, 'leftAttacker'),
+    createTestPlayer('f4', PLAYER_ROLES.ATTACKER, 'rightAttacker'),
+    createTestPlayer('s1', PLAYER_ROLES.SUBSTITUTE, 'substitute_1', 'substitute'),
+    createTestPlayer('s2', PLAYER_ROLES.SUBSTITUTE, 'substitute_2', 'substitute'),
+    createTestPlayer('s3', PLAYER_ROLES.SUBSTITUTE, 'substitute_3', 'substitute'),
+    createTestPlayer('s4', PLAYER_ROLES.SUBSTITUTE, 'substitute_4', 'substitute')
+  ];
+
   describe('Role Rotation Disabled (keep_throughout_period)', () => {
     const teamConfig = {
       format: '5v5',
       squadSize: 7,
       formation: '2-2',
       substitutionType: 'pairs',
-      pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.KEEP_THROUGHOUT_PERIOD
+      pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
     };
 
     it('should maintain player roles during substitution', () => {
@@ -162,7 +186,7 @@ describe('SubstitutionManager', () => {
       squadSize: 7,
       formation: '2-2',
       substitutionType: 'pairs',
-      pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION
+      pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
     };
 
     it('should swap roles only for outgoing pair (becoming substitutes)', () => {
@@ -242,13 +266,83 @@ describe('SubstitutionManager', () => {
     });
   });
 
+  describe('Individual paired rotation with multi-substitutions', () => {
+    const baseTeamConfig = {
+      format: '5v5',
+      squadSize: 9,
+      formation: '2-2',
+      substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+    };
+
+    it('maintains defender/attacker alignment when strategy is keep_throughout_period', () => {
+      const manager = new SubstitutionManager({
+        ...baseTeamConfig,
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
+      });
+      const formation = createFiveVFiveFormation();
+      const allPlayers = createFiveVFivePlayers();
+      const rotationQueue = ['f1', 'f3', 'f2', 'f4', 's1', 's2', 's3', 's4'];
+
+      const context = {
+        formation,
+        nextPlayerIdToSubOut: 'f1',
+        allPlayers,
+        rotationQueue,
+        currentTimeEpoch: mockCurrentTime,
+        isSubTimerPaused: false,
+        substitutionCount: 2
+      };
+
+      const result = manager.handleIndividualModeSubstitution(context);
+
+      expect(result.newFormation.leftDefender).toBe('s1');
+      expect(result.newFormation.leftAttacker).toBe('s2');
+      expect(result.newFormation.rightDefender).toBe('f2');
+      expect(result.newFormation.rightAttacker).toBe('f4');
+
+      expect(result.newFormation.substitute_1).toBe('s3');
+      expect(result.newFormation.substitute_2).toBe('s4');
+      expect(result.newFormation.substitute_3).toBe('f1');
+      expect(result.newFormation.substitute_4).toBe('f3');
+
+      expect(result.newRotationQueue).toEqual(['f2', 'f4', 's1', 's2', 's3', 's4', 'f1', 'f3']);
+    });
+
+    it('swaps defender/attacker roles when strategy is swap_every_rotation', () => {
+      const manager = new SubstitutionManager({
+        ...baseTeamConfig,
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+      });
+      const formation = createFiveVFiveFormation();
+      const allPlayers = createFiveVFivePlayers();
+      const rotationQueue = ['f1', 'f3', 'f2', 'f4', 's1', 's2', 's3', 's4'];
+
+      const context = {
+        formation,
+        nextPlayerIdToSubOut: 'f1',
+        allPlayers,
+        rotationQueue,
+        currentTimeEpoch: mockCurrentTime,
+        isSubTimerPaused: false,
+        substitutionCount: 2
+      };
+
+      const result = manager.handleIndividualModeSubstitution(context);
+
+      expect(result.newFormation.leftDefender).toBe('s1');
+      expect(result.newFormation.leftAttacker).toBe('s2');
+
+      expect(result.newRotationQueue).toEqual(['f2', 'f4', 's1', 's2', 's3', 's4', 'f1', 'f3']);
+    });
+  });
+
   describe('Multiple Substitution Cycles', () => {
     const teamConfig = {
       format: '5v5',
       squadSize: 7,
       formation: '2-2',
       substitutionType: 'pairs',
-      pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION
+      pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
     };
 
     it('should properly alternate roles across multiple substitutions', () => {
@@ -362,7 +456,7 @@ describe('SubstitutionManager', () => {
         squadSize: 7,
         formation: '2-2', 
         substitutionType: 'pairs',
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
       };
 
       const manager = new SubstitutionManager(teamConfig);
@@ -417,7 +511,7 @@ describe('SubstitutionManager', () => {
         squadSize: 7,
         formation: '2-2',
         substitutionType: 'pairs',
-        pairRoleRotation: PAIR_ROLE_ROTATION_TYPES.SWAP_EVERY_ROTATION
+        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
       };
 
       const manager = createSubstitutionManager(teamConfig);
