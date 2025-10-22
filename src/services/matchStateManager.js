@@ -1513,8 +1513,8 @@ export function formatPlayerMatchStats(player, matchId, goalScorers = {}, matchE
     return null;
   }
 
-  // Calculate total field time excluding goalie time
-  const totalFieldTime = Math.max(0, (player.stats.timeOnFieldSeconds || 0) - (player.stats.timeAsGoalieSeconds || 0));
+  // Calculate total field time using the outfield counter tracked in game state
+  const totalFieldTime = Math.max(0, player.stats.timeOnFieldSeconds || 0);
 
   // Count goals scored by this player
   const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);

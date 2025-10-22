@@ -20,6 +20,8 @@ export function useGameUIState() {
   // State for "substitute now" flag
   const [shouldSubstituteNow, setShouldSubstituteNow] = useState(false);
   const [substitutionOverride, setSubstitutionOverrideState] = useState(null);
+  const [substitutionCountOverride, setSubstitutionCountOverride] = useState(null);
+  const [shouldResetSubTimerOnNextSub, setShouldResetSubTimerOnNextSub] = useState(true);
 
   // Integration with existing animation system
   const resetAnimationState = useCallback(() => {
@@ -60,6 +62,14 @@ export function useGameUIState() {
     setSubstitutionOverrideState(null);
   }, []);
 
+  const updateSubstitutionCountOverride = useCallback((overrideCount) => {
+    setSubstitutionCountOverride(overrideCount);
+  }, []);
+
+  const clearSubstitutionCountOverride = useCallback(() => {
+    setSubstitutionCountOverride(null);
+  }, []);
+
   return {
     // Animation state
     animationState,
@@ -86,6 +96,11 @@ export function useGameUIState() {
     substitutionOverride,
     setSubstitutionOverride,
     clearSubstitutionOverride,
+    substitutionCountOverride,
+    setSubstitutionCountOverride: updateSubstitutionCountOverride,
+    clearSubstitutionCountOverride,
+    shouldResetSubTimerOnNextSub,
+    setShouldResetSubTimerOnNextSub,
     
     // Utilities
     resetAnimationState

@@ -143,6 +143,11 @@ describe('GameScreen Back Navigation Tests', () => {
       clearLastSubstitution: jest.fn(),
       shouldSubstituteNow: false,
       setShouldSubstituteNow: jest.fn(),
+      substitutionCountOverride: null,
+      setSubstitutionCountOverride: jest.fn(),
+      clearSubstitutionCountOverride: jest.fn(),
+      shouldResetSubTimerOnNextSub: true,
+      setShouldResetSubTimerOnNextSub: jest.fn(),
       resetAnimationState: jest.fn()
     });
     

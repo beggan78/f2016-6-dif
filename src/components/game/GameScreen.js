@@ -90,6 +90,7 @@ export function GameScreen({
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
   const uiState = useGameUIState();
+  const { setShouldResetSubTimerOnNextSub } = uiState;
   
   // Team name management
   const ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME;
@@ -152,6 +153,7 @@ export function GameScreen({
 
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => {
+    const effectiveSubstitutionCount = uiState.substitutionCountOverride ?? substitutionCount;
     const gameState = {
       formation,
       allPlayers,
@@ -171,18 +173,35 @@ export function GameScreen({
       matchTimerSeconds,
       ownScore,
       opponentScore,
-      substitutionCount,
-      substitutionOverride: uiState.substitutionOverride
+      substitutionCount: effectiveSubstitutionCount,
+      substitutionOverride: uiState.substitutionOverride,
+      shouldResetSubTimerOnNextSub: uiState.shouldResetSubTimerOnNextSub
     };
-
 
     return gameState;
   }, [
-    formation, allPlayers, teamConfig, selectedFormation, nextPhysicalPairToSubOut,
-    nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
-    rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
-    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore,
-    substitutionCount, uiState.substitutionOverride
+    formation,
+    allPlayers,
+    teamConfig,
+    selectedFormation,
+    nextPhysicalPairToSubOut,
+    nextPlayerToSubOut,
+    nextPlayerIdToSubOut,
+    nextNextPlayerIdToSubOut,
+    rotationQueue,
+    selectedSquadPlayers,
+    modalHandlers.modals.fieldPlayer,
+    uiState.lastSubstitution,
+    subTimerSeconds,
+    isSubTimerPaused,
+    currentPeriodNumber,
+    matchTimerSeconds,
+    ownScore,
+    opponentScore,
+    substitutionCount,
+    uiState.substitutionCountOverride,
+    uiState.substitutionOverride,
+    uiState.shouldResetSubTimerOnNextSub
   ]);
 
   // State updaters object for handlers
@@ -205,14 +224,18 @@ export function GameScreen({
     addGoalScored,
     addGoalConceded,
     resetSubTimer,
-    handleUndoSubstitutionTimer
+    handleUndoSubstitutionTimer,
+    setSubstitutionCountOverride: uiState.setSubstitutionCountOverride,
+    clearSubstitutionCountOverride: uiState.clearSubstitutionCountOverride,
+    setShouldResetSubTimerOnNextSub
   }), [
     setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setSubstitutionOverride,
     uiState.clearSubstitutionOverride, uiState.setLastSubstitution,
     setScore, ownScore, opponentScore, addGoalScored, addGoalConceded, resetSubTimer,
-    handleUndoSubstitutionTimer
+    handleUndoSubstitutionTimer, uiState.setSubstitutionCountOverride, uiState.clearSubstitutionCountOverride,
+    setShouldResetSubTimerOnNextSub
   ]);
 
   // Animation hooks object for handlers
@@ -236,8 +259,8 @@ export function GameScreen({
       animationHooks,
       modalHandlers,
       teamConfig,
-      () => substitutionCount
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, substitutionCount]
+      () => uiState.substitutionCountOverride ?? substitutionCount
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, substitutionCount, uiState.substitutionCountOverride]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>
@@ -355,6 +378,10 @@ export function GameScreen({
     }
   }, [uiState.shouldSubstituteNow, uiState.setShouldSubstituteNow, substitutionHandlers, uiState]);
 
+  const handleRegularSubstitutionClick = React.useCallback(() => {
+    setShouldResetSubTimerOnNextSub(true);
+    substitutionHandlers.handleSubstitutionWithHighlight();
+  }, [setShouldResetSubTimerOnNextSub, substitutionHandlers]);
   // Handle undo substitution using handler pattern
   const handleUndoSubstitutionClick = () => {
     if (uiState.lastSubstitution) {
@@ -593,7 +620,7 @@ export function GameScreen({
           className="flex-shrink-0"
         />
         <Button
-          onClick={substitutionHandlers.handleSubstitutionWithHighlight}
+          onClick={handleRegularSubstitutionClick}
           Icon={RefreshCcw}
           className="flex-1"
           disabled={!canSubstitute}
