@@ -6,6 +6,8 @@ import {
   hasInactivePlayersInSquad,
   findPlayerById,
   getPlayerName,
+  getPlayerDisplayName,
+  getPlayerDisplayNameById,
   getSelectedSquadPlayers,
   getOutfieldPlayers,
   createPlayerLookup,
@@ -103,6 +105,31 @@ describe('Player Utilities', () => {
 
     test('returns custom fallback for non-existent player', () => {
       expect(getPlayerName(mockPlayers, 'nonexistent', 'Unknown')).toBe('Unknown');
+    });
+  });
+
+  describe('getPlayerDisplayName', () => {
+    test('returns display name when available', () => {
+      expect(getPlayerDisplayName(mockPlayers[0])).toBe('Alice');
+    });
+
+    test('returns fallback when player missing', () => {
+      expect(getPlayerDisplayName(null, 'Fallback')).toBe('Fallback');
+    });
+
+    test('returns fallback when display name missing', () => {
+      const player = { firstName: 'No Display' };
+      expect(getPlayerDisplayName(player)).toBe('Unknown Player');
+    });
+  });
+
+  describe('getPlayerDisplayNameById', () => {
+    test('returns display name for valid ID', () => {
+      expect(getPlayerDisplayNameById(mockPlayers, '2')).toBe('Bob');
+    });
+
+    test('returns fallback for non-existent player', () => {
+      expect(getPlayerDisplayNameById(mockPlayers, 'nonexistent', 'Fallback')).toBe('Fallback');
     });
   });
 

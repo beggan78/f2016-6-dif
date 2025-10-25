@@ -48,9 +48,6 @@ export const convertTeamPlayerToGamePlayer = (teamPlayer) => {
  */
 export const mergePlayerData = (teamPlayer, existingGamePlayer) => {
   const restOfExistingPlayer = existingGamePlayer ? { ...existingGamePlayer } : {};
-  if (restOfExistingPlayer && 'name' in restOfExistingPlayer) {
-    delete restOfExistingPlayer.name;
-  }
 
   return {
     ...restOfExistingPlayer,

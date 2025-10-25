@@ -111,6 +111,28 @@ export const findPlayerById = (allPlayers, playerId) => {
 };
 
 /**
+ * Resolves a player's display name with a consistent fallback
+ * @param {Object|null|undefined} player - Player object
+ * @param {string} fallback - Fallback name when display name is unavailable
+ * @returns {string} Player display name or fallback
+ */
+export const getPlayerDisplayName = (player, fallback = 'Unknown Player') => {
+  return player?.displayName || fallback;
+};
+
+/**
+ * Resolves a player's display name by ID using the provided roster
+ * @param {Array} allPlayers - Array of all players
+ * @param {string} playerId - Player ID to look up
+ * @param {string} fallback - Fallback name when player not found
+ * @returns {string} Player display name or fallback
+ */
+export const getPlayerDisplayNameById = (allPlayers, playerId, fallback = 'Unknown Player') => {
+  const player = findPlayerById(allPlayers, playerId);
+  return getPlayerDisplayName(player, fallback);
+};
+
+/**
  * Finds a player by ID with validation and error handling
  * Common pattern: findPlayerById + null check + optional error handling
  * @param {Array} allPlayers - Array of all players
