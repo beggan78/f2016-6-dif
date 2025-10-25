@@ -66,6 +66,11 @@ CREATE TABLE public.connector (
   -- Provider-specific configuration (JSON for flexibility)
   config JSONB DEFAULT '{}'::jsonb,         -- Provider-specific settings
 
+  -- Sync tracking
+  last_verified_at TIMESTAMPTZ,             -- When connection was last verified as working
+  last_sync_at TIMESTAMPTZ,                 -- When last successful sync completed
+  last_error TEXT,                          -- Last error message (if any)
+
   -- Audit fields
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_by UUID REFERENCES auth.users(id),
@@ -148,12 +153,113 @@ COMMENT ON TABLE public.connector_sync_job IS 'Job queue for scraper to process 
 COMMENT ON COLUMN public.connector_sync_job.job_type IS 'Classification of sync job trigger source (see connector_sync_job_type enum for valid values)';
 
 -- ----------------------------------------------------------------------------
+-- TABLE: player_attendance
+-- ----------------------------------------------------------------------------
+-- Stores attendance statistics scraped from provider
+-- Updated on every successful sync (upsert based on connector_id + player_name)
+-- Links to player table when name matching is successful
+
+CREATE TABLE public.player_attendance (
+  -- Primary identification
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  connector_id UUID NOT NULL REFERENCES public.connector(id) ON DELETE CASCADE,
+
+  -- Player linking
+  player_id UUID REFERENCES public.player(id) ON DELETE SET NULL, -- Nullable: matched player
+  player_name VARCHAR(100) NOT NULL,                               -- Raw name from scraped data
+
+  -- Attendance statistics
+  total_practices INTEGER NOT NULL,                                -- Total practices in period
+  total_attendance INTEGER NOT NULL,                               -- Number of practices attended
+  attendance_percentage NUMERIC(5,2) NOT NULL,                     -- Calculated percentage (0.00-100.00)
+
+  -- Sync metadata
+  last_synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),               -- When this record was last updated
+
+  -- Audit fields
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_updated_by UUID REFERENCES auth.users(id),
+
+  -- Constraints
+  CONSTRAINT player_attendance_connector_name_unique UNIQUE (connector_id, player_name),
+  CONSTRAINT player_attendance_percentage_range CHECK (attendance_percentage >= 0 AND attendance_percentage <= 100),
+  CONSTRAINT player_attendance_count_check CHECK (total_attendance >= 0 AND total_attendance <= total_practices)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_player_attendance_connector ON public.player_attendance(connector_id);
+CREATE INDEX idx_player_attendance_player ON public.player_attendance(player_id) WHERE player_id IS NOT NULL;
+CREATE INDEX idx_player_attendance_synced ON public.player_attendance(last_synced_at DESC);
+
+-- Audit trigger
+CREATE TRIGGER update_player_attendance_timestamp
+  BEFORE UPDATE ON public.player_attendance
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_timestamp_and_user();
+
+-- Comments
+COMMENT ON TABLE public.player_attendance IS 'Practice attendance statistics scraped from team management providers, updated on each sync';
+COMMENT ON COLUMN public.player_attendance.player_id IS 'Matched player from player table (NULL if no match found)';
+COMMENT ON COLUMN public.player_attendance.player_name IS 'Raw player name from scraped data, used for matching and display when player_id is NULL';
+
+-- ----------------------------------------------------------------------------
+-- TABLE: upcoming_match
+-- ----------------------------------------------------------------------------
+-- Stores upcoming matches scraped from provider
+-- Past matches (match_date < current_date) deleted on each sync
+-- Fresh data inserted on each successful sync
+
+CREATE TABLE public.upcoming_match (
+  -- Primary identification
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  connector_id UUID NOT NULL REFERENCES public.connector(id) ON DELETE CASCADE,
+
+  -- Match details
+  match_date DATE NOT NULL,
+  match_time VARCHAR(50),                                          -- Time range format: "09:45 - 11:30"
+  opponent VARCHAR(200) NOT NULL,                                  -- Opponent team name
+  venue VARCHAR(200),                                              -- Match venue/location
+
+  -- Sync metadata
+  synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),                   -- When this record was synced
+
+  -- Audit fields
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_updated_by UUID REFERENCES auth.users(id),
+
+  -- Constraints
+  CONSTRAINT upcoming_match_unique UNIQUE (connector_id, match_date, opponent)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_upcoming_match_connector ON public.upcoming_match(connector_id);
+CREATE INDEX idx_upcoming_match_date ON public.upcoming_match(match_date);
+CREATE INDEX idx_upcoming_match_future ON public.upcoming_match(match_date) WHERE match_date >= CURRENT_DATE;
+
+-- Audit trigger
+CREATE TRIGGER update_upcoming_match_timestamp
+  BEFORE UPDATE ON public.upcoming_match
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_timestamp_and_user();
+
+-- Comments
+COMMENT ON TABLE public.upcoming_match IS 'Upcoming matches scraped from providers, refreshed on each sync with past matches removed';
+COMMENT ON COLUMN public.upcoming_match.match_time IS 'Time range in provider format (e.g., "09:45 - 11:30")';
+COMMENT ON COLUMN public.upcoming_match.opponent IS 'Opponent team name extracted from scraped match data';
+
+-- ----------------------------------------------------------------------------
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ----------------------------------------------------------------------------
 
 -- Enable RLS on all tables
 ALTER TABLE public.connector ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.connector_sync_job ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.player_attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.upcoming_match ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- POLICIES: connector
@@ -240,6 +346,76 @@ CREATE POLICY connector_sync_job_insert_policy ON public.connector_sync_job
 CREATE POLICY connector_sync_job_update_policy ON public.connector_sync_job
   FOR UPDATE
   USING (true); -- Service role bypasses RLS, but policy must exist for regular updates
+
+-- ============================================================================
+-- POLICIES: player_attendance
+-- ============================================================================
+
+-- Policy: Team members can view attendance for their team's connectors
+CREATE POLICY player_attendance_select_policy ON public.player_attendance
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.connector tc
+      JOIN public.team_user tu ON tu.team_id = tc.team_id
+      WHERE tc.id = player_attendance.connector_id
+        AND tu.user_id = auth.uid()
+    )
+  );
+
+-- Policy: Service role (scraper) can insert attendance data
+CREATE POLICY player_attendance_insert_policy ON public.player_attendance
+  FOR INSERT
+  WITH CHECK (true); -- Service role bypasses RLS
+
+-- Policy: Service role (scraper) can update attendance data
+CREATE POLICY player_attendance_update_policy ON public.player_attendance
+  FOR UPDATE
+  USING (true); -- Service role bypasses RLS
+
+-- Policy: Team admins can delete attendance records
+CREATE POLICY player_attendance_delete_policy ON public.player_attendance
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.connector tc
+      JOIN public.team_user tu ON tu.team_id = tc.team_id
+      WHERE tc.id = player_attendance.connector_id
+        AND tu.user_id = auth.uid()
+        AND tu.role = 'admin'
+    )
+  );
+
+-- ============================================================================
+-- POLICIES: upcoming_match
+-- ============================================================================
+
+-- Policy: Team members can view upcoming matches for their team's connectors
+CREATE POLICY upcoming_match_select_policy ON public.upcoming_match
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.connector tc
+      JOIN public.team_user tu ON tu.team_id = tc.team_id
+      WHERE tc.id = upcoming_match.connector_id
+        AND tu.user_id = auth.uid()
+    )
+  );
+
+-- Policy: Service role (scraper) can insert upcoming matches
+CREATE POLICY upcoming_match_insert_policy ON public.upcoming_match
+  FOR INSERT
+  WITH CHECK (true); -- Service role bypasses RLS
+
+-- Policy: Service role (scraper) can update upcoming matches
+CREATE POLICY upcoming_match_update_policy ON public.upcoming_match
+  FOR UPDATE
+  USING (true); -- Service role bypasses RLS
+
+-- Policy: Service role (scraper) can delete past matches
+CREATE POLICY upcoming_match_delete_policy ON public.upcoming_match
+  FOR DELETE
+  USING (true); -- Service role bypasses RLS for cleanup of past matches
 
 -- ----------------------------------------------------------------------------
 -- HELPER FUNCTIONS
@@ -338,11 +514,6 @@ COMMENT ON TYPE public.connector_sync_job_type IS 'Classification of what trigge
 -- 3. All team members can view connector status (but NOT decrypt credentials)
 -- 4. Service role (scraper) can update job status and create results
 -- 5. Edge Function validates user permissions before encryption
---
--- DATA RETENTION:
--- 1. Soft delete support via deleted_at column
--- 2. Sync results preserved for audit trail even if connector deleted
--- 3. Job history retained for troubleshooting and analytics
 --
 -- KEY ROTATION:
 -- 1. encryption_key_version tracks which master key was used
