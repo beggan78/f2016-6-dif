@@ -35,4 +35,6 @@ ALTER TABLE public.player
     char_length(display_name) >= 2 AND char_length(display_name) <= 50
   );
 
+CREATE INDEX idx_player_display_name ON public.player(display_name);
+
 COMMIT;
