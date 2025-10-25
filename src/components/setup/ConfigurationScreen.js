@@ -502,7 +502,10 @@ export function ConfigurationScreen({
   const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0
     ? teamPlayers.map(player => ({
         id: player.id,
-        name: player.name,
+        name: player.display_name, // Map display_name to name for game state
+        displayName: player.display_name,
+        firstName: player.first_name,
+        lastName: player.last_name,
         jerseyNumber: player.jersey_number
       }))
     : allPlayers;
@@ -583,7 +586,10 @@ export function ConfigurationScreen({
     if (isAuthenticated && currentTeam && teamPlayers.length > 0) {
       const transformedTeamPlayers = teamPlayers.map(player => ({
         id: player.id,
-        name: player.name,
+        name: player.display_name, // Map display_name to name for game state
+        displayName: player.display_name,
+        firstName: player.first_name,
+        lastName: player.last_name,
         jerseyNumber: player.jersey_number,
         // Initialize player stats if not present (required for game logic)
         stats: {
@@ -599,10 +605,11 @@ export function ConfigurationScreen({
           lastStintStartTimeEpoch: null
         }
       }));
-      
+
       // Only update allPlayers if the data has actually changed
-      if (JSON.stringify(allPlayers.map(p => ({ id: p.id, name: p.name }))) !== 
-          JSON.stringify(transformedTeamPlayers.map(p => ({ id: p.id, name: p.name })))) {
+      const currentNames = allPlayers.map(p => ({ id: p.id, name: p.displayName }));
+      const newNames = transformedTeamPlayers.map(p => ({ id: p.id, name: p.name }));
+      if (JSON.stringify(currentNames) !== JSON.stringify(newNames)) {
         setAllPlayers(transformedTeamPlayers);
       }
     }

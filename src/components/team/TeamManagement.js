@@ -611,11 +611,15 @@ function RosterManagement({ team, onRefresh }) {
     }
   }, [successMessage]);
 
-  // Filter roster based on visibility settings, then sort by name
+  // Filter roster based on visibility settings, then sort by display_name
   const filteredRoster = roster.filter(player => {
     // Show active players by default, include former players when toggle is enabled
     return player.on_roster || showInactive;
-  }).sort((a, b) => a.name.localeCompare(b.name));
+  }).sort((a, b) => {
+    const aName = a.display_name || '';
+    const bName = b.display_name || '';
+    return aName.localeCompare(bName);
+  });
 
   // Handle add player
   const handleAddPlayer = () => {
@@ -676,9 +680,9 @@ function RosterManagement({ team, onRefresh }) {
       
       // Show appropriate success message based on operation type
       if (result.operation === 'deactivated') {
-        setSuccessMessage(`${deletingPlayer.name} has been deactivated but kept in records due to game history.`);
+        setSuccessMessage(`${deletingPlayer.display_name} has been deactivated but kept in records due to game history.`);
       } else {
-        setSuccessMessage(`${deletingPlayer.name} has been removed from the roster.`);
+        setSuccessMessage(`${deletingPlayer.display_name} has been removed from the roster.`);
       }
       
       await loadRoster();
@@ -787,7 +791,13 @@ function RosterManagement({ team, onRefresh }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-600">
-                {filteredRoster.map((player) => (
+                {filteredRoster.map((player) => {
+                  // Build full name from first_name and last_name for display in roster
+                  const fullName = player.last_name
+                    ? `${player.first_name} ${player.last_name}`
+                    : player.first_name;
+
+                  return (
                   <tr key={player.id} className={`hover:bg-slate-700 transition-colors ${
                     !player.on_roster ? 'opacity-60' : ''
                   }`}>
@@ -797,13 +807,13 @@ function RosterManagement({ team, onRefresh }) {
                           player.on_roster ? 'bg-sky-600' : 'bg-slate-500'
                         }`}>
                           <span className="text-white text-sm font-medium">
-                            {player.name.charAt(0).toUpperCase()}
+                            {player.display_name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <span className={`font-medium ${
                           player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
                         }`}>
-                          {player.name}
+                          {fullName}
                           {!player.on_roster && <span className="text-slate-400 ml-2">(Former)</span>}
                         </span>
                       </div>
@@ -837,7 +847,8 @@ function RosterManagement({ team, onRefresh }) {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -55,7 +55,7 @@ npm run test:performance         # Run performance tests
 ```bash
 npm run db:start    # Start local Supabase stack
 npm run db:stop     # Stop local Supabase
-npm run db:reset    # Apply all migrations and seed data
+npm run db:migrate      # Apply all migrations
 npm run db:types    # Generate TypeScript types from schema
 npm run db:diff     # Create migration from schema changes
 ```

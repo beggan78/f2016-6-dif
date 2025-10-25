@@ -59,7 +59,7 @@ This will start:
 
 ```bash
 # Apply all migrations to local database
-npm run db:reset
+npm run db:migrate
 
 # Generate TypeScript types from schema
 npm run db:types
@@ -97,7 +97,7 @@ Current migrations:
 
 3. Apply the migration:
    ```bash
-   npm run db:reset
+   npm run db:migrate
    ```
 
 ### Seed Data
@@ -111,7 +111,7 @@ Development seed data is in `supabase/seed.sql` and includes:
 
 Reset with seed data:
 ```bash
-npm run db:reset
+npm run db:migrate
 ```
 
 ## Database Schema
@@ -231,7 +231,7 @@ npm run db:pull
 1. **Start local environment**: `npm run db:start`
 2. **Make schema changes**: Create migration files
 3. **Generate migration** (if using UI): `npm run db:diff`
-4. **Test locally**: `npm run db:reset`
+4. **Test locally**: `npm run db:migrate`
 5. **Generate types**: `npm run db:types`
 6. **Commit changes**: Git commit migration files
 7. **Deploy to production**: ONLY via CI/CD

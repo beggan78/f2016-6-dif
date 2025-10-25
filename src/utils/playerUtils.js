@@ -168,12 +168,17 @@ export const createPlayerLookupFunction = (allPlayers, options = {}) => {
  */
 export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
   const player = findPlayerById(allPlayers, playerId);
-  if (!player || !player.name) {
+  if (!player) {
     return fallback;
   }
-  
+
+  const playerName = player.displayName;
+  if (!playerName) {
+    return fallback;
+  }
+
   const isCaptain = player.stats?.isCaptain;
-  return isCaptain ? `${player.name} (C)` : player.name;
+  return isCaptain ? `${playerName} (C)` : playerName;
 };
 
 /**
