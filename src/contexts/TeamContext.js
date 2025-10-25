@@ -1678,7 +1678,7 @@ export const TeamProvider = ({ children }) => {
       console.error('Exception in updateRosterPlayer:', err);
       throw err;
     }
-  }, [user, currentTeam, getTeamPlayers, syncTeamRosterToGameState]);
+  }, [user, currentTeam, getTeamPlayers]);
 
   // Remove player from roster
   const removeRosterPlayer = useCallback(async (playerId) => {
