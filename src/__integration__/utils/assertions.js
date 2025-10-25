@@ -152,7 +152,8 @@ export const assertUIStateConsistency = (gameState, options = {}) => {
         const player = allPlayers.find(p => p.id === playerId);
         if (player) {
           // Player name should appear somewhere in the UI
-          expect(screen.queryByText(player.name)).toBeInTheDocument();
+          const playerLabel = player.displayName || player.firstName || 'Unknown Player';
+          expect(screen.queryByText(playerLabel)).toBeInTheDocument();
         }
       }
     });

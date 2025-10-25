@@ -212,7 +212,7 @@ describe('stintManager', () => {
       
       expect(result.stats.lastStintStartTimeEpoch).toBe(newTime);
       expect(result.id).toBe(player.id); // Other properties preserved
-      expect(result.name).toBe(player.name);
+      expect(result.displayName).toBe(player.displayName);
     });
 
     test('should preserve all other player properties', () => {
@@ -256,7 +256,7 @@ describe('stintManager', () => {
       const result = completeCurrentStint(player, currentTime, false);
       
       expect(result.id).toBe(player.id);
-      expect(result.name).toBe(player.name);
+      expect(result.displayName).toBe(player.displayName);
       expect(result.stats.timeOnFieldSeconds).toBe(58); // 50 + 8
       expect(result.stats.timeAsAttackerSeconds).toBe(38); // 30 + 8
       expect(result.stats.lastStintStartTimeEpoch).toBe(currentTime);
@@ -485,7 +485,7 @@ describe('stintManager', () => {
       
       // Player identity should be preserved
       expect(result.id).toBe(player.id);
-      expect(result.name).toBe(player.name);
+      expect(result.displayName).toBe(player.displayName);
     });
 
     test('should handle invalid time gracefully', () => {

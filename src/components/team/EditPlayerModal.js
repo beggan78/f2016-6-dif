@@ -4,7 +4,9 @@ import { Edit3, X } from 'lucide-react';
 
 export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAvailableJerseyNumbers }) {
   const [playerData, setPlayerData] = useState({
-    name: player?.name || '',
+    first_name: player?.first_name || '',
+    last_name: player?.last_name || '',
+    display_name: player?.display_name || '',
     jersey_number: player?.jersey_number?.toString() || '',
     on_roster: player?.on_roster ?? true
   });
@@ -26,11 +28,25 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
   // Validation
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!playerData.name.trim()) {
-      newErrors.name = 'Player name is required';
-    } else if (playerData.name.trim().length < 2) {
-      newErrors.name = 'Player name must be at least 2 characters';
+
+    if (!playerData.first_name.trim()) {
+      newErrors.first_name = 'First name is required';
+    } else if (playerData.first_name.trim().length < 2) {
+      newErrors.first_name = 'First name must be at least 2 characters';
+    } else if (playerData.first_name.trim().length > 50) {
+      newErrors.first_name = 'First name must be at most 50 characters';
+    }
+
+    if (playerData.last_name && playerData.last_name.trim().length > 50) {
+      newErrors.last_name = 'Last name must be at most 50 characters';
+    }
+
+    if (!playerData.display_name.trim()) {
+      newErrors.display_name = 'Display name is required';
+    } else if (playerData.display_name.trim().length < 2) {
+      newErrors.display_name = 'Display name must be at least 2 characters';
+    } else if (playerData.display_name.trim().length > 50) {
+      newErrors.display_name = 'Display name must be at most 50 characters';
     }
 
     if (playerData.jersey_number) {
@@ -49,13 +65,15 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
     try {
       const updates = {
-        name: playerData.name.trim(),
+        first_name: playerData.first_name.trim(),
+        last_name: playerData.last_name ? playerData.last_name.trim() : null,
+        display_name: playerData.display_name.trim(),
         jersey_number: playerData.jersey_number ? parseInt(playerData.jersey_number) : null,
         on_roster: playerData.on_roster
       };
@@ -75,6 +93,13 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
+    }
+  };
+
+  // Auto-fill display name from first name when user leaves the first name field
+  const handleFirstNameBlur = () => {
+    if (playerData.first_name.trim() && !playerData.display_name.trim()) {
+      setPlayerData(prev => ({ ...prev, display_name: prev.first_name.trim() }));
     }
   };
 
@@ -105,7 +130,7 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-100">Edit Player</h2>
-              <p className="text-sm text-slate-400">Update {player.name}'s information</p>
+              <p className="text-sm text-slate-400">Update {player.display_name}'s information</p>
             </div>
           </div>
           <button
@@ -124,21 +149,62 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               <p className="text-rose-200 text-sm">{errors.general}</p>
             </div>
           )}
-          {/* Player Name */}
+          {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Player Name *
+              First Name *
             </label>
             <Input
-              value={playerData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="Enter player name"
+              name="first_name"
+              value={playerData.first_name}
+              onChange={(e) => handleInputChange('first_name', e.target.value)}
+              onBlur={handleFirstNameBlur}
+              placeholder="Enter first name"
               disabled={loading}
-              className={errors.name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              className={errors.first_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
-            {errors.name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.name}</p>
+            {errors.first_name && (
+              <p className="mt-1 text-sm text-rose-400">{errors.first_name}</p>
             )}
+          </div>
+
+          {/* Last Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Last Name
+            </label>
+            <Input
+              name="last_name"
+              value={playerData.last_name}
+              onChange={(e) => handleInputChange('last_name', e.target.value)}
+              placeholder="Enter last name (optional)"
+              disabled={loading}
+              className={errors.last_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            />
+            {errors.last_name && (
+              <p className="mt-1 text-sm text-rose-400">{errors.last_name}</p>
+            )}
+          </div>
+
+          {/* Display Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Display Name *
+            </label>
+            <Input
+              name="display_name"
+              value={playerData.display_name}
+              onChange={(e) => handleInputChange('display_name', e.target.value)}
+              placeholder="Enter display name"
+              disabled={loading}
+              className={errors.display_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+            />
+            {errors.display_name && (
+              <p className="mt-1 text-sm text-rose-400">{errors.display_name}</p>
+            )}
+            <p className="mt-1 text-xs text-slate-400">
+              This is the name displayed in the app
+            </p>
           </div>
 
           {/* Jersey Number */}

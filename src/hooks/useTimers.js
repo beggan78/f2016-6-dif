@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logEvent, EVENT_TYPES, calculateMatchTime } from '../utils/gameEventLogger';
+import { formatPlayerName } from '../utils/formatUtils';
 import { createPersistenceManager } from '../utils/persistenceManager';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
@@ -354,7 +355,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         let goalieName = null;
         if (allPlayers) {
           const goaliePlayer = allPlayers.find(p => p.id === startingFormation.goalie);
-          goalieName = goaliePlayer ? goaliePlayer.name : null;
+          goalieName = goaliePlayer ? formatPlayerName(goaliePlayer) : null;
         }
         
         logEvent(EVENT_TYPES.GOALIE_ASSIGNMENT, {

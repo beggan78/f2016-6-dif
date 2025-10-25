@@ -112,7 +112,9 @@ export function MatchReportScreen({
   const getPlayerName = useCallback((playerId) => {
     const player = allPlayers.find(p => p.id === playerId);
     if (!player) return null;
-    return player.stats?.isCaptain ? `${player.name} (C)` : player.name;
+    const baseName = player.displayName || player.firstName;
+    if (!baseName) return null;
+    return player.stats?.isCaptain ? `${baseName} (C)` : baseName;
   }, [allPlayers]);
 
   // Handler for player filter changes

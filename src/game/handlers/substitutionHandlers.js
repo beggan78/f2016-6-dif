@@ -35,6 +35,13 @@ export const createSubstitutionHandlers = (
 
     return getModeDefinition(teamConfig);
   };
+
+  const getFormattedPlayerName = (player) => {
+    if (!player) {
+      return 'Unknown Player';
+    }
+    return formatPlayerName(player);
+  };
   const {
     setFormation,
     setAllPlayers,
@@ -316,12 +323,12 @@ export const createSubstitutionHandlers = (
                   logEvent(EVENT_TYPES.POSITION_CHANGE, {
                     type: 'immediate_substitute_reorder',
                     playerId: onlySubstituteId,
-                    playerName: selectedPlayer.name,
+                    playerName: getFormattedPlayerName(selectedPlayer),
                     swapPlayerId: firstPlayer.id,
-                    swapPlayerName: firstPlayer.name,
+                    swapPlayerName: getFormattedPlayerName(firstPlayer),
                     fromPosition: substitutePosition,
                     toPosition: firstSubstitutePosition,
-                    description: `${selectedPlayer.name} moved to next-in for immediate substitution`,
+                    description: `${getFormattedPlayerName(selectedPlayer)} moved to next-in for immediate substitution`,
                     beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                     afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                     teamConfig,
@@ -476,10 +483,10 @@ export const createSubstitutionHandlers = (
                 logEvent(EVENT_TYPES.POSITION_CHANGE, {
                   type: 'substitute_order_reorder',
                   playerId: playerId,
-                  playerName: targetPlayer.name,
+                  playerName: getFormattedPlayerName(targetPlayer),
                   fromPosition: currentPosition,
                   toPosition: toPosition,
-                  description: `${targetPlayer.name} moved to next-to-go-in position with cascading reorder`,
+                  description: `${getFormattedPlayerName(targetPlayer)} moved to next-to-go-in position with cascading reorder`,
                   beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                   afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                   teamConfig,
@@ -530,10 +537,10 @@ export const createSubstitutionHandlers = (
             logEvent(EVENT_TYPES.POSITION_CHANGE, {
               type: 'player_inactivated',
               playerId: substituteModal.playerId,
-              playerName: playerBeingInactivated.name,
+              playerName: getFormattedPlayerName(playerBeingInactivated),
               previousStatus: 'active_substitute',
               newStatus: 'inactive',
-              description: `${playerBeingInactivated.name} marked as inactive`,
+              description: `${getFormattedPlayerName(playerBeingInactivated)} marked as inactive`,
               teamConfig,
               matchTime: calculateMatchTime(currentTime),
               timestamp: currentTime,
@@ -563,10 +570,10 @@ export const createSubstitutionHandlers = (
                 logEvent(EVENT_TYPES.POSITION_CHANGE, {
                   type: 'player_inactivated_with_swap',
                   playerId: substituteModal.playerId,
-                  playerName: playerBeingInactivated.name,
+                  playerName: getFormattedPlayerName(playerBeingInactivated),
                   previousStatus: 'active_substitute',
                   newStatus: 'inactive',
-                  description: `${playerBeingInactivated.name} marked as inactive (with position swap)`,
+                  description: `${getFormattedPlayerName(playerBeingInactivated)} marked as inactive (with position swap)`,
                   beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                   afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                   teamConfig,
@@ -618,10 +625,10 @@ export const createSubstitutionHandlers = (
               logEvent(EVENT_TYPES.POSITION_CHANGE, {
                 type: 'player_activated',
                 playerId: substituteModal.playerId,
-                playerName: playerBeingActivated.name,
+                playerName: getFormattedPlayerName(playerBeingActivated),
                 previousStatus: 'inactive',
                 newStatus: 'active_substitute',
-                description: `${playerBeingActivated.name} reactivated`,
+                description: `${getFormattedPlayerName(playerBeingActivated)} reactivated`,
                 beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                 afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                 teamConfig,
@@ -829,15 +836,17 @@ export const createSubstitutionHandlers = (
             if (pair) {
               const defenderPlayer = findPlayerById(newGameState.allPlayers, pair.defender);
               const attackerPlayer = findPlayerById(newGameState.allPlayers, pair.attacker);
+              const defenderName = defenderPlayer ? getFormattedPlayerName(defenderPlayer) : 'Unknown';
+              const attackerName = attackerPlayer ? getFormattedPlayerName(attackerPlayer) : 'Unknown';
               
               logEvent(EVENT_TYPES.POSITION_CHANGE, {
                 timestamp: currentTime,
                 player1Id: pair.defender,
-                player1Name: defenderPlayer?.name || 'Unknown',
+                player1Name: defenderName,
                 player2Id: pair.attacker,
-                player2Name: attackerPlayer?.name || 'Unknown',
+                player2Name: attackerName,
                 pairKey: pairKey,
-                description: `${defenderPlayer?.name || 'Unknown'} and ${attackerPlayer?.name || 'Unknown'} swapped positions within ${pairKey}`,
+                description: `${defenderName} and ${attackerName} swapped positions within ${pairKey}`,
                 teamConfig: teamConfig
               });
             }
@@ -883,8 +892,8 @@ export const createSubstitutionHandlers = (
               logEvent(EVENT_TYPES.POSITION_CHANGE, {
                 sourcePlayerId: fieldPlayerModal.sourcePlayerId,
                 targetPlayerId: targetPlayerId,
-                sourcePlayerName: sourcePlayer.name,
-                targetPlayerName: targetPlayer.name,
+                sourcePlayerName: getFormattedPlayerName(sourcePlayer),
+                targetPlayerName: getFormattedPlayerName(targetPlayer),
                 sourcePosition: sourcePlayer.stats.currentPairKey,
                 targetPosition: targetPlayer.stats.currentPairKey,
                 beforeFormation: getFormationDescription(gameState.formation, teamConfig),
@@ -1040,12 +1049,12 @@ export const createSubstitutionHandlers = (
               logEvent(EVENT_TYPES.POSITION_CHANGE, {
                 type: 'immediate_substitute_reorder',
                 playerId: selectedSubstituteId,
-                playerName: selectedPlayer.name,
+                playerName: getFormattedPlayerName(selectedPlayer),
                 swapPlayerId: firstPlayer.id,
-                swapPlayerName: firstPlayer.name,
+                swapPlayerName: getFormattedPlayerName(firstPlayer),
                 fromPosition: substitutePosition,
                 toPosition: firstSubstitutePosition,
-                description: `${selectedPlayer.name} moved to next-in for immediate substitution`,
+                description: `${getFormattedPlayerName(selectedPlayer)} moved to next-in for immediate substitution`,
                 beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                 afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                 teamConfig,
@@ -1209,12 +1218,12 @@ export const createSubstitutionHandlers = (
             logEvent(EVENT_TYPES.POSITION_CHANGE, {
               type: 'substitute_position_swap',
               playerId: substituteModal.playerId,
-              playerName: player1.name,
+              playerName: getFormattedPlayerName(player1),
               swapPlayerId: player2.id,
-              swapPlayerName: player2.name,
+              swapPlayerName: getFormattedPlayerName(player2),
               fromPosition: currentPlayerPosition,
               toPosition: targetPosition,
-              description: `${player1.name} and ${player2.name} swapped next-in positions`,
+              description: `${getFormattedPlayerName(player1)} and ${getFormattedPlayerName(player2)} swapped next-in positions`,
               beforeFormation: getFormationDescription(gameState.formation, teamConfig),
               afterFormation: getFormationDescription(newGameState.formation, teamConfig),
               teamConfig,

@@ -173,6 +173,18 @@ const formatTimeAsMinutesSeconds = (minutes) => {
   }
 };
 
+const resolvePlayerDisplayName = (player) => {
+  if (!player) {
+    return 'Unnamed Player';
+  }
+
+  return player.displayName ||
+    player.display_name ||
+    player.firstName ||
+    player.first_name ||
+    'Unnamed Player';
+};
+
 
 export function MatchDetailsView({
   matchId,
@@ -191,7 +203,7 @@ export function MatchDetailsView({
     return (Array.isArray(teamPlayers) ? teamPlayers : []).map((player, index) => ({
       id: player.id || `player-${index}`,
       playerId: player.id,
-      name: player.name || 'Unnamed Player',
+      displayName: resolvePlayerDisplayName(player),
       goalsScored: 0,
       totalTimePlayed: 0,
       timeAsDefender: 0,
@@ -238,7 +250,7 @@ export function MatchDetailsView({
   const [editData, setEditData] = useState(() => (isCreateMode ? createModeDefaults : null));
   const [loading, setLoading] = useState(!isCreateMode);
   const [error, setError] = useState(null);
-  const [sortField, setSortField] = useState('name');
+  const [sortField, setSortField] = useState('displayName');
   const [sortDirection, setSortDirection] = useState('asc');
   const [saveError, setSaveError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -252,7 +264,12 @@ export function MatchDetailsView({
   }, [editData?.playerStats]);
 
   const availablePlayers = useMemo(() => {
-    return (teamPlayers || []).filter(player => !assignedPlayerIds.has(player.id));
+    return (teamPlayers || [])
+      .filter(player => !assignedPlayerIds.has(player.id))
+      .map(player => ({
+        ...player,
+        displayName: resolvePlayerDisplayName(player)
+      }));
   }, [teamPlayers, assignedPlayerIds]);
 
   // Initialise create mode defaults when roster data becomes available
@@ -755,7 +772,7 @@ export function MatchDetailsView({
     const newPlayerStats = {
       id: rosterPlayer.id,
       playerId: rosterPlayer.id,
-      name: rosterPlayer.name || 'Unnamed Player',
+      displayName: resolvePlayerDisplayName(rosterPlayer),
       goalsScored: 0,
       totalTimePlayed: 0,
       timeAsDefender: 0,
@@ -1246,7 +1263,7 @@ export function MatchDetailsView({
                 onChange={setPlayerToAdd}
                 options={availablePlayers.map(player => ({
                   value: player.id,
-                  label: player.name || 'Unnamed Player'
+                  label: resolvePlayerDisplayName(player)
                 }))}
                 placeholder={availablePlayers.length === 0 ? 'All players included' : 'Select player'}
                 disabled={availablePlayers.length === 0}
@@ -1267,7 +1284,7 @@ export function MatchDetailsView({
           <table className="min-w-full">
             <thead className="bg-slate-800">
               <tr>
-                <SortableHeader field="name" align="left">Player</SortableHeader>
+                <SortableHeader field="displayName" align="left">Player</SortableHeader>
                 <SortableHeader field="goalsScored">Goals</SortableHeader>
                 <SortableHeader field="totalTimePlayed">Total Time</SortableHeader>
                 <SortableHeader field="timeAsDefender">Defender</SortableHeader>
@@ -1295,7 +1312,7 @@ export function MatchDetailsView({
                   <td className="px-3 py-2 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-100 font-medium">{player.name}</span>
+                      <span className="text-slate-100 font-medium">{resolvePlayerDisplayName(player)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">

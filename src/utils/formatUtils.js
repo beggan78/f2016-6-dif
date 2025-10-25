@@ -116,8 +116,9 @@ export const getPlayerLabel = (player, currentPeriodNumber) => {
  */
 export const formatPlayerName = (player) => {
   const isCaptain = player.stats?.isCaptain;
-  const formattedName = isCaptain ? `${player.name} (C)` : player.name;
-  
+  const baseName = player.displayName || player.firstName || 'Unknown Player';
+  const formattedName = isCaptain ? `${baseName} (C)` : baseName;
+
   return formattedName;
 };
 

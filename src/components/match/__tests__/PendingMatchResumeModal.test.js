@@ -170,8 +170,8 @@ describe('PendingMatchResumeModal', () => {
           formation: '2-2'
         },
         squadSelection: [
-          { id: '1', name: 'Player 1' },
-          { id: '2', name: 'Player 2' }
+          { id: '1', displayName: 'Player 1', firstName: 'Player', lastName: '1' },
+          { id: '2', displayName: 'Player 2', firstName: 'Player', lastName: '2' }
         ]
       }
     };

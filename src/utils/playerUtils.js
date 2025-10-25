@@ -34,11 +34,22 @@ export const createEmptyPlayerStats = () => ({
 });
 
 // Helper to initialize player objects
-export const initializePlayers = (roster) => roster.map((name, index) => ({
-  id: `p${index + 1}`,
-  name,
-  stats: createEmptyPlayerStats()
-}));
+export const initializePlayers = (roster) => roster.map((rawName, index) => {
+  const fallbackName = `Player ${index + 1}`;
+  const trimmedName = typeof rawName === 'string' ? rawName.trim() : '';
+  const [firstName, ...rest] = trimmedName.split(/\s+/).filter(Boolean);
+  const displayName = trimmedName || fallbackName;
+  const resolvedFirstName = firstName || displayName;
+  const lastName = rest.length > 0 ? rest.join(' ') : null;
+
+  return {
+    id: `p${index + 1}`,
+    displayName,
+    firstName: resolvedFirstName,
+    lastName,
+    stats: createEmptyPlayerStats()
+  };
+});
 
 /**
  * Reset match-start participation markers for a player.
@@ -97,6 +108,28 @@ export const findPlayerById = (allPlayers, playerId) => {
     return undefined;
   }
   return allPlayers.find(p => p.id === playerId);
+};
+
+/**
+ * Resolves a player's display name with a consistent fallback
+ * @param {Object|null|undefined} player - Player object
+ * @param {string} fallback - Fallback name when display name is unavailable
+ * @returns {string} Player display name or fallback
+ */
+export const getPlayerDisplayName = (player, fallback = 'Unknown Player') => {
+  return player?.displayName || fallback;
+};
+
+/**
+ * Resolves a player's display name by ID using the provided roster
+ * @param {Array} allPlayers - Array of all players
+ * @param {string} playerId - Player ID to look up
+ * @param {string} fallback - Fallback name when player not found
+ * @returns {string} Player display name or fallback
+ */
+export const getPlayerDisplayNameById = (allPlayers, playerId, fallback = 'Unknown Player') => {
+  const player = findPlayerById(allPlayers, playerId);
+  return getPlayerDisplayName(player, fallback);
 };
 
 /**
@@ -168,12 +201,17 @@ export const createPlayerLookupFunction = (allPlayers, options = {}) => {
  */
 export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
   const player = findPlayerById(allPlayers, playerId);
-  if (!player || !player.name) {
+  if (!player) {
     return fallback;
   }
-  
+
+  const playerName = player.displayName || player.firstName;
+  if (!playerName) {
+    return fallback;
+  }
+
   const isCaptain = player.stats?.isCaptain;
-  return isCaptain ? `${player.name} (C)` : player.name;
+  return isCaptain ? `${playerName} (C)` : playerName;
 };
 
 /**

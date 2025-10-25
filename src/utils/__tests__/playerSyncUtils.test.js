@@ -54,14 +54,18 @@ describe('playerSyncUtils', () => {
   // Mock data for testing
   const mockTeamPlayer = {
     id: 'team-player-1',
-    name: 'John Doe',
+    first_name: 'John',
+    last_name: 'Doe',
+    display_name: 'John Doe',
     jersey_number: 10,
     on_roster: true
   };
 
   const mockExistingGamePlayer = {
     id: 'team-player-1',
-    name: 'John Smith', // Different name (will be updated)
+    displayName: 'John Smith', // Different display name (will be updated)
+    firstName: 'John',
+    lastName: 'Smith',
     jerseyNumber: 5,    // Different jersey (will be updated)
     stats: {
       currentPosition: 'leftDefender',
@@ -80,7 +84,9 @@ describe('playerSyncUtils', () => {
 
   const mockGamePlayerWithoutMatch = {
     id: 'game-only-player',
-    name: 'Local Player',
+    displayName: 'Local Player',
+    firstName: 'Local Player',
+    lastName: null,
     jerseyNumber: 99,
     stats: {
       timeOnFieldSeconds: 0,
@@ -94,7 +100,9 @@ describe('playerSyncUtils', () => {
 
       expect(result).toEqual({
         id: 'team-player-1',
-        name: 'John Doe',
+        displayName: 'John Doe',
+        firstName: 'John',
+        lastName: 'Doe',
         jerseyNumber: 10,
         stats: {
           currentPosition: null,
@@ -124,12 +132,12 @@ describe('playerSyncUtils', () => {
     it('should handle minimal player data', () => {
       const minimalPlayer = {
         id: 'minimal-1',
-        name: 'Minimal Player'
+        display_name: 'Minimal Player'
       };
 
       const result = convertTeamPlayerToGamePlayer(minimalPlayer);
       expect(result.id).toBe('minimal-1');
-      expect(result.name).toBe('Minimal Player');
+      expect(result.displayName).toBe('Minimal Player');
       expect(result.jerseyNumber).toBe(null);
       expect(result.stats).toBeDefined();
     });
@@ -154,9 +162,10 @@ describe('playerSyncUtils', () => {
 
       expect(result).toEqual({
         ...mockExistingGamePlayer,
-        name: 'John Doe',        // Updated from team
-        jerseyNumber: 10,        // Updated from team
-        // stats preserved entirely
+        displayName: 'John Doe',   // Updated from team data
+        firstName: 'John',
+        lastName: 'Doe',
+        jerseyNumber: 10,          // Updated from team
         stats: mockExistingGamePlayer.stats
       });
     });
@@ -181,11 +190,11 @@ describe('playerSyncUtils', () => {
     it('should update name even when similar', () => {
       const teamPlayerSimilarName = {
         ...mockTeamPlayer,
-        name: 'John DOE'  // Different capitalization
+        display_name: 'John DOE'  // Different capitalization
       };
 
       const result = mergePlayerData(teamPlayerSimilarName, mockExistingGamePlayer);
-      expect(result.name).toBe('John DOE');
+      expect(result.displayName).toBe('John DOE');
     });
 
     it('should handle null jersey number from team', () => {
@@ -204,7 +213,9 @@ describe('playerSyncUtils', () => {
       mockTeamPlayer,
       {
         id: 'team-player-2',
-        name: 'Jane Smith',
+        first_name: 'Jane',
+        last_name: 'Smith',
+        display_name: 'Jane Smith',
         jersey_number: 7,
         on_roster: true
       }
@@ -222,17 +233,17 @@ describe('playerSyncUtils', () => {
       
       // First player should be merged
       const mergedPlayer = result.find(p => p.id === 'team-player-1');
-      expect(mergedPlayer.name).toBe('John Doe');
+      expect(mergedPlayer.displayName).toBe('John Doe');
       expect(mergedPlayer.stats.timeOnFieldSeconds).toBe(450); // Stats preserved
       
       // Second player should be newly converted
       const newPlayer = result.find(p => p.id === 'team-player-2');
-      expect(newPlayer.name).toBe('Jane Smith');
+      expect(newPlayer.displayName).toBe('Jane Smith');
       expect(newPlayer.stats.timeOnFieldSeconds).toBe(0); // New player stats
       
       // Local player should be preserved
       const localPlayer = result.find(p => p.id === 'game-only-player');
-      expect(localPlayer.name).toBe('Local Player');
+      expect(localPlayer.displayName).toBe('Local Player');
     });
 
     it('should handle empty team players', () => {
@@ -264,9 +275,9 @@ describe('playerSyncUtils', () => {
 
     it('should handle players with missing IDs gracefully', () => {
       const playersWithMissingIds = [
-        { name: 'No ID Player' },
+        { display_name: 'No ID Player' },
         mockTeamPlayer,
-        { id: '', name: 'Empty ID Player' }
+        { id: '', display_name: 'Empty ID Player' }
       ];
 
       const result = syncTeamPlayersToGameState(playersWithMissingIds, []);
@@ -351,7 +362,7 @@ describe('playerSyncUtils', () => {
       expect(result.success).toBe(true);
       expect(result.players).toHaveLength(1);
       expect(result.message).toBe('Synced 1 roster players to game state');
-      expect(result.players[0].name).toBe('John Doe');
+      expect(result.players[0].displayName).toBe('John Doe');
       expect(result.players[0].stats.timeOnFieldSeconds).toBe(450);
     });
 
@@ -383,15 +394,15 @@ describe('playerSyncUtils', () => {
 
   describe('analyzePlayerSync', () => {
     const mockTeamPlayers = [
-      { id: 'player-1', name: 'Player 1' },
-      { id: 'player-2', name: 'Player 2' },
-      { id: 'player-3', name: 'Player 3' }
+      { id: 'player-1', displayName: 'Player 1', firstName: 'Player', lastName: '1' },
+      { id: 'player-2', displayName: 'Player 2', firstName: 'Player', lastName: '2' },
+      { id: 'player-3', displayName: 'Player 3', firstName: 'Player', lastName: '3' }
     ];
 
     const mockAllPlayers = [
-      { id: 'player-1', name: 'Player 1' },
-      { id: 'player-2', name: 'Player 2' },
-      { id: 'player-4', name: 'Player 4' } // Extra player not in team
+      { id: 'player-1', displayName: 'Player 1', firstName: 'Player', lastName: '1' },
+      { id: 'player-2', displayName: 'Player 2', firstName: 'Player', lastName: '2' },
+      { id: 'player-4', displayName: 'Player 4', firstName: 'Player', lastName: '4' } // Extra player not in team
     ];
 
     it('should analyze sync requirements correctly', () => {
@@ -407,8 +418,8 @@ describe('playerSyncUtils', () => {
 
     it('should detect no sync needed when players match', () => {
       const matchingPlayers = [
-        { id: 'player-1', name: 'Player 1' },
-        { id: 'player-2', name: 'Player 2' }
+        { id: 'player-1', displayName: 'Player 1', firstName: 'Player', lastName: '1' },
+        { id: 'player-2', displayName: 'Player 2', firstName: 'Player', lastName: '2' }
       ];
 
       const result = analyzePlayerSync(matchingPlayers, matchingPlayers);
@@ -435,9 +446,9 @@ describe('playerSyncUtils', () => {
 
     it('should ignore players without IDs', () => {
       const playersWithoutIds = [
-        { id: 'player-1', name: 'Player 1' },
-        { name: 'No ID Player' },
-        { id: '', name: 'Empty ID Player' }
+        { id: 'player-1', displayName: 'Player 1', firstName: 'Player', lastName: '1' },
+        { displayName: 'No ID Player', firstName: 'No', lastName: 'ID Player' },
+        { id: '', displayName: 'Empty ID Player', firstName: 'Empty', lastName: 'ID Player' }
       ];
 
       const result = analyzePlayerSync(playersWithoutIds, []);
@@ -454,8 +465,8 @@ describe('playerSyncUtils', () => {
         null,
         undefined,
         {},
-        { id: 'valid-1', name: 'Valid Player' },
-        { name: 'No ID' },
+        { id: 'valid-1', displayName: 'Valid Player', firstName: 'Valid', lastName: 'Player' },
+        { displayName: 'No ID', firstName: 'No', lastName: 'ID' },
         { id: '' }
       ];
 
@@ -467,8 +478,8 @@ describe('playerSyncUtils', () => {
     });
 
     it('should handle circular references gracefully', () => {
-      const circular1 = { id: 'circular-1', name: 'Circular 1' };
-      const circular2 = { id: 'circular-2', name: 'Circular 2' };
+      const circular1 = { id: 'circular-1', display_name: 'Circular 1' };
+      const circular2 = { id: 'circular-2', display_name: 'Circular 2' };
       circular1.ref = circular2;
       circular2.ref = circular1;
 
@@ -480,23 +491,23 @@ describe('playerSyncUtils', () => {
     it('should handle very long player names', () => {
       const longNamePlayer = {
         id: 'long-name-1',
-        name: 'A'.repeat(1000),
+        display_name: 'A'.repeat(1000),
         jersey_number: 1
       };
 
       const result = convertTeamPlayerToGamePlayer(longNamePlayer);
-      expect(result.name).toBe('A'.repeat(1000));
+      expect(result.displayName).toBe('A'.repeat(1000));
     });
 
     it('should handle special characters in player data', () => {
       const specialCharPlayer = {
         id: 'special-1',
-        name: 'José María-González O\'Reilly 中文 🏆',
+        display_name: 'José María-González O\'Reilly 中文 🏆',
         jersey_number: 10
       };
 
       const result = convertTeamPlayerToGamePlayer(specialCharPlayer);
-      expect(result.name).toBe('José María-González O\'Reilly 中文 🏆');
+      expect(result.displayName).toBe('José María-González O\'Reilly 中文 🏆');
     });
   });
 
@@ -505,13 +516,15 @@ describe('playerSyncUtils', () => {
       // Create large dataset
       const largeTeamRoster = Array.from({ length: 100 }, (_, i) => ({
         id: `team-player-${i + 1}`,
-        name: `Team Player ${i + 1}`,
+        display_name: `Team Player ${i + 1}`,
         jersey_number: i + 1
       }));
 
       const largeExistingPlayers = Array.from({ length: 50 }, (_, i) => ({
         id: `team-player-${i + 1}`,
-        name: `Existing Player ${i + 1}`,
+        displayName: `Existing Player ${i + 1}`,
+        firstName: `Existing`,
+        lastName: `Player ${i + 1}`,
         jerseyNumber: i + 100,
         stats: {
           timeOnFieldSeconds: i * 30,
@@ -531,12 +544,16 @@ describe('playerSyncUtils', () => {
     it('should handle sync analysis for large datasets efficiently', () => {
       const largeTeamRoster = Array.from({ length: 500 }, (_, i) => ({
         id: `player-${i}`,
-        name: `Player ${i}`
+        display_name: `Player ${i}`,
+        first_name: `Player${i}`,
+        last_name: `${i}`
       }));
 
       const largeGamePlayers = Array.from({ length: 300 }, (_, i) => ({
         id: `player-${i + 100}`, // Overlap with some team players
-        name: `Game Player ${i}`
+        displayName: `Game Player ${i}`,
+        firstName: `Game`,
+        lastName: `Player ${i}`
       }));
 
       const startTime = Date.now();
@@ -553,8 +570,8 @@ describe('playerSyncUtils', () => {
     it('should support complete roster management workflow', () => {
       // Initial team roster
       let teamRoster = [
-        { id: 'player-1', name: 'Alice', jersey_number: 10 },
-        { id: 'player-2', name: 'Bob', jersey_number: 7 }
+        { id: 'player-1', first_name: 'Alice', last_name: null, display_name: 'Alice', jersey_number: 10 },
+        { id: 'player-2', first_name: 'Bob', last_name: null, display_name: 'Bob', jersey_number: 7 }
       ];
 
       // Start with empty game state
@@ -571,7 +588,7 @@ describe('playerSyncUtils', () => {
       gameState[0].stats.currentStatus = 'on_field';
 
       // Add new player to team roster
-      teamRoster.push({ id: 'player-3', name: 'Charlie', jersey_number: 9 });
+      teamRoster.push({ id: 'player-3', first_name: 'Charlie', last_name: null, display_name: 'Charlie', jersey_number: 9 });
 
       // Second sync - preserve existing stats, add new player
       syncResult = syncTeamRosterToGameState(teamRoster, gameState);

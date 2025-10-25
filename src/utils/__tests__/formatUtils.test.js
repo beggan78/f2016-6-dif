@@ -114,7 +114,9 @@ describe('formatTimeDifference', () => {
 
 describe('getPlayerLabel', () => {
   const mockPlayer = {
-    name: 'John Doe',
+    displayName: 'John Doe',
+    firstName: 'John',
+    lastName: 'Doe',
     stats: {
       timeOnFieldSeconds: 450, // 7:30
       timeAsAttackerSeconds: 300, // 5:00
@@ -139,7 +141,9 @@ describe('getPlayerLabel', () => {
 
   it('should handle negative time difference', () => {
     const playerWithNegativeDiff = {
-      name: 'Jane Smith',
+      displayName: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
       stats: {
         timeOnFieldSeconds: 600, // 10:00
         timeAsAttackerSeconds: 120, // 2:00
@@ -153,7 +157,9 @@ describe('getPlayerLabel', () => {
 
   it('should handle zero time difference', () => {
     const playerWithZeroDiff = {
-      name: 'Equal Player',
+      displayName: 'Equal Player',
+      firstName: 'Equal',
+      lastName: 'Player',
       stats: {
         timeOnFieldSeconds: 300,
         timeAsAttackerSeconds: 150,
@@ -167,7 +173,9 @@ describe('getPlayerLabel', () => {
 
   it('should handle zero field time', () => {
     const playerWithZeroTime = {
-      name: 'Bench Player',
+      displayName: 'Bench Player',
+      firstName: 'Bench',
+      lastName: 'Player',
       stats: {
         timeOnFieldSeconds: 0,
         timeAsAttackerSeconds: 0,
@@ -216,7 +224,9 @@ describe('formatPoints', () => {
 describe('generateStatsText', () => {
   const mockSquadPlayers = [
     {
-      name: 'Player One',
+      displayName: 'Player One',
+      firstName: 'Player',
+      lastName: 'One',
       stats: {
         startedMatchAs: PLAYER_ROLES.GOALIE,
         timeOnFieldSeconds: 300,
@@ -226,7 +236,9 @@ describe('generateStatsText', () => {
       }
     },
     {
-      name: 'Player Two',
+      displayName: 'Player Two',
+      firstName: 'Player',
+      lastName: 'Two',
       stats: {
         startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         timeOnFieldSeconds: 600,
@@ -236,7 +248,9 @@ describe('generateStatsText', () => {
       }
     },
     {
-      name: 'Player Three',
+      displayName: 'Player Three',
+      firstName: 'Player',
+      lastName: 'Three',
       stats: {
         startedMatchAs: PLAYER_ROLES.SUBSTITUTE,
         timeOnFieldSeconds: 450,
@@ -292,7 +306,9 @@ describe('generateStatsText', () => {
   it('should handle players with unknown start position', () => {
     const playersWithUnknownStart = [
       {
-        name: 'Unknown Player',
+        displayName: 'Unknown Player',
+        firstName: 'Unknown',
+        lastName: 'Player',
         stats: {
           startedMatchAs: null, // Unknown start position
           timeOnFieldSeconds: 300,
@@ -338,7 +354,9 @@ describe('generateStatsText', () => {
 
   it('should handle very long player names', () => {
     const playerWithLongName = {
-      name: 'Very Long Player Name That Might Cause Issues',
+      displayName: 'Very Long Player Name That Might Cause Issues',
+      firstName: 'Very',
+      lastName: 'Long Player Name That Might Cause Issues',
       stats: {
         startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         timeOnFieldSeconds: 300,
@@ -378,7 +396,9 @@ describe('formatUtils integration', () => {
 
   it('should maintain formatting consistency in player labels', () => {
     const player = {
-      name: 'Test Player',
+      displayName: 'Test Player',
+      firstName: 'Test',
+      lastName: 'Player',
       stats: {
         timeOnFieldSeconds: 0,
         timeAsAttackerSeconds: 0,

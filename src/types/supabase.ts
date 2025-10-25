@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
-          extensions?: Json
           operationName?: string
-          query?: string
+          extensions?: Json
           variables?: Json
+          query?: string
         }
         Returns: Json
       }
@@ -37,7 +37,9 @@ export type Database = {
       club: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
+          last_updated_by: string | null
           long_name: string | null
           name: string
           short_name: string | null
@@ -45,7 +47,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
+          last_updated_by?: string | null
           long_name?: string | null
           name: string
           short_name?: string | null
@@ -53,7 +57,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
+          last_updated_by?: string | null
           long_name?: string | null
           name?: string
           short_name?: string | null
@@ -61,10 +67,92 @@ export type Database = {
         }
         Relationships: []
       }
+      club_user: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          joined_at: string | null
+          last_updated_by: string | null
+          review_notes: string | null
+          role: Database["public"]["Enums"]["club_user_role"]
+          status: Database["public"]["Enums"]["club_user_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          joined_at?: string | null
+          last_updated_by?: string | null
+          review_notes?: string | null
+          role?: Database["public"]["Enums"]["club_user_role"]
+          status?: Database["public"]["Enums"]["club_user_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          joined_at?: string | null
+          last_updated_by?: string | null
+          review_notes?: string | null
+          role?: Database["public"]["Enums"]["club_user_role"]
+          status?: Database["public"]["Enums"]["club_user_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_user_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "club"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_user_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formation_vote: {
+        Row: {
+          created_at: string
+          format: string
+          formation: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          format: string
+          formation: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          format?: string
+          formation?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       match: {
         Row: {
           captain: string | null
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           fair_play_award: string | null
           finished_at: string | null
@@ -73,7 +161,9 @@ export type Database = {
           goals_conceded: number | null
           goals_scored: number | null
           id: string
-          match_duration_seconds: number
+          initial_config: Json | null
+          last_updated_by: string | null
+          match_duration_seconds: number | null
           opponent: string | null
           outcome: Database["public"]["Enums"]["match_outcome"] | null
           period_duration_minutes: number
@@ -88,29 +178,33 @@ export type Database = {
         Insert: {
           captain?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           fair_play_award?: string | null
           finished_at?: string | null
-          format?: Database["public"]["Enums"]["match_format"]
-          formation?: string
+          format: Database["public"]["Enums"]["match_format"]
+          formation: string
           goals_conceded?: number | null
           goals_scored?: number | null
           id?: string
-          match_duration_seconds?: number
+          initial_config?: Json | null
+          last_updated_by?: string | null
+          match_duration_seconds?: number | null
           opponent?: string | null
           outcome?: Database["public"]["Enums"]["match_outcome"] | null
-          period_duration_minutes?: number
-          periods?: number
+          period_duration_minutes: number
+          periods: number
           started_at?: string | null
           state?: Database["public"]["Enums"]["match_state"]
           team_id: string
-          type?: Database["public"]["Enums"]["match_type"]
+          type: Database["public"]["Enums"]["match_type"]
           updated_at?: string
           venue_type?: Database["public"]["Enums"]["match_venue_type"]
         }
         Update: {
           captain?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           fair_play_award?: string | null
           finished_at?: string | null
@@ -119,7 +213,9 @@ export type Database = {
           goals_conceded?: number | null
           goals_scored?: number | null
           id?: string
-          match_duration_seconds?: number
+          initial_config?: Json | null
+          last_updated_by?: string | null
+          match_duration_seconds?: number | null
           opponent?: string | null
           outcome?: Database["public"]["Enums"]["match_outcome"] | null
           period_duration_minutes?: number
@@ -209,27 +305,39 @@ export type Database = {
       player: {
         Row: {
           created_at: string
+          created_by: string | null
+          display_name: string
+          first_name: string
           id: string
-          jersey_number: string | null
-          name: string
+          jersey_number: number | null
+          last_name: string | null
+          last_updated_by: string | null
           on_roster: boolean
           team_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          display_name: string
+          first_name: string
           id?: string
-          jersey_number?: string | null
-          name: string
+          jersey_number?: number | null
+          last_name?: string | null
+          last_updated_by?: string | null
           on_roster?: boolean
           team_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          display_name?: string
+          first_name?: string
           id?: string
-          jersey_number?: string | null
-          name?: string
+          jersey_number?: number | null
+          last_name?: string | null
+          last_updated_by?: string | null
           on_roster?: boolean
           team_id?: string
           updated_at?: string
@@ -248,19 +356,18 @@ export type Database = {
         Row: {
           attacker_time_seconds: number | null
           created_at: string | null
+          created_by: string | null
           defender_time_seconds: number | null
           goalie_time_seconds: number | null
           goals_scored: number | null
           got_fair_play_award: boolean | null
           id: string
+          last_updated_by: string | null
           match_id: string
           midfielder_time_seconds: number | null
           player_id: string
           started_as: Database["public"]["Enums"]["player_role"]
           substitute_time_seconds: number | null
-          substitutions_in: number | null
-          substitutions_out: number | null
-          team_mode: string
           total_field_time_seconds: number | null
           updated_at: string | null
           was_captain: boolean | null
@@ -268,19 +375,18 @@ export type Database = {
         Insert: {
           attacker_time_seconds?: number | null
           created_at?: string | null
+          created_by?: string | null
           defender_time_seconds?: number | null
           goalie_time_seconds?: number | null
           goals_scored?: number | null
           got_fair_play_award?: boolean | null
           id?: string
+          last_updated_by?: string | null
           match_id: string
           midfielder_time_seconds?: number | null
           player_id: string
           started_as: Database["public"]["Enums"]["player_role"]
           substitute_time_seconds?: number | null
-          substitutions_in?: number | null
-          substitutions_out?: number | null
-          team_mode: string
           total_field_time_seconds?: number | null
           updated_at?: string | null
           was_captain?: boolean | null
@@ -288,19 +394,18 @@ export type Database = {
         Update: {
           attacker_time_seconds?: number | null
           created_at?: string | null
+          created_by?: string | null
           defender_time_seconds?: number | null
           goalie_time_seconds?: number | null
           goals_scored?: number | null
           got_fair_play_award?: boolean | null
           id?: string
+          last_updated_by?: string | null
           match_id?: string
           midfielder_time_seconds?: number | null
           player_id?: string
           started_as?: Database["public"]["Enums"]["player_role"]
           substitute_time_seconds?: number | null
-          substitutions_in?: number | null
-          substitutions_out?: number | null
-          team_mode?: string
           total_field_time_seconds?: number | null
           updated_at?: string | null
           was_captain?: boolean | null
@@ -326,9 +431,11 @@ export type Database = {
         Row: {
           captain_count: number | null
           created_at: string | null
+          created_by: string | null
           fair_play_awards: number | null
           goals_scored: number | null
           id: string
+          last_updated_by: string | null
           matches_played: number | null
           player_id: string
           season_year: number
@@ -346,9 +453,11 @@ export type Database = {
         Insert: {
           captain_count?: number | null
           created_at?: string | null
+          created_by?: string | null
           fair_play_awards?: number | null
           goals_scored?: number | null
           id?: string
+          last_updated_by?: string | null
           matches_played?: number | null
           player_id: string
           season_year: number
@@ -366,9 +475,11 @@ export type Database = {
         Update: {
           captain_count?: number | null
           created_at?: string | null
+          created_by?: string | null
           fair_play_awards?: number | null
           goals_scored?: number | null
           id?: string
+          last_updated_by?: string | null
           matches_played?: number | null
           player_id?: string
           season_year?: number
@@ -396,28 +507,34 @@ export type Database = {
       settings: {
         Row: {
           created_at: string
+          created_by: string | null
           enabled: boolean
           id: string
           is_global: boolean
           key: string
+          last_updated_by: string | null
           team_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           enabled?: boolean
           id?: string
           is_global?: boolean
           key: string
+          last_updated_by?: string | null
           team_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           enabled?: boolean
           id?: string
           is_global?: boolean
           key?: string
+          last_updated_by?: string | null
           team_id?: string | null
           updated_at?: string
         }
@@ -434,28 +551,34 @@ export type Database = {
       team: {
         Row: {
           active: boolean
-          club_id: string | null
-          configuration: Json
+          club_id: string
+          configuration: Json | null
           created_at: string
+          created_by: string | null
           id: string
+          last_updated_by: string | null
           name: string
           updated_at: string
         }
         Insert: {
           active?: boolean
-          club_id?: string | null
-          configuration?: Json
+          club_id: string
+          configuration?: Json | null
           created_at?: string
+          created_by?: string | null
           id?: string
+          last_updated_by?: string | null
           name: string
           updated_at?: string
         }
         Update: {
           active?: boolean
-          club_id?: string | null
-          configuration?: Json
+          club_id?: string
+          configuration?: Json | null
           created_at?: string
+          created_by?: string | null
           id?: string
+          last_updated_by?: string | null
           name?: string
           updated_at?: string
         }
@@ -469,10 +592,135 @@ export type Database = {
           },
         ]
       }
+      team_access_request: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          last_updated_by: string | null
+          message: string | null
+          requested_role: Database["public"]["Enums"]["user_role"]
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["request_status"]
+          team_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_updated_by?: string | null
+          message?: string | null
+          requested_role?: Database["public"]["Enums"]["user_role"]
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          team_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_updated_by?: string | null
+          message?: string | null
+          requested_role?: Database["public"]["Enums"]["user_role"]
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          team_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_access_request_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_access_request_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_access_request_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_invitation: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by_user_id: string
+          invited_user_id: string | null
+          message: string | null
+          role: string
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id: string
+          invited_user_id?: string | null
+          message?: string | null
+          role: string
+          status?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id?: string
+          invited_user_id?: string | null
+          message?: string | null
+          role?: string
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitation_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_user: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
+          last_updated_by: string | null
           role: Database["public"]["Enums"]["user_role"]
           team_id: string
           updated_at: string
@@ -480,7 +728,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
+          last_updated_by?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           team_id: string
           updated_at?: string
@@ -488,7 +738,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
+          last_updated_by?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           team_id?: string
           updated_at?: string
@@ -537,9 +789,119 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_team_invitation: {
+        Args: { p_user_email: string; p_invitation_id: string }
+        Returns: Json
+      }
+      check_invitation_expiry_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          accepted: number
+          expired_marked: number
+          cancelled: number
+          total_invitations: number
+          pending_valid: number
+          pending_expired: number
+        }[]
+      }
+      create_club_with_admin: {
+        Args: {
+          club_long_name?: string
+          club_name: string
+          club_short_name?: string
+        }
+        Returns: Json
+      }
+      create_team_with_admin: {
+        Args: { team_config?: Json; p_club_id: string; team_name: string }
+        Returns: Json
+      }
+      decline_team_invitation: {
+        Args: { p_user_email: string; p_invitation_id: string }
+        Returns: Json
+      }
+      delete_team_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
+      expire_old_team_invitations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cleaned_count: number
+          expired_count: number
+        }[]
+      }
+      get_user_email_for_team_request: {
+        Args: { request_user_id: string; team_id: string }
+        Returns: string
+      }
+      get_user_team_ids: {
+        Args: { user_id_param?: string }
+        Returns: string[]
+      }
+      invite_user_to_team: {
+        Args: {
+          p_role: string
+          p_team_id: string
+          p_redirect_url?: string
+          p_message?: string
+          p_email: string
+        }
+        Returns: Json
+      }
+      is_club_admin: {
+        Args: { user_id_param?: string; club_id_param: string }
+        Returns: boolean
+      }
+      is_team_admin: {
+        Args: { team_id_param: string; user_id_param?: string }
+        Returns: boolean
+      }
+      is_team_manager: {
+        Args: { user_id_param?: string; team_id_param: string }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { user_id_param?: string; team_id_param: string }
+        Returns: boolean
+      }
+      restore_soft_deleted_match: {
+        Args: { p_match_id: string }
+        Returns: {
+          captain: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          fair_play_award: string | null
+          finished_at: string | null
+          format: Database["public"]["Enums"]["match_format"]
+          formation: string
+          goals_conceded: number | null
+          goals_scored: number | null
+          id: string
+          initial_config: Json | null
+          last_updated_by: string | null
+          match_duration_seconds: number | null
+          opponent: string | null
+          outcome: Database["public"]["Enums"]["match_outcome"] | null
+          period_duration_minutes: number
+          periods: number
+          started_at: string | null
+          state: Database["public"]["Enums"]["match_state"]
+          team_id: string
+          type: Database["public"]["Enums"]["match_type"]
+          updated_at: string
+          venue_type: Database["public"]["Enums"]["match_venue_type"]
+        }
+      }
+      submit_formation_vote: {
+        Args: { p_formation: string; p_format: string }
+        Returns: Json
+      }
     }
     Enums: {
+      club_user_role: "admin" | "coach" | "member"
+      club_user_status: "active" | "inactive" | "pending"
       match_event_type:
         | "goal_scored"
         | "goal_conceded"
@@ -566,6 +928,8 @@ export type Database = {
         | "midfielder"
         | "attacker"
         | "substitute"
+        | "unknown"
+      request_status: "pending" | "approved" | "rejected" | "cancelled"
       user_role: "parent" | "player" | "coach" | "admin"
     }
     CompositeTypes: {
@@ -697,6 +1061,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      club_user_role: ["admin", "coach", "member"],
+      club_user_status: ["active", "inactive", "pending"],
       match_event_type: [
         "goal_scored",
         "goal_conceded",
@@ -717,14 +1083,18 @@ export const Constants = {
       match_outcome: ["win", "loss", "draw"],
       match_state: ["running", "finished", "pending", "confirmed"],
       match_type: ["friendly", "internal", "league", "tournament", "cup"],
+      match_venue_type: ["home", "away", "neutral"],
       player_role: [
         "goalie",
         "defender",
         "midfielder",
         "attacker",
         "substitute",
+        "unknown",
       ],
+      request_status: ["pending", "approved", "rejected", "cancelled"],
       user_role: ["parent", "player", "coach", "admin"],
     },
   },
 } as const
+

@@ -55,7 +55,7 @@ npm run test:performance         # Run performance tests
 ```bash
 npm run db:start    # Start local Supabase stack
 npm run db:stop     # Stop local Supabase
-npm run db:reset    # Apply all migrations and seed data
+npm run db:migrate      # Apply all migrations
 npm run db:types    # Generate TypeScript types from schema
 npm run db:diff     # Create migration from schema changes
 ```
@@ -87,6 +87,7 @@ Before making changes, review:
 - **`CLAUDE.md`** - Comprehensive project memory and guidelines
 - **`README.md`** - Feature overview and user documentation
 - **`DATABASE.md`** - Schema management and Supabase operations
+- **`DATA_MODEL.md`** - Current database schema reference and entity details
 - **`src/game/README.md`** - Game logic architecture
 - **`src/services/README.md`** - Database patterns and match lifecycle
 - **`.claude/testing-guidelines.md`** - Testing patterns and best practices

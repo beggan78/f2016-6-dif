@@ -265,12 +265,12 @@ export const TeamProvider = ({ children }) => {
     if (!teamId) return [];
 
     try {
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('player')
-        .select('id, name, jersey_number, on_roster')
+        .select('id, first_name, last_name, display_name, jersey_number, on_roster')
         .eq('team_id', teamId)
         .eq('on_roster', true)
-        .order('name');
+        .order('display_name');
 
       if (error) {
         console.error('Error fetching team players:', error);
@@ -299,7 +299,9 @@ export const TeamProvider = ({ children }) => {
         .from('player')
         .insert([{
           team_id: currentTeam.id,
-          name: playerData.name,
+          first_name: playerData.firstName,
+          last_name: playerData.lastName || null,
+          display_name: playerData.displayName,
           jersey_number: playerData.jerseyNumber || null
         }])
         .select()
@@ -1512,7 +1514,9 @@ export const TeamProvider = ({ children }) => {
         .from('player')
         .select(`
           id,
-          name,
+          first_name,
+          last_name,
+          display_name,
           jersey_number,
           on_roster,
           created_at,
@@ -1535,7 +1539,7 @@ export const TeamProvider = ({ children }) => {
 
   // Add player to team roster
   const addRosterPlayer = useCallback(async (teamId, playerData) => {
-    if (!teamId || !playerData?.name) return null;
+    if (!teamId || !playerData?.first_name) return null;
 
     try {
       // Check if jersey number is already taken
@@ -1556,7 +1560,9 @@ export const TeamProvider = ({ children }) => {
         .from('player')
         .insert({
           team_id: teamId,
-          name: playerData.name.trim(),
+          first_name: playerData.first_name.trim(),
+          last_name: playerData.last_name ? playerData.last_name.trim() : null,
+          display_name: playerData.display_name.trim(),
           jersey_number: playerData.jersey_number || null,
           on_roster: playerData.on_roster ?? true,
           created_by: user.id,
@@ -1574,7 +1580,7 @@ export const TeamProvider = ({ children }) => {
       if (currentTeam?.id === teamId) {
         const updatedPlayers = await getTeamPlayers(teamId);
         setTeamPlayers(updatedPlayers);
-        
+
         // Sync new player to game state localStorage for consistency
         try {
           const syncResult = syncTeamRosterToGameState(updatedPlayers, []);
@@ -1629,8 +1635,14 @@ export const TeamProvider = ({ children }) => {
       };
 
       // Clean the data
-      if (updateData.name) {
-        updateData.name = updateData.name.trim();
+      if (updateData.first_name) {
+        updateData.first_name = updateData.first_name.trim();
+      }
+      if (updateData.last_name) {
+        updateData.last_name = updateData.last_name.trim();
+      }
+      if (updateData.display_name) {
+        updateData.display_name = updateData.display_name.trim();
       }
 
       const { data, error } = await supabase
@@ -1645,12 +1657,28 @@ export const TeamProvider = ({ children }) => {
         throw new Error('Failed to update player');
       }
 
+      const teamId = data?.team_id;
+
+      if (teamId && currentTeam?.id === teamId) {
+        const updatedPlayers = await getTeamPlayers(teamId);
+        setTeamPlayers(updatedPlayers);
+
+        try {
+          const syncResult = syncTeamRosterToGameState(updatedPlayers, []);
+          if (!syncResult.success) {
+            console.warn('⚠️ Failed to sync updated roster player to game state:', syncResult.error);
+          }
+        } catch (syncError) {
+          console.warn('⚠️ Roster player sync error (non-blocking):', syncError);
+        }
+      }
+
       return data;
     } catch (err) {
       console.error('Exception in updateRosterPlayer:', err);
       throw err;
     }
-  }, [user]);
+  }, [user, currentTeam, getTeamPlayers]);
 
   // Remove player from roster
   const removeRosterPlayer = useCallback(async (playerId) => {

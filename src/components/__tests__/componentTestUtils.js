@@ -116,9 +116,13 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
       }
     }
     
+    const displayName = `Player ${i}`;
+
     players.push({
       id: `${i}`,
-      name: `Player ${i}`,
+      displayName,
+      firstName: displayName,
+      lastName: null,
       stats: {
         isInactive: false,
         currentStatus: status,

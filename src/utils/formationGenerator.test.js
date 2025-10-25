@@ -443,31 +443,43 @@ describe('Formation Generator - Pair Mode', () => {
 
 describe('Formation Generator - Individual Mode', () => {
   // Mock player data for individual modes
-  const createIndividualPlayer = (id, name, timeOnField = 0, isInactive = false) => ({
-    id,
-    name,
-    stats: {
-      timeOnFieldSeconds: timeOnField,
-      timeAsDefenderSeconds: timeOnField / 2,
-      timeAsAttackerSeconds: timeOnField / 2,
-      timeAsGoalieSeconds: 0,
-      isInactive
-    }
-  });
+  const createIndividualPlayer = (id, name, timeOnField = 0, isInactive = false) => {
+    const [firstName, ...lastParts] = name.split(' ');
+    const lastName = lastParts.length > 0 ? lastParts.join(' ') : null;
+    return {
+      id,
+      displayName: name,
+      firstName,
+      lastName,
+      stats: {
+        timeOnFieldSeconds: timeOnField,
+        timeAsDefenderSeconds: timeOnField / 2,
+        timeAsAttackerSeconds: timeOnField / 2,
+        timeAsGoalieSeconds: 0,
+        isInactive
+      }
+    };
+  };
 
   // Mock player data for 1-2-1 formation with midfielder time
-  const create121Player = (id, name, timeOnField = 0, defenderTime = 0, midfielderTime = 0, attackerTime = 0, isInactive = false) => ({
-    id,
-    name,
-    stats: {
-      timeOnFieldSeconds: timeOnField,
-      timeAsDefenderSeconds: defenderTime,
-      timeAsMidfielderSeconds: midfielderTime,
-      timeAsAttackerSeconds: attackerTime,
-      timeAsGoalieSeconds: 0,
-      isInactive
-    }
-  });
+  const create121Player = (id, name, timeOnField = 0, defenderTime = 0, midfielderTime = 0, attackerTime = 0, isInactive = false) => {
+    const [firstName, ...lastParts] = name.split(' ');
+    const lastName = lastParts.length > 0 ? lastParts.join(' ') : null;
+    return {
+      id,
+      displayName: name,
+      firstName,
+      lastName,
+      stats: {
+        timeOnFieldSeconds: timeOnField,
+        timeAsDefenderSeconds: defenderTime,
+        timeAsMidfielderSeconds: midfielderTime,
+        timeAsAttackerSeconds: attackerTime,
+        timeAsGoalieSeconds: 0,
+        isInactive
+      }
+    };
+  };
 
   describe('Swap-every-rotation pair persistence', () => {
     const basePreviousFormation = {
@@ -487,17 +499,17 @@ describe('Formation Generator - Individual Mode', () => {
 
     const createSwapSquad = () => {
       const playerBlueprint = [
-        { id: 'p1', name: 'Player 1', time: 420, preferredSide: 'left' },
-        { id: 'p3', name: 'Player 3', time: 400, preferredSide: 'left' },
-        { id: 'p2', name: 'Player 2', time: 410, preferredSide: 'right' },
-        { id: 'p4', name: 'Player 4', time: 390, preferredSide: 'right' },
-        { id: 'p5', name: 'Player 5', time: 200, preferredSide: 'left' },
-        { id: 'p6', name: 'Player 6', time: 190, preferredSide: 'right' },
-        { id: 'g1', name: 'Goalie 1', time: 0, preferredSide: null }
+        { id: 'p1', label: 'Player 1', time: 420, preferredSide: 'left' },
+        { id: 'p3', label: 'Player 3', time: 400, preferredSide: 'left' },
+        { id: 'p2', label: 'Player 2', time: 410, preferredSide: 'right' },
+        { id: 'p4', label: 'Player 4', time: 390, preferredSide: 'right' },
+        { id: 'p5', label: 'Player 5', time: 200, preferredSide: 'left' },
+        { id: 'p6', label: 'Player 6', time: 190, preferredSide: 'right' },
+        { id: 'g1', label: 'Goalie 1', time: 0, preferredSide: null }
       ];
 
-      return playerBlueprint.map(({ id, name, time, preferredSide }) => {
-        const base = createIndividualPlayer(id, name, time);
+      return playerBlueprint.map(({ id, label, time, preferredSide }) => {
+        const base = createIndividualPlayer(id, label, time);
         return {
           ...base,
           stats: {
