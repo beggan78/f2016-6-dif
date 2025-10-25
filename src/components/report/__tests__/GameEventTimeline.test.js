@@ -650,9 +650,9 @@ describe('GameEventTimeline', () => {
   it('displays player filter dropdown when availablePlayers provided', () => {
     const mockOnPlayerFilterChange = jest.fn();
     const availablePlayers = [
-      { id: 'player1', name: 'Alice' },
-      { id: 'player2', name: 'Bob' },
-      { id: 'player3', name: 'Charlie' }
+      { id: 'player1', displayName: 'Alice', firstName: 'Alice' },
+      { id: 'player2', displayName: 'Bob', firstName: 'Bob' },
+      { id: 'player3', displayName: 'Charlie', firstName: 'Charlie' }
     ];
 
     render(
@@ -687,8 +687,8 @@ describe('GameEventTimeline', () => {
   it('calls onPlayerFilterChange when player selection changes', () => {
     const mockOnPlayerFilterChange = jest.fn();
     const availablePlayers = [
-      { id: 'player1', name: 'Alice' },
-      { id: 'player2', name: 'Bob' }
+      { id: 'player1', displayName: 'Alice', firstName: 'Alice' },
+      { id: 'player2', displayName: 'Bob', firstName: 'Bob' }
     ];
 
     render(
@@ -756,8 +756,8 @@ describe('GameEventTimeline', () => {
     ];
 
     const availablePlayers = [
-      { id: 'player1', name: 'Alice' },
-      { id: 'player2', name: 'Bob' }
+      { id: 'player1', displayName: 'Alice', firstName: 'Alice' },
+      { id: 'player2', displayName: 'Bob', firstName: 'Bob' }
     ];
 
     render(
@@ -831,8 +831,8 @@ describe('GameEventTimeline', () => {
     ];
 
     const availablePlayers = [
-      { id: 'player1', name: 'Alice' },
-      { id: 'player2', name: 'Bob' }
+      { id: 'player1', displayName: 'Alice', firstName: 'Alice' },
+      { id: 'player2', displayName: 'Bob', firstName: 'Bob' }
     ];
 
     render(
@@ -940,8 +940,8 @@ describe('GameEventTimeline', () => {
       });
 
       const availablePlayers = [
-        { id: 'player1', name: 'Player 1' },
-        { id: 'player2', name: 'Player 2' }
+        { id: 'player1', displayName: 'Player 1', firstName: 'Player', lastName: 'One' },
+        { id: 'player2', displayName: 'Player 2', firstName: 'Player', lastName: 'Two' }
       ];
 
       render(
@@ -949,7 +949,7 @@ describe('GameEventTimeline', () => {
           events={complexEventList}
           selectedPlayerId="player1"
           availablePlayers={availablePlayers}
-          getPlayerName={(id) => availablePlayers.find(p => p.id === id)?.name || null}
+          getPlayerName={(id) => availablePlayers.find(p => p.id === id)?.displayName || null}
         />
       );
 
@@ -1130,7 +1130,7 @@ describe('GameEventTimeline', () => {
           events={goalieEvents}
           getPlayerName={mockGetPlayerName}
           selectedPlayerId="player1"
-          availablePlayers={[{ id: 'player1', name: 'Alice' }]}
+          availablePlayers={[{ id: 'player1', displayName: 'Alice', firstName: 'Alice' }]}
         />
       );
 
@@ -1177,7 +1177,7 @@ describe('GameEventTimeline', () => {
           events={positionEvents}
           getPlayerName={mockGetPlayerName}
           selectedPlayerId="player1"
-          availablePlayers={[{ id: 'player1', name: 'Alice' }]}
+          availablePlayers={[{ id: 'player1', displayName: 'Alice', firstName: 'Alice' }]}
         />
       );
 
@@ -1395,7 +1395,7 @@ describe('GameEventTimeline', () => {
           events={sampleEvents}
           getPlayerName={mockGetPlayerName}
           goalScorers={mockGoalScorers}
-          availablePlayers={[{ id: 'player1', name: 'Alice' }]}
+          availablePlayers={[{ id: 'player1', displayName: 'Alice', firstName: 'Alice' }]}
           onPlayerFilterChange={jest.fn()}
         />
       );
@@ -1498,9 +1498,9 @@ describe('GameEventTimeline', () => {
     it('should handle rapid filter changes without errors', () => {
       const mockOnPlayerFilterChange = jest.fn();
       const availablePlayers = [
-        { id: 'player1', name: 'Alice' },
-        { id: 'player2', name: 'Bob' },
-        { id: 'player3', name: 'Charlie' }
+        { id: 'player1', displayName: 'Alice', firstName: 'Alice' },
+        { id: 'player2', displayName: 'Bob', firstName: 'Bob' },
+        { id: 'player3', displayName: 'Charlie', firstName: 'Charlie' }
       ];
 
       const { rerender } = render(

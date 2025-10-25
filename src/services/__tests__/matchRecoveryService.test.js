@@ -262,8 +262,8 @@ describe('matchRecoveryService', () => {
     it('returns recovery data from localStorage', () => {
       const mockGameState = {
         allPlayers: [
-          { id: 1, name: 'Player 1' },
-          { id: 2, name: 'Player 2' }
+          { id: 1, displayName: 'Player 1', firstName: 'Player', lastName: 'One' },
+          { id: 2, displayName: 'Player 2', firstName: 'Player', lastName: 'Two' }
         ],
         goalScorers: { 1: 2, 2: 1 },
         matchEvents: [
@@ -336,7 +336,7 @@ describe('matchRecoveryService', () => {
 
     const validLocalData = {
       currentMatchId: 'match-123',
-      allPlayers: [{ id: 1, name: 'Player 1' }],
+      allPlayers: [{ id: 1, displayName: 'Player 1', firstName: 'Player', lastName: 'One' }],
       ownScore: 2,
       opponentScore: 1
     };

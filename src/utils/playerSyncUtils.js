@@ -19,7 +19,9 @@ const persistenceManager = createGamePersistenceManager(STORAGE_KEYS.GAME_STATE)
 export const convertTeamPlayerToGamePlayer = (teamPlayer) => {
   return {
     id: teamPlayer.id,
-    name: teamPlayer.name,
+    displayName: teamPlayer.display_name,
+    firstName: teamPlayer.first_name,
+    lastName: teamPlayer.last_name,
     jerseyNumber: teamPlayer.jersey_number || null,
     stats: {
         currentPosition: null,
@@ -45,11 +47,15 @@ export const convertTeamPlayerToGamePlayer = (teamPlayer) => {
  * @returns {Object} Merged player with updated roster info but preserved stats
  */
 export const mergePlayerData = (teamPlayer, existingGamePlayer) => {
+  const restOfExistingPlayer = existingGamePlayer ? { ...existingGamePlayer } : {};
+
   return {
-    ...existingGamePlayer,
+    ...restOfExistingPlayer,
     // Update basic info from team roster
-    name: teamPlayer.name,
-    jerseyNumber: teamPlayer.jersey_number || existingGamePlayer.jerseyNumber,
+    displayName: teamPlayer.display_name,
+    firstName: teamPlayer.first_name,
+    lastName: teamPlayer.last_name,
+    jerseyNumber: teamPlayer.jersey_number || restOfExistingPlayer.jerseyNumber,
     // stats object is already preserved by ...existingGamePlayer spread
   };
 };

@@ -669,11 +669,12 @@ export async function getConfirmedMatches(teamId, startDate = null, endDate = nu
         period_duration_minutes,
         captain,
         player_match_stats (
-          player:player_id (
-            id,
-            name
-          )
+        player:player_id (
+          id,
+          display_name,
+          first_name
         )
+      )
       `)
       .eq('team_id', teamId)
       .eq('state', 'confirmed')
@@ -706,7 +707,7 @@ export async function getConfirmedMatches(teamId, startDate = null, endDate = nu
       // Extract unique player names from player_match_stats
       const playerNames = match.player_match_stats
         .filter(stat => stat.player)
-        .map(stat => stat.player.name);
+        .map(stat => stat.player.display_name || stat.player.first_name || 'Unknown Player');
 
       return {
         id: match.id,
@@ -786,7 +787,8 @@ export async function getMatchDetails(matchId) {
       .select(`
         player:player_id (
           id,
-          name
+          display_name,
+          first_name
         ),
         goals_scored,
         goalie_time_seconds,
@@ -836,20 +838,23 @@ export async function getMatchDetails(matchId) {
     // Transform player stats to UI format (convert seconds to minutes)
     const transformedPlayerStats = playerStats
       .filter(stat => stat.player)
-      .map((stat, index) => ({
-        id: index + 1,
-        playerId: stat.player.id,
-        name: stat.player.name,
-        goalsScored: stat.goals_scored || 0,
-        totalTimePlayed: (stat.total_field_time_seconds || 0) / 60,
-        timeAsDefender: (stat.defender_time_seconds || 0) / 60,
-        timeAsMidfielder: (stat.midfielder_time_seconds || 0) / 60,
-        timeAsAttacker: (stat.attacker_time_seconds || 0) / 60,
-        timeAsGoalkeeper: (stat.goalie_time_seconds || 0) / 60,
-        startingRole: formatDatabaseRoleForDisplay(stat.started_as),
-        wasCaptain: stat.was_captain || false,
-        receivedFairPlayAward: stat.got_fair_play_award || false
-      }));
+      .map((stat, index) => {
+        const displayName = stat.player.display_name || stat.player.first_name || 'Unnamed Player';
+        return {
+          id: index + 1,
+          playerId: stat.player.id,
+          displayName,
+          goalsScored: stat.goals_scored || 0,
+          totalTimePlayed: (stat.total_field_time_seconds || 0) / 60,
+          timeAsDefender: (stat.defender_time_seconds || 0) / 60,
+          timeAsMidfielder: (stat.midfielder_time_seconds || 0) / 60,
+          timeAsAttacker: (stat.attacker_time_seconds || 0) / 60,
+          timeAsGoalkeeper: (stat.goalie_time_seconds || 0) / 60,
+          startingRole: formatDatabaseRoleForDisplay(stat.started_as),
+          wasCaptain: stat.was_captain || false,
+          receivedFairPlayAward: stat.got_fair_play_award || false
+        };
+      });
 
     return {
       success: true,
@@ -948,7 +953,8 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
         ),
         player:player_id (
           id,
-          name,
+          display_name,
+          first_name,
           team_id
         )
       `);
@@ -991,8 +997,9 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
         players: new Set()
       };
 
-      if (stat.player?.name) {
-        matchDetails.players.add(stat.player.name);
+      const playerDisplayName = stat.player?.display_name || stat.player?.first_name;
+      if (playerDisplayName) {
+        matchDetails.players.add(playerDisplayName);
       }
 
       matchDetailsMap.set(matchId, matchDetails);
@@ -1040,9 +1047,10 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
       const playerId = stat.player_id;
 
       if (!playerStatsMap.has(playerId)) {
+        const displayName = stat.player.display_name || stat.player.first_name || 'Unnamed Player';
         playerStatsMap.set(playerId, {
           playerId: playerId,
-          name: stat.player.name,
+          displayName,
           matchesPlayed: 0,
           goalsScored: 0,
           totalDefenderSeconds: 0,
@@ -1106,7 +1114,7 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
 
       return {
         id: player.playerId,
-        name: player.name,
+        displayName: player.displayName,
         matchesPlayed: player.matchesPlayed,
         goalsScored: player.goalsScored,
         totalFieldTimeSeconds: player.totalFieldTimeSeconds,

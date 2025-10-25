@@ -75,25 +75,38 @@ export const TEAM_CONFIGS = {
 /**
  * Creates a mock player with standard structure
  */
-export const createMockPlayer = (id, overrides = {}) => ({
-  id,
-  name: `Player ${id}`,
-  stats: {
-    isInactive: false,
-    currentStatus: PLAYER_STATUS.ON_FIELD,
-    currentRole: PLAYER_ROLES.DEFENDER,
-    currentPairKey: POSITION_KEYS.LEFT_DEFENDER,
-    lastStintStartTimeEpoch: 1000,
-    timeOnFieldSeconds: 0,
-    timeAsAttackerSeconds: 0,
-    timeAsDefenderSeconds: 0,
-    timeAsSubSeconds: 0,
-    timeAsGoalieSeconds: 0,
-    startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
-    ...overrides.stats
-  },
-  ...overrides
-});
+export const createMockPlayer = (id, overrides = {}) => {
+  const { stats: overrideStats = {}, ...restOverrides } = overrides;
+  const sanitizedOverrides = { ...restOverrides };
+  if ('name' in sanitizedOverrides) {
+    delete sanitizedOverrides.name;
+  }
+  const fallbackName = `Player ${id}`;
+
+  return {
+    id,
+    displayName: sanitizedOverrides.displayName || fallbackName,
+    firstName: sanitizedOverrides.firstName || sanitizedOverrides.displayName || fallbackName,
+    lastName: Object.prototype.hasOwnProperty.call(sanitizedOverrides, 'lastName')
+      ? sanitizedOverrides.lastName
+      : null,
+    stats: {
+      isInactive: false,
+      currentStatus: PLAYER_STATUS.ON_FIELD,
+      currentRole: PLAYER_ROLES.DEFENDER,
+      currentPairKey: POSITION_KEYS.LEFT_DEFENDER,
+      lastStintStartTimeEpoch: 1000,
+      timeOnFieldSeconds: 0,
+      timeAsAttackerSeconds: 0,
+      timeAsDefenderSeconds: 0,
+      timeAsSubSeconds: 0,
+      timeAsGoalieSeconds: 0,
+      startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
+      ...overrideStats
+    },
+    ...sanitizedOverrides
+  };
+};
 
 /**
  * Helper to get mode definition from teamConfig object

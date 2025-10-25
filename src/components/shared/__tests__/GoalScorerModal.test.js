@@ -11,7 +11,7 @@ import GoalScorerModal from '../GoalScorerModal';
 jest.mock('../../../utils/playerUtils', () => ({
   getPlayerName: (players, playerId) => {
     const player = players.find(p => p.id === playerId);
-    return player ? player.name : 'Unknown Player';
+    return player ? player.displayName : 'Unknown Player';
   }
 }));
 
@@ -52,9 +52,9 @@ jest.mock('lucide-react', () => ({
 
 describe('GoalScorerModal', () => {
   const mockPlayers = [
-    { id: '1', name: 'Player 1', position: 'Left Attacker', status: 'on_field' },
-    { id: '2', name: 'Player 2', position: 'Right Defender', status: 'on_field' },
-    { id: '3', name: 'Player 3', position: 'Substitute', status: 'substitute' }
+    { id: '1', displayName: 'Player 1', position: 'Left Attacker', status: 'on_field' },
+    { id: '2', displayName: 'Player 2', position: 'Right Defender', status: 'on_field' },
+    { id: '3', displayName: 'Player 3', position: 'Substitute', status: 'substitute' }
   ];
 
   const defaultProps = {
@@ -150,7 +150,10 @@ describe('GoalScorerModal', () => {
       fireEvent.click(player1Button);
       
       // Change eligiblePlayers prop (simulate re-render)
-      const newPlayers = [...mockPlayers, { id: '4', name: 'Player 4', position: 'Goalie', status: 'on_field' }];
+      const newPlayers = [
+        ...mockPlayers,
+        { id: '4', displayName: 'Player 4', firstName: 'Player', lastName: 'Four', position: 'Goalie', status: 'on_field' }
+      ];
       rerender(<GoalScorerModal {...defaultProps} eligiblePlayers={newPlayers} />);
       
       // Selection should persist

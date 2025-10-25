@@ -771,10 +771,13 @@ export function useGameState(navigateToView = null) {
     const currentPlayersSnapshot = updatedPlayersWithFinalStats
       .filter(p => selectedSquadIds.includes(p.id))
       .map(p => ({
-      id: p.id,
-      name: p.name,
-      stats: JSON.parse(JSON.stringify(p.stats)) // Deep copy of stats for the log
-    }));
+        id: p.id,
+        displayName: p.displayName || null,
+        firstName: p.firstName || null,
+        lastName: p.lastName || null,
+        jerseyNumber: p.jerseyNumber || null,
+        stats: JSON.parse(JSON.stringify(p.stats)) // Deep copy of stats for the log
+      }));
 
     const newGameLogEntry = {
       periodNumber: currentPeriodNumber,

@@ -95,12 +95,26 @@ export const validateTeamCreation = (teamData) => {
  * @param {Object} playerData - Player creation data
  * @returns {Object} Validation result with success flag and errors
  */
-export const validatePlayerCreation = (playerData) => {
+export const validatePlayerCreation = (playerData = {}) => {
   const errors = {};
+  const rawFirstName = playerData.firstName ?? playerData.first_name ?? '';
+  const rawLastName = playerData.lastName ?? playerData.last_name ?? '';
+  const rawDisplayName = playerData.displayName ?? playerData.display_name ?? '';
+  const firstName = rawFirstName.trim();
+  const lastName = rawLastName.trim();
+  const displayName = rawDisplayName.trim();
   
-  // Validate player name
-  if (!playerData.name || !isValidNameInput(playerData.name)) {
-    errors.name = 'Player name is required and must contain only valid characters';
+  // Validate required name fields
+  if (!firstName || !isValidNameInput(firstName)) {
+    errors.firstName = 'First name is required and must contain only valid characters';
+  }
+
+  if (!displayName || !isValidNameInput(displayName)) {
+    errors.displayName = 'Display name is required and must contain only valid characters';
+  }
+
+  if (lastName && !isValidNameInput(lastName)) {
+    errors.lastName = 'Last name must contain only valid characters';
   }
   
   // Validate jersey number if provided
@@ -115,7 +129,9 @@ export const validatePlayerCreation = (playerData) => {
     success: Object.keys(errors).length === 0,
     errors,
     sanitizedData: {
-      name: sanitizeNameInput(playerData.name || ''),
+      firstName: sanitizeNameInput(firstName),
+      lastName: lastName ? sanitizeNameInput(lastName) : null,
+      displayName: sanitizeNameInput(displayName),
       jerseyNumber: playerData.jerseyNumber ? parseInt(playerData.jerseyNumber) : null
     }
   };

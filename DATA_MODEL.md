@@ -324,24 +324,26 @@ Player entity belonging to a team.
 **Columns:**
 - `id` (uuid, PK) - Unique identifier
 - `team_id` (uuid, NOT NULL) - References `team(id)`
-- `name` (text, NOT NULL) - Player name
-- `jersey_number` (integer, nullable) - Jersey number
+- `first_name` (text, NOT NULL) - Player first name (2-50 characters)
+- `last_name` (text, nullable) - Player last name (1-50 characters when present)
+- `display_name` (text, NOT NULL) - Preferred display name (2-50 characters)
+- `jersey_number` (integer, nullable) - Jersey number (1-99)
 - `on_roster` (boolean, NOT NULL) - Roster status (default: true)
 - `created_at` (timestamptz, NOT NULL) - Creation timestamp
 - `updated_at` (timestamptz, NOT NULL) - Last update timestamp
 - `created_by` (uuid, nullable) - References `auth.users(id)`
 - `last_updated_by` (uuid, nullable) - References `auth.users(id)`
 
-**Columns (continued):**
-
 **Constraints:**
 - Primary key on `id`
 - Unique constraint on `(team_id, jersey_number)`
 - Foreign key to `team(id)`
 - Foreign keys to `auth.users(id)` for audit fields
-- Check: `jersey_number` >= 0
-- Check: `name` must be trimmed
-- Check: `length(name)` between 1 and 50
+- Check: `jersey_number` between 1 and 99 when provided
+- Check: `char_length(first_name)` between 2 and 50
+- Check: `last_name` NULL or `char_length(last_name)` between 1 and 50
+- Check: `char_length(display_name)` between 2 and 50
+- Index on `display_name` for quick lookup (`idx_player_display_name`)
 
 **Relationships:**
 - Many-to-one with `team`

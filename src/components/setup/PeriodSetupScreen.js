@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Users, Play, ArrowLeft, Shuffle, Save } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
 import { getPlayerLabel } from '../../utils/formatUtils';
+import { getPlayerDisplayName as getPlayerDisplayNameUtil, getPlayerDisplayNameById as getPlayerDisplayNameByIdUtil } from '../../utils/playerUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
 import { useTeam } from '../../contexts/TeamContext';
@@ -162,14 +163,16 @@ export function PeriodSetupScreen({
       })
       .map(player => ({
         id: player.id,
-        name: player.name,
+        displayName: player.displayName,
         percentStartedAsSub: typeof subRecommendationPercentages[player.id] === 'number'
           ? subRecommendationPercentages[player.id]
           : 0
       }))
       .sort((a, b) => {
         if (a.percentStartedAsSub === b.percentStartedAsSub) {
-          return a.name.localeCompare(b.name);
+          const aName = a.displayName || '';
+          const bName = b.displayName || '';
+          return aName.localeCompare(bName);
         }
         return a.percentStartedAsSub - b.percentStartedAsSub;
       });
@@ -434,7 +437,7 @@ export function PeriodSetupScreen({
         setConfirmationModal({
           isOpen: true,
           type: 'inactive-goalie',
-          playerName: goaliePlayer.name,
+          playerName: getPlayerDisplayNameUtil(goaliePlayer),
           playerId: goaliePlayer.id,
           position: 'goalie',
           role: '',
@@ -514,7 +517,7 @@ export function PeriodSetupScreen({
       const displacedPlayer = allPlayers.find(p => p.id === displacedPlayerId);
       return {
         displacedPlayerId,
-        displacedPlayerName: displacedPlayer?.name || 'Player',
+        displacedPlayerName: getPlayerDisplayNameUtil(displacedPlayer),
         selectedPlayerId,
         targetPosition,
         targetRole,
@@ -728,7 +731,8 @@ export function PeriodSetupScreen({
     });
 
     if (playerId && otherAssignments.includes(playerId)) {
-      alert(`${allPlayers.find(p=>p.id === playerId)?.name || 'Player'} is already assigned. Choose a different player.`);
+      const duplicatePlayerName = getPlayerDisplayNameByIdUtil(allPlayers, playerId);
+      alert(`${duplicatePlayerName} is already assigned. Choose a different player.`);
       return; // Don't update if player is already assigned
     }
 
@@ -752,7 +756,7 @@ export function PeriodSetupScreen({
       
       // Show confirmation modal for direct selection
       showInactivePlayerConfirmation(
-        player?.name || 'Player',
+        getPlayerDisplayNameUtil(player),
         playerId,
         pairKey,
         role,
@@ -812,7 +816,8 @@ export function PeriodSetupScreen({
     });
 
     if (playerId && otherAssignments.includes(playerId)) {
-      alert(`${allPlayers.find(p=>p.id === playerId)?.name || 'Player'} is already assigned. Choose a different player.`);
+      const duplicatePlayerName = getPlayerDisplayNameByIdUtil(allPlayers, playerId);
+      alert(`${duplicatePlayerName} is already assigned. Choose a different player.`);
       return;
     }
 
@@ -836,7 +841,7 @@ export function PeriodSetupScreen({
       
       // Show confirmation modal for direct selection
       showInactivePlayerConfirmation(
-        player?.name || 'Player',
+        getPlayerDisplayNameUtil(player),
         playerId,
         position,
         '', // No role for individual mode
@@ -913,7 +918,7 @@ export function PeriodSetupScreen({
       setConfirmationModal({
         isOpen: true,
         type: 'recommendation-rerun',
-        playerName: allPlayers.find(p => p.id === playerId)?.name || 'Player',
+        playerName: getPlayerDisplayNameByIdUtil(allPlayers, playerId),
         playerId: playerId,
         position: 'goalie',
         role: '',
@@ -1161,7 +1166,7 @@ export function PeriodSetupScreen({
                     key={player.id}
                     className="flex items-center justify-between rounded-md bg-slate-800/60 px-2 py-1 text-sm text-slate-100"
                   >
-                    <span>{player.name}</span>
+                    <span>{player.displayName}</span>
                     <span className="text-xs text-slate-300">
                       {formatSubstitutePercentage(player.percentStartedAsSub)}
                     </span>
@@ -1318,7 +1323,7 @@ export function PeriodSetupScreen({
           confirmationModal.type === 'inactive-goalie'
             ? `${confirmationModal.playerName} is currently inactive but selected as goalie for next period. Do you want to continue with ${confirmationModal.playerName} as goalie?`
             : confirmationModal.type === 'recommendation-rerun'
-            ? `You've changed the goalie from ${allPlayers.find(p => p.id === confirmationModal.formerGoalieId)?.name || 'Unknown'} to ${confirmationModal.playerName}. Would you like to re-run the formation recommendations with the new goalie?`
+            ? `You've changed the goalie from ${getPlayerDisplayNameByIdUtil(allPlayers, confirmationModal.formerGoalieId) || 'Unknown'} to ${confirmationModal.playerName}. Would you like to re-run the formation recommendations with the new goalie?`
             : `Put ${confirmationModal.playerName} back into rotation?`
         }
         confirmText={

@@ -11,7 +11,7 @@ import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { useColumnDragDrop, COLUMN_SHIFT_PX } from '../../hooks/useColumnDragDrop';
 
 const SORT_COLUMNS = {
-  NAME: 'name',
+  NAME: 'displayName',
   MATCHES: 'matchesPlayed',
   GOALS: 'goalsScored',
   AVG_TIME: 'averageTimePerMatch',
@@ -157,7 +157,7 @@ export function PlayerStatsView({ startDate, endDate }) {
         render: (player) => (
           <div className="flex items-center space-x-2">
             <User className="h-4 w-4 text-slate-400" />
-            <span className="text-slate-100">{player.name}</span>
+            <span className="text-slate-100">{player.displayName}</span>
           </div>
         )
       },
@@ -506,7 +506,7 @@ export function PlayerStatsView({ startDate, endDate }) {
         <StatCard
           icon={Award}
           title="Top Scorer"
-          value={summaryStats.topScorer ? summaryStats.topScorer.name : '-'}
+          value={summaryStats.topScorer ? summaryStats.topScorer.displayName : '-'}
           subtitle={summaryStats.topScorer ? `${summaryStats.topScorer.goalsScored} goals` : 'No data'}
         />
       </div>

@@ -15,7 +15,7 @@ jest.mock('../contexts/AuthContext', () => ({
 
 jest.mock('../utils/formatUtils', () => ({
   formatPoints: jest.fn((points) => points.toString()),
-  formatPlayerName: jest.fn((player) => player ? player.name : 'Unknown'),
+  formatPlayerName: jest.fn((player) => player ? player.displayName : 'Unknown'),
   generateStatsText: jest.fn(() => 'mock stats text')
 }));
 

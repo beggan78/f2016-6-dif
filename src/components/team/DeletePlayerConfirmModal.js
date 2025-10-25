@@ -6,6 +6,8 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
   if (!player) return null;
 
   const willBeDeleted = !hasGameHistory;
+  const displayName = player.display_name || player.displayName || player.first_name || 'Unknown Player';
+  const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -38,11 +40,11 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-sky-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-lg">
-                  {player.name.charAt(0).toUpperCase()}
+                  {displayInitial}
                 </span>
               </div>
               <div className="flex-1">
-                <h3 className="text-slate-100 font-medium">{player.name}</h3>
+                <h3 className="text-slate-100 font-medium">{displayName}</h3>
                 <div className="flex items-center space-x-4 text-sm text-slate-400">
                   {player.jersey_number && (
                     <span className="flex items-center">

@@ -272,8 +272,45 @@ export class GamePersistenceManager extends PersistenceManager {
     const defaults = this.defaultState || {};
 
     // Only save serializable game state, exclude React-specific fields
+    const sanitizePlayersForStorage = (players) => {
+      if (!Array.isArray(players)) {
+        return [];
+      }
+
+      return players.map((player) => {
+        if (!player || typeof player !== 'object') {
+          return player;
+        }
+
+        const cleanedPlayer = { ...player };
+        if ('name' in cleanedPlayer) {
+          delete cleanedPlayer.name;
+        }
+
+        const {
+          id = null,
+          displayName = null,
+          firstName = null,
+          lastName = null,
+          jerseyNumber = null,
+          stats = {},
+          ...rest
+        } = cleanedPlayer;
+
+        return {
+          ...rest,
+          id,
+          displayName,
+          firstName,
+          lastName,
+          jerseyNumber,
+          stats,
+        };
+      });
+    };
+
     const stateToSave = {
-      allPlayers: gameState.allPlayers ?? defaults.allPlayers ?? [],
+      allPlayers: sanitizePlayersForStorage(gameState.allPlayers ?? defaults.allPlayers ?? []),
       view: gameState.view ?? defaults.view ?? 'config',
       selectedSquadIds: gameState.selectedSquadIds ?? defaults.selectedSquadIds ?? [],
       numPeriods: gameState.numPeriods ?? defaults.numPeriods ?? 3,

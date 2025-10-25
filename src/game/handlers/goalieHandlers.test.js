@@ -2,6 +2,7 @@ import { createGoalieHandlers } from './goalieHandlers';
 import { animateStateChange } from '../animation/animationSupport';
 import { calculateGoalieSwitch } from '../logic/gameStateLogic';
 import { getPlayerName, getOutfieldPlayers } from '../../utils/playerUtils';
+import { formatPlayerName } from '../../utils/formatUtils';
 import { 
   createMockPlayers, 
   createMockGameState,
@@ -30,7 +31,7 @@ describe('createGoalieHandlers', () => {
 
     // Mock utility functions
     getPlayerName.mockImplementation((players, id) => 
-      players.find(p => p.id === id)?.name || `Player ${id}`
+      players.find(p => p.id === id)?.displayName || `Player ${id}`
     );
     
     getOutfieldPlayers.mockImplementation((allPlayers, selectedSquadIds, goalieId) => 
@@ -93,7 +94,7 @@ describe('createGoalieHandlers', () => {
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
         availablePlayers: expect.arrayContaining([
-          { id: expect.any(String), name: expect.any(String), isInactive: expect.any(Boolean) }
+          expect.objectContaining({ id: expect.any(String), displayName: expect.any(String), isInactive: expect.any(Boolean) })
         ])
       });
     });
@@ -139,12 +140,12 @@ describe('createGoalieHandlers', () => {
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
         availablePlayers: expect.arrayContaining([
-          { id: '1', name: 'Player 1', isInactive: false },
-          { id: '2', name: 'Player 2', isInactive: false },
-          { id: '3', name: 'Player 3', isInactive: false },
-          { id: '4', name: 'Player 4', isInactive: false },
-          { id: '5', name: 'Player 5', isInactive: false },
-          { id: '6', name: 'Player 6', isInactive: false }
+          expect.objectContaining({ id: '1', displayName: 'Player 1', isInactive: false }),
+          expect.objectContaining({ id: '2', displayName: 'Player 2', isInactive: false }),
+          expect.objectContaining({ id: '3', displayName: 'Player 3', isInactive: false }),
+          expect.objectContaining({ id: '4', displayName: 'Player 4', isInactive: false }),
+          expect.objectContaining({ id: '5', displayName: 'Player 5', isInactive: false }),
+          expect.objectContaining({ id: '6', displayName: 'Player 6', isInactive: false })
         ])
       });
     });
@@ -172,12 +173,12 @@ describe('createGoalieHandlers', () => {
       expect(mockDependencies.modalHandlers.openGoalieModal).toHaveBeenCalledWith({
         currentGoalieName: 'Player 7',
         availablePlayers: expect.arrayContaining([
-          { id: '1', name: 'Player 1', isInactive: false },
-          { id: '2', name: 'Player 2', isInactive: false },
-          { id: '3', name: 'Player 3', isInactive: true },
-          { id: '4', name: 'Player 4', isInactive: false },
-          { id: '5', name: 'Player 5', isInactive: false },
-          { id: '6', name: 'Player 6', isInactive: false }
+          expect.objectContaining({ id: '1', displayName: 'Player 1', isInactive: false }),
+          expect.objectContaining({ id: '2', displayName: 'Player 2', isInactive: false }),
+          expect.objectContaining({ id: '3', displayName: 'Player 3', isInactive: true }),
+          expect.objectContaining({ id: '4', displayName: 'Player 4', isInactive: false }),
+          expect.objectContaining({ id: '5', displayName: 'Player 5', isInactive: false }),
+          expect.objectContaining({ id: '6', displayName: 'Player 6', isInactive: false })
         ])
       });
     });
@@ -185,12 +186,12 @@ describe('createGoalieHandlers', () => {
     it('should sort players with active players first, then inactive players', () => {
       // Mock players with mixed inactive status and names for sorting test
       const playersWithMixedStatus = [
-        { id: '1', name: 'Zoe Smith', stats: { isInactive: true }},
-        { id: '2', name: 'Alice Brown', stats: { isInactive: false }},
-        { id: '3', name: 'Bob Wilson', stats: { isInactive: true }},
-        { id: '4', name: 'Charlie Davis', stats: { isInactive: false }},
-        { id: '5', name: 'Anna Johnson', stats: { isInactive: false }},
-        { id: '6', name: 'David Lee', stats: { isInactive: true }}
+        { id: '1', displayName: 'Zoe Smith', stats: { isInactive: true }},
+        { id: '2', displayName: 'Alice Brown', stats: { isInactive: false }},
+        { id: '3', displayName: 'Bob Wilson', stats: { isInactive: true }},
+        { id: '4', displayName: 'Charlie Davis', stats: { isInactive: false }},
+        { id: '5', displayName: 'Anna Johnson', stats: { isInactive: false }},
+        { id: '6', displayName: 'David Lee', stats: { isInactive: true }}
       ];
 
       getOutfieldPlayers.mockReturnValue(playersWithMixedStatus);
@@ -226,12 +227,12 @@ describe('createGoalieHandlers', () => {
       }
 
       // Verify alphabetical order within active players
-      const activeNames = availablePlayers.slice(0, inactivePlayersStart).map(p => p.name);
+      const activeNames = availablePlayers.slice(0, inactivePlayersStart).map(p => formatPlayerName(p));
       const sortedActiveNames = [...activeNames].sort();
       expect(activeNames).toEqual(sortedActiveNames);
 
       // Verify alphabetical order within inactive players
-      const inactiveNames = availablePlayers.slice(inactivePlayersStart).map(p => p.name);
+      const inactiveNames = availablePlayers.slice(inactivePlayersStart).map(p => formatPlayerName(p));
       const sortedInactiveNames = [...inactiveNames].sort();
       expect(inactiveNames).toEqual(sortedInactiveNames);
     });
