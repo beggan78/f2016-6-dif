@@ -17,6 +17,7 @@ Mobile-first web application for coaching youth soccer teams with Supabase backe
 
 ### Prime Instructions
 - **Required documentation**: Read `README.md` and `src/game/README.md` before making changes
+- **Database schema reference**: Review `DATA_MODEL.md` for up-to-date table and constraint definitions
 - **Testing guidelines**: Read `.claude/testing-guidelines.md` for testing patterns and best practices
 - **Services documentation**: Read `/src/services/README.md` for database and match lifecycle patterns
 - **Architecture principles**: DRY, KISS, Separation of Concerns, Single Responsibility

@@ -87,6 +87,7 @@ Before making changes, review:
 - **`CLAUDE.md`** - Comprehensive project memory and guidelines
 - **`README.md`** - Feature overview and user documentation
 - **`DATABASE.md`** - Schema management and Supabase operations
+- **`DATA_MODEL.md`** - Current database schema reference and entity details
 - **`src/game/README.md`** - Game logic architecture
 - **`src/services/README.md`** - Database patterns and match lifecycle
 - **`.claude/testing-guidelines.md`** - Testing patterns and best practices
