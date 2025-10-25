@@ -195,7 +195,12 @@ describe('matchConfigurationService', () => {
   describe('saveNewMatchConfiguration', () => {
     const createMockParams = () => ({
       matchData: { format: '5v5', teamId: 'team123', venueType: 'home' },
-      allPlayers: [{ id: 'player1', name: 'Player 1' }],
+      allPlayers: [{
+        id: 'player1',
+        displayName: 'Player 1',
+        firstName: 'Player',
+        lastName: 'One'
+      }],
       selectedSquadIds: ['player1'],
       initialConfig: { formation: {}, teamConfig: {}, matchConfig: {} },
       setCurrentMatchId: jest.fn(),
@@ -371,7 +376,12 @@ describe('matchConfigurationService', () => {
       },
       periodGoalieIds: { 1: 'player5', 2: 'player6', 3: 'player7' },
       selectedSquadIds: ['player1', 'player2', 'player3', 'player4', 'player5', 'player6', 'player7'],
-      allPlayers: [{ id: 'player1', name: 'Player 1' }],
+      allPlayers: [{
+        id: 'player1',
+        displayName: 'Player 1',
+        firstName: 'Player',
+        lastName: 'One'
+      }],
       currentTeam: { id: 'team123', name: 'Test Team' },
       currentMatchId: null,
       matchCreated: false,
@@ -616,7 +626,12 @@ describe('matchConfigurationService', () => {
       currentMatchId: null,
       matchCreated: false,
       matchData: { format: '5v5', teamId: 'team123', venueType: 'home' },
-      allPlayers: [{ id: 'player1', name: 'Player 1' }],
+      allPlayers: [{
+        id: 'player1',
+        displayName: 'Player 1',
+        firstName: 'Player',
+        lastName: 'One'
+      }],
       selectedSquadIds: ['player1'],
       setCurrentMatchId: jest.fn(),
       setMatchCreated: jest.fn(),

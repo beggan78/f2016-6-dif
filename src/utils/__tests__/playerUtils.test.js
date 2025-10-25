@@ -79,6 +79,13 @@ describe('playerUtils', () => {
     }
   ];
 
+  const createSimplePlayer = (id, label) => ({
+    id,
+    displayName: label,
+    firstName: label,
+    lastName: null
+  });
+
   const mockTeamConfig = {
     format: '5v5',
     squadSize: 6,
@@ -154,7 +161,7 @@ describe('playerUtils', () => {
     });
 
     it('should handle players without stats', () => {
-      const playersWithoutStats = [{ id: 'p1', name: 'Player 1' }];
+      const playersWithoutStats = [createSimplePlayer('p1', 'Player 1')];
       expect(hasInactivePlayersInSquad(playersWithoutStats, ['p1'])).toBe(false);
     });
   });
@@ -338,7 +345,7 @@ describe('playerUtils', () => {
     });
 
     it('should handle missing stats', () => {
-      const playersNoStats = [{ id: 'p1', name: 'Player 1' }];
+      const playersNoStats = [createSimplePlayer('p1', 'Player 1')];
       expect(getPlayerName(playersNoStats, 'p1')).toBe('Player 1');
     });
   });
@@ -399,7 +406,7 @@ describe('playerUtils', () => {
     });
 
     it('should handle missing stats', () => {
-      const playersNoStats = [{ id: 'p1', name: 'Player 1' }];
+      const playersNoStats = [createSimplePlayer('p1', 'Player 1')];
       expect(isPlayerInactive(playersNoStats, 'p1')).toBe(false);
     });
   });
@@ -501,8 +508,8 @@ describe('playerUtils', () => {
   describe('edge cases and error handling', () => {
     it('should handle malformed player objects', () => {
       const malformedPlayers = [
-        { id: 'p1' }, // Missing name and stats
-        { name: 'Player 2' }, // Missing id and stats
+        { id: 'p1' }, // Missing displayName and stats
+        { displayName: 'Player 2' }, // Missing id and stats
         null, // Null player
         undefined // Undefined player
       ];
@@ -513,8 +520,8 @@ describe('playerUtils', () => {
 
     it('should handle undefined stats gracefully', () => {
       const playersUndefinedStats = [
-        { id: 'p1', name: 'Player 1', stats: undefined },
-        { id: 'p2', name: 'Player 2', stats: null }
+        { id: 'p1', displayName: 'Player 1', firstName: 'Player 1', lastName: null, stats: undefined },
+        { id: 'p2', displayName: 'Player 2', firstName: 'Player 2', lastName: null, stats: null }
       ];
 
       expect(isPlayerInactive(playersUndefinedStats, 'p1')).toBe(false);
@@ -525,7 +532,9 @@ describe('playerUtils', () => {
     it('should handle large player arrays efficiently', () => {
       const largePlayerArray = Array.from({ length: 1000 }, (_, i) => ({
         id: `p${i + 1}`,
-        name: `Player ${i + 1}`,
+        displayName: `Player ${i + 1}`,
+        firstName: `Player ${i + 1}`,
+        lastName: null,
         stats: { isInactive: false, isCaptain: false }
       }));
 

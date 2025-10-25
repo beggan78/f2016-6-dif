@@ -424,7 +424,7 @@ describe('GamePersistenceManager', () => {
   describe('saveGameState', () => {
     it('should save only specified game state fields', () => {
       const fullGameState = {
-        allPlayers: [{ id: '1', name: 'Player 1' }],
+        allPlayers: [{ id: '1', displayName: 'Player 1', firstName: 'Player', lastName: 'One' }],
         view: 'game',
         selectedSquadIds: ['1'],
         reactSpecificField: 'should not be saved',
@@ -440,12 +440,14 @@ describe('GamePersistenceManager', () => {
       expect(savedState).not.toHaveProperty('reactSpecificField');
       expect(savedState).not.toHaveProperty('functions');
       expect(savedState).toHaveProperty('allPlayers');
+      expect(savedState.allPlayers[0]).not.toHaveProperty('name');
+      expect(savedState.allPlayers[0]).toHaveProperty('displayName', 'Player 1');
       expect(savedState).toHaveProperty('formation');
     });
 
     it('should save ownScore and opponentScore fields', () => {
       const gameStateWithScores = {
-        allPlayers: [{ id: '1', name: 'Player 1' }],
+        allPlayers: [{ id: '1', displayName: 'Player 1' }],
         view: 'game',
         selectedSquadIds: ['1'],
         ownScore: 3,
@@ -469,7 +471,7 @@ describe('GamePersistenceManager', () => {
 
     it('should handle missing score fields gracefully', () => {
       const gameStateWithoutScores = {
-        allPlayers: [{ id: '1', name: 'Player 1' }],
+        allPlayers: [{ id: '1', displayName: 'Player 1' }],
         view: 'game',
         selectedSquadIds: ['1'],
         formation: { goalie: '1' },
@@ -489,7 +491,7 @@ describe('GamePersistenceManager', () => {
 
     it('should save zero scores correctly', () => {
       const gameStateWithZeroScores = {
-        allPlayers: [{ id: '1', name: 'Player 1' }],
+        allPlayers: [{ id: '1', displayName: 'Player 1' }],
         view: 'game',
         selectedSquadIds: ['1'],
         ownScore: 0,

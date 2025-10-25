@@ -15,45 +15,50 @@ import {
 
 describe('Player Utilities', () => {
   const mockPlayers = [
-    { 
-      id: '1', 
-      name: 'Alice', 
-      stats: { 
-        isInactive: false, 
+    {
+      id: '1',
+      displayName: 'Alice',
+      firstName: 'Alice',
+      stats: {
+        isInactive: false,
         currentStatus: 'on_field'
-      } 
+      }
     },
-    { 
-      id: '2', 
-      name: 'Bob', 
-      stats: { 
-        isInactive: true, 
+    {
+      id: '2',
+      displayName: 'Bob',
+      firstName: 'Bob',
+      stats: {
+        isInactive: true,
         currentStatus: 'substitute'
-      } 
+      }
     },
-    { 
-      id: '3', 
-      name: 'Charlie', 
-      stats: { 
-        isInactive: false, 
+    {
+      id: '3',
+      displayName: 'Charlie',
+      firstName: 'Charlie',
+      stats: {
+        isInactive: false,
         currentStatus: 'goalie'
-      } 
+      }
     },
-    { 
-      id: '4', 
-      name: 'Diana', 
-      stats: { 
-        isInactive: false, 
+    {
+      id: '4',
+      displayName: 'Diana',
+      firstName: 'Diana',
+      stats: {
+        isInactive: false,
         currentStatus: 'substitute'
-      } 
+      }
     },
-    { 
-      id: '5', 
-      name: 'Eve', 
-      stats: { 
-        isInactive: false, 
+    {
+      id: '5',
+      displayName: 'Eve',
+      firstName: 'Eve',
+      stats: {
+        isInactive: false,
         currentStatus: 'on_field'
-      } 
+      }
     }
   ];
 

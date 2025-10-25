@@ -47,7 +47,10 @@ export const convertTeamPlayerToGamePlayer = (teamPlayer) => {
  * @returns {Object} Merged player with updated roster info but preserved stats
  */
 export const mergePlayerData = (teamPlayer, existingGamePlayer) => {
-  const { name: _legacyName, ...restOfExistingPlayer } = existingGamePlayer || {};
+  const restOfExistingPlayer = existingGamePlayer ? { ...existingGamePlayer } : {};
+  if (restOfExistingPlayer && 'name' in restOfExistingPlayer) {
+    delete restOfExistingPlayer.name;
+  }
 
   return {
     ...restOfExistingPlayer,

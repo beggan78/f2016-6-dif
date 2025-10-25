@@ -18,11 +18,11 @@ import {
 
 describe('queueUtils', () => {
   const mockPlayers = [
-    { id: 'p1', name: 'Player 1' },
-    { id: 'p2', name: 'Player 2' },
-    { id: 'p3', name: 'Player 3' },
-    { id: 'p4', name: 'Player 4' },
-    { id: 'p5', name: 'Player 5' }
+    { id: 'p1', displayName: 'Player 1', firstName: 'Player', lastName: '1' },
+    { id: 'p2', displayName: 'Player 2', firstName: 'Player', lastName: '2' },
+    { id: 'p3', displayName: 'Player 3', firstName: 'Player', lastName: '3' },
+    { id: 'p4', displayName: 'Player 4', firstName: 'Player', lastName: '4' },
+    { id: 'p5', displayName: 'Player 5', firstName: 'Player', lastName: '5' }
   ];
 
   describe('getNextActivePlayer', () => {

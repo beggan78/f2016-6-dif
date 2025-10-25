@@ -56,7 +56,9 @@ describe('matchReportUtils', () => {
   const mockPlayers = [
     {
       id: 'p1',
-      name: 'Player 1',
+      displayName: 'Player 1',
+      firstName: 'Player',
+      lastName: '1',
       stats: {
         startedMatchAs: PLAYER_ROLES.GOALIE,
         timeOnFieldSeconds: 0,
@@ -68,7 +70,9 @@ describe('matchReportUtils', () => {
     },
     {
       id: 'p2',
-      name: 'Player 2',
+      displayName: 'Player 2',
+      firstName: 'Player',
+      lastName: '2',
       stats: {
         startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         timeOnFieldSeconds: 180,
@@ -244,8 +248,8 @@ describe('matchReportUtils', () => {
 
     it('should handle players without starting roles', () => {
       const playersWithoutRoles = [
-        { id: 'p1', name: 'Player 1', stats: {} },
-        { id: 'p2', name: 'Player 2', stats: {} }
+        { id: 'p1', displayName: 'Player 1', firstName: 'Player', lastName: '1', stats: {} },
+        { id: 'p2', displayName: 'Player 2', firstName: 'Player', lastName: '2', stats: {} }
       ];
 
       const startingRoles = determinePlayerStartingRoles(playersWithoutRoles, []);

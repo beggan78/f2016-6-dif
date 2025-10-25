@@ -41,18 +41,26 @@ export const createGoalieHandlers = (
     const selectedSquadIds = selectedSquadPlayers.map(p => p.id);
     const outfieldPlayers = getOutfieldPlayers(allPlayers, selectedSquadIds, formation.goalie);
     const availablePlayers = outfieldPlayers
-      .map(player => ({
-        id: player.id,
-        name: formatPlayerName(player),
-        isInactive: player.stats?.isInactive || false
-      }))
+      .map(player => {
+        const formattedName = formatPlayerName(player);
+        return {
+          ...player,
+          id: player.id,
+          displayName: player.displayName || formattedName,
+          firstName: player.firstName || player.displayName || formattedName,
+          lastName: player.lastName || null,
+          isInactive: player.stats?.isInactive || false
+        };
+      })
       .sort((a, b) => {
         // Sort by inactive status first (active players first)
         if (a.isInactive !== b.isInactive) {
           return a.isInactive ? 1 : -1;
         }
         // Then sort alphabetically by name within each group
-        return a.name.localeCompare(b.name);
+        const nameA = formatPlayerName(a);
+        const nameB = formatPlayerName(b);
+        return nameA.localeCompare(nameB);
       });
 
     openGoalieModal({

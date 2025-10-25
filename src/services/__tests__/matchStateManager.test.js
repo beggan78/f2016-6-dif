@@ -65,7 +65,9 @@ describe('matchStateManager', () => {
   const mockPlayers = [
     {
       id: 'player-1',
-      name: 'Player One',
+      displayName: 'Player One',
+      firstName: 'Player',
+      lastName: 'One',
       stats: {
         startedMatchAs: PLAYER_ROLES.GOALIE,
         startedAtRole: PLAYER_ROLES.GOALIE,
@@ -80,7 +82,9 @@ describe('matchStateManager', () => {
     },
     {
       id: 'player-2', 
-      name: 'Player Two',
+      displayName: 'Player Two',
+      firstName: 'Player',
+      lastName: 'Two',
       stats: {
         startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         startedAtRole: PLAYER_ROLES.DEFENDER,
@@ -95,7 +99,9 @@ describe('matchStateManager', () => {
     },
     {
       id: 'player-3',
-      name: 'Player Three',
+      displayName: 'Player Three',
+      firstName: 'Player',
+      lastName: 'Three',
       stats: {
         // No startedMatchAs or startedAtPosition - non-participating player
         timeOnFieldSeconds: 0,
@@ -224,7 +230,9 @@ describe('matchStateManager', () => {
         {
           id: 1,
           playerId: 'player-1',
-          name: 'Player One',
+          displayName: 'Player One',
+          firstName: 'Player',
+          lastName: 'One',
           goalsScored: 1,
           timeAsDefender: 12,
           timeAsMidfielder: 6,
@@ -299,7 +307,9 @@ describe('matchStateManager', () => {
         {
           id: 1,
           playerId: 'player-2',
-          name: 'Player Two',
+          displayName: 'Player Two',
+          firstName: 'Player',
+          lastName: 'Two',
           goalsScored: 0,
           timeAsDefender: 10,
           timeAsMidfielder: 5,

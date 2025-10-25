@@ -150,7 +150,10 @@ describe('GoalScorerModal', () => {
       fireEvent.click(player1Button);
       
       // Change eligiblePlayers prop (simulate re-render)
-      const newPlayers = [...mockPlayers, { id: '4', name: 'Player 4', position: 'Goalie', status: 'on_field' }];
+      const newPlayers = [
+        ...mockPlayers,
+        { id: '4', displayName: 'Player 4', firstName: 'Player', lastName: 'Four', position: 'Goalie', status: 'on_field' }
+      ];
       rerender(<GoalScorerModal {...defaultProps} eligiblePlayers={newPlayers} />);
       
       // Selection should persist

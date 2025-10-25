@@ -108,8 +108,8 @@ export const sortPlayersByGoalScoringRelevance = (players) => {
     }
 
     // Secondary sort: by player name (alphabetical)
-    const nameA = playerA.name || '';
-    const nameB = playerB.name || '';
+    const nameA = playerA.displayName || playerA.firstName || '';
+    const nameB = playerB.displayName || playerB.firstName || '';
     return nameA.localeCompare(nameB);
   });
 

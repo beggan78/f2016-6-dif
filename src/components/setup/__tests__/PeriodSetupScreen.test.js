@@ -652,8 +652,8 @@ describe('PeriodSetupScreen', () => {
     it('should handle inactive player scenarios', () => {
       // Test validates that inactive players are properly handled
       // The actual implementation shows confirmation modals
-      const inactivePlayer = { id: '1', name: 'Player 1', stats: { isInactive: true } };
-      const activePlayer = { id: '2', name: 'Player 2', stats: { isInactive: false } };
+      const inactivePlayer = { id: '1', displayName: 'Player 1', firstName: 'Player', lastName: '1', stats: { isInactive: true } };
+      const activePlayer = { id: '2', displayName: 'Player 2', firstName: 'Player', lastName: '2', stats: { isInactive: false } };
       
       // Mock the logic that checks for inactive players
       const isPlayerInactive = (player) => player?.stats?.isInactive || false;

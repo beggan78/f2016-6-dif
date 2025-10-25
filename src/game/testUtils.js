@@ -76,14 +76,20 @@ export const TEAM_CONFIGS = {
  * Creates a mock player with standard structure
  */
 export const createMockPlayer = (id, overrides = {}) => {
-  const { stats: overrideStats = {}, name: _legacyName, ...restOverrides } = overrides;
+  const { stats: overrideStats = {}, ...restOverrides } = overrides;
+  const sanitizedOverrides = { ...restOverrides };
+  if ('name' in sanitizedOverrides) {
+    delete sanitizedOverrides.name;
+  }
   const fallbackName = `Player ${id}`;
 
   return {
     id,
-    displayName: restOverrides.displayName || fallbackName,
-    firstName: restOverrides.firstName || fallbackName,
-    lastName: restOverrides.lastName !== undefined ? restOverrides.lastName : null,
+    displayName: sanitizedOverrides.displayName || fallbackName,
+    firstName: sanitizedOverrides.firstName || sanitizedOverrides.displayName || fallbackName,
+    lastName: Object.prototype.hasOwnProperty.call(sanitizedOverrides, 'lastName')
+      ? sanitizedOverrides.lastName
+      : null,
     stats: {
       isInactive: false,
       currentStatus: PLAYER_STATUS.ON_FIELD,
@@ -98,7 +104,7 @@ export const createMockPlayer = (id, overrides = {}) => {
       startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
       ...overrideStats
     },
-    ...restOverrides
+    ...sanitizedOverrides
   };
 };
 

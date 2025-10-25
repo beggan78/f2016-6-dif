@@ -183,7 +183,7 @@ describe('createTimerHandlers', () => {
       const currentTime = 2000;
       const isPausing = true;
       const allPlayers = [...mockPlayers, 
-        { id: '8', name: 'Player 8', stats: { currentStatus: 'BENCH' }}
+        { id: '8', displayName: 'Player 8', firstName: 'Player', lastName: 'Eight', stats: { currentStatus: 'BENCH' }}
       ];
 
       mockStateUpdaters.setAllPlayers.mockImplementation((callback) => {
@@ -214,7 +214,7 @@ describe('createTimerHandlers', () => {
       const currentTime = 2000;
       const isPausing = true;
       const playersWithExtra = [...mockPlayers, 
-        { id: '99', name: 'Not Selected', stats: { currentStatus: 'BENCH' }}
+        { id: '99', displayName: 'Not Selected', firstName: 'Not', lastName: 'Selected', stats: { currentStatus: 'BENCH' }}
       ];
 
       let callCount = 0;
