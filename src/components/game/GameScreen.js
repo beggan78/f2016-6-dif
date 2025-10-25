@@ -174,17 +174,34 @@ export function GameScreen({
       ownScore,
       opponentScore,
       substitutionCount: effectiveSubstitutionCount,
+      substitutionOverride: uiState.substitutionOverride,
       shouldResetSubTimerOnNextSub: uiState.shouldResetSubTimerOnNextSub
     };
 
-
     return gameState;
   }, [
-    formation, allPlayers, teamConfig, selectedFormation, nextPhysicalPairToSubOut,
-    nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut,
-    rotationQueue, selectedSquadPlayers, modalHandlers.modals.fieldPlayer, uiState.lastSubstitution,
-    subTimerSeconds, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, ownScore, opponentScore,
-    substitutionCount, uiState.substitutionCountOverride, uiState.shouldResetSubTimerOnNextSub
+    formation,
+    allPlayers,
+    teamConfig,
+    selectedFormation,
+    nextPhysicalPairToSubOut,
+    nextPlayerToSubOut,
+    nextPlayerIdToSubOut,
+    nextNextPlayerIdToSubOut,
+    rotationQueue,
+    selectedSquadPlayers,
+    modalHandlers.modals.fieldPlayer,
+    uiState.lastSubstitution,
+    subTimerSeconds,
+    isSubTimerPaused,
+    currentPeriodNumber,
+    matchTimerSeconds,
+    ownScore,
+    opponentScore,
+    substitutionCount,
+    uiState.substitutionCountOverride,
+    uiState.substitutionOverride,
+    uiState.shouldResetSubTimerOnNextSub
   ]);
 
   // State updaters object for handlers
@@ -197,6 +214,8 @@ export function GameScreen({
     setNextNextPlayerIdToSubOut,
     setRotationQueue,
     setShouldSubstituteNow: uiState.setShouldSubstituteNow,
+    setSubstitutionOverride: uiState.setSubstitutionOverride,
+    clearSubstitutionOverride: uiState.clearSubstitutionOverride,
     setLastSubstitution: uiState.setLastSubstitution,
     setLastSubstitutionTimestamp: () => {}, // Legacy - not used in new architecture
     setScore, // Direct access for atomic updates
@@ -212,7 +231,8 @@ export function GameScreen({
   }), [
     setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
-    setRotationQueue, uiState.setShouldSubstituteNow, uiState.setLastSubstitution,
+    setRotationQueue, uiState.setShouldSubstituteNow, uiState.setSubstitutionOverride,
+    uiState.clearSubstitutionOverride, uiState.setLastSubstitution,
     setScore, ownScore, opponentScore, addGoalScored, addGoalConceded, resetSubTimer,
     handleUndoSubstitutionTimer, uiState.setSubstitutionCountOverride, uiState.clearSubstitutionCountOverride,
     setShouldResetSubTimerOnNextSub
@@ -232,6 +252,11 @@ export function GameScreen({
   }), [pauseSubTimer, resumeSubTimer]);
 
   // Create handlers using the new handler factories
+  const getEffectiveSubstitutionCount = React.useCallback(
+    () => uiState.substitutionCountOverride ?? substitutionCount,
+    [uiState.substitutionCountOverride, substitutionCount]
+  );
+
   const substitutionHandlers = React.useMemo(() => 
     createSubstitutionHandlers(
       createGameState,
@@ -239,8 +264,8 @@ export function GameScreen({
       animationHooks,
       modalHandlers,
       teamConfig,
-      () => substitutionCount
-    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, substitutionCount]
+      getEffectiveSubstitutionCount
+    ), [createGameState, stateUpdaters, animationHooks, modalHandlers, teamConfig, getEffectiveSubstitutionCount]
   );
 
   const fieldPositionCallbacks = React.useMemo(() =>

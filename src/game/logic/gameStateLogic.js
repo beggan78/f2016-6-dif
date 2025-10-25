@@ -18,6 +18,8 @@ import { getPositionRole } from './positionUtils';
 import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
 import { getFormationDefinition } from '../../utils/formationConfigUtils';
 import { handleError, ERROR_CATEGORIES } from '../../utils/errorHandler';
+import { canUsePairedRoleStrategy, PAIRED_ROLE_STRATEGY_TYPES } from '../../constants/teamConfiguration';
+import { FIELD_PAIR_POSITIONS, getPairKeyForFieldPosition, analyzeOutgoingPair } from '../utils/pairedRotationUtils';
 
 /**
  * Helper to get mode definition from team config object
@@ -30,6 +32,70 @@ const getDefinitionForGameLogic = (teamConfig, selectedFormation = null) => {
   
   // For team config objects, use formation definition utility
   return getFormationDefinition(teamConfig, selectedFormation);
+};
+
+const ROLE_GROUP_POSITIONS = {
+  defender: ['leftDefender', 'rightDefender'],
+  attacker: ['leftAttacker', 'rightAttacker']
+};
+
+const getRoleGroupForPosition = (positionKey) => {
+  if (!positionKey) {
+    return null;
+  }
+
+  const lowerPosition = positionKey.toLowerCase();
+
+  if (lowerPosition.includes('defender')) {
+    return 'defender';
+  }
+  if (lowerPosition.includes('attacker')) {
+    return 'attacker';
+  }
+
+  return null;
+};
+
+const getPairedPlayerIdsFromFormation = (formation, playerId, options = {}) => {
+  const { strategy = 'pair' } = options;
+
+  if (!formation || !playerId) {
+    return null;
+  }
+
+  const positionKey = Object.keys(formation).find(key => formation[key] === playerId);
+  if (!positionKey) {
+    return null;
+  }
+
+  if (strategy === 'role_group') {
+    const roleGroup = getRoleGroupForPosition(positionKey);
+    const rolePositions = roleGroup ? ROLE_GROUP_POSITIONS[roleGroup] : null;
+
+    if (rolePositions) {
+      const rolePlayerIds = rolePositions.map(pos => formation[pos]).filter(Boolean);
+      if (rolePlayerIds.length === rolePositions.length) {
+        return rolePlayerIds;
+      }
+    }
+    // Fall back to pair strategy when the role group is incomplete
+  }
+
+  const pairKey = getPairKeyForFieldPosition(positionKey);
+  if (!pairKey) {
+    return null;
+  }
+
+  const pairPositions = FIELD_PAIR_POSITIONS[pairKey];
+  const playerIds = pairPositions
+    .map(pos => formation[pos])
+    .filter(Boolean);
+
+  if (playerIds.length !== 2) {
+    return null;
+  }
+
+  return playerIds;
 };
 
 /**
@@ -1000,26 +1066,53 @@ export const calculateRemovePlayerFromNextToGoOff = (gameState, playerId, substi
     return gameState;
   }
 
+  const supportsPairedRotation = substitutionCount === 2 && canUsePairedRoleStrategy(gameState.teamConfig);
+
+  if (supportsPairedRotation) {
+    const pairingStrategy =
+      gameState.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+        ? 'role_group'
+        : 'pair';
+
+    const pairIds = getPairedPlayerIdsFromFormation(
+      gameState.formation,
+      playerId,
+      { strategy: pairingStrategy }
+    );
+    if (!pairIds) {
+      return gameState;
+    }
+
+    const pairMeta = analyzeOutgoingPair(gameState.formation, pairIds);
+    const orderedPairIds = pairMeta?.playerIds || pairIds;
+
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
+    queueManager.initialize();
+
+    orderedPairIds.forEach(id => queueManager.removePlayer(id));
+
+    const insertIndex = Math.min(substitutionCount, queueManager.size());
+    orderedPairIds.forEach((id, offset) => {
+      queueManager.addPlayer(id, insertIndex + offset);
+    });
+
+    return {
+      ...gameState,
+      rotationQueue: queueManager.toArray(),
+      playersToHighlight: orderedPairIds
+    };
+  }
+
   // Get players in the "next to go off" group
   const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
 
-  // Check if player is in the next group
   if (!nextNToSubOut.includes(playerId)) {
-    return gameState; // Player is not in next group, nothing to do
+    return gameState;
   }
 
-  // Remove the player from the queue
   const queueWithoutPlayer = rotationQueue.filter(id => id !== playerId);
-
-  // After removal, the new "next to go off" group will automatically include:
-  // - The remaining players from the original group (substitutionCount - 1 players)
-  // - Plus the next player in the queue (who was at index substitutionCount before removal)
-
-  // Place the removed player immediately after the new "next to go off" group
-  // That position is at index substitutionCount (0-indexed, so after substitutionCount players)
   const insertPosition = Math.min(substitutionCount, queueWithoutPlayer.length);
 
-  // Insert the player at the calculated position
   const newQueue = [
     ...queueWithoutPlayer.slice(0, insertPosition),
     playerId,
@@ -1045,21 +1138,51 @@ export const calculateSetPlayerAsNextToGoOff = (gameState, playerId, substitutio
     return gameState;
   }
 
-  // Get players in the "next to go off" group
+  const supportsPairedRotation = substitutionCount === 2 && canUsePairedRoleStrategy(gameState.teamConfig);
+
+  if (supportsPairedRotation) {
+    const pairingStrategy =
+      gameState.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+        ? 'role_group'
+        : 'pair';
+
+    const pairIds = getPairedPlayerIdsFromFormation(
+      gameState.formation,
+      playerId,
+      { strategy: pairingStrategy }
+    );
+    if (!pairIds) {
+      return gameState;
+    }
+
+    const pairMeta = analyzeOutgoingPair(gameState.formation, pairIds);
+    const orderedPairIds = pairMeta?.playerIds || pairIds;
+
+    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
+    queueManager.initialize();
+
+    orderedPairIds.forEach(id => queueManager.removePlayer(id));
+
+    for (let i = orderedPairIds.length - 1; i >= 0; i--) {
+      queueManager.addPlayer(orderedPairIds[i], 0);
+    }
+
+    return {
+      ...gameState,
+      rotationQueue: queueManager.toArray(),
+      playersToHighlight: orderedPairIds
+    };
+  }
+
   const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
 
-  // Check if player is already in the next group
   if (nextNToSubOut.includes(playerId)) {
-    return gameState; // Player is already in next group, nothing to do
+    return gameState;
   }
 
   const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
   queueManager.initialize();
-
-  // Remove player from their current position
   queueManager.removePlayer(playerId);
-
-  // Insert player at the front of the queue (position 0)
   queueManager.addPlayer(playerId, 0);
 
   return {

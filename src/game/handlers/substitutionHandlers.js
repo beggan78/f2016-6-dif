@@ -44,6 +44,8 @@ export const createSubstitutionHandlers = (
     setNextNextPlayerIdToSubOut,
     setRotationQueue,
     setShouldSubstituteNow,
+    setSubstitutionOverride = () => {},
+    clearSubstitutionOverride = () => {},
     setLastSubstitution,
     setLastSubstitutionTimestamp,
     resetSubTimer,
@@ -240,6 +242,7 @@ export const createSubstitutionHandlers = (
 
   const handleSubstituteNow = (fieldPlayerModal) => {
     const gameState = gameStateFactory();
+    clearSubstitutionOverride();
 
     // For pairs mode, immediately substitute the pair
     if (fieldPlayerModal.type === 'pair') {
@@ -333,6 +336,7 @@ export const createSubstitutionHandlers = (
 
             // Now set the field player as next to sub out and trigger immediate substitution
             setNextPlayerToSubOut(fieldPlayerModal.target, false);
+            setSubstitutionOverride({ substitutionCount: 1, reason: 'immediate_field_player' });
             applyImmediateSubstitutionOverride();
             setShouldSubstituteNow(true);
           },
@@ -343,6 +347,7 @@ export const createSubstitutionHandlers = (
       } else {
         // Only substitute is already first, just trigger the substitution
         setNextPlayerToSubOut(fieldPlayerModal.target, false);
+        setSubstitutionOverride({ substitutionCount: 1, reason: 'immediate_field_player' });
         applyImmediateSubstitutionOverride();
         setShouldSubstituteNow(true);
       }
@@ -419,6 +424,7 @@ export const createSubstitutionHandlers = (
   };
 
   const handleCancelFieldPlayerModal = () => {
+    clearSubstitutionOverride();
     closeFieldPlayerModal();
     if (removeFromNavigationStack) {
       removeFromNavigationStack();
@@ -968,6 +974,8 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSelectSubstituteForImmediate = (substituteSelectionModal, selectedSubstituteId) => {
+    clearSubstitutionOverride();
+
     if (!substituteSelectionModal.fieldPlayerId || !selectedSubstituteId) {
       if (modalHandlers.closeSubstituteSelectionModal) {
         modalHandlers.closeSubstituteSelectionModal();
@@ -1051,6 +1059,7 @@ export const createSubstitutionHandlers = (
           }
 
           // Now set the field player as next to sub out and trigger immediate substitution
+          setSubstitutionOverride({ substitutionCount: 1, reason: 'immediate_field_player' });
           setNextPlayerToSubOut(substituteSelectionModal.fieldPlayerPosition, false);
           applyImmediateSubstitutionOverride();
           setShouldSubstituteNow(true);
@@ -1061,6 +1070,7 @@ export const createSubstitutionHandlers = (
       );
     } else {
       // Selected substitute is already next to come on, just trigger the substitution
+      setSubstitutionOverride({ substitutionCount: 1, reason: 'immediate_field_player' });
       setNextPlayerToSubOut(substituteSelectionModal.fieldPlayerPosition, false);
       applyImmediateSubstitutionOverride();
       setShouldSubstituteNow(true);
@@ -1076,6 +1086,7 @@ export const createSubstitutionHandlers = (
   };
 
   const handleCancelSubstituteSelection = () => {
+    clearSubstitutionOverride();
     if (modalHandlers.closeSubstituteSelectionModal) {
       modalHandlers.closeSubstituteSelectionModal();
     }

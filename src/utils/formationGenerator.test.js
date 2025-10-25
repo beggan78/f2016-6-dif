@@ -1,4 +1,5 @@
 import { generateRecommendedFormation, generateBalancedFormationForPeriod3, generateIndividualFormationRecommendation } from './formationGenerator';
+import { PAIRED_ROLE_STRATEGY_TYPES } from '../constants/teamConfiguration';
 import { TEAM_CONFIGS } from '../game/testUtils';
 
 describe('Formation Generator - Pair Mode', () => {
@@ -466,6 +467,106 @@ describe('Formation Generator - Individual Mode', () => {
       timeAsGoalieSeconds: 0,
       isInactive
     }
+  });
+
+  describe('Swap-every-rotation pair persistence', () => {
+    const basePreviousFormation = {
+      goalie: 'g1',
+      leftDefender: 'p1',
+      rightDefender: 'p2',
+      leftAttacker: 'p3',
+      rightAttacker: 'p4',
+      substitute_1: 'p5',
+      substitute_2: 'p6'
+    };
+
+    const baseSwapConfig = {
+      ...TEAM_CONFIGS.INDIVIDUAL_7,
+      pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
+    };
+
+    const createSwapSquad = () => {
+      const playerBlueprint = [
+        { id: 'p1', name: 'Player 1', time: 420, preferredSide: 'left' },
+        { id: 'p3', name: 'Player 3', time: 400, preferredSide: 'left' },
+        { id: 'p2', name: 'Player 2', time: 410, preferredSide: 'right' },
+        { id: 'p4', name: 'Player 4', time: 390, preferredSide: 'right' },
+        { id: 'p5', name: 'Player 5', time: 200, preferredSide: 'left' },
+        { id: 'p6', name: 'Player 6', time: 190, preferredSide: 'right' },
+        { id: 'g1', name: 'Goalie 1', time: 0, preferredSide: null }
+      ];
+
+      return playerBlueprint.map(({ id, name, time, preferredSide }) => {
+        const base = createIndividualPlayer(id, name, time);
+        return {
+          ...base,
+          stats: {
+            ...base.stats,
+            preferredSide
+          }
+        };
+      });
+    };
+
+    const applyOverrides = (squad, overrides = {}) =>
+      squad.map(player => {
+        const override = overrides[player.id];
+        if (!override) {
+          return player;
+        }
+        return {
+          ...player,
+          stats: {
+            ...player.stats,
+            ...override
+          }
+        };
+      });
+
+    test('should swap roles while keeping side pairings when goalie remains the same', () => {
+      const squad = createSwapSquad();
+
+      const result = generateIndividualFormationRecommendation(
+        'g1',
+        squad,
+        squad,
+        baseSwapConfig,
+        '2-2',
+        basePreviousFormation
+      );
+
+      expect(result.formation.leftDefender).toBe('p3');
+      expect(result.formation.leftAttacker).toBe('p1');
+      expect(result.formation.rightDefender).toBe('p4');
+      expect(result.formation.rightAttacker).toBe('p2');
+      expect(new Set([result.formation.substitute_1, result.formation.substitute_2])).toEqual(new Set(['p5', 'p6']));
+
+      expect(result.rotationQueue.slice(0, 2)).toEqual(['p3', 'p4']);
+    });
+
+    test('should break only the affected pair when the goalie changes', () => {
+      const squad = applyOverrides(createSwapSquad(), {
+        g1: { preferredSide: 'right', timeOnFieldSeconds: 180 },
+        p4: { preferredSide: 'right' }
+      });
+
+      const result = generateIndividualFormationRecommendation(
+        'p4',
+        squad,
+        squad,
+        baseSwapConfig,
+        '2-2',
+        basePreviousFormation
+      );
+
+      expect(result.formation.leftDefender).toBe('p3');
+      expect(result.formation.leftAttacker).toBe('p1');
+
+      // Right side should contain the orphaned partner (p2) and the ex-goalie (g1) with swapped roles
+      expect([result.formation.rightDefender, result.formation.rightAttacker]).toEqual(expect.arrayContaining(['p2', 'g1']));
+      expect(result.formation.rightAttacker).toBe('p2');
+      expect(result.formation.rightDefender).toBe('g1');
+    });
   });
 
   describe('1-2-1 Formation Tests', () => {

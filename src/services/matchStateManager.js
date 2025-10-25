@@ -1818,8 +1818,8 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
         formation: initialConfig.teamConfig?.formation,
         squadSize: initialConfig.teamConfig?.squadSize,
         substitutionType: initialConfig.teamConfig?.substitutionType || 'individual',
-        ...(initialConfig.teamConfig?.pairRoleRotation && {
-          pairRoleRotation: initialConfig.teamConfig.pairRoleRotation
+        ...(initialConfig.teamConfig?.pairedRoleStrategy && {
+          pairedRoleStrategy: initialConfig.teamConfig.pairedRoleStrategy
         })
       };
 

@@ -17,7 +17,7 @@ Initial game configuration screen with comprehensive state management:
 - **Captain Selection**: Optional captain assignment
 
 **Team Configuration System**:
-- Uses `createTeamConfig()` to create composite configuration with format, squadSize, formation, substitutionType, and pairRoleRotation
+- Uses `createTeamConfig()` to create composite configuration with format, squadSize, formation, substitutionType, and pairedRoleStrategy
 - Auto-creates team config when squad size is selected (uses `createTeamConfigFromSquadSize()`)
 - Pairs mode available only for 7-player 2-2 formation with role rotation options (fixed/alternating/period-alternating)
 
