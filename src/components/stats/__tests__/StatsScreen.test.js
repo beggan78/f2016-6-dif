@@ -171,7 +171,9 @@ describe('StatsScreen', () => {
   it('omits bench players with no playing time from the statistics table', () => {
     const benchPlayer = {
       id: 'bench-player',
-      name: 'Bench Player',
+      displayName: 'Bench Player',
+      firstName: 'Bench',
+      lastName: 'Player',
       stats: {
         startedMatchAs: PLAYER_ROLES.SUBSTITUTE,
         timeOnFieldSeconds: 0,
@@ -204,7 +206,9 @@ describe('StatsScreen', () => {
   it('excludes non-squad players even if they have residual stats', () => {
     const unrelatedPlayer = {
       id: 'unrelated-player',
-      name: 'Past Match Hero',
+      displayName: 'Past Match Hero',
+      firstName: 'Past',
+      lastName: 'Hero',
       stats: {
         startedMatchAs: PLAYER_ROLES.FIELD_PLAYER,
         timeOnFieldSeconds: 1200,
@@ -250,10 +254,13 @@ describe('StatsScreen', () => {
 
   describe('Fair Play Award', () => {
     // Test utility functions
-    const selectFairPlayAward = async (playerName) => {
+    const selectFairPlayAward = async (playerDisplayName) => {
       const dropdown = screen.getByTestId('fair-play-award-dropdown');
-      // Find the player by name and use their ID as the value to select
-      const player = mockPlayers.find(p => p.name === playerName);
+      // Find the player by display name and use their ID as the value to select
+      const player = mockPlayers.find(p => p.displayName === playerDisplayName);
+      if (!player) {
+        throw new Error(`Player with display name "${playerDisplayName}" not found`);
+      }
       await userEvent.selectOptions(dropdown, player.id);
     };
 
@@ -301,7 +308,7 @@ describe('StatsScreen', () => {
       const firstPlayer = mockPlayers[0];
       
       // Select a player
-      await selectFairPlayAward(firstPlayer.name);
+      await selectFairPlayAward(firstPlayer.displayName);
       
       expect(dropdown.value).toBe(firstPlayer.id);
     });
@@ -313,7 +320,7 @@ describe('StatsScreen', () => {
       expectConfirmationHidden();
       
       // Select a player
-      await selectFairPlayAward(firstPlayer.name);
+      await selectFairPlayAward(firstPlayer.displayName);
       
       // Should show confirmation
       expectConfirmationVisible();
@@ -326,7 +333,7 @@ describe('StatsScreen', () => {
       const firstPlayer = mockPlayers[0];
       
       // First select a player
-      await selectFairPlayAward(firstPlayer.name);
+      await selectFairPlayAward(firstPlayer.displayName);
       expectConfirmationVisible();
       
       // Then select "Not awarded"
@@ -340,7 +347,7 @@ describe('StatsScreen', () => {
       const firstPlayer = mockPlayers[0];
       
       // Select a player for fair play award
-      await selectFairPlayAward(firstPlayer.name);
+      await selectFairPlayAward(firstPlayer.displayName);
       
       // Click save match button
       const saveButton = screen.getByText('Save Match to History');
@@ -380,7 +387,7 @@ describe('StatsScreen', () => {
       const firstPlayer = mockPlayers[0];
 
       // Select a player for fair play award
-      await selectFairPlayAward(firstPlayer.name);
+      await selectFairPlayAward(firstPlayer.displayName);
       
       // Click save match button
       const saveButton = screen.getByText('Save Match to History');
@@ -399,7 +406,7 @@ describe('StatsScreen', () => {
       const secondPlayer = mockPlayers[1];
       
       // Select first player
-      await selectFairPlayAward(firstPlayer.name);
+      await selectFairPlayAward(firstPlayer.displayName);
       
       // Click save to apply the change
       const saveButton = screen.getByText('Save Match to History');
@@ -424,7 +431,7 @@ describe('StatsScreen', () => {
       const selectedPlayer = mockPlayers[1]; // Select second player
       
       // Select a player for fair play award
-      await selectFairPlayAward(selectedPlayer.name);
+      await selectFairPlayAward(selectedPlayer.displayName);
       
       // Click save match button
       const saveButton = screen.getByText('Save Match to History');

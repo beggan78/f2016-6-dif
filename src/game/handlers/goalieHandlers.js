@@ -86,7 +86,7 @@ export const createGoalieHandlers = (
           if (newGoaliePlayer) {
             logEvent(EVENT_TYPES.GOALIE_ASSIGNMENT, {
               goalieId: newGoalieId,
-              goalieName: newGoaliePlayer.name,
+              goalieName: formatPlayerName(newGoaliePlayer),
               previousGoalieId: gameState.formation.goalie,
               previousGoalieName: gameState.formation.goalie ? getPlayerNameById(gameState.formation.goalie) : null,
               eventType: 'replacement',
@@ -94,7 +94,7 @@ export const createGoalieHandlers = (
               timestamp: currentTime,
               periodNumber: gameState.currentPeriodNumber || 1,
               teamConfig: gameState.teamConfig,
-              description: `${newGoaliePlayer.name} is goalie`
+              description: `${formatPlayerName(newGoaliePlayer)} is goalie`
             });
           }
         } catch (error) {
