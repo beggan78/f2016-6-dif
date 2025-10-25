@@ -1657,12 +1657,28 @@ export const TeamProvider = ({ children }) => {
         throw new Error('Failed to update player');
       }
 
+      const teamId = data?.team_id;
+
+      if (teamId && currentTeam?.id === teamId) {
+        const updatedPlayers = await getTeamPlayers(teamId);
+        setTeamPlayers(updatedPlayers);
+
+        try {
+          const syncResult = syncTeamRosterToGameState(updatedPlayers, []);
+          if (!syncResult.success) {
+            console.warn('⚠️ Failed to sync updated roster player to game state:', syncResult.error);
+          }
+        } catch (syncError) {
+          console.warn('⚠️ Roster player sync error (non-blocking):', syncError);
+        }
+      }
+
       return data;
     } catch (err) {
       console.error('Exception in updateRosterPlayer:', err);
       throw err;
     }
-  }, [user]);
+  }, [user, currentTeam, getTeamPlayers, syncTeamRosterToGameState]);
 
   // Remove player from roster
   const removeRosterPlayer = useCallback(async (playerId) => {

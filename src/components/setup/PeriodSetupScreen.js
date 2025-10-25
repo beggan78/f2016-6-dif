@@ -454,20 +454,7 @@ export function PeriodSetupScreen({
   };
 
   const getPlayerDisplayName = (player) => {
-    if (!player) {
-      return 'Player';
-    }
-
-    if (player.displayName) {
-      return player.displayName;
-    }
-
-    const combinedName = [player.firstName, player.lastName].filter(Boolean).join(' ').trim();
-    if (combinedName) {
-      return combinedName;
-    }
-
-    return player.firstName || player.lastName || 'Player';
+    return player?.displayName || 'Unknown Player';
   };
 
   const getPlayerDisplayNameById = (playerId) => {
