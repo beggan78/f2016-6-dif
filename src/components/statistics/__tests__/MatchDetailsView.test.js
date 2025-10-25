@@ -18,6 +18,34 @@ jest.mock('../../../services/matchStateManager', () => ({
   deleteConfirmedMatch: jest.fn()
 }));
 
+const buildTeamPlayer = (player) => {
+  const { name, displayName, display_name, firstName, first_name, lastName, last_name, ...rest } = player;
+  const resolvedDisplayName = displayName || display_name || name || 'Unnamed Player';
+  const [first, ...lastParts] = (firstName || first_name || resolvedDisplayName).split(/\s+/);
+  const resolvedFirstName = first || resolvedDisplayName;
+  const resolvedLastName = lastName ?? last_name ?? (lastParts.length ? lastParts.join(' ') : null);
+
+  return {
+    ...rest,
+    displayName: resolvedDisplayName,
+    display_name: resolvedDisplayName,
+    firstName: resolvedFirstName,
+    first_name: resolvedFirstName,
+    lastName: resolvedLastName,
+    last_name: resolvedLastName
+  };
+};
+
+const buildPlayerStats = (playerStats) => {
+  const { name, displayName, ...rest } = playerStats;
+  const resolvedDisplayName = displayName || name || 'Unnamed Player';
+
+  return {
+    ...rest,
+    displayName: resolvedDisplayName
+  };
+};
+
 describe('MatchDetailsView - manual creation mode', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,7 +65,7 @@ describe('MatchDetailsView - manual creation mode', () => {
         matchId={null}
         mode="create"
         teamId="team-xyz"
-        teamPlayers={[{ id: 'player-1', name: 'Player One' }]}
+        teamPlayers={[{ id: 'player-1', name: 'Player One' }].map(buildTeamPlayer)}
         onManualMatchCreated={handleManualMatchCreated}
         onNavigateBack={handleNavigateBack}
       />
@@ -80,7 +108,7 @@ describe('MatchDetailsView - manual creation mode', () => {
         teamPlayers={[
           { id: 'player-1', name: 'Player One' },
           { id: 'player-2', name: 'Player Two' }
-        ]}
+        ].map(buildTeamPlayer)}
         onManualMatchCreated={handleManualMatchCreated}
         onNavigateBack={handleNavigateBack}
       />
@@ -358,7 +386,7 @@ describe('MatchDetailsView - existing match mode', () => {
           wasCaptain: false,
           receivedFairPlayAward: false
         }
-      ]
+      ].map(buildPlayerStats)
     });
 
     render(
@@ -433,7 +461,7 @@ describe('MatchDetailsView - existing match mode', () => {
           wasCaptain: false,
           receivedFairPlayAward: false
         }
-      ]
+      ].map(buildPlayerStats)
     });
 
     render(
@@ -509,7 +537,7 @@ describe('MatchDetailsView - existing match mode', () => {
           wasCaptain: false,
           receivedFairPlayAward: false
         }
-      ]
+      ].map(buildPlayerStats)
     });
 
     render(
@@ -616,7 +644,7 @@ describe('MatchDetailsView - existing match mode', () => {
           wasCaptain: false,
           receivedFairPlayAward: false
         }
-      ]
+      ].map(buildPlayerStats)
     });
 
     render(

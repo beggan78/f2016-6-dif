@@ -150,10 +150,10 @@ export function usePlayerState(initialState = {}) {
   // Add temporary player to squad
   const addTemporaryPlayer = useCallback((playerName) => {
     const newPlayerId = `temp_${Date.now()}`;
+    const [template] = initializePlayers([playerName]);
     const newPlayer = {
-      id: newPlayerId,
-      name: playerName,
-      stats: initializePlayers([playerName])[0].stats
+      ...template,
+      id: newPlayerId
     };
 
     setAllPlayers(prev => [...prev, newPlayer]);

@@ -255,14 +255,17 @@ export const MockStatsScreen = ({
       </div>
       
       <div data-testid="player-stats">
-        {allPlayers.map(player => (
-          <div key={player.id} data-testid={`player-stats-${player.id}`}>
-            <div data-player-name={player.name}>{player.name}</div>
-            <div data-field-time={player.stats.timeOnFieldSeconds}>{player.stats.timeOnFieldSeconds}s on field</div>
-            <div data-attacker-time={player.stats.timeAsAttackerSeconds}>{player.stats.timeAsAttackerSeconds}s as attacker</div>
-            <div data-defender-time={player.stats.timeAsDefenderSeconds}>{player.stats.timeAsDefenderSeconds}s as defender</div>
-          </div>
-        ))}
+        {allPlayers.map(player => {
+          const playerLabel = player.displayName || player.firstName || 'Unknown Player';
+          return (
+            <div key={player.id} data-testid={`player-stats-${player.id}`}>
+              <div data-player-name={playerLabel}>{playerLabel}</div>
+              <div data-field-time={player.stats.timeOnFieldSeconds}>{player.stats.timeOnFieldSeconds}s on field</div>
+              <div data-attacker-time={player.stats.timeAsAttackerSeconds}>{player.stats.timeAsAttackerSeconds}s as attacker</div>
+              <div data-defender-time={player.stats.timeAsDefenderSeconds}>{player.stats.timeAsDefenderSeconds}s as defender</div>
+            </div>
+          );
+        })}
       </div>
       
       <div data-testid="stats-actions">

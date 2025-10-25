@@ -46,7 +46,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
   // Form state
   const [clubForm, setClubForm] = useState({ name: '', shortName: '', longName: '' });
   const [teamForm, setTeamForm] = useState({ name: '' });
-  const [playerForm, setPlayerForm] = useState({ name: '' });
+  const [playerForm, setPlayerForm] = useState({ displayName: '' });
   const [errors, setErrors] = useState({});
 
   const clearFormErrors = useCallback(() => {
@@ -171,18 +171,28 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     clearFormErrors();
 
     // Validation
-    if (!playerForm.name.trim()) {
+    if (!playerForm.displayName.trim()) {
       setErrors({ playerName: 'Player name is required' });
       return;
     }
 
+    const trimmedName = playerForm.displayName.trim();
+    const [firstName, ...lastNameParts] = trimmedName.split(/\s+/);
     const player = await createPlayer({
-      name: playerForm.name.trim()
+      firstName: firstName || trimmedName,
+      lastName: lastNameParts.length > 0 ? lastNameParts.join(' ') : null,
+      displayName: trimmedName
     });
 
     if (player) {
-      setPlayers(prev => [...prev, player]);
-      setPlayerForm({ name: '' });
+      const normalizedPlayer = {
+        ...player,
+        displayName: player.display_name || trimmedName,
+        firstName: player.first_name || firstName || trimmedName,
+        lastName: player.last_name ?? (lastNameParts.length > 0 ? lastNameParts.join(' ') : null)
+      };
+      setPlayers(prev => [...prev, normalizedPlayer]);
+      setPlayerForm({ displayName: '' });
     }
   }, [playerForm, createPlayer, clearFormErrors]);
 
@@ -450,12 +460,12 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
       <div className="flex space-x-2">
         <div className="flex-1">
           <Input
-            value={playerForm.name}
-            onChange={(e) => setPlayerForm(prev => ({ ...prev, name: sanitizeNameInput(e.target.value) }))}
-            placeholder="Player name"
+            value={playerForm.displayName}
+            onChange={(e) => setPlayerForm(prev => ({ ...prev, displayName: sanitizeNameInput(e.target.value) }))}
+            placeholder="Player display name"
             className={errors.playerName ? 'border-rose-500' : ''}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && playerForm.name.trim()) {
+              if (e.key === 'Enter' && playerForm.displayName.trim()) {
                 handleAddPlayer();
               }
             }}
@@ -466,7 +476,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         </div>
         <Button
           onClick={handleAddPlayer}
-          disabled={loading || !playerForm.name.trim()}
+          disabled={loading || !playerForm.displayName.trim()}
           Icon={UserPlus}
         >
           Add
@@ -479,7 +489,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           <div className="max-h-32 overflow-y-auto space-y-1">
             {players.map((player) => (
               <div key={player.id} className="flex items-center p-2 bg-slate-700 rounded text-sm">
-                <span className="text-slate-100">{player.name}</span>
+                <span className="text-slate-100">{player.displayName || player.display_name || player.first_name}</span>
               </div>
             ))}
           </div>

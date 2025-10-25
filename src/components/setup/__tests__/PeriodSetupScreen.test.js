@@ -78,7 +78,7 @@ jest.mock('../../shared/UI', () => ({
 
 // Mock utility functions
 jest.mock('../../../utils/formatUtils', () => ({
-  getPlayerLabel: jest.fn((player, periodNumber) => `${player.name} (P${periodNumber})`)
+  getPlayerLabel: jest.fn((player, periodNumber) => `${player.displayName} (P${periodNumber})`)
 }));
 
 jest.mock('../../../utils/debugUtils', () => ({

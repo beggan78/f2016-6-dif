@@ -34,11 +34,22 @@ export const createEmptyPlayerStats = () => ({
 });
 
 // Helper to initialize player objects
-export const initializePlayers = (roster) => roster.map((name, index) => ({
-  id: `p${index + 1}`,
-  name,
-  stats: createEmptyPlayerStats()
-}));
+export const initializePlayers = (roster) => roster.map((rawName, index) => {
+  const fallbackName = `Player ${index + 1}`;
+  const trimmedName = typeof rawName === 'string' ? rawName.trim() : '';
+  const [firstName, ...rest] = trimmedName.split(/\s+/).filter(Boolean);
+  const displayName = trimmedName || fallbackName;
+  const resolvedFirstName = firstName || displayName;
+  const lastName = rest.length > 0 ? rest.join(' ') : null;
+
+  return {
+    id: `p${index + 1}`,
+    displayName,
+    firstName: resolvedFirstName,
+    lastName,
+    stats: createEmptyPlayerStats()
+  };
+});
 
 /**
  * Reset match-start participation markers for a player.
@@ -172,7 +183,7 @@ export const getPlayerName = (allPlayers, playerId, fallback = 'N/A') => {
     return fallback;
   }
 
-  const playerName = player.displayName;
+  const playerName = player.displayName || player.firstName;
   if (!playerName) {
     return fallback;
   }

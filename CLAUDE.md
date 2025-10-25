@@ -93,7 +93,7 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 ### Defensive Coding Practices
 **Guard against runtime errors**:
 - **Null safety**: Validate data before accessing nested properties (use optional chaining `player?.stats?.time`)
-- **Default values**: Provide fallbacks for undefined data (`const name = player.name || 'Unknown'`)
+- **Default values**: Provide fallbacks for undefined data (`const name = player.displayName || 'Unknown'`)
 - **Early returns**: Use guard clauses at function start for invalid inputs
 - **Error boundaries**: Wrap components that may crash to prevent full app failures
 

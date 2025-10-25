@@ -27,7 +27,7 @@ import { calculateRolePoints } from '../../../utils/rolePointUtils';
 // Mock utility functions
 jest.mock('../../../utils/formatUtils', () => ({
   formatPoints: jest.fn((points) => points % 1 === 0 ? points.toString() : points.toFixed(1)),
-  formatPlayerName: jest.fn((player) => player ? player.name : 'Unknown'),
+  formatPlayerName: jest.fn((player) => player ? player.displayName : 'Unknown'),
   generateStatsText: jest.fn((squadForStats, ownScore, opponentScore, opponentTeam) =>
     `Final Score: Djurgården ${ownScore} - ${opponentScore} ${opponentTeam || 'Opponent'}
 

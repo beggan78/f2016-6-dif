@@ -502,7 +502,6 @@ export function ConfigurationScreen({
   const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0
     ? teamPlayers.map(player => ({
         id: player.id,
-        name: player.display_name, // Map display_name to name for game state
         displayName: player.display_name,
         firstName: player.first_name,
         lastName: player.last_name,
@@ -586,7 +585,6 @@ export function ConfigurationScreen({
     if (isAuthenticated && currentTeam && teamPlayers.length > 0) {
       const transformedTeamPlayers = teamPlayers.map(player => ({
         id: player.id,
-        name: player.display_name, // Map display_name to name for game state
         displayName: player.display_name,
         firstName: player.first_name,
         lastName: player.last_name,
@@ -608,7 +606,7 @@ export function ConfigurationScreen({
 
       // Only update allPlayers if the data has actually changed
       const currentNames = allPlayers.map(p => ({ id: p.id, name: p.displayName }));
-      const newNames = transformedTeamPlayers.map(p => ({ id: p.id, name: p.name }));
+      const newNames = transformedTeamPlayers.map(p => ({ id: p.id, name: p.displayName }));
       if (JSON.stringify(currentNames) !== JSON.stringify(newNames)) {
         setAllPlayers(transformedTeamPlayers);
       }

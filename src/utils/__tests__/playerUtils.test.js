@@ -27,7 +27,9 @@ describe('playerUtils', () => {
   const mockPlayers = [
     {
       id: 'p1',
-      name: 'Player 1',
+      displayName: 'Player 1',
+      firstName: 'Player 1',
+      lastName: null,
       stats: {
         currentStatus: PLAYER_STATUS.ON_FIELD,
         currentRole: PLAYER_ROLES.DEFENDER,
@@ -38,7 +40,9 @@ describe('playerUtils', () => {
     },
     {
       id: 'p2',
-      name: 'Player 2',
+      displayName: 'Player 2',
+      firstName: 'Player 2',
+      lastName: null,
       stats: {
         currentStatus: PLAYER_STATUS.SUBSTITUTE,
         currentRole: PLAYER_ROLES.SUBSTITUTE,
@@ -49,7 +53,9 @@ describe('playerUtils', () => {
     },
     {
       id: 'p3',
-      name: 'Player 3',
+      displayName: 'Player 3',
+      firstName: 'Player 3',
+      lastName: null,
       stats: {
         currentStatus: PLAYER_STATUS.GOALIE,
         currentRole: PLAYER_ROLES.GOALIE,
@@ -60,7 +66,9 @@ describe('playerUtils', () => {
     },
     {
       id: 'p4',
-      name: 'Player 4',
+      displayName: 'Player 4',
+      firstName: 'Player 4',
+      lastName: null,
       stats: {
         currentStatus: PLAYER_STATUS.SUBSTITUTE,
         currentRole: PLAYER_ROLES.SUBSTITUTE,
@@ -86,7 +94,9 @@ describe('playerUtils', () => {
       expect(players).toHaveLength(3);
       expect(players[0]).toEqual({
         id: 'p1',
-        name: 'Alice',
+        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
         stats: {
           startedMatchAs: null,
           startedAtRole: null,
@@ -226,7 +236,7 @@ describe('playerUtils', () => {
     });
 
     it('returns original player when stats are missing', () => {
-      const player = { id: 'p2', name: 'No Stats' };
+      const player = { id: 'p2', displayName: 'No Stats' };
       expect(resetPlayerMatchStartState(player)).toBe(player);
     });
   });
@@ -235,7 +245,7 @@ describe('playerUtils', () => {
     it('should find player by ID', () => {
       const player = findPlayerById(mockPlayers, 'p2');
       expect(player).toBe(mockPlayers[1]);
-      expect(player.name).toBe('Player 2');
+      expect(player.displayName).toBe('Player 2');
     });
 
     it('should return undefined for non-existent player', () => {
@@ -297,7 +307,7 @@ describe('playerUtils', () => {
     });
 
     it('should validate stats when requested', () => {
-      const playersWithoutStats = [{ id: 'p1', name: 'Player 1' }];
+      const playersWithoutStats = [{ id: 'p1', displayName: 'Player 1' }];
       const lookup = createPlayerLookupFunction(playersWithoutStats, { validateStats: true });
       
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
@@ -398,7 +408,7 @@ describe('playerUtils', () => {
     it('should return captain player', () => {
       const captain = getCaptainPlayer(mockPlayers);
       expect(captain).toBe(mockPlayers[1]);
-      expect(captain.name).toBe('Player 2');
+      expect(captain.displayName).toBe('Player 2');
     });
 
     it('should return null when no captain', () => {
@@ -536,12 +546,12 @@ describe('playerUtils', () => {
 
       // Set a captain
       players = setCaptain(players, 'p2');
-      expect(getCaptainPlayer(players).name).toBe('Bob');
+      expect(getCaptainPlayer(players).displayName).toBe('Bob');
       expect(getPlayerName(players, 'p2')).toBe('Bob (C)');
 
       // Create lookup function
       const lookup = createPlayerLookupFunction(players);
-      expect(lookup('p3').name).toBe('Charlie');
+      expect(lookup('p3').displayName).toBe('Charlie');
 
       // Check squad composition
       const squad = getSelectedSquadPlayers(players, ['p1', 'p2', 'p3']);

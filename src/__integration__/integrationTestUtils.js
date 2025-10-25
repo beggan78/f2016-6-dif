@@ -350,8 +350,8 @@ export const simulateConfigurationSetup = async (gameScenario) => {
   for (const playerId of selectedSquadIds) {
     const player = players.find(p => p.id === playerId);
     if (player) {
-      // Find the checkbox by the player name in the label
-      const playerLabel = screen.getByText(player.name).closest('label');
+      const playerLabelText = player.displayName || player.firstName || 'Unknown Player';
+      const playerLabel = screen.getByText(playerLabelText).closest('label');
       const playerCheckbox = within(playerLabel).getByRole('checkbox');
       if (!playerCheckbox.checked) {
         fireEvent.click(playerCheckbox);

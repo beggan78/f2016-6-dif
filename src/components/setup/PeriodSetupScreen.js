@@ -162,7 +162,7 @@ export function PeriodSetupScreen({
       })
       .map(player => ({
         id: player.id,
-        name: player.name,
+        name: player.displayName,
         percentStartedAsSub: typeof subRecommendationPercentages[player.id] === 'number'
           ? subRecommendationPercentages[player.id]
           : 0
@@ -1161,7 +1161,7 @@ export function PeriodSetupScreen({
                     key={player.id}
                     className="flex items-center justify-between rounded-md bg-slate-800/60 px-2 py-1 text-sm text-slate-100"
                   >
-                    <span>{player.name}</span>
+                    <span>{player.displayName}</span>
                     <span className="text-xs text-slate-300">
                       {formatSubstitutePercentage(player.percentStartedAsSub)}
                     </span>
