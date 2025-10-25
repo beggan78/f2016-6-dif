@@ -1,155 +1,232 @@
 SportAdmin Scraper Integration
 ==============================
 
-## Current Status
+## Status Overview
 
-A working proof-of-concept (PoC) scraper has been implemented as a standalone TypeScript CLI tool. The PoC successfully demonstrates the technical feasibility of extracting data from SportAdmin's Blazor-based web interface.
-
-### PoC Implementation (Completed)
-
+### PoC Implementation ✓ (Completed)
 **Repository**: `sportadmin-scraper/`
+**Stack**: TypeScript, Playwright, Node.js
 
-**Technology Stack**:
-- TypeScript with strict type checking
-- Playwright for browser automation (Chromium)
-- dotenv for configuration management
-- Node.js runtime
+**Capabilities**:
+- Automated login via SportAdmin identity provider
+- Attendance statistics scraping (practice filtering, player data from nested iframes)
+- Upcoming matches scraping (Swedish date formats, future match filtering)
+- Successfully handles Blazor UI and nested iframe architecture (`vpframe_3` → `iframe[name="printa"]`)
 
-**Implemented Features**:
-1. **Authentication**: Automated login flow via SportAdmin's identity provider
-2. **Attendance Statistics Scraping**:
-   - Navigates to Närvarostatistik (attendance statistics)
-   - Filters by "Träning" (practice) activity type
-   - Extracts player attendance data from nested iframe structure
-   - Captures total practice count, individual attendance counts, and percentages
-   - Outputs: `scraped-data/attendance-data.json`
+**Output**: JSON files for attendance and matches data
+**Limitations**: .env credentials, no encryption, no Supabase integration, manual execution only
 
-3. **Upcoming Matches Scraping**:
-   - Navigates to Matcher (matches) page
-   - Parses match table with Swedish date/time formats
-   - Filters for future matches only
-   - Extracts date (YYYY-MM-DD), time, teams, and venue
-   - Outputs: `scraped-data/matches-data.json`
-
-**Technical Achievements**:
-- Successfully navigates SportAdmin's complex nested iframe architecture (`vpframe_3` → `iframe[name="printa"]`)
-- Handles Blazor component hydration timing with empirically tuned waits
-- Robust data extraction with defensive error handling
-- Structured TypeScript interfaces for scraped data
-- Screenshot capture for debugging and verification
-
-**Example Output**:
-```json
-// attendance-data.json
-{
-  "totalPractices": 64,
-  "attendance": [
-    {
-      "playerName": "Léonie Kärde",
-      "totalAttendance": 63,
-      "percentage": "98%"
-    }
-  ]
-}
-
-// matches-data.json
-{
-  "upcomingMatches": [
-    {
-      "date": "2025-11-23",
-      "time": "09:45 - 11:30",
-      "teams": "Lidingö 8 - Djurgårdens IF Fotboll",
-      "venue": "Rudboda konstgräsplan"
-    }
-  ]
-}
-```
-
-**Current Usage**:
-```bash
-# Setup
-npm install
-npx playwright install chromium
-cp .env.example .env  # Add SPORTADMIN_USERNAME and SPORTADMIN_PASSWORD
-
-# Run
-npm run dev    # Development mode with hot reload
-npm run build  # Production build
-npm start      # Run built version
-```
-
-**Limitations of PoC**:
-- Credentials stored in `.env` file (no encryption)
-- No Supabase integration
-- No job queue system
-- Manual execution only (no scheduling)
-- No error recovery or retry logic
-- Browser runs in non-headless mode by default for debugging
+**See**: `sportadmin-scraper/README.md` for setup and usage
 
 ---
 
-## Future Integration Architecture
+## Connector Integration Architecture
 
-The PoC validates the scraping approach. The next phase involves integrating the scraper with Sport Wizard's Supabase backend and deploying it as a managed service.
+### Overview
+Sport Wizard will support multiple team management providers through a unified "Connectors" system. Phase 1 implements SportAdmin; architecture designed for extensibility to support Svenska Lag, MyClub, and others.
 
-### High-Level Architecture (Planned)
-- Keep the scraper as a standalone service (Playwright worker). This isolates browser dependencies, reduces blast radius, and lets us deploy fixes without touching the main React app.
-- Sport Wizard collects SportAdmin credentials/tokens via a new "Connect SportAdmin" page. Submission hits a Supabase Edge Function that encrypts and stores credentials plus inserts a row into a `sportadmin_sync_jobs` table.
-- The scraper service polls the job table (or listens via Supabase Realtime) for pending work, decrypts credentials using a KMS-backed secret, and runs the headless browser automation.
-- Normalized output (events, attendance) is written back into shared Supabase tables such as `sportadmin_events` and `sportadmin_attendance`. The job row is updated with status, timestamps, and failure details if any.
-- Sport Wizard subscribes to job updates for progress feedback; users can trigger manual syncs by inserting new jobs, and scheduled syncs can be created via a Supabase cron Edge Function that does the same.
+### Security Architecture
 
-### Recommended Hosting (AWS Focus)
-- **Primary**: AWS ECS on Fargate. During the free tier (first 12 months), 750 vCPU hours and 1.5 GB RAM hours cover light scraping workloads. Post free-tier pricing (us-east-1) runs ~$0.0405 per vCPU-hour and ~$0.00445 per GB-hour; e.g., a 0.25 vCPU/0.5 GB task running 24/7 costs about $9/month. Secrets Manager stores credentials; EventBridge schedules periodic tasks.
-- **Alternatives**: EC2 `t3.micro`/`t4g.micro` in the free tier (12 months) for a persistent VM; good if we prefer direct OS control. Lambda container image is viable for short scrapes (<15 minutes) but adds packaging friction for headless Chromium.
-- Regardless of platform, ship metrics/logs to CloudWatch, restrict outbound access, and rotate credentials regularly.
+**Encryption Strategy**: AES-256-GCM via Supabase Edge Function + Vault
 
-### Operational Considerations
-- Enforce explicit user consent before storing SportAdmin credentials; encrypt at rest and in transit.
-- Rate-limit scraping to respect SportAdmin's terms and avoid triggering bot defenses; monitor layout changes to catch breakages quickly.
-- Provide admin tooling or Supabase RPC endpoints to revoke credentials, replay failed jobs, and inspect recent runs.
-- Keep Supabase schema changes documented (new tables/functions) and cover scraping logic with integration tests that run against mocked SportAdmin HTML.
-- Define AWS infrastructure (ECS cluster, Fargate task, Secrets Manager secrets, EventBridge schedules, IAM roles) via AWS CDK in TypeScript so the scraper stack stays versioned, reviewable, and reproducible.
+**Flow**:
+1. User enters credentials in Sport Wizard UI (HTTPS)
+2. Credentials sent to Edge Function `connect-provider`
+3. Edge Function retrieves master encryption key from Supabase Vault
+4. Credentials encrypted with AES-256-GCM using team-specific IV/salt
+5. Encrypted data stored in `team_connector` table
+6. Scraper retrieves encrypted credentials and decrypts using same master key
+7. Scraper uses decrypted credentials for one-time authentication
 
-### Technology Decision: Playwright ✓
-- **Selected**: Playwright for its robust auto-waiting, tracing capabilities, and multi-browser support
-- **Rationale**: PoC demonstrated Playwright handles SportAdmin's complex Blazor/iframe structure reliably
-- **Container Size**: ~1 GB (acceptable trade-off for resilience)
-- Alternative (Puppeteer) remains viable if container size becomes a constraint
+**Key Benefits**:
+- Zero-knowledge architecture: Encrypted credentials opaque to database
+- Team isolation: Unique IV/salt per team prevents cross-team decryption
+- Centralized key management via Supabase Vault
+- Complete audit trail of access and operations
+- Key rotation support without re-encrypting all credentials
+
+### Database Schema
+
+**See**: `ai-specs/connector_schema.sql` for complete schema
+
+**Core Tables**:
+- `team_connector` - Encrypted credentials per team/provider
+- `team_connector_sync_job` - Job queue for scraper
+- `team_connector_sync_result` - Scraping results and errors
+- Enums: `connector_provider`, `connector_status`, `sync_job_status`
+
+**Key Design Decisions**:
+- Provider-agnostic schema (supports multiple providers)
+- RLS policies enforce team-based access control
+- Soft delete support (deleted_at columns)
+- Audit fields (created_by, created_at, last_updated_by, updated_at)
+- JSON columns for provider-specific configuration and results
+
+### Implementation Phases
+
+#### Phase 1: Database Migration
+**File**: `supabase/migrations/YYYYMMDD_team_connectors.sql`
+
+Tasks:
+- Create enums for connector_provider, connector_status, sync_job_status
+- Create team_connector table with encrypted credential storage
+- Create team_connector_sync_job table for job queue
+- Create team_connector_sync_result table for history
+- Add RLS policies for team-based access control
+- Set up audit triggers (updated_at, last_updated_by)
+
+#### Phase 2: Edge Function - Credential Encryption
+**File**: `supabase/functions/connect-provider/index.ts`
+
+Features:
+- Validate provider, username, password inputs
+- Retrieve master encryption key from Supabase Vault
+- Generate team-specific IV and salt
+- Encrypt credentials using Web Crypto API (AES-256-GCM)
+- Store encrypted blob, IV, and salt in team_connector table
+- Create verification sync job to test connection
+- Rate limiting and bot detection (following existing patterns)
+- Comprehensive security logging
+
+Security Measures:
+- Input validation (length limits, format checks)
+- Bot detection scoring system
+- Multi-tier rate limiting (IP, user, global)
+- CORS headers and security headers
+- Correlation IDs for request tracking
+- Structured security event logging
+
+#### Phase 3: UI Components
+**Files**:
+- `src/components/connectors/ConnectorsSection.js` - Main section in TeamManagement Preferences tab
+- `src/components/connectors/SportAdminConnectModal.js` - Connection modal with credential form
+- `src/components/connectors/ConnectorCard.js` - Display connected providers with status
+- `src/components/connectors/DisconnectConfirmModal.js` - Disconnect confirmation with warnings
+- `src/services/connectorService.js` - API client for connector operations
+
+**Integration Point**: TeamManagement component → PREFERENCES tab → Connectors section
+
+UI Features:
+- Provider selection (SportAdmin, Svenska Lag - coming soon)
+- Credential input form with password visibility toggle
+- Connection status indicators (connected, disconnected, error)
+- Last sync timestamp and result summary
+- Manual sync trigger button
+- Disconnect with confirmation modal
+- Error handling and user feedback
+
+#### Phase 4: Scraper Integration
+**Files**:
+- `sportadmin-scraper/src/config/supabase.ts` - Supabase client configuration
+- `sportadmin-scraper/src/services/jobProcessor.ts` - Job queue polling and processing
+- `sportadmin-scraper/src/utils/encryption.ts` - Credential decryption utilities
+- `sportadmin-scraper/src/types/connector.ts` - TypeScript interfaces
+
+Features:
+- Poll team_connector_sync_job table for pending jobs (configurable interval)
+- Retrieve encrypted credentials from team_connector for job's team
+- Decrypt credentials using master key from Vault
+- Execute scraper with decrypted credentials
+- Parse and structure scraped data
+- Store results in team_connector_sync_result table
+- Update job status (running → completed/failed)
+- Error handling with detailed error messages
+- Retry logic with exponential backoff (max 3 retries)
+
+Data Flow:
+```
+Job Queue → Fetch Encrypted Creds → Decrypt → Scrape → Store Results → Update Job
+```
+
+#### Phase 5: Vault Setup & Security Hardening
+Tasks:
+- Configure Supabase Vault for encryption key storage
+- Generate and store master encryption key
+- Set up key rotation policy (quarterly recommended)
+- Configure environment variables for scraper
+- Document key management procedures
+- Set up monitoring and alerting for failed jobs
+- Implement key rotation procedures
+
+Key Management:
+- Master key stored in Supabase Vault (vault.secrets table)
+- Key versioning support for rotation
+- Old keys retained temporarily for decryption during rotation
+- Access logging for all Vault operations
+
+#### Phase 6: Testing & Monitoring
+Test Coverage:
+- Unit tests for encryption/decryption functions
+- Integration tests for Edge Function (credential flow)
+- UI component tests (modal interactions, form validation)
+- End-to-end test: Connect → Verify → Scrape → Disconnect
+- Security audit of encryption implementation
+- Load testing for job queue processing
+
+Monitoring:
+- Job success/failure rates
+- Scraping duration metrics
+- Error categorization (auth failures, scraping errors, network issues)
+- Encryption/decryption performance
+- Vault access patterns
+- Rate limiting trigger counts
+
+### Deployment Architecture
+
+**Recommended Hosting**: AWS ECS on Fargate
+
+**Cost Estimate** (us-east-1):
+- Free tier (12 months): 750 vCPU hours + 1.5 GB RAM hours
+- Post free-tier: 0.25 vCPU / 0.5 GB task @ 24/7 ≈ $9/month
+- Secrets Manager: $0.40/secret + $0.05/10k API calls
+
+**Infrastructure**:
+- ECS Cluster with Fargate tasks
+- Task Definition: Playwright + Node.js container (~1 GB)
+- EventBridge scheduler for periodic job processing
+- CloudWatch Logs for monitoring
+- VPC configuration with restricted outbound access
+
+**Alternatives**:
+- EC2 t3.micro/t4g.micro (free tier, more control)
+- Lambda container image (viable for <15 min scrapes, adds complexity)
+
+**Operational Best Practices**:
+- Rate limit scraping to respect SportAdmin ToS
+- Monitor for SportAdmin layout changes (screenshot comparison)
+- Implement scraping failure alerts (email/Slack)
+- Set up usage metrics and cost tracking
+- Regular credential rotation prompts
+- User consent tracking and audit trail
+
+### Extensibility for Future Providers
+
+**Design Principles**:
+- Provider-agnostic database schema (provider column with enum)
+- Provider-specific modal components (SportAdminConnectModal, SvenskaLagConnectModal)
+- Connector card displays provider logo and name
+- Provider-specific scraper implementations in separate modules
+- Shared encryption/decryption utilities
+- Unified job queue and result storage
+
+**Adding New Provider** (e.g., Svenska Lag):
+1. Add provider to connector_provider enum
+2. Create provider-specific connect modal component
+3. Implement provider-specific scraper module
+4. Add provider logo and branding assets
+5. Update ConnectorsSection to show new provider
+6. Test connection and scraping flows
 
 ---
 
-## Next Steps
+## Implementation Status
 
-1. **Supabase Integration**:
-   - Design database schema for `sportadmin_sync_jobs`, `sportadmin_events`, and `sportadmin_attendance` tables
-   - Implement Edge Function for credential encryption/storage
-   - Add Supabase client to scraper for reading jobs and writing results
+- [x] PoC scraper validated (sportadmin-scraper/)
+- [ ] Phase 1: Database migration (connector_schema.sql documented)
+- [ ] Phase 2: Edge Function for credential encryption
+- [ ] Phase 3: UI components for connector management
+- [ ] Phase 4: Scraper integration with job queue
+- [ ] Phase 5: Vault setup and security hardening
+- [ ] Phase 6: Testing and monitoring
 
-2. **Credential Management**:
-   - Integrate AWS Secrets Manager or Supabase Vault
-   - Implement encryption at rest for stored credentials
-   - Add credential rotation mechanism
-
-3. **Job Queue System**:
-   - Implement job polling or Realtime subscription
-   - Add job status tracking (pending → running → completed/failed)
-   - Implement retry logic with exponential backoff
-
-4. **Deployment**:
-   - Containerize scraper with Dockerfile
-   - Set up AWS ECS/Fargate infrastructure with CDK
-   - Configure CloudWatch logging and monitoring
-   - Implement health checks and auto-restart
-
-5. **Sport Wizard UI**:
-   - Add "Connect SportAdmin" settings page
-   - Implement manual sync trigger
-   - Display sync status and last sync timestamp
-   - Show scraped attendance and match data in app
-
-6. **Testing & Monitoring**:
-   - Add integration tests with mocked SportAdmin HTML
-   - Implement scraping failure alerts
-   - Monitor for SportAdmin layout changes
-   - Set up usage metrics and cost tracking
+**Next Immediate Step**: Implement Phase 1 database migration
