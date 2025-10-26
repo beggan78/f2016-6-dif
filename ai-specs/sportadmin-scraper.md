@@ -58,8 +58,16 @@ Sport Wizard will support multiple team management providers through a unified "
 #### Connector Status Lifecycle
 - `verifying`: set on connector creation or when the user retries after an error; a verification job is queued and no scheduled syncs run yet.
 - `connected`: first successful job (manual or scheduled) promotes the connector to active status; scheduled syncs resume from here.
-- `error`: any failed job that represents a blocking issue (auth, layout changes, etc.) moves the connector into error; UI surfaces the failure and scheduled jobs pause until the user retries.
+- `error`: credential/authentication failures or other hard blockers move the connector into error; scheduled jobs pause and the UI prompts the user to reconnect.
 - `disconnected`: user intentionally disables the connector; jobs should not be enqueued while in this state and the edge function should clear/suspend schedules.
+
+#### Sync Job Semantics
+- `manual`: user-initiated refresh; respects connector status (won’t run while `disconnected`).
+- `scheduled`: background refresh driven by the scheduler; pause while the connector is `verifying` or `error`.
+- `verification`: short-lived health check triggered on creation or user retry; success promotes connector to `connected`, failure keeps it in `error`.
+- Error handling:
+  - `auth_*` codes (e.g., `auth_invalid_credentials`, `auth_account_locked`) mark the job `failed`, set connector status to `error`, and cancel/pause scheduled jobs until the user re-validates credentials.
+  - `scrape_*` codes (e.g., `scrape_dom_mismatch`, `scrape_timeout`) mark the job `failed` but leave the connector `connected`; scheduler retries with backoff and UI shows a warning banner.
 
 **Core Tables**:
 - `team_connector` - Encrypted credentials per team/provider
