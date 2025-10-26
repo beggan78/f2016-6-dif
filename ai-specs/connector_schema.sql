@@ -140,7 +140,7 @@ CREATE TABLE public.connector_sync_job (
 -- Indexes for job queue processing
 CREATE INDEX idx_connector_sync_job_status ON public.connector_sync_job(status, scheduled_at);
 CREATE INDEX idx_connector_sync_job_connector ON public.connector_sync_job(connector_id);
-CREATE INDEX idx_connector_sync_job_scheduled ON public.connector_sync_job(scheduled_at) WHERE status = 'pending';
+CREATE INDEX idx_connector_sync_job_scheduled ON public.connector_sync_job(scheduled_at) WHERE status = 'waiting';
 
 -- Audit trigger
 CREATE TRIGGER update_connector_sync_job_timestamp
@@ -345,7 +345,8 @@ CREATE POLICY connector_sync_job_insert_policy ON public.connector_sync_job
 -- Note: This policy allows updates from service_role key only, not from regular users
 CREATE POLICY connector_sync_job_update_policy ON public.connector_sync_job
   FOR UPDATE
-  USING (true); -- Service role bypasses RLS, but policy must exist for regular updates
+  USING (auth.jwt()->>'role' = 'service_role')
+  WITH CHECK (auth.jwt()->>'role' = 'service_role');
 
 -- ============================================================================
 -- POLICIES: player_attendance
@@ -366,12 +367,13 @@ CREATE POLICY player_attendance_select_policy ON public.player_attendance
 -- Policy: Service role (scraper) can insert attendance data
 CREATE POLICY player_attendance_insert_policy ON public.player_attendance
   FOR INSERT
-  WITH CHECK (true); -- Service role bypasses RLS
+  WITH CHECK (auth.jwt()->>'role' = 'service_role'); -- Service role bypasses RLS
 
 -- Policy: Service role (scraper) can update attendance data
 CREATE POLICY player_attendance_update_policy ON public.player_attendance
   FOR UPDATE
-  USING (true); -- Service role bypasses RLS
+  USING (auth.jwt()->>'role' = 'service_role')
+  WITH CHECK (auth.jwt()->>'role' = 'service_role'); -- Service role bypasses RLS
 
 -- Policy: Team admins can delete attendance records
 CREATE POLICY player_attendance_delete_policy ON public.player_attendance
@@ -405,17 +407,18 @@ CREATE POLICY upcoming_match_select_policy ON public.upcoming_match
 -- Policy: Service role (scraper) can insert upcoming matches
 CREATE POLICY upcoming_match_insert_policy ON public.upcoming_match
   FOR INSERT
-  WITH CHECK (true); -- Service role bypasses RLS
+  WITH CHECK (auth.jwt()->>'role' = 'service_role'); -- Service role bypasses RLS
 
 -- Policy: Service role (scraper) can update upcoming matches
 CREATE POLICY upcoming_match_update_policy ON public.upcoming_match
   FOR UPDATE
-  USING (true); -- Service role bypasses RLS
+  USING (auth.jwt()->>'role' = 'service_role')
+  WITH CHECK (auth.jwt()->>'role' = 'service_role'); -- Service role bypasses RLS
 
 -- Policy: Service role (scraper) can delete past matches
 CREATE POLICY upcoming_match_delete_policy ON public.upcoming_match
   FOR DELETE
-  USING (true); -- Service role bypasses RLS for cleanup of past matches
+  USING (auth.jwt()->>'role' = 'service_role'); -- Service role bypasses RLS for cleanup of past matches
 
 -- ----------------------------------------------------------------------------
 -- HELPER FUNCTIONS

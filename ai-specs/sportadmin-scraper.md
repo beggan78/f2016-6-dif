@@ -49,16 +49,27 @@ Sport Wizard will support multiple team management providers through a unified "
 
 **See**: `ai-specs/connector_schema.sql` for complete schema
 
+#### Scraper Authentication
+- The scraper runs with a Supabase service-role key stored in its runtime environment (e.g., container secret or GitHub Actions secret for deployments).
+- The key must be scoped to service-role because RLS policies gate insert/update/delete access on `auth.jwt()->>'role' = 'service_role'`.
+- Local development should load the key via `.env` (never committed) while production deploys source it from the hosting provider’s secret store.
+- Rotating the service key requires updating both the scraper environment and any related Edge Functions; coordinate with Vault key management procedures.
+
+#### Connector Status Lifecycle
+- `verifying`: set on connector creation or when the user retries after an error; a verification job is queued and no scheduled syncs run yet.
+- `connected`: first successful job (manual or scheduled) promotes the connector to active status; scheduled syncs resume from here.
+- `error`: any failed job that represents a blocking issue (auth, layout changes, etc.) moves the connector into error; UI surfaces the failure and scheduled jobs pause until the user retries.
+- `disconnected`: user intentionally disables the connector; jobs should not be enqueued while in this state and the edge function should clear/suspend schedules.
+
 **Core Tables**:
 - `team_connector` - Encrypted credentials per team/provider
 - `team_connector_sync_job` - Job queue for scraper
-- `team_connector_sync_result` - Scraping results and errors
+- `player_attendance` / `upcoming_match` - Provider data snapshots
 - Enums: `connector_provider`, `connector_status`, `sync_job_status`
 
 **Key Design Decisions**:
 - Provider-agnostic schema (supports multiple providers)
 - RLS policies enforce team-based access control
-- Soft delete support (deleted_at columns)
 - Audit fields (created_by, created_at, last_updated_by, updated_at)
 - JSON columns for provider-specific configuration and results
 
@@ -71,7 +82,7 @@ Tasks:
 - Create enums for connector_provider, connector_status, sync_job_status
 - Create team_connector table with encrypted credential storage
 - Create team_connector_sync_job table for job queue
-- Create team_connector_sync_result table for history
+- Add provider data tables (player_attendance, upcoming_match)
 - Add RLS policies for team-based access control
 - Set up audit triggers (updated_at, last_updated_by)
 
@@ -128,7 +139,7 @@ Features:
 - Decrypt credentials using master key from Vault
 - Execute scraper with decrypted credentials
 - Parse and structure scraped data
-- Store results in team_connector_sync_result table
+- Persist attendance snapshots and upcoming matches
 - Update job status (running → completed/failed)
 - Error handling with detailed error messages
 - Retry logic with exponential backoff (max 3 retries)
@@ -207,7 +218,7 @@ Monitoring:
 - Connector card displays provider logo and name
 - Provider-specific scraper implementations in separate modules
 - Shared encryption/decryption utilities
-- Unified job queue and result storage
+- Unified job queue and snapshot storage
 
 **Adding New Provider** (e.g., Svenska Lag):
 1. Add provider to connector_provider enum
