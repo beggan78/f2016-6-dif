@@ -47,7 +47,13 @@ Sport Wizard will support multiple team management providers through a unified "
 
 ### Database Schema
 
-**See**: `ai-specs/connector_schema.sql` for complete schema
+**See**: `supabase/migrations/20251030000000_team_connectors.sql` for complete schema
+
+**Year-Based Attendance Tracking**:
+- `player_attendance` stores one record per player per year
+- Unique constraint: `(connector_id, player_name, year)`
+- Enables historical attendance tracking across multiple years
+- Scraper uses current year by default, future support for historical years
 
 #### Scraper Authentication
 - The scraper runs with a Supabase service-role key stored in its runtime environment (e.g., container secret or GitHub Actions secret for deployments).
@@ -147,15 +153,58 @@ Features:
 - Decrypt credentials using master key from Vault
 - Execute scraper with decrypted credentials
 - Parse and structure scraped data
-- Persist attendance snapshots and upcoming matches
+- **Year handling**: Use current year by default for attendance data
+- Persist attendance snapshots with year (upsert on `connector_id, player_name, year`)
+- Persist upcoming matches
 - Update job status (running → completed/failed)
 - Error handling with detailed error messages
 - Retry logic with exponential backoff (max 3 retries)
 
+**Attendance Year Logic**:
+- Default: Scrape current year (`new Date().getFullYear()`)
+- Each attendance record includes `year` field
+- Upsert based on `(connector_id, player_name, year)` to preserve historical data
+- Future enhancement: Support year parameter in job config for historical scraping
+
 Data Flow:
 ```
-Job Queue → Fetch Encrypted Creds → Decrypt → Scrape → Store Results → Update Job
+Job Queue → Fetch Encrypted Creds → Decrypt → Scrape (with year) → Store Results → Update Job
 ```
+
+**Implementation Notes for Year Handling**:
+
+1. **Scraper Code** (`sportadmin-scraper/`):
+   ```typescript
+   // Determine year to scrape (current year by default)
+   const scrapeYear = new Date().getFullYear();
+
+   // When upserting attendance data to Supabase
+   await supabase
+     .from('player_attendance')
+     .upsert({
+       connector_id,
+       player_name,
+       year: scrapeYear,  // Include year in data
+       total_practices,
+       total_attendance,
+       attendance_percentage,
+       last_synced_at: new Date().toISOString()
+     }, {
+       onConflict: 'connector_id,player_name,year'  // Updated conflict resolution
+     });
+   ```
+
+2. **Future Enhancement - Historical Year Scraping**:
+   - Add `job_config` JSONB column to `connector_sync_job` table
+   - Allow UI to specify year when triggering manual sync
+   - Scraper reads year from job config: `const year = job.job_config?.scrape_year ?? new Date().getFullYear()`
+   - SportAdmin UI may need navigation to select different years before scraping
+
+3. **Data Model Considerations**:
+   - Old attendance data from previous years remains in database (historical tracking)
+   - Each year's data is independent (no overwrites)
+   - UI can display multi-year trends if desired
+   - Consider data retention policy (e.g., keep last 5 years)
 
 #### Phase 5: Vault Setup & Security Hardening
 Tasks:

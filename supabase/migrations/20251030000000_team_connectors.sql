@@ -134,6 +134,8 @@ CREATE TABLE public.player_attendance (
   player_id uuid REFERENCES public.player(id) ON DELETE SET NULL,
   player_name varchar(100) NOT NULL,
 
+  year integer NOT NULL,
+
   total_practices integer NOT NULL,
   total_attendance integer NOT NULL,
   attendance_percentage numeric(5,2) NOT NULL,
@@ -145,23 +147,26 @@ CREATE TABLE public.player_attendance (
   updated_at timestamptz NOT NULL DEFAULT now(),
   last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
 
-  CONSTRAINT player_attendance_connector_name_unique UNIQUE (connector_id, player_name),
+  CONSTRAINT player_attendance_connector_name_year_unique UNIQUE (connector_id, player_name, year),
   CONSTRAINT player_attendance_percentage_range CHECK (attendance_percentage >= 0 AND attendance_percentage <= 100),
-  CONSTRAINT player_attendance_count_check CHECK (total_attendance >= 0 AND total_attendance <= total_practices)
+  CONSTRAINT player_attendance_count_check CHECK (total_attendance >= 0 AND total_attendance <= total_practices),
+  CONSTRAINT player_attendance_year_check CHECK (year >= 2020 AND year <= 2099)
 );
 
 CREATE INDEX idx_player_attendance_connector ON public.player_attendance(connector_id);
 CREATE INDEX idx_player_attendance_player ON public.player_attendance(player_id) WHERE player_id IS NOT NULL;
 CREATE INDEX idx_player_attendance_synced ON public.player_attendance(last_synced_at DESC);
+CREATE INDEX idx_player_attendance_year ON public.player_attendance(year DESC);
 
 CREATE TRIGGER update_player_attendance_timestamp
   BEFORE UPDATE ON public.player_attendance
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_updated_at_and_user();
 
-COMMENT ON TABLE public.player_attendance IS 'Practice attendance statistics scraped from team management providers';
+COMMENT ON TABLE public.player_attendance IS 'Practice attendance statistics scraped from team management providers, stored per year for historical tracking';
 COMMENT ON COLUMN public.player_attendance.player_id IS 'Matched player from player table (NULL if no match found)';
 COMMENT ON COLUMN public.player_attendance.player_name IS 'Raw player name from scraped data, used for matching and display when player_id is NULL';
+COMMENT ON COLUMN public.player_attendance.year IS 'Year of the attendance data (e.g., 2025), allows tracking attendance across multiple years';
 
 ---------------------------------------------------------------------------
 -- TABLE: upcoming_match
