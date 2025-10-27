@@ -64,13 +64,10 @@ export function OpponentNameAutocomplete({
 
   const handleInputFocus = useCallback((event) => {
     handleFocus(event);
-    if (value && !query) {
-      setQuery(value);
-    }
     if (!isOpen && query.trim()) {
       setIsOpen(true);
     }
-  }, [handleFocus, value, query, isOpen, setIsOpen, setQuery]);
+  }, [handleFocus, query, isOpen, setIsOpen]);
 
   const handleSuggestionSelect = useCallback((name) => {
     setQuery(name);

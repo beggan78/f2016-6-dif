@@ -327,6 +327,36 @@ describe('ConfigurationScreen opponent suggestions', () => {
 
     expect(props.setOpponentTeam).toHaveBeenCalledWith('Beta United');
   });
+
+  it('does not restore a cleared opponent when refocusing the input', async () => {
+    const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '' });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    const opponentInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.focus(opponentInput);
+    fireEvent.change(opponentInput, { target: { value: 'A' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha FC')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Alpha FC'));
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('Alpha FC');
+
+    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: 'Alpha FC' }} />);
+
+    const updatedInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.change(updatedInput, { target: { value: '' } });
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('');
+
+    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: '' }} />);
+
+    fireEvent.blur(updatedInput);
+    fireEvent.focus(updatedInput);
+
+    expect(updatedInput.value).toBe('');
+  });
 });
 
 describe('paired role strategy selector', () => {

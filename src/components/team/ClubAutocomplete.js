@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Building, Plus } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { Input } from '../shared/UI';
 import { useTypeaheadDropdown } from '../../hooks/useTypeaheadDropdown';
+import { useDebouncedSearch } from '../../hooks/useDebouncedSearch';
 
 export function ClubAutocomplete({ 
   value,
@@ -16,8 +17,6 @@ export function ClubAutocomplete({
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const searchTimeoutRef = useRef(null);
-
   const {
     isOpen,
     setIsOpen,
@@ -30,7 +29,7 @@ export function ClubAutocomplete({
     handleKeyDown
   } = useTypeaheadDropdown({ initialValue: value || '' });
 
-  const debouncedSearch = useCallback(async (searchQuery) => {
+  const performSearch = useCallback(async (searchQuery) => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
       return;
@@ -48,32 +47,24 @@ export function ClubAutocomplete({
     }
   }, [searchClubs]);
 
+  const { run: scheduleSearch, cancel: cancelScheduledSearch } = useDebouncedSearch(performSearch, 300);
+
   const handleInputChange = useCallback((event) => {
     const newQuery = event.target.value;
     setQuery(newQuery);
     onChange?.(newQuery);
     setIsOpen(true);
 
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      debouncedSearch(newQuery);
-    }, 300);
-  }, [onChange, setQuery, setIsOpen, debouncedSearch]);
+    scheduleSearch(newQuery);
+  }, [onChange, setQuery, setIsOpen, scheduleSearch]);
 
   const handleInputFocus = useCallback((event) => {
     handleFocus(event);
     if (query.trim()) {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      searchTimeoutRef.current = setTimeout(() => {
-        debouncedSearch(query);
-      }, 0);
+      cancelScheduledSearch();
+      performSearch(query);
     }
-  }, [handleFocus, query, debouncedSearch]);
+  }, [handleFocus, query, cancelScheduledSearch, performSearch]);
 
   const handleClubSelect = useCallback((club) => {
     setQuery(club.name);
@@ -88,11 +79,9 @@ export function ClubAutocomplete({
 
   useEffect(() => {
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+      cancelScheduledSearch();
     };
-  }, []);
+  }, [cancelScheduledSearch]);
 
   useEffect(() => {
     setQuery(value || '');
