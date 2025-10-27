@@ -14,6 +14,7 @@ import { TeamManagement } from '../team/TeamManagement';
 import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
+import { OpponentNameAutocomplete } from './OpponentNameAutocomplete';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
 import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
@@ -837,7 +838,7 @@ export function ConfigurationScreen({
     setCaptain(captainId);
   };
 
-  const handleOpponentTeamChange = (value) => {
+  const handleOpponentTeamChange = React.useCallback((value) => {
     const sanitizedValue = sanitizeNameInput(value);
 
     // Mark as active configuration when opponent name is set (non-empty)
@@ -846,7 +847,11 @@ export function ConfigurationScreen({
     }
 
     setOpponentTeam(sanitizedValue);
-  };
+  }, [setHasActiveConfiguration, setOpponentTeam]);
+
+  const handleOpponentSuggestionSelect = React.useCallback((name) => {
+    handleOpponentTeamChange(name);
+  }, [handleOpponentTeamChange]);
 
   const handleMatchTypeChange = (value) => {
     setMatchType(value);
@@ -1299,12 +1304,13 @@ export function ConfigurationScreen({
       <div className="p-3 bg-slate-700 rounded-md space-y-4">
         <div>
           <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
-          <Input
-            id="opponentTeam"
+          <OpponentNameAutocomplete
+            teamId={currentTeam?.id}
             value={opponentTeam}
-            onChange={e => handleOpponentTeamChange(e.target.value)}
+            onChange={handleOpponentTeamChange}
+            onSelect={handleOpponentSuggestionSelect}
+            inputId="opponentTeam"
             placeholder="Enter opponent team name (optional)"
-            maxLength={50}
           />
         </div>
 

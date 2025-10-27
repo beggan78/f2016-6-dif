@@ -32,7 +32,9 @@ jest.mock('lucide-react', () => ({
   Home: (props) => <svg data-testid="icon-home" {...props} />,
   Plane: (props) => <svg data-testid="icon-plane" {...props} />,
   Globe2: (props) => <svg data-testid="icon-globe" {...props} />,
-  MapPin: (props) => <svg data-testid="icon-pin" {...props} />
+  MapPin: (props) => <svg data-testid="icon-pin" {...props} />,
+  Search: (props) => <svg data-testid="icon-search" {...props} />,
+  History: (props) => <svg data-testid="icon-history" {...props} />
 }));
 
 jest.mock('../../shared/UI', () => ({
@@ -57,9 +59,9 @@ jest.mock('../../shared/UI', () => ({
       {children}
     </button>
   ),
-  Input: ({ value = '', onChange, ...props }) => (
-    <input data-testid="mock-input" value={value} onChange={onChange} {...props} />
-  )
+  Input: React.forwardRef(({ value = '', onChange, ...props }, ref) => (
+    <input data-testid="mock-input" value={value} onChange={onChange} ref={ref} {...props} />
+  ))
 }));
 
 jest.mock('../../../contexts/AuthContext', () => ({
@@ -77,6 +79,12 @@ jest.mock('../../../hooks/useFormationVotes', () => ({
     openVoteModal: jest.fn(),
     closeVoteModal: jest.fn()
   })
+}));
+
+const mockUseOpponentNameSuggestions = jest.fn();
+
+jest.mock('../../../hooks/useOpponentNameSuggestions', () => ({
+  useOpponentNameSuggestions: (...args) => mockUseOpponentNameSuggestions(...args)
 }));
 
 jest.mock('../../team/TeamManagement', () => ({
@@ -139,6 +147,14 @@ beforeEach(() => {
     hasClubs: true,
     loading: false
   }));
+
+  mockUseOpponentNameSuggestions.mockReset();
+  mockUseOpponentNameSuggestions.mockReturnValue({
+    names: ['Alpha FC', 'Beta United', 'Gamma City'],
+    loading: false,
+    error: null,
+    refresh: jest.fn()
+  });
 });
 
 const buildProps = (overrides = {}) => ({
@@ -271,6 +287,45 @@ describe('ConfigurationScreen squad selection', () => {
     });
 
     expect(screen.getByText(/exceeds the 5v5 limit of 11/i)).toBeInTheDocument();
+  });
+});
+
+describe('ConfigurationScreen opponent suggestions', () => {
+  it('surfaces previous opponents as suggestions while typing', async () => {
+    const props = buildProps({ setOpponentTeam: jest.fn() });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const opponentInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.focus(opponentInput);
+    fireEvent.change(opponentInput, { target: { value: 'A' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha FC')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Alpha FC'));
+
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('Alpha FC');
+  });
+
+  it('allows navigating suggestions with keyboard arrows and selecting with Enter', async () => {
+    const props = buildProps({ setOpponentTeam: jest.fn() });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const opponentInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.focus(opponentInput);
+    fireEvent.change(opponentInput, { target: { value: 'B' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Beta United')).toBeInTheDocument();
+    });
+
+    fireEvent.keyDown(opponentInput, { key: 'ArrowDown', code: 'ArrowDown' });
+    fireEvent.keyDown(opponentInput, { key: 'Enter', code: 'Enter' });
+
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('Beta United');
   });
 });
 
