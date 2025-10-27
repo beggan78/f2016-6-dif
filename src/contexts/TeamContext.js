@@ -10,7 +10,7 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const TeamContext = createContext({});
 
-const REFRESH_REVALIDATION_DELAY_MS = 12000;
+const REFRESH_REVALIDATION_DELAY_MS = 0;
 
 export const useTeam = () => {
   const context = useContext(TeamContext);

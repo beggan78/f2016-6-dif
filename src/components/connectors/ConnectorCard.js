@@ -182,22 +182,6 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
         </Button>
       </div>
 
-      {/* Features List */}
-      {provider?.features && provider.features.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-600">
-          <p className="text-slate-400 text-xs mb-2">Features:</p>
-          <div className="flex flex-wrap gap-2">
-            {provider.features.map((feature, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-slate-600 text-slate-300 rounded text-xs"
-              >
-                {feature}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

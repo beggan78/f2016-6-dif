@@ -5,7 +5,7 @@ export const CONNECTOR_PROVIDERS = {
   SPORTADMIN: {
     id: 'sportadmin',
     name: 'SportAdmin',
-    description: 'Swedish team management platform for practice attendance and match scheduling',
+    description: 'Swedish team management platform',
     features: ['Practice Attendance', 'Upcoming Matches'],
     comingSoon: false
   },
