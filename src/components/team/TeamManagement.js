@@ -25,6 +25,7 @@ import { TeamRoleManagementModal } from './TeamRoleManagementModal';
 import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
+import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
@@ -1103,6 +1104,11 @@ function TeamPreferences({ team, onRefresh }) {
             ]}
           />
         </div>
+      </div>
+
+      {/* Connectors Section */}
+      <div className="border-t border-slate-600 pt-6 mt-6">
+        <ConnectorsSection team={team} onRefresh={onRefresh} />
       </div>
     </div>
   );
