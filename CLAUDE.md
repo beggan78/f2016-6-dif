@@ -59,10 +59,25 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 ```
 
 **Formation Positions vs Database Roles**:
-- Formation positions: `leftDefender`, `rightAttacker`, `left`, `right` (UI-specific)  
+- Formation positions: `leftDefender`, `rightAttacker`, `left`, `right` (UI-specific)
 - Database roles: `goalie`, `defender`, `midfielder`, `attacker`, `substitute`, `unknown` (standardized enums)
 - Always use `mapFormationPositionToRole()` for conversion
 - `unknown` is used when position mapping fails (no fallback to other roles)
+
+### Team Connectors & External Platform Integration
+
+**Async Architecture** - UI → Edge Function → Database → Scraper (background):
+- Connector status flow: UI stores credentials → Edge Function encrypts → `verifying` status → Scraper processes → `connected`/`error`
+- Verification is **not immediate** - scraper processes queued jobs asynchronously
+- Schema: `supabase/migrations/20251030000000_team_connectors.sql`
+
+**Encryption Pattern** (Edge Function: `supabase/functions/connect-provider/index.ts`):
+- AES-256-GCM with PBKDF2 key derivation (100k iterations)
+- Master key stored in Supabase Vault, accessed via `supabase.rpc('get_vault_secret')` (service_role only)
+
+**Admin-Only Operations**:
+- All connector CRUD operations require `team_user.role = 'admin'`
+- Scraper updates use `service_role` to bypass RLS
 
 ### Code Organization
 - **Game logic**: `/src/game/` - Pure functions, no side effects
