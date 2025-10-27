@@ -37,32 +37,36 @@ jest.mock('lucide-react', () => ({
   History: (props) => <svg data-testid="icon-history" {...props} />
 }));
 
-jest.mock('../../shared/UI', () => ({
-  Select: ({ value, onChange, options, id }) => (
-    <select id={id} data-testid={id || 'select'} value={value || ''} onChange={(e) => onChange && onChange(e.target.value)}>
-      {options && options.map(option => (
-        typeof option === 'object'
-          ? <option key={option.value} value={option.value}>{option.label}</option>
-          : <option key={option} value={option}>{option}</option>
-      ))}
-    </select>
-  ),
-  Button: ({ children, onClick, disabled, type = 'button', Icon: IconComponent, ...props }) => (
-    <button
-      data-testid="mock-button"
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      {...props}
-    >
-      {IconComponent ? <IconComponent data-testid="mock-button-icon" /> : null}
-      {children}
-    </button>
-  ),
-  Input: React.forwardRef(({ value = '', onChange, ...props }, ref) => (
-    <input data-testid="mock-input" value={value} onChange={onChange} ref={ref} {...props} />
-  ))
-}));
+jest.mock('../../shared/UI', () => {
+  const mockReact = require('react');
+
+  return {
+    Select: ({ value, onChange, options, id }) => (
+      <select id={id} data-testid={id || 'select'} value={value || ''} onChange={(e) => onChange && onChange(e.target.value)}>
+        {options && options.map(option => (
+          typeof option === 'object'
+            ? <option key={option.value} value={option.value}>{option.label}</option>
+            : <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    ),
+    Button: ({ children, onClick, disabled, type = 'button', Icon: IconComponent, ...props }) => (
+      <button
+        data-testid="mock-button"
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        {...props}
+      >
+        {IconComponent ? <IconComponent data-testid="mock-button-icon" /> : null}
+        {children}
+      </button>
+    ),
+    Input: mockReact.forwardRef(({ value = '', onChange, ...props }, ref) => (
+      <input data-testid="mock-input" value={value} onChange={onChange} ref={ref} {...props} />
+    ))
+  };
+});
 
 jest.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth()
