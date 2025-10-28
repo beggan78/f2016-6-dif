@@ -289,6 +289,16 @@ function uint8ArrayToHex(uint8Array: Uint8Array): string {
     .join('');
 }
 
+// **HELPER**: Decode base64 string to Uint8Array
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
 // **ENCRYPTION**: Encrypt credentials using AES-256-GCM
 async function encryptCredentials(
   username: string,
@@ -304,10 +314,14 @@ async function encryptCredentials(
 
     console.log('✅ Generated IV and salt');
 
+    // Decode base64 master key to bytes (matches scraper's approach)
+    const masterKeyBytes = base64ToUint8Array(masterKey);
+    console.log(`🔑 Master key decoded: ${masterKeyBytes.length} bytes`);
+
     // Import master key as raw key material
     const keyMaterial = await crypto.subtle.importKey(
       'raw',
-      new TextEncoder().encode(masterKey),
+      masterKeyBytes,
       { name: 'PBKDF2' },
       false,
       ['deriveKey']
