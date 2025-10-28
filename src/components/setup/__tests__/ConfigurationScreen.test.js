@@ -32,35 +32,41 @@ jest.mock('lucide-react', () => ({
   Home: (props) => <svg data-testid="icon-home" {...props} />,
   Plane: (props) => <svg data-testid="icon-plane" {...props} />,
   Globe2: (props) => <svg data-testid="icon-globe" {...props} />,
-  MapPin: (props) => <svg data-testid="icon-pin" {...props} />
+  MapPin: (props) => <svg data-testid="icon-pin" {...props} />,
+  Search: (props) => <svg data-testid="icon-search" {...props} />,
+  History: (props) => <svg data-testid="icon-history" {...props} />
 }));
 
-jest.mock('../../shared/UI', () => ({
-  Select: ({ value, onChange, options, id }) => (
-    <select id={id} data-testid={id || 'select'} value={value || ''} onChange={(e) => onChange && onChange(e.target.value)}>
-      {options && options.map(option => (
-        typeof option === 'object'
-          ? <option key={option.value} value={option.value}>{option.label}</option>
-          : <option key={option} value={option}>{option}</option>
-      ))}
-    </select>
-  ),
-  Button: ({ children, onClick, disabled, type = 'button', Icon: IconComponent, ...props }) => (
-    <button
-      data-testid="mock-button"
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      {...props}
-    >
-      {IconComponent ? <IconComponent data-testid="mock-button-icon" /> : null}
-      {children}
-    </button>
-  ),
-  Input: ({ value = '', onChange, ...props }) => (
-    <input data-testid="mock-input" value={value} onChange={onChange} {...props} />
-  )
-}));
+jest.mock('../../shared/UI', () => {
+  const mockReact = require('react');
+
+  return {
+    Select: ({ value, onChange, options, id }) => (
+      <select id={id} data-testid={id || 'select'} value={value || ''} onChange={(e) => onChange && onChange(e.target.value)}>
+        {options && options.map(option => (
+          typeof option === 'object'
+            ? <option key={option.value} value={option.value}>{option.label}</option>
+            : <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    ),
+    Button: ({ children, onClick, disabled, type = 'button', Icon: IconComponent, ...props }) => (
+      <button
+        data-testid="mock-button"
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        {...props}
+      >
+        {IconComponent ? <IconComponent data-testid="mock-button-icon" /> : null}
+        {children}
+      </button>
+    ),
+    Input: mockReact.forwardRef(({ value = '', onChange, ...props }, ref) => (
+      <input data-testid="mock-input" value={value} onChange={onChange} ref={ref} {...props} />
+    ))
+  };
+});
 
 jest.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth()
@@ -77,6 +83,12 @@ jest.mock('../../../hooks/useFormationVotes', () => ({
     openVoteModal: jest.fn(),
     closeVoteModal: jest.fn()
   })
+}));
+
+const mockUseOpponentNameSuggestions = jest.fn();
+
+jest.mock('../../../hooks/useOpponentNameSuggestions', () => ({
+  useOpponentNameSuggestions: (...args) => mockUseOpponentNameSuggestions(...args)
 }));
 
 jest.mock('../../team/TeamManagement', () => ({
@@ -139,6 +151,14 @@ beforeEach(() => {
     hasClubs: true,
     loading: false
   }));
+
+  mockUseOpponentNameSuggestions.mockReset();
+  mockUseOpponentNameSuggestions.mockReturnValue({
+    names: ['Alpha FC', 'Beta United', 'Gamma City'],
+    loading: false,
+    error: null,
+    refresh: jest.fn()
+  });
 });
 
 const buildProps = (overrides = {}) => ({
@@ -271,6 +291,75 @@ describe('ConfigurationScreen squad selection', () => {
     });
 
     expect(screen.getByText(/exceeds the 5v5 limit of 11/i)).toBeInTheDocument();
+  });
+});
+
+describe('ConfigurationScreen opponent suggestions', () => {
+  it('surfaces previous opponents as suggestions while typing', async () => {
+    const props = buildProps({ setOpponentTeam: jest.fn() });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const opponentInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.focus(opponentInput);
+    fireEvent.change(opponentInput, { target: { value: 'A' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha FC')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Alpha FC'));
+
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('Alpha FC');
+  });
+
+  it('allows navigating suggestions with keyboard arrows and selecting with Enter', async () => {
+    const props = buildProps({ setOpponentTeam: jest.fn() });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const opponentInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.focus(opponentInput);
+    fireEvent.change(opponentInput, { target: { value: 'B' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Beta United')).toBeInTheDocument();
+    });
+
+    fireEvent.keyDown(opponentInput, { key: 'ArrowDown', code: 'ArrowDown' });
+    fireEvent.keyDown(opponentInput, { key: 'Enter', code: 'Enter' });
+
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('Beta United');
+  });
+
+  it('does not restore a cleared opponent when refocusing the input', async () => {
+    const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '' });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    const opponentInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.focus(opponentInput);
+    fireEvent.change(opponentInput, { target: { value: 'A' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha FC')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Alpha FC'));
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('Alpha FC');
+
+    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: 'Alpha FC' }} />);
+
+    const updatedInput = screen.getByLabelText(/opponent team name/i);
+    fireEvent.change(updatedInput, { target: { value: '' } });
+    expect(props.setOpponentTeam).toHaveBeenCalledWith('');
+
+    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: '' }} />);
+
+    fireEvent.blur(updatedInput);
+    fireEvent.focus(updatedInput);
+
+    expect(updatedInput.value).toBe('');
   });
 });
 
