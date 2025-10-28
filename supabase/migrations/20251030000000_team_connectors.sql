@@ -430,7 +430,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION public.get_connector(uuid, public.connector_provider) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_manual_sync_job(uuid) TO authenticated;
 
--- Vault access function for Edge Functions (name-based lookup)
+-- Vault access function for Edge Functions and Scraper (name-based lookup)
 -- Retrieves decrypted secrets from vault.decrypted_secrets by name
 -- SECURITY: Only accessible to service_role to maintain vault security
 CREATE OR REPLACE FUNCTION public.get_vault_secret_by_name(secret_name TEXT)
@@ -454,7 +454,7 @@ BEGIN
 END;
 $$;
 
--- Restrict access to service_role only (Edge Functions)
+-- Restrict access to service_role only (Edge Functions and Scraper)
 REVOKE ALL ON FUNCTION public.get_vault_secret_by_name(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_vault_secret_by_name(TEXT) FROM anon;
 REVOKE ALL ON FUNCTION public.get_vault_secret_by_name(TEXT) FROM authenticated;
