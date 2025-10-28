@@ -430,10 +430,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION public.get_connector(uuid, public.connector_provider) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_manual_sync_job(uuid) TO authenticated;
 
--- Vault access function for Edge Functions
--- Retrieves decrypted secrets from vault.decrypted_secrets
+-- Vault access function for Edge Functions (name-based lookup)
+-- Retrieves decrypted secrets from vault.decrypted_secrets by name
 -- SECURITY: Only accessible to service_role to maintain vault security
-CREATE OR REPLACE FUNCTION public.get_vault_secret(secret_id uuid)
+CREATE OR REPLACE FUNCTION public.get_vault_secret_by_name(secret_name TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -441,13 +441,13 @@ AS $$
 DECLARE
   secret_value TEXT;
 BEGIN
-  -- Retrieve decrypted secret from vault
+  -- Retrieve decrypted secret from vault by name
   SELECT decrypted_secret INTO secret_value
   FROM vault.decrypted_secrets
-  WHERE id = secret_id;
+  WHERE name = secret_name;
 
   IF secret_value IS NULL THEN
-    RAISE EXCEPTION 'Secret not found in vault: %', secret_id;
+    RAISE EXCEPTION 'Secret not found in vault with name: %', secret_name;
   END IF;
 
   RETURN secret_value;
@@ -455,10 +455,10 @@ END;
 $$;
 
 -- Restrict access to service_role only (Edge Functions)
-REVOKE ALL ON FUNCTION public.get_vault_secret(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.get_vault_secret(uuid) FROM anon;
-REVOKE ALL ON FUNCTION public.get_vault_secret(uuid) FROM authenticated;
-GRANT EXECUTE ON FUNCTION public.get_vault_secret(uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.get_vault_secret_by_name(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_vault_secret_by_name(TEXT) FROM anon;
+REVOKE ALL ON FUNCTION public.get_vault_secret_by_name(TEXT) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.get_vault_secret_by_name(TEXT) TO service_role;
 
 ---------------------------------------------------------------------------
 -- DOCUMENTATION

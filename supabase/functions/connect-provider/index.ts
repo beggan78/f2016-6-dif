@@ -27,8 +27,8 @@ interface EncryptedCredentials {
 
 console.log('🚀 Connect Provider Edge Function starting...');
 
-// **SECURITY**: Master encryption key UUID (from Supabase Vault)
-const VAULT_KEY_ID = 'ad4a3284-8a7a-4f92-909f-1826d02ffe45';
+// **SECURITY**: Master encryption key name in Supabase Vault
+const VAULT_KEY_NAME = 'connector_master_key';
 
 // **SECURITY**: Advanced rate limiting system with multiple tiers
 interface RateLimitEntry {
@@ -261,11 +261,11 @@ function validateCredentials(username: string, password: string): { valid: boole
 
 // **ENCRYPTION**: Retrieve master key from Vault
 async function getMasterKeyFromVault(supabaseAdmin: any): Promise<string> {
-  console.log(`🔐 Retrieving master key from Vault (ID: ${VAULT_KEY_ID})...`);
+  console.log(`🔐 Retrieving master key from Vault (name: ${VAULT_KEY_NAME})...`);
 
   const { data, error } = await supabaseAdmin
-    .rpc('get_vault_secret', {
-      secret_id: VAULT_KEY_ID
+    .rpc('get_vault_secret_by_name', {
+      secret_name: VAULT_KEY_NAME
     });
 
   if (error) {
@@ -318,7 +318,7 @@ async function encryptCredentials(
       {
         name: 'PBKDF2',
         salt: salt,
-        iterations: 100000,
+        iterations: 310000,
         hash: 'SHA-256'
       },
       keyMaterial,
