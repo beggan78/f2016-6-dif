@@ -184,9 +184,7 @@ CREATE TABLE public.upcoming_match (
   synced_at timestamptz NOT NULL DEFAULT now(),
 
   created_at timestamptz NOT NULL DEFAULT now(),
-  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   updated_at timestamptz NOT NULL DEFAULT now(),
-  last_updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
 
   CONSTRAINT upcoming_match_unique UNIQUE (connector_id, match_date, opponent)
 );

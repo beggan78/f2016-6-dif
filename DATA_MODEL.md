@@ -51,6 +51,23 @@ This document describes the database schema for the Sport Wizard application, a 
 │ Match Log   │                ┌──────────────────┐
 │   Event     │                │  Season Stats    │
 └─────────────┘                └──────────────────┘
+        │
+        │ 1:N
+        ▼
+┌─────────────┐        1:N        ┌────────────────────┐
+│  Connector  │──────────────────▶│ Connector Sync Job │
+└────┬───┬────┘                   └────────────────────┘
+     │   │ 1:N
+     │   ▼
+     │ ┌───────────────┐
+     │ │ Upcoming Match│
+     │ └───────────────┘
+     │
+     │ 1:N
+     ▼
+┌──────────────────┐
+│ Player Attendance│
+└──────────────────┘
 ```
 
 ## Enum Types
@@ -64,6 +81,28 @@ This document describes the database schema for the Sport Wizard application, a 
 - `active` - Active club user
 - `inactive` - Inactive club user
 - `pending` - Pending approval
+
+### connector_provider
+- `sportadmin` - SportAdmin team management platform
+- `svenska_lag` - Svenska Lag integration (planned)
+
+### connector_status
+- `connected` - Credentials verified and ready to sync
+- `disconnected` - Connection disabled by the team
+- `error` - Last sync failed and needs attention
+- `verifying` - Awaiting first successful verification (default)
+
+### connector_sync_job_type
+- `manual` - Triggered directly by a team admin
+- `scheduled` - Triggered by the automated scheduler
+- `verification` - Triggered during credential verification flow
+
+### sync_job_status
+- `waiting` - Job queued and ready to be picked up
+- `running` - Job is currently executing
+- `completed` - Job finished successfully
+- `failed` - Job ended with an error
+- `cancelled` - Job was cancelled before completion
 
 ### match_event_type
 - `goal_scored` - Goal scored by team
@@ -317,6 +356,168 @@ Team invitations sent to users.
 
 ---
 
+### connector
+
+Encrypted credentials for linking a team to an external provider.
+
+**Columns:**
+- `id` (uuid, PK) - Unique identifier (default `uuid_generate_v4()`)
+- `team_id` (uuid, NOT NULL) - References `team(id)`; cascade on team delete
+- `provider` (connector_provider, NOT NULL) - External provider identifier
+- `status` (connector_status, NOT NULL) - Connection lifecycle status (default: 'verifying')
+- `encrypted_username` (bytea, NOT NULL) - AES-256-GCM encrypted username
+- `encrypted_password` (bytea, NOT NULL) - AES-256-GCM encrypted password
+- `encryption_iv` (bytea, NOT NULL) - 12-byte initialization vector
+- `encryption_salt` (bytea, NOT NULL) - Salt for key derivation (minimum 16 bytes)
+- `encryption_key_version` (integer, NOT NULL) - Master key version used (default: 1)
+- `config` (jsonb, NOT NULL) - Provider-specific configuration (default: `{}`)
+- `last_verified_at` (timestamptz, nullable) - Timestamp of last credential verification
+- `last_sync_at` (timestamptz, nullable) - Timestamp of last successful sync
+- `last_error` (text, nullable) - Latest sync error message
+- `created_at` (timestamptz, NOT NULL) - Creation timestamp (default: now())
+- `created_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
+- `updated_at` (timestamptz, NOT NULL) - Last update timestamp (default: now())
+- `last_updated_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
+
+**Constraints:**
+- Primary key on `id`
+- Unique constraint on `(team_id, provider)` ensures one connector per provider per team
+- Foreign key to `team(id)` with ON DELETE CASCADE
+- Foreign keys to `auth.users(id)` for audit columns
+- Check: `octet_length(encryption_iv) = 12`
+- Check: `octet_length(encryption_salt) >= 16`
+
+**Indexes:**
+- `idx_connector_team_id` on `team_id`
+- `idx_connector_provider` on `provider`
+- `idx_connector_status` on `status`
+- `idx_connector_last_sync` on `last_sync_at DESC`
+
+**Relationships:**
+- Many-to-one with `team`
+- One-to-many with `connector_sync_job`
+- One-to-many with `player_attendance`
+- One-to-many with `upcoming_match`
+
+**Row Level Security:**
+- Enabled. Team members may select connectors; inserts, updates, and deletes require the user to be a team admin.
+
+---
+
+### connector_sync_job
+
+Queue of sync requests for pulling data from external providers.
+
+**Columns:**
+- `id` (uuid, PK) - Unique identifier (default `uuid_generate_v4()`)
+- `connector_id` (uuid, NOT NULL) - References `connector(id)`; cascade on delete
+- `job_type` (connector_sync_job_type, NOT NULL) - Sync trigger type (default: 'manual')
+- `status` (sync_job_status, NOT NULL) - Job execution state (default: 'waiting')
+- `scheduled_at` (timestamptz, NOT NULL) - When the job should run (default: now())
+- `last_started_at` (timestamptz, nullable) - When the job last started
+- `last_finished_at` (timestamptz, nullable) - When the job last finished
+- `error_message` (text, nullable) - Human-readable error
+- `error_code` (varchar(50), nullable) - Provider/service error code
+- `error_details` (jsonb, nullable) - Structured error payload
+- `created_at` (timestamptz, NOT NULL) - Creation timestamp (default: now())
+- `created_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
+- `updated_at` (timestamptz, NOT NULL) - Last update timestamp (default: now())
+- `last_updated_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
+
+**Constraints:**
+- Primary key on `id`
+- Foreign key to `connector(id)` with ON DELETE CASCADE
+- Foreign keys to `auth.users(id)` for audit columns
+
+**Indexes:**
+- `idx_connector_sync_job_status` on `(status, scheduled_at)`
+- `idx_connector_sync_job_connector` on `connector_id`
+- `idx_connector_sync_job_scheduled` partial index on `scheduled_at` where status = 'waiting'
+
+**Relationships:**
+- Many-to-one with `connector`
+
+**Row Level Security:**
+- Enabled. Team members can select queued jobs; inserts require team admin role; updates are restricted to the service role which processes jobs.
+
+---
+
+### player_attendance
+
+Historical practice attendance imported from external providers and matched to roster players when possible.
+
+**Columns:**
+- `id` (uuid, PK) - Unique identifier (default `uuid_generate_v4()`)
+- `connector_id` (uuid, NOT NULL) - References `connector(id)`; cascade on delete
+- `player_id` (uuid, nullable) - References `player(id)`; set NULL if player record is removed
+- `player_name` (varchar(100), NOT NULL) - Raw player name received from the provider
+- `year` (integer, NOT NULL) - Year the attendance summary covers
+- `total_practices` (integer, NOT NULL) - Total number of practices tracked
+- `total_attendance` (integer, NOT NULL) - Number of attended practices
+- `attendance_percentage` (numeric(5,2), NOT NULL) - Attendance rate (0-100)
+- `last_synced_at` (timestamptz, NOT NULL) - Timestamp of the most recent sync (default: now())
+- `created_at` (timestamptz, NOT NULL) - Creation timestamp (default: now())
+- `created_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
+- `updated_at` (timestamptz, NOT NULL) - Last update timestamp (default: now())
+- `last_updated_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
+
+**Constraints:**
+- Primary key on `id`
+- Unique constraint on `(connector_id, player_name, year)` prevents duplicate yearly stats per provider
+- Foreign key to `connector(id)` with ON DELETE CASCADE
+- Foreign key to `player(id)` with ON DELETE SET NULL
+- Foreign keys to `auth.users(id)` for audit columns
+- Check: `attendance_percentage` between 0 and 100
+- Check: `total_attendance` between 0 and `total_practices`
+- Check: `year` between 2020 and 2099
+
+**Indexes:**
+- `idx_player_attendance_connector` on `connector_id`
+- `idx_player_attendance_player` on `player_id` (filtered on non-null)
+- `idx_player_attendance_synced` on `last_synced_at DESC`
+- `idx_player_attendance_year` on `year DESC`
+
+**Relationships:**
+- Many-to-one with `connector`
+- Optional many-to-one with `player`
+
+**Row Level Security:**
+- Enabled. Team members can read attendance data; inserts and updates are performed by the service role; deletes require a team admin.
+
+---
+
+### upcoming_match
+
+Upcoming fixtures synchronized from external providers.
+
+**Columns:**
+- `id` (uuid, PK) - Unique identifier (default `uuid_generate_v4()`)
+- `connector_id` (uuid, NOT NULL) - References `connector(id)`; cascade on delete
+- `match_date` (date, NOT NULL) - Match date from provider schedule
+- `match_time` (varchar(50), nullable) - Provider-formatted time window (e.g., "09:45 - 11:30")
+- `opponent` (varchar(200), NOT NULL) - Opponent team name
+- `venue` (varchar(200), nullable) - Venue name/location
+- `synced_at` (timestamptz, NOT NULL) - Timestamp of the sync that produced this record (default: now())
+- `created_at` (timestamptz, NOT NULL) - Creation timestamp (default: now())
+- `updated_at` (timestamptz, NOT NULL) - Last update timestamp (default: now())
+
+**Constraints:**
+- Primary key on `id`
+- Unique constraint on `(connector_id, match_date, opponent)` deduplicates fixtures
+- Foreign key to `connector(id)` with ON DELETE CASCADE
+
+**Indexes:**
+- `idx_upcoming_match_connector` on `connector_id`
+- `idx_upcoming_match_date` on `match_date`
+
+**Relationships:**
+- Many-to-one with `connector`
+
+**Row Level Security:**
+- Enabled. Team members can view upcoming matches; inserts, updates, and deletes are limited to the service role that performs syncs.
+
+---
+
 ### player
 
 Player entity belonging to a team.
@@ -544,6 +745,54 @@ Application settings (team-level and global).
 
 **Relationships:**
 - Many-to-one with `team` (nullable for global settings)
+
+---
+
+## Functions
+
+### public.get_connector(p_team_id uuid, p_provider connector_provider)
+
+Security-definer function that returns connector metadata for a team/provider pair.
+
+**Parameters:**
+- `p_team_id` (uuid) - Team owning the connector
+- `p_provider` (connector_provider) - External provider identifier
+
+**Returns:**
+- Table columns: `id`, `status`, `last_verified_at`, `last_sync_at`, `last_error`
+
+**Notes:**
+- Grants `authenticated` callers read-only access to connector status without exposing credentials.
+- Returns at most one row; designed for UI queries to fetch current sync state.
+
+### public.create_manual_sync_job(p_connector_id uuid)
+
+Security-definer helper that enqueues a manual sync job for a connector after validating admin access.
+
+**Parameters:**
+- `p_connector_id` (uuid) - Connector that should be synced
+
+**Returns:**
+- `uuid` - Identifier of the job created in `connector_sync_job`
+
+**Notes:**
+- Ensures the caller is a team admin via `team_user.role = 'admin'`.
+- Inserts the job with `job_type = 'manual'` and `created_by = auth.uid()`.
+- Execution rights are granted to the `authenticated` role.
+
+### public.get_vault_secret_by_name(secret_name text)
+
+Security-definer function used by trusted services to retrieve decrypted secrets from Vault.
+
+**Parameters:**
+- `secret_name` (text) - Name of the Vault secret
+
+**Returns:**
+- `text` - Decrypted secret value
+
+**Notes:**
+- Only the `service_role` may execute this function; all other roles are revoked.
+- Raises an exception when the secret is not present in `vault.decrypted_secrets`.
 
 ---
 
