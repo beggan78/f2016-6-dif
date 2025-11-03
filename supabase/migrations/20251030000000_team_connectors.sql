@@ -316,10 +316,31 @@ CREATE POLICY player_attendance_insert_policy ON public.player_attendance
   FOR INSERT
   WITH CHECK (auth.jwt()->>'role' = 'service_role');
 
-CREATE POLICY player_attendance_update_policy ON public.player_attendance
+-- Allow service_role (scraper) to update all fields
+CREATE POLICY player_attendance_update_service_role_policy ON public.player_attendance
   FOR UPDATE
   USING (auth.jwt()->>'role' = 'service_role')
   WITH CHECK (auth.jwt()->>'role' = 'service_role');
+
+-- Allow team members to update records for their team's connectors (for manual player matching)
+CREATE POLICY player_attendance_update_team_member_policy ON public.player_attendance
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.connector tc
+      JOIN public.team_user tu ON tu.team_id = tc.team_id
+      WHERE tc.id = player_attendance.connector_id
+        AND tu.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.connector tc
+      JOIN public.team_user tu ON tu.team_id = tc.team_id
+      WHERE tc.id = player_attendance.connector_id
+        AND tu.user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY player_attendance_delete_policy ON public.player_attendance
   FOR DELETE
