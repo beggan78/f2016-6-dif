@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Building, Plus } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { Input } from '../shared/UI';
+import { useTypeaheadDropdown } from '../../hooks/useTypeaheadDropdown';
+import { useDebouncedSearch } from '../../hooks/useDebouncedSearch';
 
 export function ClubAutocomplete({ 
   value,
@@ -13,16 +15,21 @@ export function ClubAutocomplete({
 }) {
   const { searchClubs } = useTeam();
   const [suggestions, setSuggestions] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [query, setQuery] = useState(value || '');
-  
-  const inputRef = useRef(null);
-  const containerRef = useRef(null);
-  const searchTimeoutRef = useRef(null);
 
-  // Debounced search function
-  const debouncedSearch = useCallback(async (searchQuery) => {
+  const {
+    isOpen,
+    setIsOpen,
+    query,
+    setQuery,
+    containerRef,
+    inputRef,
+    handleFocus,
+    handleBlur,
+    handleKeyDown
+  } = useTypeaheadDropdown({ initialValue: value || '' });
+
+  const performSearch = useCallback(async (searchQuery) => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
       return;
@@ -40,96 +47,56 @@ export function ClubAutocomplete({
     }
   }, [searchClubs]);
 
-  // Handle input changes with debouncing
-  const handleInputChange = useCallback((e) => {
-    const newQuery = e.target.value;
+  const { run: scheduleSearch, cancel: cancelScheduledSearch } = useDebouncedSearch(performSearch, 300);
+
+  const handleInputChange = useCallback((event) => {
+    const newQuery = event.target.value;
     setQuery(newQuery);
     onChange?.(newQuery);
-
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      debouncedSearch(newQuery);
-    }, 300); // 300ms debounce
-  }, [onChange, debouncedSearch]);
-
-  // Handle focus to show suggestions
-  const handleFocus = useCallback(() => {
     setIsOpen(true);
+
+    scheduleSearch(newQuery);
+  }, [onChange, setQuery, setIsOpen, scheduleSearch]);
+
+  const handleInputFocus = useCallback((event) => {
+    handleFocus(event);
     if (query.trim()) {
-      debouncedSearch(query);
+      cancelScheduledSearch();
+      performSearch(query);
     }
-  }, [query, debouncedSearch]);
+  }, [handleFocus, query, cancelScheduledSearch, performSearch]);
 
-  // Handle blur to hide suggestions (with delay for clicks)
-  const handleBlur = useCallback(() => {
-    setTimeout(() => setIsOpen(false), 150);
-  }, []);
-
-  // Handle club selection
   const handleClubSelect = useCallback((club) => {
     setQuery(club.name);
     setIsOpen(false);
     onSelect?.(club);
-  }, [onSelect]);
+  }, [onSelect, setQuery, setIsOpen]);
 
-  // Handle "Create New Club" selection
   const handleCreateNew = useCallback(() => {
     setIsOpen(false);
     onCreateNew?.(query);
-  }, [onCreateNew, query]);
+  }, [onCreateNew, query, setIsOpen]);
 
-  // Handle keyboard navigation
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Escape') {
-      setIsOpen(false);
-      inputRef.current?.blur();
-    }
-  }, []);
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+      cancelScheduledSearch();
     };
-  }, []);
+  }, [cancelScheduledSearch]);
 
-  // Update query when value prop changes
   useEffect(() => {
     setQuery(value || '');
-  }, [value]);
+  }, [value, setQuery]);
 
   const showCreateOption = query.trim() && suggestions.length === 0 && !isLoading;
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Input Field */}
       <div className="relative">
         <Input
           ref={inputRef}
           value={query}
           onChange={handleInputChange}
-          onFocus={handleFocus}
+          onFocus={handleInputFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
@@ -145,10 +112,8 @@ export function ClubAutocomplete({
         </div>
       </div>
 
-      {/* Suggestions Dropdown */}
       {isOpen && (suggestions.length > 0 || showCreateOption) && (
         <div className="absolute z-10 mt-1 w-full bg-slate-700 border border-slate-500 rounded-md shadow-lg max-h-64 overflow-auto">
-          {/* Club Suggestions */}
           {suggestions.map((club) => (
             <button
               key={club.id}
@@ -167,7 +132,6 @@ export function ClubAutocomplete({
             </button>
           ))}
 
-          {/* Create New Option */}
           {showCreateOption && (
             <button
               onClick={handleCreateNew}
@@ -183,7 +147,6 @@ export function ClubAutocomplete({
             </button>
           )}
 
-          {/* No Results Message */}
           {!isLoading && suggestions.length === 0 && !showCreateOption && query.trim() && (
             <div className="px-3 py-2 text-slate-400 text-sm">
               No clubs found for "{query}"
