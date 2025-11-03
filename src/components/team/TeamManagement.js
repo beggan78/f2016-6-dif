@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   Users, 
   Settings, 
@@ -28,6 +28,8 @@ import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
+import { createPersistenceManager } from '../../utils/persistenceManager';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 const TAB_VIEWS = {
   OVERVIEW: 'overview',
@@ -51,8 +53,27 @@ export function TeamManagement({ onNavigateBack, openToTab }) {
   } = useTeam();
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept();
-  
-  const [activeTab, setActiveTab] = useState(openToTab || TAB_VIEWS.OVERVIEW);
+
+  // Create persistence manager for tab state
+  const tabPersistence = useMemo(
+    () => createPersistenceManager(STORAGE_KEYS.TEAM_MANAGEMENT_ACTIVE_TAB, { tab: TAB_VIEWS.OVERVIEW }),
+    []
+  );
+
+  // Track if this is the initial mount to prevent overriding persisted tab on page refresh
+  const isInitialMount = useRef(true);
+
+  // Initialize activeTab from openToTab prop or localStorage
+  const [activeTab, setActiveTab] = useState(() => {
+    // openToTab prop takes precedence over stored value
+    if (openToTab && Object.values(TAB_VIEWS).includes(openToTab)) {
+      return openToTab;
+    }
+    const stored = tabPersistence.loadState();
+    return stored.tab && Object.values(TAB_VIEWS).includes(stored.tab)
+      ? stored.tab
+      : TAB_VIEWS.OVERVIEW;
+  });
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -91,25 +112,28 @@ export function TeamManagement({ onNavigateBack, openToTab }) {
     }] : [])
   ], [isTeamAdmin, canManageTeam, pendingRequestsCount]);
 
-  // Simple handling of openToTab prop (only on mount)
-  useEffect(() => {
-    if (openToTab) {
-      setActiveTab(openToTab);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run on mount
-
   // Ensure activeTab always matches an available tab
+  // Skip on initial mount to preserve persisted tab selection from localStorage
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     if (tabs.length > 0) {
       const activeTabExists = tabs.some(tab => tab.id === activeTab);
-      
+
       if (!activeTabExists) {
         const fallbackTab = tabs[0].id;
         setActiveTab(fallbackTab);
       }
     }
   }, [activeTab, tabs]);
+
+  // Save activeTab to localStorage whenever it changes
+  useEffect(() => {
+    tabPersistence.saveState({ tab: activeTab });
+  }, [activeTab, tabPersistence]);
 
   // Load team data when current team changes
   const loadTeamData = useCallback(async () => {
