@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { getProviderById } from '../constants/connectorProviders';
 
 /**
  * Get all connectors for a team
@@ -277,4 +278,165 @@ export async function retryConnector(connectorId) {
 
   // Trigger a verification sync job
   await triggerManualSync(connectorId);
+}
+
+/**
+ * Get player attendance records with connector info for a team's roster
+ * Returns a map of player_id -> provider name
+ * @param {string} teamId - Team UUID
+ * @returns {Promise<Map>} Map of player_id to provider name ('SportAdmin', 'Svenska Lag')
+ */
+export async function getPlayerConnectorMappings(teamId) {
+  if (!teamId) {
+    throw new Error('Team ID is required');
+  }
+
+  const { data, error } = await supabase
+    .from('player_attendance')
+    .select(`
+      player_id,
+      connector:connector_id (
+        provider,
+        team_id
+      )
+    `)
+    .not('player_id', 'is', null)
+    .eq('connector.team_id', teamId);
+
+  if (error) {
+    console.error('Error fetching player connector mappings:', error);
+    throw new Error('Failed to load player connections');
+  }
+
+  // Create a map of player_id -> provider name
+  const mappings = new Map();
+  data?.forEach(record => {
+    if (record.player_id && record.connector?.provider) {
+      const provider = getProviderById(record.connector.provider);
+      mappings.set(record.player_id, provider?.name || record.connector.provider);
+    }
+  });
+
+  return mappings;
+}
+
+/**
+ * Get comprehensive connection details for all players in a team
+ * Includes both matched and unmatched attendance records
+ * @param {string} teamId - Team UUID
+ * @returns {Promise<Object>} Object with matched and unmatched connection details
+ */
+export async function getPlayerConnectionDetails(teamId) {
+  if (!teamId) {
+    throw new Error('Team ID is required');
+  }
+
+  // Get all connectors for the team
+  const connectors = await getTeamConnectors(teamId);
+
+  // Get all attendance records with connector info
+  const { data: attendanceData, error } = await supabase
+    .from('player_attendance')
+    .select(`
+      id,
+      player_id,
+      player_name,
+      last_synced_at,
+      connector:connector_id (
+        id,
+        provider,
+        status,
+        team_id
+      )
+    `)
+    .eq('connector.team_id', teamId);
+
+  if (error) {
+    console.error('Error fetching player connection details:', error);
+    throw new Error('Failed to load player connection details');
+  }
+
+  // Organize data by player_id
+  const matchedConnections = new Map(); // player_id -> array of connection details
+  const unmatchedAttendance = []; // attendance records without player_id
+  const hasConnectedProvider = connectors.some(c => c.status === 'connected');
+
+  attendanceData?.forEach(record => {
+    const provider = getProviderById(record.connector?.provider);
+    const connectionDetail = {
+      attendanceId: record.id,
+      providerName: provider?.name || record.connector?.provider,
+      providerId: record.connector?.provider,
+      playerNameInProvider: record.player_name,
+      lastSynced: record.last_synced_at,
+      connectorStatus: record.connector?.status,
+      connectorId: record.connector?.id
+    };
+
+    if (record.player_id) {
+      // Matched connection
+      if (!matchedConnections.has(record.player_id)) {
+        matchedConnections.set(record.player_id, []);
+      }
+      matchedConnections.get(record.player_id).push(connectionDetail);
+    } else {
+      // Unmatched attendance record
+      unmatchedAttendance.push(connectionDetail);
+    }
+  });
+
+  return {
+    matchedConnections,
+    unmatchedAttendance,
+    hasConnectedProvider
+  };
+}
+
+/**
+ * Get unmatched player attendance records for a specific connector
+ * Returns records where player_id is NULL
+ * @param {string} connectorId - Connector UUID
+ * @returns {Promise<Array>} Array of unmatched attendance records
+ */
+export async function getUnmatchedPlayerAttendance(connectorId) {
+  if (!connectorId) {
+    throw new Error('Connector ID is required');
+  }
+
+  const { data, error } = await supabase
+    .from('player_attendance')
+    .select('*')
+    .eq('connector_id', connectorId)
+    .is('player_id', null)
+    .order('player_name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching unmatched player attendance:', error);
+    throw new Error('Failed to load unmatched players');
+  }
+
+  return data || [];
+}
+
+/**
+ * Match a player attendance record to a roster player
+ * Updates the player_id field in the attendance record
+ * @param {string} attendanceId - player_attendance record UUID
+ * @param {string} playerId - player UUID from roster
+ * @returns {Promise<void>}
+ */
+export async function matchPlayerToAttendance(attendanceId, playerId) {
+  if (!attendanceId || !playerId) {
+    throw new Error('Attendance ID and player ID are required');
+  }
+
+  const { error } = await supabase
+    .from('player_attendance')
+    .update({ player_id: playerId })
+    .eq('id', attendanceId);
+
+  if (error) {
+    console.error('Error matching player to attendance:', error);
+    throw new Error('Failed to match player');
+  }
 }
