@@ -72,7 +72,7 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 - Schema: `supabase/migrations/20251030000000_team_connectors.sql`
 
 **Encryption Pattern** (Edge Function: `supabase/functions/connect-provider/index.ts`):
-- AES-256-GCM with PBKDF2 key derivation (100k iterations)
+- AES-256-GCM with PBKDF2 key derivation (310,000 iterations)
 - Master key stored in Supabase Vault, accessed via `supabase.rpc('get_vault_secret')` (service_role only)
 
 **Admin-Only Operations**:

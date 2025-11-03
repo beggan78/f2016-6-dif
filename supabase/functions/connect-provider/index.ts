@@ -30,6 +30,9 @@ console.log('🚀 Connect Provider Edge Function starting...');
 // **SECURITY**: Master encryption key name in Supabase Vault
 const VAULT_KEY_NAME = 'connector_master_key';
 
+// **ENCRYPTION**: PBKDF2 iteration count for key derivation (matches scraper)
+const PBKDF2_ITERATIONS = 310000;
+
 // **SECURITY**: Advanced rate limiting system with multiple tiers
 interface RateLimitEntry {
   count: number;
@@ -332,7 +335,7 @@ async function encryptCredentials(
       {
         name: 'PBKDF2',
         salt: salt,
-        iterations: 310000,
+        iterations: PBKDF2_ITERATIONS,
         hash: 'SHA-256'
       },
       keyMaterial,
