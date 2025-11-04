@@ -1,5 +1,6 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import type { Database } from '../../../src/types/supabase.ts'
 
 // **SECURITY**: Enhanced security headers to prevent common attacks combined with CORS
 const combinedHeaders = {
@@ -265,7 +266,7 @@ function validateCredentials(username: string, password: string): { valid: boole
 }
 
 // **ENCRYPTION**: Retrieve master key from Vault
-async function getMasterKeyFromVault(supabaseAdmin: any): Promise<string> {
+async function getMasterKeyFromVault(supabaseAdmin: SupabaseClient<Database>): Promise<string> {
   console.log(`🔐 Retrieving master key from Vault (name: ${VAULT_KEY_NAME})...`);
 
   const { data, error } = await supabaseAdmin
@@ -445,13 +446,13 @@ Deno.serve(async (req) => {
     console.log('🔑 Authorization header present');
 
     // Initialize Supabase clients
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: { Authorization: authHeader },
       },
     });
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey);
     console.log('✅ Supabase clients initialized');
 
     // Parse request body
