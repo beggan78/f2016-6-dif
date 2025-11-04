@@ -34,6 +34,22 @@ const VAULT_KEY_NAME = 'connector_master_key';
 // **ENCRYPTION**: PBKDF2 iteration count for key derivation (matches scraper)
 const PBKDF2_ITERATIONS = 310000;
 
+// Time helpers to avoid magic numbers
+const MS_IN_SECOND = 1000;
+const MS_IN_MINUTE = 60 * MS_IN_SECOND;
+const MS_IN_HOUR = 60 * MS_IN_MINUTE;
+const TEN_MINUTES_MS = 10 * MS_IN_MINUTE;
+const THIRTY_MINUTES_MS = 30 * MS_IN_MINUTE;
+const ONE_HOUR_MS = MS_IN_HOUR;
+const TWO_HOURS_MS = 2 * MS_IN_HOUR;
+
+const TEN_MINUTES_SECONDS = 10 * 60;
+const THIRTY_MINUTES_SECONDS = 30 * 60;
+const ONE_HOUR_SECONDS = 60 * 60;
+
+const MAX_RATE_LIMIT_DELAY_MS = 30 * MS_IN_SECOND;
+const BASE_RATE_LIMIT_DELAY_MS = MS_IN_SECOND;
+
 // **SECURITY**: Advanced rate limiting system with multiple tiers
 interface RateLimitEntry {
   count: number;
@@ -50,9 +66,9 @@ interface RateLimitConfig {
 }
 
 const RATE_LIMIT_CONFIGS = {
-  perIP: { windowMs: 3600000, maxRequests: 10, violationThreshold: 3, blockDurationMs: 3600000 }, // 1 hour
-  perUser: { windowMs: 3600000, maxRequests: 50, violationThreshold: 2, blockDurationMs: 1800000 }, // 30 min
-  global: { windowMs: 3600000, maxRequests: 100, violationThreshold: 1, blockDurationMs: 600000 } // 10 min
+  perIP: { windowMs: ONE_HOUR_MS, maxRequests: 10, violationThreshold: 3, blockDurationMs: ONE_HOUR_MS }, // 1 hour
+  perUser: { windowMs: ONE_HOUR_MS, maxRequests: 50, violationThreshold: 2, blockDurationMs: THIRTY_MINUTES_MS }, // 30 min
+  global: { windowMs: ONE_HOUR_MS, maxRequests: 100, violationThreshold: 1, blockDurationMs: TEN_MINUTES_MS } // 10 min
 };
 
 // In-memory rate limiting store (would use Redis in production)
@@ -65,7 +81,7 @@ function cleanupRateLimitStore(): void {
   const now = Date.now();
   for (const [key, entry] of rateLimitStore.entries()) {
     // Remove entries older than 2 hours
-    if (now - entry.lastReset > 7200000) {
+    if (now - entry.lastReset > TWO_HOURS_MS) {
       rateLimitStore.delete(key);
     }
   }
@@ -82,7 +98,7 @@ function checkRateLimit(identifier: string, config: RateLimitConfig): { allowed:
     const remainingMs = config.blockDurationMs - (now - entry.lastReset);
     return {
       allowed: false,
-      message: `Rate limit exceeded. Try again in ${Math.ceil(remainingMs / 60000)} minutes.`
+      message: `Rate limit exceeded. Try again in ${Math.ceil(remainingMs / MS_IN_MINUTE)} minutes.`
     };
   }
 
@@ -103,17 +119,17 @@ function checkRateLimit(identifier: string, config: RateLimitConfig): { allowed:
     if (entry.violations >= config.violationThreshold) {
       entry.blocked = true;
       entry.lastReset = now;
-      console.warn(`🚨 SECURITY: Rate limit violation - blocking ${identifier} for ${config.blockDurationMs / 60000} minutes`);
+      console.warn(`🚨 SECURITY: Rate limit violation - blocking ${identifier} for ${config.blockDurationMs / MS_IN_MINUTE} minutes`);
     }
 
     // Calculate exponential backoff delay
-    const delay = Math.min(1000 * Math.pow(2, entry.violations), 30000); // Max 30 seconds
+    const delay = Math.min(BASE_RATE_LIMIT_DELAY_MS * Math.pow(2, entry.violations), MAX_RATE_LIMIT_DELAY_MS); // Max 30 seconds
 
     rateLimitStore.set(key, entry);
     return {
       allowed: false,
       delay,
-      message: `Rate limit exceeded. Please wait ${delay / 1000} seconds before retrying.`
+      message: `Rate limit exceeded. Please wait ${delay / MS_IN_SECOND} seconds before retrying.`
     };
   }
 
@@ -545,14 +561,16 @@ Deno.serve(async (req) => {
         JSON.stringify({
           success: false,
           error: ipLimit.message,
-          retryAfter: ipLimit.delay ? Math.ceil(ipLimit.delay / 1000) : undefined
+          retryAfter: ipLimit.delay ? Math.ceil(ipLimit.delay / MS_IN_SECOND) : undefined
         }),
         {
           status: 429,
           headers: {
             ...combinedHeaders,
             'Content-Type': 'application/json',
-            'Retry-After': ipLimit.delay ? String(Math.ceil(ipLimit.delay / 1000)) : '3600'
+            'Retry-After': ipLimit.delay
+              ? String(Math.ceil(ipLimit.delay / MS_IN_SECOND))
+              : String(ONE_HOUR_SECONDS)
           }
         }
       );
@@ -566,14 +584,14 @@ Deno.serve(async (req) => {
         JSON.stringify({
           success: false,
           error: 'System temporarily overloaded. Please try again later.',
-          retryAfter: 600 // 10 minutes
+          retryAfter: TEN_MINUTES_SECONDS // 10 minutes
         }),
         {
           status: 503,
           headers: {
             ...combinedHeaders,
             'Content-Type': 'application/json',
-            'Retry-After': '600'
+            'Retry-After': String(TEN_MINUTES_SECONDS)
           }
         }
       );
@@ -589,14 +607,16 @@ Deno.serve(async (req) => {
           JSON.stringify({
             success: false,
             error: userRateLimit.message,
-            retryAfter: userRateLimit.delay ? Math.ceil(userRateLimit.delay / 1000) : undefined
+            retryAfter: userRateLimit.delay ? Math.ceil(userRateLimit.delay / MS_IN_SECOND) : undefined
           }),
           {
             status: 429,
             headers: {
               ...combinedHeaders,
               'Content-Type': 'application/json',
-              'Retry-After': userRateLimit.delay ? String(Math.ceil(userRateLimit.delay / 1000)) : '1800'
+              'Retry-After': userRateLimit.delay
+                ? String(Math.ceil(userRateLimit.delay / MS_IN_SECOND))
+                : String(THIRTY_MINUTES_SECONDS)
             }
           }
         );
@@ -614,7 +634,10 @@ Deno.serve(async (req) => {
       console.warn(`🚨 SECURITY: High bot probability detected - Score: ${botScore}, IP: ${clientIP}, UA: ${userAgent}`);
       // For high bot scores, apply stricter rate limiting
       const botLimit = checkRateLimit(`bot:${clientIP}`, {
-        windowMs: 3600000, maxRequests: 3, violationThreshold: 1, blockDurationMs: 7200000
+        windowMs: ONE_HOUR_MS,
+        maxRequests: 3,
+        violationThreshold: 1,
+        blockDurationMs: TWO_HOURS_MS
       });
       if (!botLimit.allowed) {
         return new Response(
