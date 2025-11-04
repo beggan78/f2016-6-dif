@@ -8,6 +8,10 @@ const originalCreateJestConfig = require(createJestConfigPath);
 require.cache[createJestConfigPath].exports = (...args) => {
   const config = originalCreateJestConfig(...args);
   config.reporters = [path.resolve(__dirname, 'jestFailOnlyReporter.js')];
+  config.moduleNameMapper = {
+    ...(config.moduleNameMapper || {}),
+    '^jsr:@supabase/supabase-js@2$': '@supabase/supabase-js'
+  };
   return config;
 };
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { 
-  Users, 
-  Settings, 
-  UserPlus, 
-  Shield, 
-  Clock, 
+import {
+  Users,
+  Settings,
+  UserPlus,
+  Shield,
+  Clock,
   Target,
   Trophy,
   CheckCircle,
@@ -14,9 +14,12 @@ import {
   Hash,
   Eye,
   EyeOff,
-  Rows4
+  Rows4,
+  Link,
+  Unlink
 } from 'lucide-react';
 import { Button, Select, Input } from '../shared/UI';
+import { Tooltip } from '../shared';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
@@ -25,9 +28,12 @@ import { TeamRoleManagementModal } from './TeamRoleManagementModal';
 import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
+import { PlayerMatchingModal } from './PlayerMatchingModal';
+import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
+import { getPlayerConnectionDetails } from '../../services/connectorService';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 
@@ -602,11 +608,17 @@ function RosterManagement({ team, onRefresh }) {
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [deletingPlayer, setDeletingPlayer] = useState(null);
   const [deletingPlayerHasGameHistory, setDeletingPlayerHasGameHistory] = useState(false);
+  const [matchingPlayer, setMatchingPlayer] = useState(null); // For player matching modal
+  const [connectionDetails, setConnectionDetails] = useState({
+    matchedConnections: new Map(),
+    unmatchedAttendance: [],
+    hasConnectedProvider: false
+  });
 
   // Load roster data
   const loadRoster = useCallback(async () => {
     if (!team?.id) return;
-    
+
     try {
       setLoading(true);
       setError(null);
@@ -620,10 +632,28 @@ function RosterManagement({ team, onRefresh }) {
     }
   }, [team?.id, getTeamRoster]);
 
+  // Load player connection details
+  const loadPlayerConnections = useCallback(async () => {
+    if (!team?.id) return;
+
+    try {
+      const details = await getPlayerConnectionDetails(team.id);
+      setConnectionDetails(details);
+    } catch (err) {
+      console.error('Error loading player connections:', err);
+      // Non-critical error - just log it, don't show to user
+    }
+  }, [team?.id]);
+
   // Load roster on component mount and team change
   useEffect(() => {
     loadRoster();
   }, [loadRoster]);
+
+  // Load player connections on component mount and team change
+  useEffect(() => {
+    loadPlayerConnections();
+  }, [loadPlayerConnections]);
 
   // Auto-clear success message after timeout
   useEffect(() => {
@@ -644,6 +674,42 @@ function RosterManagement({ team, onRefresh }) {
     const bName = b.display_name || '';
     return aName.localeCompare(bName);
   });
+
+  // Handle player matched successfully
+  const handlePlayerMatched = async (matchedAttendance, rosterPlayer) => {
+    if (matchedAttendance && rosterPlayer) {
+      setConnectionDetails(prev => {
+        const updatedMatched = new Map(prev.matchedConnections);
+        const existingMatches = updatedMatched.get(rosterPlayer.id) || [];
+
+        // Normalize record so tooltip rendering stays consistent
+        const normalizedRecord = {
+          attendanceId: matchedAttendance.attendanceId,
+          providerName: matchedAttendance.providerName,
+          providerId: matchedAttendance.providerId,
+          playerNameInProvider: matchedAttendance.playerNameInProvider,
+          lastSynced: matchedAttendance.lastSynced,
+          connectorStatus: matchedAttendance.connectorStatus,
+          connectorId: matchedAttendance.connectorId
+        };
+
+        updatedMatched.set(rosterPlayer.id, [...existingMatches, normalizedRecord]);
+
+        const updatedUnmatched = prev.unmatchedAttendance.filter(
+          record => record.attendanceId !== matchedAttendance.attendanceId
+        );
+
+        return {
+          ...prev,
+          matchedConnections: updatedMatched,
+          unmatchedAttendance: updatedUnmatched
+        };
+      });
+    }
+
+    await loadPlayerConnections(); // Reload connection data for consistency
+    setSuccessMessage('Player successfully matched to attendance data');
+  };
 
   // Handle add player
   const handleAddPlayer = () => {
@@ -806,6 +872,9 @@ function RosterManagement({ team, onRefresh }) {
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
                     Player
                   </th>
+                  <th className="px-2 py-3 text-center text-xs font-medium text-slate-300" title="Connection Status">
+                    <Link className="w-4 h-4 inline-block" />
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
                     #
                   </th>
@@ -841,6 +910,70 @@ function RosterManagement({ team, onRefresh }) {
                           {!player.on_roster && <span className="text-slate-400 ml-2">(Former)</span>}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-2 py-3 text-center">
+                      {(() => {
+                        const connections = connectionDetails.matchedConnections.get(player.id);
+                        const hasConnection = connections && connections.length > 0;
+                        const needsMatching = connectionDetails.hasConnectedProvider && !hasConnection;
+
+                        if (!hasConnection && !needsMatching) {
+                          return null; // No connection and no provider connected
+                        }
+
+                        const IconComponent = hasConnection ? Link : Unlink;
+                        const iconColor = hasConnection ? 'text-emerald-400 hover:text-emerald-300' : 'text-amber-400 hover:text-amber-300';
+
+                        const tooltipContent = (
+                          <div className="text-xs space-y-2">
+                            {hasConnection ? (
+                              <>
+                                <div className="font-semibold text-slate-100">Connected Providers:</div>
+                                {connections.map((conn, idx) => (
+                                  <div key={idx} className="space-y-1">
+                                    <div className="flex items-center space-x-2">
+                                      <Link className="w-3 h-3 text-emerald-400" />
+                                      <span className="text-slate-200">{conn.providerName}</span>
+                                    </div>
+                                    <div className="pl-5 text-slate-300">
+                                      Matched as: <span className="font-medium">{conn.playerNameInProvider}</span>
+                                    </div>
+                                    {conn.lastSynced && (
+                                      <div className="pl-5 text-slate-400 text-xs">
+                                        Last synced: {new Date(conn.lastSynced).toLocaleDateString()}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </>
+                            ) : (
+                              <>
+                                <div className="font-semibold text-amber-200">Needs Matching</div>
+                                <div className="text-slate-300">
+                                  This player is not matched to any provider data yet.
+                                </div>
+                                {connectionDetails.unmatchedAttendance.length > 0 && (
+                                  <button
+                                    className="mt-2 w-full px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-medium transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setMatchingPlayer(player);
+                                    }}
+                                  >
+                                    Match Player
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+
+                        return (
+                          <Tooltip content={tooltipContent} position="bottom">
+                            <IconComponent className={`w-4 h-4 ${iconColor} transition-colors`} />
+                          </Tooltip>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       {player.jersey_number ? (
@@ -907,6 +1040,16 @@ function RosterManagement({ team, onRefresh }) {
           hasGameHistory={deletingPlayerHasGameHistory}
           onClose={() => setDeletingPlayer(null)}
           onConfirm={handlePlayerDeleted}
+        />
+      )}
+
+      {/* Player Matching Modal */}
+      {matchingPlayer && connectionDetails.unmatchedAttendance.length > 0 && (
+        <PlayerMatchingModal
+          rosterPlayer={matchingPlayer}
+          unmatchedAttendance={connectionDetails.unmatchedAttendance}
+          onClose={() => setMatchingPlayer(null)}
+          onMatched={handlePlayerMatched}
         />
       )}
     </div>
@@ -1127,6 +1270,11 @@ function TeamPreferences({ team, onRefresh }) {
             ]}
           />
         </div>
+      </div>
+
+      {/* Connectors Section */}
+      <div className="border-t border-slate-600 pt-6 mt-6">
+        <ConnectorsSection team={team} onRefresh={onRefresh} />
       </div>
     </div>
   );
