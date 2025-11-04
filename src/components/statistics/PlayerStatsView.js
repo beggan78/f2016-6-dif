@@ -192,7 +192,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.TOTAL_TIME,
-        label: 'Total Time',
+        label: 'Outfield Time',
         sortable: true,
         className: 'text-center',
         render: (player) => (
