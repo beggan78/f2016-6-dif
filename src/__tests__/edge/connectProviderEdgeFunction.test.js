@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { TextEncoder, TextDecoder } from 'util';
 
 import {
   BASE_RATE_LIMIT_DELAY_MS,
@@ -15,6 +16,14 @@ const { perIP } = RATE_LIMIT_CONFIGS;
 
 if (typeof global.atob === 'undefined') {
   global.atob = (input) => Buffer.from(input, 'base64').toString('binary');
+}
+
+if (typeof global.TextEncoder === 'undefined') {
+  global.TextEncoder = TextEncoder;
+}
+
+if (typeof global.TextDecoder === 'undefined') {
+  global.TextDecoder = TextDecoder;
 }
 
 describe('connect-provider edge helpers', () => {
