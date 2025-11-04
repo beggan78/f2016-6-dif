@@ -18,7 +18,7 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
       ? { onReorder: onReorderOrOptions }
       : onReorderOrOptions || {};
 
-  const { onReorder, initialOrder } = options;
+  const { onReorder, initialOrder, fixedColumns = [] } = options;
 
   const defaultColumnOrder = useMemo(() => columns.map((column) => column.key), [columns]);
 
@@ -293,6 +293,12 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
         return;
       }
 
+      // Prevent reordering if source or target is fixed
+      if (fixedColumns.includes(sourceKey) || fixedColumns.includes(targetKey)) {
+        resetReorderState();
+        return;
+      }
+
       setColumnOrder((previousOrder) => {
         const withoutSource = previousOrder.filter((key) => key !== sourceKey);
         const targetIndex = withoutSource.indexOf(targetKey);
@@ -302,6 +308,12 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
         }
 
         const insertionIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+
+        // Prevent inserting before a fixed column
+        if (insertionIndex < fixedColumns.length) {
+          return previousOrder;
+        }
+
         const nextOrder = [...withoutSource];
         nextOrder.splice(insertionIndex, 0, sourceKey);
         const mergedOrder = mergeColumnOrder(nextOrder);
@@ -315,7 +327,7 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
 
       resetReorderState();
     },
-    [mergeColumnOrder, onReorder, resetReorderState]
+    [mergeColumnOrder, onReorder, resetReorderState, fixedColumns]
   );
 
   useEffect(() => {
@@ -327,6 +339,11 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
   const handlePointerDown = useCallback(
     (event, columnKey) => {
       if (event.pointerType === 'mouse' && event.button !== 0) {
+        return;
+      }
+
+      // Prevent dragging fixed columns
+      if (fixedColumns.includes(columnKey)) {
         return;
       }
 
@@ -469,7 +486,8 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
       reorderColumns,
       startDragSession,
       updateDragGhostPosition,
-      resetReorderState
+      resetReorderState,
+      fixedColumns
     ]
   );
 
