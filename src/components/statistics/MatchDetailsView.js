@@ -1286,7 +1286,7 @@ export function MatchDetailsView({
               <tr>
                 <SortableHeader field="displayName" align="left">Player</SortableHeader>
                 <SortableHeader field="goalsScored">Goals</SortableHeader>
-                <SortableHeader field="totalTimePlayed">Total Time</SortableHeader>
+                <SortableHeader field="totalTimePlayed">Outfield Time</SortableHeader>
                 <SortableHeader field="timeAsDefender">Defender</SortableHeader>
                 <SortableHeader field="timeAsMidfielder">Midfielder</SortableHeader>
                 <SortableHeader field="timeAsAttacker">Attacker</SortableHeader>
