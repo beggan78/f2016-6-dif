@@ -277,7 +277,25 @@ export async function retryConnector(connectorId) {
   }
 
   // Trigger a verification sync job
-  await triggerManualSync(connectorId);
+  try {
+    await triggerManualSync(connectorId);
+  } catch (syncError) {
+    console.error('Error triggering manual sync during retry:', syncError);
+
+    const { error: revertError } = await supabase
+      .from('connector')
+      .update({
+        status: 'error',
+        last_error: 'Failed to queue verification job. Please try again.'
+      })
+      .eq('id', connectorId);
+
+    if (revertError) {
+      console.error('Error reverting connector status after sync failure:', revertError);
+    }
+
+    throw new Error('Failed to queue verification job');
+  }
 }
 
 /**

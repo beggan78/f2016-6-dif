@@ -75,6 +75,11 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 - AES-256-GCM with PBKDF2 key derivation (310,000 iterations)
 - Master key stored in Supabase Vault, accessed via `supabase.rpc('get_vault_secret')` (service_role only)
 
+**Rate Limiting Limitations**:
+- Current implementation stores counters in-memory inside the Edge Function instance.
+- Memory resets on cold start, so rate limits effectively reset after idle periods.
+- Treat limits as best-effort throttling until a persistent store (e.g., Redis) is added.
+
 **Admin-Only Operations**:
 - All connector CRUD operations require `team_user.role = 'admin'`
 - Scraper updates use `service_role` to bypass RLS

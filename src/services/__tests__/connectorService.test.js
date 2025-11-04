@@ -9,7 +9,8 @@ import {
   triggerManualSync,
   getLatestSyncJob,
   getRecentSyncJobs,
-  matchPlayerToAttendance
+  matchPlayerToAttendance,
+  retryConnector
 } from '../connectorService';
 import { supabase } from '../../lib/supabase';
 
@@ -188,6 +189,64 @@ describe('connectorService', () => {
       supabase.rpc.mockResolvedValue({ data: null, error: { message: 'rpc failed' } });
 
       await expect(triggerManualSync('connector-1')).rejects.toThrow('Failed to trigger manual sync');
+    });
+  });
+
+  describe('retryConnector', () => {
+    it('requires connector id', async () => {
+      await expect(retryConnector()).rejects.toThrow('Connector ID is required');
+    });
+
+    it('updates status and triggers manual sync', async () => {
+      const eq = jest.fn().mockResolvedValue({ error: null });
+      const update = jest.fn(() => ({ eq }));
+      supabase.from.mockReturnValue({ update });
+      supabase.rpc.mockResolvedValue({ data: 'job-123', error: null });
+
+      await retryConnector('connector-1');
+
+      expect(supabase.from).toHaveBeenCalledWith('connector');
+      expect(update).toHaveBeenCalledWith({
+        status: 'verifying',
+        last_error: null
+      });
+      expect(eq).toHaveBeenCalledWith('id', 'connector-1');
+      expect(supabase.rpc).toHaveBeenCalledWith('create_manual_sync_job', {
+        p_connector_id: 'connector-1'
+      });
+    });
+
+    it('reverts status when manual sync fails', async () => {
+      const initialEq = jest.fn().mockResolvedValue({ error: null });
+      const initialUpdate = jest.fn(() => ({ eq: initialEq }));
+
+      const revertEq = jest.fn().mockResolvedValue({ error: null });
+      const revertUpdate = jest.fn(() => ({ eq: revertEq }));
+
+      supabase.from
+        .mockReturnValueOnce({ update: initialUpdate })
+        .mockReturnValueOnce({ update: revertUpdate });
+
+      supabase.rpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'rpc failed' }
+      });
+
+      await expect(retryConnector('connector-1')).rejects.toThrow('Failed to queue verification job');
+
+      expect(supabase.rpc).toHaveBeenCalledWith('create_manual_sync_job', {
+        p_connector_id: 'connector-1'
+      });
+      expect(console.error).toHaveBeenCalledWith('Error triggering manual sync:', { message: 'rpc failed' });
+      expect(console.error).toHaveBeenCalledWith(
+        'Error triggering manual sync during retry:',
+        expect.any(Error)
+      );
+      expect(revertUpdate).toHaveBeenCalledWith({
+        status: 'error',
+        last_error: 'Failed to queue verification job. Please try again.'
+      });
+      expect(revertEq).toHaveBeenCalledWith('id', 'connector-1');
     });
   });
 

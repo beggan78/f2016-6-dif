@@ -55,6 +55,8 @@ const RATE_LIMIT_CONFIGS = {
 };
 
 // In-memory rate limiting store (would use Redis in production)
+// NOTE: Supabase Edge Functions reset memory on cold start, so these limits reset per instance.
+// Documented limitation: attackers could bypass limits by waiting for the function to cold start.
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // **SECURITY**: Cleanup old rate limit entries
