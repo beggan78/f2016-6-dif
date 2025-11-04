@@ -300,7 +300,8 @@ export function PlayerStatsView({ startDate, endDate }) {
     isReordering,
     handlePointerDown
   } = useColumnDragDrop(baseColumns, {
-    initialOrder: savedColumnOrder
+    initialOrder: savedColumnOrder,
+    fixedColumns: [SORT_COLUMNS.NAME]
   });
 
   useEffect(() => {
@@ -545,14 +546,15 @@ export function PlayerStatsView({ startDate, endDate }) {
                         : undefined
                   };
 
+                  const isFixedColumn = column.key === SORT_COLUMNS.NAME;
                   return (
                     <th
                       key={column.key}
                       scope="col"
                       data-column-key={column.key}
                       className={`relative px-3 py-2 text-xs font-medium text-sky-200 tracking-wider select-none touch-none ${
-                        column.sortable ? 'cursor-grab active:cursor-grabbing hover:bg-slate-700 transition-colors' : ''
-                      } ${sortBy === column.key ? 'bg-slate-700' : ''} ${
+                        column.sortable && !isFixedColumn ? 'cursor-grab active:cursor-grabbing hover:bg-slate-700 transition-colors' : ''
+                      } ${column.sortable && isFixedColumn ? 'cursor-pointer hover:bg-slate-700 transition-colors' : ''} ${sortBy === column.key ? 'bg-slate-700' : ''} ${
                         draggingColumn === column.key ? 'opacity-60' : ''
                       } ${
                         dragOverColumn === column.key && draggingColumn !== column.key
