@@ -3,7 +3,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 import type { Database } from '../../../src/types/supabase.ts'
 
 // **SECURITY**: Enhanced security headers to prevent common attacks combined with CORS
-const combinedHeaders = {
+export const combinedHeaders = {
   ...corsHeaders,
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -12,14 +12,14 @@ const combinedHeaders = {
   'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none';"
 };
 
-interface ConnectProviderRequest {
+export interface ConnectProviderRequest {
   team_id: string;
   provider: string;
   username: string;
   password: string;
 }
 
-interface EncryptedCredentials {
+export interface EncryptedCredentials {
   encryptedUsername: Uint8Array;
   encryptedPassword: Uint8Array;
   iv: Uint8Array;
@@ -29,43 +29,43 @@ interface EncryptedCredentials {
 console.log('🚀 Connect Provider Edge Function starting...');
 
 // **SECURITY**: Master encryption key name in Supabase Vault
-const VAULT_KEY_NAME = 'connector_master_key';
+export const VAULT_KEY_NAME = 'connector_master_key';
 
 // **ENCRYPTION**: PBKDF2 iteration count for key derivation (matches scraper)
-const PBKDF2_ITERATIONS = 310000;
+export const PBKDF2_ITERATIONS = 310000;
 
 // Time helpers to avoid magic numbers
-const MS_IN_SECOND = 1000;
-const MS_IN_MINUTE = 60 * MS_IN_SECOND;
-const MS_IN_HOUR = 60 * MS_IN_MINUTE;
-const TEN_MINUTES_MS = 10 * MS_IN_MINUTE;
-const THIRTY_MINUTES_MS = 30 * MS_IN_MINUTE;
-const ONE_HOUR_MS = MS_IN_HOUR;
-const TWO_HOURS_MS = 2 * MS_IN_HOUR;
+export const MS_IN_SECOND = 1000;
+export const MS_IN_MINUTE = 60 * MS_IN_SECOND;
+export const MS_IN_HOUR = 60 * MS_IN_MINUTE;
+export const TEN_MINUTES_MS = 10 * MS_IN_MINUTE;
+export const THIRTY_MINUTES_MS = 30 * MS_IN_MINUTE;
+export const ONE_HOUR_MS = MS_IN_HOUR;
+export const TWO_HOURS_MS = 2 * MS_IN_HOUR;
 
-const TEN_MINUTES_SECONDS = 10 * 60;
-const THIRTY_MINUTES_SECONDS = 30 * 60;
-const ONE_HOUR_SECONDS = 60 * 60;
+export const TEN_MINUTES_SECONDS = 10 * 60;
+export const THIRTY_MINUTES_SECONDS = 30 * 60;
+export const ONE_HOUR_SECONDS = 60 * 60;
 
-const MAX_RATE_LIMIT_DELAY_MS = 30 * MS_IN_SECOND;
-const BASE_RATE_LIMIT_DELAY_MS = MS_IN_SECOND;
+export const MAX_RATE_LIMIT_DELAY_MS = 30 * MS_IN_SECOND;
+export const BASE_RATE_LIMIT_DELAY_MS = MS_IN_SECOND;
 
 // **SECURITY**: Advanced rate limiting system with multiple tiers
-interface RateLimitEntry {
+export interface RateLimitEntry {
   count: number;
   lastReset: number;
   blocked: boolean;
   violations: number;
 }
 
-interface RateLimitConfig {
+export interface RateLimitConfig {
   windowMs: number;
   maxRequests: number;
   violationThreshold: number;
   blockDurationMs: number;
 }
 
-const RATE_LIMIT_CONFIGS = {
+export const RATE_LIMIT_CONFIGS = {
   perIP: { windowMs: ONE_HOUR_MS, maxRequests: 10, violationThreshold: 3, blockDurationMs: ONE_HOUR_MS }, // 1 hour
   perUser: { windowMs: ONE_HOUR_MS, maxRequests: 50, violationThreshold: 2, blockDurationMs: THIRTY_MINUTES_MS }, // 30 min
   global: { windowMs: ONE_HOUR_MS, maxRequests: 100, violationThreshold: 1, blockDurationMs: TEN_MINUTES_MS } // 10 min
@@ -77,7 +77,7 @@ const RATE_LIMIT_CONFIGS = {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // **SECURITY**: Cleanup old rate limit entries
-function cleanupRateLimitStore(): void {
+export function cleanupRateLimitStore(): void {
   const now = Date.now();
   for (const [key, entry] of rateLimitStore.entries()) {
     // Remove entries older than 2 hours
@@ -88,7 +88,7 @@ function cleanupRateLimitStore(): void {
 }
 
 // **SECURITY**: Check rate limit with escalating response
-function checkRateLimit(identifier: string, config: RateLimitConfig): { allowed: boolean; delay?: number; message?: string } {
+export function checkRateLimit(identifier: string, config: RateLimitConfig): { allowed: boolean; delay?: number; message?: string } {
   const now = Date.now();
   const key = `${identifier}`;
   const entry = rateLimitStore.get(key) || { count: 0, lastReset: now, blocked: false, violations: 0 };
@@ -137,8 +137,12 @@ function checkRateLimit(identifier: string, config: RateLimitConfig): { allowed:
   return { allowed: true };
 }
 
+export function resetRateLimitStore(): void {
+  rateLimitStore.clear();
+}
+
 // **SECURITY**: Enhanced IP extraction with validation
-function extractClientIP(req: Request): string {
+export function extractClientIP(req: Request): string {
   const headers = [
     'x-forwarded-for',
     'x-real-ip',
@@ -163,7 +167,7 @@ function extractClientIP(req: Request): string {
 }
 
 // **SECURITY**: Advanced bot detection with scoring
-function calculateBotScore(userAgent: string, req: Request): number {
+export function calculateBotScore(userAgent: string, req: Request): number {
   let score = 0;
 
   if (!userAgent || userAgent.length < 10) {
@@ -201,7 +205,7 @@ function calculateBotScore(userAgent: string, req: Request): number {
 }
 
 // **SECURITY**: Structured security event logging
-interface SecurityEvent {
+export interface SecurityEvent {
   timestamp: string;
   event_type: 'rate_limit_exceeded' | 'bot_detected' | 'validation_failed' | 'unauthorized_access' | 'encryption_error' | 'successful_connection';
   severity: 'info' | 'warn' | 'error' | 'critical';
@@ -212,7 +216,7 @@ interface SecurityEvent {
   correlation_id: string;
 }
 
-function logSecurityEvent(event: SecurityEvent): void {
+export function logSecurityEvent(event: SecurityEvent): void {
   const logEntry = {
     ...event,
     service: 'connect-provider',
@@ -229,12 +233,12 @@ function logSecurityEvent(event: SecurityEvent): void {
   }
 }
 
-function generateCorrelationId(): string {
+export function generateCorrelationId(): string {
   return `conn_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 }
 
 // **SECURITY**: Input validation functions
-function validateTeamId(teamId: string): { valid: boolean; error?: string } {
+export function validateTeamId(teamId: string): { valid: boolean; error?: string } {
   if (!teamId || typeof teamId !== 'string') {
     return { valid: false, error: 'Team ID is required' };
   }
@@ -248,7 +252,7 @@ function validateTeamId(teamId: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-function validateProvider(provider: string): { valid: boolean; error?: string } {
+export function validateProvider(provider: string): { valid: boolean; error?: string } {
   if (!provider || typeof provider !== 'string') {
     return { valid: false, error: 'Provider is required' };
   }
@@ -261,7 +265,7 @@ function validateProvider(provider: string): { valid: boolean; error?: string } 
   return { valid: true };
 }
 
-function validateCredentials(username: string, password: string): { valid: boolean; error?: string } {
+export function validateCredentials(username: string, password: string): { valid: boolean; error?: string } {
   if (!username || typeof username !== 'string') {
     return { valid: false, error: 'Username is required' };
   }
@@ -282,7 +286,7 @@ function validateCredentials(username: string, password: string): { valid: boole
 }
 
 // **ENCRYPTION**: Retrieve master key from Vault
-async function getMasterKeyFromVault(supabaseAdmin: SupabaseClient<Database>): Promise<string> {
+export async function getMasterKeyFromVault(supabaseAdmin: SupabaseClient<Database>): Promise<string> {
   console.log(`🔐 Retrieving master key from Vault (name: ${VAULT_KEY_NAME})...`);
 
   const { data, error } = await supabaseAdmin
@@ -305,14 +309,14 @@ async function getMasterKeyFromVault(supabaseAdmin: SupabaseClient<Database>): P
 }
 
 // **HELPER**: Convert Uint8Array to hex string for PostgreSQL bytea
-function uint8ArrayToHex(uint8Array: Uint8Array): string {
+export function uint8ArrayToHex(uint8Array: Uint8Array): string {
   return '\\x' + Array.from(uint8Array)
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
 // **HELPER**: Decode base64 string to Uint8Array
-function base64ToUint8Array(base64: string): Uint8Array {
+export function base64ToUint8Array(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
@@ -322,7 +326,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 // **ENCRYPTION**: Encrypt credentials using AES-256-GCM
-async function encryptCredentials(
+export async function encryptCredentials(
   username: string,
   password: string,
   masterKey: string
@@ -397,6 +401,7 @@ async function encryptCredentials(
   }
 }
 
+if (typeof Deno !== 'undefined' && typeof Deno.serve === 'function') {
 Deno.serve(async (req) => {
   console.log(`📥 Received ${req.method} request to ${req.url}`);
 
@@ -856,3 +861,4 @@ Deno.serve(async (req) => {
     );
   }
 });
+}
