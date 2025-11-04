@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../shared/UI';
+import { StatusBadge } from '../shared/StatusBadge';
 import {
   CheckCircle,
   XCircle,
@@ -14,8 +15,23 @@ import {
   getProviderById,
   getStatusBadgeStyle,
   getSyncJobStatusStyle,
-  CONNECTOR_STATUS
+  CONNECTOR_STATUS,
+  SYNC_JOB_STATUS
 } from '../../constants/connectorProviders';
+
+const STATUS_ICON_MAP = {
+  [CONNECTOR_STATUS.CONNECTED]: CheckCircle,
+  [CONNECTOR_STATUS.VERIFYING]: Clock,
+  [CONNECTOR_STATUS.ERROR]: AlertCircle,
+  [CONNECTOR_STATUS.DISCONNECTED]: XCircle
+};
+
+const SYNC_JOB_ICON_MAP = {
+  [SYNC_JOB_STATUS.COMPLETED]: CheckCircle,
+  [SYNC_JOB_STATUS.RUNNING]: Loader,
+  [SYNC_JOB_STATUS.FAILED]: XCircle,
+  [SYNC_JOB_STATUS.WAITING]: Clock
+};
 
 export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, loading, latestSyncJob }) {
   const [isSyncing, setIsSyncing] = useState(false);
@@ -23,6 +39,8 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
   const provider = getProviderById(connector.provider);
   const statusStyle = getStatusBadgeStyle(connector.status);
   const syncJobStyle = latestSyncJob ? getSyncJobStatusStyle(latestSyncJob.status) : null;
+  const statusIcon = STATUS_ICON_MAP[connector.status] || XCircle;
+  const syncJobIcon = latestSyncJob ? SYNC_JOB_ICON_MAP[latestSyncJob.status] : null;
 
   useEffect(() => {
     setIsSyncing(loading);
@@ -50,21 +68,6 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
     }).replace(',', '');
   };
 
-  const getStatusIcon = () => {
-    switch (connector.status) {
-      case CONNECTOR_STATUS.CONNECTED:
-        return <CheckCircle className="w-4 h-4" />;
-      case CONNECTOR_STATUS.VERIFYING:
-        return <Clock className="w-4 h-4" />;
-      case CONNECTOR_STATUS.ERROR:
-        return <AlertCircle className="w-4 h-4" />;
-      case CONNECTOR_STATUS.DISCONNECTED:
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <XCircle className="w-4 h-4" />;
-    }
-  };
-
   const canSync = connector.status === CONNECTOR_STATUS.CONNECTED && !isSyncing;
   const hasError = connector.status === CONNECTOR_STATUS.ERROR;
 
@@ -78,10 +81,13 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
         </div>
 
         {/* Status Badge */}
-        <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${statusStyle.color}`}>
-          {getStatusIcon()}
-          <span>{statusStyle.label}</span>
-        </div>
+        <StatusBadge
+          icon={statusIcon}
+          iconClassName="w-4 h-4"
+          label={statusStyle.label}
+          colorClass={statusStyle.color}
+          className="px-3 py-1"
+        />
       </div>
 
       {/* Connection Details */}
@@ -108,13 +114,13 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
         <div className="bg-slate-800 rounded-lg p-3 mb-4 border border-slate-600">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-300 text-sm font-medium">Latest Sync</span>
-            <div className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center space-x-1 ${syncJobStyle.color}`}>
-              {latestSyncJob.status === 'running' && <Loader className="w-3 h-3 animate-spin" />}
-              {latestSyncJob.status === 'completed' && <CheckCircle className="w-3 h-3" />}
-              {latestSyncJob.status === 'failed' && <XCircle className="w-3 h-3" />}
-              {latestSyncJob.status === 'waiting' && <Clock className="w-3 h-3" />}
-              <span>{syncJobStyle.label}</span>
-            </div>
+            <StatusBadge
+              icon={syncJobIcon}
+              iconClassName={`w-3 h-3 ${latestSyncJob.status === SYNC_JOB_STATUS.RUNNING ? 'animate-spin' : ''}`}
+              label={syncJobStyle.label}
+              colorClass={syncJobStyle.color}
+              className="px-2 py-0.5"
+            />
           </div>
 
           <div className="text-slate-400 text-xs">
