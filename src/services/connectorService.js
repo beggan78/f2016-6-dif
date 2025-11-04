@@ -380,15 +380,30 @@ export async function getPlayerConnectionDetails(teamId) {
   const hasConnectedProvider = connectors.some(c => c.status === 'connected');
 
   attendanceData?.forEach(record => {
-    const provider = getProviderById(record.connector?.provider);
+    const connector = record.connector;
+
+    if (!connector) {
+      unmatchedAttendance.push({
+        attendanceId: record.id,
+        providerName: 'Unknown connector',
+        providerId: null,
+        playerNameInProvider: record.player_name,
+        lastSynced: record.last_synced_at,
+        connectorStatus: null,
+        connectorId: null
+      });
+      return;
+    }
+
+    const provider = getProviderById(connector.provider);
     const connectionDetail = {
       attendanceId: record.id,
-      providerName: provider?.name || record.connector?.provider,
-      providerId: record.connector?.provider,
+      providerName: provider?.name || connector.provider,
+      providerId: connector.provider,
       playerNameInProvider: record.player_name,
       lastSynced: record.last_synced_at,
-      connectorStatus: record.connector?.status,
-      connectorId: record.connector?.id
+      connectorStatus: connector.status,
+      connectorId: connector.id
     };
 
     if (record.player_id) {

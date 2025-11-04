@@ -10,7 +10,8 @@ import {
   getLatestSyncJob,
   getRecentSyncJobs,
   matchPlayerToAttendance,
-  retryConnector
+  retryConnector,
+  getPlayerConnectionDetails
 } from '../connectorService';
 import { supabase } from '../../lib/supabase';
 
@@ -275,6 +276,56 @@ describe('connectorService', () => {
 
       const result = await getLatestSyncJob('connector-1');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('getPlayerConnectionDetails', () => {
+    it('handles attendance records with missing connector reference', async () => {
+      const connectorOrder = jest.fn().mockResolvedValue({ data: [], error: null });
+      const connectorEq = jest.fn(() => ({ order: connectorOrder }));
+      const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
+
+      const attendanceRecords = [
+        {
+          id: 'att-1',
+          player_id: null,
+          player_name: 'Orphaned Player',
+          last_synced_at: '2024-01-01T00:00:00Z',
+          connector: null
+        }
+      ];
+
+      const attendanceEq = jest.fn().mockResolvedValue({
+        data: attendanceRecords,
+        error: null
+      });
+      const attendanceSelect = jest.fn(() => ({ eq: attendanceEq }));
+
+      supabase.from.mockImplementation(table => {
+        if (table === 'connector') {
+          return { select: connectorSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getPlayerConnectionDetails('team-1');
+
+      expect(result.hasConnectedProvider).toBe(false);
+      expect(result.matchedConnections.size).toBe(0);
+      expect(result.unmatchedAttendance).toEqual([
+        {
+          attendanceId: 'att-1',
+          providerName: 'Unknown connector',
+          providerId: null,
+          playerNameInProvider: 'Orphaned Player',
+          lastSynced: '2024-01-01T00:00:00Z',
+          connectorStatus: null,
+          connectorId: null
+        }
+      ]);
     });
   });
 
