@@ -315,9 +315,38 @@ export function uint8ArrayToHex(uint8Array: Uint8Array): string {
     .join('');
 }
 
-// **HELPER**: Decode base64 string to Uint8Array
+// **HELPER**: Decode base64 (or base64url) string to Uint8Array
 export function base64ToUint8Array(base64: string): Uint8Array {
-  const binaryString = atob(base64);
+  if (!base64 || typeof base64 !== 'string') {
+    throw new Error('Master key must be a non-empty string');
+  }
+
+  // Debug logging - show type and first 20 chars (for security)
+  console.log(`🔍 Decoding master key: type=${typeof base64}, length=${base64.length}, preview="${base64.substring(0, 20)}..."`);
+
+  // Strip surrounding quotes (single or double) that Vault might add
+  let cleaned = base64.trim().replace(/^["']|["']$/g, '');
+
+  // Remove any whitespace and normalize base64url -> base64 (Deno's atob is stricter than Node)
+  const sanitized = cleaned.replace(/\s+/g, '');
+  let normalized = sanitized.replace(/-/g, '+').replace(/_/g, '/');
+
+  // Pad base64 string to proper length
+  const paddingNeeded = normalized.length % 4;
+  if (paddingNeeded) {
+    normalized += '='.repeat(4 - paddingNeeded);
+  }
+
+  let binaryString: string;
+  try {
+    binaryString = atob(normalized);
+  } catch (error) {
+    console.error('❌ Failed to decode master key from base64:', error);
+    console.error(`   Original value preview: "${base64.substring(0, 50)}..."`);
+    console.error(`   After cleaning: "${cleaned.substring(0, 50)}..."`);
+    throw new Error('Invalid base64-encoded master key supplied');
+  }
+
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
@@ -343,6 +372,12 @@ export async function encryptCredentials(
     // Decode base64 master key to bytes (matches scraper's approach)
     const masterKeyBytes = base64ToUint8Array(masterKey);
     console.log(`🔑 Master key decoded: ${masterKeyBytes.length} bytes`);
+
+    // Validate key length (AES-256 requires 32 bytes)
+    if (masterKeyBytes.length !== 32) {
+      console.error(`❌ Master key decoded to unexpected length: ${masterKeyBytes.length} bytes (expected 32)`);
+      throw new Error('Invalid master key length. Expected 32 bytes.');
+    }
 
     // Import master key as raw key material
     const keyMaterial = await crypto.subtle.importKey(
