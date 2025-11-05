@@ -321,9 +321,6 @@ export function base64ToUint8Array(base64: string): Uint8Array {
     throw new Error('Master key must be a non-empty string');
   }
 
-  // Debug logging - show type and first 20 chars (for security)
-  console.log(`🔍 Decoding master key: type=${typeof base64}, length=${base64.length}, preview="${base64.substring(0, 20)}..."`);
-
   // Strip surrounding quotes (single or double) that Vault might add
   let cleaned = base64.trim().replace(/^["']|["']$/g, '');
 
@@ -342,8 +339,6 @@ export function base64ToUint8Array(base64: string): Uint8Array {
     binaryString = atob(normalized);
   } catch (error) {
     console.error('❌ Failed to decode master key from base64:', error);
-    console.error(`   Original value preview: "${base64.substring(0, 50)}..."`);
-    console.error(`   After cleaning: "${cleaned.substring(0, 50)}..."`);
     throw new Error('Invalid base64-encoded master key supplied');
   }
 
