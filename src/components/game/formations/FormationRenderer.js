@@ -1,5 +1,4 @@
 import React from 'react';
-import { PairsFormation } from './PairsFormation';
 import { IndividualFormation } from './IndividualFormation';
 
 export function FormationRenderer({ teamConfig, selectedFormation, renderSection = 'all', ...props }) {
@@ -9,9 +8,7 @@ export function FormationRenderer({ teamConfig, selectedFormation, renderSection
     return <div data-testid={testId}>No team configuration available</div>;
   }
 
-  if (teamConfig.substitutionType === 'pairs') {
-    return <PairsFormation data-testid={testId} teamConfig={teamConfig} selectedFormation={selectedFormation} renderSection={renderSection} {...props} />;
-  } else if (teamConfig.substitutionType === 'individual') {
+  if (teamConfig.substitutionType === 'individual') {
     return <IndividualFormation data-testid={testId} teamConfig={teamConfig} selectedFormation={selectedFormation} renderSection={renderSection} {...props} />;
   }
 

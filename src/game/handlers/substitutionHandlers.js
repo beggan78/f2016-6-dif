@@ -4,7 +4,6 @@ import {
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
   calculateUndo,
-  calculatePairPositionSwap,
   calculateSubstituteReorder,
   calculateRemovePlayerFromNextToGoOff,
   calculateSetPlayerAsNextToGoOff
@@ -815,48 +814,6 @@ export const createSubstitutionHandlers = (
             showPositionOptions: true
           });
         }
-      }
-    } else if (action === 'swap-pair-positions') {
-      // Handle pair position swapping (for pairs mode)
-      if (fieldPlayerModal.target && fieldPlayerModal.type === 'pair') {
-        
-        const currentTime = getCurrentTimestamp();
-        
-        animateStateChange(
-          gameStateFactory(),
-          (state) => calculatePairPositionSwap(state, fieldPlayerModal.target),
-          (newGameState) => {
-            // Apply state updates
-            setFormation(newGameState.formation);
-            setAllPlayers(newGameState.allPlayers);
-            
-            // Log position change event
-            const pairKey = fieldPlayerModal.target;
-            const pair = newGameState.formation[pairKey];
-            if (pair) {
-              const defenderPlayer = findPlayerById(newGameState.allPlayers, pair.defender);
-              const attackerPlayer = findPlayerById(newGameState.allPlayers, pair.attacker);
-              const defenderName = defenderPlayer ? getFormattedPlayerName(defenderPlayer) : 'Unknown';
-              const attackerName = attackerPlayer ? getFormattedPlayerName(attackerPlayer) : 'Unknown';
-              
-              logEvent(EVENT_TYPES.POSITION_CHANGE, {
-                timestamp: currentTime,
-                player1Id: pair.defender,
-                player1Name: defenderName,
-                player2Id: pair.attacker,
-                player2Name: attackerName,
-                pairKey: pairKey,
-                description: `${defenderName} and ${attackerName} swapped positions within ${pairKey}`,
-                teamConfig: teamConfig
-              });
-            }
-          },
-          setAnimationState,
-          setHideNextOffIndicator,
-          setRecentlySubstitutedPlayers
-        );
-        
-        closeFieldPlayerModal();
       }
     } else if (action === null) {
       // Go back to main options
