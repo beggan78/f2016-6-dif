@@ -121,8 +121,7 @@ export const FORMATION_DEFINITIONS = {
 
 // Substitution styles available
 export const SUBSTITUTION_TYPES = {
-  INDIVIDUAL: 'individual',
-  PAIRS: 'pairs'
+  INDIVIDUAL: 'individual'
 };
 
 // Centralised format metadata for dynamic validation/selection logic
@@ -138,7 +137,7 @@ export const FORMAT_CONFIGS = {
       FORMATIONS.FORMATION_1_1_2,
       FORMATIONS.FORMATION_2_1_1
     ],
-    allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL, SUBSTITUTION_TYPES.PAIRS],
+    allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL],
     getDefaultSubstitutionType: () => SUBSTITUTION_TYPES.INDIVIDUAL
   },
   [FORMATS.FORMAT_7V7]: {
@@ -191,79 +190,22 @@ export function getMaximumPlayersForFormat(format) {
   return Math.max(GAME_CONSTANTS.MIN_SQUAD_SIZE, GAME_CONSTANTS.DEFAULT_MAX_SQUAD_SIZE);
 }
 
-// Pair role rotation styles (for pairs substitution mode)
-export const PAIRED_ROLE_STRATEGY_TYPES = {
-  KEEP_THROUGHOUT_PERIOD: 'keep_throughout_period',
-  SWAP_EVERY_ROTATION: 'swap_every_rotation'
-};
-
-// Detailed paired role strategy definitions
-export const PAIRED_ROLE_STRATEGY_DEFINITIONS = {
-  [PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD]: {
-    label: 'Keep roles throughout period',
-    description: 'Players maintain their defender/attacker roles for the entire period',
-    shortDescription: 'Consistent roles all period'
-  },
-  [PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION]: {
-    label: 'Swap roles every rotation',
-    description: 'Players swap defender/attacker roles each time the pair is substituted',
-    shortDescription: 'Roles swap each substitution'
-  }
-};
-
-export const PAIRED_ROLE_STRATEGY_SUPPORTED_SQUAD_SIZES = {
-  [SUBSTITUTION_TYPES.PAIRS]: [7],
-  [SUBSTITUTION_TYPES.INDIVIDUAL]: [7, 9, 11]
-};
-
-/**
- * Determines if a team configuration supports paired role strategies
- * @param {Object} config - Team configuration fields
- * @returns {boolean} True if paired role strategies are supported
- */
-export const canUsePairedRoleStrategy = ({ format, squadSize, formation, substitutionType } = {}) => {
-  if (!format || !formation || !squadSize || !substitutionType) {
-    return false;
-  }
-
-  if (format !== FORMATS.FORMAT_5V5) {
-    return false;
-  }
-
-  if (formation !== FORMATIONS.FORMATION_2_2) {
-    return false;
-  }
-
-  const supportedSizes = PAIRED_ROLE_STRATEGY_SUPPORTED_SQUAD_SIZES[substitutionType];
-  if (!Array.isArray(supportedSizes)) {
-    return false;
-  }
-
-  return supportedSizes.includes(squadSize);
-};
 
 /**
  * Creates a composite team configuration object
  * @param {string} format - Field format (5v5, 7v7, etc.)
  * @param {number} squadSize - Total number of players (5-15)
  * @param {string} formation - Tactical formation (2-2, 1-2-1, etc.)
- * @param {string} substitutionType - Substitution style (individual, pairs)
- * @param {string} [pairedRoleStrategy] - Paired role strategy (only for paired-compatible modes)
+ * @param {string} substitutionType - Substitution style (individual)
  * @returns {Object} Team configuration object
  */
-export const createTeamConfig = (format, squadSize, formation, substitutionType, pairedRoleStrategy = null) => {
-  const config = {
+export const createTeamConfig = (format, squadSize, formation, substitutionType) => {
+  return {
     format,
     squadSize,
     formation,
     substitutionType
   };
-
-  if (canUsePairedRoleStrategy(config)) {
-    config.pairedRoleStrategy = pairedRoleStrategy || PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD;
-  }
-
-  return config;
 };
 
 /**
@@ -297,7 +239,7 @@ export const getValidFormations = (format, squadSize) => {
  * @returns {boolean} True if valid
  */
 export const validateTeamConfig = (teamConfig) => {
-  const { format, squadSize, formation, substitutionType, pairedRoleStrategy } = teamConfig;
+  const { format, squadSize, formation, substitutionType } = teamConfig;
 
   // Validate format
   if (!Object.values(FORMATS).includes(format) || !FORMAT_CONFIGS[format]) {
@@ -327,31 +269,6 @@ export const validateTeamConfig = (teamConfig) => {
     throw new Error(`Substitution type ${substitutionType} is not supported for ${format}. Allowed: ${formatConfig.allowedSubstitutionTypes.join(', ')}`);
   }
 
-  // Business rule: Pairs substitution only allowed with 2-2 formation and 7 players
-  if (substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-    if (format !== FORMATS.FORMAT_5V5) {
-      throw new Error(`Pairs substitution is only supported for ${FORMATS.FORMAT_5V5}, not ${format}`);
-    }
-    if (formation !== FORMATIONS.FORMATION_2_2) {
-      throw new Error(`Pairs substitution is only supported with ${FORMATIONS.FORMATION_2_2} formation, not ${formation}`);
-    }
-    if (squadSize !== 7) {
-      throw new Error(`Pairs substitution is only supported with 7 players, not ${squadSize} players`);
-    }
-  }
-
-  const supportsPairedStrategy = canUsePairedRoleStrategy(teamConfig);
-
-  if (pairedRoleStrategy !== undefined && pairedRoleStrategy !== null) {
-    if (!Object.values(PAIRED_ROLE_STRATEGY_TYPES).includes(pairedRoleStrategy)) {
-      throw new Error(`Invalid paired role strategy: ${pairedRoleStrategy}. Must be one of: ${Object.values(PAIRED_ROLE_STRATEGY_TYPES).join(', ')}`);
-    }
-
-    if (!supportsPairedStrategy) {
-      throw new Error('pairedRoleStrategy can only be set when the configuration supports paired rotations');
-    }
-  }
-
   return true;
 };
 
@@ -371,7 +288,7 @@ export const validateAndCorrectTeamConfig = (teamConfig) => {
     return { isValid: true, correctedConfig: teamConfig, corrections: [] };
   } catch (error) {
     // Handle specific business rule violations with auto-correction
-    const { squadSize, formation, substitutionType } = correctedConfig;
+    const { squadSize, substitutionType } = correctedConfig;
 
     // Auto-correct unsupported substitution types for the selected format
     if (formatConfig && !formatConfig.allowedSubstitutionTypes.includes(substitutionType)) {
@@ -380,50 +297,7 @@ export const validateAndCorrectTeamConfig = (teamConfig) => {
         : SUBSTITUTION_TYPES.INDIVIDUAL;
 
       correctedConfig.substitutionType = fallbackSubType;
-      correctedConfig.pairedRoleStrategy = null;
       corrections.push(`Changed substitution type to ${fallbackSubType} (unsupported for format ${teamConfig.format})`);
-      if (teamConfig.pairedRoleStrategy) {
-        corrections.push('Removed pairedRoleStrategy setting (configuration does not support paired rotations)');
-      }
-    }
-
-    // Auto-correct pairs substitution incompatibility
-    if (correctedConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-      const pairsSupportedForFormat = correctedConfig.format === FORMATS.FORMAT_5V5;
-      if (!pairsSupportedForFormat || formation !== FORMATIONS.FORMATION_2_2 || squadSize !== 7) {
-        correctedConfig.substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL;
-        correctedConfig.pairedRoleStrategy = null;
-        corrections.push(`Changed substitution type from pairs to individual (pairs only supported with 2-2 formation and 7 players)`);
-        if (teamConfig.pairedRoleStrategy) {
-          corrections.push('Removed pairedRoleStrategy setting (configuration does not support paired rotations)');
-        }
-
-        console.log('⚠️ TEAM CONFIG AUTO-CORRECTION: Pairs substitution incompatible with configuration', {
-          formation,
-          squadSize,
-          originalSubstitutionType: substitutionType,
-          correctedSubstitutionType: correctedConfig.substitutionType
-        });
-      }
-    }
-
-    const supportsPairedStrategy = canUsePairedRoleStrategy(correctedConfig);
-
-    if (!supportsPairedStrategy && correctedConfig.pairedRoleStrategy) {
-      const originalStrategy = teamConfig.pairedRoleStrategy ?? correctedConfig.pairedRoleStrategy;
-      correctedConfig.pairedRoleStrategy = null;
-      corrections.push(`Removed pairedRoleStrategy setting (configuration does not support paired rotations)`);
-
-      console.log('⚠️ TEAM CONFIG AUTO-CORRECTION: pairedRoleStrategy removed for unsupported configuration', {
-        originalPairedRoleStrategy: originalStrategy,
-        correctedPairedRoleStrategy: correctedConfig.pairedRoleStrategy,
-        substitutionType: correctedConfig.substitutionType,
-        format: correctedConfig.format,
-        formation: correctedConfig.formation,
-        squadSize: correctedConfig.squadSize
-      });
-    } else if (supportsPairedStrategy && !correctedConfig.pairedRoleStrategy) {
-      correctedConfig.pairedRoleStrategy = PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD;
     }
 
     // Try validation again with corrected config
@@ -452,20 +326,10 @@ export const createDefaultTeamConfig = (squadSize, format = FORMATS.FORMAT_5V5) 
 
   const defaultFormation = formatConfig.defaultFormation || FORMATIONS.FORMATION_2_2;
 
-  const defaultPairedRoleStrategy = canUsePairedRoleStrategy({
-    format: resolvedFormat,
-    squadSize,
-    formation: defaultFormation,
-    substitutionType: defaultSubstitutionType
-  })
-    ? PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
-    : null;
-
   return createTeamConfig(
     resolvedFormat,
     squadSize,
     defaultFormation,
-    defaultSubstitutionType,
-    defaultPairedRoleStrategy
+    defaultSubstitutionType
   );
 };
