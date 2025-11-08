@@ -33,8 +33,6 @@ const getSideFromPosition = (position) => {
   return null;
 };
 
-const getPreferredSideForPlayer = (player) => player?.stats?.preferredSide || null;
-
 /**
  * Manages substitution logic for different team modes
  */

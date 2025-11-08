@@ -862,43 +862,6 @@ export const calculateRemovePlayerFromNextToGoOff = (gameState, playerId, substi
     return gameState;
   }
 
-  const supportsPairedRotation = substitutionCount === 2 && canUsePairedRoleStrategy(gameState.teamConfig);
-
-  if (supportsPairedRotation) {
-    const pairingStrategy =
-      gameState.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
-        ? 'role_group'
-        : 'pair';
-
-    const pairIds = getPairedPlayerIdsFromFormation(
-      gameState.formation,
-      playerId,
-      { strategy: pairingStrategy }
-    );
-    if (!pairIds) {
-      return gameState;
-    }
-
-    const pairMeta = analyzeOutgoingPair(gameState.formation, pairIds);
-    const orderedPairIds = pairMeta?.playerIds || pairIds;
-
-    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
-    queueManager.initialize();
-
-    orderedPairIds.forEach(id => queueManager.removePlayer(id));
-
-    const insertIndex = Math.min(substitutionCount, queueManager.size());
-    orderedPairIds.forEach((id, offset) => {
-      queueManager.addPlayer(id, insertIndex + offset);
-    });
-
-    return {
-      ...gameState,
-      rotationQueue: queueManager.toArray(),
-      playersToHighlight: orderedPairIds
-    };
-  }
-
   // Get players in the "next to go off" group
   const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
 
@@ -932,42 +895,6 @@ export const calculateSetPlayerAsNextToGoOff = (gameState, playerId, substitutio
 
   if (!rotationQueue || rotationQueue.length === 0) {
     return gameState;
-  }
-
-  const supportsPairedRotation = substitutionCount === 2 && canUsePairedRoleStrategy(gameState.teamConfig);
-
-  if (supportsPairedRotation) {
-    const pairingStrategy =
-      gameState.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
-        ? 'role_group'
-        : 'pair';
-
-    const pairIds = getPairedPlayerIdsFromFormation(
-      gameState.formation,
-      playerId,
-      { strategy: pairingStrategy }
-    );
-    if (!pairIds) {
-      return gameState;
-    }
-
-    const pairMeta = analyzeOutgoingPair(gameState.formation, pairIds);
-    const orderedPairIds = pairMeta?.playerIds || pairIds;
-
-    const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(gameState.allPlayers));
-    queueManager.initialize();
-
-    orderedPairIds.forEach(id => queueManager.removePlayer(id));
-
-    for (let i = orderedPairIds.length - 1; i >= 0; i--) {
-      queueManager.addPlayer(orderedPairIds[i], 0);
-    }
-
-    return {
-      ...gameState,
-      rotationQueue: queueManager.toArray(),
-      playersToHighlight: orderedPairIds
-    };
   }
 
   const nextNToSubOut = rotationQueue.slice(0, substitutionCount);

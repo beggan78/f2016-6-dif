@@ -6,9 +6,7 @@ import {
   FORMATS,
   FORMAT_CONFIGS,
   SUBSTITUTION_TYPES,
-  validateAndCorrectTeamConfig,
-  PAIRED_ROLE_STRATEGY_TYPES,
-  canUsePairedRoleStrategy
+  validateAndCorrectTeamConfig
 } from '../constants/teamConfiguration';
 
 /**
@@ -119,23 +117,11 @@ export function useTeamConfig(initialState = {}) {
         ? formatConfig.getDefaultSubstitutionType(squadSize)
         : SUBSTITUTION_TYPES.INDIVIDUAL);
 
-    const candidateConfig = {
-      format: formatToUse,
-      squadSize,
-      formation: selectedFormation,
-      substitutionType: substitutionToUse
-    };
-
-    const pairRotation = canUsePairedRoleStrategy(candidateConfig)
-      ? teamConfig?.pairedRoleStrategy || PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
-      : null;
-
     const newConfig = createTeamConfig(
       formatToUse,
       squadSize,
       selectedFormation, // use current formation selection
-      substitutionToUse,
-      pairRotation
+      substitutionToUse
     );
 
     console.log('🔧 createTeamConfigFromSquadSize result:', {

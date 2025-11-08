@@ -8,117 +8,12 @@ const DB_DEFENDER = roleToDatabase(PLAYER_ROLES.DEFENDER);
 const DB_ATTACKER = roleToDatabase(PLAYER_ROLES.ATTACKER);
 const DB_MIDFIELDER = roleToDatabase(PLAYER_ROLES.MIDFIELDER);
 
-const SIDE_LEFT = 'left';
-const SIDE_RIGHT = 'right';
-
 // Helper to get mode definition - uses centralized formation utilities
 const getDefinition = (teamConfig, selectedFormation = null) => {
   return getFormationDefinition(teamConfig, selectedFormation);
 };
 
 
-const determinePreferredSideForPlayer = (playerId, squadLookup, previousFormation) => {
-  const player = squadLookup.get(playerId);
-  const preferredSide = player?.stats?.preferredSide;
-
-  if (preferredSide === SIDE_LEFT || preferredSide === SIDE_RIGHT) {
-    return preferredSide;
-  }
-
-  if (previousFormation) {
-    if (
-      previousFormation.leftDefender === playerId ||
-      previousFormation.leftAttacker === playerId
-    ) {
-      return SIDE_LEFT;
-    }
-
-    if (
-      previousFormation.rightDefender === playerId ||
-      previousFormation.rightAttacker === playerId
-    ) {
-      return SIDE_RIGHT;
-    }
-  }
-
-  return null;
-};
-
-const createSideCandidate = (playerId, side, statsLookup, squadLookup) => {
-  const statsEntry = statsLookup.get(playerId);
-  const squadEntry = squadLookup.get(playerId);
-
-  const totalOutfieldTime =
-    statsEntry?.stats?.timeOnFieldSeconds ??
-    squadEntry?.stats?.timeOnFieldSeconds ??
-    0;
-
-  const isInactive = Boolean(
-    statsEntry?.stats?.isInactive ?? squadEntry?.stats?.isInactive
-  );
-
-  return {
-    id: playerId,
-    side,
-    totalTime: totalOutfieldTime,
-    isInactive
-  };
-};
-
-const assignSideGroup = ({ candidates, previousDefender, previousAttacker }) => {
-  const available = [...candidates].sort((a, b) => a.totalTime - b.totalTime);
-
-  const pickById = (playerId) => {
-    if (!playerId) return null;
-    const index = available.findIndex(candidate => candidate.id === playerId);
-    if (index === -1) {
-      return null;
-    }
-    return available.splice(index, 1)[0];
-  };
-
-  const pickBestCandidate = () => {
-    const activeIndex = available.findIndex(candidate => !candidate.isInactive);
-    if (activeIndex !== -1) {
-      return available.splice(activeIndex, 1)[0];
-    }
-    return available.shift() || null;
-  };
-
-  let defenderCandidate = null;
-  let attackerCandidate = null;
-
-  const previousAttackerCandidate = pickById(previousAttacker);
-  const previousDefenderCandidate = pickById(previousDefender);
-
-  if (previousDefenderCandidate && previousAttackerCandidate) {
-    defenderCandidate = previousAttackerCandidate;
-    attackerCandidate = previousDefenderCandidate;
-  } else if (previousAttackerCandidate) {
-    defenderCandidate = previousAttackerCandidate;
-    attackerCandidate = pickBestCandidate();
-  } else if (previousDefenderCandidate) {
-    attackerCandidate = previousDefenderCandidate;
-    defenderCandidate = pickBestCandidate();
-  } else {
-    defenderCandidate = pickBestCandidate();
-    attackerCandidate = pickBestCandidate();
-  }
-
-  if (!defenderCandidate && available.length) {
-    defenderCandidate = pickBestCandidate();
-  }
-
-  if (!attackerCandidate && available.length) {
-    attackerCandidate = pickBestCandidate();
-  }
-
-  return {
-    defenderCandidate,
-    attackerCandidate,
-    remaining: available
-  };
-};
 
 /**
  * Generates formation recommendations for individual modes (6, 7, or 8+ players)
@@ -272,21 +167,8 @@ const generateFormationRecommendation = (currentGoalieId, playerStats, squad, te
   const substitutePositions = modeConfig?.substitutePositions || [];
   addSubstitutePositions(formationResult, substitutePositions, substitutesOrdered, inactivePlayers);
 
-  let rotationQueueIds;
-  let nextToRotateOff;
-
-  if (canUsePairedRoleStrategy(teamConfig)) {
-    const orderingStrategy =
-      teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
-        ? 'role_groups'
-        : 'pair';
-
-    rotationQueueIds = buildPairedRotationQueueFromFormation(formationResult, substitutePositions, { orderingStrategy });
-    nextToRotateOff = rotationQueueIds[0] || null;
-  } else {
-    rotationQueueIds = rotationQueue.map(p => p.id);
-    nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
-  }
+  const rotationQueueIds = rotationQueue.map(p => p.id);
+  const nextToRotateOff = fieldPlayersOrdered[0]?.id || null;
 
   return {
     formation: formationResult,
