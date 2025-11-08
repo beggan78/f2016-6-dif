@@ -9,7 +9,6 @@ import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig } from '../services/matchStateManager';
 import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
 import { createRotationQueue } from '../game/queue/rotationQueue';
-import { buildPairedRotationQueueFromFormation } from '../game/utils/pairedRotationUtils';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { useMatchPersistence } from './useMatchPersistence';
@@ -18,7 +17,7 @@ import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat, canUsePairedRoleStrategy, PAIRED_ROLE_STRATEGY_TYPES } from '../constants/teamConfiguration';
+import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
@@ -149,7 +148,6 @@ export function useGameState(navigateToView = null) {
 
   const [currentPeriodNumber, setCurrentPeriodNumber] = useState(initialState.currentPeriodNumber);
   const [formation, setFormation] = useState(initialState.formation);
-  const [nextPhysicalPairToSubOut, setNextPhysicalPairToSubOut] = useState(initialState.nextPhysicalPairToSubOut);
   const [nextPlayerToSubOut, setNextPlayerToSubOut] = useState(initialState.nextPlayerToSubOut);
   const [nextPlayerIdToSubOut, setNextPlayerIdToSubOut] = useState(initialState.nextPlayerIdToSubOut);
   const [nextNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut] = useState(initialState.nextNextPlayerIdToSubOut);
@@ -243,7 +241,6 @@ export function useGameState(navigateToView = null) {
         alertMinutes,
         currentPeriodNumber,
         formation,
-        nextPhysicalPairToSubOut,
         nextPlayerToSubOut,
         nextPlayerIdToSubOut,
         nextNextPlayerIdToSubOut,
@@ -264,14 +261,14 @@ export function useGameState(navigateToView = null) {
         matchState,
         hasActiveConfiguration,
       };
-      
+
       // Use the persistence manager's saveGameState method
       persistenceManager.saveGameState(currentState);
     }, 100); // 100ms debounce to prevent rapid successive saves
 
     // Cleanup timeout on dependency change or unmount
     return () => clearTimeout(timeoutId);
-  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPhysicalPairToSubOut, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
+  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
 
 
 
@@ -558,43 +555,32 @@ export function useGameState(navigateToView = null) {
       const definition = getModeDefinition(formationAwareTeamConfig);
       const fieldPositions = definition?.fieldPositions || [];
       const substitutePositions = definition?.substitutePositions || [];
-      const pairedRotationEligible = canUsePairedRoleStrategy(formationAwareTeamConfig);
 
       let initialQueue = [];
       let nextPlayerToRotateOff = null;
 
-      if (pairedRotationEligible) {
-        const orderingStrategy =
-          formationAwareTeamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION
-            ? 'role_groups'
-            : 'pair';
+      const fieldPlayersInFormation = fieldPositions.map(pos => formation[pos]).filter(Boolean);
+      const substitutePlayersInFormation = substitutePositions.map(pos => formation[pos]).filter(Boolean);
 
-        initialQueue = buildPairedRotationQueueFromFormation(formation, substitutePositions, { orderingStrategy });
-        nextPlayerToRotateOff = initialQueue[0] || null;
-      } else {
-        const fieldPlayersInFormation = fieldPositions.map(pos => formation[pos]).filter(Boolean);
-        const substitutePlayersInFormation = substitutePositions.map(pos => formation[pos]).filter(Boolean);
+      const allOutfieldPlayers = [...fieldPlayersInFormation, ...substitutePlayersInFormation];
+      const outfieldPlayersWithTime = allOutfieldPlayers.map(playerId => {
+        const player = allPlayers.find(p => p.id === playerId);
+        return {
+          id: playerId,
+          totalOutfieldTime: player?.stats?.timeOnFieldSeconds || 0
+        };
+      });
 
-        const allOutfieldPlayers = [...fieldPlayersInFormation, ...substitutePlayersInFormation];
-        const outfieldPlayersWithTime = allOutfieldPlayers.map(playerId => {
-          const player = allPlayers.find(p => p.id === playerId);
-          return {
-            id: playerId,
-            totalOutfieldTime: player?.stats?.timeOnFieldSeconds || 0
-          };
-        });
+      const fieldPlayersSorted = outfieldPlayersWithTime
+        .filter(p => fieldPlayersInFormation.includes(p.id))
+        .sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
 
-        const fieldPlayersSorted = outfieldPlayersWithTime
-          .filter(p => fieldPlayersInFormation.includes(p.id))
-          .sort((a, b) => b.totalOutfieldTime - a.totalOutfieldTime);
+      const substitutePlayersSorted = outfieldPlayersWithTime
+        .filter(p => substitutePlayersInFormation.includes(p.id))
+        .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
 
-        const substitutePlayersSorted = outfieldPlayersWithTime
-          .filter(p => substitutePlayersInFormation.includes(p.id))
-          .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
-
-        initialQueue = [...fieldPlayersSorted.map(p => p.id), ...substitutePlayersSorted.map(p => p.id)];
-        nextPlayerToRotateOff = fieldPlayersSorted[0]?.id || null;
-      }
+      initialQueue = [...fieldPlayersSorted.map(p => p.id), ...substitutePlayersSorted.map(p => p.id)];
+      nextPlayerToRotateOff = fieldPlayersSorted[0]?.id || null;
 
       if (nextPlayerToRotateOff && initialQueue.length >= fieldPositions.length) {
         setNextPlayerIdToSubOut(nextPlayerToRotateOff);
@@ -702,10 +688,9 @@ export function useGameState(navigateToView = null) {
     requestWakeLock();
 
     const substitutionManager = createSubstitutionManager(teamConfig);
-    
+
     const context = {
       formation,
-      nextPhysicalPairToSubOut,
       nextPlayerIdToSubOut,
       allPlayers,
       rotationQueue,
@@ -715,14 +700,11 @@ export function useGameState(navigateToView = null) {
 
     try {
       const result = substitutionManager.executeSubstitution(context);
-      
+
       // Apply results to state
       setFormation(result.newFormation);
       setAllPlayers(result.updatedPlayers);
-      
-      if (result.newNextPhysicalPairToSubOut) {
-        setNextPhysicalPairToSubOut(result.newNextPhysicalPairToSubOut);
-      }
+
       if (result.newRotationQueue) {
         setRotationQueue(result.newRotationQueue);
       }
@@ -862,154 +844,6 @@ export function useGameState(navigateToView = null) {
   }, [persistence, clearAllMatchEvents, clearCaptain, setVenueType]);
 
 
-  // Team mode switching functions
-  const splitPairs = useCallback(() => {
-    if (teamConfig?.substitutionType !== 'pairs') return;
-    
-    // Import queue state utilities
-    const { analyzePairsRotationState, createIndividualQueueFromPairs } = require('../game/utils/queueStateUtils');
-    
-    // Analyze current pairs rotation state to preserve order
-    const pairsAnalysis = analyzePairsRotationState(nextPhysicalPairToSubOut, formation);
-    
-    setFormation(prev => {
-      const newFormation = {
-        goalie: prev.goalie,
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null },
-        leftDefender: prev.leftPair.defender,
-        rightDefender: prev.rightPair.defender,
-        leftAttacker: prev.leftPair.attacker,
-        rightAttacker: prev.rightPair.attacker,
-        substitute_1: prev.subPair.defender,
-        substitute_2: prev.subPair.attacker,
-      };
-      return newFormation;
-    });
-
-    // Update player stats - change currentPairKey to individual positions
-    setAllPlayers(prev => prev.map(p => {
-      if (!selectedSquadIds.includes(p.id)) return p;
-      
-      const stats = { ...p.stats };
-      
-      // Map pair keys to individual keys
-      if (stats.currentPairKey === 'leftPair') {
-        if (p.id === formation.leftPair.defender) {
-          stats.currentPairKey = 'leftDefender';
-        } else if (p.id === formation.leftPair.attacker) {
-          stats.currentPairKey = 'leftAttacker';
-        }
-      } else if (stats.currentPairKey === 'rightPair') {
-        if (p.id === formation.rightPair.defender) {
-          stats.currentPairKey = 'rightDefender';
-        } else if (p.id === formation.rightPair.attacker) {
-          stats.currentPairKey = 'rightAttacker';
-        }
-      } else if (stats.currentPairKey === 'subPair') {
-        if (p.id === formation.subPair.defender) {
-          stats.currentPairKey = 'substitute_1';
-        } else if (p.id === formation.subPair.attacker) {
-          stats.currentPairKey = 'substitute_2';
-        }
-      }
-      
-      return { ...p, stats };
-    }));
-
-    // Update team config to individual mode
-    const newTeamConfig = createTeamConfig(teamConfig?.format || FORMATS.FORMAT_5V5, 7, selectedFormation, 'individual');
-    updateTeamConfig(newTeamConfig);
-    
-    // Create individual rotation queue that preserves pairs rotation order
-    const individualQueue = createIndividualQueueFromPairs(pairsAnalysis, {
-      leftPair: formation.leftPair,
-      rightPair: formation.rightPair,
-      subPair: formation.subPair
-    });
-    
-    setRotationQueue(individualQueue.queue);
-    setNextPlayerIdToSubOut(individualQueue.nextPlayerId);
-    setNextNextPlayerIdToSubOut(individualQueue.nextNextPlayerId);
-    setNextPlayerToSubOut('leftDefender');
-  }, [teamConfig, selectedSquadIds, formation, nextPhysicalPairToSubOut, selectedFormation, updateTeamConfig, setAllPlayers]);
-
-  const formPairs = useCallback(() => {
-    if (teamConfig?.substitutionType !== 'individual' || teamConfig?.squadSize !== 7) return;
-    
-    // Check for inactive players in the selected squad
-    if (hasInactivePlayersInSquad(allPlayers, selectedSquadIds)) {
-      alert('Cannot form pairs while there are inactive players. Please activate all players first.');
-      return;
-    }
-    
-    // Import queue state utilities
-    const { analyzePairsFromIndividualQueue } = require('../game/utils/queueStateUtils');
-    
-    // Analyze current individual rotation queue to determine pairs rotation
-    const pairsAnalysis = analyzePairsFromIndividualQueue(rotationQueue, formation);
-    
-    setFormation(prev => {
-      const newFormation = {
-        goalie: prev.goalie,
-        leftPair: { 
-          defender: prev.leftDefender,
-          attacker: prev.leftAttacker
-        },
-        rightPair: { 
-          defender: prev.rightDefender,
-          attacker: prev.rightAttacker
-        },
-        subPair: { 
-          defender: prev.substitute_1,
-          attacker: prev.substitute_2
-        },
-        leftDefender: null,
-        rightDefender: null,
-        leftAttacker: null,
-        rightAttacker: null,
-        substitute_1: null,
-        substitute_2: null,
-      };
-      return newFormation;
-    });
-
-    // Update player stats - change currentPairKey to pair keys
-    setAllPlayers(prev => prev.map(p => {
-      if (!selectedSquadIds.includes(p.id)) return p;
-      
-      const stats = { ...p.stats };
-      
-      // Map individual keys to pair keys
-      if (stats.currentPairKey === 'leftDefender' || stats.currentPairKey === 'leftAttacker') {
-        stats.currentPairKey = 'leftPair';
-      } else if (stats.currentPairKey === 'rightDefender' || stats.currentPairKey === 'rightAttacker') {
-        stats.currentPairKey = 'rightPair';
-      } else if (stats.currentPairKey === 'substitute_1' || stats.currentPairKey === 'substitute_2') {
-        stats.currentPairKey = 'subPair';
-      }
-      
-      return { ...p, stats };
-    }));
-
-    // Update team config to pairs mode
-    const newTeamConfig = createTeamConfig(teamConfig?.format || FORMATS.FORMAT_5V5, 7, selectedFormation, 'pairs');
-    updateTeamConfig(newTeamConfig);
-    
-    // Set the next pair to rotate based on individual queue analysis
-    setNextPhysicalPairToSubOut(pairsAnalysis.nextPair);
-    setRotationQueue([]);
-    setNextPlayerIdToSubOut(null);
-    setNextNextPlayerIdToSubOut(null);
-    setNextPlayerToSubOut(null);
-  }, [teamConfig, selectedSquadIds, allPlayers, rotationQueue, formation, selectedFormation, updateTeamConfig, setAllPlayers]);
-
-  // Enhanced setters for manual selection - rotation logic already handles sequence correctly
-  const setNextPhysicalPairToSubOutWithRotation = useCallback((newPairKey) => {
-    setNextPhysicalPairToSubOut(newPairKey);
-    // The existing rotation logic in handleSubstitution will continue from this selection
-  }, []);
 
   const setNextPlayerToSubOutWithRotation = useCallback((newPosition, isAutomaticUpdate = true) => {
     setNextPlayerToSubOut(newPosition);
@@ -1551,8 +1385,7 @@ export function useGameState(navigateToView = null) {
           format: formationAwareTeamConfig.format,
           formation: formationAwareTeamConfig.formation,
           squadSize: formationAwareTeamConfig.squadSize,
-          substitutionType: formationAwareTeamConfig.substitutionType,
-          pairedRoleStrategy: formationAwareTeamConfig.pairedRoleStrategy || "keep_throughout_period"
+          substitutionType: formationAwareTeamConfig.substitutionType
         },
         matchConfig: {
           format: formationAwareTeamConfig.format,
@@ -1725,8 +1558,6 @@ export function useGameState(navigateToView = null) {
     setCurrentPeriodNumber,
     formation,
     setFormation,
-    nextPhysicalPairToSubOut,
-    setNextPhysicalPairToSubOut: setNextPhysicalPairToSubOutWithRotation,
     nextPlayerToSubOut,
     setNextPlayerToSubOut: setNextPlayerToSubOutWithRotation,
     nextPlayerIdToSubOut,
@@ -1786,8 +1617,6 @@ export function useGameState(navigateToView = null) {
     handleEndPeriod,
     addTemporaryPlayer,
     clearStoredState,
-    splitPairs,
-    formPairs,
     togglePlayerInactive,
     getInactivePlayerPosition,
     switchPlayerPositions,
