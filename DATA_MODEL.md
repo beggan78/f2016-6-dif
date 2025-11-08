@@ -452,9 +452,9 @@ Historical practice attendance imported from external providers and matched to r
 - `player_id` (uuid, nullable) - References `player(id)`; set NULL if player record is removed
 - `player_name` (varchar(100), NOT NULL) - Raw player name received from the provider
 - `year` (integer, NOT NULL) - Year the attendance summary covers
+- `month` (integer, NOT NULL) - Month the attendance summary covers (1-12)
 - `total_practices` (integer, NOT NULL) - Total number of practices tracked
 - `total_attendance` (integer, NOT NULL) - Number of attended practices
-- `attendance_percentage` (numeric(5,2), NOT NULL) - Attendance rate (0-100)
 - `last_synced_at` (timestamptz, NOT NULL) - Timestamp of the most recent sync (default: now())
 - `created_at` (timestamptz, NOT NULL) - Creation timestamp (default: now())
 - `created_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
@@ -463,11 +463,11 @@ Historical practice attendance imported from external providers and matched to r
 
 **Constraints:**
 - Primary key on `id`
-- Unique constraint on `(connector_id, player_name, year)` prevents duplicate yearly stats per provider
+- Unique constraint on `(connector_id, player_name, year, month)` prevents duplicate monthly stats per provider
 - Foreign key to `connector(id)` with ON DELETE CASCADE
 - Foreign key to `player(id)` with ON DELETE SET NULL
 - Foreign keys to `auth.users(id)` for audit columns
-- Check: `attendance_percentage` between 0 and 100
+- Check: `month` between 1 and 12
 - Check: `total_attendance` between 0 and `total_practices`
 - Check: `year` between 2020 and 2099
 
