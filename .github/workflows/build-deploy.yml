@@ -49,7 +49,7 @@ jobs:
         run: CI=true npm test -- --verbose=false --silent --reporters=default
 
       - name: Build static files
-        run: CI=true && PUBLIC_URL="/sportwizard" npm run build
+        run: CI=true && npm run build
         env:
           REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
           REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
