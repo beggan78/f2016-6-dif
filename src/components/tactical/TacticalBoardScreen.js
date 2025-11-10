@@ -193,35 +193,37 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
       {/* Controls */}
       <div className="flex flex-col gap-3 mb-4">
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {interactionMode === 'draw' && (
-            <button
-              onClick={handleUndoDrawing}
-              disabled={!canUndoDrawing}
-              className={`rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md ${
-                canUndoDrawing
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white'
-                  : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              Undo
-            </button>
-          )}
-          <button
-            onClick={handleClearAction}
-            className="bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
-          >
-            {clearButtonLabel}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={handleBackPress}
             className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
           >
             Back
           </button>
+          <div className="flex items-center gap-2">
+            {interactionMode === 'draw' && (
+              <button
+                onClick={handleUndoDrawing}
+                disabled={!canUndoDrawing}
+                className={`rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md ${
+                  canUndoDrawing
+                    ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                    : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                Undo
+              </button>
+            )}
+            <button
+              onClick={handleClearAction}
+              className="bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
+            >
+              {clearButtonLabel}
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+        <div className="flex flex-wrap justify-center items-center gap-3">
           {/* Interaction Mode Toggle */}
           <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
             <button
