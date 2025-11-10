@@ -5,10 +5,21 @@ import { TacticalBoardScreen } from '../TacticalBoardScreen';
 
 // Mock the TacticalBoard component
 jest.mock('../TacticalBoard', () => ({
-  TacticalBoard: ({ pitchMode, placedChips, onChipPlace, onChipMove, onChipDelete }) => (
+  TacticalBoard: ({ 
+    pitchMode, 
+    placedChips, 
+    onChipPlace, 
+    onChipMove, 
+    onChipDelete,
+    interactionMode,
+    drawings,
+    onAddDrawing
+  }) => (
     <div data-testid="tactical-board">
       <div data-testid="pitch-mode">{pitchMode}</div>
       <div data-testid="placed-chips-count">{placedChips.length}</div>
+      <div data-testid="interaction-mode">{interactionMode}</div>
+      <div data-testid="drawings-count">{drawings.length}</div>
       <button 
         data-testid="mock-place-chip" 
         onClick={() => onChipPlace({ id: 'test-chip', type: 'player', color: 'red', number: 1, x: 50, y: 50 })}
@@ -27,6 +38,17 @@ jest.mock('../TacticalBoard', () => ({
       >
         Delete Chip
       </button>
+      <button
+        data-testid="mock-add-drawing"
+        onClick={() => onAddDrawing({
+          id: `drawing-${Date.now()}`,
+          color: '#fbbf24',
+          width: 1.5,
+          points: [{ x: 10, y: 10 }, { x: 15, y: 15 }]
+        })}
+      >
+        Add Drawing
+      </button>
     </div>
   )
 }));
@@ -36,8 +58,11 @@ jest.mock('../../../utils/persistenceManager', () => ({
   createPersistenceManager: jest.fn(() => ({
     loadState: jest.fn(() => ({
       pitchMode: 'full',
+      interactionMode: 'drag',
       fullModeChips: [],
       halfModeChips: [],
+      fullModeDrawings: [],
+      halfModeDrawings: [],
       fromView: null
     })),
     saveState: jest.fn()
@@ -66,8 +91,11 @@ describe('TacticalBoardScreen', () => {
     createPersistenceManager.mockReturnValue({
       loadState: jest.fn(() => ({
         pitchMode: 'full',
+        interactionMode: 'drag',
         fullModeChips: [],
         halfModeChips: [],
+        fullModeDrawings: [],
+        halfModeDrawings: [],
         fromView: null
       })),
       saveState: jest.fn()
@@ -81,6 +109,9 @@ describe('TacticalBoardScreen', () => {
       expect(screen.getByText('Back')).toBeInTheDocument();
       expect(screen.getByText('Full')).toBeInTheDocument();
       expect(screen.getByText('Half')).toBeInTheDocument();
+      expect(screen.getByText('Drag')).toBeInTheDocument();
+      expect(screen.getByText('Draw')).toBeInTheDocument();
+      expect(screen.getByText('Clear Chips')).toBeInTheDocument();
       expect(screen.getByTestId('tactical-board')).toBeInTheDocument();
     });
 
@@ -97,6 +128,7 @@ describe('TacticalBoardScreen', () => {
       render(<TacticalBoardScreen {...defaultProps} />);
       
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('0');
+      expect(screen.getByTestId('drawings-count')).toHaveTextContent('0');
     });
   });
 
@@ -139,7 +171,24 @@ describe('TacticalBoardScreen', () => {
       expect(screen.getByText('Full')).toHaveClass('bg-sky-500');
     });
 
-    
+    it('should toggle between drag and draw modes', () => {
+      render(<TacticalBoardScreen {...defaultProps} />);
+
+      expect(screen.getByTestId('interaction-mode')).toHaveTextContent('drag');
+      expect(screen.queryByText('Undo')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Draw'));
+
+      expect(screen.getByTestId('interaction-mode')).toHaveTextContent('draw');
+      expect(screen.getByText('Undo')).toBeInTheDocument();
+      expect(screen.getByText('Clear Drawings')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Drag'));
+
+      expect(screen.getByTestId('interaction-mode')).toHaveTextContent('drag');
+      expect(screen.queryByText('Undo')).not.toBeInTheDocument();
+      expect(screen.getByText('Clear Chips')).toBeInTheDocument();
+    });
   });
 
   describe('Chip Management', () => {
@@ -172,6 +221,50 @@ describe('TacticalBoardScreen', () => {
       
       // Delete the chip
       fireEvent.click(screen.getByTestId('mock-delete-chip'));
+      expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('0');
+    });
+  });
+
+  describe('Draw Mode Controls', () => {
+    it('should add and undo drawings', () => {
+      render(<TacticalBoardScreen {...defaultProps} />);
+
+      fireEvent.click(screen.getByText('Draw'));
+      expect(screen.getByText('Undo')).toBeDisabled();
+
+      fireEvent.click(screen.getByTestId('mock-add-drawing'));
+      expect(screen.getByTestId('drawings-count')).toHaveTextContent('1');
+      expect(screen.getByText('Undo')).not.toBeDisabled();
+
+      fireEvent.click(screen.getByText('Undo'));
+      expect(screen.getByTestId('drawings-count')).toHaveTextContent('0');
+      expect(screen.getByText('Undo')).toBeDisabled();
+    });
+
+    it('should clear only drawings when in draw mode', () => {
+      render(<TacticalBoardScreen {...defaultProps} />);
+
+      fireEvent.click(screen.getByTestId('mock-place-chip'));
+      fireEvent.click(screen.getByText('Draw'));
+      fireEvent.click(screen.getByTestId('mock-add-drawing'));
+
+      expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('1');
+      expect(screen.getByTestId('drawings-count')).toHaveTextContent('1');
+
+      fireEvent.click(screen.getByText('Clear Drawings'));
+
+      expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('1');
+      expect(screen.getByTestId('drawings-count')).toHaveTextContent('0');
+    });
+
+    it('should clear only chips when in drag mode', () => {
+      render(<TacticalBoardScreen {...defaultProps} />);
+
+      fireEvent.click(screen.getByTestId('mock-place-chip'));
+      expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('1');
+
+      fireEvent.click(screen.getByText('Clear Chips'));
+
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('0');
     });
   });

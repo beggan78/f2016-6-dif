@@ -7,13 +7,18 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   // Memoize the persistence manager to prevent re-creation on every render
   const persistenceManager = useMemo(() => createPersistenceManager(STORAGE_KEYS.TACTICAL_PREFERENCES, {
     pitchMode: 'full',
+    interactionMode: 'drag',
     fullModeChips: [],
     halfModeChips: [],
+    fullModeDrawings: [],
+    halfModeDrawings: [],
     fromView: null, // Add fromView for persistent back navigation
   }), []); // Empty dependency array ensures it's created only once
 
   const [pitchMode, setPitchMode] = useState('full');
   const [placedChips, setPlacedChips] = useState([]);
+  const [drawings, setDrawings] = useState([]);
+  const [interactionMode, setInteractionMode] = useState('drag');
 
   const handleBackPress = useCallback(() => {
     const savedState = persistenceManager.loadState();
@@ -24,8 +29,11 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   useEffect(() => {
     const savedState = persistenceManager.loadState();
     setPitchMode(savedState.pitchMode);
-    const chipsToLoad = savedState.pitchMode === 'full' ? savedState.fullModeChips : savedState.halfModeChips;
-    setPlacedChips(chipsToLoad || []);
+    setInteractionMode(savedState.interactionMode || 'drag');
+    const chipsKey = savedState.pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
+    const drawingsKey = savedState.pitchMode === 'full' ? 'fullModeDrawings' : 'halfModeDrawings';
+    setPlacedChips(savedState[chipsKey] || []);
+    setDrawings(savedState[drawingsKey] || []);
 
     // If fromView is provided, it means we have just navigated here.
     // Save it for persistence in case of a page reload.
@@ -58,15 +66,18 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
     // Get the current state from storage
     const savedState = persistenceManager.loadState();
 
-    // Determine keys for saving current chips and loading new ones
+    // Determine keys for saving current chips/drawings and loading new ones
     const currentChipsKey = pitchMode === 'full' ? 'fullModeChips' : 'halfModeChips';
     const newChipsKey = mode === 'full' ? 'fullModeChips' : 'halfModeChips';
+    const currentDrawingsKey = pitchMode === 'full' ? 'fullModeDrawings' : 'halfModeDrawings';
+    const newDrawingsKey = mode === 'full' ? 'fullModeDrawings' : 'halfModeDrawings';
 
     // Create the new state object to save
     const newState = {
       ...savedState,
       pitchMode: mode,
       [currentChipsKey]: placedChips,
+      [currentDrawingsKey]: drawings,
     };
 
     // Save the new state
@@ -75,7 +86,8 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
     // Update React state to reflect the change
     setPitchMode(mode);
     setPlacedChips(newState[newChipsKey] || []);
-  }, [pitchMode, placedChips, persistenceManager]);
+    setDrawings(newState[newDrawingsKey] || []);
+  }, [pitchMode, placedChips, drawings, persistenceManager]);
 
   // A helper to update chips and persist them
   const updateAndPersistChips = useCallback((getNewChips) => {
@@ -90,6 +102,21 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
       });
 
       return newChips;
+    });
+  }, [pitchMode, persistenceManager]);
+
+  const updateAndPersistDrawings = useCallback((getNewDrawings) => {
+    setDrawings(prevDrawings => {
+      const newDrawings = getNewDrawings(prevDrawings);
+      const currentDrawingsKey = pitchMode === 'full' ? 'fullModeDrawings' : 'halfModeDrawings';
+
+      persistenceManager.saveState({
+        ...persistenceManager.loadState(),
+        pitchMode,
+        [currentDrawingsKey]: newDrawings,
+      });
+
+      return newDrawings;
     });
   }, [pitchMode, persistenceManager]);
 
@@ -111,7 +138,16 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
     updateAndPersistChips(prev => prev.filter(chip => chip.id !== chipId));
   }, [updateAndPersistChips]);
 
-  const handleClearBoard = useCallback(() => {
+  const handleAddDrawing = useCallback((stroke) => {
+    updateAndPersistDrawings(prev => [...prev, stroke]);
+  }, [updateAndPersistDrawings]);
+
+  const handleUndoDrawing = useCallback(() => {
+    if (!drawings.length) return;
+    updateAndPersistDrawings(prev => prev.slice(0, -1));
+  }, [drawings, updateAndPersistDrawings]);
+
+  const handleClearChips = useCallback(() => {
     setPlacedChips([]); // Clear chips from the view
 
     // Determine which set of chips to clear in storage
@@ -124,50 +160,123 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
     });
   }, [pitchMode, persistenceManager]);
 
+  const handleClearDrawings = useCallback(() => {
+    setDrawings([]);
+    const currentDrawingsKey = pitchMode === 'full' ? 'fullModeDrawings' : 'halfModeDrawings';
+    persistenceManager.saveState({
+      ...persistenceManager.loadState(),
+      [currentDrawingsKey]: [],
+    });
+  }, [pitchMode, persistenceManager]);
+
+  const handleClearAction = useCallback(() => {
+    if (interactionMode === 'draw') {
+      handleClearDrawings();
+    } else {
+      handleClearChips();
+    }
+  }, [interactionMode, handleClearChips, handleClearDrawings]);
+
+  const handleInteractionModeChange = useCallback((mode) => {
+    if (mode === interactionMode) return;
+    setInteractionMode(mode);
+    persistenceManager.saveState({
+      ...persistenceManager.loadState(),
+      interactionMode: mode,
+    });
+  }, [interactionMode, persistenceManager]);
+
+  const canUndoDrawing = interactionMode === 'draw' && drawings.length > 0;
+  const clearButtonLabel = interactionMode === 'draw' ? 'Clear Drawings' : 'Clear Chips';
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
-      {/* Navigation and Pitch Mode Toggle */}
-      <div className="flex items-center justify-between mb-4">
-        {/* Back Button */}
-        <button
-          onClick={handleBackPress}
-          className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
-        >
-          Back
-        </button>
-        
-        {/* Pitch Mode Toggle */}
-        <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
+      {/* Controls */}
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {interactionMode === 'draw' && (
+            <button
+              onClick={handleUndoDrawing}
+              disabled={!canUndoDrawing}
+              className={`rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md ${
+                canUndoDrawing
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                  : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              Undo
+            </button>
+          )}
           <button
-            onClick={() => handlePitchModeToggle('full')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              pitchMode === 'full'
-                ? 'bg-sky-500 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={handleClearAction}
+            className="bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
           >
-            Full
+            {clearButtonLabel}
           </button>
           <button
-            onClick={() => handlePitchModeToggle('half')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              pitchMode === 'half'
-                ? 'bg-sky-500 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={handleBackPress}
+            className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
           >
-            Half
+            Back
           </button>
         </div>
-        
-        {/* Clear Button */}
-        <button
-          onClick={handleClearBoard}
-          className="bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
-        >
-          Clear
-        </button>
+
+        <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+          {/* Interaction Mode Toggle */}
+          <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
+            <button
+              onClick={() => handleInteractionModeChange('drag')}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                interactionMode === 'drag'
+                  ? 'bg-emerald-500 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Drag
+            </button>
+            <button
+              onClick={() => handleInteractionModeChange('draw')}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                interactionMode === 'draw'
+                  ? 'bg-emerald-500 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Draw
+            </button>
+          </div>
+
+          {/* Pitch Mode Toggle */}
+          <div className="bg-slate-800 border border-slate-600 rounded-full p-0.5 inline-flex">
+            <button
+              onClick={() => handlePitchModeToggle('full')}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                pitchMode === 'full'
+                  ? 'bg-sky-500 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Full
+            </button>
+            <button
+              onClick={() => handlePitchModeToggle('half')}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                pitchMode === 'half'
+                  ? 'bg-sky-500 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Half
+            </button>
+          </div>
+        </div>
       </div>
+
+      {interactionMode === 'draw' && (
+        <p className="text-xs text-amber-200 mb-3">
+          Draw freely on the pitch. Switch back to Drag mode to move or add chips.
+        </p>
+      )}
 
       {/* Tactical Board */}
       <TacticalBoard
@@ -176,8 +285,9 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
         onChipPlace={handleChipPlace}
         onChipMove={handleChipMove}
         onChipDelete={handleChipDelete}
-        pushNavigationState={pushNavigationState}
-        removeFromNavigationStack={removeFromNavigationStack}
+        interactionMode={interactionMode}
+        drawings={drawings}
+        onAddDrawing={handleAddDrawing}
       />
     </div>
   );
