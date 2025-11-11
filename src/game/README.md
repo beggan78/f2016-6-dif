@@ -152,7 +152,7 @@ This separation allows logic changes without breaking animations and vice versa.
 - `calculateUndo()`: Reverses the most recent substitution with time adjustments
 - `calculatePlayerToggleInactive()`: Activates/deactivates players (7-player mode only)
 - `calculateSubstituteSwap()`: Swaps substitute_1 and substitute_2 positions
-- `calculateNextSubstitutionTarget()`: Updates next player/pair to substitute
+- `calculateNextSubstitutionTarget()`: Updates next player to substitute
 
 **Key characteristics**:
 - All functions are pure (input → output, no side effects)
@@ -163,17 +163,16 @@ This separation allows logic changes without breaking animations and vice versa.
 
 **When to add functions**:
 - New game operations (e.g., captain assignment, penalty management)
-- Formation-specific rules (e.g., pair-breaking logic)
+- Formation-specific rules (e.g., role rotation logic)
 - Time-based calculations (e.g., fatigue tracking)
 
 ### `logic/substitutionManager.js`
-**Purpose**: Specialized substitution business logic and time calculation  
+**Purpose**: Specialized substitution business logic and time calculation
 **Responsibilities**:
 - `SubstitutionManager` class: Handles formation-specific substitution logic
 - `handleRoleChange()`: Manages role transitions within periods
 - Formation-specific handlers:
-  - `handlePairsSubstitution()`: Pairs mode substitution logic
-  - `handleIndividualSubstitution()`: 6-player individual mode logic  
+  - `handleIndividualSubstitution()`: 6-player individual mode logic
   - `handleIndividual7Substitution()`: 7-player individual mode with inactive support
 
 **Integration points**:
@@ -268,7 +267,7 @@ This separation allows logic changes without breaking animations and vice versa.
 - Captures current positions of all players including goalie
 - Maps each player to their UI position index and role
 - Returns position snapshot for before/after comparison
-- Supports all team configurations (pairs, individual 6-player, individual 7-player)
+- Supports all team configurations (individual 6-player, individual 7-player, 7v7 formats)
 
 **`calculateAllPlayerAnimations(beforePositions, afterPositions, teamConfig)`**
 - Compares before/after position snapshots
@@ -299,12 +298,9 @@ This separation allows logic changes without breaking animations and vice versa.
 ```javascript
 const MEASUREMENTS = {
   padding: 16,     // Component padding (8px top + 8px bottom)
-  border: 4,       // Border width (2px top + 2px bottom)  
+  border: 4,       // Border width (2px top + 2px bottom)
   gap: 8,          // Space between components
-  contentHeight: {
-    pairs: 84,     // Height of pair component content
-    individual: 76 // Height of individual component content
-  }
+  contentHeight: 76 // Height of individual component content
 };
 ```
 
@@ -321,17 +317,17 @@ const MEASUREMENTS = {
 The handlers module contains domain-organized event handler factories that integrate game logic with UI interactions. Each handler file focuses on a specific domain and follows consistent patterns for state management and animation integration.
 
 ### `handlers/fieldPositionHandlers.js`
-**Purpose**: Field position interaction logic (formerly longPressHandlers.js, now quickTapHandlers)  
+**Purpose**: Field position interaction logic (formerly longPressHandlers.js, now quickTapHandlers)
 **Responsibilities**:
 - `createFieldPositionHandlers()`: Creates callbacks for field position long press interactions
-- `handleFieldPlayerQuickTap()`: Opens field player modal for pairs/individual modes
+- `handleFieldPlayerQuickTap()`: Opens field player modal for individual modes
 - `handleSubstituteQuickTap()`: Opens substitute modal for 7-player individual mode
 - `createPositionCallback()`: Creates position-specific callback functions
 
 **Key characteristics**:
 - Domain-based naming (field positions, not technical implementation)
 - Returns callback functions for integration with `useQuickTapWithScrollDetection` hook
-- Formation-aware logic for pairs vs individual modes
+- Formation-aware logic for different squad sizes
 - Modal integration through modalHandlers dependency
 
 **Integration with scroll detection**:
@@ -354,7 +350,7 @@ The handlers module contains domain-organized event handler factories that integ
 - Modal management with browser back button support
 
 ### `handlers/substitutionHandlers.js`
-**Purpose**: Player substitution operations and game state transitions  
+**Purpose**: Player substitution operations and game state transitions
 **Responsibilities**:
 - `createSubstitutionHandlers()`: Creates substitution-related handlers
 - `handleSubstitutionWithHighlight()`: Animated substitution with time tracking
@@ -364,7 +360,7 @@ The handlers module contains domain-organized event handler factories that integ
 - Modal handlers for field player and substitute interactions
 
 **Key features**:
-- Formation-aware substitution logic (pairs vs individual modes)
+- Formation-aware substitution logic for different squad sizes
 - Integration with animation system using `animateStateChange`
 - Time tracking and undo functionality
 - Complex modal workflows for position changes
@@ -435,15 +431,13 @@ The UI module contains focused utilities for game screen rendering, separated fr
 - **State priority**: Recently substituted overrides other indicators
 
 ### `ui/playerAnimation.js`
-**Purpose**: Animation property extraction and management  
+**Purpose**: Animation property extraction and management
 **Responsibilities**:
 - `getPlayerAnimation()`: Individual player animation properties
-- `getPairAnimation()`: Pair formation animation (checks both defender and attacker)
 - Animation class, z-index, and style prop extraction
 
 **Integration points**:
 - Uses `getPlayerAnimationProps` from animation module
-- Handles both individual and pair animation scenarios
 - Returns consistent animation property structure
 
 **UI Module Benefits**:
@@ -530,16 +524,15 @@ The central `gameState` object contains:
 Modern composite team configuration architecture with four components:
 
 ### Configuration Components
-- **Format**: Field format (`5v5`, future: `7v7`)
+- **Format**: Field format (`5v5`, `7v7`)
 - **Squad Size**: Total players (5-15 players supported)
-- **Formation**: Tactical formation (`2-2`, `1-2-1`, and future formations)
-- **Substitution Type**: Substitution style (`individual`, `pairs`)
+- **Formation**: Tactical formation (`2-2`, `1-2-1`, `2-2-2`, `2-3-1`)
+- **Substitution Type**: Substitution style (`individual`)
 
 ### Supported Configurations
-- **Pairs Mode**: 7-player pairs management using `substitutionType: 'pairs'`
-- **Individual Modes**: 6+ player individual management using `substitutionType: 'individual'`
-- **Formation Support**: Both 2-2 and 1-2-1 formations fully implemented
-- **Role Tracking**: Defender, Attacker, Midfielder (1-2-1), and Goalie roles
+- **Individual Modes**: 5-15 player individual management using `substitutionType: 'individual'`
+- **Formation Support**: 2-2, 1-2-1, 2-2-2, and 2-3-1 formations fully implemented
+- **Role Tracking**: Defender, Attacker, Midfielder (1-2-1, 2-2-2, 2-3-1), and Goalie roles
 
 ## Animation Orchestration
 The unified animation system:
@@ -715,28 +708,32 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 ### 2-2 Formation (Fully Implemented)
 - **Field positions**: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`
 - **Role mapping**: Defenders (left/right), Attackers (left/right)
-- **Supports**: All squad sizes (6, 7+ players) and both substitution types (individual, pairs)
+- **Supports**: All squad sizes (5-15 players) with individual substitution
 
 ### 1-2-1 Formation (Fully Implemented)
 - **Field positions**: `defender`, `left`, `right`, `attacker`
 - **Role mapping**: Defender (1), Midfielders (left/right), Attacker (1)
 - **Midfielder support**: Full time tracking for `timeAsMidfielderSeconds`
-- **Supports**: All squad sizes and both substitution types
+- **Supports**: All squad sizes with individual substitution
 
-## Substitution Types
+### 2-2-2 Formation (Fully Implemented)
+- **Field positions**: `leftDefender`, `rightDefender`, `leftMidfielder`, `rightMidfielder`, `leftAttacker`, `rightAttacker`
+- **Role mapping**: Defenders (left/right), Midfielders (left/right), Attackers (left/right)
+- **Format**: 7v7 only
+- **Supports**: 9-15 player squads with individual substitution
 
-### Pairs Mode (`substitutionType: 'pairs'`)
-- Typically used with 7-player squads
-- Field pairs: `leftPair`, `rightPair` (each with two players)
-- Substitute pair: `subPair` (two players)
-- Substitutions swap entire pairs
-- Role swapping within pairs supported
-- Queue contains individual player IDs, not pair objects
+### 2-3-1 Formation (Fully Implemented)
+- **Field positions**: `leftDefender`, `rightDefender`, `leftMidfielder`, `centerMidfielder`, `rightMidfielder`, `attacker`
+- **Role mapping**: Defenders (left/right), Midfielders (left/center/right), Attacker (1)
+- **Format**: 7v7 only
+- **Supports**: 9-15 player squads with individual substitution
+
+## Substitution Type
 
 ### Individual Mode (`substitutionType: 'individual'`)
-- Used with 6+ player squads
+- Used with 5-15 player squads
 - Individual field positions based on formation
-- Substitute positions: `substitute` (6-player) or `substitute_1`, `substitute_2` (7+ player)
+- Substitute positions vary by squad size: `substitute` (5-6 players), `substitute_1`/`substitute_2` (7-8 players), etc.
 - Individual player substitutions and role tracking
 - Inactive player support for 7+ player squads
 - Next/next-next tracking for substitute management

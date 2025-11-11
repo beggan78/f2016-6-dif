@@ -103,12 +103,12 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
       if (i <= fieldPositions.length) {
         status = PLAYER_STATUS.ON_FIELD;
         pairKey = fieldPositions[i - 1];
-        role = modeDefinition.positions[pairKey]?.role || PLAYER_ROLES.FIELD_PLAYER;
+        role = modeDefinition?.positions?.[pairKey]?.role || PLAYER_ROLES.FIELD_PLAYER;
       } else if (i <= totalOutfield) {
         status = PLAYER_STATUS.SUBSTITUTE;
         const subIndex = i - fieldPositions.length - 1;
         pairKey = substitutePositions[subIndex];
-        role = modeDefinition.positions[pairKey]?.role || PLAYER_ROLES.SUBSTITUTE;
+        role = modeDefinition?.positions?.[pairKey]?.role || PLAYER_ROLES.SUBSTITUTE;
       } else {
         status = PLAYER_STATUS.GOALIE;
         role = PLAYER_ROLES.GOALIE;

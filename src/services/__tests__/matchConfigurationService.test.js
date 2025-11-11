@@ -53,44 +53,6 @@ describe('matchConfigurationService', () => {
         format: '5v5',
         formation: '2-2',
         squadSize: 7,
-        substitutionType: 'pairs'
-      };
-
-      const result = formatTeamConfigForDatabase(teamConfig);
-
-      expect(result).toEqual({
-        format: '5v5',
-        formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'pairs'
-      });
-    });
-
-    it('should include pairedRoleStrategy when present', () => {
-      const teamConfig = {
-        format: '5v5',
-        formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'pairs',
-        pairedRoleStrategy: 'keep_throughout_period'
-      };
-
-      const result = formatTeamConfigForDatabase(teamConfig);
-
-      expect(result).toEqual({
-        format: '5v5',
-        formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'pairs',
-        pairedRoleStrategy: 'keep_throughout_period'
-      });
-    });
-
-    it('should exclude pairedRoleStrategy when not present', () => {
-      const teamConfig = {
-        format: '5v5',
-        formation: '1-2-1',
-        squadSize: 6,
         substitutionType: 'individual'
       };
 
@@ -98,11 +60,10 @@ describe('matchConfigurationService', () => {
 
       expect(result).toEqual({
         format: '5v5',
-        formation: '1-2-1',
-        squadSize: 6,
+        formation: '2-2',
+        squadSize: 7,
         substitutionType: 'individual'
       });
-      expect(result).not.toHaveProperty('pairedRoleStrategy');
     });
   });
 
@@ -119,7 +80,7 @@ describe('matchConfigurationService', () => {
           format: '5v5',
           formation: '2-2',
           squadSize: 7,
-          substitutionType: 'pairs'
+          substitutionType: 'individual'
         },
         matchData: {
           format: '5v5',
@@ -142,7 +103,7 @@ describe('matchConfigurationService', () => {
           format: '5v5',
           formation: '2-2',
           squadSize: 7,
-          substitutionType: 'pairs'
+          substitutionType: 'individual'
         },
         matchConfig: {
           format: '5v5',
@@ -362,7 +323,7 @@ describe('matchConfigurationService', () => {
         format: '5v5',
         formation: '2-2',
         squadSize: 7,
-        substitutionType: 'pairs'
+        substitutionType: 'individual'
       },
       selectedFormation: '2-2',
       numPeriods: 3,

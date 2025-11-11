@@ -50,23 +50,6 @@ describe('Formation Utilities', () => {
       });
     });
 
-    it('should return correct structure for pairs mode', () => {
-      const teamConfig = {
-        format: '5v5',
-        formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'pairs'
-      };
-
-      const expected = getExpectedFormationStructure(teamConfig);
-
-      expect(expected).toEqual({
-        goalie: null,
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null }
-      });
-    });
     it('should return correct structure for 7v7 2-3-1 formation', () => {
       const teamConfig = {
         format: '7v7',
@@ -200,38 +183,6 @@ describe('Formation Utilities', () => {
         rightAttacker: 'player5',
         substitute_1: 'player6',
         substitute_2: 'player7'
-      });
-    });
-
-    it('should handle pairs mode normalization', () => {
-      const teamConfig = {
-        format: '5v5',
-        formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'pairs'
-      };
-
-      const squadSelection = ['player1', 'player2', 'player3', 'player4', 'player5', 'player6', 'player7'];
-
-      const messyFormation = {
-        goalie: 'player1',
-        leftPair: { defender: 'player2', attacker: 'player3' },
-        rightPair: { defender: 'player4', attacker: 'player5' },
-        subPair: { defender: 'player6', attacker: 'player7' },
-        // Redundant individual positions that should be ignored
-        leftDefender: 'player8',
-        rightDefender: 'player9',
-        leftAttacker: 'player10',
-        rightAttacker: 'player11'
-      };
-
-      const cleaned = normalizeFormationStructure(messyFormation, teamConfig, squadSelection);
-
-      expect(cleaned).toEqual({
-        goalie: 'player1',
-        leftPair: { defender: 'player2', attacker: 'player3' },
-        rightPair: { defender: 'player4', attacker: 'player5' },
-        subPair: { defender: 'player6', attacker: 'player7' }
       });
     });
 

@@ -23,7 +23,6 @@ describe('Game Mode Configuration', () => {
   describe('Team configuration compatibility', () => {
     test('should work with all supported team configurations', () => {
       const expectedConfigs = [
-        TEAM_CONFIGS.PAIRS_7,
         createTeamConfig('5v5', 5, '2-2', 'individual'),
         TEAM_CONFIGS.INDIVIDUAL_6,
         TEAM_CONFIGS.INDIVIDUAL_7,
@@ -43,7 +42,6 @@ describe('Game Mode Configuration', () => {
 
     test('getModeDefinition should return consistent structure for team configs', () => {
       const testConfigs = [
-        createTeamConfig('5v5', 7, '2-2', 'pairs'),
         createTeamConfig('5v5', 5, '2-2', 'individual'),
         createTeamConfig('5v5', 6, '2-2', 'individual'),
         createTeamConfig('5v5', 7, '2-2', 'individual'),
@@ -84,7 +82,6 @@ describe('Game Mode Configuration', () => {
       const testCases = [
         { config: TEAM_CONFIGS.INDIVIDUAL_6, expectedOutfield: 5 },
         { config: TEAM_CONFIGS.INDIVIDUAL_7, expectedOutfield: 6 },
-        { config: TEAM_CONFIGS.PAIRS_7, expectedOutfield: 6 },
         { config: TEAM_CONFIGS.INDIVIDUAL_7V7_222, expectedOutfield: 8 }
       ];
 

@@ -414,11 +414,7 @@ export function getAllPositions(teamConfig) {
 export function getValidPositions(teamConfig) {
   const definition = getModeDefinition(teamConfig);
   if (!definition) return [];
-  
-  if (teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-    return ['leftPair', 'rightPair', 'subPair'];
-  }
-  
+
   return definition.positionOrder;
 }
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Users, UserPen, Dice5, Settings } from 'lucide-react';
-import { hasInactivePlayersInSquad } from '../../utils/playerUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
@@ -22,16 +21,6 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
   const handleAddPlayer = () => {
     setIsOpen(false);
     onAddPlayer();
-  };
-
-  const handleSplitPairs = () => {
-    setIsOpen(false);
-    onSplitPairs();
-  };
-
-  const handleFormPairs = () => {
-    setIsOpen(false);
-    onFormPairs();
   };
 
   const handleNavigateToTacticalBoard = () => {
@@ -93,17 +82,6 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
   };
 
   const isConfigScreen = currentView === 'config';
-  const isGameScreen = currentView === 'game';
-  const showFormationOptions = isGameScreen && teamConfig?.formation === '2-2' && (
-    (teamConfig?.substitutionType === 'pairs' && teamConfig?.squadSize === 7) || 
-    (teamConfig?.substitutionType === 'individual' && teamConfig?.squadSize === 7)
-  );
-  
-  // Check for inactive players in the selected squad
-  const hasInactivePlayers = hasInactivePlayersInSquad(allPlayers, selectedSquadIds);
-  
-  // Disable "Form Pairs" if there are inactive players
-  const canFormPairs = !hasInactivePlayers;
 
   // Get user display name
   const getUserDisplayName = () => {
@@ -339,28 +317,6 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
               >
                 Add Player
               </button>
-              {showFormationOptions && teamConfig?.substitutionType === 'pairs' && (
-                <button
-                  onClick={handleSplitPairs}
-                  className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
-                >
-                  Split Pairs
-                </button>
-              )}
-              {showFormationOptions && teamConfig?.substitutionType === 'individual' && (
-                <button
-                  onClick={handleFormPairs}
-                  disabled={!canFormPairs}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                    canFormPairs 
-                      ? 'text-slate-100 hover:bg-slate-600 hover:text-sky-400' 
-                      : 'text-slate-400 cursor-not-allowed'
-                  }`}
-                  title={!canFormPairs ? "Cannot form pairs while there are inactive players" : ""}
-                >
-                  Form Pairs
-                </button>
-              )}
               <button
                 onClick={handleRestartMatch}
                 className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"

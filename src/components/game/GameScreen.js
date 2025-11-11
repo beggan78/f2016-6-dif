@@ -147,10 +147,6 @@ export function GameScreen({
     setSubstitutionCount(nextValue);
   }, []);
 
-  // Determine which formation mode we're using
-  const isPairsMode = teamConfig?.substitutionType === 'pairs';
-
-
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => {
     const effectiveSubstitutionCount = uiState.substitutionCountOverride ?? substitutionCount;
@@ -686,14 +682,11 @@ export function GameScreen({
         onChangePosition={substitutionHandlers.handleChangePosition}
         playerName={modalHandlers.modals.fieldPlayer.playerName}
         availablePlayers={modalHandlers.modals.fieldPlayer.availablePlayers}
-        showPositionChange={!isPairsMode && modalHandlers.modals.fieldPlayer.type === 'player'}
+        showPositionChange={modalHandlers.modals.fieldPlayer.type === 'player'}
         showPositionOptions={modalHandlers.modals.fieldPlayer.showPositionOptions}
-        showSwapPositions={isPairsMode && modalHandlers.modals.fieldPlayer.type === 'pair'}
-        showSubstitutionOptions={
-          modalHandlers.modals.fieldPlayer.type === 'player' ||
-          (modalHandlers.modals.fieldPlayer.type === 'pair' && modalHandlers.modals.fieldPlayer.target !== 'subPair')
-        }
-        canSubstitute={teamConfig?.substitutionType === 'individual' ? canSubstitute : true}
+        showSwapPositions={false}
+        showSubstitutionOptions={modalHandlers.modals.fieldPlayer.type === 'player'}
+        canSubstitute={canSubstitute}
         isPlayerAboutToSubOff={modalHandlers.modals.fieldPlayer.isPlayerAboutToSubOff || false}
       />
 

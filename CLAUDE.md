@@ -126,18 +126,16 @@ Modern composite team configuration system using four components:
 - **Venue Type**: Match location context (`home`, `away`, `neutral`) used for analytics and persistence
 - **Squad Size**: Total players (5-15 players supported)
 - **Formation**: Tactical formation (`2-2`, `1-2-1`, and future formations)
-- **Substitution Type**: Substitution style (`individual`, `pairs`)
+- **Substitution Type**: Substitution style (`individual`)
 
 ### ConfigurationScreen Reference
 - **Opponent & Match Type**: Opponent name is optional (50 char). `matchType` comes from `MATCH_TYPE_OPTIONS` and persists to `match.type` (`league`, `friendly`, `cup`, `tournament`, `internal`).
 - **Venue Type**: Defaults to `home`; stored alongside match data for analytics and pending-match recovery.
 - **Alert Minutes**: `ALERT_OPTIONS` control substitution reminders (0-5 minutes). Values propagate to `useTimers` for rotation cues.
 - **Goalie Assignments**: Each period must specify a goalie before period setup or saving is enabled.
-- **Substitution Mode**: 7-player 5v5 squads in 2-2 formation can switch between `individual` and `pairs`; pairs mode exposes `PAIRED_ROLE_STRATEGY_DEFINITIONS` settings.
 - **Captain Selection**: Optional dropdown stored in match state and persisted with configuration saves.
 
 ### Common Configurations
-- **7-player pairs**: `{format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'pairs'}`
 - **6-player individual**: `{format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual'}`
 - **7-player individual**: `{format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual'}`
 

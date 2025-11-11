@@ -43,14 +43,9 @@ export const getCurrentAttackers = (formation, teamConfig) => {
 
   const attackers = [];
 
-  if (teamConfig?.substitutionType === 'individual') {
-    if (formation.leftAttacker) attackers.push(formation.leftAttacker);
-    if (formation.rightAttacker) attackers.push(formation.rightAttacker);
-    if (formation.attacker) attackers.push(formation.attacker); // For 1-2-1 formation
-  } else if (teamConfig?.substitutionType === 'pairs') {
-    if (formation.leftPair?.attacker) attackers.push(formation.leftPair.attacker);
-    if (formation.rightPair?.attacker) attackers.push(formation.rightPair.attacker);
-  }
+  if (formation.leftAttacker) attackers.push(formation.leftAttacker);
+  if (formation.rightAttacker) attackers.push(formation.rightAttacker);
+  if (formation.attacker) attackers.push(formation.attacker); // For 1-2-1 formation
 
   return attackers;
 };
@@ -66,14 +61,9 @@ export const getCurrentDefenders = (formation, teamConfig) => {
 
   const defenders = [];
 
-  if (teamConfig?.substitutionType === 'individual') {
-    if (formation.leftDefender) defenders.push(formation.leftDefender);
-    if (formation.rightDefender) defenders.push(formation.rightDefender);
-    if (formation.defender) defenders.push(formation.defender); // For 1-2-1 formation
-  } else if (teamConfig?.substitutionType === 'pairs') {
-    if (formation.leftPair?.defender) defenders.push(formation.leftPair.defender);
-    if (formation.rightPair?.defender) defenders.push(formation.rightPair.defender);
-  }
+  if (formation.leftDefender) defenders.push(formation.leftDefender);
+  if (formation.rightDefender) defenders.push(formation.rightDefender);
+  if (formation.defender) defenders.push(formation.defender); // For 1-2-1 formation
 
   return defenders;
 };
@@ -150,15 +140,7 @@ export const getPlayerPositionDisplay = (player) => {
       return 'Substitute 3';
     case 'substitute':
       return 'Substitute';
-    
-    // Pairs mode positions - combine pair location with player role
-    case 'leftPair':
-      return normalizeRole(player.stats.currentRole) === PLAYER_ROLES.DEFENDER ? 'Left Defender' : 'Left Attacker';
-    case 'rightPair':
-      return normalizeRole(player.stats.currentRole) === PLAYER_ROLES.DEFENDER ? 'Right Defender' : 'Right Attacker';
-    case 'subPair':
-      return normalizeRole(player.stats.currentRole) === PLAYER_ROLES.DEFENDER ? 'Sub Defender' : 'Sub Attacker';
-    
+
     default:
       // Handle any unknown position keys
       if (pairKey.startsWith('substitute_')) {

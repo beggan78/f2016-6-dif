@@ -4,14 +4,14 @@ A mobile-first web application designed for coaching youth soccer teams. This ap
 
 ## Overview
 
-Sport Wizard is built for managing youth soccer teams with flexible squad sizes (5-15 players) and multiple tactical formations. The app uses a modern composite configuration system combining format (5v5 or 7v7), squad size, formation (2-2, 1-2-1, 2-2-2, or 2-3-1), and substitution type (individual or pairs) to create customized team management experiences with intelligent rotation systems that ensure fair playing time distribution.
+Sport Wizard is built for managing youth soccer teams with flexible squad sizes (5-15 players) and multiple tactical formations. The app uses a modern composite configuration system combining format (5v5 or 7v7), squad size, formation (2-2, 1-2-1, 2-2-2, or 2-3-1), and individual substitution management to create customized team management experiences with intelligent rotation systems that ensure fair playing time distribution.
 
 ### Key Features
 
 #### Core Game Management
 - **Smart Player Selection**: Choose players from flexible squad sizes (5-15 players supported)
 - **Multiple Formations**: Support for 2-2 (classic), 1-2-1 (tactical), 2-2-2, and 2-3-1 formations with role-aware time tracking
-- **Flexible Team Modes**: Supports pair-based substitutions and individual player rotations
+- **Individual Player Rotations**: Intelligent individual substitution management with round-robin rotation
 - **Custom Rotation Alerts**: Configure substitution reminders (0-5 minutes) to keep coaching staff on schedule
 - **Real-time Game Management**: Dual timers track match time and substitution intervals
 - **Automated Substitution Planning**: AI-powered recommendations for optimal player rotations
@@ -46,12 +46,6 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 
 ### Team Configurations
 
-#### 7-Player Mode (Pairs)
-- Players are organized into pairs (defender + attacker) for the 5v5 format
-- Three pairs total: Left, Right, and Substitute
-- Substitutions occur at the pair level
-- Automatic round-robin rotation between pairs
-
 #### 6-Player Mode (Individual)
 - Players assigned to individual positions
 - Positions: Left Defender, Right Defender, Left Attacker, Right Attacker, Substitute
@@ -69,7 +63,6 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 - Players cover six field positions with formation-specific midfield roles
 - **2-2-2**: Balanced left/right defenders, midfielders, and attackers
 - **2-3-1**: Two backs supporting a midfield trio and a lone striker
-- Individual substitution mode only (pairs not yet available)
 - Rotation queue adapts to the larger roster and inactive player handling
 
 ## App Workflow
@@ -82,7 +75,6 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 - Configure substitution alerts (0-5 minutes) to drive timed rotation reminders
 - Set number of periods (1-3) and duration (10-30 minutes)
 - Assign goalies for each period
-- For eligible 7-player 5v5 setups toggle between individual or pair substitution modes and pick a pair role rotation style
 - Optionally designate a captain for the match
 
 ### 2. Period Setup
@@ -201,8 +193,7 @@ The interface provides clear visual cues for rotation planning:
 - **Subtle Borders**: Rose-200 (off) / Emerald-200 (on)
 
 ### Player Selection Logic
-- **For 7-Player Squads**: Mode defaults to Pairs mode but can be switched to Individual
-- **Period Setup**: Shows individual position cards instead of pair assignments
+- **Period Setup**: Shows individual position cards for player assignments
 - **Smart Filtering**: Only unassigned players appear in dropdowns until formation is complete
 - **Easy Swapping**: Once complete, all players available for position swapping
 
@@ -214,7 +205,7 @@ The interface provides clear visual cues for rotation planning:
 
 ## Formation Recommendation System
 
-The app features an intelligent formation recommendation system that automatically suggests optimal player arrangements for periods 2 and 3, ensuring fair role distribution and maintaining team chemistry through strategic management. The system uses different approaches for pair-based and individual team modes.
+The app features an intelligent formation recommendation system that automatically suggests optimal player arrangements for periods 2 and 3, ensuring fair role distribution and maintaining team chemistry through strategic rotation management.
 
 ### Individual Mode Rotation System
 
@@ -275,73 +266,9 @@ For field players, roles are assigned based on time balance to promote fair role
 - Simplified substitution decisions for coaches
 - Maintains role balance through intelligent position assignment
 
-### Pair Mode Recommendations
-
-#### Before 2nd Period
-The system prioritizes maintaining existing partnerships while ensuring position balance:
-
-**Pair Integrity Maintenance**
-- When the goalie changes, the algorithm identifies the new goalie's original partner from the previous period
-- The ex-goalie is paired with this "orphaned" partner
-- The orphaned partner changes defender/attacker roles from their previous position
-- The former goalie takes the vacant role in the new pair
-
-**Role Swapping for Balance**
-- All other existing pairs are preserved but with swapped defender/attacker roles
-- This ensures players experience both defensive and attacking positions across periods
-- Team chemistry is maintained while promoting positional versatility
-
-**Playing Time Considerations (Pair mode)**
-- **Substitute Recommendation**: The pair containing the player with the most total outfield time becomes the recommended substitute pair
-- **First Substitution Target**: Among non-substitute pairs, the pair with the player having the most outfield time is recommended as "first to rotate off"
-
-#### Before 3rd Period
-Period 3 introduces sophisticated role balance enforcement based on accumulated playing time:
-
-**Role Balance Enforcement (Time-Based)**
-The system analyzes each player's defender vs attacker time ratio to determine role requirements:
-- **Balanced Players**: Those with `0.8 ≤ defenderTime/attackerTime ≤ 1.25` have no specific role restrictions
-- **Must Play Defender**: Players with `defenderTime/attackerTime < 0.8` (predominantly played attacker) are assigned defender roles
-- **Must Play Attacker**: Players with `defenderTime/attackerTime > 1.25` (predominantly played defender) are assigned attacker roles
-- The system adds 1 second to each time category to prevent division-by-zero errors
-
-**Adaptive Pair Management**
-The algorithm attempts to maintain pair integrity while respecting role balance requirements:
-
-1. **Pair Preservation Priority**: When possible, existing pairs are maintained with appropriate role adjustments
-2. **Strategic Pair Breaking**: If role balance cannot be achieved while keeping pairs intact, the system intelligently breaks pairs to ensure fair role distribution
-3. **Goalie Change Handling**: Similar to period 2, but with additional role balance constraints applied
-
-**Flexible Player Assignment**
-For players not restricted by balancing rules:
-- They receive the opposite role from what they played in period 2
-- This promotes continued positional variety and skill development
-
-**Example Scenarios**
-
-*Scenario 1: Balanced Distribution*
-- Player A: 150s defender, 160s attacker (ratio = 0.94) → Flexible
-- Player B: 180s defender, 140s attacker (ratio = 1.29) → Must play attacker
-- Result: Pair maintained with Player B as attacker, Player A takes defender role
-
-*Scenario 2: Pair Breaking Required*
-- Player C: 50s defender, 200s attacker (ratio = 0.25) → Must play defender  
-- Player D: 60s defender, 180s attacker (ratio = 0.33) → Must play defender
-- Result: Original C-D pair broken, each paired with players who need attacker roles
-
-### Substitute Recommendations (All Periods)
-
-**Primary Recommendation Logic**
-- The pair containing the player with the highest total outfield time is recommended as the substitute pair
-- This ensures players with more accumulated playing time get appropriate rest periods
-
-**First Rotation Target**
-- Among the two non-substitute pairs, the one containing the player with the most outfield time is marked as "first to rotate off"
-- This balances playing time by prioritizing substitutions for players who have been on field longer
-
 ### Algorithm Benefits
 
-**Fair Play Assurance (All Modes)**
+**Fair Play Assurance**
 - Time-based calculations ensure truly equitable role distribution
 - Prevents players from being "stuck" in single positions across multiple periods
 - Maintains competitive balance while developing all players
@@ -351,11 +278,6 @@ For players not restricted by balancing rules:
 - Role balance through intelligent position assignment
 - Simplified coaching decisions with clear rotation order
 - Granular time tracking for precise fairness
-
-**Pair Mode Advantages**
-- Prioritizes keeping successful partnerships together when possible
-- Only breaks pairs when necessary for fairness, minimizing disruption
-- Smooth transitions maintain team coordination and player confidence
 
 **Coaching Support**
 - Recommendations are clearly presented but never mandatory

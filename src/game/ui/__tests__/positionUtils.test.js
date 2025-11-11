@@ -33,7 +33,6 @@ describe('UI positionUtils', () => {
   const mockSubstitutePositions8 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2, POSITION_KEYS.SUBSTITUTE_3];
   const mockSubstitutePositions9 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2, POSITION_KEYS.SUBSTITUTE_3, 'substitute_4'];
   const mockSubstitutePositions10 = [POSITION_KEYS.SUBSTITUTE_1, POSITION_KEYS.SUBSTITUTE_2, POSITION_KEYS.SUBSTITUTE_3, 'substitute_4', 'substitute_5'];
-  const mockSubstitutePositionsPairs = [POSITION_KEYS.SUB_PAIR];
 
   describe('getPositionIcon', () => {
     test('should return RotateCcw icon for substitute positions', () => {
@@ -90,12 +89,6 @@ describe('UI positionUtils', () => {
       expect(getPositionDisplayName('substitute_3', null, TEAM_CONFIGS.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
       expect(getPositionDisplayName('substitute_4', null, TEAM_CONFIGS.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
       expect(getPositionDisplayName('substitute_5', null, TEAM_CONFIGS.INDIVIDUAL_10, mockSubstitutePositions10)).toBe('Substitute');
-    });
-
-    test('should return proper display names for pair positions', () => {
-      expect(getPositionDisplayName('leftPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('Left');
-      expect(getPositionDisplayName('rightPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('Right');
-      expect(getPositionDisplayName('subPair', null, TEAM_CONFIGS.PAIRS_7, mockSubstitutePositionsPairs)).toBe('Substitutes');
     });
 
     test('should handle inactive player status', () => {
@@ -248,10 +241,9 @@ describe('UI positionUtils', () => {
 
   describe('formation support checks', () => {
     describe('supportsInactiveUsers', () => {
-      test('should return true for both individual modes (6-player and 7-player)', () => {
+      test('should return true when substitute slots are available', () => {
         expect(supportsInactiveUsers(TEAM_CONFIGS.INDIVIDUAL_7)).toBe(true);
         expect(supportsInactiveUsers(TEAM_CONFIGS.INDIVIDUAL_6)).toBe(true);
-        expect(supportsInactiveUsers(TEAM_CONFIGS.PAIRS_7)).toBe(false);
       });
     });
 
@@ -259,7 +251,6 @@ describe('UI positionUtils', () => {
       test('should return true only for INDIVIDUAL_7', () => {
         expect(supportsNextNextIndicators(TEAM_CONFIGS.INDIVIDUAL_7)).toBe(true);
         expect(supportsNextNextIndicators(TEAM_CONFIGS.INDIVIDUAL_6)).toBe(false);
-        expect(supportsNextNextIndicators(TEAM_CONFIGS.PAIRS_7)).toBe(false);
       });
 
     });
@@ -269,27 +260,23 @@ describe('UI positionUtils', () => {
     test('should provide consistent behavior across team configs', () => {
       const teamConfigs = [
         TEAM_CONFIGS.INDIVIDUAL_6,
-        TEAM_CONFIGS.INDIVIDUAL_7,
-        TEAM_CONFIGS.PAIRS_7
+        TEAM_CONFIGS.INDIVIDUAL_7
       ];
-      
+
       teamConfigs.forEach(teamConfig => {
         // Team mode support checks should be consistent
         const supportsInactive = supportsInactiveUsers(teamConfig);
         const supportsNextNext = supportsNextNextIndicators(teamConfig);
-        
+
         expect(typeof supportsInactive).toBe('boolean');
         expect(typeof supportsNextNext).toBe('boolean');
-        
+
         // Check expected values for each mode
         if (teamConfig === TEAM_CONFIGS.INDIVIDUAL_7) {
           expect(supportsInactive).toBe(true); // 7-player individual mode supports inactive players
           expect(supportsNextNext).toBe(true);
         } else if (teamConfig === TEAM_CONFIGS.INDIVIDUAL_6) {
           expect(supportsInactive).toBe(true); // 6-player individual mode also supports inactive players
-          expect(supportsNextNext).toBe(false);
-        } else {
-          expect(supportsInactive).toBe(false); // Only pairs mode doesn't support inactive players
           expect(supportsNextNext).toBe(false);
         }
       });
@@ -298,8 +285,7 @@ describe('UI positionUtils', () => {
     test('should handle indicator props consistently for each team mode', () => {
       const teamConfigs = [
         { type: TEAM_CONFIGS.INDIVIDUAL_6, subs: mockSubstitutePositions6 },
-        { type: TEAM_CONFIGS.INDIVIDUAL_7, subs: mockSubstitutePositions7 },
-        { type: TEAM_CONFIGS.PAIRS_7, subs: mockSubstitutePositionsPairs }
+        { type: TEAM_CONFIGS.INDIVIDUAL_7, subs: mockSubstitutePositions7 }
       ];
 
       teamConfigs.forEach(({ type: teamConfig, subs: substitutePositions }) => {

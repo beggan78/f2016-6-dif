@@ -465,8 +465,8 @@ const analyzePlayerStartingRoleFromFormation = (playerId, formationEntry) => {
  */
 const isFieldPositionKey = (positionKey) => {
   const fieldPositionKeys = [
-    'leftPair', 'rightPair',
-    'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'
+    'leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker',
+    'defender', 'left', 'right', 'attacker' // 1-2-1 formation positions
   ];
   return fieldPositionKeys.includes(positionKey);
 };
@@ -477,10 +477,7 @@ const isFieldPositionKey = (positionKey) => {
  * @returns {boolean} True if substitute position
  */
 const isSubstitutePositionKey = (positionKey) => {
-  const substitutePositionKeys = [
-    'subPair', 'substitute_1', 'substitute_2'
-  ];
-  return substitutePositionKeys.includes(positionKey);
+  return positionKey.startsWith('substitute_');
 };
 
 /**

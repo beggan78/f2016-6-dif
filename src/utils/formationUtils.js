@@ -1,5 +1,4 @@
 import { getModeDefinition as getModernModeDefinition } from '../constants/gameModes';
-import { SUBSTITUTION_TYPES } from '../constants/teamConfiguration';
 
 /**
  * Cross-screen formation utilities and standardization functions
@@ -78,16 +77,6 @@ export function getExpectedFormationStructure(teamConfig) {
     return {};
   }
 
-  // For pairs mode, return pair structure
-  if (teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-    return {
-      goalie: null,
-      leftPair: { defender: null, attacker: null },
-      rightPair: { defender: null, attacker: null },
-      subPair: { defender: null, attacker: null }
-    };
-  }
-
   const structure = { goalie: null };
 
   const fieldPositions = modeDefinition.fieldPositions || [];
@@ -136,19 +125,6 @@ export function validateFormationStructure(formation, teamConfig) {
     errors.push(`Unexpected positions found: ${extraKeys.join(', ')}`);
   }
 
-  // For pairs mode, validate pair structure
-  if (teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-    const pairKeys = ['leftPair', 'rightPair', 'subPair'];
-    for (const pairKey of pairKeys) {
-      const pair = formation[pairKey];
-      if (pair && typeof pair === 'object') {
-        if (!pair.hasOwnProperty('defender') || !pair.hasOwnProperty('attacker')) {
-          errors.push(`${pairKey} must have defender and attacker properties`);
-        }
-      }
-    }
-  }
-
   return {
     isValid: errors.length === 0,
     errors
@@ -181,35 +157,19 @@ export function normalizeFormationStructure(messyFormation, teamConfig, squadSel
   // Clean goalie position
   cleanFormation.goalie = getValidPlayerId(messyFormation.goalie);
 
-  if (teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-    // Normalize pairs mode
-    const pairKeys = ['leftPair', 'rightPair', 'subPair'];
+  const modeDefinition = getModeDefinition(teamConfig);
 
-    for (const pairKey of pairKeys) {
-      if (messyFormation[pairKey] && typeof messyFormation[pairKey] === 'object') {
-        // Use existing pair structure if valid
-        const pair = messyFormation[pairKey];
-        cleanFormation[pairKey] = {
-          defender: getValidPlayerId(pair.defender),
-          attacker: getValidPlayerId(pair.attacker)
-        };
-      }
-    }
-  } else {
-    const modeDefinition = getModeDefinition(teamConfig);
+  if (modeDefinition) {
+    (modeDefinition.fieldPositions || []).forEach(positionKey => {
+      cleanFormation[positionKey] = getValidPlayerId(messyFormation[positionKey]);
+    });
 
-    if (modeDefinition) {
-      (modeDefinition.fieldPositions || []).forEach(positionKey => {
-        cleanFormation[positionKey] = getValidPlayerId(messyFormation[positionKey]);
-      });
-
-      (modeDefinition.substitutePositions || []).forEach(positionKey => {
-        const legacyKey = positionKey === 'substitute_1' && messyFormation.substitute
-          ? 'substitute'
-          : positionKey;
-        cleanFormation[positionKey] = getValidPlayerId(messyFormation[legacyKey]);
-      });
-    }
+    (modeDefinition.substitutePositions || []).forEach(positionKey => {
+      const legacyKey = positionKey === 'substitute_1' && messyFormation.substitute
+        ? 'substitute'
+        : positionKey;
+      cleanFormation[positionKey] = getValidPlayerId(messyFormation[legacyKey]);
+    });
   }
 
   return cleanFormation;
