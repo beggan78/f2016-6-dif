@@ -56,7 +56,7 @@ describe('FormationRenderer', () => {
       animationState: { type: 'none', phase: 'idle', data: {} },
       recentlySubstitutedPlayers: new Set(),
       hideNextOffIndicator: false,
-      nextPhysicalPairToSubOut: 'leftPair',
+      nextPhysicalPairToSubOut: 'leftDefender',
       nextPlayerIdToSubOut: '1',
       nextNextPlayerIdToSubOut: '2',
       quickTapHandlers: {

@@ -346,7 +346,6 @@ export function GameEventTimeline({
           return `Goal for ${opponentTeam}`;
         }
       case EVENT_TYPES.SUBSTITUTION:
-        // Handle multiple players for pairs mode substitutions
         const playersOffArray = eventData.playersOff || (eventData.outPlayerId ? [eventData.outPlayerId] : []);
         const playersOnArray = eventData.playersOn || (eventData.inPlayerId ? [eventData.inPlayerId] : []);
         

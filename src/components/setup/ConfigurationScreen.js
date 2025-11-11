@@ -342,7 +342,7 @@ export function ConfigurationScreen({
   React.useEffect(() => {
     if (!teamConfig) return;
 
-    if (!teamConfig?.substitutionType || teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
+    if (!teamConfig?.substitutionType) {
       handleSubstitutionModeChange(SUBSTITUTION_TYPES.INDIVIDUAL);
     }
   }, [teamConfig, teamConfig?.substitutionType, handleSubstitutionModeChange]);

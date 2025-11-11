@@ -21,22 +21,6 @@ export const createTestSquad = () => {
  * Formation setups for different team modes
  */
 export const formationScenarios = {
-  pairs7Standard: (playerIds) => ({
-    goalie: playerIds[0],
-    leftPair: {
-      defender: playerIds[1],
-      attacker: playerIds[2]
-    },
-    rightPair: {
-      defender: playerIds[3],
-      attacker: playerIds[4]
-    },
-    subPair: {
-      defender: playerIds[5],
-      attacker: playerIds[6]
-    }
-  }),
-  
   individual6Standard: (playerIds) => ({
     goalie: playerIds[0],
     leftDefender: playerIds[1],
@@ -146,9 +130,12 @@ export const persistenceScenarios = {
     selectedSquadIds: ['player-1', 'player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7'],
     formation: {
       goalie: 'player-1',
-      leftPair: { defender: 'player-2', attacker: 'player-3' },
-      rightPair: { defender: 'player-4', attacker: 'player-5' },
-      subPair: { defender: 'player-6', attacker: 'player-7' }
+      leftDefender: 'player-2',
+      rightDefender: 'player-3',
+      leftAttacker: 'player-4',
+      rightAttacker: 'player-5',
+      substitute_1: 'player-6',
+      substitute_2: 'player-7'
     },
     gameLog: [
       {
@@ -197,20 +184,26 @@ export const errorScenarios = {
       return () => { window.localStorage = originalLocalStorage; };
     }
   },
-  
+
   invalidFormation: {
     missingGoalie: (playerIds) => ({
       goalie: null,
-      leftPair: { defender: playerIds[1], attacker: playerIds[2] },
-      rightPair: { defender: playerIds[3], attacker: playerIds[4] },
-      subPair: { defender: playerIds[5], attacker: playerIds[6] }
+      leftDefender: playerIds[1],
+      rightDefender: playerIds[2],
+      leftAttacker: playerIds[3],
+      rightAttacker: playerIds[4],
+      substitute_1: playerIds[5],
+      substitute_2: playerIds[6]
     }),
-    
+
     duplicateAssignments: (playerIds) => ({
       goalie: playerIds[0],
-      leftPair: { defender: playerIds[1], attacker: playerIds[1] }, // Duplicate!
-      rightPair: { defender: playerIds[3], attacker: playerIds[4] },
-      subPair: { defender: playerIds[5], attacker: playerIds[6] }
+      leftDefender: playerIds[1],
+      rightDefender: playerIds[1], // Duplicate!
+      leftAttacker: playerIds[3],
+      rightAttacker: playerIds[4],
+      substitute_1: playerIds[5],
+      substitute_2: playerIds[6]
     })
   }
 };

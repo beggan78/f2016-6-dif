@@ -352,9 +352,5 @@ const assign121Positions = (fieldPlayers) => {
 };
 
 
-/**
- * Generates formation recommendations for periods 2+ in pair mode
- */
-
 // Export the individual formation function
 export { generateIndividualFormationRecommendation };

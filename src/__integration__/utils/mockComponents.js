@@ -115,41 +115,6 @@ export const MockIndividualFormation = ({ formation, allPlayers, quickTapHandler
   );
 };
 
-/**
- * Mock PairsFormation component
- */
-export const MockPairsFormation = ({ formation, allPlayers, quickTapHandlers, ...props }) => {
-  const pairs = ['leftPair', 'rightPair', 'subPair'];
-  
-  return (
-    <div 
-      data-testid="mock-pairs-formation"
-      data-goalie={formation?.goalie}
-    >
-      {pairs.map(pairKey => {
-        const pair = formation?.[pairKey];
-        if (!pair) return null;
-        
-        const defender = allPlayers?.find(p => p.id === pair.defender);
-        const attacker = allPlayers?.find(p => p.id === pair.attacker);
-        
-        return (
-          <div 
-            key={pairKey}
-            data-testid={`pair-${pairKey}`}
-            data-defender-id={pair.defender}
-            data-attacker-id={pair.attacker}
-            {...(quickTapHandlers?.[pairKey] || {})}
-          >
-            <div data-role="defender">{defender?.name || 'Empty'}</div>
-            <div data-role="attacker">{attacker?.name || 'Empty'}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 // ===================================================================
 // SCREEN COMPONENT MOCKS
 // ===================================================================

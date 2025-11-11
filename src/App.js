@@ -770,9 +770,6 @@ function AppContent() {
     gameState.setPeriodGoalieIds({});
     gameState.setFormation({
       goalie: null,
-      leftPair: { defender: null, attacker: null },
-      rightPair: { defender: null, attacker: null },
-      subPair: { defender: null, attacker: null },
       // 6-player formation structure
       leftDefender: null,
       rightDefender: null,

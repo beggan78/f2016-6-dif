@@ -118,10 +118,6 @@ describe('PeriodSetupScreen', () => {
     const buildFieldPositions = (teamConfig) => {
       if (!teamConfig) return [];
 
-      if (teamConfig.substitutionType === 'pairs') {
-        return ['leftPair', 'rightPair'];
-      }
-
       if (teamConfig.formation === FORMATIONS.FORMATION_1_2_1) {
         return ['defender', 'left', 'right', 'attacker'];
       }
@@ -134,8 +130,8 @@ describe('PeriodSetupScreen', () => {
     };
 
     const buildSubstitutePositions = (teamConfig) => {
-      if (!teamConfig || teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-        return teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS ? ['subPair'] : [];
+      if (!teamConfig) {
+        return [];
       }
 
       const format = teamConfig.format === FORMATS.FORMAT_7V7 ? FORMATS.FORMAT_7V7 : FORMATS.FORMAT_5V5;
@@ -150,13 +146,6 @@ describe('PeriodSetupScreen', () => {
 
       const fieldPositions = buildFieldPositions(teamConfig);
       const substitutePositions = buildSubstitutePositions(teamConfig);
-
-      if (teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-        return {
-          fieldPositions,
-          substitutePositions: ['subPair']
-        };
-      }
 
       return {
         fieldPositions,

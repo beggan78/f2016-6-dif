@@ -107,19 +107,11 @@ export const createSubstitutionHandlers = (
    * Get formation description for event logging
    */
   const getFormationDescription = (formation, teamConfig) => {
-    if (teamConfig?.substitutionType === 'pairs') {
-      return {
-        leftPair: formation.leftPair,
-        rightPair: formation.rightPair,
-        subPair: formation.subPair,
-        goalie: formation.goalie
-      };
-    } else {
-      // Generic formation normalizer for individual modes using MODE_DEFINITIONS
-      const definition = getDefinition(teamConfig);
-      if (!definition) return formation;
-      
-      const normalized = { goalie: formation.goalie };
+    // Generic formation normalizer for individual modes using MODE_DEFINITIONS
+    const definition = getDefinition(teamConfig);
+    if (!definition) return formation;
+
+    const normalized = { goalie: formation.goalie };
       
       // Add field positions
       definition.fieldPositions.forEach(position => {
@@ -135,9 +127,8 @@ export const createSubstitutionHandlers = (
           normalized[position] = formation[position];
         }
       });
-      
-      return normalized;
-    }
+
+    return normalized;
   };
 
   /**
@@ -249,14 +240,6 @@ export const createSubstitutionHandlers = (
   const handleSubstituteNow = (fieldPlayerModal) => {
     const gameState = gameStateFactory();
     clearSubstitutionOverride();
-
-    // For pairs mode, immediately substitute the pair
-    if (fieldPlayerModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(fieldPlayerModal.target);
-      setShouldSubstituteNow(true);
-      closeFieldPlayerModal();
-      return;
-    }
 
     // For individual mode, show substitute selection modal
     if (fieldPlayerModal.type === 'player') {
@@ -752,15 +735,8 @@ export const createSubstitutionHandlers = (
   const handleChangePosition = (action) => {
     const gameState = gameStateFactory();
     const { fieldPlayerModal } = gameState;
-    
+
     if (action === 'show-options') {
-      // Check if this is pairs mode - position change not supported
-      if (gameState.teamConfig?.substitutionType === 'pairs') {
-        alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
-        closeFieldPlayerModal();
-        return;
-      }
-      
       // Show the position selection options for individual modes
       if (fieldPlayerModal.target && fieldPlayerModal.type === 'player') {
         const sourcePlayerId = gameState.formation[fieldPlayerModal.target];

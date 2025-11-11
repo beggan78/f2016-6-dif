@@ -196,7 +196,7 @@ export function useGameState(navigateToView = null) {
   const persistence = useMatchPersistence(gameState, setters, teamContext);
 
 
-  // Sync player roles with formation changes (fixes PAIRS_7 Goal Scorer modal sorting)
+  // Sync player roles with formation changes
   useEffect(() => {
     const formationAwareTeamConfig = getFormationAwareTeamConfig();
     updatePlayerRolesFromFormation(formation, selectedSquadIds, formationAwareTeamConfig);
