@@ -10,12 +10,6 @@ import { getFormationDefinition } from '../utils/formationConfigUtils';
 
 // Modern teamConfig objects for testing (replaces legacy TEAM_MODES)
 export const TEAM_CONFIGS = {
-  PAIRS_7: {
-    format: '5v5',
-    squadSize: 7,
-    formation: '2-2',
-    substitutionType: 'pairs'
-  },
   INDIVIDUAL_6: {
     format: '5v5',
     squadSize: 6,
@@ -133,41 +127,24 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
   
   for (let i = 1; i <= count; i++) {
     let status, role, position;
-    
-    if (teamConfig.substitutionType === 'pairs') {
-      // Special handling for pairs mode
-      if (i <= 4) {
-        status = PLAYER_STATUS.ON_FIELD;
-        role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        position = i <= 2 ? POSITION_KEYS.LEFT_PAIR : POSITION_KEYS.RIGHT_PAIR;
-      } else if (i <= 6) {
-        status = PLAYER_STATUS.SUBSTITUTE;
-        role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        position = POSITION_KEYS.SUB_PAIR;
-      } else {
-        status = PLAYER_STATUS.GOALIE;
-        role = PLAYER_ROLES.GOALIE;
-        position = POSITION_KEYS.GOALIE;
-      }
+
+    // Use configuration-driven approach for individual modes
+    const fieldPositions = definition.fieldPositions;
+    const substitutePositions = definition.substitutePositions;
+
+    if (i <= fieldPositions.length) {
+      status = PLAYER_STATUS.ON_FIELD;
+      position = fieldPositions[i - 1];
+      role = definition.positions[position].role;
+    } else if (i <= fieldPositions.length + substitutePositions.length) {
+      status = PLAYER_STATUS.SUBSTITUTE;
+      const subIndex = i - fieldPositions.length - 1;
+      position = substitutePositions[subIndex];
+      role = definition.positions[position].role;
     } else {
-      // Use configuration-driven approach for individual modes
-      const fieldPositions = definition.fieldPositions;
-      const substitutePositions = definition.substitutePositions;
-      
-      if (i <= fieldPositions.length) {
-        status = PLAYER_STATUS.ON_FIELD;
-        position = fieldPositions[i - 1];
-        role = definition.positions[position].role;
-      } else if (i <= fieldPositions.length + substitutePositions.length) {
-        status = PLAYER_STATUS.SUBSTITUTE;
-        const subIndex = i - fieldPositions.length - 1;
-        position = substitutePositions[subIndex];
-        role = definition.positions[position].role;
-      } else {
-        status = PLAYER_STATUS.GOALIE;
-        role = PLAYER_ROLES.GOALIE;
-        position = POSITION_KEYS.GOALIE;
-      }
+      status = PLAYER_STATUS.GOALIE;
+      role = PLAYER_ROLES.GOALIE;
+      position = POSITION_KEYS.GOALIE;
     }
     
     players.push(createMockPlayer(i.toString(), {
@@ -192,41 +169,31 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
  */
 export const createMockFormation = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
   const definition = getDefinitionForTests(teamConfig);
-  
+
   if (!definition) {
     throw new Error(`Unable to get definition for teamConfig: ${JSON.stringify(teamConfig)}`);
   }
-  
-  if (teamConfig.substitutionType === 'pairs') {
-    // Special handling for pairs mode
-    return {
-      leftPair: { defender: '1', attacker: '2' },
-      rightPair: { defender: '3', attacker: '4' },
-      subPair: { defender: '5', attacker: '6' },
-      goalie: '7'
-    };
-  } else {
-    // Use configuration-driven approach for individual modes
-    const formation = {};
-    let playerId = 1;
-    
-    // Add field positions
-    definition.fieldPositions.forEach(position => {
-      formation[position] = playerId.toString();
-      playerId++;
-    });
-    
-    // Add substitute positions
-    definition.substitutePositions.forEach(position => {
-      formation[position] = playerId.toString();
-      playerId++;
-    });
-    
-    // Add goalie
-    formation.goalie = playerId.toString();
-    
-    return formation;
-  }
+
+  // Use configuration-driven approach for individual modes
+  const formation = {};
+  let playerId = 1;
+
+  // Add field positions
+  definition.fieldPositions.forEach(position => {
+    formation[position] = playerId.toString();
+    playerId++;
+  });
+
+  // Add substitute positions
+  definition.substitutePositions.forEach(position => {
+    formation[position] = playerId.toString();
+    playerId++;
+  });
+
+  // Add goalie
+  formation.goalie = playerId.toString();
+
+  return formation;
 };
 
 /**
@@ -240,15 +207,15 @@ export const createMockGameState = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7, over
   const rotationQueue = definition
     ? [...definition.fieldPositions, ...definition.substitutePositions].map((_, idx) => (idx + 1).toString())
     : ['1', '2', '3', '4', '5'];
-  
+
   return {
     formation,
     allPlayers,
     teamConfig,
     selectedFormation: teamConfig.formation,
     rotationQueue,
-    nextPhysicalPairToSubOut: teamConfig.substitutionType === 'pairs' ? 'leftPair' : firstFieldPosition,
-    nextPlayerToSubOut: teamConfig.substitutionType === 'pairs' ? 'leftPair' : firstFieldPosition,
+    nextPhysicalPairToSubOut: firstFieldPosition,
+    nextPlayerToSubOut: firstFieldPosition,
     nextPlayerIdToSubOut: '1',
     nextNextPlayerIdToSubOut: '2',
     selectedSquadPlayers: allPlayers,
@@ -269,10 +236,6 @@ export const createMockRotationQueue = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) 
 
   if (!definition) {
     return [];
-  }
-
-  if (teamConfig.substitutionType === 'pairs') {
-    return ['1', '2', '3', '4', '5', '6'];
   }
 
   const outfieldSlots = definition.fieldPositions.length + definition.substitutePositions.length;
@@ -350,15 +313,9 @@ export const expectPlayerStatsToMatch = (actual, expected) => {
 };
 
 export const expectFormationToMatch = (actual, expected, teamConfig) => {
-  if (teamConfig.substitutionType === 'pairs') {
-    expect(actual.leftPair).toEqual(expected.leftPair);
-    expect(actual.rightPair).toEqual(expected.rightPair);
-    expect(actual.subPair).toEqual(expected.subPair);
-  } else {
-    Object.keys(expected).forEach(key => {
-      expect(actual[key]).toBe(expected[key]);
-    });
-  }
+  Object.keys(expected).forEach(key => {
+    expect(actual[key]).toBe(expected[key]);
+  });
   expect(actual.goalie).toBe(expected.goalie);
 };
 
@@ -389,13 +346,7 @@ export const getIndividualModeTestCases = () => [
  * Get test cases for all team modes
  */
 export const getAllModeTestCases = () => [
-  ...getIndividualModeTestCases(),
-  { 
-    teamConfig: TEAM_CONFIGS.PAIRS_7,
-    expectedPlayerCount: 7,
-    expectedOutfieldCount: 6,
-    expectedSubstituteCount: 2
-  }
+  ...getIndividualModeTestCases()
 ];
 
 /**
@@ -417,13 +368,11 @@ export const expectFormationConsistency = (formation, teamConfig) => {
   
   // Check goalie exists
   expect(formation).toHaveProperty('goalie');
-  
-  // For individual modes, check position structure
-  if (teamConfig.substitutionType !== 'pairs') {
-    [...definition.fieldPositions, ...definition.substitutePositions].forEach(position => {
-      expect(typeof formation[position]).toBe('string');
-    });
-  }
+
+  // Check position structure
+  [...definition.fieldPositions, ...definition.substitutePositions].forEach(position => {
+    expect(typeof formation[position]).toBe('string');
+  });
 };
 
 /**

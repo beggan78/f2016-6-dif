@@ -69,21 +69,6 @@ describe('FormationRenderer', () => {
   });
 
   describe('Component Routing Logic', () => {
-    it('should render PairsFormation for pairs substitution type', () => {
-      const props = {
-        ...defaultProps,
-        teamConfig: TEAM_CONFIGS.PAIRS_7,
-        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7)
-      };
-      
-      render(<FormationRenderer {...props} />);
-      
-      expect(screen.getByTestId('pairs-formation')).toBeInTheDocument();
-      expect(screen.getByTestId('pairs-formation')).toHaveAttribute('data-substitution-type', 'pairs');
-      expect(screen.getByText('Pairs Formation Component')).toBeInTheDocument();
-      expect(screen.queryByTestId('individual-formation')).not.toBeInTheDocument();
-    });
-
     it('should render IndividualFormation for individual substitution type (6 players)', () => {
       const props = {
         ...defaultProps,
@@ -165,48 +150,6 @@ describe('FormationRenderer', () => {
     });
   });
 
-  describe('Props Passing to PairsFormation', () => {
-    it('should pass all props correctly to PairsFormation', () => {
-      const props = {
-        ...defaultProps,
-        teamConfig: TEAM_CONFIGS.PAIRS_7,
-        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7),
-        allPlayers: createMockPlayers(7)
-      };
-      
-      render(<FormationRenderer {...props} />);
-      
-      // Verify props are passed through
-      expect(screen.getByTestId('pairs-formation-players')).toHaveTextContent('7 players');
-      expect(screen.getByTestId('pairs-formation-goalie')).toHaveTextContent('7');
-    });
-
-    it('should handle empty players array for PairsFormation', () => {
-      const props = {
-        ...defaultProps,
-        teamConfig: TEAM_CONFIGS.PAIRS_7,
-        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7),
-        allPlayers: []
-      };
-      
-      render(<FormationRenderer {...props} />);
-      
-      expect(screen.getByTestId('pairs-formation-players')).toHaveTextContent('0 players');
-    });
-
-    it('should handle missing formation for PairsFormation', () => {
-      const props = {
-        ...defaultProps,
-        teamConfig: TEAM_CONFIGS.PAIRS_7,
-        formation: null
-      };
-      
-      render(<FormationRenderer {...props} />);
-      
-      expect(screen.getByTestId('pairs-formation-goalie')).toHaveTextContent('No goalie');
-    });
-  });
-
   describe('Props Passing to IndividualFormation', () => {
     it('should pass all props correctly to IndividualFormation for 6-player individual', () => {
       const props = {
@@ -285,17 +228,17 @@ describe('FormationRenderer', () => {
         handleFieldPlayerQuickTap: jest.fn(),
         handleSubstituteClick: jest.fn()
       };
-      
+
       const props = {
         ...defaultProps,
-        teamConfig: TEAM_CONFIGS.PAIRS_7,
+        teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
         quickTapHandlers: mockHandlers
       };
-      
+
       render(<FormationRenderer {...props} />);
-      
+
       // Component should render without throwing
-      expect(screen.getByTestId('pairs-formation')).toBeInTheDocument();
+      expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
     });
 
     it('should pass function props to formation components', () => {

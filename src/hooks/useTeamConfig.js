@@ -59,7 +59,6 @@ export function useTeamConfig(initialState = {}) {
   const updateTeamConfig = useCallback((newTeamConfig) => {
     console.log('📝 updateTeamConfig called:', {
       'newTeamConfig.substitutionType': newTeamConfig?.substitutionType,
-      'newTeamConfig.pairedRoleStrategy': newTeamConfig?.pairedRoleStrategy,
       fullNewConfig: newTeamConfig
     });
 
@@ -82,7 +81,6 @@ export function useTeamConfig(initialState = {}) {
     console.log('🔄 updateFormationSelection called:', {
       newFormation,
       'teamConfig.substitutionType': teamConfig?.substitutionType,
-      'teamConfig.pairedRoleStrategy': teamConfig?.pairedRoleStrategy,
       'teamConfig.squadSize': teamConfig?.squadSize
     });
 
@@ -105,7 +103,6 @@ export function useTeamConfig(initialState = {}) {
       squadSize,
       substitutionType,
       selectedFormation,
-      'currentTeamConfig.pairedRoleStrategy': teamConfig?.pairedRoleStrategy,
       'currentTeamConfig.substitutionType': teamConfig?.substitutionType
     });
 
@@ -126,7 +123,6 @@ export function useTeamConfig(initialState = {}) {
 
     console.log('🔧 createTeamConfigFromSquadSize result:', {
       'newConfig.substitutionType': newConfig.substitutionType,
-      'newConfig.pairedRoleStrategy': newConfig.pairedRoleStrategy,
       fullNewConfig: newConfig
     });
 
