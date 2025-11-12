@@ -69,6 +69,5 @@ export const isValidTeamConfig = (teamConfig) => {
          teamConfig !== null &&
          typeof teamConfig.format === 'string' &&
          typeof teamConfig.squadSize === 'number' &&
-         typeof teamConfig.formation === 'string' &&
-         typeof teamConfig.substitutionType === 'string';
+         typeof teamConfig.formation === 'string';
 };

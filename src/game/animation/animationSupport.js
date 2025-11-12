@@ -76,14 +76,14 @@
  * ┌──────────────────────┐    ┌─────────────────────┐
  * │ Formation Components │ -> │ Animation Utilities │
  * │ - IndividualFormation│    │ - getPlayerAnimation│
- * │ - PairsFormation     │    │ - getPairAnimation  │
+ * │ - IndividualFormation│    │ - getPlayerAnimation│
  * └──────────┬───────────┘    └─────────────────────┘
  *            │
  *            ▼
  * ┌──────────────────────┐    ┌─────────────────────┐
  * │ Player Components    │ -> │ CSS Classes Applied │
  * │ - PlayerBox          │    │ - animate-dynamic-* │
- * │ - PairBox            │    │ - z-index classes   │
+ * │ - PlayerRow          │    │ - z-index classes   │
  * └──────────────────────┘    │ - glow effect CSS   │
  *                             └─────────────────────┘
  * 
@@ -155,7 +155,7 @@
  */
 // No longer using findPlayerById in this file
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { getFormationPositionsWithGoalie, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
+import { getFormationPositionsWithGoalie, getModeDefinition } from '../../constants/gameModes';
 import { getFieldPositions, getSubstitutePositions } from '../logic/positionUtils';
 
 // Animation timing constants
@@ -167,10 +167,7 @@ const MEASUREMENTS = {
   padding: 16, // p-2 = 8px top + 8px bottom = 16px total
   border: 4,   // border-2 = 2px top + 2px bottom = 4px total
   gap: 8,      // space-y-2 = 8px between elements
-  contentHeight: {
-    pairs: 84,      // Content height for pair components
-    individual: 56  // Content height for individual components
-  },
+  contentHeight: 56,  // Content height for individual player components
   // SUB NOW button height including margins and spacing
   // Button itself (~48px) + margins (~16px) + gap (~8px) = ~72px total
   subButtonHeight: 72
@@ -178,20 +175,18 @@ const MEASUREMENTS = {
 
 /**
  * Get the total height of a position box including padding, border, and gap
- * 
+ *
  * This calculation is critical for accurate animation distances. It must match
- * the actual rendered heights of player/pair components in the UI.
- * 
- * @param {string} mode - 'pairs' or 'individual' based on team mode
+ * the actual rendered heights of player components in the UI.
+ *
  * @returns {number} Total height in pixels including all spacing
- * 
+ *
  * @example
- * const height = getBoxHeight('individual'); // Returns 104px total
- * // Breakdown: 16px padding + 4px border + 76px content + 8px gap = 104px
+ * const height = getBoxHeight(); // Returns 84px total
+ * // Breakdown: 16px padding + 4px border + 56px content + 8px gap = 84px
  */
-const getBoxHeight = (mode) => {
-  const contentHeight = mode === 'pairs' ? MEASUREMENTS.contentHeight.pairs : MEASUREMENTS.contentHeight.individual;
-  return MEASUREMENTS.padding + MEASUREMENTS.border + contentHeight + MEASUREMENTS.gap;
+const getBoxHeight = () => {
+  return MEASUREMENTS.padding + MEASUREMENTS.border + MEASUREMENTS.contentHeight + MEASUREMENTS.gap;
 };
 
 /**
@@ -241,7 +236,7 @@ const crossesFieldSubstituteBoundary = (fromPosition, toPosition, teamConfig) =>
  * Maps logical position keys to their visual rendering order. This determines
  * animation distances by calculating index differences.
  * 
- * @param {string} position - Position key (e.g., 'leftDefender', 'defender', 'goalie', 'leftPair')
+ * @param {string} position - Position key (e.g., 'leftDefender', 'defender', 'goalie')
  * @param {Object} teamConfig - Team configuration object
  * @param {string} selectedFormation - Formation type ('2-2', '1-2-1', etc.) for formation-aware positioning
  * @returns {number} Zero-based index representing visual order (-1 if not found)
@@ -290,8 +285,7 @@ const getPositionIndex = (position, teamConfig, selectedFormation = null) => {
 const calculateDistance = (fromIndex, toIndex, teamConfig, fromPosition = null, toPosition = null) => {
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return 0;
 
-  const mode = teamConfig?.substitutionType === 'pairs' ? 'pairs' : 'individual';
-  const boxHeight = getBoxHeight(mode);
+  const boxHeight = getBoxHeight();
   let distance = Math.abs(toIndex - fromIndex) * boxHeight * 0.9025;
 
   // Add SUB NOW button height if movement crosses field/substitute boundary
@@ -316,10 +310,9 @@ const calculateDistance = (fromIndex, toIndex, teamConfig, fromPosition = null, 
  * 
  * PositionData structure:
  * - playerId: string - Player's unique identifier
- * - position: string - Position key (e.g., 'leftDefender', 'defender', 'goalie')  
+ * - position: string - Position key (e.g., 'leftDefender', 'defender', 'goalie')
  * - positionIndex: number - Visual order index for animation calculations
- * - role?: string - Player role for pairs mode ('defender' or 'attacker')
- * 
+ *
  * @example
  * const positions = captureAllPlayerPositions(formation, players, teamConfig, '1-2-1');
  * // Returns: {
@@ -330,7 +323,7 @@ const calculateDistance = (fromIndex, toIndex, teamConfig, fromPosition = null, 
  */
 export const captureAllPlayerPositions = (formation, allPlayers, teamConfig, selectedFormation = null) => {
   const positions = {};
-  
+
   // Add goalie
   if (formation.goalie) {
     positions[formation.goalie] = {
@@ -339,51 +332,23 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamConfig, sel
       positionIndex: getPositionIndex(POSITION_KEYS.GOALIE, teamConfig, selectedFormation)
     };
   }
-  
-  // Add field and substitute players based on team mode
-  if (teamConfig?.substitutionType === 'pairs') {
-    // Pairs mode
-    [POSITION_KEYS.LEFT_PAIR, POSITION_KEYS.RIGHT_PAIR, POSITION_KEYS.SUB_PAIR].forEach(pairKey => {
-      const pair = formation[pairKey];
-      if (pair) {
-        if (pair.defender) {
-          positions[pair.defender] = {
-            playerId: pair.defender,
-            position: pairKey,
-            positionIndex: getPositionIndex(pairKey, teamConfig, selectedFormation),
-            role: 'defender'
-          };
-        }
-        if (pair.attacker) {
-          positions[pair.attacker] = {
-            playerId: pair.attacker,
-            position: pairKey,
-            positionIndex: getPositionIndex(pairKey, teamConfig, selectedFormation),
-            role: 'attacker'
-          };
-        }
+
+  // Add field and substitute players based on dynamic definitions
+  const modeDefinition = getModeDefinition(teamConfig);
+  if (modeDefinition) {
+    const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
+
+    allPositions.forEach(pos => {
+      const playerId = formation[pos];
+      if (playerId) {
+        const positionIndex = getPositionIndex(pos, teamConfig, selectedFormation);
+        positions[playerId] = {
+          playerId: playerId,
+          position: pos,
+          positionIndex: positionIndex
+        };
       }
     });
-  } else if (isIndividualMode(teamConfig)) {
-    // Unified individual mode handling using dynamic definitions
-    const modeDefinition = getModeDefinition(teamConfig);
-    
-    if (modeDefinition) {
-      const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
-
-      allPositions.forEach(pos => {
-        const playerId = formation[pos];
-        if (playerId) {
-          const positionIndex = getPositionIndex(pos, teamConfig, selectedFormation);
-          positions[playerId] = {
-            playerId: playerId,
-            position: pos,
-            positionIndex: positionIndex
-          };
-        }
-      });
-      
-    }
   }
   
   return positions;

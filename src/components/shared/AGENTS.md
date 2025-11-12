@@ -16,7 +16,7 @@ This directory contains reusable UI components shared across the application. Al
 - **`ThreeOptionModal`**: Three-button modal with individual variants for each option.
 
 ### Game-Specific Modals
-- **`FieldPlayerModal`**: Options for on-field players - set next to sub off, substitute now, change position. Supports position swap UI flow with back button. Conditional options based on `showPositionChange`, `showSwapPositions`, `showSubstitutionOptions`.
+- **`FieldPlayerModal`**: Options for on-field players - set next to sub off, substitute now, change position. Conditional options based on `showPositionChange` and `showSubstitutionOptions`.
 - **`SubstitutePlayerModal`**: Options for bench players - activate/inactivate, set as next to go in, change next position. Dynamic UI flow for position selection.
 - **`GoalieModal`**: Scrollable list of players to replace current goalie. Marks inactive players as disabled.
 - **`ScoreEditModal`**: Increment/decrement controls for own and opponent score.
@@ -29,8 +29,7 @@ This directory contains reusable UI components shared across the application. Al
 - **`GoalScorerModal`**: Three modes - `new` (select scorer), `correct` (update existing), `view` (read-only). Shows position icons (Sword/Shield/ArrowDownUp/Hand) with role-specific colors. Supports "No specific scorer" option for new goals.
 - **`FeatureVoteModal`**: Feature voting UI with loading/success/error states. Shows auth prompt for unauthenticated users.
 - **`PreferencesModal`**: User preferences with audio alert settings (enable/disable, sound selection, volume slider, test preview). Uses `PreferencesContext` and `audioAlertService`. Preloads sounds on open.
-- **`PairRoleRotationHelpModal`**: Informational modal explaining pair rotation strategies (keep roles vs swap roles).
-- **`HamburgerMenu`**: Main navigation menu with authentication state, profile, team management, statistics, tactical board, add player, pair management. Shows pending requests badge for team managers.
+- **`HamburgerMenu`**: Main navigation menu with authentication state, profile, team management, statistics, tactical board, add player, and match management actions. Shows pending requests badge for team managers.
 
 ## Key Patterns
 

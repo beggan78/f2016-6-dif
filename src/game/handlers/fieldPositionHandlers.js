@@ -24,51 +24,29 @@ export const createFieldPositionHandlers = (
     return getModeDefinition(teamConfig);
   };
 
-  const isPairsMode = teamConfig?.substitutionType === 'pairs';
   const supportsInactive = supportsInactiveUsers(teamConfig);
   const supportsNextNext = supportsNextNextIndicators(teamConfig);
 
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 
   const handleFieldPlayerQuickTap = (position) => {
-    if (isPairsMode) {
-      // Pairs mode - handle pair interactions
-      const pairKey = position;
-      const pairData = formation[pairKey];
-      if (!pairData) return;
+    // Individual modes - handle individual player interactions
+    const playerId = formation[position];
+    const playerName = getPlayerNameById(playerId);
 
-      const defenderName = getPlayerNameById(pairData.defender);
-      const attackerName = getPlayerNameById(pairData.attacker);
-      const pairName = `${defenderName} / ${attackerName}`;
+    // Check if this player is in the first N players of rotation queue (about to sub off)
+    const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
+    const isPlayerAboutToSubOff = nextNToSubOut.includes(playerId);
 
-      openFieldPlayerModal({
-        type: 'pair',
-        target: pairKey,
-        playerName: pairName,
-        sourcePlayerId: null,
-        availablePlayers: [],
-        showPositionOptions: false,
-        isPlayerAboutToSubOff: false // Pairs mode doesn't use individual player rotation tracking
-      });
-    } else {
-      // Individual modes - handle individual player interactions
-      const playerId = formation[position];
-      const playerName = getPlayerNameById(playerId);
-
-      // Check if this player is in the first N players of rotation queue (about to sub off)
-      const nextNToSubOut = rotationQueue.slice(0, substitutionCount);
-      const isPlayerAboutToSubOff = nextNToSubOut.includes(playerId);
-
-      openFieldPlayerModal({
-        type: 'player',
-        target: position,
-        playerName: playerName,
-        sourcePlayerId: playerId,
-        availablePlayers: [],
-        showPositionOptions: false,
-        isPlayerAboutToSubOff: isPlayerAboutToSubOff
-      });
-    }
+    openFieldPlayerModal({
+      type: 'player',
+      target: position,
+      playerName: playerName,
+      sourcePlayerId: playerId,
+      availablePlayers: [],
+      showPositionOptions: false,
+      isPlayerAboutToSubOff: isPlayerAboutToSubOff
+    });
   };
 
   const handleSubstituteQuickTap = (position) => {
@@ -133,21 +111,15 @@ export const createFieldPositionHandlers = (
 
   // Generate callback functions for all possible positions
   const positionCallbacks = {};
-  
-  if (isPairsMode) {
-    positionCallbacks.leftPairCallback = createPositionCallback('leftPair');
-    positionCallbacks.rightPairCallback = createPositionCallback('rightPair');
-    positionCallbacks.subPairCallback = createPositionCallback('subPair');
-  } else {
-    // Individual modes - dynamically get all positions from team mode definition
-    const definition = getDefinition(teamConfig);
-    if (definition) {
-      const allPositions = [...definition.fieldPositions, ...definition.substitutePositions];
-      
-      allPositions.forEach(position => {
-        positionCallbacks[`${position}Callback`] = createPositionCallback(position);
-      });
-    }
+
+  // Individual modes - dynamically get all positions from team mode definition
+  const definition = getDefinition(teamConfig);
+  if (definition) {
+    const allPositions = [...definition.fieldPositions, ...definition.substitutePositions];
+
+    allPositions.forEach(position => {
+      positionCallbacks[`${position}Callback`] = createPositionCallback(position);
+    });
   }
 
   return positionCallbacks;

@@ -205,11 +205,6 @@ describe('WORKFLOW_NAME Integration Tests', () => {
       // Test different workflow paths
       const workflowVariations = [
         {
-          name: 'pairs_7_formation',
-          config: gameConfigScenarios.standardPairs,
-          formation: formationScenarios.pairs7Standard
-        },
-        {
           name: 'individual_6_formation',
           config: gameConfigScenarios.individual6,
           formation: formationScenarios.individual6Standard

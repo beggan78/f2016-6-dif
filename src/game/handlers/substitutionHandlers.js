@@ -4,7 +4,6 @@ import {
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
   calculateUndo,
-  calculatePairPositionSwap,
   calculateSubstituteReorder,
   calculateRemovePlayerFromNextToGoOff,
   calculateSetPlayerAsNextToGoOff
@@ -12,7 +11,7 @@ import {
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
-import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
+import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { getSubstituteTargetPositions, getPositionDisplayName } from '../ui/positionUtils';
 import { getPositionRole, getFieldPositions } from '../logic/positionUtils';
@@ -45,7 +44,6 @@ export const createSubstitutionHandlers = (
   const {
     setFormation,
     setAllPlayers,
-    setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut,
     setNextPlayerIdToSubOut,
     setNextNextPlayerIdToSubOut,
@@ -108,19 +106,11 @@ export const createSubstitutionHandlers = (
    * Get formation description for event logging
    */
   const getFormationDescription = (formation, teamConfig) => {
-    if (teamConfig?.substitutionType === 'pairs') {
-      return {
-        leftPair: formation.leftPair,
-        rightPair: formation.rightPair,
-        subPair: formation.subPair,
-        goalie: formation.goalie
-      };
-    } else {
-      // Generic formation normalizer for individual modes using MODE_DEFINITIONS
-      const definition = getDefinition(teamConfig);
-      if (!definition) return formation;
-      
-      const normalized = { goalie: formation.goalie };
+    // Generic formation normalizer for individual modes using MODE_DEFINITIONS
+    const definition = getDefinition(teamConfig);
+    if (!definition) return formation;
+
+    const normalized = { goalie: formation.goalie };
       
       // Add field positions
       definition.fieldPositions.forEach(position => {
@@ -136,9 +126,8 @@ export const createSubstitutionHandlers = (
           normalized[position] = formation[position];
         }
       });
-      
-      return normalized;
-    }
+
+    return normalized;
   };
 
   /**
@@ -192,12 +181,10 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSetNextSubstitution = (fieldPlayerModal) => {
-    if (fieldPlayerModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(fieldPlayerModal.target);
-    } else if (fieldPlayerModal.type === 'player') {
+    if (fieldPlayerModal.type === 'player') {
       // In multi-sub mode, use rotation queue logic
       const substitutionCount = getSubstitutionCount();
-      if (substitutionCount > 1 && isIndividualMode(teamConfig)) {
+      if (substitutionCount > 1) {
         const gameState = gameStateFactory();
         const playerId = fieldPlayerModal.sourcePlayerId;
 
@@ -225,7 +212,7 @@ export const createSubstitutionHandlers = (
   const handleRemoveFromNextSubstitution = (fieldPlayerModal) => {
     if (fieldPlayerModal.type === 'player') {
       const substitutionCount = getSubstitutionCount();
-      if (substitutionCount > 1 && isIndividualMode(teamConfig)) {
+      if (substitutionCount > 1) {
         const gameState = gameStateFactory();
         const playerId = fieldPlayerModal.sourcePlayerId;
 
@@ -251,14 +238,6 @@ export const createSubstitutionHandlers = (
     const gameState = gameStateFactory();
     clearSubstitutionOverride();
 
-    // For pairs mode, immediately substitute the pair
-    if (fieldPlayerModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(fieldPlayerModal.target);
-      setShouldSubstituteNow(true);
-      closeFieldPlayerModal();
-      return;
-    }
-
     // For individual mode, show substitute selection modal
     if (fieldPlayerModal.type === 'player') {
       const definition = getDefinition(teamConfig);
@@ -278,7 +257,7 @@ export const createSubstitutionHandlers = (
 
       // Get all active substitutes
       const substitutes = gameState.allPlayers.filter(p =>
-        definition.substitutePositions.includes(p.stats?.currentPairKey) &&
+        definition.substitutePositions.includes(p.stats?.currentPositionKey) &&
         !p.stats?.isInactive
       );
 
@@ -439,7 +418,7 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSetAsNextToGoIn = (substituteModal, formation) => {
-    if (substituteModal.playerId && isIndividualMode(teamConfig)) {
+    if (substituteModal.playerId) {
       const playerId = substituteModal.playerId;
       const gameState = gameStateFactory();
       
@@ -516,7 +495,7 @@ export const createSubstitutionHandlers = (
       const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
       const bottomSubPosition = getBottomSubstitutePosition(teamConfig);
-      const isBottomSubBeingInactivated = playerBeingInactivated?.stats.currentPairKey === bottomSubPosition;
+      const isBottomSubBeingInactivated = playerBeingInactivated?.stats.currentPositionKey === bottomSubPosition;
       
       if (isBottomSubBeingInactivated) {
         // No animation needed - player is already in the correct position for inactive players
@@ -673,7 +652,6 @@ export const createSubstitutionHandlers = (
     // Capture before-state for undo functionality
     const substitutionTimestamp = getCurrentTimestamp();
     const beforeFormation = { ...gameState.formation };
-    const beforeNextPair = gameState.nextPhysicalPairToSubOut;
     const beforeNextPlayer = gameState.nextPlayerToSubOut;
     const beforeNextPlayerId = gameState.nextPlayerIdToSubOut;
     const beforeNextNextPlayerId = gameState.nextNextPlayerIdToSubOut;
@@ -688,7 +666,6 @@ export const createSubstitutionHandlers = (
         // Apply the state changes
         setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
-        setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
         setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
@@ -721,7 +698,6 @@ export const createSubstitutionHandlers = (
         const lastSubstitutionData = {
           timestamp: substitutionTimestamp,
           beforeFormation,
-          beforeNextPair,
           beforeNextPlayer,
           beforeNextPlayerId,
           beforeNextNextPlayerId,
@@ -753,15 +729,8 @@ export const createSubstitutionHandlers = (
   const handleChangePosition = (action) => {
     const gameState = gameStateFactory();
     const { fieldPlayerModal } = gameState;
-    
+
     if (action === 'show-options') {
-      // Check if this is pairs mode - position change not supported
-      if (gameState.teamConfig?.substitutionType === 'pairs') {
-        alert('Position change between pairs is not supported. Use the "Swap positions" option to swap attacker and defender within this pair.');
-        closeFieldPlayerModal();
-        return;
-      }
-      
       // Show the position selection options for individual modes
       if (fieldPlayerModal.target && fieldPlayerModal.type === 'player') {
         const sourcePlayerId = gameState.formation[fieldPlayerModal.target];
@@ -785,17 +754,17 @@ export const createSubstitutionHandlers = (
             if (player.id === sourcePlayerId) return false;
             const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
             if (!fullPlayerData) return false;
-            const currentPairKey = fullPlayerData.stats.currentPairKey;
+            const currentPositionKey = fullPlayerData.stats.currentPositionKey;
             
             // Exclude substitutes based on team mode using MODE_DEFINITIONS
             const definition = getDefinition(gameState.teamConfig);
             if (!definition) return true;
             
             // Use configuration-driven substitute exclusion
-            return !definition.substitutePositions.includes(currentPairKey);
+            return !definition.substitutePositions.includes(currentPositionKey);
           }).map(player => {
             const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
-            const role = definition.positions[fullPlayerData.stats.currentPairKey]?.role;
+            const role = definition.positions[fullPlayerData.stats.currentPositionKey]?.role;
             return { ...player, role };
           }).sort((a, b) => {
             const aHasSameRole = a.role === sourcePlayerRole;
@@ -815,48 +784,6 @@ export const createSubstitutionHandlers = (
             showPositionOptions: true
           });
         }
-      }
-    } else if (action === 'swap-pair-positions') {
-      // Handle pair position swapping (for pairs mode)
-      if (fieldPlayerModal.target && fieldPlayerModal.type === 'pair') {
-        
-        const currentTime = getCurrentTimestamp();
-        
-        animateStateChange(
-          gameStateFactory(),
-          (state) => calculatePairPositionSwap(state, fieldPlayerModal.target),
-          (newGameState) => {
-            // Apply state updates
-            setFormation(newGameState.formation);
-            setAllPlayers(newGameState.allPlayers);
-            
-            // Log position change event
-            const pairKey = fieldPlayerModal.target;
-            const pair = newGameState.formation[pairKey];
-            if (pair) {
-              const defenderPlayer = findPlayerById(newGameState.allPlayers, pair.defender);
-              const attackerPlayer = findPlayerById(newGameState.allPlayers, pair.attacker);
-              const defenderName = defenderPlayer ? getFormattedPlayerName(defenderPlayer) : 'Unknown';
-              const attackerName = attackerPlayer ? getFormattedPlayerName(attackerPlayer) : 'Unknown';
-              
-              logEvent(EVENT_TYPES.POSITION_CHANGE, {
-                timestamp: currentTime,
-                player1Id: pair.defender,
-                player1Name: defenderName,
-                player2Id: pair.attacker,
-                player2Name: attackerName,
-                pairKey: pairKey,
-                description: `${defenderName} and ${attackerName} swapped positions within ${pairKey}`,
-                teamConfig: teamConfig
-              });
-            }
-          },
-          setAnimationState,
-          setHideNextOffIndicator,
-          setRecentlySubstitutedPlayers
-        );
-        
-        closeFieldPlayerModal();
       }
     } else if (action === null) {
       // Go back to main options
@@ -894,8 +821,8 @@ export const createSubstitutionHandlers = (
                 targetPlayerId: targetPlayerId,
                 sourcePlayerName: getFormattedPlayerName(sourcePlayer),
                 targetPlayerName: getFormattedPlayerName(targetPlayer),
-                sourcePosition: sourcePlayer.stats.currentPairKey,
-                targetPosition: targetPlayer.stats.currentPairKey,
+                sourcePosition: sourcePlayer.stats.currentPositionKey,
+                targetPosition: targetPlayer.stats.currentPositionKey,
                 beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                 afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                 teamConfig,
@@ -933,7 +860,6 @@ export const createSubstitutionHandlers = (
       (newGameState) => {
         // Apply the state changes
         setFormation(newGameState.formation);
-        setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
         setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);

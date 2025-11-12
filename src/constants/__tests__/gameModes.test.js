@@ -9,11 +9,7 @@ import {
   getOutfieldPositions,
   supportsInactiveUsers,
   supportsNextNextIndicators,
-  isIndividualMode,
-  getPlayerCountForMode,
-  isIndividual6Mode,
-  isIndividual7Mode,
-  isIndividual8Mode
+  getPlayerCountForMode
 } from '../gameModes';
 
 import { createTeamConfig } from '../teamConfiguration';
@@ -23,8 +19,7 @@ describe('Game Mode Configuration', () => {
   describe('Team configuration compatibility', () => {
     test('should work with all supported team configurations', () => {
       const expectedConfigs = [
-        TEAM_CONFIGS.PAIRS_7,
-        createTeamConfig('5v5', 5, '2-2', 'individual'),
+        createTeamConfig('5v5', 5, '2-2'),
         TEAM_CONFIGS.INDIVIDUAL_6,
         TEAM_CONFIGS.INDIVIDUAL_7,
         TEAM_CONFIGS.INDIVIDUAL_8,
@@ -43,15 +38,14 @@ describe('Game Mode Configuration', () => {
 
     test('getModeDefinition should return consistent structure for team configs', () => {
       const testConfigs = [
-        createTeamConfig('5v5', 7, '2-2', 'pairs'),
-        createTeamConfig('5v5', 5, '2-2', 'individual'),
-        createTeamConfig('5v5', 6, '2-2', 'individual'),
-        createTeamConfig('5v5', 7, '2-2', 'individual'),
-        createTeamConfig('5v5', 8, '2-2', 'individual'),
-        createTeamConfig('5v5', 9, '2-2', 'individual'),
-        createTeamConfig('5v5', 10, '2-2', 'individual'),
-        createTeamConfig('7v7', 9, '2-2-2', 'individual'),
-        createTeamConfig('7v7', 10, '2-3-1', 'individual')
+        createTeamConfig('5v5', 5, '2-2'),
+        createTeamConfig('5v5', 6, '2-2'),
+        createTeamConfig('5v5', 7, '2-2'),
+        createTeamConfig('5v5', 8, '2-2'),
+        createTeamConfig('5v5', 9, '2-2'),
+        createTeamConfig('5v5', 10, '2-2'),
+        createTeamConfig('7v7', 9, '2-2-2'),
+        createTeamConfig('7v7', 10, '2-3-1')
       ];
 
       testConfigs.forEach(config => {
@@ -65,7 +59,7 @@ describe('Game Mode Configuration', () => {
     });
 
 
-    test('should have valid individual mode configurations', () => {
+    test('individual configurations expose expected metadata', () => {
       const individualConfigs = [
         TEAM_CONFIGS.INDIVIDUAL_6,
         TEAM_CONFIGS.INDIVIDUAL_7,
@@ -74,7 +68,7 @@ describe('Game Mode Configuration', () => {
       ];
 
       individualConfigs.forEach(config => {
-        expect(isIndividualMode(config)).toBe(true);
+        expect(getModeDefinition(config)).toBeTruthy();
         const count = getPlayerCountForMode(config);
         expect(count).toBeGreaterThan(5);
       });
@@ -84,7 +78,6 @@ describe('Game Mode Configuration', () => {
       const testCases = [
         { config: TEAM_CONFIGS.INDIVIDUAL_6, expectedOutfield: 5 },
         { config: TEAM_CONFIGS.INDIVIDUAL_7, expectedOutfield: 6 },
-        { config: TEAM_CONFIGS.PAIRS_7, expectedOutfield: 6 },
         { config: TEAM_CONFIGS.INDIVIDUAL_7V7_222, expectedOutfield: 8 }
       ];
 

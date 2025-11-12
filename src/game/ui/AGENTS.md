@@ -8,7 +8,6 @@ This directory contains UI utility functions for the game screen. These utilitie
 Animation property utilities that integrate with `src/game/animation/animationSupport.js`:
 
 - **`getPlayerAnimation(playerId, animationState)`**: Returns animation class, z-index class, and style props for individual players
-- **`getPairAnimation(defenderPlayerId, attackerPlayerId, animationState)`**: Returns animation props for pairs formations, checking both players for movement
 
 **Returns**: `{ animationClass, zIndexClass, styleProps }`
 
@@ -58,7 +57,7 @@ All modules reference `src/components/game/formations/constants.js`:
 
 **Defensive Coding**: All functions include null/undefined checks and return safe defaults
 
-**Reusability**: Functions designed for use across multiple formation components (IndividualFormation, PairsFormation)
+**Reusability**: Functions designed for use across formation components such as `IndividualFormation`
 
 ## Barrel Exports
 All utilities exported via `index.js` for clean imports:

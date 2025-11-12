@@ -13,7 +13,7 @@ Contains pure functions for all game state transitions and calculations. Handles
 - `calculateUndo()`: Reverses the most recent substitution with time adjustments
 - `calculatePlayerToggleInactive()`: Activates/deactivates players (7-player individual configuration only)
 - `calculateSubstituteSwap()`: Swaps substitute_1 and substitute_2 positions
-- `calculateNextSubstitutionTarget()`: Updates next player/pair to substitute
+- `calculateNextSubstitutionTarget()`: Updates next player to substitute
 
 **Key Characteristics**:
 - All functions are pure (input → output, no side effects)
@@ -26,7 +26,6 @@ Contains pure functions for all game state transitions and calculations. Handles
 - `SubstitutionManager` class: Handles formation-specific substitution logic
 - `handleRoleChange()`: Manages role transitions within periods
 - Formation-specific handlers:
-  - `handlePairsSubstitution()`: Pairs mode substitution logic
   - `handleIndividualSubstitution()`: 6-player individual mode logic  
   - `handleIndividual7Substitution()`: 7-player individual mode with inactive support
 
@@ -138,7 +137,7 @@ All logic functions can be tested in isolation:
 const testState = {
   formation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
-  teamConfig: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' }
+  teamConfig: { format: '5v5', squadSize: 6, formation: '2-2' }
 };
 
 const result = calculateSubstitution(testState);

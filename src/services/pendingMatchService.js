@@ -153,7 +153,7 @@ export function validatePendingMatchConfig(initialConfig) {
 
   // Validate team config
   const { teamConfig } = initialConfig;
-  if (!teamConfig.formation || !teamConfig.squadSize || !teamConfig.substitutionType) {
+  if (!teamConfig.formation || !teamConfig.squadSize) {
     return false;
   }
 
@@ -227,8 +227,7 @@ export function matchesCurrentConfiguration(currentConfig, pendingMatch) {
                         JSON.stringify(initial_config.squadSelection?.sort());
     
     const teamConfigMatches = currentConfig.teamConfig?.formation === initial_config.teamConfig?.formation &&
-                             currentConfig.teamConfig?.squadSize === initial_config.teamConfig?.squadSize &&
-                             currentConfig.teamConfig?.substitutionType === initial_config.teamConfig?.substitutionType;
+                             currentConfig.teamConfig?.squadSize === initial_config.teamConfig?.squadSize;
     
     const matchConfigMatches = currentConfig.periods === initial_config.matchConfig?.periods &&
                               currentConfig.periodDurationMinutes === initial_config.matchConfig?.periodDurationMinutes &&

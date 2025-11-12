@@ -91,7 +91,7 @@ export function PeriodSetupScreen({
   currentPeriodNumber,
   formation,
   setFormation,
-  availableForPairing,
+  availableForAssignment,
   allPlayers,
   setAllPlayers,
   handleStartGame,
@@ -115,8 +115,6 @@ export function PeriodSetupScreen({
   resumeFormationData = null
 }) {
   const { currentTeam } = useTeam();
-  // Determine formation mode
-  const isPairsMode = teamConfig?.substitutionType === 'pairs';
   const [recommendationHandled, setRecommendationHandled] = useState(false);
   const [subRecommendationPercentages, setSubRecommendationPercentages] = useState({});
   const [subRecommendationLoading, setSubRecommendationLoading] = useState(false);
@@ -124,14 +122,6 @@ export function PeriodSetupScreen({
   const modeDefinition = useMemo(() => getModeDefinition(teamConfig), [teamConfig]);
   const openSubstituteSlotCount = useMemo(() => {
     if (!teamConfig) return 0;
-
-    if (isPairsMode) {
-      const subPair = formation?.subPair || {};
-      let openSlots = 0;
-      if (!subPair.defender) openSlots += 1;
-      if (!subPair.attacker) openSlots += 1;
-      return openSlots;
-    }
 
     if (!modeDefinition) {
       return 0;
@@ -141,22 +131,17 @@ export function PeriodSetupScreen({
     return substitutePositions.reduce((count, position) => {
       return !formation?.[position] ? count + 1 : count;
     }, 0);
-  }, [teamConfig, formation, isPairsMode, modeDefinition]);
+  }, [teamConfig, formation, modeDefinition]);
   const substituteRecommendations = useMemo(() => {
     if (currentPeriodNumber !== 1) return [];
     if (!Array.isArray(selectedSquadPlayers)) return [];
     const goalieId = formation?.goalie;
     const substitutePositions = modeDefinition?.substitutePositions || [];
-    const subPair = formation?.subPair;
 
     return [...selectedSquadPlayers]
       .filter(player => {
         if (!player?.id || player.id === goalieId) {
           return false;
-        }
-
-        if (isPairsMode) {
-          return !subPair || (subPair.defender !== player.id && subPair.attacker !== player.id);
         }
 
         return !substitutePositions.some(position => formation?.[position] === player.id);
@@ -181,7 +166,6 @@ export function PeriodSetupScreen({
     selectedSquadPlayers,
     formation,
     subRecommendationPercentages,
-    isPairsMode,
     modeDefinition
   ]);
   const displayedSubstituteRecommendations = useMemo(() => {
@@ -207,7 +191,7 @@ export function PeriodSetupScreen({
     playerName: '',
     playerId: '',
     position: '',
-    role: '', // For pairs mode
+    role: '',
     originalValue: '', // To restore dropdown if cancelled
     // For indirect swaps
     swapDetails: null, // Contains swap information for indirect scenarios
@@ -355,41 +339,7 @@ export function PeriodSetupScreen({
       return;
     }
 
-    if (isPairsMode) {
-      setFormation(prev => {
-        const subPair = prev.subPair || { defender: null, attacker: null };
-        const openRoles = ['defender', 'attacker'].filter(role => !subPair[role]);
-        if (openRoles.length === 0) {
-          return prev;
-        }
-
-        const playersToAssign = displayedSubstituteRecommendations.slice(0, openRoles.length);
-        const recommendedIds = new Set(playersToAssign.map(player => player.id));
-        const updatedFormation = {
-          ...prev,
-          leftPair: { ...prev.leftPair },
-          rightPair: { ...prev.rightPair },
-          subPair: { ...prev.subPair }
-        };
-
-        ['leftPair', 'rightPair'].forEach(pairKey => {
-          ['defender', 'attacker'].forEach(role => {
-            if (updatedFormation[pairKey]?.[role] && recommendedIds.has(updatedFormation[pairKey][role])) {
-              updatedFormation[pairKey][role] = null;
-            }
-          });
-        });
-
-        openRoles.forEach((role, index) => {
-          const recommendation = playersToAssign[index];
-          if (recommendation) {
-            updatedFormation.subPair[role] = recommendation.id;
-          }
-        });
-
-        return updatedFormation;
-      });
-    } else if (modeDefinition) {
+    if (modeDefinition) {
       setFormation(prev => {
         const substitutePositions = (modeDefinition.substitutePositions || []).filter(position => !prev[position]);
         if (substitutePositions.length === 0) {
@@ -419,7 +369,7 @@ export function PeriodSetupScreen({
     }
 
     setRecommendationHandled(true);
-  }, [displayedSubstituteRecommendations, isPairsMode, modeDefinition, setFormation]);
+  }, [displayedSubstituteRecommendations, modeDefinition, setFormation]);
 
   // Handle resume formation data from pending match
   useEffect(() => {
@@ -456,36 +406,19 @@ export function PeriodSetupScreen({
 
   // Helper function to check if a position is a field position (not substitute)
   const isFieldPosition = (position, role = null) => {
-    if (isPairsMode) {
-      return position === 'leftPair' || position === 'rightPair';
-    } else {
-      // Handle both 2-2 and 1-2-1 formation field positions
-      return position === 'leftDefender' || position === 'rightDefender' || 
-             position === 'leftAttacker' || position === 'rightAttacker' ||
-             position === 'defender' || position === 'left' || position === 'right' || position === 'attacker' ||
-             position === 'leftMidfielder' || position === 'rightMidfielder' || position === 'centerMidfielder';
-    }
+    // Handle both 2-2 and 1-2-1 formation field positions
+    return position === 'leftDefender' || position === 'rightDefender' ||
+           position === 'leftAttacker' || position === 'rightAttacker' ||
+           position === 'defender' || position === 'left' || position === 'right' || position === 'attacker' ||
+           position === 'leftMidfielder' || position === 'rightMidfielder' || position === 'centerMidfielder';
   };
 
   // Helper function to find where a player is currently positioned
   const findPlayerCurrentPosition = (playerId) => {
-    if (isPairsMode) {
-      const pairKeys = ['leftPair', 'rightPair', 'subPair'];
-      for (const pairKey of pairKeys) {
-        const pair = formation[pairKey];
-        if (pair?.defender === playerId) {
-          return { position: pairKey, role: 'defender' };
-        }
-        if (pair?.attacker === playerId) {
-          return { position: pairKey, role: 'attacker' };
-        }
-      }
-    } else {
-      const positions = getOutfieldPositions(teamConfig);
-      for (const position of positions) {
-        if (formation[position] === playerId) {
-          return { position };
-        }
+    const positions = getOutfieldPositions(teamConfig);
+    for (const position of positions) {
+      if (formation[position] === playerId) {
+        return { position };
       }
     }
     return null;
@@ -505,12 +438,7 @@ export function PeriodSetupScreen({
     }
 
     // Find who is currently in the target position (substitute position)
-    let displacedPlayerId = null;
-    if (isPairsMode && targetRole) {
-      displacedPlayerId = formation[targetPosition]?.[targetRole];
-    } else if (!isPairsMode) {
-      displacedPlayerId = formation[targetPosition];
-    }
+    const displacedPlayerId = formation[targetPosition];
 
     // Check if the displaced player is inactive
     if (displacedPlayerId && isPlayerInactive(displacedPlayerId)) {
@@ -559,10 +487,10 @@ export function PeriodSetupScreen({
 
   // Helper function to activate player and complete assignment
   const activatePlayerAndAssign = () => {
-    const { type, playerId, position, role, swapDetails } = confirmationModal;
-    
+    const { type, playerId, position, swapDetails } = confirmationModal;
+
     // Activate the player (for direct, indirect, and inactive-goalie scenarios)
-    setAllPlayers(prevPlayers => 
+    setAllPlayers(prevPlayers =>
       prevPlayers.map(player => {
         if (player.id === playerId) {
           return {
@@ -576,65 +504,57 @@ export function PeriodSetupScreen({
         return player;
       })
     );
-    
+
     // Complete the assignment based on type
     if (type === 'direct') {
       // Direct assignment - assign the selected player to the position
-      if (isPairsMode) {
-        originalHandlePlayerAssignment(position, role, playerId);
-      } else {
-        originalHandleIndividualPlayerAssignment(position, playerId);
-      }
+      originalHandleIndividualPlayerAssignment(position, playerId);
     } else if (type === 'indirect' && swapDetails) {
       // Indirect assignment - execute the swap that caused the displacement
-      if (isPairsMode) {
-        originalHandlePlayerAssignment(position, role, swapDetails.selectedPlayerId);
-      } else {
-        originalHandleIndividualPlayerAssignment(position, swapDetails.selectedPlayerId);
-      }
+      originalHandleIndividualPlayerAssignment(position, swapDetails.selectedPlayerId);
     } else if (type === 'inactive-goalie') {
       // Inactive goalie - player is already activated above, formation.goalie is already set
       // No additional assignment needed - just keep the current goalie selection
     } else if (type === 'recommendation-rerun') {
       // Re-run recommendations with new goalie
       const { newGoalieId, formerGoalieId } = confirmationModal;
-      
+
       // First perform the goalie change
       performGoalieChange(newGoalieId, formerGoalieId);
-      
+
       // Then re-run recommendations with the new goalie
       if (preparePeriodWithGameLog && gameLog.length > 0) {
         // Update the period goalie IDs first so recommendations use the new goalie
         setPeriodGoalieIds(prev => {
           const updatedIds = { ...prev, [currentPeriodNumber]: newGoalieId };
-          
+
           // Use setTimeout to ensure state update is applied before re-running recommendations
           setTimeout(() => {
             preparePeriodWithGameLog(currentPeriodNumber, gameLog, newGoalieId);
           }, 10);
-          
+
           return updatedIds;
         });
       }
     }
-    
+
     // Close the modal
-    setConfirmationModal({ 
-      isOpen: false, 
-      type: 'direct', 
-      playerName: '', 
-      playerId: '', 
-      position: '', 
-      role: '', 
+    setConfirmationModal({
+      isOpen: false,
+      type: 'direct',
+      playerName: '',
+      playerId: '',
+      position: '',
+      role: '',
       originalValue: '',
-      swapDetails: null 
+      swapDetails: null
     });
   };
 
   // Helper function to cancel inactive player assignment
   const cancelInactivePlayerAssignment = () => {
-    const { type, position, role, originalValue } = confirmationModal;
-    
+    const { type, position, originalValue } = confirmationModal;
+
     if (type === 'inactive-goalie') {
       // For inactive goalie, clear the goalie selection and set flag for auto-recommendations
       setIsReplacingInactiveGoalie(true);
@@ -648,137 +568,23 @@ export function PeriodSetupScreen({
       performGoalieChange(newGoalieId, formerGoalieId);
     } else {
       // For other types, restore the original dropdown value
-      if (isPairsMode) {
-        setFormation(prev => ({
-          ...prev,
-          [position]: { ...prev[position], [role]: originalValue }
-        }));
-      } else {
-        setFormation(prev => ({
-          ...prev,
-          [position]: originalValue
-        }));
-      }
+      setFormation(prev => ({
+        ...prev,
+        [position]: originalValue
+      }));
     }
-    
+
     // Close the modal
-    setConfirmationModal({ 
-      isOpen: false, 
-      type: 'direct', 
-      playerName: '', 
-      playerId: '', 
-      position: '', 
-      role: '', 
+    setConfirmationModal({
+      isOpen: false,
+      type: 'direct',
+      playerName: '',
+      playerId: '',
+      position: '',
+      role: '',
       originalValue: '',
-      swapDetails: null 
+      swapDetails: null
     });
-  };
-
-  // Store original handlers for use in confirmation flow
-  const originalHandlePlayerAssignment = (pairKey, role, playerId) => {
-    // If formation is complete, allow player switching
-    if (isFormationComplete() && playerId) {
-      // Find where the selected player is currently assigned
-      let currentPlayerPosition = null;
-      ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
-        if (formation[pk]?.defender === playerId) {
-          currentPlayerPosition = { pairKey: pk, role: 'defender' };
-        } else if (formation[pk]?.attacker === playerId) {
-          currentPlayerPosition = { pairKey: pk, role: 'attacker' };
-        }
-      });
-
-      if (currentPlayerPosition) {
-        // Get the player currently in the target position
-        const currentPlayerInTargetPosition = formation[pairKey]?.[role];
-        
-        // Check if both players are in the same pair
-        if (currentPlayerPosition.pairKey === pairKey) {
-          // Same pair swap - update both roles in a single object to avoid overwrite
-          setFormation(prev => ({
-            ...prev,
-            [pairKey]: { 
-              ...prev[pairKey], 
-              [role]: playerId,
-              [currentPlayerPosition.role]: currentPlayerInTargetPosition 
-            }
-          }));
-        } else {
-          // Different pairs - original logic works fine
-          setFormation(prev => ({
-            ...prev,
-            [pairKey]: { ...prev[pairKey], [role]: playerId },
-            [currentPlayerPosition.pairKey]: { 
-              ...prev[currentPlayerPosition.pairKey], 
-              [currentPlayerPosition.role]: currentPlayerInTargetPosition 
-            }
-          }));
-        }
-        return;
-      }
-    }
-
-    // Original logic for incomplete formation
-    const otherAssignments = [];
-    ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
-      if (pk !== pairKey) {
-        if (formation[pk]?.defender) otherAssignments.push(formation[pk].defender);
-        if (formation[pk]?.attacker) otherAssignments.push(formation[pk].attacker);
-      } else { // current pair, different role
-        if (role === 'defender' && formation[pk]?.attacker) otherAssignments.push(formation[pk].attacker);
-        if (role === 'attacker' && formation[pk]?.defender) otherAssignments.push(formation[pk].defender);
-      }
-    });
-
-    if (playerId && otherAssignments.includes(playerId)) {
-      const duplicatePlayerName = getPlayerDisplayNameByIdUtil(allPlayers, playerId);
-      alert(`${duplicatePlayerName} is already assigned. Choose a different player.`);
-      return; // Don't update if player is already assigned
-    }
-
-    setFormation(prev => ({
-      ...prev,
-      [pairKey]: { ...prev[pairKey], [role]: playerId }
-    }));
-  };
-
-  // New handler with inactive player check
-  const handlePlayerAssignment = (pairKey, role, playerId) => {
-    // If no player selected, proceed normally
-    if (!playerId) {
-      return originalHandlePlayerAssignment(pairKey, role, playerId);
-    }
-
-    // Check for direct inactive player selection for field position
-    if (isPlayerInactive(playerId) && isFieldPosition(pairKey, role)) {
-      const player = allPlayers.find(p => p.id === playerId);
-      const originalValue = formation[pairKey]?.[role] || '';
-      
-      // Show confirmation modal for direct selection
-      showInactivePlayerConfirmation(
-        getPlayerDisplayNameUtil(player),
-        playerId,
-        pairKey,
-        role,
-        originalValue
-      );
-      return;
-    }
-
-    // Check for indirect inactive player displacement (when formation is complete)
-    if (isFormationComplete() && playerId) {
-      const swapInfo = wouldPlaceInactivePlayerInFieldPosition(playerId, pairKey, role);
-      if (swapInfo) {
-        const originalValue = formation[pairKey]?.[role] || '';
-        
-        // Show confirmation modal for indirect displacement
-        showIndirectInactivePlayerConfirmation(swapInfo, originalValue);
-        return;
-      }
-    }
-
-    // Proceed with normal assignment
-    originalHandlePlayerAssignment(pairKey, role, playerId);
   };
 
   // Store original individual handler for use in confirmation flow
@@ -867,28 +673,6 @@ export function PeriodSetupScreen({
   };
 
 
-  const getAvailableForSelect = (currentPairKey, currentRole) => {
-    // If formation is complete, show all players except goalie
-    if (isFormationComplete()) {
-      return availableForPairing;
-    }
-
-    // Original logic for incomplete formation
-    const assignedElsewhereIds = new Set();
-    ['leftPair', 'rightPair', 'subPair'].forEach(pk => {
-      const pair = formation[pk];
-      if (pair) {
-        if (pk !== currentPairKey || (pk === currentPairKey && currentRole !== 'defender')) {
-          if (pair.defender) assignedElsewhereIds.add(pair.defender);
-        }
-        if (pk !== currentPairKey || (pk === currentPairKey && currentRole !== 'attacker')) {
-          if (pair.attacker) assignedElsewhereIds.add(pair.attacker);
-        }
-      }
-    });
-    return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
-  };
-
   const handleGoalieChangeForCurrentPeriod = (playerId) => {
     const formerGoalieId = formation.goalie;
     
@@ -938,44 +722,22 @@ export function PeriodSetupScreen({
   const performGoalieChange = (newGoalieId, formerGoalieId) => {
     // Find where the new goalie is currently positioned
     let newGoalieCurrentPosition = null;
-    
-    if (isPairsMode) {
-      // Search pairs mode positions
-      ['leftPair', 'rightPair', 'subPair'].forEach(pairKey => {
-        if (formation[pairKey]?.defender === newGoalieId) {
-          newGoalieCurrentPosition = { pairKey, role: 'defender' };
-        } else if (formation[pairKey]?.attacker === newGoalieId) {
-          newGoalieCurrentPosition = { pairKey, role: 'attacker' };
-        }
-      });
-    } else {
-      // Search individual mode positions
-      getOutfieldPositions(teamConfig).forEach(position => {
-        if (formation[position] === newGoalieId) {
-          newGoalieCurrentPosition = { position };
-        }
-      });
-    }
-    
+
+    // Search individual mode positions
+    getOutfieldPositions(teamConfig).forEach(position => {
+      if (formation[position] === newGoalieId) {
+        newGoalieCurrentPosition = { position };
+      }
+    });
+
     // Perform the position swap or simple assignment
     if (newGoalieCurrentPosition && formerGoalieId) {
       // Swap positions between new goalie and former goalie
-      if (isPairsMode) {
-        setFormation(prev => ({
-          ...prev,
-          goalie: newGoalieId,
-          [newGoalieCurrentPosition.pairKey]: {
-            ...prev[newGoalieCurrentPosition.pairKey],
-            [newGoalieCurrentPosition.role]: formerGoalieId
-          }
-        }));
-      } else {
-        setFormation(prev => ({
-          ...prev,
-          goalie: newGoalieId,
-          [newGoalieCurrentPosition.position]: formerGoalieId
-        }));
-      }
+      setFormation(prev => ({
+        ...prev,
+        goalie: newGoalieId,
+        [newGoalieCurrentPosition.position]: formerGoalieId
+      }));
     } else {
       // Simple assignment (new goalie not in formation or no former goalie)
       setFormation(prev => ({
@@ -983,17 +745,17 @@ export function PeriodSetupScreen({
         goalie: newGoalieId
       }));
     }
-    
+
     // Update period goalie tracking
     setPeriodGoalieIds(prev => ({ ...prev, [currentPeriodNumber]: newGoalieId }));
-    
+
     // Update rotation queue for individual modes
-    if (rotationQueue && rotationQueue.length > 0 && teamConfig?.substitutionType !== 'pairs') {
+    if (rotationQueue && rotationQueue.length > 0) {
       const newGoalieIndex = rotationQueue.findIndex(id => id === newGoalieId);
-      
+
       if (newGoalieIndex !== -1) {
         const updatedQueue = [...rotationQueue];
-        
+
         if (formerGoalieId) {
           // Replace new goalie with former goalie at same position
           updatedQueue[newGoalieIndex] = formerGoalieId;
@@ -1001,7 +763,7 @@ export function PeriodSetupScreen({
           // No former goalie, just remove new goalie from queue
           updatedQueue.splice(newGoalieIndex, 1);
         }
-        
+
         setRotationQueue(updatedQueue);
       } else if (formerGoalieId) {
         // New goalie is not in queue but we had a former goalie - add former goalie to end
@@ -1014,7 +776,7 @@ export function PeriodSetupScreen({
   const getAvailableForIndividualSelect = (currentPosition) => {
     // If formation is complete, show all players except goalie
     if (isFormationComplete()) {
-      return availableForPairing;
+      return availableForAssignment;
     }
 
     // Original logic for incomplete formation - works for both 6 and 7 player modes
@@ -1024,24 +786,15 @@ export function PeriodSetupScreen({
         assignedElsewhereIds.add(formation[pos]);
       }
     });
-    return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
+    return availableForAssignment.filter(p => !assignedElsewhereIds.has(p.id));
   };
 
   const isFormationComplete = () => {
-    if (isPairsMode) {
-      const outfielders = [
-        formation.leftPair.defender, formation.leftPair.attacker,
-        formation.rightPair.defender, formation.rightPair.attacker,
-        formation.subPair.defender, formation.subPair.attacker
-      ].filter(Boolean);
-      return formation.goalie && outfielders.length === 6 && new Set(outfielders).size === 6;
-    } else {
-      // Individual modes (6 or 7 players) - use configuration-driven validation
-      const outfieldPositions = getOutfieldPositions(teamConfig);
-      const outfielders = outfieldPositions.map(pos => formation[pos]).filter(Boolean);
-      const expectedCount = outfieldPositions.length;
-      return formation.goalie && outfielders.length === expectedCount && new Set(outfielders).size === expectedCount;
-    }
+    // Individual modes (6 or 7 players) - use configuration-driven validation
+    const outfieldPositions = getOutfieldPositions(teamConfig);
+    const outfielders = outfieldPositions.map(pos => formation[pos]).filter(Boolean);
+    const expectedCount = outfieldPositions.length;
+    return formation.goalie && outfielders.length === expectedCount && new Set(outfielders).size === expectedCount;
   };
 
   const randomizeFormation = () => {
@@ -1051,7 +804,7 @@ export function PeriodSetupScreen({
     }
 
     // Get players available for positioning (excluding goalie)
-    const availablePlayers = availableForPairing;
+    const availablePlayers = availableForAssignment;
     
     if (availablePlayers.length === 0) {
       alert('No players available for positioning.');
@@ -1236,36 +989,7 @@ export function PeriodSetupScreen({
         );
       })()}
 
-      {formation.goalie && isPairsMode && (
-        <>
-          <PairSelectionCard
-            title="Left"
-            pairKey="leftPair"
-            pair={formation.leftPair}
-            onPlayerAssign={handlePlayerAssignment}
-            getAvailableOptions={getAvailableForSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <PairSelectionCard
-            title="Right"
-            pairKey="rightPair"
-            pair={formation.rightPair}
-            onPlayerAssign={handlePlayerAssignment}
-            getAvailableOptions={getAvailableForSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-          <PairSelectionCard
-            title="Substitutes"
-            pairKey="subPair"
-            pair={formation.subPair}
-            onPlayerAssign={handlePlayerAssignment}
-            getAvailableOptions={getAvailableForSelect}
-            currentPeriodNumber={currentPeriodNumber}
-          />
-        </>
-      )}
-
-      {formation.goalie && teamConfig?.substitutionType === 'individual' && (
+      {formation.goalie && (
         <IndividualPositionCards
           teamConfig={teamConfig}
           formation={formation}
@@ -1338,40 +1062,6 @@ export function PeriodSetupScreen({
         }
         variant="accent"
       />
-    </div>
-  );
-}
-
-export function PairSelectionCard({ title, pairKey, pair, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
-  const defenderOptions = getAvailableOptions(pairKey, 'defender');
-  const attackerOptions = getAvailableOptions(pairKey, 'attacker');
-
-  // Use same colors as GameScreen: sky for on-field, slate for substitutes
-  const isSubstitute = pairKey === 'subPair';
-  const bgColor = isSubstitute ? 'bg-slate-700' : 'bg-sky-700';
-  const headerColor = isSubstitute ? 'text-slate-200' : 'text-sky-200';
-
-  return (
-    <div className={`p-2 ${bgColor} rounded-md space-y-1.5`}>
-      <h3 className={`text-sm font-medium ${headerColor}`}>{title}</h3>
-      <div>
-        <label className={`block text-xs font-medium ${headerColor} mb-0.5`}>Defender</label>
-        <Select
-          value={pair.defender || ""}
-          onChange={value => onPlayerAssign(pairKey, 'defender', value)}
-          options={defenderOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-          placeholder="Select Defender"
-        />
-      </div>
-      <div>
-        <label className={`block text-xs font-medium ${headerColor} mb-0.5`}>Attacker</label>
-        <Select
-          value={pair.attacker || ""}
-          onChange={value => onPlayerAssign(pairKey, 'attacker', value)}
-          options={attackerOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-          placeholder="Select Attacker"
-        />
-      </div>
     </div>
   );
 }

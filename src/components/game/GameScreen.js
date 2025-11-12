@@ -55,13 +55,11 @@ export function GameScreen({
   resetSubTimer, 
   handleUndoSubstitution: handleUndoSubstitutionTimer,
   handleEndPeriod, 
-  nextPhysicalPairToSubOut,
   nextPlayerToSubOut,
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
   setNextNextPlayerIdToSubOut,
   selectedSquadPlayers,
-  setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
   teamConfig,
@@ -147,10 +145,6 @@ export function GameScreen({
     setSubstitutionCount(nextValue);
   }, []);
 
-  // Determine which formation mode we're using
-  const isPairsMode = teamConfig?.substitutionType === 'pairs';
-
-
   // Helper to create game state object for pure logic functions
   const createGameState = React.useCallback(() => {
     const effectiveSubstitutionCount = uiState.substitutionCountOverride ?? substitutionCount;
@@ -159,7 +153,6 @@ export function GameScreen({
       allPlayers,
       teamConfig,
       selectedFormation,
-      nextPhysicalPairToSubOut,
       nextPlayerToSubOut,
       nextPlayerIdToSubOut,
       nextNextPlayerIdToSubOut,
@@ -184,7 +177,6 @@ export function GameScreen({
     allPlayers,
     teamConfig,
     selectedFormation,
-    nextPhysicalPairToSubOut,
     nextPlayerToSubOut,
     nextPlayerIdToSubOut,
     nextNextPlayerIdToSubOut,
@@ -208,7 +200,6 @@ export function GameScreen({
   const stateUpdaters = React.useMemo(() => ({
     setFormation,
     setAllPlayers,
-    setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut,
     setNextPlayerIdToSubOut,
     setNextNextPlayerIdToSubOut,
@@ -229,7 +220,7 @@ export function GameScreen({
     clearSubstitutionCountOverride: uiState.clearSubstitutionCountOverride,
     setShouldResetSubTimerOnNextSub
   }), [
-    setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
+    setFormation, setAllPlayers,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setSubstitutionOverride,
     uiState.clearSubstitutionOverride, uiState.setLastSubstitution,
@@ -598,8 +589,7 @@ export function GameScreen({
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
-          hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
-          nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || !canSubstitute}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
           substitutionCount={substitutionCount}
@@ -655,8 +645,7 @@ export function GameScreen({
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
-          hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
-          nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || !canSubstitute}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
           substitutionCount={substitutionCount}
@@ -686,14 +675,10 @@ export function GameScreen({
         onChangePosition={substitutionHandlers.handleChangePosition}
         playerName={modalHandlers.modals.fieldPlayer.playerName}
         availablePlayers={modalHandlers.modals.fieldPlayer.availablePlayers}
-        showPositionChange={!isPairsMode && modalHandlers.modals.fieldPlayer.type === 'player'}
+        showPositionChange={modalHandlers.modals.fieldPlayer.type === 'player'}
         showPositionOptions={modalHandlers.modals.fieldPlayer.showPositionOptions}
-        showSwapPositions={isPairsMode && modalHandlers.modals.fieldPlayer.type === 'pair'}
-        showSubstitutionOptions={
-          modalHandlers.modals.fieldPlayer.type === 'player' ||
-          (modalHandlers.modals.fieldPlayer.type === 'pair' && modalHandlers.modals.fieldPlayer.target !== 'subPair')
-        }
-        canSubstitute={teamConfig?.substitutionType === 'individual' ? canSubstitute : true}
+        showSubstitutionOptions={modalHandlers.modals.fieldPlayer.type === 'player'}
+        canSubstitute={canSubstitute}
         isPlayerAboutToSubOff={modalHandlers.modals.fieldPlayer.isPlayerAboutToSubOff || false}
       />
 
@@ -786,7 +771,7 @@ const arePropsEqual = (prevProps, nextProps) => {
   // Compare primitive props
   const primitiveProps = [
     'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
-    'teamConfig', 'selectedFormation', 'nextPhysicalPairToSubOut', 'nextPlayerToSubOut',
+    'teamConfig', 'selectedFormation', 'nextPlayerToSubOut',
     'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'ownScore', 'opponentScore'
   ];
   

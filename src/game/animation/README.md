@@ -94,7 +94,6 @@ The system maps player positions to visual indices for distance calculations:
 |---------------------|----------------|
 | **Individual 6-Player** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute(5) |
 | **Individual 7-Player** | goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute_1(5) → substitute_2(6) |
-| **Pairs Configuration** | goalie(0) → leftPair(1) → rightPair(2) → subPair(3) |
 
 **Distance Calculation:**
 ```javascript
@@ -245,27 +244,6 @@ return (
     style={styleProps}
   >
     {/* Player content */}
-  </div>
-);
-```
-
-**Pairs Formation Integration:**
-```javascript
-import { getPairAnimation } from '../../game/ui/playerAnimation';
-
-// In render function  
-const { animationClass, zIndexClass, styleProps } = getPairAnimation(
-  pairData.defender, 
-  pairData.attacker, 
-  animationState
-);
-
-return (
-  <div 
-    className={`${baseClasses} ${animationClass} ${zIndexClass}`}
-    style={styleProps}
-  >
-    {/* Pair content */}
   </div>
 );
 ```
@@ -486,12 +464,6 @@ Gets animation properties for individual player rendering.
 
 **Returns:** `{ animationClass, zIndexClass, styleProps }`
 
-#### `getPairAnimation(defenderId, attackerId, animationState)`
-
-Gets animation properties for pair rendering.
-
-**Returns:** `{ animationClass, zIndexClass, styleProps }`
-
 ### Constants
 
 ```javascript
@@ -521,7 +493,7 @@ export const GLOW_DURATION = 900;       // Glow effect duration
 
 The animation system provides a powerful, unified abstraction for player movements that:
 
-- ✅ **Works for all team configurations** (pairs, individual 6-player, individual 7-player)
+- ✅ **Works for all current team configurations** (individual 6-player, individual 7-player)
 - ✅ **Handles all movement types** (substitutions, swaps, goalie changes)
 - ✅ **Provides consistent visual feedback** with glow effects
 - ✅ **Performs efficiently** with hardware-accelerated CSS

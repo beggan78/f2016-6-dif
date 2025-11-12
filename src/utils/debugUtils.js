@@ -93,28 +93,12 @@ export const randomizeFormationPositions = (availablePlayers, teamConfig) => {
   const shuffled = shuffleArray(availablePlayers);
   const formation = {};
 
-  // Extract formation and substitution type from team config
+  // Extract formation info from team config
   const selectedFormation = teamConfig?.formation || '2-2';
-  const substitutionType = teamConfig?.substitutionType || 'individual';
   const squadSize = teamConfig?.squadSize || 7;
   const format = teamConfig?.format || '5v5';
 
-  if (substitutionType === 'pairs') {
-    // Pairs mode: 3 pairs (left, right, sub) with defender/attacker roles
-    formation.leftPair = {
-      defender: shuffled[0]?.id || null,
-      attacker: shuffled[1]?.id || null
-    };
-    formation.rightPair = {
-      defender: shuffled[2]?.id || null,
-      attacker: shuffled[3]?.id || null
-    };
-    formation.subPair = {
-      defender: shuffled[4]?.id || null,
-      attacker: shuffled[5]?.id || null
-    };
-  } else {
-    // Individual modes: Handle 5v5 and 7v7 formations
+  // Individual modes: Handle 5v5 and 7v7 formations
     let fieldPlayerCount;
 
     // Determine field player count based on format
@@ -189,7 +173,6 @@ export const randomizeFormationPositions = (availablePlayers, teamConfig) => {
         formation[`substitute_${i + 1}`] = shuffled[4 + i]?.id || null;
       }
     }
-  }
 
   return formation;
 };

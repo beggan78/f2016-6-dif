@@ -153,88 +153,6 @@ describe('createFieldPositionHandlers', () => {
     });
   });
 
-  describe('PAIRS_7 mode', () => {
-    beforeEach(() => {
-      mockPlayers = createMockPlayers(7, TEAM_CONFIGS.PAIRS_7);
-      mockFormation = createMockFormation(TEAM_CONFIGS.PAIRS_7);
-    });
-
-    it('should create all required callback functions for pairs mode', () => {
-      const handlers = createFieldPositionHandlers(
-        TEAM_CONFIGS.PAIRS_7,
-        mockFormation,
-        mockPlayers,
-        '1',
-        mockModalHandlers
-      );
-
-      expect(handlers.leftPairCallback).toBeDefined();
-      expect(handlers.rightPairCallback).toBeDefined();
-      expect(handlers.subPairCallback).toBeDefined();
-      expect(typeof handlers.leftPairCallback).toBe('function');
-    });
-
-    it('should handle pair quick tap correctly', () => {
-      const handlers = createFieldPositionHandlers(
-        TEAM_CONFIGS.PAIRS_7,
-        mockFormation,
-        mockPlayers,
-        '1',
-        mockModalHandlers
-      );
-
-      handlers.leftPairCallback();
-
-      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
-        type: 'pair',
-        target: 'leftPair',
-        playerName: 'Player 1 / Player 2',
-        sourcePlayerId: null,
-        availablePlayers: [],
-        showPositionOptions: false,
-        isPlayerAboutToSubOff: false
-      });
-    });
-
-    it('should handle right pair quick tap correctly', () => {
-      const handlers = createFieldPositionHandlers(
-        TEAM_CONFIGS.PAIRS_7,
-        mockFormation,
-        mockPlayers,
-        '1',
-        mockModalHandlers
-      );
-
-      handlers.rightPairCallback();
-
-      expect(mockModalHandlers.openFieldPlayerModal).toHaveBeenCalledWith({
-        type: 'pair',
-        target: 'rightPair',
-        playerName: 'Player 3 / Player 4',
-        sourcePlayerId: null,
-        availablePlayers: [],
-        showPositionOptions: false,
-        isPlayerAboutToSubOff: false
-      });
-    });
-
-    it('should handle missing pair data gracefully', () => {
-      const emptyFormation = { ...mockFormation, leftPair: undefined };
-      
-      const handlers = createFieldPositionHandlers(
-        TEAM_CONFIGS.PAIRS_7,
-        emptyFormation,
-        mockPlayers,
-        '1',
-        mockModalHandlers
-      );
-
-      handlers.leftPairCallback();
-
-      expect(mockModalHandlers.openFieldPlayerModal).not.toHaveBeenCalled();
-    });
-  });
-
   describe('INDIVIDUAL_6 mode', () => {
     beforeEach(() => {
       mockPlayers = createMockPlayers(6, TEAM_CONFIGS.INDIVIDUAL_6);
@@ -375,22 +293,6 @@ describe('createFieldPositionHandlers', () => {
         expect(handlers[callback]).toBeDefined();
         expect(typeof handlers[callback]).toBe('function');
       });
-    });
-
-    it('should only generate pair callbacks for pairs mode', () => {
-      const handlers = createFieldPositionHandlers(
-        TEAM_CONFIGS.PAIRS_7,
-        mockFormation,
-        mockPlayers,
-        '1',
-        mockModalHandlers
-      );
-
-      expect(handlers.leftPairCallback).toBeDefined();
-      expect(handlers.rightPairCallback).toBeDefined();
-      expect(handlers.subPairCallback).toBeDefined();
-      expect(handlers.leftDefenderCallback).toBeUndefined();
-      expect(handlers.substitute_1Callback).toBeUndefined();
     });
 
     it('should generate callbacks for substitute_4 and substitute_5 in 9-player and 10-player modes', () => {

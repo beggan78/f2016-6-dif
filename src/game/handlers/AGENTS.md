@@ -25,7 +25,7 @@ Coordinates UI event handling with game logic and animation systems. Handlers br
 - Returns position-specific callbacks (not action handlers)
 - `handleFieldPlayerQuickTap()`: Opens modal for field players
 - `handleSubstituteQuickTap()`: Opens modal for substitutes (inactive support)
-- Differentiates pairs mode vs individual mode
+- Supports individual mode rotation logic with multi-sub awareness
 - Multi-sub aware: detects if player is in "next N to sub out"
 
 ### `timerHandlers.js` - Timer Control
@@ -72,7 +72,6 @@ Coordinates UI event handling with game logic and animation systems. Handlers br
 **Next-to-sub-out Updaters** (substitution handlers):
 - `setNextPlayerIdToSubOut`: Individual mode single-sub
 - `setNextNextPlayerIdToSubOut`: Individual mode 7-player
-- `setNextPhysicalPairToSubOut`: Pairs mode
 
 **Timer Updaters** (substitution/timer handlers):
 - `resetSubTimer`: Reset after substitution

@@ -15,7 +15,7 @@ describe('usePlayerState', () => {
             startedAtPosition: 'goalie',
             currentRole: PLAYER_ROLES.GOALIE,
             currentStatus: PLAYER_STATUS.GOALIE,
-            currentPairKey: 'goalie',
+            currentPositionKey: 'goalie',
             lastStintStartTimeEpoch: 1234,
             timeOnFieldSeconds: 300,
             timeAsGoalieSeconds: 300
@@ -30,7 +30,7 @@ describe('usePlayerState', () => {
             startedAtPosition: 'leftDefender',
             currentRole: PLAYER_ROLES.DEFENDER,
             currentStatus: PLAYER_STATUS.ON_FIELD,
-            currentPairKey: 'leftDefender',
+            currentPositionKey: 'leftDefender',
             lastStintStartTimeEpoch: 5678,
             timeOnFieldSeconds: 280,
             timeAsDefenderSeconds: 280
@@ -54,7 +54,7 @@ describe('usePlayerState', () => {
     expect(goalie.stats.startedAtPosition).toBeNull();
     expect(goalie.stats.currentRole).toBeNull();
     expect(goalie.stats.currentStatus).toBe(PLAYER_STATUS.SUBSTITUTE);
-    expect(goalie.stats.currentPairKey).toBeNull();
+    expect(goalie.stats.currentPositionKey).toBeNull();
     expect(goalie.stats.lastStintStartTimeEpoch).toBeNull();
     expect(goalie.stats.timeOnFieldSeconds).toBe(300);
     expect(goalie.stats.timeAsGoalieSeconds).toBe(300);

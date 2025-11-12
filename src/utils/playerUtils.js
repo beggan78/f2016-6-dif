@@ -24,7 +24,7 @@ export const createEmptyPlayerStats = () => ({
   currentRole: null, // 'Goalie', 'Defender', 'Attacker'
   currentStatus: null, // 'on_field', 'substitute', 'goalie'
   lastStintStartTimeEpoch: 0, // For calculating duration of current stint
-  currentPairKey: null, // 'leftPair', 'rightPair', 'subPair'
+  currentPositionKey: null, // Formation slot key (e.g., 'leftDefender', 'substitute_1')
   isInactive: false, // For 7-player individual mode - temporarily removes player from rotation
   isCaptain: false, // Captain designation for the current game
   goals: 0,
@@ -76,7 +76,7 @@ export const resetPlayerMatchStartState = (player) => {
       startLocked: false,
       currentRole: null,
       currentStatus: PLAYER_STATUS.SUBSTITUTE,
-      currentPairKey: null,
+      currentPositionKey: null,
       lastStintStartTimeEpoch: null
     }
   };
@@ -389,7 +389,7 @@ export const hasActiveSubstitutes = (allPlayers, teamConfig) => {
   
   // Find players in substitute positions
   const substitutePlayers = allPlayers.filter(player => 
-    substitutePositions.includes(player.stats?.currentPairKey)
+    substitutePositions.includes(player.stats?.currentPositionKey)
   );
 
 
