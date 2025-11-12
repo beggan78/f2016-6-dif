@@ -58,27 +58,15 @@ export function TacticalBoard({
   }, [isDrawMode, isChipBeingDragged]);
 
   const getNormalizedPoint = useCallback((event) => {
-    if (drawingSurfaceRef.current) {
-      const svg = drawingSurfaceRef.current;
-      const point = svg.createSVGPoint();
-      point.x = event.clientX;
-      point.y = event.clientY;
-      const ctm = svg.getScreenCTM();
-      if (ctm) {
-        const transformed = point.matrixTransform(ctm.inverse());
-        return {
-          x: Math.max(0, Math.min(100, transformed.x)),
-          y: Math.max(0, Math.min(100, transformed.y)),
-        };
-      }
+    const surfaceRect = drawingSurfaceRef.current
+      ? drawingSurfaceRef.current.getBoundingClientRect()
+      : boardRef.current?.getBoundingClientRect();
+    if (!surfaceRect || !surfaceRect.width || !surfaceRect.height) {
+      return null;
     }
 
-    if (!boardRef.current) return null;
-    const rect = boardRef.current.getBoundingClientRect();
-    if (!rect.width || !rect.height) return null;
-
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const x = ((event.clientX - surfaceRect.left) / surfaceRect.width) * 100;
+    const y = ((event.clientY - surfaceRect.top) / surfaceRect.height) * 100;
 
     return {
       x: Math.max(0, Math.min(100, x)),
@@ -193,7 +181,9 @@ export function TacticalBoard({
             touchAction: 'none', // Prevent default touch behaviors
             aspectRatio: pitchMode === 'full' ? '16 / 23' : '5 / 4',
             width: '100%',
-            cursor: isDrawMode ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23facc15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5l4 4L7 21l-4 1 1-4 12.5-12.5z'/%3E%3C/svg%3E\") 0 24, crosshair" : 'default'
+            cursor: isDrawMode
+              ? "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2724%27%20height%3D%2724%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M4.5%2019.5l1-5.5%209.5-9.5%205%205-9.5%209.5z%27%20fill%3D%27%23facc15%27/%3E%3Cpath%20d%3D%27M14.5%205.5l4%204%27%20stroke%3D%27%230f172a%27%20stroke-width%3D%271.2%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E\") 2 22, crosshair"
+              : 'default'
           }}
         >
 
@@ -271,20 +261,25 @@ export function TacticalBoard({
           )}
 
           {/* Drawing layer */}
-          <svg
+          <div
             ref={drawingSurfaceRef}
             className="absolute inset-0 z-30"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
             style={{
               pointerEvents: isDrawMode ? 'auto' : 'none',
               touchAction: 'none',
             }}
             onPointerDown={handleDrawingPointerDown}
           >
-            {drawings.map((stroke) => renderStroke(stroke))}
-            {activeStroke && renderStroke(activeStroke)}
-          </svg>
+            <svg
+              className="w-full h-full"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              style={{ pointerEvents: 'none' }}
+            >
+              {drawings.map((stroke) => renderStroke(stroke))}
+              {activeStroke && renderStroke(activeStroke)}
+            </svg>
+          </div>
 
           {/* Vecteezy Attribution - Required for Free License */}
           <div className="absolute bottom-0 right-1 z-20">

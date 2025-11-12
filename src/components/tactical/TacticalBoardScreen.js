@@ -170,9 +170,8 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   }, [pitchMode, persistenceManager]);
 
   const handleClearAction = useCallback(() => {
-    if (interactionMode === 'draw') {
-      handleClearDrawings();
-    } else {
+    handleClearDrawings();
+    if (interactionMode === 'drag') {
       handleClearChips();
     }
   }, [interactionMode, handleClearChips, handleClearDrawings]);
@@ -187,7 +186,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   }, [interactionMode, persistenceManager]);
 
   const canUndoDrawing = interactionMode === 'draw' && drawings.length > 0;
-  const clearButtonLabel = interactionMode === 'draw' ? 'Clear Drawings' : 'Clear Chips';
+  const clearButtonLabel = interactionMode === 'draw' ? 'Clear Drawings' : 'Clear All';
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
@@ -273,12 +272,6 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
           </div>
         </div>
       </div>
-
-      {interactionMode === 'draw' && (
-        <p className="text-xs text-amber-200 mb-3">
-          Draw freely on the pitch. Switch back to Drag mode to move or add chips.
-        </p>
-      )}
 
       {/* Tactical Board */}
       <TacticalBoard

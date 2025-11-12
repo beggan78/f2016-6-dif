@@ -65,8 +65,8 @@ export const DRAG_DROP = {
 
 // Free draw settings
 export const DRAWING = {
-  COLOR: '#fbbf24', // amber-300
-  WIDTH: 0.75, // SVG units on 0-100 viewBox
+  COLOR: '#1e293b', // slate-800
+  WIDTH: 0.5, // SVG units on 0-100 viewBox
 };
 
 // Color scheme for player chips

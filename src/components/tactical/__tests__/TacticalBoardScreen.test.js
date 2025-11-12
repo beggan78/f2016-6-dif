@@ -111,7 +111,7 @@ describe('TacticalBoardScreen', () => {
       expect(screen.getByText('Half')).toBeInTheDocument();
       expect(screen.getByText('Drag')).toBeInTheDocument();
       expect(screen.getByText('Draw')).toBeInTheDocument();
-      expect(screen.getByText('Clear Chips')).toBeInTheDocument();
+      expect(screen.getByText('Clear All')).toBeInTheDocument();
       expect(screen.getByTestId('tactical-board')).toBeInTheDocument();
     });
 
@@ -187,7 +187,7 @@ describe('TacticalBoardScreen', () => {
 
       expect(screen.getByTestId('interaction-mode')).toHaveTextContent('drag');
       expect(screen.queryByText('Undo')).not.toBeInTheDocument();
-      expect(screen.getByText('Clear Chips')).toBeInTheDocument();
+      expect(screen.getByText('Clear All')).toBeInTheDocument();
     });
   });
 
@@ -263,7 +263,7 @@ describe('TacticalBoardScreen', () => {
       fireEvent.click(screen.getByTestId('mock-place-chip'));
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('1');
 
-      fireEvent.click(screen.getByText('Clear Chips'));
+      fireEvent.click(screen.getByText('Clear All'));
 
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('0');
     });
