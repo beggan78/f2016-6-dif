@@ -12,14 +12,12 @@ Initial game configuration screen with comprehensive state management:
 - **Match Details**: Opponent name (optional, 50 char max), match type (league/friendly/cup/tournament/internal), venue type (home/away/neutral)
 - **Game Settings**: Periods (1-4), duration (5-40 min), substitution alerts (0-5 min)
 - **Format & Formation**: Format selection (5v5, future 7v7) with formation-specific options (2-2, 1-2-1)
-- **Substitution Mode**: Individual vs Pairs (for 7-player 2-2 squads only)
 - **Goalie Assignment**: Pre-assign goalies for each period
 - **Captain Selection**: Optional captain assignment
 
 **Team Configuration System**:
-- Uses `createTeamConfig()` to create composite configuration with format, squadSize, formation, substitutionType, and pairedRoleStrategy
+- Uses `createTeamConfig()` to create composite configuration with format, squadSize, and formation
 - Auto-creates team config when squad size is selected (uses `createTeamConfigFromSquadSize()`)
-- Pairs mode available only for 7-player 2-2 formation with role rotation options (fixed/alternating/period-alternating)
 
 **State Management**:
 - Integrates with `useGameState` hook for all configuration state
@@ -41,13 +39,11 @@ Initial game configuration screen with comprehensive state management:
 ### PeriodSetupScreen.js
 Formation and position assignment for each period:
 
-**Formation Modes**:
-- **Pairs Mode**: Left pair, right pair, substitute pair (defender + attacker each)
-- **Individual Mode**: Position-specific assignments (2-2: leftDefender, rightDefender, leftAttacker, rightAttacker; 1-2-1: defender, left, right, attacker; plus substitutes)
+**Formation Assignments**:
+- Position-specific assignments (2-2: leftDefender, rightDefender, leftAttacker, rightAttacker; 1-2-1: defender, left, right, attacker; plus substitutes)
 
 **Dynamic UI Rendering**:
-- Renders `PairSelectionCard` components for pairs mode
-- Renders `IndividualPositionCard` components for individual mode
+- Renders `IndividualPositionCard` components for each position
 - Uses `POSITION_CONFIG` map to define position titles and keys
 - Uses `getModeDefinition()` to get field and substitute positions
 
@@ -73,7 +69,6 @@ Formation and position assignment for each period:
 **Formation Validation**:
 - `isFormationComplete()` checks all positions filled and no duplicates
 - Disables "Enter Game" button until formation is valid
-- Supports both pairs and individual mode validation
 
 **Resume Support**:
 - Accepts `resumeFormationData` prop to restore saved formations
@@ -97,7 +92,7 @@ Visual preview component for tactical formations:
 ### Configuration State Sequence
 1. User selects squad → auto-creates team config
 2. User selects formation → updates team config
-3. User changes substitution mode → recreates team config with new substitution type
+3. Rotation queue recalculates automatically (single substitution system—no mode switch)
 4. All changes set `hasActiveConfiguration` to true
 
 ### Resume Data Processing
@@ -130,7 +125,7 @@ Visual preview component for tactical formations:
 ## Important Notes
 
 - ConfigurationScreen must render before PeriodSetupScreen in game flow
-- Formation data structure differs between pairs and individual modes
+- Formation data structure differs between supported formations
 - Goalie is always excluded from field/substitute position options
 - Resume data processing uses refs to prevent race conditions and infinite loops
 - Inactive player handling requires user confirmation before activation

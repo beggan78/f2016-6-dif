@@ -415,7 +415,7 @@ describe('GamePersistenceManager', () => {
         allPlayers: [],
         view: 'config',
         selectedSquadIds: [],
-        teamConfig: { format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+        teamConfig: { format: '5v5', squadSize: 7, formation: '2-2' },
         formation: expect.any(Object)
       });
     });

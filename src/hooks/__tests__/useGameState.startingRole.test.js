@@ -66,8 +66,7 @@ jest.mock('../../game/queue/rotationQueue', () => ({
 jest.mock('../../game/logic/substitutionManager', () => ({
   createSubstitutionManager: jest.fn(() => ({
     initialize: jest.fn(() => ({
-      rotationQueue: [],
-      currentPair: null
+      rotationQueue: []
     })),
     getRotationQueue: jest.fn(() => [])
   })),
@@ -94,7 +93,6 @@ jest.mock('../../services/matchStateManager', () => ({
 }));
 
 jest.mock('../../utils/formationGenerator', () => ({
-  generateRecommendedFormation: jest.fn(),
   generateIndividualFormationRecommendation: jest.fn()
 }));
 
@@ -125,8 +123,7 @@ describe('useGameState starting role persistence', () => {
     teamConfig: {
       format: '5v5',
       formation: FORMATIONS.FORMATION_2_2,
-      squadSize: 6,
-      substitutionType: 'individual'
+      squadSize: 6
     },
     selectedFormation: FORMATIONS.FORMATION_2_2,
     currentPeriodNumber: 1,

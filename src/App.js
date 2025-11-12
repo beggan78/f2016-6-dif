@@ -648,7 +648,7 @@ function AppContent() {
     };
   }, []);
 
-  const availableForPairing = useMemo(() => {
+  const availableForAssignment = useMemo(() => {
     if (!gameState.formation.goalie) return [];
     return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie);
   }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie]);
@@ -770,9 +770,6 @@ function AppContent() {
     gameState.setPeriodGoalieIds({});
     gameState.setFormation({
       goalie: null,
-      leftPair: { defender: null, attacker: null },
-      rightPair: { defender: null, attacker: null },
-      subPair: { defender: null, attacker: null },
       // 6-player formation structure
       leftDefender: null,
       rightDefender: null,
@@ -971,7 +968,7 @@ function AppContent() {
             currentPeriodNumber={gameState.currentPeriodNumber}
             formation={gameState.formation}
             setFormation={gameState.setFormation}
-            availableForPairing={availableForPairing}
+            availableForAssignment={availableForAssignment}
             allPlayers={gameState.allPlayers}
             setAllPlayers={gameState.setAllPlayers}
             handleStartGame={handleStartGame}
@@ -1012,13 +1009,11 @@ function AppContent() {
             resetSubTimer={timers.resetSubTimer}
             handleUndoSubstitution={handleUndoSubstitution}
             handleEndPeriod={handleEndPeriod}
-            nextPhysicalPairToSubOut={gameState.nextPhysicalPairToSubOut}
             nextPlayerToSubOut={gameState.nextPlayerToSubOut}
             nextPlayerIdToSubOut={gameState.nextPlayerIdToSubOut}
             nextNextPlayerIdToSubOut={gameState.nextNextPlayerIdToSubOut}
             setNextNextPlayerIdToSubOut={gameState.setNextNextPlayerIdToSubOut}
             selectedSquadPlayers={selectedSquadPlayers}
-            setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}
             teamConfig={gameState.teamConfig}
@@ -1157,8 +1152,6 @@ function AppContent() {
             onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
             teamConfig={gameState.teamConfig}
-            onSplitPairs={gameState.splitPairs}
-            onFormPairs={gameState.formPairs}
             allPlayers={gameState.allPlayers}
             selectedSquadIds={gameState.selectedSquadIds}
             setView={navigateToView}

@@ -4,21 +4,17 @@ import {
   createDefaultTeamConfig,
   FORMATIONS,
   FORMATS,
-  FORMAT_CONFIGS,
-  SUBSTITUTION_TYPES,
-  validateAndCorrectTeamConfig,
-  PAIRED_ROLE_STRATEGY_TYPES,
-  canUsePairedRoleStrategy
+  validateAndCorrectTeamConfig
 } from '../constants/teamConfiguration';
 
 /**
  * Hook for managing team configuration and formation selection
  *
  * Handles:
- * - Team configuration state (format, squad size, formation, substitution type)
+ * - Team configuration state (format, squad size, formation)
  * - Formation selection UI state
  * - Configuration updates and validation
- * - Formation compatibility logic (e.g., 1-2-1 with pairs)
+ * - Formation compatibility logic across supported formations
  *
  * @param {Object} initialState - Initial state from persistence
  * @returns {Object} Team configuration state and handlers
@@ -60,8 +56,6 @@ export function useTeamConfig(initialState = {}) {
   // Team configuration update function with validation
   const updateTeamConfig = useCallback((newTeamConfig) => {
     console.log('📝 updateTeamConfig called:', {
-      'newTeamConfig.substitutionType': newTeamConfig?.substitutionType,
-      'newTeamConfig.pairedRoleStrategy': newTeamConfig?.pairedRoleStrategy,
       fullNewConfig: newTeamConfig
     });
 
@@ -83,8 +77,6 @@ export function useTeamConfig(initialState = {}) {
   const updateFormationSelection = useCallback((newFormation) => {
     console.log('🔄 updateFormationSelection called:', {
       newFormation,
-      'teamConfig.substitutionType': teamConfig?.substitutionType,
-      'teamConfig.pairedRoleStrategy': teamConfig?.pairedRoleStrategy,
       'teamConfig.squadSize': teamConfig?.squadSize
     });
 
@@ -102,45 +94,21 @@ export function useTeamConfig(initialState = {}) {
   }, [teamConfig, updateTeamConfig]);
 
   // Create new team config from squad size with validation
-  const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = null, formatOverride = null) => {
+  const createTeamConfigFromSquadSize = useCallback((squadSize, formatOverride = null) => {
     console.log('🔧 createTeamConfigFromSquadSize called:', {
       squadSize,
-      substitutionType,
-      selectedFormation,
-      'currentTeamConfig.pairedRoleStrategy': teamConfig?.pairedRoleStrategy,
-      'currentTeamConfig.substitutionType': teamConfig?.substitutionType
+      selectedFormation
     });
 
     const formatToUse = formatOverride || teamConfig?.format || FORMATS.FORMAT_5V5;
-    const formatConfig = FORMAT_CONFIGS[formatToUse] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
-    const substitutionToUse = substitutionType
-      || teamConfig?.substitutionType
-      || (formatConfig.getDefaultSubstitutionType
-        ? formatConfig.getDefaultSubstitutionType(squadSize)
-        : SUBSTITUTION_TYPES.INDIVIDUAL);
-
-    const candidateConfig = {
-      format: formatToUse,
-      squadSize,
-      formation: selectedFormation,
-      substitutionType: substitutionToUse
-    };
-
-    const pairRotation = canUsePairedRoleStrategy(candidateConfig)
-      ? teamConfig?.pairedRoleStrategy || PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
-      : null;
 
     const newConfig = createTeamConfig(
       formatToUse,
       squadSize,
-      selectedFormation, // use current formation selection
-      substitutionToUse,
-      pairRotation
+      selectedFormation // use current formation selection
     );
 
     console.log('🔧 createTeamConfigFromSquadSize result:', {
-      'newConfig.substitutionType': newConfig.substitutionType,
-      'newConfig.pairedRoleStrategy': newConfig.pairedRoleStrategy,
       fullNewConfig: newConfig
     });
 

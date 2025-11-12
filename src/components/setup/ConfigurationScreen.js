@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, PAIRED_ROLE_STRATEGY_DEFINITIONS, PAIRED_ROLE_STRATEGY_TYPES, getMinimumPlayersForFormat, getMaximumPlayersForFormat, canUsePairedRoleStrategy } from '../../constants/teamConfiguration';
+import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
@@ -16,7 +16,6 @@ import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
 import { OpponentNameAutocomplete } from './OpponentNameAutocomplete';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
-import PairRoleRotationHelpModal from '../shared/PairRoleRotationHelpModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
@@ -72,7 +71,6 @@ export function ConfigurationScreen({
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
-  const [isPairRoleHelpModalOpen, setIsPairRoleHelpModalOpen] = React.useState(false);
   const [saveConfigStatus, setSaveConfigStatus] = React.useState({ loading: false, message: '', error: null });
   
   // Direct pending match state (no navigation complexity)
@@ -100,17 +98,6 @@ export function ConfigurationScreen({
   const meetsMinimumSelection = selectedSquadIds.length >= minPlayersRequired;
   const exceedsFormatMaximum = selectedSquadIds.length > maxPlayersAllowed;
   const withinFormatBounds = meetsMinimumSelection && !exceedsFormatMaximum;
-  const currentSquadSize = teamConfig?.squadSize || selectedSquadIds.length;
-  const formationForEligibility = teamConfig?.formation || selectedFormation;
-  const substitutionTypeForEligibility = teamConfig?.substitutionType || SUBSTITUTION_TYPES.INDIVIDUAL;
-  const showPairedRoleStrategySelector = canUsePairedRoleStrategy({
-    format: currentFormat,
-    squadSize: currentSquadSize,
-    formation: formationForEligibility,
-    substitutionType: substitutionTypeForEligibility
-  });
-  const activePairedRoleStrategy = teamConfig?.pairedRoleStrategy || PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD;
-
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
   // Ref to track if resume data has been applied to prevent reapplication
@@ -319,71 +306,6 @@ export function ConfigurationScreen({
     clearMessages: clearVoteMessages,
     isAuthenticated: isVoteAuthenticated
   } = useFormationVotes();
-
-  // Handle substitution mode changes
-  const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
-    if (!teamConfig) return;
-
-    if (teamConfig?.substitutionType === newSubstitutionType) {
-      return;
-    }
-
-    const format = teamConfig.format || FORMATS.FORMAT_5V5;
-    const formatConfig = FORMAT_CONFIGS[format] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
-    if (!formatConfig.allowedSubstitutionTypes.includes(newSubstitutionType)) {
-      console.warn(`Substitution type ${newSubstitutionType} not supported for format ${format}`);
-      return;
-    }
-
-    const newTeamConfig = createTeamConfig(
-      format,
-      teamConfig.squadSize || selectedSquadIds.length,
-      teamConfig.formation || selectedFormation,
-      newSubstitutionType,
-      teamConfig.pairedRoleStrategy
-    );
-
-    updateTeamConfig(newTeamConfig);
-    setHasActiveConfiguration(true);
-  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, setHasActiveConfiguration]);
-
-  // Handle paired role strategy changes
-  const handlePairedRoleStrategyChange = React.useCallback((newStrategy) => {
-    if (!teamConfig) return;
-
-    if (teamConfig?.pairedRoleStrategy === newStrategy) {
-      return;
-    }
-
-    const format = teamConfig.format || FORMATS.FORMAT_5V5;
-    const squadSize = teamConfig.squadSize || selectedSquadIds.length;
-    const formation = teamConfig.formation || selectedFormation;
-    const substitutionType = teamConfig.substitutionType || SUBSTITUTION_TYPES.INDIVIDUAL;
-
-    if (!canUsePairedRoleStrategy({ format, squadSize, formation, substitutionType })) {
-      return;
-    }
-
-    const newTeamConfig = createTeamConfig(
-      format,
-      squadSize,
-      formation,
-      substitutionType,
-      newStrategy
-    );
-
-    updateTeamConfig(newTeamConfig);
-    setHasActiveConfiguration(true);
-  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, setHasActiveConfiguration]);
-
-  // Ensure new configurations default to individual substitution mode
-  React.useEffect(() => {
-    if (!teamConfig) return;
-
-    if (!teamConfig?.substitutionType || teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-      handleSubstitutionModeChange(SUBSTITUTION_TYPES.INDIVIDUAL);
-    }
-  }, [teamConfig, teamConfig?.substitutionType, handleSubstitutionModeChange]);
 
   // Sync team roster to game state on mount and when team/players change
   React.useEffect(() => {
@@ -642,8 +564,6 @@ export function ConfigurationScreen({
         // This prevents formation compatibility checks from overriding the restored config
         if (resumeData.teamConfig) {
           console.log('🔄 RESUME: Restoring team config:', {
-            substitutionType: resumeData.teamConfig.substitutionType,
-            pairedRoleStrategy: resumeData.teamConfig.pairedRoleStrategy,
             fullConfig: resumeData.teamConfig
           });
           updateTeamConfig(resumeData.teamConfig);
@@ -770,16 +690,11 @@ export function ConfigurationScreen({
       // Auto-create team configuration based on squad size
       // GUARD: Skip auto-configuration during resume data processing to prevent override
       if (uniqueIds.length >= minPlayersRequired && uniqueIds.length <= maxPlayersAllowed && !isProcessingResumeDataRef.current) {
-        const formatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
-        const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
-          ? formatConfig.getDefaultSubstitutionType(uniqueIds.length)
-          : SUBSTITUTION_TYPES.INDIVIDUAL;
         console.log('⚡ AUTO-CONFIG: Squad selection changed, triggering createTeamConfigFromSquadSize:', {
           squadSize: uniqueIds.length,
-          defaultSubstitutionType,
           currentTeamConfig: teamConfig
         });
-        createTeamConfigFromSquadSize(uniqueIds.length, defaultSubstitutionType, currentFormat);
+        createTeamConfigFromSquadSize(uniqueIds.length, currentFormat);
       } else if (isProcessingResumeDataRef.current) {
         console.log('🛡️ AUTO-CONFIG: Skipped during resume processing to prevent override');
       }
@@ -874,21 +789,10 @@ export function ConfigurationScreen({
       : fallbackFormation;
 
     const squadSize = teamConfig.squadSize || selectedSquadIds.length || (formatConfig.fieldPlayers + 1);
-    const allowedSubTypes = formatConfig.allowedSubstitutionTypes || [SUBSTITUTION_TYPES.INDIVIDUAL];
-    const nextSubstitutionType = allowedSubTypes.includes(teamConfig.substitutionType)
-      ? teamConfig.substitutionType
-      : (formatConfig.getDefaultSubstitutionType
-        ? formatConfig.getDefaultSubstitutionType(squadSize)
-        : SUBSTITUTION_TYPES.INDIVIDUAL);
-
-    const nextPairedRoleStrategy = teamConfig.pairedRoleStrategy;
-
     const newTeamConfig = createTeamConfig(
       newFormat,
       squadSize,
-      nextFormation,
-      nextSubstitutionType,
-      nextPairedRoleStrategy
+      nextFormation
     );
 
     setSelectedFormation(nextFormation);
@@ -918,7 +822,6 @@ export function ConfigurationScreen({
 
     // Select formation based on format
     let randomFormation;
-    let substitutionType;
 
     if (isCurrently7v7) {
       // 7v7: Randomly select between available 7v7 formations
@@ -929,18 +832,16 @@ export function ConfigurationScreen({
       randomFormation = formations7v7.length > 0
         ? formations7v7[Math.floor(Math.random() * formations7v7.length)]
         : FORMAT_CONFIGS[FORMATS.FORMAT_7V7].defaultFormation;
-      substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL; // 7v7 only supports individual
     } else {
-      // 5v5: Always select 2-2 formation with individual substitution (paired rotation handled separately)
+      // 5v5: Always select 2-2 formation (single substitution system)
       randomFormation = FORMATIONS.FORMATION_2_2;
-      substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL;
     }
 
     handleFormatChange(format);
     updateFormationSelection(randomFormation);
 
     // Create team config based on format
-    createTeamConfigFromSquadSize(squadSize, substitutionType, format);
+    createTeamConfigFromSquadSize(squadSize, format);
 
     // Randomize goalie assignments (use current numPeriods setting)
     const goalieAssignments = randomizeGoalieAssignments(randomPlayers, numPeriods);
@@ -1405,43 +1306,6 @@ export function ConfigurationScreen({
         </div>
       </div>
 
-      {/* Paired role strategy selection */}
-      {showPairedRoleStrategySelector && (
-        <div className="p-3 bg-slate-700 rounded-md">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-base font-medium text-sky-200">Role Rotation</h3>
-            <button
-              type="button"
-              onClick={() => setIsPairRoleHelpModalOpen(true)}
-              className="text-slate-400 hover:text-sky-300 transition-colors"
-              title="Learn about role rotation options"
-            >
-              <HelpCircle className="h-4 w-4" />
-            </button>
-          </div>
-          <p className="text-xs text-slate-400 mb-3">
-            Choose how paired players rotate roles when you substitute two players at a time. Available for 5v5 2-2 lineups with 7 or 9 players.
-          </p>
-          <div className="space-y-2">
-            {Object.entries(PAIRED_ROLE_STRATEGY_DEFINITIONS).map(([value, definition]) => (
-              <label key={value} className="flex items-start space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="pairedRoleStrategy"
-                  value={value}
-                  checked={activePairedRoleStrategy === value}
-                  onChange={e => handlePairedRoleStrategyChange(e.target.value)}
-                  className="form-radio h-4 w-4 text-sky-500 bg-slate-800 border-slate-500 focus:ring-sky-400 mt-0.5"
-                />
-                <div>
-                  <span className="text-sky-50 text-sm font-medium">{definition.label}</span>
-                  <p className="text-xs text-slate-300">{definition.shortDescription}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Goalie Assignment */}
       {withinFormatBounds && (
@@ -1541,11 +1405,6 @@ export function ConfigurationScreen({
         <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
       </FeatureVoteModal>
 
-      <PairRoleRotationHelpModal
-        isOpen={isPairRoleHelpModalOpen}
-        onClose={() => setIsPairRoleHelpModalOpen(false)}
-      />
-      
       {/* Direct Pending Match Resume Modal (no navigation complexity) */}
       <PendingMatchResumeModal
         isOpen={showPendingMatchModal}

@@ -74,7 +74,7 @@ Extracts player management logic from useGameState.
 Manages team configuration and formation selection.
 
 **Key State:**
-- `teamConfig` - Composite config (format, squadSize, formation, substitutionType)
+- `teamConfig` - Composite config (format, squadSize, formation)
 - `selectedFormation` - User-selected formation ('2-2', '1-2-1')
 - Formation-aware config resolution for position utilities
 

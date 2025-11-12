@@ -1,36 +1,22 @@
 import { PLAYER_ROLES } from '../../constants/playerConstants';
-import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
-import { PAIRED_ROLE_STRATEGY_TYPES, canUsePairedRoleStrategy } from '../../constants/teamConfiguration';
+import { getModeDefinition } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { findPlayerById, createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
 import { updatePlayerTimeStats, startNewStint, resetPlayerStintTimer } from '../time/stintManager';
 import { handleError, createError, ERROR_SEVERITY } from '../../utils/errorHandler';
-import { analyzeOutgoingPair } from '../utils/pairedRotationUtils';
 
 const LEFT = 'left';
 const RIGHT = 'right';
 
 /**
- * Deep clone formation object efficiently
- * Formations can have nested pair objects (e.g., {leftPair: {defender: 'p1', attacker: 'p2'}})
- * This handles 1-level nesting which is sufficient for all current formation types
+ * Clone formation object
  *
  * @param {Object} formation - Formation object to clone
- * @returns {Object} Deep cloned formation
+ * @returns {Object} Cloned formation
  */
 function cloneFormation(formation) {
-  const cloned = {};
-  for (const key in formation) {
-    const value = formation[key];
-    // Handle nested pair objects (shallow clone the pair)
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      cloned[key] = { ...value };
-    } else {
-      cloned[key] = value;
-    }
-  }
-  return cloned;
+  return { ...formation };
 }
 
 const getSideFromPosition = (position) => {
@@ -46,8 +32,6 @@ const getSideFromPosition = (position) => {
   }
   return null;
 };
-
-const getPreferredSideForPlayer = (player) => player?.stats?.preferredSide || null;
 
 /**
  * Manages substitution logic for different team modes
@@ -73,121 +57,6 @@ export class SubstitutionManager {
    */
   getPositionRole(position) {
     return getPositionRole(position);
-  }
-
-  /**
-   * Handles pairs substitution (7-player pairs mode)
-   * 
-   * Uses conditional time tracking based on timer pause state:
-   * - Normal substitution (timer not paused): Accumulates time using updatePlayerTimeStats()
-   * - Pause substitution (timer paused): Preserves time using resetPlayerStintTimer()
-   * 
-   * Supports pair role rotation:
-   * - Keep throughout period: Players maintain their roles (defender/attacker) during substitution
-   * - Swap every rotation: Players swap roles each time they are substituted
-   * 
-   * @param {Object} context - Substitution context
-   * @param {Object} context.formation - Current formation
-   * @param {string} context.nextPhysicalPairToSubOut - Pair to substitute out
-   * @param {Array} context.allPlayers - All player objects
-   * @param {number} context.currentTimeEpoch - Current time
-   * @param {boolean} context.isSubTimerPaused - Whether timer is paused
-   * @returns {Object} Substitution result with updated formation and players
-   */
-  handlePairsSubstitution(context) {
-    const { 
-      formation,
-      nextPhysicalPairToSubOut, 
-      allPlayers, 
-      currentTimeEpoch,
-      isSubTimerPaused
-    } = context;
-
-    const pairToSubOutKey = nextPhysicalPairToSubOut;
-    const pairToSubInKey = 'subPair';
-
-    const pairGettingSubbed = formation[pairToSubOutKey];
-    const pairComingIn = formation[pairToSubInKey];
-
-    const playersGoingOffIds = [pairGettingSubbed.defender, pairGettingSubbed.attacker].filter(Boolean);
-    const playersComingOnIds = [pairComingIn.defender, pairComingIn.attacker].filter(Boolean);
-
-    // Determine role rotation behavior from team configuration
-    const shouldSwapRoles = this.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION;
-
-    // Calculate new formation with role rotation support
-    const newFormation = cloneFormation(formation);
-    
-    if (shouldSwapRoles) {
-      // Keep incoming pair roles (they already have the swapped roles from when they went out)
-      newFormation[pairToSubOutKey].defender = pairComingIn.defender;
-      newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
-      
-      // Swap roles ONLY for outgoing pair (they become substitutes with swapped roles)
-      newFormation[pairToSubInKey].defender = pairGettingSubbed.attacker;
-      newFormation[pairToSubInKey].attacker = pairGettingSubbed.defender;
-    } else {
-      // Keep roles (current behavior)
-      newFormation[pairToSubOutKey].defender = pairComingIn.defender;
-      newFormation[pairToSubOutKey].attacker = pairComingIn.attacker;
-      newFormation[pairToSubInKey].defender = pairGettingSubbed.defender;
-      newFormation[pairToSubInKey].attacker = pairGettingSubbed.attacker;
-    }
-
-    // Calculate updated players with role rotation support
-    const updatedPlayers = allPlayers.map(p => {
-      if (playersGoingOffIds.includes(p.id)) {
-        // Use conditional time tracking based on timer pause state
-        const timeResult = isSubTimerPaused 
-          ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
-          : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
-        
-        // Note: Players going to substitutes always have SUBSTITUTE role when off field
-        // The role rotation is reflected in their position within the substitute pair formation
-        
-        return {
-          ...p,
-          stats: {
-            ...timeResult.stats,
-            currentStatus: 'substitute',
-            currentPairKey: pairToSubInKey,
-            currentRole: PLAYER_ROLES.SUBSTITUTE // Always substitute when off field
-          }
-        };
-      }
-      if (playersComingOnIds.includes(p.id)) {
-        // Use conditional time tracking based on timer pause state
-        const timeResult = isSubTimerPaused 
-          ? resetPlayerStintTimer(p, currentTimeEpoch)  // During pause: don't add time
-          : { ...p, stats: updatePlayerTimeStats(p, currentTimeEpoch, false) }; // Normal: add time
-        
-        // Determine new role based on position in new formation
-        // Since we don't swap incoming pair roles in formation, they keep their substitute roles
-        const isDefender = pairComingIn.defender === p.id;
-        const newRole = isDefender ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        
-        return {
-          ...p,
-          stats: {
-            ...timeResult.stats,
-            currentStatus: 'on_field',
-            currentPairKey: pairToSubOutKey,
-            currentRole: newRole
-          }
-        };
-      }
-      return p;
-    });
-
-    const newNextPair = pairToSubOutKey === 'leftPair' ? 'rightPair' : 'leftPair';
-
-    return {
-      newFormation,
-      updatedPlayers,
-      newNextPhysicalPairToSubOut: newNextPair,
-      playersComingOnIds: playersComingOnIds,
-      playersGoingOffIds: playersGoingOffIds
-    };
   }
 
 
@@ -247,57 +116,19 @@ export class SubstitutionManager {
     const modeConfig = this.getModeConfig();
     const { substitutePositions, supportsInactiveUsers, substituteRotationPattern } = modeConfig;
 
-    const configForPairedStrategy = {
-      format: this.teamConfig?.format,
-      squadSize: this.teamConfig?.squadSize,
-      formation: this.teamConfig?.formation || this.selectedFormation,
-      substitutionType: this.teamConfig?.substitutionType
-    };
-
-    let isPairedRotationActive = substitutionCount === 2 && canUsePairedRoleStrategy(configForPairedStrategy);
-    let playersToSubOutIds = rotationQueue.slice(0, substitutionCount);
-    let pairedPairMeta = null;
-
-    if (isPairedRotationActive) {
-      pairedPairMeta = analyzeOutgoingPair(formation, playersToSubOutIds);
-      if (!pairedPairMeta) {
-        isPairedRotationActive = false;
-      } else {
-        const orderedPairedIds = pairedPairMeta.playerIds
-          ? [...pairedPairMeta.playerIds]
-          : [pairedPairMeta.defenderId, pairedPairMeta.attackerId].filter(Boolean);
-
-        if (orderedPairedIds.length < substitutionCount) {
-          isPairedRotationActive = false;
-        } else {
-          playersToSubOutIds = orderedPairedIds.slice(0, substitutionCount);
-        }
-      }
-    }
+    const playersToSubOutIds = rotationQueue.slice(0, substitutionCount);
 
     // Get N substitute positions (players to bring on)
-    let substitutePositionsToUse = substitutePositions.slice(0, substitutionCount);
-    const shouldSwapRoles = isPairedRotationActive && this.teamConfig?.pairedRoleStrategy === PAIRED_ROLE_STRATEGY_TYPES.SWAP_EVERY_ROTATION;
+    const substitutePositionsToUse = substitutePositions.slice(0, substitutionCount);
 
     // Validate that all players to sub out are in field positions
     const fieldPositions = modeConfig.fieldPositions;
-
-    const availableSubstitutes = substitutePositions.map(position => {
-      const playerId = formation[position];
-      const player = findPlayerById(allPlayers, playerId);
-      return {
-        position,
-        playerId,
-        preferredSide: getPreferredSideForPlayer(player)
-      };
-    });
-    const usedSubstitutePositions = new Set();
 
     // Build substitution pairs: map each field player to their substitute
     const substitutionPairs = [];
     for (let i = 0; i < playersToSubOutIds.length; i++) {
       const playerGoingOffId = playersToSubOutIds[i];
-      let substitutePosition = substitutePositionsToUse[i];
+      const substitutePosition = substitutePositionsToUse[i];
 
       // Find field position of outgoing player
       const fieldPosition = fieldPositions.find(pos => formation[pos] === playerGoingOffId);
@@ -319,28 +150,6 @@ export class SubstitutionManager {
         throw error;
       }
 
-      const side = getSideFromPosition(fieldPosition);
-
-      if (shouldSwapRoles && substitutionCount > 1) {
-        let chosenSubstitute = null;
-
-        if (side) {
-          chosenSubstitute = availableSubstitutes.find(sub =>
-            !usedSubstitutePositions.has(sub.position) &&
-            sub.preferredSide === side
-          );
-        }
-
-        if (!chosenSubstitute) {
-          chosenSubstitute = availableSubstitutes.find(sub => !usedSubstitutePositions.has(sub.position));
-        }
-
-        if (chosenSubstitute) {
-          substitutePosition = chosenSubstitute.position;
-        }
-      }
-
-      usedSubstitutePositions.add(substitutePosition);
       const playerComingOnId = formation[substitutePosition];
 
       // Safety check for inactive substitute
@@ -351,6 +160,7 @@ export class SubstitutionManager {
         }
       }
 
+      const side = getSideFromPosition(fieldPosition);
       const newRole = this.getPositionRole(fieldPosition);
 
       substitutionPairs.push({
@@ -487,7 +297,7 @@ export class SubstitutionManager {
           stats: {
             ...timeResult.stats,
             currentStatus: 'substitute',
-            currentPairKey: newSubstitutePosition || pair.substitutePosition,
+            currentPositionKey: newSubstitutePosition || pair.substitutePosition,
             currentRole: PLAYER_ROLES.SUBSTITUTE,
             ...(pair.side ? { preferredSide: pair.side } : {})
           }
@@ -508,7 +318,7 @@ export class SubstitutionManager {
           stats: {
             ...timeResult.stats,
             currentStatus: 'on_field',
-            currentPairKey: pair.fieldPosition,
+            currentPositionKey: pair.fieldPosition,
             currentRole: pair.newRole,
             ...(pair.side ? { preferredSide: pair.side } : {})
           }
@@ -526,7 +336,7 @@ export class SubstitutionManager {
             ...p,
             stats: {
               ...p.stats,
-              currentPairKey: newPosition,
+              currentPositionKey: newPosition,
               currentRole: PLAYER_ROLES.SUBSTITUTE
             }
           };
@@ -573,21 +383,15 @@ export class SubstitutionManager {
   }
 
   /**
-   * Main substitution handler - delegates to appropriate method based on team mode
+   * Main substitution handler - currently a single rotation system
    */
   executeSubstitution(context) {
-    if (this.teamConfig?.substitutionType === 'pairs') {
-      return this.handlePairsSubstitution(context);
-    } else if (isIndividualMode(this.teamConfig)) {
-      return this.handleIndividualModeSubstitution(context);
-    } else {
-      throw new Error(`Unknown team mode: ${this.teamConfig}`);
-    }
+    return this.handleIndividualModeSubstitution(context);
   }
 }
 
 /**
- * Handles role changes within a period (like pair swaps)
+ * Handles role changes within a period (e.g., manual swaps)
  * This calculates time for the previous role and updates the player's current role
  * 
  * Uses conditional time tracking:

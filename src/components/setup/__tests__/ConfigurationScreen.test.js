@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
-import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES, PAIRED_ROLE_STRATEGY_TYPES } from '../../../constants/teamConfiguration';
+import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
 
 const mockUseAuth = jest.fn(() => ({
@@ -117,10 +117,6 @@ jest.mock('../../shared/FeatureVoteModal', () => ({
   default: () => null
 }));
 
-jest.mock('../../shared/PairRoleRotationHelpModal', () => ({
-  __esModule: true,
-  default: () => null
-}));
 
 jest.mock('../../../services/pendingMatchService', () => ({
   checkForPendingMatches: jest.fn(() => Promise.resolve({ shouldShow: false, pendingMatches: [] })),
@@ -175,8 +171,7 @@ const buildProps = (overrides = {}) => ({
   teamConfig: {
     format: FORMATS.FORMAT_5V5,
     squadSize: 7,
-    formation: FORMATIONS.FORMATION_2_2,
-    substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+    formation: FORMATIONS.FORMATION_2_2
   },
   updateTeamConfig: jest.fn(),
   selectedFormation: FORMATIONS.FORMATION_2_2,
@@ -253,7 +248,7 @@ describe('ConfigurationScreen squad selection', () => {
 
     expect(props.createTeamConfigFromSquadSize.mock.calls.length).toBeGreaterThan(initialConfigCalls);
     const lastConfigCall = props.createTeamConfigFromSquadSize.mock.calls[props.createTeamConfigFromSquadSize.mock.calls.length - 1];
-    expect(lastConfigCall).toEqual([expectedIds.length, SUBSTITUTION_TYPES.INDIVIDUAL, FORMATS.FORMAT_5V5]);
+    expect(lastConfigCall).toEqual([expectedIds.length, FORMATS.FORMAT_5V5]);
 
     rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: nextSelection }} />);
 
@@ -360,66 +355,6 @@ describe('ConfigurationScreen opponent suggestions', () => {
     fireEvent.focus(updatedInput);
 
     expect(updatedInput.value).toBe('');
-  });
-});
-
-describe('paired role strategy selector', () => {
-  it('renders selector for eligible individual configurations', () => {
-    const selectedIds = Array.from({ length: 9 }).map((_, index) => `player-${index + 1}`);
-    const props = buildProps({
-      selectedSquadIds: selectedIds,
-      teamConfig: {
-        format: FORMATS.FORMAT_5V5,
-        squadSize: 9,
-        formation: FORMATIONS.FORMATION_2_2,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
-        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
-      }
-    });
-
-    render(<ConfigurationScreen {...props} />);
-
-    expect(screen.getByText(/Role Rotation/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Keep roles throughout period/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Swap roles every rotation/i)).toBeInTheDocument();
-  });
-
-  it('renders role strategy selector for eligible 7-player squads', () => {
-    const selectedIds = Array.from({ length: 7 }).map((_, index) => `player-${index + 1}`);
-    const props = buildProps({
-      selectedSquadIds: selectedIds,
-      teamConfig: {
-        format: FORMATS.FORMAT_5V5,
-        squadSize: 7,
-        formation: FORMATIONS.FORMATION_2_2,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL,
-        pairedRoleStrategy: PAIRED_ROLE_STRATEGY_TYPES.KEEP_THROUGHOUT_PERIOD
-      }
-    });
-
-    render(<ConfigurationScreen {...props} />);
-
-    expect(screen.getByText(/Role Rotation/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Keep roles throughout period/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Swap roles every rotation/i)).toBeInTheDocument();
-    expect(screen.getByText(/Available for 5v5 2-2 lineups with 7 or 9 players/i)).toBeInTheDocument();
-  });
-
-  it('hides role strategy selector for ineligible configurations', () => {
-    const selectedIds = Array.from({ length: 6 }).map((_, index) => `player-${index + 1}`);
-    const props = buildProps({
-      selectedSquadIds: selectedIds,
-      teamConfig: {
-        format: FORMATS.FORMAT_5V5,
-        squadSize: 6,
-        formation: FORMATIONS.FORMATION_2_2,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
-      }
-    });
-
-    render(<ConfigurationScreen {...props} />);
-
-    expect(screen.queryByText(/Role Rotation/i)).not.toBeInTheDocument();
   });
 });
 

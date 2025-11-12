@@ -57,7 +57,6 @@ jest.mock('../formations/FormationRenderer', () => ({
     animationState,
     recentlySubstitutedPlayers,
     hideNextOffIndicator,
-    nextPhysicalPairToSubOut,
     nextPlayerIdToSubOut,
     nextNextPlayerIdToSubOut,
     getPlayerNameById,
@@ -280,32 +279,13 @@ describe('GameScreen', () => {
       expect(screen.getByText('3 - 1')).toBeInTheDocument();
     });
 
-    it('should render with pairs team config', () => {
-      const props = {
-        ...defaultProps,
-        teamConfig: {
-          format: '5v5',
-          squadSize: 7,
-          formation: '2-2',
-          substitutionType: 'pairs'
-        },
-        formation: createMockFormation(TEAM_CONFIGS.PAIRS_7)
-      };
-      
-      render(<GameScreen {...props} />);
-      
-      const formationRenderer = screen.getByTestId('formation-renderer-field');
-      expect(formationRenderer).toBeInTheDocument();
-    });
-
     it('should render with individual team config', () => {
       const props = {
         ...defaultProps,
         teamConfig: {
           format: '5v5',
           squadSize: 6,
-          formation: '2-2',
-          substitutionType: 'individual'
+          formation: '2-2'
         },
         formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6)
       };
@@ -486,8 +466,7 @@ describe('GameScreen', () => {
       const teamConfig = {
         format: '7v7',
         squadSize: 14,
-        formation: '2-2-2',
-        substitutionType: 'individual'
+        formation: '2-2-2'
       };
       const props = createMockGameScreenProps({ teamConfig });
 

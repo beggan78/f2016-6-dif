@@ -17,8 +17,7 @@ export const createMockGameScreenProps = (overrides = {}) => {
   const teamConfig = overrides.teamConfig || {
     format: '5v5',
     squadSize: 7,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   };
   const formation = overrides.formation || createMockFormation(teamConfig);
   const allPlayers = overrides.allPlayers || createMockPlayers(teamConfig.squadSize || 7, teamConfig);
@@ -42,13 +41,11 @@ export const createMockGameScreenProps = (overrides = {}) => {
     resetSubTimer: jest.fn(),
     handleUndoSubstitution: jest.fn(),
     handleEndPeriod: jest.fn(),
-    nextPhysicalPairToSubOut: teamConfig?.substitutionType === 'pairs' ? 'leftPair' : 'leftDefender',
     nextPlayerToSubOut: 'leftDefender',
     nextPlayerIdToSubOut: '1',
     nextNextPlayerIdToSubOut: '2',
     setNextNextPlayerIdToSubOut: jest.fn(),
     selectedSquadPlayers: allPlayers,
-    setNextPhysicalPairToSubOut: jest.fn(),
     setNextPlayerToSubOut: jest.fn(),
     setNextPlayerIdToSubOut: jest.fn(),
     teamConfig,
@@ -77,43 +74,26 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
   const players = [];
   
   for (let i = 1; i <= count; i++) {
-    let status, role, pairKey;
-    
-    if (teamConfig.substitutionType === 'pairs') {
-      // PAIRS mode structure
-      if (i <= 4) {
-        status = PLAYER_STATUS.ON_FIELD;
-        role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        pairKey = i <= 2 ? 'leftPair' : 'rightPair';
-      } else if (i <= 6) {
-        status = PLAYER_STATUS.SUBSTITUTE;
-        role = i % 2 === 1 ? PLAYER_ROLES.DEFENDER : PLAYER_ROLES.ATTACKER;
-        pairKey = 'subPair';
-      } else {
-        status = PLAYER_STATUS.GOALIE;
-        role = PLAYER_ROLES.GOALIE;
-        pairKey = 'goalie';
-      }
-    } else {
-      const modeDefinition = getModeDefinition(teamConfig);
-      const fieldPositions = modeDefinition?.fieldPositions || [];
-      const substitutePositions = modeDefinition?.substitutePositions || [];
-      const totalOutfield = fieldPositions.length + substitutePositions.length;
+    let status, role, positionKey;
 
-      if (i <= fieldPositions.length) {
-        status = PLAYER_STATUS.ON_FIELD;
-        pairKey = fieldPositions[i - 1];
-        role = modeDefinition.positions[pairKey]?.role || PLAYER_ROLES.FIELD_PLAYER;
-      } else if (i <= totalOutfield) {
-        status = PLAYER_STATUS.SUBSTITUTE;
-        const subIndex = i - fieldPositions.length - 1;
-        pairKey = substitutePositions[subIndex];
-        role = modeDefinition.positions[pairKey]?.role || PLAYER_ROLES.SUBSTITUTE;
-      } else {
-        status = PLAYER_STATUS.GOALIE;
-        role = PLAYER_ROLES.GOALIE;
-        pairKey = 'goalie';
-      }
+    const modeDefinition = getModeDefinition(teamConfig);
+    const fieldPositions = modeDefinition?.fieldPositions || [];
+    const substitutePositions = modeDefinition?.substitutePositions || [];
+    const totalOutfield = fieldPositions.length + substitutePositions.length;
+
+    if (i <= fieldPositions.length) {
+      status = PLAYER_STATUS.ON_FIELD;
+      positionKey = fieldPositions[i - 1];
+      role = modeDefinition?.positions?.[positionKey]?.role || PLAYER_ROLES.FIELD_PLAYER;
+    } else if (i <= totalOutfield) {
+      status = PLAYER_STATUS.SUBSTITUTE;
+      const subIndex = i - fieldPositions.length - 1;
+      positionKey = substitutePositions[subIndex];
+      role = modeDefinition?.positions?.[positionKey]?.role || PLAYER_ROLES.SUBSTITUTE;
+    } else {
+      status = PLAYER_STATUS.GOALIE;
+      role = PLAYER_ROLES.GOALIE;
+      positionKey = 'goalie';
     }
     
     const displayName = `Player ${i}`;
@@ -127,7 +107,7 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
         isInactive: false,
         currentStatus: status,
         currentRole: role,
-        currentPairKey: pairKey,
+        currentPositionKey: positionKey,
         lastStintStartTimeEpoch: Date.now() - (i * 30000),
         timeOnFieldSeconds: i * 30,
         timeAsAttackerSeconds: role === PLAYER_ROLES.ATTACKER ? i * 15 : 0,
@@ -138,7 +118,7 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
         startedMatchAs: status === PLAYER_STATUS.ON_FIELD ? PLAYER_ROLES.FIELD_PLAYER :
                        status === PLAYER_STATUS.GOALIE ? PLAYER_ROLES.GOALIE : PLAYER_ROLES.SUBSTITUTE,
         startedAtRole: role,
-        startedAtPosition: pairKey,
+        startedAtPosition: positionKey,
         startLocked: false,
         periodsAsGoalie: status === PLAYER_STATUS.GOALIE ? 1 : 0,
         periodsAsDefender: role === PLAYER_ROLES.DEFENDER ? 1 : 0,
@@ -157,15 +137,6 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
 export const createMockFormation = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7) => {
   const squadSize = teamConfig.squadSize || 7;
   const goalieId = squadSize.toString();
-
-  if (teamConfig.substitutionType === 'pairs') {
-    return {
-      goalie: goalieId,
-      leftPair: { defender: '1', attacker: '2' },
-      rightPair: { defender: '3', attacker: '4' },
-      subPair: { defender: '5', attacker: '6' }
-    };
-  }
 
   const modeDefinition = getModeDefinition(teamConfig);
 
@@ -482,11 +453,7 @@ export const componentAssertions = {
   
   expectFormationToBeRendered: (teamConfig) => {
     // Formation-specific assertions based on team config
-    if (teamConfig.substitutionType === 'pairs') {
-      expect(screen.getByText(/pair/i)).toBeInTheDocument();
-    } else {
-      expect(screen.getByText(/defender|attacker|midfielder/i)).toBeInTheDocument();
-    }
+    expect(screen.getByText(/defender|attacker|midfielder/i)).toBeInTheDocument();
   }
 };
 

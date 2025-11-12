@@ -1344,29 +1344,15 @@ export function formatFinalStatsFromGameState(gameState, matchDurationSeconds) {
 }
 
 /**
- * Map formation position to database player_role enum with pairs mode support
- * @param {string} position - Formation position (e.g., 'defender', 'left', 'attacker', 'goalie', 'leftPair', 'rightPair')
- * @param {string} currentRole - Player's current role (for pairs mode: any format accepted)
+ * Map formation position to database player_role enum
+ * @param {string} position - Formation position (e.g., 'defender', 'left', 'attacker', 'goalie')
+ * @param {string} currentRole - Player's current role (optional, for fallback)
  * @returns {string} Database player_role enum value
  */
 export function mapFormationPositionToRole(position, currentRole = null) {
   if (!position) {
     console.warn('⚠️  No position provided to mapFormationPositionToRole');
     return roleToDatabase(PLAYER_ROLES.UNKNOWN);
-  }
-
-  // Handle pairs mode positions - normalize and convert currentRole
-  if (position === 'leftPair' || position === 'rightPair') {
-    if (currentRole) {
-      const normalizedRole = normalizeRole(currentRole);
-      return roleToDatabase(normalizedRole);
-    }
-    return roleToDatabase(PLAYER_ROLES.UNKNOWN);
-  }
-
-  // Handle substitute pair
-  if (position === 'subPair') {
-    return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
 
   switch (position) {
@@ -1824,11 +1810,7 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
       const runtimeTeamConfig = {
         format: initialConfig.teamConfig?.format,
         formation: initialConfig.teamConfig?.formation,
-        squadSize: initialConfig.teamConfig?.squadSize,
-        substitutionType: initialConfig.teamConfig?.substitutionType || 'individual',
-        ...(initialConfig.teamConfig?.pairedRoleStrategy && {
-          pairedRoleStrategy: initialConfig.teamConfig.pairedRoleStrategy
-        })
+        squadSize: initialConfig.teamConfig?.squadSize
       };
 
       // Normalize the formation structure

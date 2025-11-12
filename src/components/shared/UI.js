@@ -303,7 +303,6 @@ export function FieldPlayerModal({
   availablePlayers = [],
   showPositionChange = false,
   showPositionOptions = false,
-  showSwapPositions = false,
   showSubstitutionOptions = true,
   canSubstitute = true,
   isPlayerAboutToSubOff = false
@@ -386,11 +385,6 @@ export function FieldPlayerModal({
                 {showPositionChange && (
                   <Button onClick={() => onChangePosition && onChangePosition('show-options')} variant="accent">
                     Change position
-                  </Button>
-                )}
-                {showSwapPositions && (
-                  <Button onClick={() => onChangePosition && onChangePosition('swap-pair-positions')} variant="accent">
-                    Swap positions
                   </Button>
                 )}
               </div>

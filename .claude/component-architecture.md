@@ -10,15 +10,13 @@ This document outlines the component architecture patterns, relationships, and b
 App
 ├── GameScreen (Main game interface)
 │   ├── FormationRenderer (Formation display logic)
-│   │   ├── PairsFormation (7-player pairs mode)
-│   │   └── IndividualFormation (6/7-player individual modes)
+│   │   └── IndividualFormation (all supported squad sizes)
 │   └── UI Components (Button, Timer displays, etc.)
 ├── ConfigurationScreen (Team setup)
 │   ├── PlayerList (Player selection)
 │   └── AddPlayerModal (Add temporary players)
 ├── PeriodSetupScreen (Formation configuration)
-│   ├── PairSelectionCard (Pairs mode setup)
-│   └── IndividualPositionCard (Individual mode setup)
+│   └── IndividualPositionCard (formation setup)
 └── StatsScreen (Game results and export)
 ```
 
@@ -43,22 +41,14 @@ Each team configuration definition includes:
 - **initialFormationTemplate**: Template for creating new formations
 - **validationMessage**: Mode-specific validation text
 
-#### Utility Functions (18 available)
+#### Utility Functions (key examples)
 - **Position Queries**: `getFormationPositions()`, `getOutfieldPositions()`, `getAllPositions()`
-- **Mode Detection**: `isIndividualMode()`, `isIndividual6Mode()`, `isIndividual7Mode()`, `isIndividual8Mode()`
 - **Capability Checks**: `supportsInactiveUsers()`, `supportsNextNextIndicators()`
 - **Player Counting**: `getPlayerCountForMode()`, `getMaxInactiveCount()`
 - **Formation Helpers**: `getInitialFormationTemplate()`, `getValidationMessage()`
 - **Role Mapping**: Table-driven lookups via `POSITION_ROLE_MAP`
 
 ### Team Configurations
-
-#### PAIRS_7 (7-Player Pairs Configuration)
-- **Players**: 7 total (6 outfield + 1 goalie)
-- **Structure**: 3 pairs (leftPair, rightPair, subPair) + goalie
-- **Field Players**: 4 (2 pairs of defender/attacker)
-- **Substitution**: Entire pairs swap in/out
-- **Rotation**: Simple pair-based rotation
 
 #### INDIVIDUAL_6 (6-Player Individual Configuration)
 - **Players**: 6 total (5 outfield + 1 goalie)
@@ -102,7 +92,7 @@ Each team configuration definition includes:
 - **Purpose**: Formation assignment for game periods
 - **Key Features**: Player-to-position assignment, drag-and-drop, validation
 - **State Management**: Complex formation state with position tracking
-- **Testing**: Tests covering all team configurations (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7, INDIVIDUAL_8)
+- **Testing**: Tests covering all individual team configurations (INDIVIDUAL_6 through INDIVIDUAL_8+)
 
 #### GameScreen
 - **File**: `src/components/game/GameScreen.js`
@@ -127,12 +117,6 @@ Each team configuration definition includes:
 - **Purpose**: Route to appropriate formation component based on team configuration
 - **Pattern**: Component factory/router pattern
 - **Testing**: Tests covering component routing, props passing, and error scenarios
-
-#### PairsFormation
-- **File**: `src/components/game/formations/PairsFormation.js`
-- **Purpose**: Display 7-player pairs formation (3 pairs + goalie)
-- **Key Features**: Pair-based positioning, drag-and-drop support
-- **Testing**: 32 tests covering all pair positions and interactions
 
 #### IndividualFormation
 - **File**: `src/components/game/formations/IndividualFormation.js`
@@ -326,7 +310,6 @@ Each individual configuration includes a `substituteRotationPattern` property th
   format: '5v5',
   squadSize: 6, 
   formation: '2-2',
-  substitutionType: 'individual',
   substituteRotationPattern: 'simple',
   // ... other configuration
 }
@@ -336,7 +319,6 @@ Each individual configuration includes a `substituteRotationPattern` property th
   format: '5v5',
   squadSize: 7,
   formation: '2-2', 
-  substitutionType: 'individual',
   substituteRotationPattern: 'carousel',
   // ... other configuration
 }
@@ -346,7 +328,6 @@ Each individual configuration includes a `substituteRotationPattern` property th
   format: '5v5',
   squadSize: 8,
   formation: '2-2',
-  substitutionType: 'individual', 
   substituteRotationPattern: 'advanced_carousel',
   // ... other configuration
 }

@@ -4,11 +4,9 @@
 
 import {
   POSITION_KEYS,
-  getPairPositionKeys,
   getFieldPositionKeys22,
   getFieldPositionKeys121,
   getSubstitutePositionKeys,
-  isPairPosition,
   isFieldPosition,
   isSubstitutePosition,
   isGoaliePosition
@@ -18,30 +16,25 @@ describe('positionConstants', () => {
   describe('POSITION_KEYS', () => {
     it('should have all expected position keys', () => {
       expect(POSITION_KEYS).toEqual({
-        // Pairs formation
-        LEFT_PAIR: 'leftPair',
-        RIGHT_PAIR: 'rightPair',
-        SUB_PAIR: 'subPair',
-        
         // Individual formations - 2-2 formation
         LEFT_DEFENDER: 'leftDefender',
         RIGHT_DEFENDER: 'rightDefender',
         LEFT_ATTACKER: 'leftAttacker',
         RIGHT_ATTACKER: 'rightAttacker',
-        
+
         // Individual formations - 1-2-1 formation
         DEFENDER: 'defender',
         LEFT: 'left',
         RIGHT: 'right',
         ATTACKER: 'attacker',
-        
+
         // Substitute positions
         SUBSTITUTE_1: 'substitute_1',
         SUBSTITUTE_2: 'substitute_2',
         SUBSTITUTE_3: 'substitute_3',
         SUBSTITUTE_4: 'substitute_4',
         SUBSTITUTE_5: 'substitute_5',
-        
+
         // Common
         GOALIE: 'goalie'
       });
@@ -52,26 +45,6 @@ describe('positionConstants', () => {
         expect(typeof value).toBe('string');
         expect(value.length).toBeGreaterThan(0);
       });
-    });
-  });
-
-  describe('getPairPositionKeys', () => {
-    it('should return all pair position keys', () => {
-      const pairKeys = getPairPositionKeys();
-      expect(pairKeys).toEqual(['leftPair', 'rightPair', 'subPair']);
-    });
-
-    it('should return same array on multiple calls', () => {
-      const keys1 = getPairPositionKeys();
-      const keys2 = getPairPositionKeys();
-      expect(keys1).toEqual(keys2);
-    });
-
-    it('should include all pair positions from POSITION_KEYS', () => {
-      const pairKeys = getPairPositionKeys();
-      expect(pairKeys).toContain(POSITION_KEYS.LEFT_PAIR);
-      expect(pairKeys).toContain(POSITION_KEYS.RIGHT_PAIR);
-      expect(pairKeys).toContain(POSITION_KEYS.SUB_PAIR);
     });
   });
 
@@ -130,34 +103,6 @@ describe('positionConstants', () => {
     });
   });
 
-  describe('isPairPosition', () => {
-    it('should identify pair positions correctly', () => {
-      expect(isPairPosition('leftPair')).toBe(true);
-      expect(isPairPosition('rightPair')).toBe(true);
-      expect(isPairPosition('subPair')).toBe(true);
-    });
-
-    it('should return false for non-pair positions', () => {
-      expect(isPairPosition('leftDefender')).toBe(false);
-      expect(isPairPosition('goalie')).toBe(false);
-      expect(isPairPosition('substitute_1')).toBe(false);
-      expect(isPairPosition('defender')).toBe(false);
-    });
-
-    it('should handle edge cases', () => {
-      expect(isPairPosition('')).toBe(false);
-      expect(isPairPosition(null)).toBe(false);
-      expect(isPairPosition(undefined)).toBe(false);
-      expect(isPairPosition('invalidPosition')).toBe(false);
-    });
-
-    it('should use POSITION_KEYS constants', () => {
-      expect(isPairPosition(POSITION_KEYS.LEFT_PAIR)).toBe(true);
-      expect(isPairPosition(POSITION_KEYS.RIGHT_PAIR)).toBe(true);
-      expect(isPairPosition(POSITION_KEYS.SUB_PAIR)).toBe(true);
-    });
-  });
-
   describe('isFieldPosition', () => {
     it('should identify 2-2 field positions correctly', () => {
       expect(isFieldPosition('leftDefender')).toBe(true);
@@ -174,10 +119,8 @@ describe('positionConstants', () => {
     });
 
     it('should return false for non-field positions', () => {
-      expect(isFieldPosition('leftPair')).toBe(false);
       expect(isFieldPosition('goalie')).toBe(false);
       expect(isFieldPosition('substitute_1')).toBe(false);
-      expect(isFieldPosition('subPair')).toBe(false);
     });
 
     it('should handle edge cases', () => {
@@ -205,7 +148,6 @@ describe('positionConstants', () => {
 
     it('should return false for non-substitute positions', () => {
       expect(isSubstitutePosition('leftDefender')).toBe(false);
-      expect(isSubstitutePosition('leftPair')).toBe(false);
       expect(isSubstitutePosition('goalie')).toBe(false);
       expect(isSubstitutePosition('defender')).toBe(false);
     });
@@ -231,7 +173,6 @@ describe('positionConstants', () => {
 
     it('should return false for non-goalie positions', () => {
       expect(isGoaliePosition('leftDefender')).toBe(false);
-      expect(isGoaliePosition('leftPair')).toBe(false);
       expect(isGoaliePosition('substitute_1')).toBe(false);
       expect(isGoaliePosition('defender')).toBe(false);
     });
@@ -254,9 +195,7 @@ describe('positionConstants', () => {
       const categorizedPositions = [];
 
       allPositions.forEach(position => {
-        if (isPairPosition(position)) {
-          categorizedPositions.push(position);
-        } else if (isFieldPosition(position)) {
+        if (isFieldPosition(position)) {
           categorizedPositions.push(position);
         } else if (isSubstitutePosition(position)) {
           categorizedPositions.push(position);
@@ -271,7 +210,6 @@ describe('positionConstants', () => {
     it('should have mutually exclusive categories', () => {
       Object.values(POSITION_KEYS).forEach(position => {
         const categories = [
-          isPairPosition(position),
           isFieldPosition(position),
           isSubstitutePosition(position),
           isGoaliePosition(position)
@@ -285,40 +223,27 @@ describe('positionConstants', () => {
 
   describe('integration scenarios', () => {
     it('should support formation validation workflow', () => {
-      // Check if we have all positions for pairs formation
-      const pairPositions = getPairPositionKeys();
-      expect(pairPositions).toHaveLength(3); // leftPair, rightPair, subPair
-      
-      pairPositions.forEach(position => {
-        expect(isPairPosition(position)).toBe(true);
-        expect(isFieldPosition(position)).toBe(false);
-        expect(isSubstitutePosition(position)).toBe(false);
-      });
-
       // Check if we have all positions for 2-2 individual formation
       const field22Positions = getFieldPositionKeys22();
       expect(field22Positions).toHaveLength(4);
-      
+
       field22Positions.forEach(position => {
         expect(isFieldPosition(position)).toBe(true);
-        expect(isPairPosition(position)).toBe(false);
       });
 
       // Check substitute positions
       const subPositions = getSubstitutePositionKeys();
       expect(subPositions).toHaveLength(5);
-      
+
       subPositions.forEach(position => {
         expect(isSubstitutePosition(position)).toBe(true);
         expect(isFieldPosition(position)).toBe(false);
-        expect(isPairPosition(position)).toBe(false);
       });
     });
 
     it('should support position validation for game logic', () => {
       // Test various position validation scenarios
       const testCases = [
-        { position: 'leftPair', expectedCategory: 'pair' },
         { position: 'leftDefender', expectedCategory: 'field' },
         { position: 'substitute_1', expectedCategory: 'substitute' },
         { position: 'goalie', expectedCategory: 'goalie' },
@@ -328,9 +253,6 @@ describe('positionConstants', () => {
 
       testCases.forEach(({ position, expectedCategory }) => {
         switch (expectedCategory) {
-          case 'pair':
-            expect(isPairPosition(position)).toBe(true);
-            break;
           case 'field':
             expect(isFieldPosition(position)).toBe(true);
             break;
@@ -371,7 +293,6 @@ describe('positionConstants', () => {
       const performanceOperation = () => {
         for (let i = 0; i < iterations; i++) {
           positions.forEach(position => {
-            isPairPosition(position);
             isFieldPosition(position);
             isSubstitutePosition(position);
             isGoaliePosition(position);

@@ -63,18 +63,6 @@ const { animationClass, zIndexClass, styleProps } = getPlayerAnimation(playerId,
   {/* Player content */}
 </div>
 
-// Pair animation  
-import { getPairAnimation } from '../../game/ui/playerAnimation';
-
-const { animationClass, zIndexClass, styleProps } = getPairAnimation(
-  defenderId, attackerId, animationState
-);
-
-<div className={`${baseClass} ${animationClass} ${zIndexClass}`} style={styleProps}>
-  {/* Pair content */}
-</div>
-```
-
 ### Handler Creation
 ```javascript
 // In handler files
@@ -109,7 +97,6 @@ const createHandlers = (gameStateFactory, stateUpdaters, animationHooks, ...) =>
 | `captureAllPlayerPositions()` | Capture position snapshot | `{[playerId]: PositionData}` |
 | `calculateAllPlayerAnimations()` | Calculate movements | `{[playerId]: AnimationData}` |
 | `getPlayerAnimation()` | Get animation props for player | `{animationClass, zIndexClass, styleProps}` |
-| `getPairAnimation()` | Get animation props for pair | `{animationClass, zIndexClass, styleProps}` |
 
 ### Constants
 
@@ -138,11 +125,6 @@ goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → right
 ### Individual 7-Player Configuration  
 ```
 goalie(0) → leftDefender(1) → rightDefender(2) → leftAttacker(3) → rightAttacker(4) → substitute_1(5) → substitute_2(6)
-```
-
-### Pairs Configuration
-```
-goalie(0) → leftPair(1) → rightPair(2) → subPair(3)
 ```
 
 ## ⚡ Common Patterns
@@ -249,7 +231,7 @@ console.log('Recently substituted:', recentlySubstitutedPlayers);
 - [ ] Follows existing handler naming conventions
 
 ### Component Integration
-- [ ] Uses `getPlayerAnimation` or `getPairAnimation` utilities
+- [ ] Uses `getPlayerAnimation` utilities
 - [ ] Applies returned classes and styles correctly
 - [ ] Handles animation state properly
 - [ ] Maintains proper element structure

@@ -1,15 +1,13 @@
 /**
  * PeriodSetupScreen Component Tests
- * 
+ *
  * Comprehensive testing suite for the period setup screen, with focus on position
- * swapping functionality. This includes the critical same-pair swap bug fix and
- * comprehensive validation of all position assignment scenarios.
- * 
+ * assignment and player management functionality.
+ *
  * Test Coverage:
- * - Position swapping in pairs mode (same-pair and cross-pair)
- * - Position swapping in individual modes (6-7 players)
- * - Formation support (2-2 and 1-2-1)
- * - Inactive player handling during swaps
+ * - Position swapping in individual modes (6-15 players)
+ * - Formation support (2-2, 1-2-1, 2-2-2, 2-3-1)
+ * - Inactive player handling
  * - Error scenarios and edge cases
  */
 
@@ -17,7 +15,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PeriodSetupScreen } from '../PeriodSetupScreen';
 import { TEAM_CONFIGS } from '../../../game/testUtils';
-import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
+import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
 import {
   createMockPlayers,
   createMockFormation,
@@ -120,10 +118,6 @@ describe('PeriodSetupScreen', () => {
     const buildFieldPositions = (teamConfig) => {
       if (!teamConfig) return [];
 
-      if (teamConfig.substitutionType === 'pairs') {
-        return ['leftPair', 'rightPair'];
-      }
-
       if (teamConfig.formation === FORMATIONS.FORMATION_1_2_1) {
         return ['defender', 'left', 'right', 'attacker'];
       }
@@ -136,8 +130,8 @@ describe('PeriodSetupScreen', () => {
     };
 
     const buildSubstitutePositions = (teamConfig) => {
-      if (!teamConfig || teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-        return teamConfig?.substitutionType === SUBSTITUTION_TYPES.PAIRS ? ['subPair'] : [];
+      if (!teamConfig) {
+        return [];
       }
 
       const format = teamConfig.format === FORMATS.FORMAT_7V7 ? FORMATS.FORMAT_7V7 : FORMATS.FORMAT_5V5;
@@ -153,13 +147,6 @@ describe('PeriodSetupScreen', () => {
       const fieldPositions = buildFieldPositions(teamConfig);
       const substitutePositions = buildSubstitutePositions(teamConfig);
 
-      if (teamConfig.substitutionType === SUBSTITUTION_TYPES.PAIRS) {
-        return {
-          fieldPositions,
-          substitutePositions: ['subPair']
-        };
-      }
-
       return {
         fieldPositions,
         substitutePositions
@@ -173,18 +160,21 @@ describe('PeriodSetupScreen', () => {
     });
 
     // Create realistic mock players for 7-player team
-    mockPlayers = createMockPlayers(7, TEAM_CONFIGS.PAIRS_7);
+    mockPlayers = createMockPlayers(7, TEAM_CONFIGS.INDIVIDUAL_7);
 
     mockProps = {
       currentPeriodNumber: 1,
       formation: {
         goalie: '7',
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null }
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute_1: null,
+        substitute_2: null
       },
       setFormation: jest.fn(),
-      availableForPairing: mockPlayers.slice(0, 6), // Exclude goalie
+      availableForAssignment: mockPlayers.slice(0, 6), // Exclude goalie
       allPlayers: mockPlayers,
       setAllPlayers: jest.fn(),
       handleStartGame: jest.fn(),
@@ -193,7 +183,7 @@ describe('PeriodSetupScreen', () => {
       periodGoalieIds: { 1: '7' },
       setPeriodGoalieIds: jest.fn(),
       numPeriods: 2,
-      teamConfig: TEAM_CONFIGS.PAIRS_7,
+      teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
       selectedFormation: '2-2',
       setView: jest.fn(),
       ownScore: 0,
@@ -221,17 +211,6 @@ describe('PeriodSetupScreen', () => {
       expect(screen.getByText('Goalie for Period 1')).toBeInTheDocument();
     });
 
-    it('should render pair selection cards for pairs mode', () => {
-      const formation = createMockFormation(TEAM_CONFIGS.PAIRS_7);
-      const props = { ...mockProps, formation };
-      
-      render(<PeriodSetupScreen {...props} />);
-      
-      expect(screen.getByText('Left')).toBeInTheDocument();
-      expect(screen.getByText('Right')).toBeInTheDocument();
-      expect(screen.getByText('Substitutes')).toBeInTheDocument();
-    });
-
     it.skip('should render individual position cards for individual mode', () => {
       // Skip this test due to mock complexity with individual mode getOutfieldPositions
       // The core position swapping functionality is already thoroughly tested
@@ -241,12 +220,12 @@ describe('PeriodSetupScreen', () => {
         ...mockProps, 
         teamConfig,
         formation,
-        availableForPairing: mockPlayers.slice(0, 6)
+        availableForAssignment: mockPlayers.slice(0, 6)
       };
       
       render(<PeriodSetupScreen {...props} />);
       
-      // Should render individual position cards instead of pairs
+      // Should render up-to-date individual position cards
       expect(screen.queryByText('Left')).not.toBeInTheDocument();
       expect(screen.queryByText('Right')).not.toBeInTheDocument();
     });
@@ -255,8 +234,7 @@ describe('PeriodSetupScreen', () => {
       const teamConfig = {
         format: FORMATS.FORMAT_5V5,
         squadSize: 11,
-        formation: FORMATIONS.FORMATION_2_2,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        formation: FORMATIONS.FORMATION_2_2
       };
 
       const players = Array.from({ length: teamConfig.squadSize }, (_, index) => ({
@@ -284,7 +262,7 @@ describe('PeriodSetupScreen', () => {
         formation,
         allPlayers: players,
         selectedSquadPlayers: players,
-        availableForPairing: players,
+        availableForAssignment: players,
         periodGoalieIds: { 1: formation.goalie }
       };
 
@@ -329,7 +307,8 @@ describe('PeriodSetupScreen', () => {
         ...mockProps,
         formation: {
           ...mockProps.formation,
-          subPair: { defender: '5', attacker: '6' }
+          substitute_1: '5',
+          substitute_2: '6'
         }
       };
 
@@ -356,7 +335,8 @@ describe('PeriodSetupScreen', () => {
         ...mockProps,
         formation: {
           ...mockProps.formation,
-          subPair: { defender: '5', attacker: null }
+          substitute_1: '5',
+          substitute_2: null
         },
         setFormation: jest.fn()
       };
@@ -378,8 +358,8 @@ describe('PeriodSetupScreen', () => {
         ...props.formation
       });
 
-      expect(updatedFormation.subPair.defender).toBe('5');
-      expect(updatedFormation.subPair.attacker).toBe('3');
+      expect(updatedFormation.substitute_1).toBe('5');
+      expect(updatedFormation.substitute_2).toBe('3');
     });
 
     it('populates substitutes and hides recommendations when accepted', async () => {
@@ -410,16 +390,19 @@ describe('PeriodSetupScreen', () => {
 
       const initialFormation = {
         goalie: '7',
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null }
+        leftDefender: null,
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute_1: null,
+        substitute_2: null
       };
       const updatedFormation = updater(initialFormation);
 
-      expect(updatedFormation.subPair.defender).toBe('5');
-      expect(updatedFormation.subPair.attacker).toBe('3');
-      expect(updatedFormation.leftPair.defender).toBeNull();
-      expect(updatedFormation.leftPair.attacker).toBeNull();
+      expect(updatedFormation.substitute_1).toBe('5');
+      expect(updatedFormation.substitute_2).toBe('3');
+      expect(updatedFormation.leftDefender).toBeNull();
+      expect(updatedFormation.rightDefender).toBeNull();
     });
 
     it('dismisses recommendations without changing formation', async () => {
@@ -458,16 +441,19 @@ describe('PeriodSetupScreen', () => {
     });
   });
 
-  describe('Position Swapping - Same Pair (Fixed Bug)', () => {
+  describe('Position Swapping - Regression Coverage', () => {
     let completeFormation;
 
     beforeEach(() => {
-      // Setup a complete formation for swapping tests
+      // Setup a complete formation for swapping tests (using individual mode)
       completeFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
     });
 
@@ -477,11 +463,12 @@ describe('PeriodSetupScreen', () => {
 
       // Should render without errors when formation is complete
       expect(screen.getByText('Period 1 Team Selection')).toBeInTheDocument();
-      
-      // Should show pair cards
-      expect(screen.getByText('Left')).toBeInTheDocument();
-      expect(screen.getByText('Right')).toBeInTheDocument();
-      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+
+      // Should show individual position cards
+      expect(screen.queryByText('Left')).not.toBeInTheDocument();
+      expect(screen.queryByText('Right')).not.toBeInTheDocument();
+      // Should show substitute positions (multiple)
+      expect(screen.getAllByText('Substitute').length).toBeGreaterThan(0);
     });
 
     it('should enable start button when formation is complete', () => {
@@ -498,90 +485,10 @@ describe('PeriodSetupScreen', () => {
 
       // Component should render successfully with complete formation
       expect(screen.getByText('Period 1 Team Selection')).toBeInTheDocument();
-      
+
       // Start button should be enabled
       const startButton = screen.getByText('Enter Game');
       expect(startButton).not.toBeDisabled();
-    });
-
-    it('should test same-pair swap logic conceptually', () => {
-      // This test validates the concept of same-pair swapping
-      // The actual bug was in the state update logic where both roles in same pair
-      // would be overwritten instead of updated together
-      
-      const initialFormation = {
-        goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
-      };
-
-      // Simulate the corrected same-pair swap logic
-      // This is what the fix ensures happens correctly
-      const simulateCorrectSamePairSwap = (formation, pairKey, role, newPlayerId) => {
-        const currentPlayerPosition = { pairKey: 'leftPair', role: 'defender' }; // Player 1's position
-        const currentPlayerInTargetPosition = formation[pairKey][role]; // Player 2
-
-        // The fix: when both are in same pair, update both roles in single object
-        if (currentPlayerPosition.pairKey === pairKey) {
-          return {
-            ...formation,
-            [pairKey]: {
-              ...formation[pairKey],
-              [role]: newPlayerId, // Player 1 -> attacker
-              [currentPlayerPosition.role]: currentPlayerInTargetPosition // Player 2 -> defender
-            }
-          };
-        }
-        return formation;
-      };
-
-      // Test the corrected logic
-      const result = simulateCorrectSamePairSwap(
-        initialFormation,
-        'leftPair', 
-        'attacker',  // Assigning Player 1 to attacker
-        '1'          // Player 1's ID
-      );
-
-      // Both positions should be populated (this was the bug - one would be undefined)
-      expect(result.leftPair.defender).toBeDefined();
-      expect(result.leftPair.attacker).toBeDefined();
-      expect(result.leftPair.defender).toBe('2'); // Original attacker now defender
-      expect(result.leftPair.attacker).toBe('1');  // Original defender now attacker
-    });
-  });
-
-  describe('Position Swapping - Cross Pair', () => {
-    it('should handle cross-pair swapping conceptually', () => {
-      // Test validates that cross-pair swapping (which already worked) continues to work
-      const initialFormation = {
-        goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
-      };
-
-      // Simulate cross-pair swap (this logic already worked correctly)
-      const simulateCrossPairSwap = (formation, targetPair, targetRole, newPlayerId, sourcePair, sourceRole) => {
-        return {
-          ...formation,
-          [targetPair]: { ...formation[targetPair], [targetRole]: newPlayerId },
-          [sourcePair]: { ...formation[sourcePair], [sourceRole]: formation[targetPair][targetRole] }
-        };
-      };
-
-      // Test cross-pair swap: move Player 3 from rightPair defender to leftPair defender
-      const result = simulateCrossPairSwap(
-        initialFormation,
-        'leftPair', 'defender', '3',  // Target: leftPair defender = Player 3
-        'rightPair', 'defender', '1'   // Source: rightPair defender = Player 1
-      );
-
-      expect(result.leftPair.defender).toBe('3');
-      expect(result.rightPair.defender).toBe('1');
-      expect(result.leftPair.attacker).toBe('2'); // Unchanged
-      expect(result.rightPair.attacker).toBe('4'); // Unchanged
     });
   });
 
@@ -604,7 +511,7 @@ describe('PeriodSetupScreen', () => {
         ...mockProps,
         teamConfig,
         allPlayers: individualPlayers,
-        availableForPairing: individualPlayers.slice(0, 6),
+        availableForAssignment: individualPlayers.slice(0, 6),
         formation
       };
 
@@ -612,8 +519,7 @@ describe('PeriodSetupScreen', () => {
 
       // Component should render successfully with individual mode
       expect(screen.getByText('Period 1 Team Selection')).toBeInTheDocument();
-      
-      // Individual mode should not show pair cards
+      // Individual mode should only show individual position cards
       expect(screen.queryByText('Left')).not.toBeInTheDocument();
       expect(screen.queryByText('Right')).not.toBeInTheDocument();
     });
@@ -637,7 +543,7 @@ describe('PeriodSetupScreen', () => {
         teamConfig,
         selectedFormation: '1-2-1',
         allPlayers: formationPlayers,
-        availableForPairing: formationPlayers.slice(0, 6),
+        availableForAssignment: formationPlayers.slice(0, 6),
         formation
       };
 
@@ -670,9 +576,12 @@ describe('PeriodSetupScreen', () => {
     it('should validate complete formations correctly', () => {
       const completeFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
 
       const props = { ...mockProps, formation: completeFormation };
@@ -685,9 +594,12 @@ describe('PeriodSetupScreen', () => {
     it('should validate incomplete formations correctly', () => {
       const incompleteFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: null },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: null,
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
 
       const props = { ...mockProps, formation: incompleteFormation };
@@ -700,9 +612,12 @@ describe('PeriodSetupScreen', () => {
     it('should handle start game action', () => {
       const completeFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
 
       const props = { ...mockProps, formation: completeFormation };
@@ -717,75 +632,61 @@ describe('PeriodSetupScreen', () => {
 
   describe('Edge Cases and Error Handling', () => {
     it('should handle empty formation gracefully', () => {
-      const props = { 
-        ...mockProps, 
+      const props = {
+        ...mockProps,
         formation: {
           goalie: null,
-          leftPair: { defender: null, attacker: null },
-          rightPair: { defender: null, attacker: null },
-          subPair: { defender: null, attacker: null }
+          leftDefender: null,
+          rightDefender: null,
+          leftAttacker: null,
+          rightAttacker: null,
+          substitute_1: null,
+          substitute_2: null
         }
       };
-      
+
       expect(() => render(<PeriodSetupScreen {...props} />)).not.toThrow();
     });
 
     it('should handle null formation gracefully', () => {
-      const props = { 
-        ...mockProps, 
+      const props = {
+        ...mockProps,
         formation: {
           goalie: null,
-          leftPair: { defender: null, attacker: null },
-          rightPair: { defender: null, attacker: null },
-          subPair: { defender: null, attacker: null }
+          leftDefender: null,
+          rightDefender: null,
+          leftAttacker: null,
+          rightAttacker: null,
+          substitute_1: null,
+          substitute_2: null
         }
       };
-      
-      expect(() => render(<PeriodSetupScreen {...props} />)).not.toThrow();
-    });
-
-    it('should handle missing availableForPairing array', () => {
-      const props = { ...mockProps, availableForPairing: [] };
       
       expect(() => render(<PeriodSetupScreen {...props} />)).not.toThrow();
     });
 
     it('should handle missing allPlayers array', () => {
       const props = { ...mockProps, allPlayers: [] };
-      
+
       expect(() => render(<PeriodSetupScreen {...props} />)).not.toThrow();
     });
 
     it('should prevent duplicate player assignments in incomplete formations', () => {
       const incompleteFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: null },
-        rightPair: { defender: null, attacker: null },
-        subPair: { defender: null, attacker: null }
+        leftDefender: '1',
+        rightDefender: null,
+        leftAttacker: null,
+        rightAttacker: null,
+        substitute_1: null,
+        substitute_2: null
       };
 
       const props = { ...mockProps, formation: incompleteFormation };
       render(<PeriodSetupScreen {...props} />);
 
-      // Try to assign Player 1 (already leftPair defender) to leftPair attacker
-      const leftAttackerSelect = screen.getAllByTestId('select')[1];
-      fireEvent.change(leftAttackerSelect, { target: { value: '1' } });
-
-      // Should not allow the assignment in incomplete formation
+      // Formation should filter available players to prevent duplicates
       // The mock implementation should handle this via the availability filtering
-    });
-
-    it('should handle malformed pair objects gracefully', () => {
-      const malformedFormation = {
-        goalie: '7',
-        leftPair: { defender: null, attacker: null },
-        rightPair: { defender: '3', attacker: null }, // Missing attacker
-        subPair: { defender: '5', attacker: '6' }
-      };
-
-      const props = { ...mockProps, formation: malformedFormation };
-
-      expect(() => render(<PeriodSetupScreen {...props} />)).not.toThrow();
     });
   });
 
@@ -793,9 +694,12 @@ describe('PeriodSetupScreen', () => {
     it('should show Save Configuration button only in first period before match starts', () => {
       const completeFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
 
       const props = {
@@ -815,9 +719,12 @@ describe('PeriodSetupScreen', () => {
     it('should hide Save Configuration button for later periods even when match not started', () => {
       const completeFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
 
       const props = {
@@ -836,9 +743,12 @@ describe('PeriodSetupScreen', () => {
     it('should hide Save Configuration button when match state is running', () => {
       const completeFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
 
       const props = {
@@ -858,9 +768,12 @@ describe('PeriodSetupScreen', () => {
     it('should hide Save Configuration button when handleSavePeriodConfiguration is not provided', () => {
       const completeFormation = {
         goalie: '7',
-        leftPair: { defender: '1', attacker: '2' },
-        rightPair: { defender: '3', attacker: '4' },
-        subPair: { defender: '5', attacker: '6' }
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
       };
 
       const props = {

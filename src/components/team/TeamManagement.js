@@ -1063,7 +1063,6 @@ function TeamPreferences({ team, onRefresh }) {
     formation: '2-2',
     periodLength: 20,
     numPeriods: 2,
-    substitutionMode: 'individual',
     substitutionLogic: 'equal_time',
     trackGoalScorer: true,
     teamCaptain: 'none',
@@ -1178,21 +1177,6 @@ function TeamPreferences({ team, onRefresh }) {
         </h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Substitution Mode
-            </label>
-            <Select
-              value={preferences.substitutionMode}
-              onChange={(value) => setPreferences(prev => ({ ...prev, substitutionMode: value }))}
-              options={[
-                { value: 'individual', label: 'Individual' },
-                { value: 'pairs', label: 'Pairs' },
-                { value: 'all', label: 'All Players' }
-              ]}
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Substitution Logic

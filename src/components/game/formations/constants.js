@@ -78,12 +78,7 @@ export const POSITION_DISPLAY_NAMES = {
   leftMidfielder: 'Left Midfielder',
   rightMidfielder: 'Right Midfielder',
   centerMidfielder: 'Center Midfielder',
-  
-  // Pairs Formation positions
-  leftPair: 'Left',
-  rightPair: 'Right',
-  subPair: 'Substitutes',
-  
+
   // Substitute positions
   substitute_1: 'Substitute',
   substitute_2: 'Substitute',

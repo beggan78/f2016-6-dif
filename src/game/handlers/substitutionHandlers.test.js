@@ -47,7 +47,6 @@ describe('createSubstitutionHandlers', () => {
     mockLastSubstitution = {
       timestamp: 1000,
       beforeFormation: mockGameState.formation,
-      beforeNextPair: 'leftPair',
       beforeNextPlayer: 'leftDefender',
       beforeNextPlayerId: '1',
       beforeNextNextPlayerId: '2',
@@ -86,7 +85,7 @@ describe('createSubstitutionHandlers', () => {
       if (!substitutePositions.length) return false;
       
       const substitutePlayers = allPlayers.filter(player => 
-        substitutePositions.includes(player.stats?.currentPairKey)
+        substitutePositions.includes(player.stats?.currentPositionKey)
       );
       
       return substitutePlayers.some(player => !player.stats?.isInactive);
@@ -186,22 +185,6 @@ describe('createSubstitutionHandlers', () => {
   });
 
   describe('handleSetNextSubstitution', () => {
-    it('should set next pair substitution for pairs mode', () => {
-      const handlers = createSubstitutionHandlers(
-        mockGameStateFactory,
-        mockDependencies.stateUpdaters,
-        mockDependencies.animationHooks,
-        mockDependencies.modalHandlers,
-        TEAM_CONFIGS.PAIRS_7
-      );
-
-      const fieldPlayerModal = { type: 'pair', target: 'leftPair' };
-      handlers.handleSetNextSubstitution(fieldPlayerModal);
-
-      expect(mockDependencies.stateUpdaters.setNextPhysicalPairToSubOut).toHaveBeenCalledWith('leftPair');
-      expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
-    });
-
     it('should set next player substitution for individual mode', () => {
       const handlers = createSubstitutionHandlers(
         mockGameStateFactory,
@@ -234,23 +217,6 @@ describe('createSubstitutionHandlers', () => {
 
       // Should open substitute selection modal instead of direct substitution
       expect(mockDependencies.modalHandlers.openSubstituteSelectionModal).toHaveBeenCalled();
-      expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
-    });
-
-    it('should trigger immediate substitution for pairs mode', () => {
-      const handlers = createSubstitutionHandlers(
-        mockGameStateFactory,
-        mockDependencies.stateUpdaters,
-        mockDependencies.animationHooks,
-        mockDependencies.modalHandlers,
-        TEAM_CONFIGS.PAIRS_7
-      );
-
-      const fieldPlayerModal = { type: 'pair', target: 'leftPair' };
-      handlers.handleSubstituteNow(fieldPlayerModal);
-
-      expect(mockDependencies.stateUpdaters.setNextPhysicalPairToSubOut).toHaveBeenCalledWith('leftPair');
-      expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });
 
@@ -354,7 +320,7 @@ describe('createSubstitutionHandlers', () => {
   describe('handleInactivatePlayer', () => {
     it('should inactivate substitute_2 without animation', () => {
       const playersWithSub7_2 = mockPlayers.map(p => 
-        p.id === '6' ? { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' }} : p
+        p.id === '6' ? { ...p, stats: { ...p.stats, currentPositionKey: 'substitute_2' }} : p
       );
       
       findPlayerById.mockReturnValue(playersWithSub7_2.find(p => p.id === '6'));
@@ -378,7 +344,7 @@ describe('createSubstitutionHandlers', () => {
 
     it('should inactivate substitute_1 with animation', () => {
       const playersWithSub7_1 = mockPlayers.map(p => 
-        p.id === '5' ? { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' }} : p
+        p.id === '5' ? { ...p, stats: { ...p.stats, currentPositionKey: 'substitute_1' }} : p
       );
       
       findPlayerById.mockReturnValue(playersWithSub7_1.find(p => p.id === '5'));
@@ -401,7 +367,7 @@ describe('createSubstitutionHandlers', () => {
 
     it('should handle INDIVIDUAL_6 mode without animation (only one substitute position)', () => {
       const playersWithSub6_1 = mockPlayers.slice(0, 6).map(p => 
-        p.id === '5' ? { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' }} : p
+        p.id === '5' ? { ...p, stats: { ...p.stats, currentPositionKey: 'substitute_1' }} : p
       );
       
       findPlayerById.mockReturnValue(playersWithSub6_1.find(p => p.id === '5'));
@@ -542,7 +508,7 @@ describe('createSubstitutionHandlers', () => {
           ...p,
           stats: {
             ...p.stats,
-            currentPairKey: position || null,
+            currentPositionKey: position || null,
           },
         };
       });
@@ -577,35 +543,6 @@ describe('createSubstitutionHandlers', () => {
       // Source player '1' is a Defender.
       // Expected order: Attackers ('3', '4'), then the other Defender ('2').
       expect(availablePlayers.map(p => p.id)).toEqual(['3', '4', '2']);
-    });
-
-    it('should show alert for pairs mode position change', () => {
-      const mockGameStateWithModal = {
-        ...mockGameState,
-        teamConfig: TEAM_CONFIGS.PAIRS_7,
-        fieldPlayerModal: {
-          type: 'pair',
-          target: 'leftPair'
-        }
-      };
-      mockGameStateFactory.mockReturnValue(mockGameStateWithModal);
-
-      global.alert = jest.fn();
-
-      const handlers = createSubstitutionHandlers(
-        mockGameStateFactory,
-        mockDependencies.stateUpdaters,
-        mockDependencies.animationHooks,
-        mockDependencies.modalHandlers,
-        TEAM_CONFIGS.PAIRS_7
-      );
-
-      handlers.handleChangePosition('show-options');
-
-      expect(global.alert).toHaveBeenCalledWith(
-        expect.stringContaining('Position change between pairs is not supported')
-      );
-      expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });
 
     it('should perform position switch with animation', () => {

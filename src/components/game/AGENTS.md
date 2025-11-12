@@ -9,8 +9,7 @@ This directory contains React components for rendering the live game screen duri
 - **`SubstitutionCountControls.js`**: Stepper UI component for selecting how many players to substitute (1-4 players). Includes compact variant for inline display.
 
 ### Formation Renderers (`formations/`)
-- **`FormationRenderer.js`**: Router component that selects `PairsFormation` or `IndividualFormation` based on `teamConfig.substitutionType`.
-- **`PairsFormation.js`**: Renders 7-player pairs mode (left/right pairs with defender+attacker, substitute pair).
+- **`FormationRenderer.js`**: Router component that renders `IndividualFormation` for supported team configurations.
 - **`IndividualFormation.js`**: Renders individual player formations (6-7 players, supports 2-2 and 1-2-1 formations).
 - **`components/PlayerStatsDisplay.js`**: Displays player time stats (total outfield time, attacker/defender difference).
 - **`constants.js`**: Shared styling constants, icon styles, position display names, help messages.
@@ -49,7 +48,7 @@ Modals integrate with browser back navigation via `pushNavigationState`.
 ### 4. Animation System
 **Two-phase animation**:
 1. **State Update**: Handlers call `setAnimationState()` with player movements
-2. **Render**: Formation components use `getPlayerAnimation()` and `getPairAnimation()` utilities to apply CSS animations
+2. **Render**: Formation components use `getPlayerAnimation()` utilities to apply CSS animations
 
 Animation state tracked in `useGameUIState`:
 - `animationState` - active player movements
@@ -80,7 +79,7 @@ GameScreen renders FormationRenderer twice (field section, then SUB NOW button, 
 - `allPlayers` - player array with stats
 - `matchTimerSeconds`, `subTimerSeconds`, `isSubTimerPaused` - timer state
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut` - rotation queue
-- `teamConfig` - configuration `{format, squadSize, formation, substitutionType}`
+- `teamConfig` - configuration `{format, squadSize, formation}`
 - `ownScore`, `opponentScore` - current score
 - Score/goal handlers, setters, match events
 
@@ -123,12 +122,6 @@ GameScreen renders FormationRenderer twice (field section, then SUB NOW button, 
 - Displays incoming position labels for substitutes (shows target position + player name)
 - Inactive player support (7+ player modes)
 - Multi-sub indicators (shows next and next-next players to sub)
-
-### PairsFormation
-- Fixed structure: leftPair, rightPair, subPair
-- Each pair contains defender + attacker
-- No inactive support
-- Pair-level next indicators
 
 ## Helper Utilities
 

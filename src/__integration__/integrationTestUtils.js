@@ -325,7 +325,7 @@ const createDefaultPlayerStats = () => ({
   isInactive: false,
   currentStatus: PLAYER_STATUS.SUBSTITUTE,
   currentRole: PLAYER_ROLES.SUBSTITUTE,
-  currentPairKey: null,
+  currentPositionKey: null,
   lastStintStartTimeEpoch: Date.now(),
   timeOnFieldSeconds: 0,
   timeAsAttackerSeconds: 0,

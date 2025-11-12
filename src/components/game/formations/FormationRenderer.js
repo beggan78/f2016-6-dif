@@ -1,5 +1,4 @@
 import React from 'react';
-import { PairsFormation } from './PairsFormation';
 import { IndividualFormation } from './IndividualFormation';
 
 export function FormationRenderer({ teamConfig, selectedFormation, renderSection = 'all', ...props }) {
@@ -9,11 +8,22 @@ export function FormationRenderer({ teamConfig, selectedFormation, renderSection
     return <div data-testid={testId}>No team configuration available</div>;
   }
 
-  if (teamConfig.substitutionType === 'pairs') {
-    return <PairsFormation data-testid={testId} teamConfig={teamConfig} selectedFormation={selectedFormation} renderSection={renderSection} {...props} />;
-  } else if (teamConfig.substitutionType === 'individual') {
-    return <IndividualFormation data-testid={testId} teamConfig={teamConfig} selectedFormation={selectedFormation} renderSection={renderSection} {...props} />;
+  const hasRequiredFields =
+    typeof teamConfig.format === 'string' &&
+    typeof teamConfig.formation === 'string' &&
+    typeof teamConfig.squadSize === 'number';
+
+  if (!hasRequiredFields) {
+    return <div data-testid={testId}>Invalid team configuration</div>;
   }
 
-  return <div data-testid={testId}>Unsupported substitution type: {teamConfig.substitutionType}</div>;
+  return (
+    <IndividualFormation
+      data-testid={testId}
+      teamConfig={teamConfig}
+      selectedFormation={selectedFormation}
+      renderSection={renderSection}
+      {...props}
+    />
+  );
 }

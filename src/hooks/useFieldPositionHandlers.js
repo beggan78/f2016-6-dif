@@ -1,21 +1,8 @@
 import { useQuickTapWithScrollDetection } from './useQuickTapWithScrollDetection';
 
 export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => {
-  const isPairsMode = teamConfig?.substitutionType === 'pairs';
-
   // Create all the quick tap handlers using the hook
   // Note: These hooks must be called consistently on every render
-
-  // Pairs mode handlers
-  const leftPairEvents = useQuickTapWithScrollDetection(
-    fieldPositionCallbacks.leftPairCallback || (() => {})
-  );
-  const rightPairEvents = useQuickTapWithScrollDetection(
-    fieldPositionCallbacks.rightPairCallback || (() => {})
-  );
-  const subPairEvents = useQuickTapWithScrollDetection(
-    fieldPositionCallbacks.subPairCallback || (() => {})
-  );
 
   // Individual mode handlers - all possible positions
   // 2-2 Formation positions
@@ -74,37 +61,29 @@ export const useFieldPositionHandlers = (fieldPositionCallbacks, teamConfig) => 
     fieldPositionCallbacks.substitute_5Callback || (() => {})
   );
 
-  if (isPairsMode) {
-    return {
-      leftPairEvents,
-      rightPairEvents,
-      subPairEvents
-    };
-  } else {
-    return {
-      // 2-2 Formation events
-      leftDefenderEvents,
-      rightDefenderEvents,
-      leftAttackerEvents,
-      rightAttackerEvents,
+  return {
+    // 2-2 Formation events
+    leftDefenderEvents,
+    rightDefenderEvents,
+    leftAttackerEvents,
+    rightAttackerEvents,
 
-      // 7v7 formation events
-      leftMidfielderEvents,
-      centerMidfielderEvents,
-      rightMidfielderEvents,
-      
-      // 1-2-1 Formation events (FIXED - now included!)
-      defenderEvents,
-      leftEvents,
-      rightEvents,
-      attackerEvents,
-      
-      // Substitute events (used by both formations)
-      substitute_1Events,
-      substitute_2Events,
-      substitute_3Events,
-      substitute_4Events,
-      substitute_5Events
-    };
-  }
+    // 7v7 formation events
+    leftMidfielderEvents,
+    centerMidfielderEvents,
+    rightMidfielderEvents,
+
+    // 1-2-1 Formation events
+    defenderEvents,
+    leftEvents,
+    rightEvents,
+    attackerEvents,
+
+    // Substitute events (used by both formations)
+    substitute_1Events,
+    substitute_2Events,
+    substitute_3Events,
+    substitute_4Events,
+    substitute_5Events
+  };
 };

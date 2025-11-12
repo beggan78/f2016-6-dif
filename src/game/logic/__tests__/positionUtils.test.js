@@ -24,11 +24,6 @@ describe('positionUtils', () => {
           config: TEAM_CONFIGS.INDIVIDUAL_7,
           expectedLength: 6,
           excludedPositions: ['goalie']
-        },
-        {
-          config: TEAM_CONFIGS.PAIRS_7,
-          expectedLength: 3,
-          excludedPositions: ['goalie']
         }
       ];
 
@@ -65,10 +60,6 @@ describe('positionUtils', () => {
         {
           config: TEAM_CONFIGS.INDIVIDUAL_7,
           expectedLength: 4
-        },
-        {
-          config: TEAM_CONFIGS.PAIRS_7,
-          expectedLength: 2
         }
       ];
 
