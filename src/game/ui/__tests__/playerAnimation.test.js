@@ -3,7 +3,7 @@
  * Tests animation property delegation and formatting
  */
 
-import { getPlayerAnimation, getPairAnimation } from '../playerAnimation';
+import { getPlayerAnimation } from '../playerAnimation';
 import * as animationSupport from '../../animation/animationSupport';
 
 // Mock the animation support module
@@ -95,126 +95,6 @@ describe('playerAnimation', () => {
     });
   });
 
-  describe('getPairAnimation', () => {
-    test('should return defender animation when defender is moving', () => {
-      const defenderAnimation = {
-        animationClass: 'animate-move-up-200',
-        zIndexClass: 'z-index-moving-up',
-        styleProps: { '--move-distance': '200px' }
-      };
-      
-      animationSupport.getPlayerAnimationProps
-        .mockReturnValueOnce(defenderAnimation) // defender call
-        .mockReturnValueOnce(null); // attacker call
-      
-      const result = getPairAnimation('defender1', 'attacker1', { isAnimating: true });
-      
-      expect(animationSupport.getPlayerAnimationProps).toHaveBeenCalledWith('defender1', { isAnimating: true });
-      expect(animationSupport.getPlayerAnimationProps).toHaveBeenCalledWith('attacker1', { isAnimating: true });
-      expect(result).toEqual({
-        animationClass: 'animate-move-up-200',
-        zIndexClass: 'z-index-moving-up',
-        styleProps: { '--move-distance': '200px' }
-      });
-    });
-
-    test('should return attacker animation when attacker is moving', () => {
-      const attackerAnimation = {
-        animationClass: 'animate-move-down-75',
-        zIndexClass: 'z-index-moving-down',
-        styleProps: { '--move-distance': '75px' }
-      };
-      
-      animationSupport.getPlayerAnimationProps
-        .mockReturnValueOnce(null) // defender call
-        .mockReturnValueOnce(attackerAnimation); // attacker call
-      
-      const result = getPairAnimation('defender1', 'attacker1', { isAnimating: true });
-      
-      expect(result).toEqual({
-        animationClass: 'animate-move-down-75',
-        zIndexClass: 'z-index-moving-down',
-        styleProps: { '--move-distance': '75px' }
-      });
-    });
-
-    test('should prioritize defender animation when both are moving', () => {
-      const defenderAnimation = {
-        animationClass: 'animate-move-up-100',
-        zIndexClass: 'z-index-moving-up',
-        styleProps: { '--move-distance': '100px' }
-      };
-      
-      const attackerAnimation = {
-        animationClass: 'animate-move-up-100',
-        zIndexClass: 'z-index-moving-up',
-        styleProps: { '--move-distance': '100px' }
-      };
-      
-      animationSupport.getPlayerAnimationProps
-        .mockReturnValueOnce(defenderAnimation) // defender call
-        .mockReturnValueOnce(attackerAnimation); // attacker call
-      
-      const result = getPairAnimation('defender1', 'attacker1', { isAnimating: true });
-      
-      // Should use defender animation (first truthy value)
-      expect(result).toEqual({
-        animationClass: 'animate-move-up-100',
-        zIndexClass: 'z-index-moving-up',
-        styleProps: { '--move-distance': '100px' }
-      });
-    });
-
-    test('should return empty props when neither player is moving', () => {
-      animationSupport.getPlayerAnimationProps
-        .mockReturnValueOnce(null) // defender call
-        .mockReturnValueOnce(null); // attacker call
-      
-      const result = getPairAnimation('defender1', 'attacker1', { isAnimating: false });
-      
-      expect(result).toEqual({
-        animationClass: '',
-        zIndexClass: '',
-        styleProps: {}
-      });
-    });
-
-    test('should handle undefined animation props gracefully', () => {
-      animationSupport.getPlayerAnimationProps
-        .mockReturnValueOnce(undefined) // defender call
-        .mockReturnValueOnce(undefined); // attacker call
-      
-      const result = getPairAnimation('defender1', 'attacker1', {});
-      
-      expect(result).toEqual({
-        animationClass: '',
-        zIndexClass: '',
-        styleProps: {}
-      });
-    });
-
-    test('should call animation support for both players', () => {
-      const animationState = { isAnimating: true };
-      
-      animationSupport.getPlayerAnimationProps.mockReturnValue(null);
-      
-      getPairAnimation('defender1', 'attacker1', animationState);
-      
-      expect(animationSupport.getPlayerAnimationProps).toHaveBeenCalledTimes(2);
-      expect(animationSupport.getPlayerAnimationProps).toHaveBeenCalledWith('defender1', animationState);
-      expect(animationSupport.getPlayerAnimationProps).toHaveBeenCalledWith('attacker1', animationState);
-    });
-
-    test('should handle different player IDs correctly', () => {
-      animationSupport.getPlayerAnimationProps.mockReturnValue(null);
-      
-      getPairAnimation('player5', 'player6', { isAnimating: false });
-      
-      expect(animationSupport.getPlayerAnimationProps).toHaveBeenCalledWith('player5', { isAnimating: false });
-      expect(animationSupport.getPlayerAnimationProps).toHaveBeenCalledWith('player6', { isAnimating: false });
-    });
-  });
-
   describe('integration scenarios', () => {
     test('should handle typical individual player animation scenario', () => {
       const individualAnimation = {
@@ -237,43 +117,12 @@ describe('playerAnimation', () => {
       expect(result.styleProps).toEqual({ '--move-distance': '125px' });
     });
 
-    test('should handle typical pair animation scenario', () => {
-      const pairAnimation = {
-        animationClass: 'animate-move-up-84',
-        zIndexClass: 'z-index-moving-up',
-        styleProps: { '--move-distance': '84px' }
-      };
-      
-      // Both players in pair move together
-      animationSupport.getPlayerAnimationProps
-        .mockReturnValueOnce(pairAnimation) // defender
-        .mockReturnValueOnce(pairAnimation); // attacker
-      
-      const result = getPairAnimation('defender2', 'attacker2', {
-        isAnimating: true,
-        animatingPlayers: {
-          defender2: { isMoving: true, direction: 'up', distance: 84 },
-          attacker2: { isMoving: true, direction: 'up', distance: 84 }
-        }
-      });
-      
-      expect(result.animationClass).toBe('animate-move-up-84');
-      expect(result.zIndexClass).toBe('z-index-moving-up');
-    });
-
     test('should handle no animation scenario', () => {
       animationSupport.getPlayerAnimationProps.mockReturnValue(null);
       
       const individualResult = getPlayerAnimation('player1', { isAnimating: false });
-      const pairResult = getPairAnimation('defender1', 'attacker1', { isAnimating: false });
       
       expect(individualResult).toEqual({
-        animationClass: '',
-        zIndexClass: '',
-        styleProps: {}
-      });
-      
-      expect(pairResult).toEqual({
         animationClass: '',
         zIndexClass: '',
         styleProps: {}

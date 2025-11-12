@@ -842,14 +842,11 @@ export function ConfigurationScreen({
         ? formatConfig.getDefaultSubstitutionType(squadSize)
         : SUBSTITUTION_TYPES.INDIVIDUAL);
 
-    const nextPairedRoleStrategy = teamConfig.pairedRoleStrategy;
-
     const newTeamConfig = createTeamConfig(
       newFormat,
       squadSize,
       nextFormation,
-      nextSubstitutionType,
-      nextPairedRoleStrategy
+      nextSubstitutionType
     );
 
     setSelectedFormation(nextFormation);
@@ -892,7 +889,7 @@ export function ConfigurationScreen({
         : FORMAT_CONFIGS[FORMATS.FORMAT_7V7].defaultFormation;
       substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL; // 7v7 only supports individual
     } else {
-      // 5v5: Always select 2-2 formation with individual substitution (paired rotation handled separately)
+      // 5v5: Always select 2-2 formation with individual substitution
       randomFormation = FORMATIONS.FORMATION_2_2;
       substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL;
     }

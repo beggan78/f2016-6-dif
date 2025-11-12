@@ -29,7 +29,6 @@ export function IndividualFormation({
   goalieHandlers,
   getPlayerNameById,
   getPlayerTimeStats,
-  nextPhysicalPairToSubOut, // Filter out React-specific props
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
   substitutionCount = 1,

@@ -8,7 +8,7 @@ export function useGameModals(pushNavigationState, removeFromNavigationStack) {
   const [modals, setModals] = useState({
     fieldPlayer: {
       isOpen: false,
-      type: null, // 'pair' or 'player'
+      type: null, // 'player'
       target: null, // pairKey or position
       playerName: '',
       sourcePlayerId: null,

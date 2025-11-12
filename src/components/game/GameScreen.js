@@ -55,13 +55,11 @@ export function GameScreen({
   resetSubTimer, 
   handleUndoSubstitution: handleUndoSubstitutionTimer,
   handleEndPeriod, 
-  nextPhysicalPairToSubOut,
   nextPlayerToSubOut,
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
   setNextNextPlayerIdToSubOut,
   selectedSquadPlayers,
-  setNextPhysicalPairToSubOut,
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
   teamConfig,
@@ -155,7 +153,6 @@ export function GameScreen({
       allPlayers,
       teamConfig,
       selectedFormation,
-      nextPhysicalPairToSubOut,
       nextPlayerToSubOut,
       nextPlayerIdToSubOut,
       nextNextPlayerIdToSubOut,
@@ -180,7 +177,6 @@ export function GameScreen({
     allPlayers,
     teamConfig,
     selectedFormation,
-    nextPhysicalPairToSubOut,
     nextPlayerToSubOut,
     nextPlayerIdToSubOut,
     nextNextPlayerIdToSubOut,
@@ -204,7 +200,6 @@ export function GameScreen({
   const stateUpdaters = React.useMemo(() => ({
     setFormation,
     setAllPlayers,
-    setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut,
     setNextPlayerIdToSubOut,
     setNextNextPlayerIdToSubOut,
@@ -225,7 +220,7 @@ export function GameScreen({
     clearSubstitutionCountOverride: uiState.clearSubstitutionCountOverride,
     setShouldResetSubTimerOnNextSub
   }), [
-    setFormation, setAllPlayers, setNextPhysicalPairToSubOut,
+    setFormation, setAllPlayers,
     setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setSubstitutionOverride,
     uiState.clearSubstitutionOverride, uiState.setLastSubstitution,
@@ -595,7 +590,6 @@ export function GameScreen({
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
           hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
-          nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
           substitutionCount={substitutionCount}
@@ -652,7 +646,6 @@ export function GameScreen({
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
           hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
-          nextPhysicalPairToSubOut={nextPhysicalPairToSubOut}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
           substitutionCount={substitutionCount}
@@ -779,7 +772,7 @@ const arePropsEqual = (prevProps, nextProps) => {
   // Compare primitive props
   const primitiveProps = [
     'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
-    'teamConfig', 'selectedFormation', 'nextPhysicalPairToSubOut', 'nextPlayerToSubOut',
+    'teamConfig', 'selectedFormation', 'nextPlayerToSubOut',
     'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'ownScore', 'opponentScore'
   ];
   

@@ -28,7 +28,7 @@ Modern composite team configuration architecture with four components:
 **Core Constants:**
 - `FORMATS`: Field formats (`5v5`, `7v7`)
 - `FORMATIONS`: Tactical formations (`2-2`, `1-2-1`, `2-2-2`, `2-3-1`, etc.)
-- `SUBSTITUTION_TYPES`: Substitution styles (`individual`, `pairs`)
+- `SUBSTITUTION_TYPES`: Substitution styles (`individual`)
 - `GAME_CONSTANTS`: Squad size limits (5-15 players), field player counts
 
 **Key Functions:**
@@ -37,7 +37,7 @@ Modern composite team configuration architecture with four components:
 - `getValidFormations()` - Get formations for format and squad size
 
 **Business Rules:**
-- Pairs substitution: Only 5v5, 2-2 formation, 7 players
+- Individual substitution: Supports 6-7 player squads with rotation queue
 - Each format has specific field player counts and allowed formations
 
 ### gameModes.js
@@ -92,7 +92,7 @@ When persisting player data:
 All game logic works with team configuration objects created by `createTeamConfig()`:
 - Pass team config to `getModeDefinition()` for complete mode properties
 - Use validation functions before persisting configurations
-- Respect business rules (pairs mode restrictions, squad size limits)
+- Respect business rules (squad size limits, format compatibility)
 
 ### Formation-Specific Logic
 Different formations have different position keys and role mappings:

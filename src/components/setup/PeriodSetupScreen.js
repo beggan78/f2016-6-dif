@@ -191,7 +191,7 @@ export function PeriodSetupScreen({
     playerName: '',
     playerId: '',
     position: '',
-    role: '', // For pairs mode
+    role: '',
     originalValue: '', // To restore dropdown if cancelled
     // For indirect swaps
     swapDetails: null, // Contains swap information for indirect scenarios

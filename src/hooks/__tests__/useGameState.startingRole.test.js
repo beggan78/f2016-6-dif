@@ -94,7 +94,6 @@ jest.mock('../../services/matchStateManager', () => ({
 }));
 
 jest.mock('../../utils/formationGenerator', () => ({
-  generateRecommendedFormation: jest.fn(),
   generateIndividualFormationRecommendation: jest.fn()
 }));
 

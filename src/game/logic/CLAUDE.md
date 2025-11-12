@@ -26,7 +26,6 @@ Contains pure functions for all game state transitions and calculations. Handles
 - `SubstitutionManager` class: Handles formation-specific substitution logic
 - `handleRoleChange()`: Manages role transitions within periods
 - Formation-specific handlers:
-  - `handlePairsSubstitution()`: Pairs mode substitution logic
   - `handleIndividualSubstitution()`: 6-player individual mode logic  
   - `handleIndividual7Substitution()`: 7-player individual mode with inactive support
 

@@ -101,7 +101,7 @@ Post-match analysis and reporting system that transforms game data into visual r
 
 ### GameEventTimeline Event Formatting
 - **Goal Events**: Format as "3-2 TeamName Scored - PlayerName" (uses goalScorers mapping)
-- **Substitution Events**: Handles both single player and pairs mode (playersOff/playersOn arrays)
+- **Substitution Events**: Handles single-player substitutions (playersOff/playersOn arrays)
 - **Period Grouping**: Groups by event.periodNumber, displays intermissions between periods
 - **Intermission Calculation**: Matches start/end events by precedingPeriodNumber/followingPeriodNumber
 - **Timeline Visuals**: Uses Lucide icons (Play, Square, Trophy, Shield, etc.)

@@ -76,7 +76,7 @@
  * ┌──────────────────────┐    ┌─────────────────────┐
  * │ Formation Components │ -> │ Animation Utilities │
  * │ - IndividualFormation│    │ - getPlayerAnimation│
- * │ - PairsFormation     │    │ - getPairAnimation  │
+ * │ - IndividualFormation│    │ - getPlayerAnimation│
  * └──────────┬───────────┘    └─────────────────────┘
  *            │
  *            ▼

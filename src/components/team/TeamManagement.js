@@ -1187,7 +1187,6 @@ function TeamPreferences({ team, onRefresh }) {
               onChange={(value) => setPreferences(prev => ({ ...prev, substitutionMode: value }))}
               options={[
                 { value: 'individual', label: 'Individual' },
-                { value: 'pairs', label: 'Pairs' },
                 { value: 'all', label: 'All Players' }
               ]}
             />

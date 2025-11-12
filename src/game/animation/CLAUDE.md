@@ -54,16 +54,12 @@ const MEASUREMENTS = {
   padding: 16,     // Component padding (8px top + 8px bottom)
   border: 4,       // Border width (2px top + 2px bottom)  
   gap: 8,          // Space between components
-  contentHeight: {
-    pairs: 84,     // Height of pair component content
-    individual: 76 // Height of individual component content
-  }
+  contentHeight: 76 // Height of individual player component content
 };
 ```
 
 ### Position Mapping
 Each team configuration has specific position mappings:
-- **Pairs**: leftPair (index 0), rightPair (index 1), subPair (index 2), goalie (index 3)
 - **Individual 6-Player**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute (4), goalie (5)
 - **Individual 7-Player**: leftDefender (0), rightDefender (1), leftAttacker (2), rightAttacker (3), substitute_1 (4), substitute_2 (5), goalie (6)
 

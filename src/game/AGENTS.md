@@ -28,7 +28,7 @@ All state transition logic is pure:
 - **Format**: `5v5` (future: `7v7`)
 - **Squad Size**: 5-15 players
 - **Formation**: `2-2` or `1-2-1` (fully implemented)
-- **Substitution Type**: `individual` or `pairs`
+- **Substitution Type**: `individual`
 
 ### Formations
 **2-2**: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`, `goalie` (Defender/Attacker roles)
@@ -36,7 +36,6 @@ All state transition logic is pure:
 
 ### Substitution Types
 **Individual**: 6+ players, individual positions, `substitute` or `substitute_1`/`substitute_2`, inactive player support (7+)
-**Pairs**: 7 players typical, `leftPair`/`rightPair`/`subPair`, swaps entire pairs
 
 ## Game State Structure
 Core fields in `gameState`:

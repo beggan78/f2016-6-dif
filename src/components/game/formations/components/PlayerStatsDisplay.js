@@ -5,7 +5,7 @@ import { ICON_STYLES } from '../constants';
 
 /**
  * Reusable component for displaying player time stats
- * Used in both Individual and Pairs formations
+ * Used in individual formation components
  */
 export function PlayerStatsDisplay({ playerId, getPlayerTimeStats, className = '' }) {
   if (!playerId) return null;

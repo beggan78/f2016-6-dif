@@ -112,13 +112,6 @@ queueManager.reorderByPositions(timeBasedOrder);
 
 ## Team Configuration-Specific Behavior
 
-### Pairs Substitution Type (`substitutionType: 'pairs'`)
-- Typically used with 7-player squads
-- Queue contains individual player IDs, not pair objects
-- Next pair determined by which pair contains queue[0]
-- Pair substitutions affect both players but queue tracks individuals
-- Works with both 2-2 and 1-2-1 formations
-
 ### Individual Substitution Type (`substitutionType: 'individual'`)
 
 #### 6-Player Squads

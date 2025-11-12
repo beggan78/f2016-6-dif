@@ -8,7 +8,7 @@
  * 1. **Format** - Field format (5v5, future: 7v7)
  * 2. **Squad Size** - Total players (5-15 supported)
  * 3. **Formation** - Tactical formation (2-2, 1-2-1, future formations)
- * 4. **Substitution Type** - Substitution style (individual, pairs)
+ * 4. **Substitution Type** - Substitution style (individual)
  * 
  * Benefits:
  * - Scalable to any squad size within limits

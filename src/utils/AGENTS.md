@@ -28,8 +28,6 @@ This directory contains cross-cutting utility functions for data transformation,
 
 ### Formation & Rotation
 - **`formationGenerator.js`**: Generates optimal formations based on playing time balance
-  - `generateRecommendedFormation()`: Pairs mode (periods 2+) with role swapping
-  - `generateBalancedFormationForPeriod3()`: Period 3 with strict role balance enforcement (timeRatio thresholds)
   - `generateIndividualFormationRecommendation()`: Individual modes (6/7/8+ players) with time-based rotation
   - Supports 2-2 and 1-2-1 formations with role-specific time tracking
   - Returns `{formation, rotationQueue, nextToRotateOff}` structure
@@ -87,7 +85,7 @@ This directory contains cross-cutting utility functions for data transformation,
   - `getExpectedFormationStructure()`: Returns clean formation template with null values
   - `validateFormationStructure()`: Validates formation matches expected structure
   - `normalizeFormationStructure()`: Cleans messy formation data to expected structure
-  - Handles pairs mode vs individual mode structures
+  - Handles individual rotation structures across supported formations
 
 ### Error Handling & Recovery
 - **`errorHandler.js`**: Structured error framework

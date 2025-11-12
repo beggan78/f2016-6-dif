@@ -23,17 +23,6 @@ import {
 } from '../../../__tests__/componentTestUtils';
 
 
-// Mock the formation components  
-jest.mock('../PairsFormation', () => ({
-  PairsFormation: (props) => (
-    <div data-testid="pairs-formation" data-substitution-type="pairs">
-      <div data-testid="pairs-formation-players">{props.allPlayers?.length || 0} players</div>
-      <div data-testid="pairs-formation-goalie">{props.formation?.goalie || 'No goalie'}</div>
-      Pairs Formation Component
-    </div>
-  )
-}));
-
 jest.mock('../IndividualFormation', () => ({
   IndividualFormation: (props) => (
     <div data-testid="individual-formation" data-substitution-type="individual">
@@ -56,7 +45,6 @@ describe('FormationRenderer', () => {
       animationState: { type: 'none', phase: 'idle', data: {} },
       recentlySubstitutedPlayers: new Set(),
       hideNextOffIndicator: false,
-      nextPhysicalPairToSubOut: 'leftDefender',
       nextPlayerIdToSubOut: '1',
       nextNextPlayerIdToSubOut: '2',
       quickTapHandlers: {
@@ -81,7 +69,6 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
       expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
-      expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
     });
 
     it('should render IndividualFormation for individual substitution type (7 players)', () => {
@@ -96,7 +83,6 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
       expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
-      expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
     });
 
     it('should render IndividualFormation for individual substitution type (8 players)', () => {
@@ -111,7 +97,6 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
       expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
-      expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
     });
 
     it('should show error message for unsupported substitution type', () => {
@@ -123,7 +108,6 @@ describe('FormationRenderer', () => {
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByText(/Unsupported substitution type: INVALID_TYPE/)).toBeInTheDocument();
-      expect(screen.queryByTestId('pairs-formation')).not.toBeInTheDocument();
       expect(screen.queryByTestId('individual-formation')).not.toBeInTheDocument();
     });
 

@@ -16,7 +16,7 @@ import {
  * - Team configuration state (format, squad size, formation, substitution type)
  * - Formation selection UI state
  * - Configuration updates and validation
- * - Formation compatibility logic (e.g., 1-2-1 with pairs)
+ * - Formation compatibility logic across supported formations
  *
  * @param {Object} initialState - Initial state from persistence
  * @returns {Object} Team configuration state and handlers

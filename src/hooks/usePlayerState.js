@@ -166,7 +166,7 @@ export function usePlayerState(initialState = {}) {
   }, []);
 
   // Toggle player inactive status (for substitute players)
-  const togglePlayerInactive = useCallback((playerId, teamConfig, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, nextPlayerToSubOut, nextPhysicalPairToSubOut, animationCallback = null, delayMs = 0) => {
+  const togglePlayerInactive = useCallback((playerId, teamConfig, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, nextPlayerToSubOut, animationCallback = null, delayMs = 0) => {
     if (teamConfig.squadSize !== 7 || teamConfig.substitutionType !== 'individual') return null;
 
     const player = findPlayerById(allPlayers, playerId);
@@ -208,8 +208,7 @@ export function usePlayerState(initialState = {}) {
           rotationQueue,
           nextPlayerIdToSubOut,
           nextNextPlayerIdToSubOut,
-          nextPlayerToSubOut,
-          nextPhysicalPairToSubOut
+          nextPlayerToSubOut
         };
         const newGameState = calculatePlayerToggleInactive(currentGameState, playerId);
 
@@ -237,8 +236,7 @@ export function usePlayerState(initialState = {}) {
           rotationQueue,
           nextPlayerIdToSubOut,
           nextNextPlayerIdToSubOut,
-          nextPlayerToSubOut,
-          nextPhysicalPairToSubOut
+          nextPlayerToSubOut
         };
       }
     };

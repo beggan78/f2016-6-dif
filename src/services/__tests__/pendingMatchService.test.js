@@ -415,7 +415,7 @@ describe('pendingMatchService', () => {
 
     it('should return false for invalid matchConfig', () => {
       const config = {
-        teamConfig: { formation: '2-2', squadSize: 7, substitutionType: 'pairs' },
+        teamConfig: { formation: '2-2', squadSize: 7, substitutionType: 'individual' },
         matchConfig: {}, // missing required properties
         squadSelection: ['player1']
       };
@@ -425,7 +425,7 @@ describe('pendingMatchService', () => {
 
     it('should return false for invalid squadSelection', () => {
       const config = {
-        teamConfig: { formation: '2-2', squadSize: 7, substitutionType: 'pairs' },
+        teamConfig: { formation: '2-2', squadSize: 7, substitutionType: 'individual' },
         matchConfig: { format: '5v5', periods: 3, periodDurationMinutes: 15 },
         squadSelection: [] // empty array
       };
@@ -441,7 +441,7 @@ describe('pendingMatchService', () => {
         teamConfig: {
           formation: '2-2',
           squadSize: 7,
-          substitutionType: 'pairs'
+          substitutionType: 'individual'
         },
         matchConfig: {
           format: '5v5',
@@ -466,7 +466,7 @@ describe('pendingMatchService', () => {
         teamConfig: {
           formation: '2-2',
           squadSize: 7,
-          substitutionType: 'pairs'
+          substitutionType: 'individual'
         },
         matchConfig: {
           format: '5v5',
@@ -534,7 +534,7 @@ describe('pendingMatchService', () => {
       });
 
       const validConfig = {
-        teamConfig: { formation: '2-2', squadSize: 7, substitutionType: 'pairs' },
+        teamConfig: { formation: '2-2', squadSize: 7, substitutionType: 'individual' },
         matchConfig: { format: '5v5', periods: 3, periodDurationMinutes: 15 },
         squadSelection: ['player1']
       };
@@ -555,7 +555,7 @@ describe('pendingMatchService', () => {
       teamConfig: {
         formation: '2-2',
         squadSize: 7,
-        substitutionType: 'pairs'
+        substitutionType: 'individual'
       },
       periods: 3,
       periodDurationMinutes: 15,
@@ -569,7 +569,7 @@ describe('pendingMatchService', () => {
         teamConfig: {
           formation: '2-2',
           squadSize: 7,
-          substitutionType: 'pairs'
+          substitutionType: 'individual'
         },
         matchConfig: {
           periods: 3,

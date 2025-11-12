@@ -10,12 +10,12 @@ import { normalizeRole, validateRoleInDev } from './roleConstants.js';
  * - Format (5v5, future: 7v7)
  * - Squad Size (5-15 players)
  * - Formation (2-2, 1-2-1, future formations) 
- * - Substitution Type (individual, pairs)
+ * - Substitution Type (individual)
  * 
  * Key Features:
  * - Dynamic position generation based on squad size
  * - Formation-specific role mappings and position layouts
- * - Flexible substitution type support (individual vs pairs)
+ * - Flexible substitution type support across formations
  * - Middleware role support for 1-2-1 formation
  * - Validation and recommendation algorithms
  */

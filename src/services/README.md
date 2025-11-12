@@ -200,8 +200,7 @@ The service uses environment-gated logging:
 
 ### Team Mode Considerations
 
-The system handles both pairs and individual substitution modes:
-- **Pairs Mode**: Uses `currentRole` parameter for accurate role mapping from pair positions
+Current substitution logic targets the individual rotation system for both 5v5 and 7v7 formats:
 - **Individual Mode**: Direct position-to-role mapping for single-player positions
 - **Formation Support**: Handles 2-2, 1-2-1, and future formation types
 
@@ -234,7 +233,7 @@ The `initial_config` JSON field stores the complete configuration needed to resu
   teamConfig: {
     formation: '2-2',
     squadSize: 7,
-    substitutionType: 'pairs'
+    substitutionType: 'individual'
   },
   matchConfig: {
     periods: 3,

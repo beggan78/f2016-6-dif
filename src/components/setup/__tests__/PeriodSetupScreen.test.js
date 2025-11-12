@@ -225,7 +225,7 @@ describe('PeriodSetupScreen', () => {
       
       render(<PeriodSetupScreen {...props} />);
       
-      // Should render individual position cards instead of pairs
+      // Should render up-to-date individual position cards
       expect(screen.queryByText('Left')).not.toBeInTheDocument();
       expect(screen.queryByText('Right')).not.toBeInTheDocument();
     });

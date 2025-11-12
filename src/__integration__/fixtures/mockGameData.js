@@ -458,13 +458,13 @@ export const workflowScenarios = {
       {
         name: 'configuration',
         screen: 'config',
-        data: { squadSize: 7, formation: '2-2', substitutionType: 'pairs' },
+        data: { squadSize: 7, formation: '2-2', substitutionType: 'individual' },
         expectedResult: { view: 'setup', selectedSquadIds: Array.isArray }
       },
       {
         name: 'period_setup',
         screen: 'setup',
-        data: formationScenarios.pairs7Standard,
+        data: formationScenarios.individual7Standard,
         expectedResult: { view: 'game', formation: Object }
       },
       {

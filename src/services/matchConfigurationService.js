@@ -27,8 +27,7 @@ export function formatTeamConfigForDatabase(teamConfig) {
     format: teamConfig.format,
     formation: teamConfig.formation,
     squadSize: teamConfig.squadSize,
-    substitutionType: teamConfig.substitutionType,
-    ...(teamConfig.pairedRoleStrategy && { pairedRoleStrategy: teamConfig.pairedRoleStrategy })
+    substitutionType: teamConfig.substitutionType
   };
 }
 

@@ -1811,10 +1811,7 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
         format: initialConfig.teamConfig?.format,
         formation: initialConfig.teamConfig?.formation,
         squadSize: initialConfig.teamConfig?.squadSize,
-        substitutionType: initialConfig.teamConfig?.substitutionType || 'individual',
-        ...(initialConfig.teamConfig?.pairedRoleStrategy && {
-          pairedRoleStrategy: initialConfig.teamConfig.pairedRoleStrategy
-        })
+        substitutionType: initialConfig.teamConfig?.substitutionType || 'individual'
       };
 
       // Normalize the formation structure

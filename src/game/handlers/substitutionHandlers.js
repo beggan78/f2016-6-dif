@@ -44,7 +44,6 @@ export const createSubstitutionHandlers = (
   const {
     setFormation,
     setAllPlayers,
-    setNextPhysicalPairToSubOut,
     setNextPlayerToSubOut,
     setNextPlayerIdToSubOut,
     setNextNextPlayerIdToSubOut,
@@ -182,9 +181,7 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSetNextSubstitution = (fieldPlayerModal) => {
-    if (fieldPlayerModal.type === 'pair') {
-      setNextPhysicalPairToSubOut(fieldPlayerModal.target);
-    } else if (fieldPlayerModal.type === 'player') {
+    if (fieldPlayerModal.type === 'player') {
       // In multi-sub mode, use rotation queue logic
       const substitutionCount = getSubstitutionCount();
       if (substitutionCount > 1 && isIndividualMode(teamConfig)) {
@@ -655,7 +652,6 @@ export const createSubstitutionHandlers = (
     // Capture before-state for undo functionality
     const substitutionTimestamp = getCurrentTimestamp();
     const beforeFormation = { ...gameState.formation };
-    const beforeNextPair = gameState.nextPhysicalPairToSubOut;
     const beforeNextPlayer = gameState.nextPlayerToSubOut;
     const beforeNextPlayerId = gameState.nextPlayerIdToSubOut;
     const beforeNextNextPlayerId = gameState.nextNextPlayerIdToSubOut;
@@ -670,7 +666,6 @@ export const createSubstitutionHandlers = (
         // Apply the state changes
         setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
-        setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
         setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
@@ -703,7 +698,6 @@ export const createSubstitutionHandlers = (
         const lastSubstitutionData = {
           timestamp: substitutionTimestamp,
           beforeFormation,
-          beforeNextPair,
           beforeNextPlayer,
           beforeNextPlayerId,
           beforeNextNextPlayerId,
@@ -866,7 +860,6 @@ export const createSubstitutionHandlers = (
       (newGameState) => {
         // Apply the state changes
         setFormation(newGameState.formation);
-        setNextPhysicalPairToSubOut(newGameState.nextPhysicalPairToSubOut);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
         setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);

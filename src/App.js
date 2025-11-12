@@ -1009,13 +1009,11 @@ function AppContent() {
             resetSubTimer={timers.resetSubTimer}
             handleUndoSubstitution={handleUndoSubstitution}
             handleEndPeriod={handleEndPeriod}
-            nextPhysicalPairToSubOut={gameState.nextPhysicalPairToSubOut}
             nextPlayerToSubOut={gameState.nextPlayerToSubOut}
             nextPlayerIdToSubOut={gameState.nextPlayerIdToSubOut}
             nextNextPlayerIdToSubOut={gameState.nextNextPlayerIdToSubOut}
             setNextNextPlayerIdToSubOut={gameState.setNextNextPlayerIdToSubOut}
             selectedSquadPlayers={selectedSquadPlayers}
-            setNextPhysicalPairToSubOut={gameState.setNextPhysicalPairToSubOut}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}
             teamConfig={gameState.teamConfig}
@@ -1154,8 +1152,6 @@ function AppContent() {
             onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
             teamConfig={gameState.teamConfig}
-            onSplitPairs={gameState.splitPairs}
-            onFormPairs={gameState.formPairs}
             allPlayers={gameState.allPlayers}
             selectedSquadIds={gameState.selectedSquadIds}
             setView={navigateToView}

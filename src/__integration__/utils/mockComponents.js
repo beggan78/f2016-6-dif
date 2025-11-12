@@ -385,7 +385,6 @@ export const createMockComponentSet = (customMocks = {}) => {
     // Formation components
     FormationRenderer: MockFormationRenderer,
     IndividualFormation: MockIndividualFormation,
-    PairsFormation: MockPairsFormation,
     
     // Screen components
     ConfigurationScreen: MockConfigurationScreen,
@@ -492,7 +491,6 @@ export default {
   createInteractiveMockComponent,
   MockFormationRenderer,
   MockIndividualFormation,
-  MockPairsFormation,
   MockConfigurationScreen,
   MockPeriodSetupScreen,
   MockStatsScreen,

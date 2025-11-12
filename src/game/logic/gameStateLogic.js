@@ -321,7 +321,6 @@ export const calculateUndo = (gameState, lastSubstitution) => {
 
   // Restore formation and next player tracking
   const newFormation = lastSubstitution.beforeFormation;
-  const newNextPhysicalPairToSubOut = lastSubstitution.beforeNextPair;
   const newNextPlayerToSubOut = lastSubstitution.beforeNextPlayer;
   const newNextPlayerIdToSubOut = lastSubstitution.beforeNextPlayerId;
   const newNextNextPlayerIdToSubOut = lastSubstitution.beforeNextNextPlayerId;
@@ -383,7 +382,6 @@ export const calculateUndo = (gameState, lastSubstitution) => {
   return {
     ...gameState,
     formation: newFormation,
-    nextPhysicalPairToSubOut: newNextPhysicalPairToSubOut,
     nextPlayerToSubOut: newNextPlayerToSubOut,
     nextPlayerIdToSubOut: newNextPlayerIdToSubOut,
     nextNextPlayerIdToSubOut: newNextNextPlayerIdToSubOut,
@@ -778,12 +776,7 @@ export const calculateSubstituteReorder = (gameState, targetPosition, substituti
  */
 export const calculateNextSubstitutionTarget = (gameState, target, targetType) => {
   // This is a simple state update with no complex logic
-  if (targetType === 'pair') {
-    return {
-      ...gameState,
-      nextPhysicalPairToSubOut: target
-    };
-  } else if (targetType === 'player') {
+  if (targetType === 'player') {
     const newNextPlayerIdToSubOut = gameState.formation[target];
     return {
       ...gameState,
