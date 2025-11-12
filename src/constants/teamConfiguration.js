@@ -2,8 +2,8 @@
  * Team Configuration Constants and Utilities
  * 
  * This module defines the modern composite team configuration system that replaces
- * legacy string-based team modes (PAIRS_7, INDIVIDUAL_6, INDIVIDUAL_7) with a
- * flexible architecture based on four independent components:
+ * legacy string-based team modes with a flexible architecture based on four
+ * independent components:
  * 
  * 1. **Format** - Field format (5v5, future: 7v7)
  * 2. **Squad Size** - Total players (5-15 supported)

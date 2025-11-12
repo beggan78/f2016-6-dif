@@ -1,6 +1,6 @@
+AGENT INSTRUCTION: DO NOT READ OR EDIT THIS FILE
 This was the initial prompt used to create the Sport Wizard app.
 It is only kept here for reference and should be taken as an indication to how the app works today.
-AGENT INSTRUCTION: DO NOT READ OR EDIT THIS FILE
 
 ## Sport Wizard
 
