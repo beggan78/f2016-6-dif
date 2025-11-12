@@ -234,7 +234,6 @@ export const validateTeamConfig = (teamConfig) => {
     throw new Error(`Invalid format: ${format}. Must be one of: ${Object.values(FORMATS).join(', ')}`);
   }
 
-  const formatConfig = FORMAT_CONFIGS[format];
   const maximumPlayersForFormat = getMaximumPlayersForFormat(format);
 
   // Validate squad size

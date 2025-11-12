@@ -15,7 +15,7 @@ import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
-import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
+import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition } from '../../constants/gameModes';
 import { getFormationDefinition } from '../../utils/formationConfigUtils';
 import { handleError, ERROR_CATEGORIES } from '../../utils/errorHandler';
 
@@ -358,16 +358,9 @@ export const calculateUndo = (gameState, lastSubstitution) => {
       
       // Restore their field position from the before-substitution formation
       const beforeFormation = lastSubstitution.beforeFormation;
-      
-      // Find what position this player had before substitution
-      let restoredPosition = null;
-      if (isIndividualMode(lastSubstitution.teamConfig)) {
-        if (beforeFormation.leftDefender === player.id) restoredPosition = 'leftDefender';
-        else if (beforeFormation.rightDefender === player.id) restoredPosition = 'rightDefender';
-        else if (beforeFormation.leftAttacker === player.id) restoredPosition = 'leftAttacker';
-        else if (beforeFormation.rightAttacker === player.id) restoredPosition = 'rightAttacker';
-      }
-      
+      const validPositions = getValidPositions(lastSubstitution.teamConfig);
+      const restoredPosition = validPositions.find(pos => beforeFormation[pos] === player.id);
+
       if (restoredPosition) {
         currentStats.currentPositionKey = restoredPosition;
       }

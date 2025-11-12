@@ -36,7 +36,7 @@ Modern composite team configuration architecture with three components:
 - `getValidFormations()` - Get formations for format and squad size
 
 **Business Rules:**
-- Individual substitution: Supports 6-7 player squads with rotation queue
+- Single individual rotation queue drives all supported squad sizes (5-15 players)
 - Each format has specific field player counts and allowed formations
 
 ### gameModes.js

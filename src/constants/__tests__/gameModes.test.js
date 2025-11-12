@@ -9,7 +9,6 @@ import {
   getOutfieldPositions,
   supportsInactiveUsers,
   supportsNextNextIndicators,
-  isIndividualMode,
   getPlayerCountForMode
 } from '../gameModes';
 
@@ -60,7 +59,7 @@ describe('Game Mode Configuration', () => {
     });
 
 
-    test('should have valid individual mode configurations', () => {
+    test('individual configurations expose expected metadata', () => {
       const individualConfigs = [
         TEAM_CONFIGS.INDIVIDUAL_6,
         TEAM_CONFIGS.INDIVIDUAL_7,
@@ -69,7 +68,7 @@ describe('Game Mode Configuration', () => {
       ];
 
       individualConfigs.forEach(config => {
-        expect(isIndividualMode(config)).toBe(true);
+        expect(getModeDefinition(config)).toBeTruthy();
         const count = getPlayerCountForMode(config);
         expect(count).toBeGreaterThan(5);
       });

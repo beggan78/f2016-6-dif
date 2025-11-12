@@ -833,7 +833,7 @@ export function ConfigurationScreen({
         ? formations7v7[Math.floor(Math.random() * formations7v7.length)]
         : FORMAT_CONFIGS[FORMATS.FORMAT_7V7].defaultFormation;
     } else {
-      // 5v5: Always select 2-2 formation with individual substitution
+      // 5v5: Always select 2-2 formation (single substitution system)
       randomFormation = FORMATIONS.FORMATION_2_2;
     }
 

@@ -11,7 +11,7 @@ import {
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
-import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition, isIndividualMode } from '../../constants/gameModes';
+import { getModeDefinition, supportsInactiveUsers, getBottomSubstitutePosition } from '../../constants/gameModes';
 import { logEvent, removeEvent, EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { getSubstituteTargetPositions, getPositionDisplayName } from '../ui/positionUtils';
 import { getPositionRole, getFieldPositions } from '../logic/positionUtils';
@@ -184,7 +184,7 @@ export const createSubstitutionHandlers = (
     if (fieldPlayerModal.type === 'player') {
       // In multi-sub mode, use rotation queue logic
       const substitutionCount = getSubstitutionCount();
-      if (substitutionCount > 1 && isIndividualMode(teamConfig)) {
+      if (substitutionCount > 1) {
         const gameState = gameStateFactory();
         const playerId = fieldPlayerModal.sourcePlayerId;
 
@@ -212,7 +212,7 @@ export const createSubstitutionHandlers = (
   const handleRemoveFromNextSubstitution = (fieldPlayerModal) => {
     if (fieldPlayerModal.type === 'player') {
       const substitutionCount = getSubstitutionCount();
-      if (substitutionCount > 1 && isIndividualMode(teamConfig)) {
+      if (substitutionCount > 1) {
         const gameState = gameStateFactory();
         const playerId = fieldPlayerModal.sourcePlayerId;
 
@@ -418,7 +418,7 @@ export const createSubstitutionHandlers = (
   };
 
   const handleSetAsNextToGoIn = (substituteModal, formation) => {
-    if (substituteModal.playerId && isIndividualMode(teamConfig)) {
+    if (substituteModal.playerId) {
       const playerId = substituteModal.playerId;
       const gameState = gameStateFactory();
       

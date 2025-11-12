@@ -169,11 +169,9 @@ This separation allows logic changes without breaking animations and vice versa.
 ### `logic/substitutionManager.js`
 **Purpose**: Specialized substitution business logic and time calculation
 **Responsibilities**:
-- `SubstitutionManager` class: Handles formation-specific substitution logic
+- `SubstitutionManager` class: Handles the universal rotation logic
 - `handleRoleChange()`: Manages role transitions within periods
-- Formation-specific handlers:
-  - `handleIndividualSubstitution()`: 6-player individual mode logic
-  - `handleIndividual7Substitution()`: 7-player individual mode with inactive support
+- `handleIndividualModeSubstitution()`: Applies the single substitution path for every supported squad size
 
 **Integration points**:
 - Uses rotation queue for player ordering

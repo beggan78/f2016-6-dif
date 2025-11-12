@@ -155,7 +155,7 @@
  */
 // No longer using findPlayerById in this file
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { getFormationPositionsWithGoalie, getModeDefinition, isIndividualMode } from '../../constants/gameModes';
+import { getFormationPositionsWithGoalie, getModeDefinition } from '../../constants/gameModes';
 import { getFieldPositions, getSubstitutePositions } from '../logic/positionUtils';
 
 // Animation timing constants
@@ -333,26 +333,22 @@ export const captureAllPlayerPositions = (formation, allPlayers, teamConfig, sel
     };
   }
 
-  // Add field and substitute players - unified individual mode handling using dynamic definitions
-  if (isIndividualMode(teamConfig)) {
-    const modeDefinition = getModeDefinition(teamConfig);
+  // Add field and substitute players based on dynamic definitions
+  const modeDefinition = getModeDefinition(teamConfig);
+  if (modeDefinition) {
+    const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
 
-    if (modeDefinition) {
-      const allPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
-
-      allPositions.forEach(pos => {
-        const playerId = formation[pos];
-        if (playerId) {
-          const positionIndex = getPositionIndex(pos, teamConfig, selectedFormation);
-          positions[playerId] = {
-            playerId: playerId,
-            position: pos,
-            positionIndex: positionIndex
-          };
-        }
-      });
-      
-    }
+    allPositions.forEach(pos => {
+      const playerId = formation[pos];
+      if (playerId) {
+        const positionIndex = getPositionIndex(pos, teamConfig, selectedFormation);
+        positions[playerId] = {
+          playerId: playerId,
+          position: pos,
+          positionIndex: positionIndex
+        };
+      }
+    });
   }
   
   return positions;

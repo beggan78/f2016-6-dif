@@ -28,14 +28,14 @@ All state transition logic is pure:
 - **Format**: `5v5` (future: `7v7`)
 - **Squad Size**: 5-15 players
 - **Formation**: `2-2` or `1-2-1` (fully implemented)
-- **Substitution Type**: `individual`
+- **Rotation System**: Single individual rotation queue (always enabled)
 
 ### Formations
 **2-2**: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker`, `goalie` (Defender/Attacker roles)
 **1-2-1**: `defender`, `left`, `right`, `attacker`, `goalie` (Defender/Midfielder/Attacker roles)
 
-### Substitution Types
-**Individual**: 6+ players, individual positions, `substitute` or `substitute_1`/`substitute_2`, inactive player support (7+)
+### Substitution System
+Individual rotation is always active. Substitute positions (`substitute`, `substitute_1`, `substitute_2`, …) are generated from squad size, and 7+ player squads also support inactive-player handling.
 
 ## Game State Structure
 Core fields in `gameState`:

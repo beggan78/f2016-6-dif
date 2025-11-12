@@ -92,7 +92,7 @@ Visual preview component for tactical formations:
 ### Configuration State Sequence
 1. User selects squad → auto-creates team config
 2. User selects formation → updates team config
-3. User changes substitution mode → recreates team config with new substitution type
+3. Rotation queue recalculates automatically (single substitution system—no mode switch)
 4. All changes set `hasActiveConfiguration` to true
 
 ### Resume Data Processing

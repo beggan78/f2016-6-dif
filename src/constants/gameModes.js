@@ -357,15 +357,6 @@ export function supportsNextNextIndicators(teamConfig) {
 }
 
 /**
- * Check if team configuration is individual mode
- * @param {Object} teamConfig - Team configuration object
- * @returns {boolean} True if individual substitution mode
- */
-export function isIndividualMode(teamConfig) {
-  return !!teamConfig;
-}
-
-/**
  * Get player count for team configuration
  * @param {Object} teamConfig - Team configuration object
  * @returns {number|null} Squad size or null if invalid

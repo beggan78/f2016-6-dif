@@ -10,7 +10,7 @@
  * - Formation-specific role mapping in constants/gameModes.js
  * - Supports both 2-2 and 1-2-1 formations
  * - Dynamic substitute position generation for various squad sizes
- * - Individual substitution type support
+ * - Dynamic substitute position support
  */
 export const POSITION_KEYS = {
   // Individual formations - 2-2 formation (unified naming for 6-player, 7-player, 8-player, 9-player, and 10-player)

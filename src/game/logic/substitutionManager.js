@@ -1,5 +1,5 @@
 import { PLAYER_ROLES } from '../../constants/playerConstants';
-import { getModeDefinition, isIndividualMode } from '../../constants/gameModes';
+import { getModeDefinition } from '../../constants/gameModes';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { findPlayerById, createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
@@ -383,14 +383,10 @@ export class SubstitutionManager {
   }
 
   /**
-   * Main substitution handler - delegates to appropriate method based on team mode
+   * Main substitution handler - currently a single rotation system
    */
   executeSubstitution(context) {
-    if (isIndividualMode(this.teamConfig)) {
-      return this.handleIndividualModeSubstitution(context);
-    } else {
-      throw new Error(`Unknown team mode: ${this.teamConfig}`);
-    }
+    return this.handleIndividualModeSubstitution(context);
   }
 }
 

@@ -24,7 +24,7 @@ import {
 
 jest.mock('../IndividualFormation', () => ({
   IndividualFormation: (props) => (
-    <div data-testid="individual-formation" data-substitution-type="individual">
+    <div data-testid="individual-formation">
       <div data-testid="individual-formation-players">{props.allPlayers?.length || 0} players</div>
       <div data-testid="individual-formation-goalie">{props.formation?.goalie || 'No goalie'}</div>
       Individual Formation Component
@@ -56,7 +56,7 @@ describe('FormationRenderer', () => {
   });
 
   describe('Component Routing Logic', () => {
-    it('should render IndividualFormation for individual substitution type (6 players)', () => {
+    it('renders IndividualFormation for 6-player configs', () => {
       const props = {
         ...defaultProps,
         teamConfig: TEAM_CONFIGS.INDIVIDUAL_6,
@@ -66,11 +66,10 @@ describe('FormationRenderer', () => {
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
-      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
     });
 
-    it('should render IndividualFormation for individual substitution type (7 players)', () => {
+    it('renders IndividualFormation for 7-player configs', () => {
       const props = {
         ...defaultProps,
         teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
@@ -80,11 +79,10 @@ describe('FormationRenderer', () => {
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
-      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
     });
 
-    it('should render IndividualFormation for individual substitution type (8 players)', () => {
+    it('renders IndividualFormation for 8-player configs', () => {
       const props = {
         ...defaultProps,
         teamConfig: TEAM_CONFIGS.INDIVIDUAL_8,
@@ -94,7 +92,6 @@ describe('FormationRenderer', () => {
       render(<FormationRenderer {...props} />);
       
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
-      expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
     });
 

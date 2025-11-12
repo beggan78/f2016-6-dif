@@ -5,7 +5,6 @@
 
 import { PLAYER_ROLES } from '../constants/playerConstants';
 import { normalizeRole, getRolePriority } from '../constants/roleConstants';
-// import { isIndividualMode } from '../constants/gameModes';
 
 /**
  * Get a player's current role from their stored data
