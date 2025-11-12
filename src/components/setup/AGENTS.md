@@ -12,12 +12,11 @@ Initial game configuration screen with comprehensive state management:
 - **Match Details**: Opponent name (optional, 50 char max), match type (league/friendly/cup/tournament/internal), venue type (home/away/neutral)
 - **Game Settings**: Periods (1-4), duration (5-40 min), substitution alerts (0-5 min)
 - **Format & Formation**: Format selection (5v5, future 7v7) with formation-specific options (2-2, 1-2-1)
-- **Substitution Mode**: Individual rotation (multi-sub support for larger squads)
 - **Goalie Assignment**: Pre-assign goalies for each period
 - **Captain Selection**: Optional captain assignment
 
 **Team Configuration System**:
-- Uses `createTeamConfig()` to create composite configuration with format, squadSize, formation, and substitutionType
+- Uses `createTeamConfig()` to create composite configuration with format, squadSize, and formation
 - Auto-creates team config when squad size is selected (uses `createTeamConfigFromSquadSize()`)
 
 **State Management**:

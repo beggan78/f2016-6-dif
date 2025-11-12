@@ -1,5 +1,5 @@
 import { SubstitutionManager, createSubstitutionManager } from '../substitutionManager';
-import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
+import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
 import { PLAYER_ROLES } from '../../../constants/playerConstants';
 import { getCurrentTimestamp } from '../../../utils/timeUtils';
 
@@ -107,8 +107,7 @@ describe('SubstitutionManager', () => {
     const teamConfig = {
       format: FORMATS.FORMAT_7V7,
       squadSize: 10,
-      formation: FORMATIONS.FORMATION_2_3_1,
-      substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+      formation: FORMATIONS.FORMATION_2_3_1
     };
 
     it('promotes remaining active substitutes when inactive players stay on the bench', () => {
@@ -157,8 +156,7 @@ describe('SubstitutionManager', () => {
       const teamConfig = {
         format: FORMATS.FORMAT_7V7,
         squadSize: 10,
-        formation: FORMATIONS.FORMATION_2_3_1,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        formation: FORMATIONS.FORMATION_2_3_1
       };
 
       const manager = createSubstitutionManager(teamConfig);

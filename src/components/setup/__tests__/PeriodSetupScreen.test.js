@@ -15,7 +15,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PeriodSetupScreen } from '../PeriodSetupScreen';
 import { TEAM_CONFIGS } from '../../../game/testUtils';
-import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
+import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
 import {
   createMockPlayers,
   createMockFormation,
@@ -234,8 +234,7 @@ describe('PeriodSetupScreen', () => {
       const teamConfig = {
         format: FORMATS.FORMAT_5V5,
         squadSize: 11,
-        formation: FORMATIONS.FORMATION_2_2,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        formation: FORMATIONS.FORMATION_2_2
       };
 
       const players = Array.from({ length: teamConfig.squadSize }, (_, index) => ({

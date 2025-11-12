@@ -1810,8 +1810,7 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
       const runtimeTeamConfig = {
         format: initialConfig.teamConfig?.format,
         formation: initialConfig.teamConfig?.formation,
-        squadSize: initialConfig.teamConfig?.squadSize,
-        substitutionType: initialConfig.teamConfig?.substitutionType || 'individual'
+        squadSize: initialConfig.teamConfig?.squadSize
       };
 
       // Normalize the formation structure

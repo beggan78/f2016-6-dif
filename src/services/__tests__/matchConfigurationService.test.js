@@ -52,8 +52,7 @@ describe('matchConfigurationService', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'individual'
+        squadSize: 7
       };
 
       const result = formatTeamConfigForDatabase(teamConfig);
@@ -61,8 +60,7 @@ describe('matchConfigurationService', () => {
       expect(result).toEqual({
         format: '5v5',
         formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'individual'
+        squadSize: 7
       });
     });
   });
@@ -79,8 +77,7 @@ describe('matchConfigurationService', () => {
         teamConfig: {
           format: '5v5',
           formation: '2-2',
-          squadSize: 7,
-          substitutionType: 'individual'
+          squadSize: 7
         },
         matchData: {
           format: '5v5',
@@ -102,8 +99,7 @@ describe('matchConfigurationService', () => {
         teamConfig: {
           format: '5v5',
           formation: '2-2',
-          squadSize: 7,
-          substitutionType: 'individual'
+          squadSize: 7
         },
         matchConfig: {
           format: '5v5',
@@ -125,8 +121,7 @@ describe('matchConfigurationService', () => {
         teamConfig: {
           format: '5v5',
           formation: '1-2-1',
-          squadSize: 6,
-          substitutionType: 'individual'
+          squadSize: 6
         },
         matchData: {
           format: '5v5',
@@ -322,8 +317,7 @@ describe('matchConfigurationService', () => {
       teamConfig: {
         format: '5v5',
         formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'individual'
+        squadSize: 7
       },
       selectedFormation: '2-2',
       numPeriods: 3,

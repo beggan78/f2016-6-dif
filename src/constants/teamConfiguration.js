@@ -2,19 +2,18 @@
  * Team Configuration Constants and Utilities
  * 
  * This module defines the modern composite team configuration system that replaces
- * legacy string-based team modes with a flexible architecture based on four
+ * legacy string-based team modes with a flexible architecture based on three
  * independent components:
  * 
  * 1. **Format** - Field format (5v5, future: 7v7)
  * 2. **Squad Size** - Total players (5-15 supported)
  * 3. **Formation** - Tactical formation (2-2, 1-2-1, future formations)
- * 4. **Substitution Type** - Substitution style (individual)
  * 
  * Benefits:
  * - Scalable to any squad size within limits
  * - Formation-independent substitution logic
  * - Clear separation of concerns
- * - Easy addition of new formations and substitution types
+ * - Easy addition of new formations
  * - Dynamic position and role generation
  */
 
@@ -119,11 +118,6 @@ export const FORMATION_DEFINITIONS = {
   },
 };
 
-// Substitution styles available
-export const SUBSTITUTION_TYPES = {
-  INDIVIDUAL: 'individual'
-};
-
 // Centralised format metadata for dynamic validation/selection logic
 export const FORMAT_CONFIGS = {
   [FORMATS.FORMAT_5V5]: {
@@ -136,9 +130,7 @@ export const FORMAT_CONFIGS = {
       FORMATIONS.FORMATION_1_3,
       FORMATIONS.FORMATION_1_1_2,
       FORMATIONS.FORMATION_2_1_1
-    ],
-    allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL],
-    getDefaultSubstitutionType: () => SUBSTITUTION_TYPES.INDIVIDUAL
+    ]
   },
   [FORMATS.FORMAT_7V7]: {
     label: '7v7',
@@ -152,9 +144,7 @@ export const FORMAT_CONFIGS = {
       FORMATIONS.FORMATION_2_1_3,
       FORMATIONS.FORMATION_3_2_1,
       FORMATIONS.FORMATION_3_1_2
-    ],
-    allowedSubstitutionTypes: [SUBSTITUTION_TYPES.INDIVIDUAL],
-    getDefaultSubstitutionType: () => SUBSTITUTION_TYPES.INDIVIDUAL
+    ]
   }
 };
 
@@ -196,15 +186,13 @@ export function getMaximumPlayersForFormat(format) {
  * @param {string} format - Field format (5v5, 7v7, etc.)
  * @param {number} squadSize - Total number of players (5-15)
  * @param {string} formation - Tactical formation (2-2, 1-2-1, etc.)
- * @param {string} substitutionType - Substitution style (individual)
  * @returns {Object} Team configuration object
  */
-export const createTeamConfig = (format, squadSize, formation, substitutionType) => {
+export const createTeamConfig = (format, squadSize, formation) => {
   return {
     format,
     squadSize,
-    formation,
-    substitutionType
+    formation
   };
 };
 
@@ -239,7 +227,7 @@ export const getValidFormations = (format, squadSize) => {
  * @returns {boolean} True if valid
  */
 export const validateTeamConfig = (teamConfig) => {
-  const { format, squadSize, formation, substitutionType } = teamConfig;
+  const { format, squadSize, formation } = teamConfig;
 
   // Validate format
   if (!Object.values(FORMATS).includes(format) || !FORMAT_CONFIGS[format]) {
@@ -260,15 +248,6 @@ export const validateTeamConfig = (teamConfig) => {
     throw new Error(`Formation ${formation} not valid for ${format} with ${squadSize} players. Valid formations: ${validFormations.join(', ')}`);
   }
 
-  // Validate substitution type
-  if (!Object.values(SUBSTITUTION_TYPES).includes(substitutionType)) {
-    throw new Error(`Invalid substitution type: ${substitutionType}. Must be one of: ${Object.values(SUBSTITUTION_TYPES).join(', ')}`);
-  }
-
-  if (!formatConfig.allowedSubstitutionTypes.includes(substitutionType)) {
-    throw new Error(`Substitution type ${substitutionType} is not supported for ${format}. Allowed: ${formatConfig.allowedSubstitutionTypes.join(', ')}`);
-  }
-
   return true;
 };
 
@@ -281,25 +260,11 @@ export const validateTeamConfig = (teamConfig) => {
 export const validateAndCorrectTeamConfig = (teamConfig) => {
   const corrections = [];
   let correctedConfig = { ...teamConfig };
-  const formatConfig = FORMAT_CONFIGS[teamConfig.format];
 
   try {
     validateTeamConfig(teamConfig);
     return { isValid: true, correctedConfig: teamConfig, corrections: [] };
   } catch (error) {
-    // Handle specific business rule violations with auto-correction
-    const { squadSize, substitutionType } = correctedConfig;
-
-    // Auto-correct unsupported substitution types for the selected format
-    if (formatConfig && !formatConfig.allowedSubstitutionTypes.includes(substitutionType)) {
-      const fallbackSubType = formatConfig.getDefaultSubstitutionType
-        ? formatConfig.getDefaultSubstitutionType(squadSize)
-        : SUBSTITUTION_TYPES.INDIVIDUAL;
-
-      correctedConfig.substitutionType = fallbackSubType;
-      corrections.push(`Changed substitution type to ${fallbackSubType} (unsupported for format ${teamConfig.format})`);
-    }
-
     // Try validation again with corrected config
     try {
       validateTeamConfig(correctedConfig);
@@ -320,16 +285,11 @@ export const createDefaultTeamConfig = (squadSize, format = FORMATS.FORMAT_5V5) 
   const resolvedFormat = FORMAT_CONFIGS[format] ? format : FORMATS.FORMAT_5V5;
   const formatConfig = FORMAT_CONFIGS[resolvedFormat];
 
-  const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
-    ? formatConfig.getDefaultSubstitutionType(squadSize)
-    : SUBSTITUTION_TYPES.INDIVIDUAL;
-
   const defaultFormation = formatConfig.defaultFormation || FORMATIONS.FORMATION_2_2;
 
   return createTeamConfig(
     resolvedFormat,
     squadSize,
-    defaultFormation,
-    defaultSubstitutionType
+    defaultFormation
   );
 };

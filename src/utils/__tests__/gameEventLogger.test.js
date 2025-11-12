@@ -50,7 +50,7 @@ describe('gameEventLogger', () => {
     test('should log a basic event', () => {
       const event = logEvent(EVENT_TYPES.MATCH_START, {
         periodDurationMinutes: 15,
-        teamConfig: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' }
+        teamConfig: { format: '5v5', squadSize: 6, formation: '2-2' }
       });
 
       expect(event).toMatchObject({

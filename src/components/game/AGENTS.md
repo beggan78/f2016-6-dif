@@ -79,7 +79,7 @@ GameScreen renders FormationRenderer twice (field section, then SUB NOW button, 
 - `allPlayers` - player array with stats
 - `matchTimerSeconds`, `subTimerSeconds`, `isSubTimerPaused` - timer state
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut` - rotation queue
-- `teamConfig` - configuration `{format, squadSize, formation, substitutionType}`
+- `teamConfig` - configuration `{format, squadSize, formation}`
 - `ownScore`, `opponentScore` - current score
 - Score/goal handlers, setters, match events
 

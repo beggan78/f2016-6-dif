@@ -15,7 +15,6 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { FormationRenderer } from '../FormationRenderer';
 import { TEAM_CONFIGS } from '../../../../game/testUtils';
-import { createTeamConfig } from '../../../../constants/teamConfiguration';
 import {
   createMockGameScreenProps,
   createMockPlayers,
@@ -97,18 +96,6 @@ describe('FormationRenderer', () => {
       expect(screen.getByTestId('individual-formation')).toBeInTheDocument();
       expect(screen.getByTestId('individual-formation')).toHaveAttribute('data-substitution-type', 'individual');
       expect(screen.getByText('Individual Formation Component')).toBeInTheDocument();
-    });
-
-    it('should show error message for unsupported substitution type', () => {
-      const props = {
-        ...defaultProps,
-        teamConfig: { substitutionType: 'INVALID_TYPE' }
-      };
-      
-      render(<FormationRenderer {...props} />);
-      
-      expect(screen.getByText(/Unsupported substitution type: INVALID_TYPE/)).toBeInTheDocument();
-      expect(screen.queryByTestId('individual-formation')).not.toBeInTheDocument();
     });
 
     it('should show error message when teamConfig is null', () => {
@@ -273,8 +260,8 @@ describe('FormationRenderer', () => {
       };
       
       render(<FormationRenderer {...props} />);
-      
-      expect(screen.getByText(/Unsupported substitution type:/)).toBeInTheDocument();
+
+      expect(screen.getByText(/Invalid team configuration/)).toBeInTheDocument();
     });
   });
 });

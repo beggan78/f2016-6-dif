@@ -989,7 +989,7 @@ export function PeriodSetupScreen({
         );
       })()}
 
-      {formation.goalie && teamConfig?.substitutionType === 'individual' && (
+      {formation.goalie && (
         <IndividualPositionCards
           teamConfig={teamConfig}
           formation={formation}

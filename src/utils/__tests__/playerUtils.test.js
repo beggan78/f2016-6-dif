@@ -89,8 +89,7 @@ describe('playerUtils', () => {
   const mockTeamConfig = {
     format: '5v5',
     squadSize: 6,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   };
 
   describe('initializePlayers', () => {
@@ -461,7 +460,7 @@ describe('playerUtils', () => {
       // Mock the gameModes module
       jest.doMock('../../constants/gameModes', () => ({
         getModeDefinition: jest.fn((teamConfig) => {
-          if (teamConfig?.substitutionType === 'individual') {
+          if (teamConfig) {
             return {
               substitutePositions: ['substitute_1', 'substitute_2']
             };

@@ -175,7 +175,7 @@ describe('Formation Generator - Individual Mode', () => {
         'g1',
         squad,
         squad,
-        { format: '5v5', squadSize: 5, formation: '1-2-1', substitutionType: 'individual' }
+        { format: '5v5', squadSize: 5, formation: '1-2-1' }
       );
 
       // Should assign the 4 field positions

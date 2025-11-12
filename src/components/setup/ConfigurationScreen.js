@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
-import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
+import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
@@ -307,42 +307,6 @@ export function ConfigurationScreen({
     isAuthenticated: isVoteAuthenticated
   } = useFormationVotes();
 
-  // Handle substitution mode changes
-  const handleSubstitutionModeChange = React.useCallback((newSubstitutionType) => {
-    if (!teamConfig) return;
-
-    if (teamConfig?.substitutionType === newSubstitutionType) {
-      return;
-    }
-
-    const format = teamConfig.format || FORMATS.FORMAT_5V5;
-    const formatConfig = FORMAT_CONFIGS[format] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
-    if (!formatConfig.allowedSubstitutionTypes.includes(newSubstitutionType)) {
-      console.warn(`Substitution type ${newSubstitutionType} not supported for format ${format}`);
-      return;
-    }
-
-    const newTeamConfig = createTeamConfig(
-      format,
-      teamConfig.squadSize || selectedSquadIds.length,
-      teamConfig.formation || selectedFormation,
-      newSubstitutionType
-    );
-
-    updateTeamConfig(newTeamConfig);
-    setHasActiveConfiguration(true);
-  }, [teamConfig, selectedSquadIds.length, selectedFormation, updateTeamConfig, setHasActiveConfiguration]);
-
-
-  // Ensure new configurations default to individual substitution mode
-  React.useEffect(() => {
-    if (!teamConfig) return;
-
-    if (!teamConfig?.substitutionType) {
-      handleSubstitutionModeChange(SUBSTITUTION_TYPES.INDIVIDUAL);
-    }
-  }, [teamConfig, teamConfig?.substitutionType, handleSubstitutionModeChange]);
-
   // Sync team roster to game state on mount and when team/players change
   React.useEffect(() => {
     // Guard: Skip team sync if resume processing is currently happening
@@ -600,7 +564,6 @@ export function ConfigurationScreen({
         // This prevents formation compatibility checks from overriding the restored config
         if (resumeData.teamConfig) {
           console.log('🔄 RESUME: Restoring team config:', {
-            substitutionType: resumeData.teamConfig.substitutionType,
             fullConfig: resumeData.teamConfig
           });
           updateTeamConfig(resumeData.teamConfig);
@@ -727,16 +690,11 @@ export function ConfigurationScreen({
       // Auto-create team configuration based on squad size
       // GUARD: Skip auto-configuration during resume data processing to prevent override
       if (uniqueIds.length >= minPlayersRequired && uniqueIds.length <= maxPlayersAllowed && !isProcessingResumeDataRef.current) {
-        const formatConfig = FORMAT_CONFIGS[currentFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
-        const defaultSubstitutionType = formatConfig.getDefaultSubstitutionType
-          ? formatConfig.getDefaultSubstitutionType(uniqueIds.length)
-          : SUBSTITUTION_TYPES.INDIVIDUAL;
         console.log('⚡ AUTO-CONFIG: Squad selection changed, triggering createTeamConfigFromSquadSize:', {
           squadSize: uniqueIds.length,
-          defaultSubstitutionType,
           currentTeamConfig: teamConfig
         });
-        createTeamConfigFromSquadSize(uniqueIds.length, defaultSubstitutionType, currentFormat);
+        createTeamConfigFromSquadSize(uniqueIds.length, currentFormat);
       } else if (isProcessingResumeDataRef.current) {
         console.log('🛡️ AUTO-CONFIG: Skipped during resume processing to prevent override');
       }
@@ -831,18 +789,10 @@ export function ConfigurationScreen({
       : fallbackFormation;
 
     const squadSize = teamConfig.squadSize || selectedSquadIds.length || (formatConfig.fieldPlayers + 1);
-    const allowedSubTypes = formatConfig.allowedSubstitutionTypes || [SUBSTITUTION_TYPES.INDIVIDUAL];
-    const nextSubstitutionType = allowedSubTypes.includes(teamConfig.substitutionType)
-      ? teamConfig.substitutionType
-      : (formatConfig.getDefaultSubstitutionType
-        ? formatConfig.getDefaultSubstitutionType(squadSize)
-        : SUBSTITUTION_TYPES.INDIVIDUAL);
-
     const newTeamConfig = createTeamConfig(
       newFormat,
       squadSize,
-      nextFormation,
-      nextSubstitutionType
+      nextFormation
     );
 
     setSelectedFormation(nextFormation);
@@ -872,7 +822,6 @@ export function ConfigurationScreen({
 
     // Select formation based on format
     let randomFormation;
-    let substitutionType;
 
     if (isCurrently7v7) {
       // 7v7: Randomly select between available 7v7 formations
@@ -883,18 +832,16 @@ export function ConfigurationScreen({
       randomFormation = formations7v7.length > 0
         ? formations7v7[Math.floor(Math.random() * formations7v7.length)]
         : FORMAT_CONFIGS[FORMATS.FORMAT_7V7].defaultFormation;
-      substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL; // 7v7 only supports individual
     } else {
       // 5v5: Always select 2-2 formation with individual substitution
       randomFormation = FORMATIONS.FORMATION_2_2;
-      substitutionType = SUBSTITUTION_TYPES.INDIVIDUAL;
     }
 
     handleFormatChange(format);
     updateFormationSelection(randomFormation);
 
     // Create team config based on format
-    createTeamConfigFromSquadSize(squadSize, substitutionType, format);
+    createTeamConfigFromSquadSize(squadSize, format);
 
     // Randomize goalie assignments (use current numPeriods setting)
     const goalieAssignments = randomizeGoalieAssignments(randomPlayers, numPeriods);

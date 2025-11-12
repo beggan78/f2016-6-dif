@@ -112,7 +112,7 @@ queueManager.reorderByPositions(timeBasedOrder);
 
 ## Team Configuration-Specific Behavior
 
-### Individual Substitution Type (`substitutionType: 'individual'`)
+### Individual Rotation Mode
 
 #### 6-Player Squads
 - Simple rotation: substituted player moves to end

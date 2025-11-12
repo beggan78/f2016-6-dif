@@ -3,7 +3,6 @@ import {
   validateTeamConfig,
   validateAndCorrectTeamConfig,
   createDefaultTeamConfig,
-  SUBSTITUTION_TYPES,
   FORMATIONS,
   FORMATS,
   FORMAT_CONFIGS,
@@ -13,24 +12,22 @@ import {
 describe('Team Configuration', () => {
   describe('createTeamConfig', () => {
     test('should create team config for individual mode', () => {
-      const config = createTeamConfig('5v5', 6, '2-2', SUBSTITUTION_TYPES.INDIVIDUAL);
+      const config = createTeamConfig('5v5', 6, '2-2');
 
       expect(config).toEqual({
         format: '5v5',
         squadSize: 6,
-        formation: '2-2',
-        substitutionType: 'individual'
+        formation: '2-2'
       });
     });
 
     test('should create team config for 1-2-1 formation', () => {
-      const config = createTeamConfig('5v5', 7, '1-2-1', SUBSTITUTION_TYPES.INDIVIDUAL);
+      const config = createTeamConfig('5v5', 7, '1-2-1');
 
       expect(config).toEqual({
         format: '5v5',
         squadSize: 7,
-        formation: '1-2-1',
-        substitutionType: 'individual'
+        formation: '1-2-1'
       });
     });
   });
@@ -40,8 +37,7 @@ describe('Team Configuration', () => {
       const config = {
         format: '5v5',
         squadSize: 6,
-        formation: '2-2',
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        formation: '2-2'
       };
 
       expect(() => validateTeamConfig(config)).not.toThrow();
@@ -51,8 +47,7 @@ describe('Team Configuration', () => {
       const config = {
         format: '5v5',
         squadSize: 7,
-        formation: FORMATIONS.FORMATION_1_2_1,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        formation: FORMATIONS.FORMATION_1_2_1
       };
 
       expect(() => validateTeamConfig(config)).not.toThrow();
@@ -66,8 +61,7 @@ describe('Team Configuration', () => {
       expect(config).toEqual({
         format: '5v5',
         squadSize: 6,
-        formation: '2-2',
-        substitutionType: 'individual'
+        formation: '2-2'
       });
     });
 
@@ -77,8 +71,7 @@ describe('Team Configuration', () => {
       expect(config).toEqual({
         format: '5v5',
         squadSize: 7,
-        formation: '2-2',
-        substitutionType: 'individual'
+        formation: '2-2'
       });
     });
   });
@@ -88,8 +81,7 @@ describe('Team Configuration', () => {
       const validConfig = {
         format: '5v5',
         squadSize: 6,
-        formation: FORMATIONS.FORMATION_2_2,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        formation: FORMATIONS.FORMATION_2_2
       };
 
       const result = validateAndCorrectTeamConfig(validConfig);
@@ -103,8 +95,7 @@ describe('Team Configuration', () => {
       const individualConfig = {
         format: '5v5',
         squadSize: 6,
-        formation: FORMATIONS.FORMATION_1_2_1,
-        substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+        formation: FORMATIONS.FORMATION_1_2_1
       };
 
       const result = validateAndCorrectTeamConfig(individualConfig);

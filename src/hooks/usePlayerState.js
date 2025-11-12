@@ -167,7 +167,7 @@ export function usePlayerState(initialState = {}) {
 
   // Toggle player inactive status (for substitute players)
   const togglePlayerInactive = useCallback((playerId, teamConfig, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, nextPlayerToSubOut, animationCallback = null, delayMs = 0) => {
-    if (teamConfig.squadSize !== 7 || teamConfig.substitutionType !== 'individual') return null;
+    if (teamConfig.squadSize !== 7) return null;
 
     const player = findPlayerById(allPlayers, playerId);
     if (!player) return null;

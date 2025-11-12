@@ -458,7 +458,7 @@ export const workflowScenarios = {
       {
         name: 'configuration',
         screen: 'config',
-        data: { squadSize: 7, formation: '2-2', substitutionType: 'individual' },
+        data: { squadSize: 7, formation: '2-2' },
         expectedResult: { view: 'setup', selectedSquadIds: Array.isArray }
       },
       {

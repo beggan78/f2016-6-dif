@@ -1,5 +1,5 @@
 import { PLAYER_ROLES, PLAYER_STATUS } from './playerConstants.js';
-import { SUBSTITUTION_TYPES, GAME_CONSTANTS, FORMAT_CONFIGS, FORMATS, FORMATIONS } from './teamConfiguration.js';
+import { GAME_CONSTANTS, FORMAT_CONFIGS, FORMATS, FORMATIONS } from './teamConfiguration.js';
 import { normalizeRole, validateRoleInDev } from './roleConstants.js';
 
 /**
@@ -10,12 +10,11 @@ import { normalizeRole, validateRoleInDev } from './roleConstants.js';
  * - Format (5v5, future: 7v7)
  * - Squad Size (5-15 players)
  * - Formation (2-2, 1-2-1, future formations) 
- * - Substitution Type (individual)
  * 
  * Key Features:
  * - Dynamic position generation based on squad size
  * - Formation-specific role mappings and position layouts
- * - Flexible substitution type support across formations
+ * - Flexible substitute count support across formations
  * - Middleware role support for 1-2-1 formation
  * - Validation and recommendation algorithms
  */
@@ -215,7 +214,7 @@ const determineSubstituteRotationPattern = (substituteCount) => {
  * @returns {Object} Complete individual mode definition
  */
 const buildIndividualModeDefinition = (teamConfig, formationLayout, substitutePositions, fieldPlayers) => {
-  const { format, squadSize, formation, substitutionType } = teamConfig;
+  const { format, squadSize, formation } = teamConfig;
   
   const positions = buildCompletePositions(formationLayout, substitutePositions);
   const expectedCounts = calculateExpectedCounts(fieldPlayers, substitutePositions.length);
@@ -226,7 +225,6 @@ const buildIndividualModeDefinition = (teamConfig, formationLayout, substitutePo
     format,
     squadSize,
     formation,
-    substitutionType,
     positions,
     expectedCounts,
     positionOrder,
@@ -259,7 +257,7 @@ export const getModeDefinition = (teamConfig) => {
     return modeDefinitionCache.get(cacheKey);
   }
   
-  // Generate mode definition - Individual substitution type only
+  // Generate mode definition
   const formatKey = teamConfig.format || FORMATS.FORMAT_5V5;
   const formatLayouts = FORMATION_LAYOUTS[formatKey] || {};
   const formationLayout = formatLayouts[teamConfig.formation];
@@ -364,8 +362,7 @@ export function supportsNextNextIndicators(teamConfig) {
  * @returns {boolean} True if individual substitution mode
  */
 export function isIndividualMode(teamConfig) {
-  if (!teamConfig) return false;
-  return teamConfig.substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL;
+  return !!teamConfig;
 }
 
 /**
@@ -383,18 +380,6 @@ export function getPlayerCountForMode(teamConfig) {
  * @param {number} squadSize - Squad size to check for
  * @returns {Function} Function that checks if teamConfig matches the squad size
  */
-const createIndividualModeChecker = (squadSize) => (teamConfig) => {
-  if (!teamConfig) return false;
-  return teamConfig.squadSize === squadSize && teamConfig.substitutionType === SUBSTITUTION_TYPES.INDIVIDUAL;
-};
-
-// Export individual mode checkers
-export const isIndividual5Mode = createIndividualModeChecker(5);
-export const isIndividual6Mode = createIndividualModeChecker(6);
-export const isIndividual7Mode = createIndividualModeChecker(7);
-export const isIndividual8Mode = createIndividualModeChecker(8);
-export const isIndividual9Mode = createIndividualModeChecker(9);
-export const isIndividual10Mode = createIndividualModeChecker(10);
 
 /**
  * Get all positions for team configuration (including goalie)

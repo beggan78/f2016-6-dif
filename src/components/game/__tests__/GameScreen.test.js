@@ -285,8 +285,7 @@ describe('GameScreen', () => {
         teamConfig: {
           format: '5v5',
           squadSize: 6,
-          formation: '2-2',
-          substitutionType: 'individual'
+          formation: '2-2'
         },
         formation: createMockFormation(TEAM_CONFIGS.INDIVIDUAL_6)
       };
@@ -467,8 +466,7 @@ describe('GameScreen', () => {
       const teamConfig = {
         format: '7v7',
         squadSize: 14,
-        formation: '2-2-2',
-        substitutionType: 'individual'
+        formation: '2-2-2'
       };
       const props = createMockGameScreenProps({ teamConfig });
 

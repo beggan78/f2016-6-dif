@@ -13,8 +13,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'individual'
+        squadSize: 7
       };
 
       const expected = getExpectedFormationStructure(teamConfig);
@@ -34,8 +33,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '5v5',
         formation: '1-2-1',
-        squadSize: 6,
-        substitutionType: 'individual'
+        squadSize: 6
       };
 
       const expected = getExpectedFormationStructure(teamConfig);
@@ -54,8 +52,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '7v7',
         formation: '2-3-1',
-        squadSize: 10,
-        substitutionType: 'individual'
+        squadSize: 10
       };
 
       const expected = getExpectedFormationStructure(teamConfig);
@@ -80,8 +77,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'individual'
+        squadSize: 7
       };
 
       const formation = {
@@ -104,8 +100,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
-        squadSize: 6,
-        substitutionType: 'individual'
+        squadSize: 6
       };
 
       const formation = {
@@ -124,8 +119,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
-        squadSize: 6,
-        substitutionType: 'individual'
+        squadSize: 6
       };
 
       const formation = {
@@ -150,8 +144,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
-        squadSize: 7,
-        substitutionType: 'individual'
+        squadSize: 7
       };
 
       const squadSelection = ['player1', 'player2', 'player3', 'player4', 'player5', 'player6', 'player7'];
@@ -190,8 +183,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '5v5',
         formation: '2-2',
-        squadSize: 6,
-        substitutionType: 'individual'
+        squadSize: 6
       };
 
       const squadSelection = ['player1', 'player2', 'player3', 'player4', 'player5', 'player6'];
@@ -215,8 +207,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '7v7',
         formation: '2-2-2',
-        squadSize: 9,
-        substitutionType: 'individual'
+        squadSize: 9
       };
 
       const squadSelection = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9'];
@@ -253,8 +244,7 @@ describe('Formation Utilities', () => {
       const teamConfig = {
         format: '7v7',
         formation: '2-3-1',
-        squadSize: 10,
-        substitutionType: 'individual'
+        squadSize: 10
       };
 
       const formation = {

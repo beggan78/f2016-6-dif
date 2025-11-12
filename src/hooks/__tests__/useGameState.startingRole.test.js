@@ -123,8 +123,7 @@ describe('useGameState starting role persistence', () => {
     teamConfig: {
       format: '5v5',
       formation: FORMATIONS.FORMATION_2_2,
-      squadSize: 6,
-      substitutionType: 'individual'
+      squadSize: 6
     },
     selectedFormation: FORMATIONS.FORMATION_2_2,
     currentPeriodNumber: 1,

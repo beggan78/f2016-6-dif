@@ -13,56 +13,47 @@ export const TEAM_CONFIGS = {
   INDIVIDUAL_6: {
     format: '5v5',
     squadSize: 6,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   },
   INDIVIDUAL_7: {
     format: '5v5',
     squadSize: 7,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   },
   INDIVIDUAL_8: {
     format: '5v5',
     squadSize: 8,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   },
   INDIVIDUAL_9: {
     format: '5v5',
     squadSize: 9,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   },
   INDIVIDUAL_10: {
     format: '5v5',
     squadSize: 10,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   },
   INDIVIDUAL_7_1_2_1: {
     format: '5v5',
     squadSize: 7,
-    formation: '1-2-1',
-    substitutionType: 'individual'
+    formation: '1-2-1'
   },
   INDIVIDUAL_7V7_MIN: {
     format: '7v7',
     squadSize: 7,
-    formation: '2-2-2',
-    substitutionType: 'individual'
+    formation: '2-2-2'
   },
   INDIVIDUAL_7V7_222: {
     format: '7v7',
     squadSize: 9,
-    formation: '2-2-2',
-    substitutionType: 'individual'
+    formation: '2-2-2'
   },
   INDIVIDUAL_7V7_231: {
     format: '7v7',
     squadSize: 10,
-    formation: '2-3-1',
-    substitutionType: 'individual'
+    formation: '2-3-1'
   }
 };
 

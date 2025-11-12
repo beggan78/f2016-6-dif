@@ -589,7 +589,7 @@ export function GameScreen({
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
-          hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || !canSubstitute}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
           substitutionCount={substitutionCount}
@@ -645,7 +645,7 @@ export function GameScreen({
           allPlayers={allPlayers}
           animationState={uiState.animationState}
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
-          hideNextOffIndicator={uiState.hideNextOffIndicator || (teamConfig?.substitutionType === 'individual' && !canSubstitute)}
+          hideNextOffIndicator={uiState.hideNextOffIndicator || !canSubstitute}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
           nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
           substitutionCount={substitutionCount}

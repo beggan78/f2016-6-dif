@@ -58,7 +58,7 @@ describe('UI positionUtils', () => {
     });
 
     test('should return proper display names for 1-2-1 formation positions', () => {
-      const teamConfig121 = createTeamConfig({ format: '5v5', squadSize: 7, formation: '1-2-1', substitutionType: 'individual' });
+      const teamConfig121 = createTeamConfig('5v5', 7, '1-2-1');
       expect(getPositionDisplayName('goalie', null, teamConfig121, mockSubstitutePositions7)).toBe('Goalie');
       expect(getPositionDisplayName('defender', null, teamConfig121, mockSubstitutePositions7)).toBe('Defender');
       expect(getPositionDisplayName('left', null, teamConfig121, mockSubstitutePositions7)).toBe('Left Mid');

@@ -10,10 +10,7 @@ import {
   supportsInactiveUsers,
   supportsNextNextIndicators,
   isIndividualMode,
-  getPlayerCountForMode,
-  isIndividual6Mode,
-  isIndividual7Mode,
-  isIndividual8Mode
+  getPlayerCountForMode
 } from '../gameModes';
 
 import { createTeamConfig } from '../teamConfiguration';
@@ -23,7 +20,7 @@ describe('Game Mode Configuration', () => {
   describe('Team configuration compatibility', () => {
     test('should work with all supported team configurations', () => {
       const expectedConfigs = [
-        createTeamConfig('5v5', 5, '2-2', 'individual'),
+        createTeamConfig('5v5', 5, '2-2'),
         TEAM_CONFIGS.INDIVIDUAL_6,
         TEAM_CONFIGS.INDIVIDUAL_7,
         TEAM_CONFIGS.INDIVIDUAL_8,
@@ -42,14 +39,14 @@ describe('Game Mode Configuration', () => {
 
     test('getModeDefinition should return consistent structure for team configs', () => {
       const testConfigs = [
-        createTeamConfig('5v5', 5, '2-2', 'individual'),
-        createTeamConfig('5v5', 6, '2-2', 'individual'),
-        createTeamConfig('5v5', 7, '2-2', 'individual'),
-        createTeamConfig('5v5', 8, '2-2', 'individual'),
-        createTeamConfig('5v5', 9, '2-2', 'individual'),
-        createTeamConfig('5v5', 10, '2-2', 'individual'),
-        createTeamConfig('7v7', 9, '2-2-2', 'individual'),
-        createTeamConfig('7v7', 10, '2-3-1', 'individual')
+        createTeamConfig('5v5', 5, '2-2'),
+        createTeamConfig('5v5', 6, '2-2'),
+        createTeamConfig('5v5', 7, '2-2'),
+        createTeamConfig('5v5', 8, '2-2'),
+        createTeamConfig('5v5', 9, '2-2'),
+        createTeamConfig('5v5', 10, '2-2'),
+        createTeamConfig('7v7', 9, '2-2-2'),
+        createTeamConfig('7v7', 10, '2-3-1')
       ];
 
       testConfigs.forEach(config => {

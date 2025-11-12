@@ -119,14 +119,13 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 - **Error boundaries**: Wrap components that may crash to prevent full app failures
 
 ## Team Configuration System
-Modern composite team configuration system using four components:
+Modern composite team configuration system using three components:
 
 ### Team Configuration Components
 - **Format**: Field format (`5v5`, future: `7v7`)
 - **Venue Type**: Match location context (`home`, `away`, `neutral`) used for analytics and persistence
 - **Squad Size**: Total players (5-15 players supported)
 - **Formation**: Tactical formation (`2-2`, `1-2-1`, and future formations)
-- **Substitution Type**: Substitution style (`individual`)
 
 ### ConfigurationScreen Reference
 - **Opponent & Match Type**: Opponent name is optional (50 char). `matchType` comes from `MATCH_TYPE_OPTIONS` and persists to `match.type` (`league`, `friendly`, `cup`, `tournament`, `internal`).
@@ -136,8 +135,8 @@ Modern composite team configuration system using four components:
 - **Captain Selection**: Optional dropdown stored in match state and persisted with configuration saves.
 
 ### Common Configurations
-- **6-player individual**: `{format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual'}`
-- **7-player individual**: `{format: '5v5', squadSize: 7, formation: '2-2', substitutionType: 'individual'}`
+- **6-player individual**: `{format: '5v5', squadSize: 6, formation: '2-2'}`
+- **7-player individual**: `{format: '5v5', squadSize: 7, formation: '2-2'}`
 
 ### Supported Formations
 - **2-2 Formation**: 2 defenders, 2 attackers (fully implemented)

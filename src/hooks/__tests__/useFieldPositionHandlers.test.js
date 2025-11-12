@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { useFieldPositionHandlers } from '../useFieldPositionHandlers';
+import { TEAM_CONFIGS } from '../../game/testUtils';
 
 jest.mock('../useQuickTapWithScrollDetection');
 
@@ -23,7 +24,7 @@ describe('useFieldPositionHandlers', () => {
     };
 
     const { result } = renderHook(() =>
-      useFieldPositionHandlers(fieldPositionCallbacks, { substitutionType: 'individual' })
+      useFieldPositionHandlers(fieldPositionCallbacks, TEAM_CONFIGS.INDIVIDUAL_7V7_231)
     );
 
     // Verify the handler object contains the midfielder event handlers
@@ -56,7 +57,7 @@ describe('useFieldPositionHandlers', () => {
           centerMidfielderCallback,
           rightMidfielderCallback
         },
-        { substitutionType: 'individual' }
+        TEAM_CONFIGS.INDIVIDUAL_7V7_231
       )
     );
 

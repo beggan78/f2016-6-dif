@@ -459,9 +459,8 @@ export function useGameState(navigateToView = null) {
         // Continue with game anyway - save is optional for navigation
       });
 
-    // Initialize rotation queue for individual modes only if not already set by formation generator
-    // For Period 1 or when formation generator hasn't provided a queue
-    if ((teamConfig.substitutionType === 'individual') && rotationQueue.length === 0) {
+    // Initialize rotation queue (Period 1 or when formation generator hasn't provided a queue)
+    if (rotationQueue.length === 0) {
       const formationAwareTeamConfig = getFormationAwareTeamConfig();
       const definition = getModeDefinition(formationAwareTeamConfig);
       const fieldPositions = definition?.fieldPositions || [];
@@ -1163,8 +1162,7 @@ export function useGameState(navigateToView = null) {
         teamConfig: {
           format: formationAwareTeamConfig.format,
           formation: formationAwareTeamConfig.formation,
-          squadSize: formationAwareTeamConfig.squadSize,
-          substitutionType: formationAwareTeamConfig.substitutionType
+          squadSize: formationAwareTeamConfig.squadSize
         },
         matchConfig: {
           format: formationAwareTeamConfig.format,

@@ -326,7 +326,6 @@ Each individual configuration includes a `substituteRotationPattern` property th
   format: '5v5',
   squadSize: 6, 
   formation: '2-2',
-  substitutionType: 'individual',
   substituteRotationPattern: 'simple',
   // ... other configuration
 }
@@ -336,7 +335,6 @@ Each individual configuration includes a `substituteRotationPattern` property th
   format: '5v5',
   squadSize: 7,
   formation: '2-2', 
-  substitutionType: 'individual',
   substituteRotationPattern: 'carousel',
   // ... other configuration
 }
@@ -346,7 +344,6 @@ Each individual configuration includes a `substituteRotationPattern` property th
   format: '5v5',
   squadSize: 8,
   formation: '2-2',
-  substitutionType: 'individual', 
   substituteRotationPattern: 'advanced_carousel',
   // ... other configuration
 }

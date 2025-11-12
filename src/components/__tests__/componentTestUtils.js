@@ -17,8 +17,7 @@ export const createMockGameScreenProps = (overrides = {}) => {
   const teamConfig = overrides.teamConfig || {
     format: '5v5',
     squadSize: 7,
-    formation: '2-2',
-    substitutionType: 'individual'
+    formation: '2-2'
   };
   const formation = overrides.formation || createMockFormation(teamConfig);
   const allPlayers = overrides.allPlayers || createMockPlayers(teamConfig.squadSize || 7, teamConfig);

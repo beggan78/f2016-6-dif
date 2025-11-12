@@ -515,22 +515,21 @@ The central `gameState` object contains:
 - `formation`: Current player positions and formation structure
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
-- `teamConfig`: Team configuration object with format, squadSize, formation, and substitutionType
+- `teamConfig`: Team configuration object with format, squadSize, and formation
 - `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
 - `playersToHighlight`: Players to show glow effects
 - Various timing and metadata fields
 
 ## Team Configuration System
-Modern composite team configuration architecture with four components:
+Modern composite team configuration architecture with three components:
 
 ### Configuration Components
 - **Format**: Field format (`5v5`, `7v7`)
 - **Squad Size**: Total players (5-15 players supported)
 - **Formation**: Tactical formation (`2-2`, `1-2-1`, `2-2-2`, `2-3-1`)
-- **Substitution Type**: Substitution style (`individual`)
 
 ### Supported Configurations
-- **Individual Modes**: 5-15 player individual management using `substitutionType: 'individual'`
+- **Individual Modes**: 5-15 player squads managed via the round-robin rotation queue
 - **Formation Support**: 2-2, 1-2-1, 2-2-2, and 2-3-1 formations fully implemented
 - **Role Tracking**: Defender, Attacker, Midfielder (1-2-1, 2-2-2, 2-3-1), and Goalie roles
 
@@ -728,9 +727,9 @@ const handlePositionSwitch = (player1Id, player2Id) => {
 - **Format**: 7v7 only
 - **Supports**: 9-15 player squads with individual substitution
 
-## Substitution Type
+## Substitution System
 
-### Individual Mode (`substitutionType: 'individual'`)
+### Individual Mode (rotation queue)
 - Used with 5-15 player squads
 - Individual field positions based on formation
 - Substitute positions vary by squad size: `substitute` (5-6 players), `substitute_1`/`substitute_2` (7-8 players), etc.
@@ -782,7 +781,7 @@ All logic functions can be tested in isolation:
 const testState = {
   formation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
-  teamConfig: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' }
+  teamConfig: { format: '5v5', squadSize: 6, formation: '2-2' }
 };
 
 const result = calculateSubstitution(testState);

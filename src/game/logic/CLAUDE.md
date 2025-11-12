@@ -137,7 +137,7 @@ All logic functions can be tested in isolation:
 const testState = {
   formation: { /* test formation */ },
   allPlayers: [ /* test players */ ],
-  teamConfig: { format: '5v5', squadSize: 6, formation: '2-2', substitutionType: 'individual' }
+  teamConfig: { format: '5v5', squadSize: 6, formation: '2-2' }
 };
 
 const result = calculateSubstitution(testState);

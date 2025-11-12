@@ -232,8 +232,7 @@ The `initial_config` JSON field stores the complete configuration needed to resu
 {
   teamConfig: {
     formation: '2-2',
-    squadSize: 7,
-    substitutionType: 'individual'
+    squadSize: 7
   },
   matchConfig: {
     periods: 3,
@@ -291,7 +290,7 @@ const shouldShow = !!(result.match &&
 
 #### 2. Configuration Validation Requirements
 All pending configurations must include:
-- **teamConfig**: `formation`, `squadSize`, `substitutionType`
+- **teamConfig**: `formation`, `squadSize`
 - **matchConfig**: `format`, `periods`, `periodDurationMinutes`
 - **squadSelection**: Non-empty array of player IDs
 
@@ -320,7 +319,7 @@ The database stores configuration in flat structure, but ConfigurationScreen exp
 ```javascript
 // From ConfigurationScreen - save current configuration
 const configData = {
-  teamConfig: { formation, squadSize, substitutionType },
+  teamConfig: { formation, squadSize },
   matchConfig: { periods, periodDurationMinutes, opponentTeam, matchType, captainId },
   squadSelection: selectedPlayers,
   formation: formationData,

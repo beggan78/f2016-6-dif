@@ -4,8 +4,6 @@ import {
   createDefaultTeamConfig,
   FORMATIONS,
   FORMATS,
-  FORMAT_CONFIGS,
-  SUBSTITUTION_TYPES,
   validateAndCorrectTeamConfig
 } from '../constants/teamConfiguration';
 
@@ -13,7 +11,7 @@ import {
  * Hook for managing team configuration and formation selection
  *
  * Handles:
- * - Team configuration state (format, squad size, formation, substitution type)
+ * - Team configuration state (format, squad size, formation)
  * - Formation selection UI state
  * - Configuration updates and validation
  * - Formation compatibility logic across supported formations
@@ -58,7 +56,6 @@ export function useTeamConfig(initialState = {}) {
   // Team configuration update function with validation
   const updateTeamConfig = useCallback((newTeamConfig) => {
     console.log('📝 updateTeamConfig called:', {
-      'newTeamConfig.substitutionType': newTeamConfig?.substitutionType,
       fullNewConfig: newTeamConfig
     });
 
@@ -80,7 +77,6 @@ export function useTeamConfig(initialState = {}) {
   const updateFormationSelection = useCallback((newFormation) => {
     console.log('🔄 updateFormationSelection called:', {
       newFormation,
-      'teamConfig.substitutionType': teamConfig?.substitutionType,
       'teamConfig.squadSize': teamConfig?.squadSize
     });
 
@@ -98,31 +94,21 @@ export function useTeamConfig(initialState = {}) {
   }, [teamConfig, updateTeamConfig]);
 
   // Create new team config from squad size with validation
-  const createTeamConfigFromSquadSize = useCallback((squadSize, substitutionType = null, formatOverride = null) => {
+  const createTeamConfigFromSquadSize = useCallback((squadSize, formatOverride = null) => {
     console.log('🔧 createTeamConfigFromSquadSize called:', {
       squadSize,
-      substitutionType,
-      selectedFormation,
-      'currentTeamConfig.substitutionType': teamConfig?.substitutionType
+      selectedFormation
     });
 
     const formatToUse = formatOverride || teamConfig?.format || FORMATS.FORMAT_5V5;
-    const formatConfig = FORMAT_CONFIGS[formatToUse] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
-    const substitutionToUse = substitutionType
-      || teamConfig?.substitutionType
-      || (formatConfig.getDefaultSubstitutionType
-        ? formatConfig.getDefaultSubstitutionType(squadSize)
-        : SUBSTITUTION_TYPES.INDIVIDUAL);
 
     const newConfig = createTeamConfig(
       formatToUse,
       squadSize,
-      selectedFormation, // use current formation selection
-      substitutionToUse
+      selectedFormation // use current formation selection
     );
 
     console.log('🔧 createTeamConfigFromSquadSize result:', {
-      'newConfig.substitutionType': newConfig.substitutionType,
       fullNewConfig: newConfig
     });
 

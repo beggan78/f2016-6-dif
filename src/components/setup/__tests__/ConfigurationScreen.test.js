@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
-import { FORMATS, FORMATIONS, SUBSTITUTION_TYPES } from '../../../constants/teamConfiguration';
+import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
 
 const mockUseAuth = jest.fn(() => ({
@@ -171,8 +171,7 @@ const buildProps = (overrides = {}) => ({
   teamConfig: {
     format: FORMATS.FORMAT_5V5,
     squadSize: 7,
-    formation: FORMATIONS.FORMATION_2_2,
-    substitutionType: SUBSTITUTION_TYPES.INDIVIDUAL
+    formation: FORMATIONS.FORMATION_2_2
   },
   updateTeamConfig: jest.fn(),
   selectedFormation: FORMATIONS.FORMATION_2_2,
@@ -249,7 +248,7 @@ describe('ConfigurationScreen squad selection', () => {
 
     expect(props.createTeamConfigFromSquadSize.mock.calls.length).toBeGreaterThan(initialConfigCalls);
     const lastConfigCall = props.createTeamConfigFromSquadSize.mock.calls[props.createTeamConfigFromSquadSize.mock.calls.length - 1];
-    expect(lastConfigCall).toEqual([expectedIds.length, SUBSTITUTION_TYPES.INDIVIDUAL, FORMATS.FORMAT_5V5]);
+    expect(lastConfigCall).toEqual([expectedIds.length, FORMATS.FORMAT_5V5]);
 
     rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: nextSelection }} />);
 

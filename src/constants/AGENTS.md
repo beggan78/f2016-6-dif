@@ -23,12 +23,11 @@ Central role value management system preventing case sensitivity bugs:
 - `GOAL_SCORING_PRIORITY` - Priority mapping for goal attribution
 
 ### teamConfiguration.js
-Modern composite team configuration architecture with four components:
+Modern composite team configuration architecture with three components:
 
 **Core Constants:**
 - `FORMATS`: Field formats (`5v5`, `7v7`)
 - `FORMATIONS`: Tactical formations (`2-2`, `1-2-1`, `2-2-2`, `2-3-1`, etc.)
-- `SUBSTITUTION_TYPES`: Substitution styles (`individual`)
 - `GAME_CONSTANTS`: Squad size limits (5-15 players), field player counts
 
 **Key Functions:**
