@@ -1,3 +1,7 @@
+This was the initial prompt used to create the Sport Wizard app.
+It is only kept here for reference and should be taken as an indication to how the app works today.
+AGENT INSTRUCTION: DO NOT READ OR EDIT THIS FILE
+
 ## Sport Wizard
 
 I need a mobile-first webapp for my soccer team that I'm coaching. Every game is played in 3 periods.

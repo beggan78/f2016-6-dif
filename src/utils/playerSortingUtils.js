@@ -112,14 +112,14 @@ export const sortPlayersByGoalScoringRelevance = (players) => {
  * @returns {string} Position display name (e.g., "Left Attacker", "Substitute")
  */
 export const getPlayerPositionDisplay = (player) => {
-  if (!player?.stats?.currentPairKey) {
+  if (!player?.stats?.currentPositionKey) {
     return 'Substitute';
   }
 
-  const pairKey = player.stats.currentPairKey;
+  const positionKey = player.stats.currentPositionKey;
   
   // Map position keys to display names
-  switch (pairKey) {
+  switch (positionKey) {
     case 'goalie':
       return 'Goalie';
     
@@ -143,7 +143,7 @@ export const getPlayerPositionDisplay = (player) => {
 
     default:
       // Handle any unknown position keys
-      if (pairKey.startsWith('substitute_')) {
+      if (positionKey.startsWith('substitute_')) {
         return 'Substitute';
       }
       return 'Substitute';

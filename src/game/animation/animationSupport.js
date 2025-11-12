@@ -83,7 +83,7 @@
  * ┌──────────────────────┐    ┌─────────────────────┐
  * │ Player Components    │ -> │ CSS Classes Applied │
  * │ - PlayerBox          │    │ - animate-dynamic-* │
- * │ - PairBox            │    │ - z-index classes   │
+ * │ - PlayerRow          │    │ - z-index classes   │
  * └──────────────────────┘    │ - glow effect CSS   │
  *                             └─────────────────────┘
  * 
@@ -236,7 +236,7 @@ const crossesFieldSubstituteBoundary = (fromPosition, toPosition, teamConfig) =>
  * Maps logical position keys to their visual rendering order. This determines
  * animation distances by calculating index differences.
  * 
- * @param {string} position - Position key (e.g., 'leftDefender', 'defender', 'goalie', 'leftPair')
+ * @param {string} position - Position key (e.g., 'leftDefender', 'defender', 'goalie')
  * @param {Object} teamConfig - Team configuration object
  * @param {string} selectedFormation - Formation type ('2-2', '1-2-1', etc.) for formation-aware positioning
  * @returns {number} Zero-based index representing visual order (-1 if not found)

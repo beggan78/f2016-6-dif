@@ -91,7 +91,7 @@ export function PeriodSetupScreen({
   currentPeriodNumber,
   formation,
   setFormation,
-  availableForPairing,
+  availableForAssignment,
   allPlayers,
   setAllPlayers,
   handleStartGame,
@@ -776,7 +776,7 @@ export function PeriodSetupScreen({
   const getAvailableForIndividualSelect = (currentPosition) => {
     // If formation is complete, show all players except goalie
     if (isFormationComplete()) {
-      return availableForPairing;
+      return availableForAssignment;
     }
 
     // Original logic for incomplete formation - works for both 6 and 7 player modes
@@ -786,7 +786,7 @@ export function PeriodSetupScreen({
         assignedElsewhereIds.add(formation[pos]);
       }
     });
-    return availableForPairing.filter(p => !assignedElsewhereIds.has(p.id));
+    return availableForAssignment.filter(p => !assignedElsewhereIds.has(p.id));
   };
 
   const isFormationComplete = () => {
@@ -804,7 +804,7 @@ export function PeriodSetupScreen({
     }
 
     // Get players available for positioning (excluding goalie)
-    const availablePlayers = availableForPairing;
+    const availablePlayers = availableForAssignment;
     
     if (availablePlayers.length === 0) {
       alert('No players available for positioning.');

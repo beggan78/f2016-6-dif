@@ -128,7 +128,7 @@ export const createHandlers = (gameStateFactory, stateUpdaters, animationHooks, 
 ## Key Functions Reference
 
 ### Logic (`/logic/`)
-- `calculateSubstitution()`, `calculatePositionSwitch()`, `calculateGoalieSwitch()`, `calculateUndo()`, `calculatePlayerToggleInactive()`, `calculatePairPositionSwap()`
+- `calculateSubstitution()`, `calculatePositionSwitch()`, `calculateGoalieSwitch()`, `calculateUndo()`, `calculatePlayerToggleInactive()`, `calculateGeneralSubstituteSwap()`
 
 ### Animation (`/animation/`)
 - `animateStateChange()` (main entry), `captureAllPlayerPositions()`, `calculateAllPlayerAnimations()`, `getPlayerAnimationProps()`

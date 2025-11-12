@@ -9,7 +9,7 @@ export function useGameModals(pushNavigationState, removeFromNavigationStack) {
     fieldPlayer: {
       isOpen: false,
       type: null, // 'player'
-      target: null, // pairKey or position
+      target: null, // position key
       playerName: '',
       sourcePlayerId: null,
       availablePlayers: [],

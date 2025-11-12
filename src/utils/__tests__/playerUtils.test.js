@@ -33,7 +33,7 @@ describe('playerUtils', () => {
       stats: {
         currentStatus: PLAYER_STATUS.ON_FIELD,
         currentRole: PLAYER_ROLES.DEFENDER,
-        currentPairKey: 'leftDefender',
+        currentPositionKey: 'leftDefender',
         isInactive: false,
         isCaptain: false
       }
@@ -46,7 +46,7 @@ describe('playerUtils', () => {
       stats: {
         currentStatus: PLAYER_STATUS.SUBSTITUTE,
         currentRole: PLAYER_ROLES.SUBSTITUTE,
-        currentPairKey: 'substitute_1',
+        currentPositionKey: 'substitute_1',
         isInactive: false,
         isCaptain: true
       }
@@ -59,7 +59,7 @@ describe('playerUtils', () => {
       stats: {
         currentStatus: PLAYER_STATUS.GOALIE,
         currentRole: PLAYER_ROLES.GOALIE,
-        currentPairKey: 'goalie',
+        currentPositionKey: 'goalie',
         isInactive: false,
         isCaptain: false
       }
@@ -72,7 +72,7 @@ describe('playerUtils', () => {
       stats: {
         currentStatus: PLAYER_STATUS.SUBSTITUTE,
         currentRole: PLAYER_ROLES.SUBSTITUTE,
-        currentPairKey: 'substitute_2',
+        currentPositionKey: 'substitute_2',
         isInactive: true,
         isCaptain: false
       }
@@ -122,7 +122,7 @@ describe('playerUtils', () => {
           currentRole: null,
           currentStatus: null,
           lastStintStartTimeEpoch: 0,
-          currentPairKey: null,
+          currentPositionKey: null,
           isInactive: false,
           isCaptain: false,
           goals: 0,
@@ -220,7 +220,7 @@ describe('playerUtils', () => {
           startedAtPosition: 'goalie',
           currentRole: PLAYER_ROLES.GOALIE,
           currentStatus: PLAYER_STATUS.GOALIE,
-          currentPairKey: 'goalie',
+          currentPositionKey: 'goalie',
           lastStintStartTimeEpoch: 1234567890,
           timeOnFieldSeconds: 312,
           timeAsGoalieSeconds: 312
@@ -235,7 +235,7 @@ describe('playerUtils', () => {
       expect(result.stats.startedAtPosition).toBeNull();
       expect(result.stats.currentRole).toBeNull();
       expect(result.stats.currentStatus).toBe(PLAYER_STATUS.SUBSTITUTE);
-      expect(result.stats.currentPairKey).toBeNull();
+      expect(result.stats.currentPositionKey).toBeNull();
       expect(result.stats.lastStintStartTimeEpoch).toBeNull();
       // ensure other stats remain intact
       expect(result.stats.timeOnFieldSeconds).toBe(312);

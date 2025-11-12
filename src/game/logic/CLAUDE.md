@@ -13,7 +13,7 @@ Contains pure functions for all game state transitions and calculations. Handles
 - `calculateUndo()`: Reverses the most recent substitution with time adjustments
 - `calculatePlayerToggleInactive()`: Activates/deactivates players (7-player individual configuration only)
 - `calculateSubstituteSwap()`: Swaps substitute_1 and substitute_2 positions
-- `calculateNextSubstitutionTarget()`: Updates next player/pair to substitute
+- `calculateNextSubstitutionTarget()`: Updates next player to substitute
 
 **Key Characteristics**:
 - All functions are pure (input → output, no side effects)

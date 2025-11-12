@@ -648,7 +648,7 @@ function AppContent() {
     };
   }, []);
 
-  const availableForPairing = useMemo(() => {
+  const availableForAssignment = useMemo(() => {
     if (!gameState.formation.goalie) return [];
     return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie);
   }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie]);
@@ -968,7 +968,7 @@ function AppContent() {
             currentPeriodNumber={gameState.currentPeriodNumber}
             formation={gameState.formation}
             setFormation={gameState.setFormation}
-            availableForPairing={availableForPairing}
+            availableForAssignment={availableForAssignment}
             allPlayers={gameState.allPlayers}
             setAllPlayers={gameState.setAllPlayers}
             handleStartGame={handleStartGame}

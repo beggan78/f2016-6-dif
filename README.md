@@ -53,7 +53,7 @@ Sport Wizard is built for managing youth soccer teams with flexible squad sizes 
 - Time-based rotation queue management with round-robin during periods
 
 #### 7-Player Mode (Individual)
-- Players assigned to individual positions without pairs
+- Players assigned to fixed individual positions
 - Positions: Left Defender, Right Defender, Left Attacker, Right Attacker, Substitute1, Substitute2
 - Dual substitution system with two substitute players
 - Advanced visual indicators showing both immediate and upcoming substitutions

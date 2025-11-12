@@ -297,7 +297,7 @@ export class SubstitutionManager {
           stats: {
             ...timeResult.stats,
             currentStatus: 'substitute',
-            currentPairKey: newSubstitutePosition || pair.substitutePosition,
+            currentPositionKey: newSubstitutePosition || pair.substitutePosition,
             currentRole: PLAYER_ROLES.SUBSTITUTE,
             ...(pair.side ? { preferredSide: pair.side } : {})
           }
@@ -318,7 +318,7 @@ export class SubstitutionManager {
           stats: {
             ...timeResult.stats,
             currentStatus: 'on_field',
-            currentPairKey: pair.fieldPosition,
+            currentPositionKey: pair.fieldPosition,
             currentRole: pair.newRole,
             ...(pair.side ? { preferredSide: pair.side } : {})
           }
@@ -336,7 +336,7 @@ export class SubstitutionManager {
             ...p,
             stats: {
               ...p.stats,
-              currentPairKey: newPosition,
+              currentPositionKey: newPosition,
               currentRole: PLAYER_ROLES.SUBSTITUTE
             }
           };
@@ -395,7 +395,7 @@ export class SubstitutionManager {
 }
 
 /**
- * Handles role changes within a period (like pair swaps)
+ * Handles role changes within a period (e.g., manual swaps)
  * This calculates time for the previous role and updates the player's current role
  * 
  * Uses conditional time tracking:

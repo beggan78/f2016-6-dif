@@ -12,12 +12,12 @@ import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { useMatchPersistence } from './useMatchPersistence';
-import { hasInactivePlayersInSquad, createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers, createEmptyPlayerStats } from '../utils/playerUtils';
+import { createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers, createEmptyPlayerStats } from '../utils/playerUtils';
 import { useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
-import { createTeamConfig, FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../constants/teamConfiguration';
+import { FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../constants/teamConfiguration';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { DEFAULT_MATCH_TYPE } from '../constants/matchTypes';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
@@ -63,7 +63,7 @@ const hasPlayerAssignments = (formation, teamConfig) => {
   });
 };
 
-const findPlayerPairKey = (playerId, formation, formationAwareTeamConfig) => {
+const findPlayerPositionKey = (playerId, formation, formationAwareTeamConfig) => {
   const modeDefinition = getModeDefinition(formationAwareTeamConfig);
   if (!modeDefinition) {
     return null;
@@ -529,7 +529,7 @@ export function useGameState(navigateToView = null) {
         return player;
       }
 
-      const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(
+      const { currentRole, currentStatus, currentPositionKey } = initializePlayerRoleAndStatus(
         player.id,
         formation,
         formationAwareTeamConfig
@@ -544,13 +544,13 @@ export function useGameState(navigateToView = null) {
         else if (currentStatus === PLAYER_STATUS.SUBSTITUTE) newStartedMatchAs = PLAYER_ROLES.SUBSTITUTE;
 
         stats.startedMatchAs = newStartedMatchAs;
-        stats.startedAtPosition = currentPairKey;
+        stats.startedAtPosition = currentPositionKey;
         stats.startedAtRole = currentRole || null;
       }
 
       stats.currentRole = currentRole;
       stats.currentStatus = currentStatus;
-      stats.currentPairKey = currentPairKey;
+      stats.currentPositionKey = currentPositionKey;
       stats.lastStintStartTimeEpoch = lockTimestamp;
       stats.startLocked = true;
 
@@ -646,7 +646,7 @@ export function useGameState(navigateToView = null) {
         const stats = updatePlayerTimeStats(p, currentTimeEpoch, isSubTimerPaused);
 
         // Update period role counts (based on final role of the period)
-        // Note: With pair swapping, players can change roles mid-period, but we count
+        // Players can change roles mid-period via manual swaps, but we count
         // the period based on their final role for formation recommendation purposes
         if (stats.currentRole === PLAYER_ROLES.GOALIE) stats.periodsAsGoalie += 1;
         else if (stats.currentRole === PLAYER_ROLES.DEFENDER) stats.periodsAsDefender += 1;
@@ -792,7 +792,7 @@ export function useGameState(navigateToView = null) {
   // Helper function to get inactive players for animation purposes
   const getInactivePlayerPosition = useCallback((playerId) => {
     const player = findPlayerById(allPlayers, playerId);
-    return player?.stats.currentPairKey;
+    return player?.stats.currentPositionKey;
   }, [allPlayers]);
 
   // Function to switch positions between two outfield players
@@ -816,8 +816,8 @@ export function useGameState(navigateToView = null) {
       return false;
     }
 
-    const player1Position = player1.stats.currentPairKey;
-    const player2Position = player2.stats.currentPairKey;
+    const player1Position = player1.stats.currentPositionKey;
+    const player2Position = player2.stats.currentPositionKey;
 
     // Don't allow switching if either player is not currently on field or substitute
     const currentValidPositions = getValidPositions(teamConfig);
@@ -848,7 +848,7 @@ export function useGameState(navigateToView = null) {
           ...p,
           stats: {
             ...handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused),
-            currentPairKey: player2Position
+            currentPositionKey: player2Position
           }
         };
       }
@@ -860,7 +860,7 @@ export function useGameState(navigateToView = null) {
           ...p,
           stats: {
             ...handleRoleChange(p, newRole, currentTimeEpoch, isSubTimerPaused),
-            currentPairKey: player1Position
+            currentPositionKey: player1Position
           }
         };
       }
@@ -894,7 +894,7 @@ export function useGameState(navigateToView = null) {
       return false;
     }
 
-    const newGoaliePosition = newGoalie.stats.currentPairKey;
+    const newGoaliePosition = newGoalie.stats.currentPositionKey;
 
     // Update period formation
     setFormation(prev => {
@@ -931,7 +931,7 @@ export function useGameState(navigateToView = null) {
 
         // Update status and position
         newStats.currentStatus = newStatus;
-        newStats.currentPairKey = newGoaliePosition;
+        newStats.currentPositionKey = newGoaliePosition;
 
         return { ...p, stats: newStats };
       } else if (p.id === newGoalieId) {
@@ -948,7 +948,7 @@ export function useGameState(navigateToView = null) {
 
         // Update status and position
         newStats.currentStatus = PLAYER_STATUS.GOALIE;
-        newStats.currentPairKey = 'goalie';
+        newStats.currentPositionKey = 'goalie';
 
         return { ...p, stats: newStats };
       }
@@ -970,7 +970,7 @@ export function useGameState(navigateToView = null) {
     });
 
     return true;
-  }, [allPlayers, formation, teamConfig, setAllPlayers, setFormation, setRotationQueue]);
+  }, [allPlayers, formation, setAllPlayers, setFormation, setRotationQueue]);
 
   // Helper function to get all outfield players (excludes goalie)
   const getOutfieldPlayersForGame = useCallback(() => {
@@ -1118,7 +1118,7 @@ export function useGameState(navigateToView = null) {
       // Update player states (same logic as handleStartGame)
       const updatedPlayers = allPlayers.map(p => {
         if (selectedSquadIds.includes(p.id)) {
-          const { currentRole, currentStatus, currentPairKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
+          const { currentRole, currentStatus, currentPositionKey } = initializePlayerRoleAndStatus(p.id, formation, formationAwareTeamConfig);
           const stats = { ...p.stats };
           
           // Set participation markers for database insertion (same logic as handleStartGame)
@@ -1130,7 +1130,7 @@ export function useGameState(navigateToView = null) {
             
             stats.startedMatchAs = newStartedMatchAs;
             // Store the specific formation position for formation-aware role mapping
-            stats.startedAtPosition = currentPairKey;
+            stats.startedAtPosition = currentPositionKey;
             // Preserve the exact role at match start for accurate reporting
             stats.startedAtRole = currentRole || null;
             stats.startLocked = false;
@@ -1142,7 +1142,7 @@ export function useGameState(navigateToView = null) {
               ...stats,
               currentRole,
               currentStatus,
-              currentPairKey: findPlayerPairKey(
+              currentPositionKey: findPlayerPositionKey(
                 p.id,
                 formation,
                 formationAwareTeamConfig
@@ -1305,7 +1305,7 @@ export function useGameState(navigateToView = null) {
       console.error('❌ Error saving match configuration:', error);
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
-  }, [formation, teamConfig, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
+  }, [formation, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
       numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentTeam?.id, periodGoalieIds,
       currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
 

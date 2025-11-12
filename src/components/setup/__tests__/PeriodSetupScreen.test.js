@@ -174,7 +174,7 @@ describe('PeriodSetupScreen', () => {
         substitute_2: null
       },
       setFormation: jest.fn(),
-      availableForPairing: mockPlayers.slice(0, 6), // Exclude goalie
+      availableForAssignment: mockPlayers.slice(0, 6), // Exclude goalie
       allPlayers: mockPlayers,
       setAllPlayers: jest.fn(),
       handleStartGame: jest.fn(),
@@ -220,7 +220,7 @@ describe('PeriodSetupScreen', () => {
         ...mockProps, 
         teamConfig,
         formation,
-        availableForPairing: mockPlayers.slice(0, 6)
+        availableForAssignment: mockPlayers.slice(0, 6)
       };
       
       render(<PeriodSetupScreen {...props} />);
@@ -263,7 +263,7 @@ describe('PeriodSetupScreen', () => {
         formation,
         allPlayers: players,
         selectedSquadPlayers: players,
-        availableForPairing: players,
+        availableForAssignment: players,
         periodGoalieIds: { 1: formation.goalie }
       };
 
@@ -442,7 +442,7 @@ describe('PeriodSetupScreen', () => {
     });
   });
 
-  describe('Position Swapping - Same Pair (Fixed Bug)', () => {
+  describe('Position Swapping - Regression Coverage', () => {
     let completeFormation;
 
     beforeEach(() => {
@@ -512,7 +512,7 @@ describe('PeriodSetupScreen', () => {
         ...mockProps,
         teamConfig,
         allPlayers: individualPlayers,
-        availableForPairing: individualPlayers.slice(0, 6),
+        availableForAssignment: individualPlayers.slice(0, 6),
         formation
       };
 
@@ -520,8 +520,7 @@ describe('PeriodSetupScreen', () => {
 
       // Component should render successfully with individual mode
       expect(screen.getByText('Period 1 Team Selection')).toBeInTheDocument();
-      
-      // Individual mode should not show pair cards
+      // Individual mode should only show individual position cards
       expect(screen.queryByText('Left')).not.toBeInTheDocument();
       expect(screen.queryByText('Right')).not.toBeInTheDocument();
     });
@@ -545,7 +544,7 @@ describe('PeriodSetupScreen', () => {
         teamConfig,
         selectedFormation: '1-2-1',
         allPlayers: formationPlayers,
-        availableForPairing: formationPlayers.slice(0, 6),
+        availableForAssignment: formationPlayers.slice(0, 6),
         formation
       };
 

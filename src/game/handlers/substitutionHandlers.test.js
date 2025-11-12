@@ -47,7 +47,6 @@ describe('createSubstitutionHandlers', () => {
     mockLastSubstitution = {
       timestamp: 1000,
       beforeFormation: mockGameState.formation,
-      beforeNextPair: 'leftPair',
       beforeNextPlayer: 'leftDefender',
       beforeNextPlayerId: '1',
       beforeNextNextPlayerId: '2',
@@ -86,7 +85,7 @@ describe('createSubstitutionHandlers', () => {
       if (!substitutePositions.length) return false;
       
       const substitutePlayers = allPlayers.filter(player => 
-        substitutePositions.includes(player.stats?.currentPairKey)
+        substitutePositions.includes(player.stats?.currentPositionKey)
       );
       
       return substitutePlayers.some(player => !player.stats?.isInactive);
@@ -321,7 +320,7 @@ describe('createSubstitutionHandlers', () => {
   describe('handleInactivatePlayer', () => {
     it('should inactivate substitute_2 without animation', () => {
       const playersWithSub7_2 = mockPlayers.map(p => 
-        p.id === '6' ? { ...p, stats: { ...p.stats, currentPairKey: 'substitute_2' }} : p
+        p.id === '6' ? { ...p, stats: { ...p.stats, currentPositionKey: 'substitute_2' }} : p
       );
       
       findPlayerById.mockReturnValue(playersWithSub7_2.find(p => p.id === '6'));
@@ -345,7 +344,7 @@ describe('createSubstitutionHandlers', () => {
 
     it('should inactivate substitute_1 with animation', () => {
       const playersWithSub7_1 = mockPlayers.map(p => 
-        p.id === '5' ? { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' }} : p
+        p.id === '5' ? { ...p, stats: { ...p.stats, currentPositionKey: 'substitute_1' }} : p
       );
       
       findPlayerById.mockReturnValue(playersWithSub7_1.find(p => p.id === '5'));
@@ -368,7 +367,7 @@ describe('createSubstitutionHandlers', () => {
 
     it('should handle INDIVIDUAL_6 mode without animation (only one substitute position)', () => {
       const playersWithSub6_1 = mockPlayers.slice(0, 6).map(p => 
-        p.id === '5' ? { ...p, stats: { ...p.stats, currentPairKey: 'substitute_1' }} : p
+        p.id === '5' ? { ...p, stats: { ...p.stats, currentPositionKey: 'substitute_1' }} : p
       );
       
       findPlayerById.mockReturnValue(playersWithSub6_1.find(p => p.id === '5'));
@@ -509,7 +508,7 @@ describe('createSubstitutionHandlers', () => {
           ...p,
           stats: {
             ...p.stats,
-            currentPairKey: position || null,
+            currentPositionKey: position || null,
           },
         };
       });

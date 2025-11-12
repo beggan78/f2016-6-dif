@@ -677,7 +677,6 @@ export function GameScreen({
         availablePlayers={modalHandlers.modals.fieldPlayer.availablePlayers}
         showPositionChange={modalHandlers.modals.fieldPlayer.type === 'player'}
         showPositionOptions={modalHandlers.modals.fieldPlayer.showPositionOptions}
-        showSwapPositions={false}
         showSubstitutionOptions={modalHandlers.modals.fieldPlayer.type === 'player'}
         canSubstitute={canSubstitute}
         isPlayerAboutToSubOff={modalHandlers.modals.fieldPlayer.isPlayerAboutToSubOff || false}

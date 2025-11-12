@@ -340,7 +340,7 @@ export const performanceTestData = {
         currentStatus: i < 4 ? PLAYER_STATUS.ON_FIELD : PLAYER_STATUS.SUBSTITUTE,
         currentRole: i < 2 ? PLAYER_ROLES.DEFENDER :
                           i < 4 ? PLAYER_ROLES.ATTACKER : PLAYER_ROLES.SUBSTITUTE,
-        currentPairKey: null,
+        currentPositionKey: null,
         lastStintStartTimeEpoch: Date.now() - (i * 1000),
         timeOnFieldSeconds: i * 30,
         timeAsAttackerSeconds: i * 15,

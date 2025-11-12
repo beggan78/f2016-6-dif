@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, HelpCircle, Save } from 'lucide-react';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save } from 'lucide-react';
 import { Select, Button } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, SUBSTITUTION_TYPES, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
@@ -98,10 +98,6 @@ export function ConfigurationScreen({
   const meetsMinimumSelection = selectedSquadIds.length >= minPlayersRequired;
   const exceedsFormatMaximum = selectedSquadIds.length > maxPlayersAllowed;
   const withinFormatBounds = meetsMinimumSelection && !exceedsFormatMaximum;
-  const currentSquadSize = teamConfig?.squadSize || selectedSquadIds.length;
-  const formationForEligibility = teamConfig?.formation || selectedFormation;
-  const substitutionTypeForEligibility = teamConfig?.substitutionType || SUBSTITUTION_TYPES.INDIVIDUAL;
-
   // Ref to track resume data processing to prevent infinite loops
   const resumeDataProcessedRef = useRef(false);
   // Ref to track if resume data has been applied to prevent reapplication

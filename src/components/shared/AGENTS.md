@@ -16,7 +16,7 @@ This directory contains reusable UI components shared across the application. Al
 - **`ThreeOptionModal`**: Three-button modal with individual variants for each option.
 
 ### Game-Specific Modals
-- **`FieldPlayerModal`**: Options for on-field players - set next to sub off, substitute now, change position. Supports position swap UI flow with back button. Conditional options based on `showPositionChange`, `showSwapPositions`, `showSubstitutionOptions`.
+- **`FieldPlayerModal`**: Options for on-field players - set next to sub off, substitute now, change position. Conditional options based on `showPositionChange` and `showSubstitutionOptions`.
 - **`SubstitutePlayerModal`**: Options for bench players - activate/inactivate, set as next to go in, change next position. Dynamic UI flow for position selection.
 - **`GoalieModal`**: Scrollable list of players to replace current goalie. Marks inactive players as disabled.
 - **`ScoreEditModal`**: Increment/decrement controls for own and opponent score.

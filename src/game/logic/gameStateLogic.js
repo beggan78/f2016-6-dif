@@ -114,8 +114,8 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
     return gameState;
   }
 
-  const player1Position = player1.stats.currentPairKey;
-  const player2Position = player2.stats.currentPairKey;
+  const player1Position = player1.stats.currentPositionKey;
+  const player2Position = player2.stats.currentPositionKey;
 
   // Validate positions
   const currentValidPositions = getValidPositions(teamConfig);
@@ -140,7 +140,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
         ...playerWithRoleChange,
         stats: {
           ...playerWithRoleChange.stats,
-          currentPairKey: player2Position
+          currentPositionKey: player2Position
         }
       };
     }
@@ -153,7 +153,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
         ...playerWithRoleChange,
         stats: {
           ...playerWithRoleChange.stats,
-          currentPairKey: player1Position
+          currentPositionKey: player1Position
         }
       };
     }
@@ -191,7 +191,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
     return gameState;
   }
 
-  const newGoaliePosition = newGoalie.stats.currentPairKey;
+  const newGoaliePosition = newGoalie.stats.currentPositionKey;
   
 
   // Create new formation
@@ -228,7 +228,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
       const finalStats = {
         ...playerWithNewRole.stats,
         currentStatus: newStatus,
-        currentPairKey: newGoaliePosition
+        currentPositionKey: newGoaliePosition
       };
       
       return { ...p, stats: finalStats };
@@ -248,7 +248,7 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
       const finalStats = {
         ...playerWithNewRole.stats,
         currentStatus: PLAYER_STATUS.GOALIE,
-        currentPairKey: POSITION_KEYS.GOALIE
+        currentPositionKey: POSITION_KEYS.GOALIE
       };
       
       return { ...p, stats: finalStats };
@@ -369,7 +369,7 @@ export const calculateUndo = (gameState, lastSubstitution) => {
       }
       
       if (restoredPosition) {
-        currentStats.currentPairKey = restoredPosition;
+        currentStats.currentPositionKey = restoredPosition;
       }
 
       return { ...player, stats: currentStats };
@@ -426,7 +426,7 @@ const createReactivationCascade = (reactivatedPlayerId, substitutePositions, for
   // Reactivated player goes to substitute_1
   cascade.formation[substitutePositions[0]] = reactivatedPlayerId;
   cascade.players[reactivatedPlayerId] = {
-    currentPairKey: substitutePositions[0],
+    currentPositionKey: substitutePositions[0],
     isInactive: false
   };
   
@@ -438,7 +438,7 @@ const createReactivationCascade = (reactivatedPlayerId, substitutePositions, for
     if (newPosition) {
       cascade.formation[newPosition] = playerId;
       cascade.players[playerId] = {
-        currentPairKey: newPosition,
+        currentPositionKey: newPosition,
         isInactive: false  // Explicitly preserve active status
       };
     }
@@ -453,7 +453,7 @@ const createReactivationCascade = (reactivatedPlayerId, substitutePositions, for
     if (newPosition) {
       cascade.formation[newPosition] = playerId;
       cascade.players[playerId] = {
-        currentPairKey: newPosition,
+        currentPositionKey: newPosition,
         isInactive: true  // Explicitly preserve inactive status
       };
     }
@@ -485,7 +485,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
   const currentlyInactive = player.stats.isInactive;
   
   // Check if player is a substitute using configuration-driven approach
-  const isSubstitute = definition.substitutePositions.includes(player.stats.currentPairKey);
+  const isSubstitute = definition.substitutePositions.includes(player.stats.currentPositionKey);
   
   // Only allow inactivating/activating substitute players
   if (!isSubstitute) {
@@ -586,7 +586,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     
     // Cascading inactivation: Move inactive player to bottom and shift others up
     const bottomSubPosition = getBottomSubstitutePosition(teamConfig);
-    const currentPosition = player.stats.currentPairKey;
+    const currentPosition = player.stats.currentPositionKey;
     
     if (bottomSubPosition && currentPosition !== bottomSubPosition) {
       const substitutePositions = definition.substitutePositions;
@@ -604,7 +604,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
           // Update player's position key
           newAllPlayers = newAllPlayers.map(p => {
             if (p.id === playerIdToMove) {
-              return { ...p, stats: { ...p.stats, currentPairKey: targetPosition } };
+              return { ...p, stats: { ...p.stats, currentPositionKey: targetPosition } };
             }
             return p;
           });
@@ -615,7 +615,7 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       newFormation[bottomSubPosition] = playerId;
       newAllPlayers = newAllPlayers.map(p => {
         if (p.id === playerId) {
-          return { ...p, stats: { ...p.stats, currentPairKey: bottomSubPosition } };
+          return { ...p, stats: { ...p.stats, currentPositionKey: bottomSubPosition } };
         }
         return p;
       });
@@ -665,10 +665,10 @@ export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPositi
   // Update player positions in their stats
   const newAllPlayers = allPlayers.map(p => {
     if (p.id === fromPlayerId) {
-      return { ...p, stats: { ...p.stats, currentPairKey: toPosition } };
+      return { ...p, stats: { ...p.stats, currentPositionKey: toPosition } };
     }
     if (p.id === toPlayerId) {
-      return { ...p, stats: { ...p.stats, currentPairKey: fromPosition } };
+      return { ...p, stats: { ...p.stats, currentPositionKey: fromPosition } };
     }
     return p;
   });
@@ -746,7 +746,7 @@ export const calculateSubstituteReorder = (gameState, targetPosition, substituti
   const newAllPlayers = allPlayers.map(p => {
     // Target player moves to lastNextPosition
     if (p.id === targetPlayerId) {
-      return { ...p, stats: { ...p.stats, currentPairKey: lastNextPosition } };
+      return { ...p, stats: { ...p.stats, currentPositionKey: lastNextPosition } };
     }
 
     // Update shifted players
@@ -754,7 +754,7 @@ export const calculateSubstituteReorder = (gameState, targetPosition, substituti
     if (shiftedPlayer) {
       const currentIndex = substitutePositions.indexOf(shiftedPlayer.currentPosition);
       const newPosition = substitutePositions[currentIndex + 1];
-      return { ...p, stats: { ...p.stats, currentPairKey: newPosition } };
+      return { ...p, stats: { ...p.stats, currentPositionKey: newPosition } };
     }
 
     return p;

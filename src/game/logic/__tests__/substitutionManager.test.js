@@ -27,13 +27,13 @@ describe('SubstitutionManager', () => {
   });
 
   // Helper to create test players
-  const createTestPlayer = (id, role, pairKey, status = 'on_field') => ({
+  const createTestPlayer = (id, role, positionKey, status = 'on_field') => ({
     id,
     name: `Player ${id}`,
     stats: {
       currentRole: role,
       currentStatus: status,
-      currentPairKey: pairKey,
+      currentPositionKey: positionKey,
       timeOnFieldSeconds: 0,
       timeAsDefenderSeconds: 0,
       timeAsAttackerSeconds: 0,
@@ -142,10 +142,10 @@ describe('SubstitutionManager', () => {
       expect(substituteIds).not.toContain('s1');
 
       const updatedS2 = result.updatedPlayers.find(p => p.id === 's2');
-      expect(updatedS2.stats.currentPairKey).toBe('substitute_1');
+      expect(updatedS2.stats.currentPositionKey).toBe('substitute_1');
 
       const updatedF1 = result.updatedPlayers.find(p => p.id === 'f1');
-      expect(updatedF1.stats.currentPairKey).toBe('substitute_2');
+      expect(updatedF1.stats.currentPositionKey).toBe('substitute_2');
 
       // Rotation queue should advance to the next field player
       expect(result.newRotationQueue[0]).toBe('f2');

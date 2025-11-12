@@ -55,7 +55,7 @@ Raw position string constants for all formations:
 - Position keys: `leftDefender`, `rightDefender`, `leftAttacker`, `rightAttacker` (2-2)
 - Position keys: `defender`, `left`, `right`, `attacker` (1-2-1)
 - Substitute positions: `substitute_1` through `substitute_5`
-- Helper functions: `isPairPosition()`, `isFieldPosition()`, `isSubstitutePosition()`
+- Helper functions: `isFieldPosition()`, `isSubstitutePosition()`
 
 ### matchTypes.js
 Match type enumeration matching database enum:

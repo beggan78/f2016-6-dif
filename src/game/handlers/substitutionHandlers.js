@@ -257,7 +257,7 @@ export const createSubstitutionHandlers = (
 
       // Get all active substitutes
       const substitutes = gameState.allPlayers.filter(p =>
-        definition.substitutePositions.includes(p.stats?.currentPairKey) &&
+        definition.substitutePositions.includes(p.stats?.currentPositionKey) &&
         !p.stats?.isInactive
       );
 
@@ -495,7 +495,7 @@ export const createSubstitutionHandlers = (
       const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
       const bottomSubPosition = getBottomSubstitutePosition(teamConfig);
-      const isBottomSubBeingInactivated = playerBeingInactivated?.stats.currentPairKey === bottomSubPosition;
+      const isBottomSubBeingInactivated = playerBeingInactivated?.stats.currentPositionKey === bottomSubPosition;
       
       if (isBottomSubBeingInactivated) {
         // No animation needed - player is already in the correct position for inactive players
@@ -754,17 +754,17 @@ export const createSubstitutionHandlers = (
             if (player.id === sourcePlayerId) return false;
             const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
             if (!fullPlayerData) return false;
-            const currentPairKey = fullPlayerData.stats.currentPairKey;
+            const currentPositionKey = fullPlayerData.stats.currentPositionKey;
             
             // Exclude substitutes based on team mode using MODE_DEFINITIONS
             const definition = getDefinition(gameState.teamConfig);
             if (!definition) return true;
             
             // Use configuration-driven substitute exclusion
-            return !definition.substitutePositions.includes(currentPairKey);
+            return !definition.substitutePositions.includes(currentPositionKey);
           }).map(player => {
             const fullPlayerData = gameState.allPlayers.find(p => p.id === player.id);
-            const role = definition.positions[fullPlayerData.stats.currentPairKey]?.role;
+            const role = definition.positions[fullPlayerData.stats.currentPositionKey]?.role;
             return { ...player, role };
           }).sort((a, b) => {
             const aHasSameRole = a.role === sourcePlayerRole;
@@ -821,8 +821,8 @@ export const createSubstitutionHandlers = (
                 targetPlayerId: targetPlayerId,
                 sourcePlayerName: getFormattedPlayerName(sourcePlayer),
                 targetPlayerName: getFormattedPlayerName(targetPlayer),
-                sourcePosition: sourcePlayer.stats.currentPairKey,
-                targetPosition: targetPlayer.stats.currentPairKey,
+                sourcePosition: sourcePlayer.stats.currentPositionKey,
+                targetPosition: targetPlayer.stats.currentPositionKey,
                 beforeFormation: getFormationDescription(gameState.formation, teamConfig),
                 afterFormation: getFormationDescription(newGameState.formation, teamConfig),
                 teamConfig,

@@ -66,8 +66,7 @@ jest.mock('../../game/queue/rotationQueue', () => ({
 jest.mock('../../game/logic/substitutionManager', () => ({
   createSubstitutionManager: jest.fn(() => ({
     initialize: jest.fn(() => ({
-      rotationQueue: [],
-      currentPair: null
+      rotationQueue: []
     })),
     getRotationQueue: jest.fn(() => [])
   })),

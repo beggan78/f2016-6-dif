@@ -88,7 +88,7 @@ export const createMockPlayer = (id, overrides = {}) => {
       isInactive: false,
       currentStatus: PLAYER_STATUS.ON_FIELD,
       currentRole: PLAYER_ROLES.DEFENDER,
-      currentPairKey: POSITION_KEYS.LEFT_DEFENDER,
+      currentPositionKey: POSITION_KEYS.LEFT_DEFENDER,
       lastStintStartTimeEpoch: 1000,
       timeOnFieldSeconds: 0,
       timeAsAttackerSeconds: 0,
@@ -151,7 +151,7 @@ export const createMockPlayers = (count = 7, teamConfig = TEAM_CONFIGS.INDIVIDUA
       stats: {
         currentStatus: status,
         currentRole: role,
-        currentPairKey: position,
+        currentPositionKey: position,
         timeOnFieldSeconds: i * 30, // Varied playing times
         timeAsDefenderSeconds: role === PLAYER_ROLES.DEFENDER ? i * 30 : 0,
         timeAsAttackerSeconds: role === PLAYER_ROLES.ATTACKER ? i * 30 : 0,
@@ -307,7 +307,7 @@ export const createMockAnimationState = () => ({
 export const expectPlayerStatsToMatch = (actual, expected) => {
   expect(actual.currentStatus).toBe(expected.currentStatus);
   expect(actual.currentRole).toBe(expected.currentRole);
-  expect(actual.currentPairKey).toBe(expected.currentPairKey);
+  expect(actual.currentPositionKey).toBe(expected.currentPositionKey);
 };
 
 export const expectFormationToMatch = (actual, expected, teamConfig) => {

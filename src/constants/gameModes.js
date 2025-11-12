@@ -486,7 +486,7 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
         return {
           currentRole: role,
           currentStatus: currentStatus,
-          currentPairKey: position
+          currentPositionKey: position
         };
       }
     }
@@ -496,6 +496,6 @@ export function initializePlayerRoleAndStatus(playerId, formation, teamConfig) {
   return {
     currentRole: PLAYER_ROLES.SUBSTITUTE,
     currentStatus: PLAYER_STATUS.SUBSTITUTE,
-    currentPairKey: 'substitute_1'
+    currentPositionKey: 'substitute_1'
   };
 }

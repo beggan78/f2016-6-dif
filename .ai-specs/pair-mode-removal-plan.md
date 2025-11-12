@@ -78,7 +78,7 @@ This document outlines the comprehensive plan to remove the old Pair Substitutio
 - ✅ Removed `buildPairsModeDefinition()` function (lines 215-244)
 - ✅ Simplified `getModeDefinition()` - removed pairs branch
 - ✅ Removed pairs handling from `initializePlayerRoleAndStatus()` (lines 471-507)
-- ✅ Simplified default currentPairKey to 'substitute_1'
+- ✅ Simplified default currentPositionKey to 'substitute_1'
 
 **File: `/src/game/logic/gameStateLogic.js`**
 - ✅ Removed imports: `canUsePairedRoleStrategy`, `PAIRED_ROLE_STRATEGY_TYPES`, `FIELD_PAIR_POSITIONS`, `getPairKeyForFieldPosition`, `analyzeOutgoingPair`
@@ -174,8 +174,8 @@ Identified references to remove:
 - Find and remove `analyzePairsRotationState()` function if it exists
 
 **File: `/src/hooks/usePlayerState.js`**
-- Search for `currentPairKey` references
-- May need to keep `currentPairKey` for individual mode position tracking
+- Search for `currentPositionKey` references
+- May need to keep `currentPositionKey` for individual mode position tracking
 - Verify usage and ensure no pairs-specific logic
 
 **File: `/src/utils/persistenceManager.js`**
@@ -414,7 +414,7 @@ grep -r "nextPhysicalPairToSubOut\|pairedRoleStrategy" src/
 
 1. **Multimode Substitution**: This NEW feature allows N players to substitute at once in individual mode. It should be PRESERVED and tested thoroughly during regression testing.
 
-2. **currentPairKey Field**: This field is used in individual mode to track player positions (e.g., 'leftDefender', 'substitute_1'). Despite the name "PairKey", it's used for position tracking in individual mode and should be kept (though it could be renamed to `currentPosition` in a future refactor).
+2. **currentPositionKey Field**: This field is used in individual mode to track player positions (e.g., 'leftDefender', 'substitute_1'). Despite the name "PairKey", it's used for position tracking in individual mode and should be kept (though it could be renamed to `currentPosition` in a future refactor).
 
 3. **Time Tracking**: Ensure time calculations continue to work correctly for all players during multimode substitutions.
 
