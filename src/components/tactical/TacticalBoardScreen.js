@@ -186,20 +186,23 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   }, [interactionMode, persistenceManager]);
 
   const canUndoDrawing = interactionMode === 'draw' && drawings.length > 0;
-  const clearButtonLabel = interactionMode === 'draw' ? 'Clear Drawings' : 'Clear All';
+  const clearButtonLabel = interactionMode === 'draw' ? 'Clear' : 'Clear All';
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
       {/* Controls */}
       <div className="flex flex-col gap-3 mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <button
-            onClick={handleBackPress}
-            className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
-          >
-            Back
-          </button>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex-1 min-w-[110px] flex justify-start">
+            <button
+              onClick={handleBackPress}
+              className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
+            >
+              Back
+            </button>
+          </div>
+
+          <div className="flex-1 min-w-[110px] flex justify-center">
             {interactionMode === 'draw' && (
               <button
                 onClick={handleUndoDrawing}
@@ -213,6 +216,9 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
                 Undo
               </button>
             )}
+          </div>
+
+          <div className="flex-1 min-w-[110px] flex justify-end">
             <button
               onClick={handleClearAction}
               className="bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
