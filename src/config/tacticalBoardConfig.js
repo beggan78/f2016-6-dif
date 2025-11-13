@@ -63,6 +63,12 @@ export const DRAG_DROP = {
   GHOST_OPACITY: 0.7
 };
 
+// Free draw settings
+export const DRAWING = {
+  COLOR: '#1e293b', // slate-800
+  WIDTH: 0.5, // SVG units on 0-100 viewBox
+};
+
 // Color scheme for player chips
 export const CHIP_COLORS = {
   white: 'bg-white text-slate-900 border-slate-300',
