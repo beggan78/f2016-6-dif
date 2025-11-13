@@ -143,9 +143,13 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   }, [updateAndPersistDrawings]);
 
   const handleUndoDrawing = useCallback(() => {
-    if (!drawings.length) return;
-    updateAndPersistDrawings(prev => prev.slice(0, -1));
-  }, [drawings, updateAndPersistDrawings]);
+    updateAndPersistDrawings(prev => {
+      if (prev.length === 0) {
+        return prev;
+      }
+      return prev.slice(0, -1);
+    });
+  }, [updateAndPersistDrawings]);
 
   const handleClearChips = useCallback(() => {
     setPlacedChips([]); // Clear chips from the view

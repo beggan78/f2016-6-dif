@@ -81,7 +81,7 @@ export function TacticalBoard({
     if (!point) return;
 
     const newStroke = {
-      id: `drawing-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      id: `drawing-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       color: DRAWING.COLOR,
       width: DRAWING.WIDTH,
       points: [point],
