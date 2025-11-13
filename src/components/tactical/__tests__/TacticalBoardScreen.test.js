@@ -181,7 +181,7 @@ describe('TacticalBoardScreen', () => {
 
       expect(screen.getByTestId('interaction-mode')).toHaveTextContent('draw');
       expect(screen.getByText('Undo')).toBeInTheDocument();
-      expect(screen.getByText('Clear Drawings')).toBeInTheDocument();
+      expect(screen.getByText('Clear')).toBeInTheDocument();
 
       fireEvent.click(screen.getByText('Drag'));
 
@@ -251,7 +251,7 @@ describe('TacticalBoardScreen', () => {
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('1');
       expect(screen.getByTestId('drawings-count')).toHaveTextContent('1');
 
-      fireEvent.click(screen.getByText('Clear Drawings'));
+      fireEvent.click(screen.getByText('Clear'));
 
       expect(screen.getByTestId('placed-chips-count')).toHaveTextContent('1');
       expect(screen.getByTestId('drawings-count')).toHaveTextContent('0');
