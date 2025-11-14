@@ -90,33 +90,37 @@ export function TeamManagement({ onNavigateBack, openToTab }) {
 
 
   // Main team management view - define tabs early to avoid hooks order issues
-  const tabs = React.useMemo(() => [
-    { 
-      id: TAB_VIEWS.OVERVIEW, 
-      label: 'Overview', 
-      icon: Users,
-      description: 'Team information and members'
-    },
-    ...(isTeamAdmin ? [{ 
-      id: TAB_VIEWS.ACCESS, 
-      label: 'Access Management', 
-      icon: Shield,
-      description: 'Approve requests and invite users',
-      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null
-    }] : []),
-    ...(canManageTeam ? [{ 
-      id: TAB_VIEWS.ROSTER, 
-      label: 'Roster', 
-      icon: Rows4,
-      description: 'Manage team players'
-    }] : []),
-    ...(canManageTeam ? [{ 
-      id: TAB_VIEWS.PREFERENCES, 
-      label: 'Preferences', 
-      icon: Settings,
-      description: 'Team settings and preferences'
-    }] : [])
-  ], [isTeamAdmin, canManageTeam, pendingRequestsCount]);
+  const tabs = React.useMemo(() => {
+    const orderedTabs = [
+      { 
+        id: TAB_VIEWS.OVERVIEW, 
+        label: 'Overview', 
+        icon: Users,
+        description: 'Team information and members'
+      },
+      canManageTeam ? { 
+        id: TAB_VIEWS.ROSTER, 
+        label: 'Roster', 
+        icon: Rows4,
+        description: 'Manage team players'
+      } : null,
+      isTeamAdmin ? { 
+        id: TAB_VIEWS.ACCESS, 
+        label: 'Access Management', 
+        icon: Shield,
+        description: 'Approve requests and invite users',
+        badge: pendingRequestsCount > 0 ? pendingRequestsCount : null
+      } : null,
+      canManageTeam ? { 
+        id: TAB_VIEWS.PREFERENCES, 
+        label: 'Preferences', 
+        icon: Settings,
+        description: 'Team settings and preferences'
+      } : null
+    ];
+
+    return orderedTabs.filter(Boolean);
+  }, [isTeamAdmin, canManageTeam, pendingRequestsCount]);
 
   // Ensure activeTab always matches an available tab
   // Skip on initial mount to preserve persisted tab selection from localStorage
