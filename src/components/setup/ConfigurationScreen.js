@@ -23,6 +23,7 @@ import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch } from '../../services/matchStateManager';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
+import { suggestUpcomingOpponent } from '../../services/opponentPrefillService';
 
 
 export function ConfigurationScreen({ 
@@ -109,6 +110,7 @@ export function ConfigurationScreen({
   const lastConfigSessionIdRef = useRef(configurationSessionId);
   const pendingMatchCheckQueuedRef = useRef(false);
   const pendingCheckAfterLoadingRef = useRef(false);
+  const opponentPrefillAttemptedTeamRef = useRef(null);
   
   // Component unmount cleanup to prevent memory leaks
   React.useEffect(() => {
@@ -221,6 +223,7 @@ export function ConfigurationScreen({
     }
 
     lastConfigSessionIdRef.current = configurationSessionId;
+    opponentPrefillAttemptedTeamRef.current = null;
 
     if (!configurationSessionId) {
       return;
@@ -753,16 +756,20 @@ export function ConfigurationScreen({
     setCaptain(captainId);
   };
 
-  const handleOpponentTeamChange = React.useCallback((value) => {
+  const setOpponentTeamValue = React.useCallback((value, options = {}) => {
+    const { markActive = true } = options;
     const sanitizedValue = sanitizeNameInput(value);
 
-    // Mark as active configuration when opponent name is set (non-empty)
-    if (sanitizedValue.trim()) {
+    if (markActive && sanitizedValue.trim()) {
       setHasActiveConfiguration(true);
     }
 
     setOpponentTeam(sanitizedValue);
   }, [setHasActiveConfiguration, setOpponentTeam]);
+
+  const handleOpponentTeamChange = React.useCallback((value) => {
+    setOpponentTeamValue(value);
+  }, [setOpponentTeamValue]);
 
   const handleOpponentSuggestionSelect = React.useCallback((name) => {
     handleOpponentTeamChange(name);
@@ -850,8 +857,54 @@ export function ConfigurationScreen({
     // Set a random opponent name
     const opponentNames = ['Lions FC', 'Eagles United', 'Sharks', 'Thunder', 'Storm', 'Wildcats'];
     const randomOpponent = opponentNames[Math.floor(Math.random() * opponentNames.length)];
-    setOpponentTeam(randomOpponent);
+    setOpponentTeamValue(randomOpponent);
   };
+
+  // Autofill opponent using connector data when available
+  React.useEffect(() => {
+    const teamId = currentTeam?.id;
+
+    if (!teamId || teamLoading) {
+      return;
+    }
+
+    if (isResumedMatch) {
+      return;
+    }
+
+    const sessionKey = `${teamId}-${configurationSessionId || 0}`;
+
+    if (opponentTeam && opponentTeam.trim().length > 0) {
+      if (opponentPrefillAttemptedTeamRef.current !== sessionKey) {
+        opponentPrefillAttemptedTeamRef.current = sessionKey;
+      }
+      return;
+    }
+    if (opponentPrefillAttemptedTeamRef.current === sessionKey) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const prefillOpponent = async () => {
+      opponentPrefillAttemptedTeamRef.current = sessionKey;
+
+      try {
+        const result = await suggestUpcomingOpponent(teamId);
+        if (!isCancelled && result?.opponent) {
+          setOpponentTeamValue(result.opponent, { markActive: false });
+        }
+      } catch (error) {
+        console.error('Failed to auto-populate opponent from upcoming matches:', error);
+      }
+    };
+
+    prefillOpponent();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentTeam?.id, teamLoading, opponentTeam, isResumedMatch, setOpponentTeamValue, configurationSessionId]);
 
   const handleMigrateData = async () => {
     setSyncStatus({ loading: true, message: 'Migrating local data to cloud...', error: null });

@@ -123,6 +123,12 @@ jest.mock('../../../services/pendingMatchService', () => ({
   createResumeDataForConfiguration: jest.fn(() => ({}))
 }));
 
+const mockSuggestUpcomingOpponent = jest.fn(() => Promise.resolve({ opponent: null }));
+
+jest.mock('../../../services/opponentPrefillService', () => ({
+  suggestUpcomingOpponent: (...args) => mockSuggestUpcomingOpponent(...args)
+}));
+
 jest.mock('../../../services/matchStateManager', () => ({
   discardPendingMatch: jest.fn(() => Promise.resolve())
 }));
@@ -155,6 +161,9 @@ beforeEach(() => {
     error: null,
     refresh: jest.fn()
   });
+
+  mockSuggestUpcomingOpponent.mockReset();
+  mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: null });
 });
 
 const buildProps = (overrides = {}) => ({
@@ -355,6 +364,104 @@ describe('ConfigurationScreen opponent suggestions', () => {
     fireEvent.focus(updatedInput);
 
     expect(updatedInput.value).toBe('');
+  });
+
+  it('prefills opponent when connector suggestion is available', async () => {
+    mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
+    const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '' });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const initialHasActive = props.setHasActiveConfiguration.mock.calls.length;
+
+    await waitFor(() => {
+      expect(props.setOpponentTeam).toHaveBeenCalledWith('Auto FC');
+    });
+
+    expect(mockSuggestUpcomingOpponent).toHaveBeenCalledWith('team-1');
+    expect(props.setHasActiveConfiguration.mock.calls.length).toBe(initialHasActive);
+  });
+
+  it('does not prefill opponent when a value already exists', async () => {
+    mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
+    const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: 'Existing Club' });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(mockSuggestUpcomingOpponent).not.toHaveBeenCalled();
+    });
+
+    expect(props.setOpponentTeam).not.toHaveBeenCalledWith('Auto FC');
+  });
+
+  it('prefill attempt resets when configurationSessionId changes', async () => {
+    mockSuggestUpcomingOpponent
+      .mockResolvedValueOnce({ opponent: 'Auto FC', reason: 'matched' })
+      .mockResolvedValue({ opponent: 'Next FC', reason: 'matched' });
+
+    const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '', configurationSessionId: 1 });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(props.setOpponentTeam).toHaveBeenCalledWith('Auto FC');
+    });
+
+    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: 'Auto FC' }} />);
+    props.setOpponentTeam.mockClear();
+
+    rerender(<ConfigurationScreen {...{ ...props, configurationSessionId: 2, opponentTeam: '' }} />);
+
+    await waitFor(() => {
+      expect(props.setOpponentTeam).toHaveBeenCalledWith('Next FC');
+    });
+
+    expect(mockSuggestUpcomingOpponent).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not re-prefill when opponent cleared within same session', async () => {
+    mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
+    const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '' });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(props.setOpponentTeam).toHaveBeenCalledWith('Auto FC');
+    });
+
+    expect(mockSuggestUpcomingOpponent).toHaveBeenCalledTimes(1);
+
+    // Simulate clearing the input while remaining in same session
+    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: '' }} />);
+
+    await waitFor(() => {
+      expect(mockSuggestUpcomingOpponent).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('does not auto-prefill when field starts with existing value and is cleared once', async () => {
+    mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
+    const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: 'Saved Opponent', configurationSessionId: 3 });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(mockSuggestUpcomingOpponent).not.toHaveBeenCalled();
+    });
+
+    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: '' }} />);
+
+    await waitFor(() => {
+      expect(mockSuggestUpcomingOpponent).not.toHaveBeenCalled();
+    });
+
+    rerender(<ConfigurationScreen {...{ ...props, configurationSessionId: 4, opponentTeam: '' }} />);
+
+    await waitFor(() => {
+      expect(mockSuggestUpcomingOpponent).toHaveBeenCalledWith('team-1');
+      expect(mockSuggestUpcomingOpponent).toHaveBeenCalledTimes(1);
+    });
   });
 });
 
