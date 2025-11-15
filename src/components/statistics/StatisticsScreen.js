@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, BarChart3, Users, History } from 'lucide-react';
+import { ArrowLeft, BarChart3, Users, History, Calendar } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -8,6 +8,7 @@ import { TeamStatsView } from './TeamStatsView';
 import { PlayerStatsView } from './PlayerStatsView';
 import { MatchHistoryView } from './MatchHistoryView';
 import { MatchDetailsView } from './MatchDetailsView';
+import { AttendanceStatsView } from './AttendanceStatsView';
 import { TimeFilter } from './TimeFilter';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -15,6 +16,7 @@ import { STORAGE_KEYS } from '../../constants/storageKeys';
 const STATS_TABS = {
   TEAM: 'team',
   PLAYER: 'player',
+  ATTENDANCE: 'attendance',
   HISTORY: 'history'
 };
 
@@ -129,9 +131,15 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     },
     {
       id: STATS_TABS.PLAYER,
-      label: 'Player Stats',
+      label: 'Player Match Stats',
       icon: Users,
-      description: 'Individual player statistics'
+      description: 'Individual player match statistics'
+    },
+    {
+      id: STATS_TABS.ATTENDANCE,
+      label: 'Attendance Stats',
+      icon: Calendar,
+      description: 'Practice attendance tracking'
     },
     {
       id: STATS_TABS.HISTORY,
@@ -162,6 +170,8 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
         return <TeamStatsView startDate={timeRangeStart} endDate={timeRangeEnd} onMatchSelect={handleMatchSelect} />;
       case STATS_TABS.PLAYER:
         return <PlayerStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
+      case STATS_TABS.ATTENDANCE:
+        return <AttendanceStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
       case STATS_TABS.HISTORY:
         return (
           <MatchHistoryView
