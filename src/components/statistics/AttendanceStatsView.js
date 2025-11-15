@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, Calendar, TrendingUp, Users as UsersIcon, Activity } from 'lucide-react';
+import { User, Calendar, TrendingUp, Users as UsersIcon, Award } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getAttendanceStats, getTeamConnectors } from '../../services/connectorService';
 import { Button } from '../shared/UI';
@@ -170,20 +170,37 @@ export function AttendanceStatsView({ startDate, endDate }) {
         totalPlayers: 0,
         totalPractices: 0,
         averageAttendanceRate: 0,
-        totalAttendance: 0
+        topAttendee: null
       };
     }
 
     const totalPlayers = attendanceData.length;
     const maxPractices = Math.max(...attendanceData.map(p => p.totalPractices), 0);
-    const totalAttendance = attendanceData.reduce((sum, player) => sum + player.totalAttendance, 0);
     const averageRate = attendanceData.reduce((sum, player) => sum + player.attendanceRate, 0) / totalPlayers;
+
+    // Find player with highest absolute attendance count
+    // If tie in count, use attendance rate as tiebreaker
+    const topAttendee = attendanceData.reduce((top, player) => {
+      if (!top) return player;
+
+      // Primary: highest absolute attendance count
+      if (player.totalAttendance > top.totalAttendance) return player;
+      if (player.totalAttendance < top.totalAttendance) return top;
+
+      // Tiebreaker: highest percentage
+      if (player.attendanceRate > top.attendanceRate) return player;
+      return top;
+    }, null);
 
     return {
       totalPlayers,
       totalPractices: maxPractices,
       averageAttendanceRate: Math.round(averageRate * 10) / 10,
-      totalAttendance
+      topAttendee: topAttendee ? {
+        playerName: topAttendee.playerName,
+        attendanceRate: topAttendee.attendanceRate,
+        totalAttendance: topAttendee.totalAttendance
+      } : null
     };
   }, [attendanceData]);
 
@@ -268,10 +285,16 @@ export function AttendanceStatsView({ startDate, endDate }) {
             />
 
             <StatCard
-              icon={Activity}
-              title="Total Attendance"
-              value={summaryStats.totalAttendance}
-              subtitle="Practice sessions attended"
+              icon={Award}
+              title="Top Attendee"
+              value={summaryStats.topAttendee
+                ? summaryStats.topAttendee.playerName
+                : 'N/A'
+              }
+              subtitle={summaryStats.topAttendee
+                ? `${summaryStats.topAttendee.attendanceRate}%`
+                : 'No data'
+              }
             />
           </div>
 
