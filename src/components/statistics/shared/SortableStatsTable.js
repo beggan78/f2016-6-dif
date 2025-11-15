@@ -90,6 +90,8 @@ export function SortableStatsTable({
                     scope="col"
                     data-column-key={column.key}
                     className={`relative px-3 py-2 text-xs font-medium text-sky-200 tracking-wider select-none touch-none ${
+                      column.className || ''
+                    } ${
                       isFirstColumn ? 'sticky left-0 z-10 bg-slate-800' : ''
                     } ${
                       column.sortable && !isFirstColumn ? 'cursor-grab active:cursor-grabbing hover:bg-slate-700 transition-colors' : ''
@@ -106,7 +108,7 @@ export function SortableStatsTable({
                     onClick={column.sortable ? () => onSort(column.key) : undefined}
                     onPointerDown={(event) => handlePointerDown(event, column.key)}
                   >
-                    <div className="relative flex w-full items-center justify-between">
+                    <div className="relative flex w-full items-center justify-center gap-1">
                       {/* Visual drop indicator */}
                       {indicator && draggingColumn !== column.key && (
                         <span
