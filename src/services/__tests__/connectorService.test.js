@@ -11,7 +11,8 @@ import {
   getRecentSyncJobs,
   matchPlayerToAttendance,
   retryConnector,
-  getPlayerConnectionDetails
+  getPlayerConnectionDetails,
+  getAttendanceStats
 } from '../connectorService';
 import { supabase } from '../../lib/supabase';
 
@@ -395,6 +396,837 @@ describe('connectorService', () => {
       supabase.from.mockReturnValue(chain);
 
       await expect(matchPlayerToAttendance('attendance', 'player')).rejects.toThrow('Failed to match player');
+    });
+  });
+
+  describe('getAttendanceStats', () => {
+    const teamId = 'team-123';
+    const startDate = new Date('2025-01-01');
+    const endDate = new Date('2025-01-31');
+
+    const mockConnectors = [
+      { id: 'connector-1', status: 'connected', provider: 'sportadmin' }
+    ];
+
+    const mockAttendanceData = [
+      {
+        id: 'att-1',
+        player_id: 'player-1',
+        player_name: 'Alice Johnson',
+        year: 2025,
+        month: 1,
+        total_practices: 10,
+        total_attendance: 9,
+        connector: { id: 'connector-1', provider: 'sportadmin' }
+      },
+      {
+        id: 'att-2',
+        player_id: 'player-1',
+        player_name: 'Alice Johnson',
+        year: 2025,
+        month: 2,
+        total_practices: 8,
+        total_attendance: 7,
+        connector: { id: 'connector-1', provider: 'sportadmin' }
+      },
+      {
+        id: 'att-3',
+        player_id: 'player-2',
+        player_name: 'Bob Smith',
+        year: 2025,
+        month: 1,
+        total_practices: 10,
+        total_attendance: 8,
+        connector: { id: 'connector-1', provider: 'sportadmin' }
+      }
+    ];
+
+    const mockPlayers = [
+      { id: 'player-1', display_name: 'Alice Johnson', first_name: 'Alice' },
+      { id: 'player-2', display_name: 'Bob Smith', first_name: 'Bob' }
+    ];
+
+    const mockMatchStats = [
+      {
+        player_id: 'player-1',
+        match: {
+          id: 'match-1',
+          team_id: teamId,
+          state: 'confirmed',
+          deleted_at: null,
+          started_at: '2025-01-15T10:00:00Z'
+        }
+      },
+      {
+        player_id: 'player-1',
+        match: {
+          id: 'match-2',
+          team_id: teamId,
+          state: 'confirmed',
+          deleted_at: null,
+          started_at: '2025-01-20T10:00:00Z'
+        }
+      },
+      {
+        player_id: 'player-2',
+        match: {
+          id: 'match-1',
+          team_id: teamId,
+          state: 'confirmed',
+          deleted_at: null,
+          started_at: '2025-01-15T10:00:00Z'
+        }
+      }
+    ];
+
+    beforeEach(() => {
+      // Mock getTeamConnectors chain
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      // Mock player_attendance chain
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      // Mock player chain
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      // Mock match stats chain
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mockMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+    });
+
+    it('requires team id', async () => {
+      await expect(getAttendanceStats(null)).rejects.toThrow('Team ID is required');
+    });
+
+    it('returns empty array when no connectors are connected', async () => {
+      const emptyOrder = jest.fn().mockResolvedValue({ data: [], error: null });
+      const emptyEq = jest.fn(() => ({ order: emptyOrder }));
+      const emptySelect = jest.fn(() => ({ eq: emptyEq }));
+      supabase.from.mockReturnValue({ select: emptySelect });
+
+      const result = await getAttendanceStats(teamId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when only verifying/error connectors exist', async () => {
+      const nonConnectedConnectors = [
+        { id: 'connector-1', status: 'verifying', provider: 'sportadmin' },
+        { id: 'connector-2', status: 'error', provider: 'svenska_lag' }
+      ];
+
+      const order = jest.fn().mockResolvedValue({ data: nonConnectedConnectors, error: null });
+      const eq = jest.fn(() => ({ order }));
+      const select = jest.fn(() => ({ eq }));
+      supabase.from.mockReturnValue({ select });
+
+      const result = await getAttendanceStats(teamId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('fetches and aggregates attendance data correctly', async () => {
+      const result = await getAttendanceStats(teamId);
+
+      expect(result).toHaveLength(2);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice).toEqual({
+        playerId: 'player-1',
+        playerName: 'Alice Johnson',
+        totalPractices: 18, // 10 + 8
+        totalAttendance: 16, // 9 + 7
+        attendanceRate: 88.9, // (16/18) * 100, rounded to 1 decimal
+        matchesPlayed: 2,
+        practicesPerMatch: 8.0, // 16/2, rounded to 2 decimals
+        monthlyRecords: expect.arrayContaining([
+          { year: 2025, month: 1, practices: 10, attendance: 9 },
+          { year: 2025, month: 2, practices: 8, attendance: 7 }
+        ])
+      });
+
+      const bob = result.find(p => p.playerId === 'player-2');
+      expect(bob).toEqual({
+        playerId: 'player-2',
+        playerName: 'Bob Smith',
+        totalPractices: 10,
+        totalAttendance: 8,
+        attendanceRate: 80.0,
+        matchesPlayed: 1,
+        practicesPerMatch: 8.0,
+        monthlyRecords: [{ year: 2025, month: 1, practices: 10, attendance: 8 }]
+      });
+    });
+
+    it('sorts results by player name', async () => {
+      const result = await getAttendanceStats(teamId);
+
+      expect(result[0].playerName).toBe('Alice Johnson');
+      expect(result[1].playerName).toBe('Bob Smith');
+    });
+
+    it('uses display_name when available, falls back to first_name', async () => {
+      const playersWithMissing = [
+        { id: 'player-1', display_name: null, first_name: 'Alice' },
+        { id: 'player-2', display_name: 'Bob Smith', first_name: 'Bob' }
+      ];
+
+      const playersEq = jest.fn().mockResolvedValue({ data: playersWithMissing, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      // Re-setup mocks for this specific test
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mockMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.playerName).toBe('Alice');
+    });
+
+    it('handles missing player records gracefully', async () => {
+      const playersEq = jest.fn().mockResolvedValue({ data: [], error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      // Re-setup mocks for this specific test
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mockMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      expect(result[0].playerName).toBe('Unknown Player');
+    });
+
+    it('filters match stats by team id', async () => {
+      const mixedMatchStats = [
+        ...mockMatchStats,
+        {
+          player_id: 'player-1',
+          match: {
+            id: 'match-other',
+            team_id: 'other-team',
+            state: 'confirmed',
+            deleted_at: null,
+            started_at: '2025-01-15T10:00:00Z'
+          }
+        }
+      ];
+
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mixedMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      // Re-setup complete mocks including the ones from beforeEach
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.matchesPlayed).toBe(2); // Should not count other-team match
+    });
+
+    it('filters match stats by confirmed state', async () => {
+      const mixedMatchStats = [
+        mockMatchStats[0],
+        {
+          player_id: 'player-1',
+          match: {
+            id: 'match-running',
+            team_id: teamId,
+            state: 'running',
+            deleted_at: null,
+            started_at: '2025-01-20T10:00:00Z'
+          }
+        }
+      ];
+
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mixedMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      // Re-setup complete mocks including the ones from beforeEach
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.matchesPlayed).toBe(1); // Should not count running match
+    });
+
+    it('excludes deleted matches', async () => {
+      const mixedMatchStats = [
+        mockMatchStats[0],
+        {
+          player_id: 'player-1',
+          match: {
+            id: 'match-deleted',
+            team_id: teamId,
+            state: 'confirmed',
+            deleted_at: '2025-01-25T10:00:00Z',
+            started_at: '2025-01-20T10:00:00Z'
+          }
+        }
+      ];
+
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mixedMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      // Re-setup complete mocks including the ones from beforeEach
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.matchesPlayed).toBe(1); // Should not count deleted match
+    });
+
+    it('filters matches by date range when provided', async () => {
+      const result = await getAttendanceStats(teamId, startDate, endDate);
+
+      // Both matches in mockMatchStats are within Jan 2025
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.matchesPlayed).toBe(2);
+    });
+
+    it('excludes matches outside date range', async () => {
+      const mixedMatchStats = [
+        mockMatchStats[0],
+        {
+          player_id: 'player-1',
+          match: {
+            id: 'match-future',
+            team_id: teamId,
+            state: 'confirmed',
+            deleted_at: null,
+            started_at: '2025-02-15T10:00:00Z' // Outside date range
+          }
+        }
+      ];
+
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mixedMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      // Re-setup complete mocks including the ones from beforeEach
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getAttendanceStats(teamId, startDate, endDate);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.matchesPlayed).toBe(1); // Should not count future match
+    });
+
+    it('handles zero matches played correctly', async () => {
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: [], error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      // Re-setup complete mocks including the ones from beforeEach
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.matchesPlayed).toBe(0);
+      expect(alice.practicesPerMatch).toBe(0);
+    });
+
+    it('handles zero practices correctly', async () => {
+      const zeroAttendance = [
+        {
+          id: 'att-1',
+          player_id: 'player-1',
+          player_name: 'Alice Johnson',
+          year: 2025,
+          month: 1,
+          total_practices: 0,
+          total_attendance: 0,
+          connector: { id: 'connector-1', provider: 'sportadmin' }
+        }
+      ];
+
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: zeroAttendance, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      // Mock connector to return connected connectors so function proceeds
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      // Mock player to return player data
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      // Mock match stats
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mockMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn(() => ({})) };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      const alice = result.find(p => p.playerId === 'player-1');
+      expect(alice.attendanceRate).toBe(0);
+    });
+
+    it('only includes matched players (player_id not null)', async () => {
+      const mixedAttendance = [
+        ...mockAttendanceData,
+        {
+          id: 'att-unmatched',
+          player_id: null, // Unmatched
+          player_name: 'Unmatched Player',
+          year: 2025,
+          month: 1,
+          total_practices: 10,
+          total_attendance: 10,
+          connector: { id: 'connector-1', provider: 'sportadmin' }
+        }
+      ];
+
+      // Filter out null player_ids (simulating .not('player_id', 'is', null))
+      const filteredAttendance = mixedAttendance.filter(a => a.player_id !== null);
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: filteredAttendance, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      // Mock connector to return connected connectors so function proceeds
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      // Mock player to return player data
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      // Mock match stats
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: mockMatchStats, error: null });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn(() => ({})) };
+      });
+
+      const result = await getAttendanceStats(teamId);
+
+      // Should only have 2 players (Alice and Bob), not the unmatched one
+      expect(result).toHaveLength(2);
+      expect(result.every(p => p.playerId)).toBe(true);
+    });
+
+    it('throws when attendance data fetch fails', async () => {
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: null, error: { message: 'db error' } }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      // Mock connector to return connected connectors so function proceeds
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player_match_stats') {
+          return {
+            select: jest.fn(() => ({
+              in: jest.fn().mockResolvedValue({ data: [], error: null })
+            }))
+          };
+        }
+        if (table === 'player') {
+          return {
+            select: jest.fn(() => ({
+              in: jest.fn(() => ({
+                eq: jest.fn().mockResolvedValue({ data: [], error: null })
+              }))
+            }))
+          };
+        }
+        return { select: jest.fn(() => ({})) };
+      });
+
+      await expect(getAttendanceStats(teamId)).rejects.toThrow('Failed to load attendance data');
+    });
+
+    it('throws when player data fetch fails', async () => {
+      const playersEq = jest.fn().mockResolvedValue({ data: null, error: { message: 'player error' } });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      // Mock connector to return connected connectors so function proceeds
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      // Mock player_attendance to return valid data so function proceeds to player fetch
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return {
+            select: jest.fn(() => ({
+              in: jest.fn().mockResolvedValue({ data: [], error: null })
+            }))
+          };
+        }
+        return { select: jest.fn(() => ({})) };
+      });
+
+      await expect(getAttendanceStats(teamId)).rejects.toThrow('Failed to load player data');
+    });
+
+    it('throws when match stats fetch fails', async () => {
+      const matchStatsIn = jest.fn().mockResolvedValue({ data: null, error: { message: 'match error' } });
+      const matchStatsSelect = jest.fn(() => ({ in: matchStatsIn }));
+
+      // Mock connector to return connected connectors so function proceeds
+      const connectorsOrder = jest.fn().mockResolvedValue({ data: mockConnectors, error: null });
+      const connectorsEq = jest.fn(() => ({ order: connectorsOrder }));
+      const connectorsSelect = jest.fn(() => ({ eq: connectorsEq }));
+
+      // Mock player_attendance to return valid data so function proceeds
+      const attendanceOrder = jest.fn(() => ({ order: jest.fn().mockResolvedValue({ data: mockAttendanceData, error: null }) }));
+      const attendanceNot = jest.fn(() => ({ order: attendanceOrder }));
+      const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
+      const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
+
+      // Mock player to return valid data so function proceeds to match stats fetch
+      const playersEq = jest.fn().mockResolvedValue({ data: mockPlayers, error: null });
+      const playersIn = jest.fn(() => ({ eq: playersEq }));
+      const playersSelect = jest.fn(() => ({ in: playersIn }));
+
+      supabase.from.mockImplementation((table) => {
+        if (table === 'connector') {
+          return { select: connectorsSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        if (table === 'player') {
+          return { select: playersSelect };
+        }
+        if (table === 'player_match_stats') {
+          return { select: matchStatsSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      await expect(getAttendanceStats(teamId)).rejects.toThrow('Failed to load match statistics');
+    });
+
+    describe('shouldIncludeMonth (10-day rule)', () => {
+      it('includes month when full month is within range', async () => {
+        // Test is implicit in main tests - January 2025 is fully included
+        const result = await getAttendanceStats(
+          teamId,
+          new Date('2025-01-01'),
+          new Date('2025-01-31')
+        );
+
+        expect(result.length).toBeGreaterThan(0);
+      });
+
+      it('includes month when exactly 10 days overlap', async () => {
+        // Filter for Jan 1-10 (10 days)
+        const result = await getAttendanceStats(
+          teamId,
+          new Date('2025-01-01'),
+          new Date('2025-01-10')
+        );
+
+        // Should include January data
+        const alice = result.find(p => p.playerId === 'player-1');
+        expect(alice.monthlyRecords.some(r => r.month === 1)).toBe(true);
+      });
+
+      it('excludes month when less than 10 days overlap', async () => {
+        // Filter for Jan 1-9 (9 days)
+        const result = await getAttendanceStats(
+          teamId,
+          new Date('2025-01-01'),
+          new Date('2025-01-09')
+        );
+
+        // Should not include any data (9 days < 10)
+        expect(result).toHaveLength(0);
+      });
+
+      it('handles month boundaries correctly', async () => {
+        // Filter for Jan 22 - Feb 10 (10 days in Jan, ~10 in Feb)
+        const result = await getAttendanceStats(
+          teamId,
+          new Date('2025-01-22'),
+          new Date('2025-02-10')
+        );
+
+        const alice = result.find(p => p.playerId === 'player-1');
+        // Should include both January and February
+        expect(alice.monthlyRecords.some(r => r.month === 1)).toBe(true);
+        expect(alice.monthlyRecords.some(r => r.month === 2)).toBe(true);
+      });
+
+      it('includes all months when no date filters provided', async () => {
+        const result = await getAttendanceStats(teamId, null, null);
+
+        const alice = result.find(p => p.playerId === 'player-1');
+        // Should include both months
+        expect(alice.monthlyRecords).toHaveLength(2);
+      });
     });
   });
 });

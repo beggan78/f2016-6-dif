@@ -27,8 +27,17 @@ export function useTableSort(data, initialSortBy, initialSortOrder = 'asc', isRe
       let aValue = a[sortBy];
       let bValue = b[sortBy];
 
+      // Handle null/undefined values first
+      if (aValue == null && bValue == null) {
+        return 0;
+      } else if (aValue == null) {
+        return sortOrder === 'asc' ? -1 : 1;
+      } else if (bValue == null) {
+        return sortOrder === 'asc' ? 1 : -1;
+      }
+
       // Handle string comparison
-      if (typeof aValue === 'string') {
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
         const comparison = aValue.localeCompare(bValue);
         return sortOrder === 'asc' ? comparison : -comparison;
       }
