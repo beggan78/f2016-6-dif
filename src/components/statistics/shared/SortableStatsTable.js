@@ -63,7 +63,7 @@ export function SortableStatsTable({
         <table className="min-w-full">
           <thead className="bg-slate-800">
             <tr ref={headerRowRef}>
-              {orderedColumns.map((column) => {
+              {orderedColumns.map((column, columnIndex) => {
                 const indicator =
                   dropIndicator?.columnKey === column.key ? dropIndicator.position : null;
                 const transformValue =
@@ -81,13 +81,20 @@ export function SortableStatsTable({
                       : undefined
                 };
 
+                // First column should be sticky
+                const isFirstColumn = columnIndex === 0;
+
                 return (
                   <th
                     key={column.key}
                     scope="col"
                     data-column-key={column.key}
                     className={`relative px-3 py-2 text-xs font-medium text-sky-200 tracking-wider select-none touch-none ${
-                      column.sortable ? 'cursor-grab active:cursor-grabbing hover:bg-slate-700 transition-colors' : ''
+                      isFirstColumn ? 'sticky left-0 z-10 bg-slate-800' : ''
+                    } ${
+                      column.sortable && !isFirstColumn ? 'cursor-grab active:cursor-grabbing hover:bg-slate-700 transition-colors' : ''
+                    } ${
+                      column.sortable && isFirstColumn ? 'cursor-pointer hover:bg-slate-700 transition-colors' : ''
                     } ${sortBy === column.key ? 'bg-slate-700' : ''} ${
                       draggingColumn === column.key ? 'opacity-60' : ''
                     } ${
@@ -128,7 +135,7 @@ export function SortableStatsTable({
                   index % 2 === 0 ? 'bg-slate-700' : 'bg-slate-800'
                 } hover:bg-slate-600 transition-colors`}
               >
-                {orderedColumns.map((column) => {
+                {orderedColumns.map((column, columnIndex) => {
                   const indicator =
                     dropIndicator?.columnKey === column.key ? dropIndicator.position : null;
                   const transformValue =
@@ -142,10 +149,20 @@ export function SortableStatsTable({
                     transition: 'transform 0.15s ease'
                   };
 
+                  // First column should be sticky with background color matching the row
+                  const isFirstColumn = columnIndex === 0;
+                  const stickyBgClass = isFirstColumn
+                    ? index % 2 === 0
+                      ? 'bg-slate-700'
+                      : 'bg-slate-800'
+                    : '';
+
                   return (
                     <td
                       key={column.key}
-                      className={`px-3 py-2 whitespace-nowrap text-sm ${column.className}`}
+                      className={`px-3 py-2 whitespace-nowrap text-sm ${column.className} ${
+                        isFirstColumn ? 'sticky left-0 z-10' : ''
+                      } ${stickyBgClass}`}
                       style={cellStyle}
                     >
                       {column.render(item)}

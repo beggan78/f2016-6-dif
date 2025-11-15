@@ -302,6 +302,12 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
         }
 
         const insertionIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+
+        // Prevent moving any column to position 0 (first column must stay fixed)
+        if (insertionIndex === 0) {
+          return previousOrder;
+        }
+
         const nextOrder = [...withoutSource];
         nextOrder.splice(insertionIndex, 0, sourceKey);
         const mergedOrder = mergeColumnOrder(nextOrder);
@@ -327,6 +333,12 @@ export function useColumnDragDrop(columns, onReorderOrOptions) {
   const handlePointerDown = useCallback(
     (event, columnKey) => {
       if (event.pointerType === 'mouse' && event.button !== 0) {
+        return;
+      }
+
+      // Prevent dragging the first column (it should always stay fixed)
+      const columnIndex = orderedColumns.findIndex((column) => column.key === columnKey);
+      if (columnIndex === 0) {
         return;
       }
 
