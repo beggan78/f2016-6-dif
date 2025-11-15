@@ -9,6 +9,12 @@ import { supabase } from '../lib/supabase';
 import { getProviderById } from '../constants/connectorProviders';
 
 /**
+ * Minimum number of days a month must overlap with a date range
+ * to be included in attendance calculations
+ */
+const MIN_DAYS_FOR_MONTH_INCLUSION = 10;
+
+/**
  * Get all connectors for a team
  * @param {string} teamId - Team UUID
  * @returns {Promise<Array>} Array of connector objects
@@ -505,8 +511,8 @@ function shouldIncludeMonth(year, month, startDate, endDate) {
   // Count days in the overlap
   const daysDiff = Math.floor((rangeEnd - rangeStart) / (1000 * 60 * 60 * 24)) + 1;
 
-  // Include if at least 10 days overlap
-  return daysDiff >= 10;
+  // Include if at least MIN_DAYS_FOR_MONTH_INCLUSION days overlap
+  return daysDiff >= MIN_DAYS_FOR_MONTH_INCLUSION;
 }
 
 /**
