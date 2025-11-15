@@ -1,14 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronUp, ChevronDown, User, Award, Clock, Users, Target } from 'lucide-react';
+import { User, Award, Clock, Users, Target } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getConfirmedMatches, getPlayerStats } from '../../services/matchStateManager';
 import { formatMinutesAsTime, formatSecondsAsTime } from '../../utils/formatUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
-import { PersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
-import { useColumnDragDrop, COLUMN_SHIFT_PX } from '../../hooks/useColumnDragDrop';
+import { useTableSort } from '../../hooks/useTableSort';
+import { useColumnOrderPersistence } from '../../hooks/useColumnOrderPersistence';
+import { StatCard } from './shared/StatCard';
+import { StatsLoadingState } from './shared/StatsLoadingState';
+import { StatsErrorState } from './shared/StatsErrorState';
+import { StatsEmptyState } from './shared/StatsEmptyState';
+import { SortableStatsTable } from './shared/SortableStatsTable';
 
 const SORT_COLUMNS = {
   NAME: 'displayName',
@@ -33,8 +38,6 @@ export function PlayerStatsView({ startDate, endDate }) {
   const [matchesLoading, setMatchesLoading] = useState(false);
   const [error, setError] = useState(null);
   const [matchesError, setMatchesError] = useState(null);
-  const [sortBy, setSortBy] = useState(SORT_COLUMNS.NAME);
-  const [sortOrder, setSortOrder] = useState('asc');
   const {
     typeFilter,
     outcomeFilter,
@@ -147,6 +150,7 @@ export function PlayerStatsView({ startDate, endDate }) {
 
   const clearAllFilters = clearFilters;
 
+  // Define table columns
   const baseColumns = useMemo(
     () => [
       {
@@ -266,67 +270,19 @@ export function PlayerStatsView({ startDate, endDate }) {
     []
   );
 
-  const defaultColumnOrder = useMemo(
-    () => baseColumns.map((column) => column.key),
-    [baseColumns]
+  // Use column order persistence hook
+  const dragDropHandlers = useColumnOrderPersistence(
+    baseColumns,
+    STORAGE_KEYS.STATISTICS_PLAYER_COLUMN_ORDER
   );
 
-  const columnOrderManager = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    return new PersistenceManager(STORAGE_KEYS.STATISTICS_PLAYER_COLUMN_ORDER, {
-      order: defaultColumnOrder
-    });
-  }, [defaultColumnOrder]);
-
-  const savedColumnOrder = useMemo(() => {
-    if (!columnOrderManager) {
-      return null;
-    }
-
-    const savedState = columnOrderManager.loadState();
-    return Array.isArray(savedState?.order) ? savedState.order : null;
-  }, [columnOrderManager]);
-
+  // Use table sort hook
   const {
-    headerRowRef,
-    orderedColumns,
-    columnOrder,
-    draggingColumn,
-    dragOverColumn,
-    dropIndicator,
-    isReordering,
-    handlePointerDown
-  } = useColumnDragDrop(baseColumns, {
-    initialOrder: savedColumnOrder
-  });
-
-  useEffect(() => {
-    if (!columnOrderManager) {
-      return;
-    }
-
-    columnOrderManager.saveState({ order: columnOrder });
-  }, [columnOrderManager, columnOrder]);
-
-  const sortedPlayers = useMemo(() => {
-    const sorted = [...players].sort((a, b) => {
-      let aValue = a[sortBy];
-      let bValue = b[sortBy];
-
-      if (typeof aValue === 'string') {
-        const comparison = aValue.localeCompare(bValue);
-        return sortOrder === 'asc' ? comparison : -comparison;
-      }
-
-      const comparison = aValue - bValue;
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    return sorted;
-  }, [players, sortBy, sortOrder]);
+    sortedData: sortedPlayers,
+    sortBy,
+    handleSort,
+    renderSortIndicator
+  } = useTableSort(players, SORT_COLUMNS.NAME, 'asc', dragDropHandlers.isReordering);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
@@ -341,16 +297,10 @@ export function PlayerStatsView({ startDate, endDate }) {
     }
 
     const totalPlayers = players.length;
-
-    // Calculate average field time across all players
     const totalFieldTime = players.reduce((sum, player) => sum + player.averageTimePerMatch, 0);
     const averageFieldTime = totalFieldTime / totalPlayers;
-
-    // Calculate average goals per player
     const totalGoals = players.reduce((sum, player) => sum + player.goalsScored, 0);
     const averageGoalsPerPlayer = totalGoals / totalPlayers;
-
-    // Find top scorer
     const topScorer = players.reduce((top, player) =>
       player.goalsScored > top.goalsScored ? player : top
     );
@@ -364,67 +314,14 @@ export function PlayerStatsView({ startDate, endDate }) {
     };
   }, [players]);
 
-  const handleSort = (columnKey) => {
-    if (isReordering) {
-      return;
-    }
-
-    if (sortBy === columnKey) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(columnKey);
-      setSortOrder('desc'); // Default to desc for numeric columns
-    }
-  };
-
-  const renderSortIndicator = (columnKey) => {
-    if (sortBy !== columnKey) return null;
-
-    return sortOrder === 'asc' ? (
-      <ChevronUp className="h-4 w-4 inline-block ml-1" />
-    ) : (
-      <ChevronDown className="h-4 w-4 inline-block ml-1" />
-    );
-  };
-
-  const StatCard = ({ icon: Icon, title, value, subtitle }) => (
-    <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-lg">
-            <Icon className="h-5 w-5 text-sky-400" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm">{title}</p>
-            <p className="text-slate-100 text-xl font-semibold">{value}</p>
-            {subtitle && <p className="text-slate-400 text-xs">{subtitle}</p>}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   // Show loading state
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">Loading player statistics...</div>
-        </div>
-      </div>
-    );
+    return <StatsLoadingState message="Loading player statistics..." />;
   }
 
   // Show error state
   if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-red-400 mb-2">Error loading player statistics</div>
-          <div className="text-slate-400 text-sm">{error}</div>
-        </div>
-      </div>
-    );
+    return <StatsErrorState title="Error loading player statistics" message={error} />;
   }
 
   const hasPlayerData = sortedPlayers.length > 0;
@@ -459,168 +356,71 @@ export function PlayerStatsView({ startDate, endDate }) {
       )}
 
       {noMatchesAvailable && (
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">No player statistics available</div>
-          <p className="text-slate-500 text-sm mt-2">Add matches or adjust the selected time range.</p>
-        </div>
+        <StatsEmptyState
+          title="No player statistics available"
+          message="Add matches or adjust the selected time range."
+        />
       )}
 
       {!noMatchesAvailable && noMatchesForFilters && (
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">No matches found with the selected filters</div>
-          <p className="text-slate-500 text-sm mt-2">Try adjusting the filter criteria.</p>
-        </div>
+        <StatsEmptyState
+          title="No matches found with the selected filters"
+          message="Try adjusting the filter criteria."
+        />
       )}
 
       {!noMatchesAvailable && !noMatchesForFilters && !hasPlayerData && !matchesLoading && (
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">No player statistics recorded for the selected filters</div>
-        </div>
+        <StatsEmptyState
+          title="No player statistics recorded for the selected filters"
+        />
       )}
 
       {hasPlayerData && (
         <>
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={Users}
-          title="Total Players"
-          value={summaryStats.totalPlayers}
-          subtitle={`Active players`}
-        />
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              icon={Users}
+              title="Total Players"
+              value={summaryStats.totalPlayers}
+              subtitle="Active players"
+            />
 
-        <StatCard
-          icon={Clock}
-          title="Avg. Playing Time"
-          value={formatMinutesAsTime(summaryStats.averageFieldTime)}
-          subtitle={`Per match`}
-        />
+            <StatCard
+              icon={Clock}
+              title="Avg. Playing Time"
+              value={formatMinutesAsTime(summaryStats.averageFieldTime)}
+              subtitle="Per match"
+            />
 
-        <StatCard
-          icon={Target}
-          title="Average goals"
-          value={summaryStats.averageGoalsPerPlayer.toFixed(1)}
-          subtitle={`Total goals: ${summaryStats.totalGoals}`}
-        />
+            <StatCard
+              icon={Target}
+              title="Average goals"
+              value={summaryStats.averageGoalsPerPlayer.toFixed(1)}
+              subtitle={`Total goals: ${summaryStats.totalGoals}`}
+            />
 
-        <StatCard
-          icon={Award}
-          title="Top Scorer"
-          value={summaryStats.topScorer ? summaryStats.topScorer.displayName : '-'}
-          subtitle={summaryStats.topScorer ? `${summaryStats.topScorer.goalsScored} goals` : 'No data'}
-        />
-      </div>
+            <StatCard
+              icon={Award}
+              title="Top Scorer"
+              value={summaryStats.topScorer ? summaryStats.topScorer.displayName : '-'}
+              subtitle={summaryStats.topScorer ? `${summaryStats.topScorer.goalsScored} goals` : 'No data'}
+            />
+          </div>
 
-      {/* Player Stats Table */}
-      <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-400 flex items-center space-x-2">
-            <Users className="h-5 w-5" />
-            <span>Player Statistics</span>
-          </h3>
-          <p className="text-slate-400 text-sm mt-1">
-            Click column headers to sort or drag to reorder. Statistics are calculated across all matches.
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-slate-800">
-              <tr ref={headerRowRef}>
-                {orderedColumns.map((column) => {
-                  const indicator =
-                    dropIndicator?.columnKey === column.key ? dropIndicator.position : null;
-                  const transformValue =
-                    indicator === 'before'
-                      ? `translateX(${COLUMN_SHIFT_PX}px)`
-                      : indicator === 'after'
-                      ? `translateX(-${COLUMN_SHIFT_PX}px)`
-                      : undefined;
-                  const headerStyle = {
-                    transform: transformValue,
-                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                    boxShadow:
-                      indicator && draggingColumn !== column.key
-                        ? '0 0 0 2px rgba(56, 189, 248, 0.3)'
-                        : undefined
-                  };
-
-                  return (
-                    <th
-                      key={column.key}
-                      scope="col"
-                      data-column-key={column.key}
-                      className={`relative px-3 py-2 text-xs font-medium text-sky-200 tracking-wider select-none touch-none ${
-                        column.sortable ? 'cursor-grab active:cursor-grabbing hover:bg-slate-700 transition-colors' : ''
-                      } ${sortBy === column.key ? 'bg-slate-700' : ''} ${
-                        draggingColumn === column.key ? 'opacity-60' : ''
-                      } ${
-                        dragOverColumn === column.key && draggingColumn !== column.key
-                          ? 'ring-1 ring-sky-400 ring-inset'
-                          : ''
-                      }`}
-                      style={headerStyle}
-                      onClick={column.sortable ? () => handleSort(column.key) : undefined}
-                      onPointerDown={(event) => handlePointerDown(event, column.key)}
-                    >
-                      <div className="relative flex w-full items-center justify-between">
-                        {indicator && draggingColumn !== column.key && (
-                          <span
-                            className="pointer-events-none absolute top-1/2 h-8 w-1 rounded-full bg-sky-400/80 -translate-y-1/2"
-                            style={{
-                              left: indicator === 'before' ? '-0.4rem' : undefined,
-                              right: indicator === 'after' ? '-0.4rem' : undefined,
-                              boxShadow: '0 0 12px rgba(56, 189, 248, 0.6)'
-                            }}
-                            aria-hidden="true"
-                          />
-                        )}
-                        <span>{column.label}</span>
-                        {column.sortable && renderSortIndicator(column.key)}
-                      </div>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-600">
-              {sortedPlayers.map((player, index) => (
-                <tr
-                  key={player.id}
-                  className={`${
-                    index % 2 === 0 ? 'bg-slate-700' : 'bg-slate-800'
-                  } hover:bg-slate-600 transition-colors`}
-                >
-                  {orderedColumns.map((column) => {
-                    const indicator =
-                      dropIndicator?.columnKey === column.key ? dropIndicator.position : null;
-                    const transformValue =
-                      indicator === 'before'
-                        ? `translateX(${COLUMN_SHIFT_PX}px)`
-                        : indicator === 'after'
-                        ? `translateX(-${COLUMN_SHIFT_PX}px)`
-                        : undefined;
-                    const cellStyle = {
-                      transform: transformValue,
-                      transition: 'transform 0.15s ease'
-                    };
-
-                    return (
-                      <td
-                        key={column.key}
-                        className={`px-3 py-2 whitespace-nowrap text-sm ${column.className}`}
-                        style={cellStyle}
-                      >
-                        {column.render(player)}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          {/* Player Stats Table */}
+          <SortableStatsTable
+            data={sortedPlayers}
+            orderedColumns={dragDropHandlers.orderedColumns}
+            sortBy={sortBy}
+            dragDropHandlers={dragDropHandlers}
+            onSort={handleSort}
+            renderSortIndicator={renderSortIndicator}
+            headerIcon={Users}
+            headerTitle="Player Statistics"
+            headerSubtitle="Click column headers to sort or drag to reorder. Statistics are calculated across all matches."
+            idKey="id"
+          />
         </>
       )}
     </div>

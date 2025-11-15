@@ -9,6 +9,12 @@ import { supabase } from '../lib/supabase';
 import { getProviderById } from '../constants/connectorProviders';
 
 /**
+ * Minimum number of days a month must overlap with a date range
+ * to be included in attendance calculations
+ */
+const MIN_DAYS_FOR_MONTH_INCLUSION = 10;
+
+/**
  * Get all connectors for a team
  * @param {string} teamId - Team UUID
  * @returns {Promise<Array>} Array of connector objects
@@ -471,5 +477,221 @@ export async function matchPlayerToAttendance(attendanceId, playerId) {
   if (error) {
     console.error('Error matching player to attendance:', error);
     throw new Error('Failed to match player');
+  }
+}
+
+/**
+ * Check if a month should be included based on the 10-day rule
+ * A month is included if at least 10 days of that month fall within [startDate, endDate]
+ * @param {number} year - Year of the month
+ * @param {number} month - Month (1-12)
+ * @param {Date|null} startDate - Start date filter
+ * @param {Date|null} endDate - End date filter
+ * @returns {boolean} True if the month should be included
+ */
+function shouldIncludeMonth(year, month, startDate, endDate) {
+  // If no date filters, include all months
+  if (!startDate && !endDate) {
+    return true;
+  }
+
+  // Create date range for the month
+  const monthStart = new Date(year, month - 1, 1); // month is 1-indexed, Date constructor uses 0-indexed
+  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999); // Last day of month
+
+  // Determine the overlap range
+  const rangeStart = startDate && startDate > monthStart ? startDate : monthStart;
+  const rangeEnd = endDate && endDate < monthEnd ? endDate : monthEnd;
+
+  // No overlap
+  if (rangeStart > rangeEnd) {
+    return false;
+  }
+
+  // Count days in the overlap
+  const daysDiff = Math.floor((rangeEnd - rangeStart) / (1000 * 60 * 60 * 24)) + 1;
+
+  // Include if at least MIN_DAYS_FOR_MONTH_INCLUSION days overlap
+  return daysDiff >= MIN_DAYS_FOR_MONTH_INCLUSION;
+}
+
+/**
+ * Get attendance statistics for all players in a team
+ * Combines attendance data from connectors with match stats
+ * @param {string} teamId - Team UUID
+ * @param {Date|null} startDate - Start date filter (optional)
+ * @param {Date|null} endDate - End date filter (optional)
+ * @returns {Promise<Array>} Array of player attendance stat objects
+ */
+export async function getAttendanceStats(teamId, startDate = null, endDate = null) {
+  if (!teamId) {
+    throw new Error('Team ID is required');
+  }
+
+  try {
+    // Get all connectors for the team
+    const connectors = await getTeamConnectors(teamId);
+    const connectedConnectors = connectors.filter(c => c.status === 'connected');
+
+    if (connectedConnectors.length === 0) {
+      return [];
+    }
+
+    // Fetch all attendance data for all connectors
+    const connectorIds = connectedConnectors.map(c => c.id);
+
+    const { data: attendanceData, error: attendanceError } = await supabase
+      .from('player_attendance')
+      .select(`
+        id,
+        player_id,
+        player_name,
+        year,
+        month,
+        total_practices,
+        total_attendance,
+        connector:connector_id (
+          id,
+          provider
+        )
+      `)
+      .in('connector_id', connectorIds)
+      .not('player_id', 'is', null) // Only include matched players
+      .order('year', { ascending: true })
+      .order('month', { ascending: true });
+
+    if (attendanceError) {
+      console.error('Error fetching attendance data:', attendanceError);
+      throw new Error('Failed to load attendance data');
+    }
+
+    // Filter attendance data by the 10-day rule
+    const filteredAttendance = (attendanceData || []).filter(record => {
+      return shouldIncludeMonth(record.year, record.month, startDate, endDate);
+    });
+
+    // Aggregate attendance data by player
+    const playerAttendanceMap = new Map();
+
+    filteredAttendance.forEach(record => {
+      const playerId = record.player_id;
+
+      if (!playerAttendanceMap.has(playerId)) {
+        playerAttendanceMap.set(playerId, {
+          playerId,
+          totalPractices: 0,
+          totalAttendance: 0,
+          monthlyRecords: []
+        });
+      }
+
+      const playerData = playerAttendanceMap.get(playerId);
+      playerData.totalPractices += record.total_practices || 0;
+      playerData.totalAttendance += record.total_attendance || 0;
+      playerData.monthlyRecords.push({
+        year: record.year,
+        month: record.month,
+        practices: record.total_practices,
+        attendance: record.total_attendance
+      });
+    });
+
+    // Get player info and match stats
+    const playerIds = Array.from(playerAttendanceMap.keys());
+
+    if (playerIds.length === 0) {
+      return [];
+    }
+
+    // Fetch player names
+    const { data: players, error: playersError } = await supabase
+      .from('player')
+      .select('id, display_name, first_name')
+      .in('id', playerIds)
+      .eq('team_id', teamId);
+
+    if (playersError) {
+      console.error('Error fetching players:', playersError);
+      throw new Error('Failed to load player data');
+    }
+
+    // Create player name map
+    const playerNameMap = new Map();
+    (players || []).forEach(player => {
+      playerNameMap.set(player.id, player.display_name || player.first_name || 'Unknown Player');
+    });
+
+    // Fetch match stats to get matches played
+    // We use the same date filter as for attendance
+    let matchStatsQuery = supabase
+      .from('player_match_stats')
+      .select(`
+        player_id,
+        match:match_id (
+          id,
+          team_id,
+          state,
+          deleted_at,
+          started_at
+        )
+      `)
+      .in('player_id', playerIds);
+
+    const { data: matchStatsData, error: matchStatsError } = await matchStatsQuery;
+
+    if (matchStatsError) {
+      console.error('Error fetching match stats:', matchStatsError);
+      throw new Error('Failed to load match statistics');
+    }
+
+    // Count matches per player (only confirmed matches within date range)
+    const matchesPlayedMap = new Map();
+
+    (matchStatsData || []).forEach(stat => {
+      if (!stat.match || stat.match.team_id !== teamId) return;
+      if (stat.match.state !== 'confirmed') return;
+      if (stat.match.deleted_at !== null) return;
+
+      // Apply date filters
+      if (startDate || endDate) {
+        const matchDate = new Date(stat.match.started_at);
+        if (startDate && matchDate < startDate) return;
+        if (endDate && matchDate > endDate) return;
+      }
+
+      const playerId = stat.player_id;
+      matchesPlayedMap.set(playerId, (matchesPlayedMap.get(playerId) || 0) + 1);
+    });
+
+    // Combine all data
+    const result = Array.from(playerAttendanceMap.entries()).map(([playerId, attendanceData]) => {
+      const playerName = playerNameMap.get(playerId) || 'Unknown Player';
+      const matchesPlayed = matchesPlayedMap.get(playerId) || 0;
+      const attendanceRate = attendanceData.totalPractices > 0
+        ? (attendanceData.totalAttendance / attendanceData.totalPractices) * 100
+        : 0;
+      const practicesPerMatch = matchesPlayed > 0
+        ? attendanceData.totalAttendance / matchesPlayed
+        : 0;
+
+      return {
+        playerId,
+        playerName,
+        totalPractices: attendanceData.totalPractices,
+        totalAttendance: attendanceData.totalAttendance,
+        attendanceRate: Math.round(attendanceRate * 10) / 10, // 1 decimal place
+        matchesPlayed,
+        practicesPerMatch: Math.round(practicesPerMatch * 100) / 100, // 2 decimal places
+        monthlyRecords: attendanceData.monthlyRecords
+      };
+    });
+
+    // Sort by player name
+    result.sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+    return result;
+  } catch (error) {
+    console.error('Error getting attendance stats:', error);
+    throw error;
   }
 }
