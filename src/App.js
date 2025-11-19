@@ -1049,7 +1049,7 @@ function AppContent() {
         );
       case VIEWS.STATS:
         return (
-          <StatsScreen 
+          <StatsScreen
             allPlayers={gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
             formatTime={formatTime}
             setView={navigateToView}
@@ -1070,11 +1070,15 @@ function AppContent() {
             navigateToMatchReport={gameState.navigateToMatchReport}
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
-          goalScorers={gameState.goalScorers || {}}
-          authModal={authModal}
-          checkForActiveMatch={checkForActiveMatch}
-          selectedSquadIds={gameState.selectedSquadIds}
-          onStartNewConfigurationSession={beginNewConfigurationSession}
+            goalScorers={gameState.goalScorers || {}}
+            authModal={authModal}
+            checkForActiveMatch={checkForActiveMatch}
+            selectedSquadIds={gameState.selectedSquadIds}
+            onStartNewConfigurationSession={beginNewConfigurationSession}
+            matchStartTime={gameState.matchStartTime}
+            periodDurationMinutes={gameState.periodDurationMinutes}
+            gameLog={gameState.gameLog}
+            formation={gameState.formation}
         />
       );
       case VIEWS.MATCH_REPORT:

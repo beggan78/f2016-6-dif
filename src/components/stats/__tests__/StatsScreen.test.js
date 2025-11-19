@@ -22,29 +22,10 @@ import {
   userInteractions
 } from '../../__tests__/componentTestUtils';
 import { updateMatchToConfirmed } from '../../../services/matchStateManager';
-import { calculateRolePoints } from '../../../utils/rolePointUtils';
 
 // Mock utility functions
 jest.mock('../../../utils/formatUtils', () => ({
-  formatPoints: jest.fn((points) => points % 1 === 0 ? points.toString() : points.toFixed(1)),
-  formatPlayerName: jest.fn((player) => player ? player.displayName : 'Unknown'),
-  generateStatsText: jest.fn((squadForStats, ownScore, opponentScore, opponentTeam) =>
-    `Final Score: Djurgården ${ownScore} - ${opponentScore} ${opponentTeam || 'Opponent'}
-
-Spelare		Start	M	B	A	Ute	Back	Fw	Mv
-------		-------	-	-	-	----------	----	--	--
-Player 1		S	1.0	1.0	1.0	15:30	08:15	07:15	00:00
-Player 2		M	3.0	0.0	0.0	15:30	00:00	00:00	15:30`)
-}));
-
-// Mock rolePointUtils with proper structure
-jest.mock('../../../utils/rolePointUtils', () => ({
-  calculateRolePoints: jest.fn(() => ({
-    goaliePoints: 1.0,
-    defenderPoints: 1.0,
-    midfielderPoints: 0.5,
-    attackerPoints: 0.5
-  }))
+  formatPlayerName: jest.fn((player) => player ? player.displayName : 'Unknown')
 }));
 
 // Mock matchStateManager functions
@@ -60,16 +41,17 @@ jest.mock('../../../contexts/AuthContext', () => ({
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   ListChecks: ({ className, ...props }) => <div data-testid="list-checks-icon" className={className} {...props} />,
-  Copy: ({ className, ...props }) => <div data-testid="copy-icon" className={className} {...props} />,
-  PlusCircle: ({ className, ...props }) => <div data-testid="plus-circle-icon" className={className} {...props} />
+  PlusCircle: ({ className, ...props }) => <div data-testid="plus-circle-icon" className={className} {...props} />,
+  FileText: ({ className, ...props }) => <div data-testid="file-text-icon" className={className} {...props} />,
+  Save: ({ className, ...props }) => <div data-testid="save-icon" className={className} {...props} />
 }));
 
 // Mock UI components
 jest.mock('../../shared/UI', () => ({
   Button: ({ onClick, disabled, children, Icon, ...props }) => (
-    <button 
+    <button
       data-testid="button"
-      onClick={onClick} 
+      onClick={onClick}
       disabled={disabled}
       data-children={children}
       {...props}
@@ -80,13 +62,26 @@ jest.mock('../../shared/UI', () => ({
   )
 }));
 
-// Mock clipboard API
-Object.defineProperty(navigator, 'clipboard', {
-  value: {
-    writeText: jest.fn()
-  },
-  writable: true
-});
+// Mock report components
+jest.mock('../../report/MatchSummaryHeader', () => ({
+  MatchSummaryHeader: ({ ownTeamName, opponentTeam, ownScore, opponentScore }) => (
+    <div data-testid="match-summary-header">
+      <div>{ownTeamName} {ownScore} - {opponentScore} {opponentTeam}</div>
+    </div>
+  )
+}));
+
+jest.mock('../../report/PlayerStatsTable', () => ({
+  PlayerStatsTable: ({ players }) => (
+    <div data-testid="player-stats-table">
+      {players.map(player => (
+        <div key={player.id} data-testid={`player-${player.id}`}>
+          {player.displayName}
+        </div>
+      ))}
+    </div>
+  )
+}));
 
 describe('StatsScreen', () => {
   let defaultProps;
@@ -151,21 +146,18 @@ describe('StatsScreen', () => {
         openSignup: jest.fn()
       },
       selectedSquadIds: mockPlayers.map(player => player.id),
+      matchStartTime: Date.now() - 3600000, // 1 hour ago
+      periodDurationMinutes: 12,
+      gameLog: [{ period: 1 }, { period: 2 }, { period: 3 }],
+      formation: {},
+      checkForActiveMatch: jest.fn(),
+      onStartNewConfigurationSession: jest.fn(),
       ...mockSetters
     };
 
     // Reset mocks
     jest.clearAllMocks();
-    navigator.clipboard.writeText.mockResolvedValue();
     updateMatchToConfirmed.mockResolvedValue({ success: true });
-    
-    // Set up rolePointUtils mock explicitly
-    calculateRolePoints.mockImplementation(() => ({
-      goaliePoints: 1.0,
-      defenderPoints: 1.0,
-      midfielderPoints: 0.5,
-      attackerPoints: 0.5
-    }));
   });
 
   it('omits bench players with no playing time from the statistics table', () => {
@@ -243,12 +235,12 @@ describe('StatsScreen', () => {
 
     it('should handle empty players array gracefully', () => {
       const props = { ...defaultProps, allPlayers: [] };
-      
+
       expect(() => render(<StatsScreen {...props} />)).not.toThrow();
-      
+
       // Should still render the structure
       expect(screen.getByText('Game Finished - Statistics')).toBeInTheDocument();
-      expect(screen.getByText('Final Score')).toBeInTheDocument();
+      expect(screen.getByTestId('match-summary-header')).toBeInTheDocument();
     });
   });
 

@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { FileText, Clock, Users, Trophy, Settings } from 'lucide-react';
+import { FileText, Clock, Trophy, Settings } from 'lucide-react';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { hasPlayerParticipated } from '../../utils/playerUtils';
 
 // Placeholder imports - these components will be created next
 import { MatchSummaryHeader } from './MatchSummaryHeader';
-import { PlayerStatsTable } from './PlayerStatsTable';
 import { GameEventTimeline } from './GameEventTimeline';
 import { ReportControls } from './ReportControls';
 import { ReportSection } from './ReportSection';
@@ -134,7 +133,7 @@ export function MatchReportScreen({
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <div className="flex items-center mb-4">
               <FileText className="h-6 w-6 text-sky-400 mr-2" />
-              <h1 className="text-2xl font-bold text-sky-300">Match Report</h1>
+              <h1 className="text-2xl font-bold text-sky-300">Match Log</h1>
             </div>
             <div className="text-center py-8">
               <p className="text-slate-400 mb-4">No match data available</p>
@@ -157,7 +156,7 @@ export function MatchReportScreen({
         <div className="mb-6">
           <div className="flex items-center mb-4">
             <FileText className="h-6 w-6 text-sky-400 mr-2" />
-            <h1 className="text-2xl font-bold text-sky-300">Match Report</h1>
+            <h1 className="text-2xl font-bold text-sky-300">Match Log</h1>
           </div>
           
           {/* Navigation Controls */}
@@ -179,16 +178,6 @@ export function MatchReportScreen({
               totalPeriods={totalPeriods}
               periodDurationMinutes={periodDurationMinutes}
               matchStartTime={matchStartTime}
-            />
-          </ReportSection>
-
-          {/* Player Statistics Section */}
-          <ReportSection icon={Users} title="Player Statistics">
-            <PlayerStatsTable
-              players={squadPlayers}
-              formation={formation}
-              matchEvents={matchEvents}
-              goalScorers={goalScorers}
             />
           </ReportSection>
 
