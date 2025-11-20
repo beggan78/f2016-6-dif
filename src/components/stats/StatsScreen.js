@@ -286,17 +286,15 @@ export function StatsScreen({
       )}
 
       {/* Player Statistics */}
-      <div className="bg-slate-700 rounded-lg p-1">
-        <PlayerStatsTable
-          players={squadForStats}
-          formation={formation}
-          matchEvents={matchEvents}
-          goalScorers={goalScorers}
-        />
-      </div>
+      <PlayerStatsTable
+        players={squadForStats}
+        formation={formation}
+        matchEvents={matchEvents}
+        goalScorers={goalScorers}
+      />
 
       <Button onClick={navigateToMatchReport} Icon={FileText} variant="primary">
-        View Match Report
+        View Match Log
       </Button>
 
       <Button onClick={handleNewGame} Icon={PlusCircle}>
