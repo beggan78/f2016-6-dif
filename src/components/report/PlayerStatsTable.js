@@ -41,7 +41,9 @@ export function PlayerStatsTable({
   }, [matchEvents, goalScorers]);
   // Define column configuration
   const columns = useMemo(() => {
+    const showDefenderColumn = players.some(p => p.stats?.timeAsDefenderSeconds > 0);
     const showMidfielderColumn = players.some(p => p.stats?.timeAsMidfielderSeconds > 0);
+    const showAttackerColumn = players.some(p => p.stats?.timeAsAttackerSeconds > 0);
 
     const allColumns = [
     {
@@ -67,7 +69,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeOnField',
-      label: 'Time on Field',
+      label: 'Outfield',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -76,18 +78,8 @@ export function PlayerStatsTable({
       }
     },
     {
-      key: 'timeAsAttacker',
-      label: 'Time as Attacker',
-      sortable: true,
-      className: 'text-center text-slate-300 font-mono',
-      render: (player) => {
-        const time = player.stats?.timeAsAttackerSeconds || 0;
-        return time > 0 ? formatTime(time) : '--';
-      }
-    },
-    {
       key: 'timeAsDefender',
-      label: 'Time as Defender',
+      label: 'Defender',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -97,7 +89,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsMidfielder',
-      label: 'Time as Midfielder',
+      label: 'Midfielder',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -106,8 +98,18 @@ export function PlayerStatsTable({
       }
     },
     {
+      key: 'timeAsAttacker',
+      label: 'Attacker',
+      sortable: true,
+      className: 'text-center text-slate-300 font-mono',
+      render: (player) => {
+        const time = player.stats?.timeAsAttackerSeconds || 0;
+        return time > 0 ? formatTime(time) : '--';
+      }
+    },
+    {
       key: 'timeAsGoalie',
-      label: 'Time as Goalie',
+      label: 'Goalie',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -117,7 +119,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsSubstitute',
-      label: 'Time as Substitute',
+      label: 'Substitute',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -127,7 +129,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'goalsScored',
-      label: 'Goals Scored',
+      label: 'Goals',
       sortable: true,
       className: 'text-center text-slate-300',
       render: (player) => {
@@ -136,10 +138,14 @@ export function PlayerStatsTable({
       }
     }
   ];
-    if (showMidfielderColumn) {
-      return allColumns;
-    }
-    return allColumns.filter(c => c.key !== 'timeAsMidfielder');
+
+    // Filter out conditional columns based on whether any player has time in those roles
+    return allColumns.filter(column => {
+      if (column.key === 'timeAsDefender' && !showDefenderColumn) return false;
+      if (column.key === 'timeAsMidfielder' && !showMidfielderColumn) return false;
+      if (column.key === 'timeAsAttacker' && !showAttackerColumn) return false;
+      return true;
+    });
   }, [playerGoals, players]);
 
   // Sort players based on current sort settings
