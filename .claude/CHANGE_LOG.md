@@ -88,4 +88,4 @@
 
 ### Files
 - **New**: `src/hooks/useTeamInvitationManager.js`, `.claude/CHANGE_LOG.md`
-- **Modified**: `src/App.js`, `src/hooks/useMatchRecovery.js`, `src/components/stats/StatsScreen.js`, `README.md`
+- **Modified**: `src/App.js`, `src/hooks/useMatchRecovery.js`, `src/components/stats/GameFinishedScreen.js`, `README.md`

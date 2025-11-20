@@ -17,7 +17,7 @@ App
 │   └── AddPlayerModal (Add temporary players)
 ├── PeriodSetupScreen (Formation configuration)
 │   └── IndividualPositionCard (formation setup)
-└── StatsScreen (Game results and export)
+└── GameFinishedScreen (Game results and export)
 ```
 
 ## Configuration-Driven Architecture
@@ -101,8 +101,8 @@ Each team configuration definition includes:
 - **State Management**: Real-time game state via useGameState hook
 - **Testing**: 30 tests covering game controls and interactions
 
-#### StatsScreen
-- **File**: `src/components/stats/StatsScreen.js`
+#### GameFinishedScreen
+- **File**: `src/components/stats/GameFinishedScreen.js`
 - **Purpose**: Post-game statistics and data export
 - **Key Features**: Statistics display, clipboard export, game reset
 - **State Management**: Read-only display of final game data
@@ -342,7 +342,7 @@ Each individual configuration includes a `substituteRotationPattern` property th
 ## State Management Patterns
 
 ### 1. Global State (useGameState)
-**Used by**: GameScreen, StatsScreen
+**Used by**: GameScreen, GameFinishedScreen
 **Purpose**: Core game state that persists across screens
 **Pattern**: Custom hook with localStorage persistence
 

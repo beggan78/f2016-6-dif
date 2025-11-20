@@ -5,7 +5,7 @@ import '@testing-library/jest-dom';
 import { NavigationHistoryProvider } from '../contexts/NavigationHistoryContext';
 import { useScreenNavigation } from '../hooks/useNavigationHistory';
 import { VIEWS } from '../constants/viewConstants';
-import { StatsScreen } from '../components/stats/StatsScreen';
+import { GameFinishedScreen } from '../components/stats/GameFinishedScreen';
 import { MatchReportScreen } from '../components/report/MatchReportScreen';
 import { createMockPlayers } from '../components/__tests__/componentTestUtils';
 
@@ -108,7 +108,7 @@ function NavigationHarness() {
 
   if (view === VIEWS.STATS) {
     return (
-      <StatsScreen
+      <GameFinishedScreen
         {...statsProps}
         navigateToMatchReport={() => navigation.navigateTo(VIEWS.MATCH_REPORT)}
       />

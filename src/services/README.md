@@ -131,11 +131,11 @@ got_fair_play_award: BOOLEAN (default false)
 
 ### Integration Points
 
-#### StatsScreen Integration
-The StatsScreen component handles the user-facing match saving workflow:
+#### GameFinishedScreen Integration
+The GameFinishedScreen component handles the user-facing match saving workflow:
 
 ```javascript
-// Save workflow in StatsScreen.js
+// Save workflow in GameFinishedScreen.js
 const handleSaveMatchHistory = async () => {
   // 1. Confirm match in database (running -> confirmed)
   const result = await updateMatchToConfirmed(currentMatchId);

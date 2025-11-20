@@ -15,7 +15,7 @@ import { clearAllEvents } from './utils/gameEventLogger';
 import { ConfigurationScreen } from './components/setup/ConfigurationScreen';
 import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
-import { StatsScreen } from './components/stats/StatsScreen';
+import { GameFinishedScreen } from './components/stats/GameFinishedScreen';
 import { StatisticsScreen } from './components/statistics/StatisticsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
@@ -1049,7 +1049,7 @@ function AppContent() {
         );
       case VIEWS.STATS:
         return (
-          <StatsScreen
+          <GameFinishedScreen
             allPlayers={gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
             formatTime={formatTime}
             setView={navigateToView}

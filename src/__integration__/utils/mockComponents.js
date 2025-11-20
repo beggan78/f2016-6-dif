@@ -198,9 +198,9 @@ export const MockConfigurationScreen = ({
 };
 
 /**
- * Mock StatsScreen component
+ * Mock GameFinishedScreen component
  */
-export const MockStatsScreen = ({ 
+export const MockGameFinishedScreen = ({ 
   allPlayers = [],
   gameHistory = {},
   onExportStats,
@@ -389,7 +389,7 @@ export const createMockComponentSet = (customMocks = {}) => {
     // Screen components
     ConfigurationScreen: MockConfigurationScreen,
     PeriodSetupScreen: MockPeriodSetupScreen,
-    StatsScreen: MockStatsScreen,
+    GameFinishedScreen: MockGameFinishedScreen,
     
     // Modal components
     AddPlayerModal: MockAddPlayerModal,
@@ -493,7 +493,7 @@ export default {
   MockIndividualFormation,
   MockConfigurationScreen,
   MockPeriodSetupScreen,
-  MockStatsScreen,
+  MockGameFinishedScreen,
   MockAddPlayerModal,
   MockUI,
   MockHamburgerMenu,
