@@ -86,7 +86,6 @@ jest.mock('../../report/PlayerStatsTable', () => ({
 describe('GameFinishedScreen', () => {
   let defaultProps;
   let mockPlayers;
-  let mockFormatTime;
   let mockSetters;
 
   beforeEach(() => {
@@ -107,12 +106,6 @@ describe('GameFinishedScreen', () => {
     
     mockPlayers = mockSquadForStats;
 
-    mockFormatTime = jest.fn((seconds) => {
-      const minutes = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    });
-
     mockSetters = {
       setView: jest.fn(),
       setAllPlayers: jest.fn(),
@@ -129,7 +122,6 @@ describe('GameFinishedScreen', () => {
 
     defaultProps = {
       allPlayers: mockPlayers,
-      formatTime: mockFormatTime,
       initialRoster: createMockPlayers(7),
       ownScore: 3,
       opponentScore: 1,
@@ -239,7 +231,7 @@ describe('GameFinishedScreen', () => {
       expect(() => render(<GameFinishedScreen {...props} />)).not.toThrow();
 
       // Should still render the structure
-      expect(screen.getByText('Game Finished')).toBeInTheDocument();
+      expect(screen.getByText('Game Finished - Statistics')).toBeInTheDocument();
       expect(screen.getByTestId('match-summary-header')).toBeInTheDocument();
     });
   });

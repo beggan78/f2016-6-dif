@@ -133,7 +133,7 @@ export function MatchReportScreen({
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <div className="flex items-center mb-4">
               <FileText className="h-6 w-6 text-sky-400 mr-2" />
-              <h1 className="text-2xl font-bold text-sky-300">Match Log</h1>
+              <h1 className="text-2xl font-bold text-sky-300">Match Report</h1>
             </div>
             <div className="text-center py-8">
               <p className="text-slate-400 mb-4">No match data available</p>
@@ -156,7 +156,7 @@ export function MatchReportScreen({
         <div className="mb-6">
           <div className="flex items-center mb-4">
             <FileText className="h-6 w-6 text-sky-400 mr-2" />
-            <h1 className="text-2xl font-bold text-sky-300">Match Log</h1>
+            <h1 className="text-2xl font-bold text-sky-300">Match Report</h1>
           </div>
           
           {/* Navigation Controls */}

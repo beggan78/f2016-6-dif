@@ -51,11 +51,6 @@ const mockPlayers = createMockPlayers(5);
 
 const statsProps = {
   allPlayers: mockPlayers,
-  formatTime: (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  },
   setView: jest.fn(),
   setAllPlayers: jest.fn(),
   setSelectedSquadIds: jest.fn(),

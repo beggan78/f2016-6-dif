@@ -220,7 +220,7 @@ Modern composite team configuration system using three components:
 
 ### Critical Rules
 - When writing tests, avoid changing production code except for debug logs
-- If production code seems buggy, describe the issue rather than fixing it
+- If production code seems buggy, describe the issue to the user rather than fixing it
 - Tests should reflect actual application behavior, not ideal behavior
 
 ## Notes for Future Sessions
@@ -232,15 +232,8 @@ Modern composite team configuration system using three components:
 - Always display dates on the ISO format YYYY-MM-DD
 - **Linting**: Always run `CI=true && npm run build` before finishing a task to check for ESLint errors that will fail in GitHub CI
 - **Testing**: Follow patterns in `.claude/testing-guidelines.md` for new tests
-- **New components**: Write tests first, following established patterns in `__tests__` directories
+- **New components**: Write tests following established patterns in `__tests__` directories
 - **State Updates**: Ensure all calculated state changes are properly applied via handler state updaters
 
 ## General Principles
-- Assume that application is already running. If it needs to be started, the user will start it
-- Always assume that the application is already running.
-
-## Recent Major Features (Reference)
-- **Browser Back Interception**: Tactical Board integrated with `useBrowserBackIntercept` hook
-- **Time Tracking Bug Fix**: Fixed substitution timer conditional logic with `isSubTimerPaused` checks
-- **Match Database System**: Full match lifecycle with player statistics persistence via `matchStateManager.js`
-- **Role Constants Cleanup**: Eliminated `ON_FIELD` role, introduced `FIELD_PLAYER` and role/status separation
+- Always that application is already running. If it needs to be started, the user will start it

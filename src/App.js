@@ -1051,7 +1051,6 @@ function AppContent() {
         return (
           <GameFinishedScreen
             allPlayers={gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
-            formatTime={formatTime}
             setView={navigateToView}
             onNavigateBack={navigateBack}
             setAllPlayers={gameState.setAllPlayers}
