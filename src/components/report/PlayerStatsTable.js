@@ -59,11 +59,23 @@ export function PlayerStatsTable({
       sortable: true,
       className: 'text-center text-slate-300',
       render: (player) => {
-        // Only use startedMatchAs - the role they started the match with in Period 1
-        const role = player.stats?.startedMatchAs;
-        if (role === PLAYER_ROLES.GOALIE) return 'Goalie';
-        if (role === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-        if (role === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+        // Use startedAtRole for specific role (defender/midfielder/attacker)
+        // Fall back to startedMatchAs if startedAtRole not available
+        const specificRole = player.stats?.startedAtRole;
+        const genericRole = player.stats?.startedMatchAs;
+
+        // Check specific role first
+        if (specificRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+        if (specificRole === PLAYER_ROLES.DEFENDER) return 'Defender';
+        if (specificRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
+        if (specificRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
+        if (specificRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+
+        // Fall back to generic role
+        if (genericRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+        if (genericRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+        if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+
         return '--'; // Player didn't start the match
       }
     },
@@ -162,14 +174,26 @@ export function PlayerStatsTable({
           break;
         case 'startingRole':
           // Map role values to strings for alphabetical comparison
-          const getRoleValue = (role) => {
-            if (role === PLAYER_ROLES.GOALIE) return 'Goalie';
-            if (role === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-            if (role === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+          const getRoleValue = (player) => {
+            const specificRole = player.stats?.startedAtRole;
+            const genericRole = player.stats?.startedMatchAs;
+
+            // Check specific role first
+            if (specificRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+            if (specificRole === PLAYER_ROLES.DEFENDER) return 'Defender';
+            if (specificRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
+            if (specificRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
+            if (specificRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+
+            // Fall back to generic role
+            if (genericRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+            if (genericRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+            if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+
             return '--'; // Empty value sorts to end
           };
-          aValue = getRoleValue(a.stats?.startedMatchAs);
-          bValue = getRoleValue(b.stats?.startedMatchAs);
+          aValue = getRoleValue(a);
+          bValue = getRoleValue(b);
           break;
         case 'timeOnField':
           aValue = a.stats?.timeOnFieldSeconds || 0;
