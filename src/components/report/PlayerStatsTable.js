@@ -158,7 +158,7 @@ export function PlayerStatsTable({
       if (column.key === 'timeAsAttacker' && !showAttackerColumn) return false;
       return true;
     });
-  }, [playerGoals, players, formatTime]);
+  }, [playerGoals, players]);
 
   // Sort players based on current sort settings
   const sortedPlayers = useMemo(() => {
