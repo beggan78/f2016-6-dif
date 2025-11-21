@@ -1,21 +1,20 @@
-import React, { useState } from 'react';
-import { ListChecks, PlusCircle, Copy, FileText, Save, History } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ListChecks, PlusCircle, FileText, Save } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { FeatureGate } from '../auth/FeatureGate';
-import { PLAYER_ROLES } from '../../constants/playerConstants';
-import { calculateRolePoints } from '../../utils/rolePointUtils';
-import { formatPoints, generateStatsText, formatPlayerName } from '../../utils/formatUtils';
+import { formatPlayerName } from '../../utils/formatUtils';
 import { hasPlayerParticipated } from '../../utils/playerUtils';
 import { updateMatchToConfirmed } from '../../services/matchStateManager';
+import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
+import { PlayerStatsTable } from '../report/PlayerStatsTable';
 
-export function StatsScreen({ 
-  allPlayers, 
-  formatTime, 
-  setView, 
-  setAllPlayers, 
-  setSelectedSquadIds, 
-  setPeriodGoalieIds, 
+export function GameFinishedScreen({
+  allPlayers,
+  setView,
+  setAllPlayers,
+  setSelectedSquadIds,
+  setPeriodGoalieIds,
   setGameLog,
   initializePlayers,
   initialRoster,
@@ -28,25 +27,44 @@ export function StatsScreen({
   setOpponentTeam,
   navigateToMatchReport,
   // Additional props for match data persistence
-  teamMode,
-  numPeriods,
-  periodDurationMinutes,
-  captainId,
-  matchEvents,
-  gameLog,
+  matchEvents = [],
+  gameLog = [],
   currentMatchId,
-  goalScorers,
+  goalScorers = {},
   authModal,
   checkForActiveMatch,
   selectedSquadIds = [],
-  onStartNewConfigurationSession = () => {}
+  onStartNewConfigurationSession = () => {},
+  // New props for MatchSummaryHeader and PlayerStatsTable
+  matchStartTime,
+  periodDurationMinutes = 12,
+  formation = {}
 }) {
-  const [copySuccess, setCopySuccess] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const { isAuthenticated } = useAuth();
+
+  // Calculate match duration and total periods (same as MatchReportScreen)
+  const matchDuration = useMemo(() => {
+    if (!matchStartTime) {
+      return 0;
+    }
+
+    const endTime = matchEvents && matchEvents.length > 0
+      ? Math.max(...matchEvents.map(e => e.timestamp))
+      : Date.now();
+
+    const duration = Math.floor((endTime - matchStartTime) / 1000);
+
+    return duration;
+  }, [matchEvents, matchStartTime]);
+
+  const totalPeriods = useMemo(() => {
+    return gameLog.length;
+  }, [gameLog]);
+
   const participantSet = Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0
     ? new Set(selectedSquadIds)
     : null;
@@ -88,17 +106,6 @@ export function StatsScreen({
   const handleFairPlayAwardChange = (event) => {
     const selectedPlayerId = event.target.value || null;
     setFairPlayAwardPlayerId(selectedPlayerId);
-  };
-
-  const copyStatsToClipboard = async () => {
-    const statsText = generateStatsText(squadForStats, ownScore, opponentScore, opponentTeam);
-    try {
-      await navigator.clipboard.writeText(statsText);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy stats to clipboard:', err);
-    }
   };
 
   const handleSaveMatchHistory = async () => {
@@ -155,14 +162,6 @@ export function StatsScreen({
     }
   };
 
-  const handleViewMatchHistory = () => {
-    // TODO: Navigate to match history view
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Navigating to match history...');
-    }
-  };
-
-
   const handleNewGame = async () => {
     console.log('📊 New Game from Stats Screen - calling checkForActiveMatch()');
     await checkForActiveMatch(() => {
@@ -186,72 +185,23 @@ export function StatsScreen({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-sky-300 flex items-center">
-          <ListChecks className="mr-2 h-6 w-6" />Game Finished - Statistics
+          <ListChecks className="mr-2 h-6 w-6" />
+          Game Finished - Statistics
         </h2>
       </div>
 
-      {/* Final Score Display */}
-      <div className="p-4 bg-slate-700 rounded-lg text-center">
-        <h3 className="text-lg font-semibold text-sky-200 mb-3">Final Score</h3>
-        <div className="flex items-center justify-center space-x-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-sky-400">{ownScore}</div>
-            <div className="text-sm text-slate-300 font-semibold">Djurgården</div>
-          </div>
-          <div className="text-2xl font-mono font-bold text-slate-400">-</div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-slate-400">{opponentScore}</div>
-            <div className="text-sm text-slate-300 font-semibold">{opponentTeam || 'Opponent'}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto bg-slate-700 rounded-lg p-1">
-        <table className="min-w-full divide-y divide-slate-600">
-          <thead className="bg-slate-800">
-            <tr>
-              {['Spelare', 'Start', 'M', 'B', 'Mit', 'A', 'Ute', 'Back', 'Mid', 'Fw', 'Mv'].map(header => (
-                <th key={header} scope="col" className="px-3 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-slate-700 divide-y divide-slate-600">
-            {squadForStats.map(player => {
-              const { goaliePoints, defenderPoints, midfielderPoints, attackerPoints } = calculateRolePoints(player);
-              return (
-                <tr key={player.id}>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-100">{formatPlayerName(player)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">
-                    {player.stats.startedMatchAs === PLAYER_ROLES.GOALIE ? 'M' :
-                        player.stats.startedMatchAs === PLAYER_ROLES.FIELD_PLAYER ? 'S' :
-                            player.stats.startedMatchAs === PLAYER_ROLES.SUBSTITUTE ? 'A' : '-'}
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(goaliePoints)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(defenderPoints)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(midfielderPoints)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300">{formatPoints(attackerPoints)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeOnFieldSeconds)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsDefenderSeconds)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsMidfielderSeconds || 0)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsAttackerSeconds)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTime(player.stats.timeAsGoalieSeconds)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="text-sm text-slate-400 bg-slate-800 p-3 rounded-lg">
-        <p className="font-medium text-sky-200 mb-2">Points System:</p>
-        <ul className="space-y-1">
-          <li>• Each player gets exactly 3 points total</li>
-          <li>• 1 point per period as goalie (M)</li>
-          <li>• Remaining points split between defender (B), midfielder (Mit), and attacker (A) based on time played</li>
-          <li>• Points awarded in 0.5 increments</li>
-        </ul>
+      {/* Match Summary */}
+      <div className="p-4 bg-slate-700 rounded-lg">
+        <MatchSummaryHeader
+          ownTeamName="Djurgården"
+          opponentTeam={opponentTeam || 'Opponent'}
+          ownScore={ownScore}
+          opponentScore={opponentScore}
+          matchStartTime={matchStartTime}
+          matchDuration={matchDuration}
+          totalPeriods={totalPeriods}
+          periodDurationMinutes={periodDurationMinutes}
+        />
       </div>
 
       {/* Fair Play Award Selection */}
@@ -261,7 +211,7 @@ export function StatsScreen({
             🏆 Fair Play Award
           </h3>
         </div>
-        
+
         <div className="relative">
           <select
             value={fairPlayAwardPlayerId || ''}
@@ -282,7 +232,7 @@ export function StatsScreen({
             </svg>
           </div>
         </div>
-        
+
         {/* Selection confirmation */}
         {fairPlayAwardPlayerId && (
           <div className={FAIR_PLAY_AWARD_STYLES.confirmation} data-testid="fair-play-confirmation">
@@ -296,75 +246,52 @@ export function StatsScreen({
         )}
       </div>
 
-      <div className="flex gap-3 items-center">
-        <Button onClick={copyStatsToClipboard} Icon={Copy}>
-          Copy Statistics
-        </Button>
-        {copySuccess && (
-          <span className="text-green-400 text-sm font-medium">
-            ✓ Statistics copied to clipboard!
-          </span>
-        )}
-      </div>
-
-      {/* Match History Features - Protected */}
-      <div className="space-y-4">
-        {isAuthenticated ? (
-          <div className="space-y-3">
-            {/* Save Match Button for Authenticated Users */}
-            <div className="space-y-2">
-              <div className="flex gap-3 items-center">
-                <Button 
-                  onClick={handleSaveMatchHistory} 
-                  Icon={Save}
-                  variant="primary"
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save Match to History'}
-                </Button>
-                {saveSuccess && (
-                  <span className="text-emerald-400 text-sm font-medium">
-                    ✓ Match saved successfully!
-                  </span>
-                )}
-              </div>
-              
-              {saveError && (
-                <div className="p-2 bg-rose-900/20 border border-rose-600 rounded text-rose-200 text-sm">
-                  ❌ {saveError}
-                </div>
-              )}
-            </div>
-
-            {/* View Match History Button */}
-            <Button 
-              onClick={handleViewMatchHistory} 
-              Icon={History}
-              variant="secondary"
+      {/* Save Match to History - Protected */}
+      {isAuthenticated ? (
+        <div className="space-y-2">
+          <div className="flex gap-3 items-center">
+            <Button
+              onClick={handleSaveMatchHistory}
+              Icon={Save}
+              variant="primary"
+              className="bg-emerald-600 hover:bg-emerald-700"
+              disabled={saving}
             >
-              View Match History
+              {saving ? 'Saving...' : 'Save Match to History'}
             </Button>
+            {saveSuccess && (
+              <span className="text-emerald-400 text-sm font-medium">
+                ✓ Match saved successfully!
+              </span>
+            )}
           </div>
-        ) : (
-          /* Authentication Gate for Anonymous Users */
-          <FeatureGate
-            feature="match history"
-            description="Save this match to your history and track your team's performance over time"
-            compact
-            authModal={authModal}
-          >
-            <div className="space-y-3">
-              <Button Icon={Save} variant="primary" disabled>
-                Save Match to History
-              </Button>
-              <Button Icon={History} variant="secondary" disabled>
-                View Match History
-              </Button>
+
+          {saveError && (
+            <div className="p-2 bg-rose-900/20 border border-rose-600 rounded text-rose-200 text-sm">
+              ❌ {saveError}
             </div>
-          </FeatureGate>
-        )}
-      </div>
+          )}
+        </div>
+      ) : (
+        <FeatureGate
+          feature="match history"
+          description="Save this match to your history and track your team's performance over time"
+          compact
+          authModal={authModal}
+        >
+          <Button Icon={Save} variant="primary" disabled>
+            Save Match to History
+          </Button>
+        </FeatureGate>
+      )}
+
+      {/* Player Statistics */}
+      <PlayerStatsTable
+        players={squadForStats}
+        formation={formation}
+        matchEvents={matchEvents}
+        goalScorers={goalScorers}
+      />
 
       <Button onClick={navigateToMatchReport} Icon={FileText} variant="primary">
         View Match Report

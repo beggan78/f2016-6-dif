@@ -1,11 +1,11 @@
 /**
- * StatsScreen Component Tests
- * 
- * Basic testing suite for the StatsScreen component focusing on structural validation.
- * 
+ * GameFinishedScreen Component Tests
+ *
+ * Basic testing suite for the GameFinishedScreen component focusing on structural validation.
+ *
  * Note: Complex role point calculation tests removed due to Jest mocking challenges
  * with rolePointUtils.calculateRolePoints. The component works correctly in practice.
- * 
+ *
  * Test Coverage: Basic structural tests covering:
  * - Component rendering without crashes
  * - Empty state handling
@@ -15,36 +15,17 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { StatsScreen } from '../StatsScreen';
+import { GameFinishedScreen } from '../GameFinishedScreen';
 import { PLAYER_ROLES } from '../../../constants/playerConstants';
 import {
   createMockPlayers,
   userInteractions
 } from '../../__tests__/componentTestUtils';
 import { updateMatchToConfirmed } from '../../../services/matchStateManager';
-import { calculateRolePoints } from '../../../utils/rolePointUtils';
 
 // Mock utility functions
 jest.mock('../../../utils/formatUtils', () => ({
-  formatPoints: jest.fn((points) => points % 1 === 0 ? points.toString() : points.toFixed(1)),
-  formatPlayerName: jest.fn((player) => player ? player.displayName : 'Unknown'),
-  generateStatsText: jest.fn((squadForStats, ownScore, opponentScore, opponentTeam) =>
-    `Final Score: Djurgården ${ownScore} - ${opponentScore} ${opponentTeam || 'Opponent'}
-
-Spelare		Start	M	B	A	Ute	Back	Fw	Mv
-------		-------	-	-	-	----------	----	--	--
-Player 1		S	1.0	1.0	1.0	15:30	08:15	07:15	00:00
-Player 2		M	3.0	0.0	0.0	15:30	00:00	00:00	15:30`)
-}));
-
-// Mock rolePointUtils with proper structure
-jest.mock('../../../utils/rolePointUtils', () => ({
-  calculateRolePoints: jest.fn(() => ({
-    goaliePoints: 1.0,
-    defenderPoints: 1.0,
-    midfielderPoints: 0.5,
-    attackerPoints: 0.5
-  }))
+  formatPlayerName: jest.fn((player) => player ? player.displayName : 'Unknown')
 }));
 
 // Mock matchStateManager functions
@@ -60,16 +41,17 @@ jest.mock('../../../contexts/AuthContext', () => ({
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   ListChecks: ({ className, ...props }) => <div data-testid="list-checks-icon" className={className} {...props} />,
-  Copy: ({ className, ...props }) => <div data-testid="copy-icon" className={className} {...props} />,
-  PlusCircle: ({ className, ...props }) => <div data-testid="plus-circle-icon" className={className} {...props} />
+  PlusCircle: ({ className, ...props }) => <div data-testid="plus-circle-icon" className={className} {...props} />,
+  FileText: ({ className, ...props }) => <div data-testid="file-text-icon" className={className} {...props} />,
+  Save: ({ className, ...props }) => <div data-testid="save-icon" className={className} {...props} />
 }));
 
 // Mock UI components
 jest.mock('../../shared/UI', () => ({
   Button: ({ onClick, disabled, children, Icon, ...props }) => (
-    <button 
+    <button
       data-testid="button"
-      onClick={onClick} 
+      onClick={onClick}
       disabled={disabled}
       data-children={children}
       {...props}
@@ -80,18 +62,30 @@ jest.mock('../../shared/UI', () => ({
   )
 }));
 
-// Mock clipboard API
-Object.defineProperty(navigator, 'clipboard', {
-  value: {
-    writeText: jest.fn()
-  },
-  writable: true
-});
+// Mock report components
+jest.mock('../../report/MatchSummaryHeader', () => ({
+  MatchSummaryHeader: ({ ownTeamName, opponentTeam, ownScore, opponentScore }) => (
+    <div data-testid="match-summary-header">
+      <div>{ownTeamName} {ownScore} - {opponentScore} {opponentTeam}</div>
+    </div>
+  )
+}));
 
-describe('StatsScreen', () => {
+jest.mock('../../report/PlayerStatsTable', () => ({
+  PlayerStatsTable: ({ players }) => (
+    <div data-testid="player-stats-table">
+      {players.map(player => (
+        <div key={player.id} data-testid={`player-${player.id}`}>
+          {player.displayName}
+        </div>
+      ))}
+    </div>
+  )
+}));
+
+describe('GameFinishedScreen', () => {
   let defaultProps;
   let mockPlayers;
-  let mockFormatTime;
   let mockSetters;
 
   beforeEach(() => {
@@ -112,12 +106,6 @@ describe('StatsScreen', () => {
     
     mockPlayers = mockSquadForStats;
 
-    mockFormatTime = jest.fn((seconds) => {
-      const minutes = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    });
-
     mockSetters = {
       setView: jest.fn(),
       setAllPlayers: jest.fn(),
@@ -134,7 +122,6 @@ describe('StatsScreen', () => {
 
     defaultProps = {
       allPlayers: mockPlayers,
-      formatTime: mockFormatTime,
       initialRoster: createMockPlayers(7),
       ownScore: 3,
       opponentScore: 1,
@@ -151,21 +138,18 @@ describe('StatsScreen', () => {
         openSignup: jest.fn()
       },
       selectedSquadIds: mockPlayers.map(player => player.id),
+      matchStartTime: Date.now() - 3600000, // 1 hour ago
+      periodDurationMinutes: 12,
+      gameLog: [{ period: 1 }, { period: 2 }, { period: 3 }],
+      formation: {},
+      checkForActiveMatch: jest.fn(),
+      onStartNewConfigurationSession: jest.fn(),
       ...mockSetters
     };
 
     // Reset mocks
     jest.clearAllMocks();
-    navigator.clipboard.writeText.mockResolvedValue();
     updateMatchToConfirmed.mockResolvedValue({ success: true });
-    
-    // Set up rolePointUtils mock explicitly
-    calculateRolePoints.mockImplementation(() => ({
-      goaliePoints: 1.0,
-      defenderPoints: 1.0,
-      midfielderPoints: 0.5,
-      attackerPoints: 0.5
-    }));
   });
 
   it('omits bench players with no playing time from the statistics table', () => {
@@ -193,7 +177,7 @@ describe('StatsScreen', () => {
     };
 
     render(
-      <StatsScreen
+      <GameFinishedScreen
         {...defaultProps}
         allPlayers={[...defaultProps.allPlayers, benchPlayer]}
         selectedSquadIds={[...defaultProps.selectedSquadIds, benchPlayer.id]}
@@ -227,7 +211,7 @@ describe('StatsScreen', () => {
     };
 
     render(
-      <StatsScreen
+      <GameFinishedScreen
         {...defaultProps}
         allPlayers={[...defaultProps.allPlayers, unrelatedPlayer]}
         selectedSquadIds={defaultProps.selectedSquadIds}
@@ -243,12 +227,12 @@ describe('StatsScreen', () => {
 
     it('should handle empty players array gracefully', () => {
       const props = { ...defaultProps, allPlayers: [] };
-      
-      expect(() => render(<StatsScreen {...props} />)).not.toThrow();
-      
+
+      expect(() => render(<GameFinishedScreen {...props} />)).not.toThrow();
+
       // Should still render the structure
       expect(screen.getByText('Game Finished - Statistics')).toBeInTheDocument();
-      expect(screen.getByText('Final Score')).toBeInTheDocument();
+      expect(screen.getByTestId('match-summary-header')).toBeInTheDocument();
     });
   });
 
@@ -274,7 +258,7 @@ describe('StatsScreen', () => {
     };
 
     it('should display fair play award dropdown with default "Not awarded" option', () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       expect(screen.getByTestId('fair-play-award-section')).toBeInTheDocument();
       expect(screen.getByText('🏆 Fair Play Award')).toBeInTheDocument();
@@ -286,7 +270,7 @@ describe('StatsScreen', () => {
     });
 
     it('should populate dropdown with participating players only', () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const dropdown = screen.getByTestId('fair-play-award-dropdown');
       const options = dropdown.querySelectorAll('option');
@@ -302,7 +286,7 @@ describe('StatsScreen', () => {
     });
 
     it('should update fairPlayAwardPlayerId state when selection changes', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const dropdown = screen.getByTestId('fair-play-award-dropdown');
       const firstPlayer = mockPlayers[0];
@@ -314,7 +298,7 @@ describe('StatsScreen', () => {
     });
 
     it('should show emerald confirmation message when player selected', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const firstPlayer = mockPlayers[0];
       expectConfirmationHidden();
@@ -327,7 +311,7 @@ describe('StatsScreen', () => {
     });
 
     it('should hide confirmation when "Not awarded" is selected', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const dropdown = screen.getByTestId('fair-play-award-dropdown');
       const firstPlayer = mockPlayers[0];
@@ -342,7 +326,7 @@ describe('StatsScreen', () => {
     });
 
     it('should include award in player state when saving match', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const firstPlayer = mockPlayers[0];
       
@@ -369,7 +353,7 @@ describe('StatsScreen', () => {
     });
 
     it('should handle save workflow without award selection', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       // Click save match button without selecting award
       const saveButton = screen.getByText('Save Match to History');
@@ -382,7 +366,7 @@ describe('StatsScreen', () => {
     });
 
     it('should pass fairPlayAwardId to updateMatchToConfirmed', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const firstPlayer = mockPlayers[0];
 
@@ -400,7 +384,7 @@ describe('StatsScreen', () => {
     });
 
     it('should update player hasFairPlayAward property correctly', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const firstPlayer = mockPlayers[0];
       const secondPlayer = mockPlayers[1];
@@ -426,7 +410,7 @@ describe('StatsScreen', () => {
     });
 
     it('should pass correct fair play award player ID to updateMatchToConfirmed', async () => {
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
       
       const selectedPlayer = mockPlayers[1]; // Select second player
       
@@ -455,7 +439,7 @@ describe('StatsScreen', () => {
         error: 'Match must be finished before it can be saved to history.'
       });
 
-      render(<StatsScreen {...defaultProps} />);
+      render(<GameFinishedScreen {...defaultProps} />);
 
       const saveButton = screen.getByText('Save Match to History');
       await userEvent.click(saveButton);

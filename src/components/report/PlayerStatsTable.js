@@ -41,7 +41,9 @@ export function PlayerStatsTable({
   }, [matchEvents, goalScorers]);
   // Define column configuration
   const columns = useMemo(() => {
+    const showDefenderColumn = players.some(p => p.stats?.timeAsDefenderSeconds > 0);
     const showMidfielderColumn = players.some(p => p.stats?.timeAsMidfielderSeconds > 0);
+    const showAttackerColumn = players.some(p => p.stats?.timeAsAttackerSeconds > 0);
 
     const allColumns = [
     {
@@ -54,20 +56,32 @@ export function PlayerStatsTable({
     {
       key: 'startingRole',
       label: 'Starting Role',
-      sortable: false,
+      sortable: true,
       className: 'text-center text-slate-300',
       render: (player) => {
-        // Only use startedMatchAs - the role they started the match with in Period 1
-        const role = player.stats?.startedMatchAs;
-        if (role === PLAYER_ROLES.GOALIE) return 'Goalie';
-        if (role === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-        if (role === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+        // Use startedAtRole for specific role (defender/midfielder/attacker)
+        // Fall back to startedMatchAs if startedAtRole not available
+        const specificRole = player.stats?.startedAtRole;
+        const genericRole = player.stats?.startedMatchAs;
+
+        // Check specific role first
+        if (specificRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+        if (specificRole === PLAYER_ROLES.DEFENDER) return 'Defender';
+        if (specificRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
+        if (specificRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
+        if (specificRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+
+        // Fall back to generic role
+        if (genericRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+        if (genericRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+        if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+
         return '--'; // Player didn't start the match
       }
     },
     {
       key: 'timeOnField',
-      label: 'Time on Field',
+      label: 'Outfield',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -76,18 +90,8 @@ export function PlayerStatsTable({
       }
     },
     {
-      key: 'timeAsAttacker',
-      label: 'Time as Attacker',
-      sortable: true,
-      className: 'text-center text-slate-300 font-mono',
-      render: (player) => {
-        const time = player.stats?.timeAsAttackerSeconds || 0;
-        return time > 0 ? formatTime(time) : '--';
-      }
-    },
-    {
       key: 'timeAsDefender',
-      label: 'Time as Defender',
+      label: 'Defender',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -97,7 +101,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsMidfielder',
-      label: 'Time as Midfielder',
+      label: 'Midfielder',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -106,8 +110,18 @@ export function PlayerStatsTable({
       }
     },
     {
+      key: 'timeAsAttacker',
+      label: 'Attacker',
+      sortable: true,
+      className: 'text-center text-slate-300 font-mono',
+      render: (player) => {
+        const time = player.stats?.timeAsAttackerSeconds || 0;
+        return time > 0 ? formatTime(time) : '--';
+      }
+    },
+    {
       key: 'timeAsGoalie',
-      label: 'Time as Goalie',
+      label: 'Goalie',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -117,7 +131,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsSubstitute',
-      label: 'Time as Substitute',
+      label: 'Substitute',
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -127,7 +141,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'goalsScored',
-      label: 'Goals Scored',
+      label: 'Goals',
       sortable: true,
       className: 'text-center text-slate-300',
       render: (player) => {
@@ -136,10 +150,14 @@ export function PlayerStatsTable({
       }
     }
   ];
-    if (showMidfielderColumn) {
-      return allColumns;
-    }
-    return allColumns.filter(c => c.key !== 'timeAsMidfielder');
+
+    // Filter out conditional columns based on whether any player has time in those roles
+    return allColumns.filter(column => {
+      if (column.key === 'timeAsDefender' && !showDefenderColumn) return false;
+      if (column.key === 'timeAsMidfielder' && !showMidfielderColumn) return false;
+      if (column.key === 'timeAsAttacker' && !showAttackerColumn) return false;
+      return true;
+    });
   }, [playerGoals, players]);
 
   // Sort players based on current sort settings
@@ -153,6 +171,29 @@ export function PlayerStatsTable({
         case 'name':
           aValue = a.name || '';
           bValue = b.name || '';
+          break;
+        case 'startingRole':
+          // Map role values to strings for alphabetical comparison
+          const getRoleValue = (player) => {
+            const specificRole = player.stats?.startedAtRole;
+            const genericRole = player.stats?.startedMatchAs;
+
+            // Check specific role first
+            if (specificRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+            if (specificRole === PLAYER_ROLES.DEFENDER) return 'Defender';
+            if (specificRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
+            if (specificRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
+            if (specificRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+
+            // Fall back to generic role
+            if (genericRole === PLAYER_ROLES.GOALIE) return 'Goalie';
+            if (genericRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+            if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+
+            return '--'; // Empty value sorts to end
+          };
+          aValue = getRoleValue(a);
+          bValue = getRoleValue(b);
           break;
         case 'timeOnField':
           aValue = a.stats?.timeOnFieldSeconds || 0;
@@ -227,25 +268,30 @@ export function PlayerStatsTable({
 
   if (!sortedPlayers.length) {
     return (
-      <div className="text-center py-8 text-slate-400">
-        <p>No player statistics available</p>
+      <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
+        <div className="text-center py-8 text-slate-400">
+          <p>No player statistics available</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-slate-600">
+    <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-slate-600">
         <thead className="bg-slate-800">
           <tr>
-            {columns.map((column) => (
+            {columns.map((column, index) => (
               <th
                 key={column.key}
                 scope="col"
-                className={`px-3 py-3 text-xs font-medium text-sky-200 uppercase tracking-wider ${
+                className={`px-3 py-3 text-xs font-medium text-sky-200 tracking-wider ${
                   column.sortable ? 'cursor-pointer hover:bg-slate-700 transition-colors' : ''
                 } ${
                   sortBy === column.key ? 'bg-slate-700' : ''
+                } ${
+                  index === 0 ? 'sticky left-0 z-10 bg-slate-800' : ''
                 }`}
                 onClick={column.sortable ? () => handleSort(column.key) : undefined}
               >
@@ -258,17 +304,19 @@ export function PlayerStatsTable({
           </tr>
         </thead>
         <tbody className="bg-slate-700 divide-y divide-slate-600">
-          {sortedPlayers.map((player, index) => (
+          {sortedPlayers.map((player, rowIndex) => (
             <tr
               key={player.id}
               className={`${
-                index % 2 === 0 ? 'bg-slate-700' : 'bg-slate-800'
+                rowIndex % 2 === 0 ? 'bg-slate-700' : 'bg-slate-800'
               } hover:bg-slate-600 transition-colors`}
             >
-              {columns.map((column) => (
+              {columns.map((column, colIndex) => (
                 <td
                   key={column.key}
-                  className={`px-3 py-3 whitespace-nowrap text-sm ${column.className}`}
+                  className={`px-3 py-3 whitespace-nowrap text-sm ${column.className} ${
+                    colIndex === 0 ? `sticky left-0 z-10 ${rowIndex % 2 === 0 ? 'bg-slate-700' : 'bg-slate-800'}` : ''
+                  }`}
                 >
                   {column.render(player)}
                 </td>
@@ -277,6 +325,7 @@ export function PlayerStatsTable({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

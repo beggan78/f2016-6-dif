@@ -5,7 +5,7 @@ import '@testing-library/jest-dom';
 import { NavigationHistoryProvider } from '../contexts/NavigationHistoryContext';
 import { useScreenNavigation } from '../hooks/useNavigationHistory';
 import { VIEWS } from '../constants/viewConstants';
-import { StatsScreen } from '../components/stats/StatsScreen';
+import { GameFinishedScreen } from '../components/stats/GameFinishedScreen';
 import { MatchReportScreen } from '../components/report/MatchReportScreen';
 import { createMockPlayers } from '../components/__tests__/componentTestUtils';
 
@@ -51,11 +51,6 @@ const mockPlayers = createMockPlayers(5);
 
 const statsProps = {
   allPlayers: mockPlayers,
-  formatTime: (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  },
   setView: jest.fn(),
   setAllPlayers: jest.fn(),
   setSelectedSquadIds: jest.fn(),
@@ -108,7 +103,7 @@ function NavigationHarness() {
 
   if (view === VIEWS.STATS) {
     return (
-      <StatsScreen
+      <GameFinishedScreen
         {...statsProps}
         navigateToMatchReport={() => navigation.navigateTo(VIEWS.MATCH_REPORT)}
       />

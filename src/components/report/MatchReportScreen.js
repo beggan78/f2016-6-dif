@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { FileText, Clock, Users, Trophy, Settings } from 'lucide-react';
+import { FileText, Clock, Trophy, Settings } from 'lucide-react';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { hasPlayerParticipated } from '../../utils/playerUtils';
 
 // Placeholder imports - these components will be created next
 import { MatchSummaryHeader } from './MatchSummaryHeader';
-import { PlayerStatsTable } from './PlayerStatsTable';
 import { GameEventTimeline } from './GameEventTimeline';
 import { ReportControls } from './ReportControls';
 import { ReportSection } from './ReportSection';
@@ -179,16 +178,6 @@ export function MatchReportScreen({
               totalPeriods={totalPeriods}
               periodDurationMinutes={periodDurationMinutes}
               matchStartTime={matchStartTime}
-            />
-          </ReportSection>
-
-          {/* Player Statistics Section */}
-          <ReportSection icon={Users} title="Player Statistics">
-            <PlayerStatsTable
-              players={squadPlayers}
-              formation={formation}
-              matchEvents={matchEvents}
-              goalScorers={goalScorers}
             />
           </ReportSection>
 
