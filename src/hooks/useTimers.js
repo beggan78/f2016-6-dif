@@ -38,7 +38,7 @@ const calculateSubTimer = (lastSubstitutionTime, totalPausedDuration, pauseStart
   return Math.max(0, elapsedSeconds);
 };
 
-export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSounds = null, currentPeriodNumber = 1) {
+export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSounds = null, currentPeriodNumber = 1, isDisplayActive = true) {
   // Initialize timer state from localStorage or defaults
   const initializeTimerState = () => {
     const saved = loadTimerState();
@@ -118,7 +118,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         lastAlertTimeRef.current = null;
       }
     }
-  }, [subTimerSeconds, alertMinutes, playAlertSounds, hasPlayedAlert, isPeriodActive, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, periodStartTime, lastSubstitutionTime, totalPausedDuration, pauseStartTime]);
+  }, [subTimerSeconds, alertMinutes, playAlertSounds, hasPlayedAlert, isPeriodActive, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, periodStartTime, lastSubstitutionTime, totalPausedDuration, pauseStartTime, isDisplayActive]);
 
   // Timer display update effect - only triggers re-renders, doesn't save to localStorage
   useEffect(() => {
@@ -128,7 +128,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
       updateIntervalRef.current = null;
     }
     
-    if (isPeriodActive && periodStartTime) {
+    if (isDisplayActive && isPeriodActive && periodStartTime) {
       const updateDisplay = () => {
         setForceUpdateCounter(prev => prev + 1);
       };
@@ -154,7 +154,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-  }, [isPeriodActive, periodStartTime]);
+  }, [isDisplayActive, isPeriodActive, periodStartTime]);
 
   // Save timer state to localStorage with specific values (handles async state updates)
   const saveTimerStateWithOverrides = useCallback((overrides = {}) => {

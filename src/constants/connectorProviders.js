@@ -47,6 +47,7 @@ export const SYNC_JOB_STATUS = {
   RUNNING: 'running',
   COMPLETED: 'completed',
   FAILED: 'failed',
+  RETRYING: 'retrying',
   CANCELLED: 'cancelled'
 };
 
@@ -113,6 +114,12 @@ export function getSyncJobStatusStyle(status) {
         color: 'bg-yellow-600 text-yellow-100',
         icon: 'clock',
         label: 'Waiting'
+      };
+    case SYNC_JOB_STATUS.RETRYING:
+      return {
+        color: 'bg-amber-600 text-amber-100',
+        icon: 'refresh-cw',
+        label: 'Retrying'
       };
     case SYNC_JOB_STATUS.FAILED:
       return {

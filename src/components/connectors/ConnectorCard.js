@@ -30,6 +30,7 @@ const SYNC_JOB_ICON_MAP = {
   [SYNC_JOB_STATUS.COMPLETED]: CheckCircle,
   [SYNC_JOB_STATUS.RUNNING]: Loader,
   [SYNC_JOB_STATUS.FAILED]: XCircle,
+  [SYNC_JOB_STATUS.RETRYING]: RefreshCw,
   [SYNC_JOB_STATUS.WAITING]: Clock
 };
 
@@ -68,7 +69,8 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
     }).replace(',', '');
   };
 
-  const canSync = connector.status === CONNECTOR_STATUS.CONNECTED && !isSyncing;
+  const isRetrying = latestSyncJob?.status === SYNC_JOB_STATUS.RETRYING;
+  const canSync = connector.status === CONNECTOR_STATUS.CONNECTED && !isSyncing && !isRetrying;
   const hasError = connector.status === CONNECTOR_STATUS.ERROR;
 
   return (

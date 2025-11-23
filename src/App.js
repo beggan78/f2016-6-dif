@@ -113,7 +113,13 @@ function AppContent() {
     return navigationHistory.navigateBack(fallback);
   }, [navigationHistory]);
 
-  const timers = useTimers(gameState.periodDurationMinutes, gameState.alertMinutes, gameState.playAlertSounds, gameState.currentPeriodNumber);
+  const timers = useTimers(
+    gameState.periodDurationMinutes,
+    gameState.alertMinutes,
+    gameState.playAlertSounds,
+    gameState.currentPeriodNumber,
+    gameState.view === VIEWS.GAME
+  );
   const {
     showSessionWarning,
     sessionExpiry,
