@@ -314,6 +314,52 @@ describe('useTimers', () => {
 
       expect(result.current.matchTimerSeconds).toBe(890); // 900 - 10
     });
+
+    it('should not update timers when display is inactive', () => {
+      const { result } = renderHook(
+        ({ displayActive }) => useTimers(15, 0, null, 1, displayActive),
+        { initialProps: { displayActive: false } }
+      );
+
+      act(() => {
+        result.current.startTimers();
+      });
+
+      const initialMatchTimer = result.current.matchTimerSeconds;
+      const initialSubTimer = result.current.subTimerSeconds;
+
+      act(() => {
+        Date.now.mockReturnValue(1010000);
+        jest.advanceTimersByTime(5000);
+      });
+
+      expect(result.current.matchTimerSeconds).toBe(initialMatchTimer);
+      expect(result.current.subTimerSeconds).toBe(initialSubTimer);
+    });
+
+    it('should clean up interval when display becomes inactive', () => {
+      const setIntervalSpy = jest.spyOn(global, 'setInterval');
+      const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+
+      const { result, rerender } = renderHook(
+        ({ displayActive }) => useTimers(15, 0, null, 1, displayActive),
+        { initialProps: { displayActive: true } }
+      );
+
+      act(() => {
+        result.current.startTimers();
+      });
+
+      const intervalCalls = setIntervalSpy.mock.calls.length;
+
+      rerender({ displayActive: false });
+
+      expect(clearIntervalSpy).toHaveBeenCalled();
+      expect(setIntervalSpy.mock.calls.length).toBe(intervalCalls);
+
+      setIntervalSpy.mockRestore();
+      clearIntervalSpy.mockRestore();
+    });
   });
 
   describe('Substitution Timer Controls', () => {
