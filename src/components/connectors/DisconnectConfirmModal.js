@@ -63,11 +63,17 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
                 <ul className="text-rose-300 text-sm space-y-1">
                   <li>• Automatic data synchronization will stop</li>
                   <li>• Stored credentials will be removed</li>
-                  <li>• Existing attendance and match data will be preserved</li>
-                  <li>• You can reconnect at any time</li>
                 </ul>
               </div>
             </div>
+          </div>
+
+          {/* Reassurance */}
+          <div className="bg-slate-700 border border-slate-600 rounded-lg p-4 mb-6">
+            <ul className="text-slate-200 text-sm space-y-1">
+              <li>• Existing attendance and match data will be preserved</li>
+              <li>• You can reconnect at any time</li>
+            </ul>
           </div>
 
           {/* Error Message */}
