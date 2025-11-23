@@ -118,7 +118,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
         lastAlertTimeRef.current = null;
       }
     }
-  }, [subTimerSeconds, alertMinutes, playAlertSounds, hasPlayedAlert, isPeriodActive, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, periodStartTime, lastSubstitutionTime, totalPausedDuration, pauseStartTime]);
+  }, [subTimerSeconds, alertMinutes, playAlertSounds, hasPlayedAlert, isPeriodActive, isSubTimerPaused, currentPeriodNumber, matchTimerSeconds, periodStartTime, lastSubstitutionTime, totalPausedDuration, pauseStartTime, isDisplayActive]);
 
   // Timer display update effect - only triggers re-renders, doesn't save to localStorage
   useEffect(() => {

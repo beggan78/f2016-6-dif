@@ -67,9 +67,16 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 ### Team Connectors & External Platform Integration
 
 **Async Architecture** - UI → Edge Function → Database → Scraper (background):
-- Connector status flow: UI stores credentials → Edge Function encrypts → `verifying` status → Scraper processes → `connected`/`error`
+- Connector status flow: UI stores credentials → Edge Function encrypts → `verifying` status → Scraper processes → `connected`/`error`/`retrying`
 - Verification is **not immediate** - scraper processes queued jobs asynchronously
 - Schema: `supabase/migrations/20251030000000_team_connectors.sql`
+
+**Retry Behavior**:
+- Failed sync jobs automatically transition to `retrying` status
+- Maximum retry attempts: 5 (tracked via `failure_count` field)
+- After 5 failed attempts, status transitions to `error`
+- Each retry increments `failure_count` and updates `last_error` with failure details
+- Successful retry resets `failure_count` to 0 and transitions to `connected`
 
 **Encryption Pattern** (Edge Function: `supabase/functions/connect-provider/index.ts`):
 - AES-256-GCM with PBKDF2 key derivation (310,000 iterations)
