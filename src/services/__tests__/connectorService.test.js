@@ -328,6 +328,66 @@ describe('connectorService', () => {
         }
       ]);
     });
+
+    it('deduplicates matched attendance records per connector using the latest sync', async () => {
+      const connectors = [
+        { id: 'connector-1', provider: 'sportadmin', status: 'connected', team_id: 'team-1' }
+      ];
+      const connectorOrder = jest.fn().mockResolvedValue({ data: connectors, error: null });
+      const connectorEq = jest.fn(() => ({ order: connectorOrder }));
+      const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
+
+      const attendanceRecords = [
+        {
+          id: 'att-old',
+          player_id: 'player-1',
+          player_name: 'Ebba Yngbrant',
+          last_synced_at: '2024-01-10T00:00:00Z',
+          connector: connectors[0]
+        },
+        {
+          id: 'att-new',
+          player_id: 'player-1',
+          player_name: 'Ebba Yngbrant',
+          last_synced_at: '2024-02-15T00:00:00Z',
+          connector: connectors[0]
+        }
+      ];
+
+      const attendanceEq = jest.fn().mockResolvedValue({
+        data: attendanceRecords,
+        error: null
+      });
+      const attendanceSelect = jest.fn(() => ({ eq: attendanceEq }));
+
+      supabase.from.mockImplementation(table => {
+        if (table === 'connector') {
+          return { select: connectorSelect };
+        }
+        if (table === 'player_attendance') {
+          return { select: attendanceSelect };
+        }
+        return { select: jest.fn() };
+      });
+
+      const result = await getPlayerConnectionDetails('team-1');
+
+      expect(result.hasConnectedProvider).toBe(true);
+      expect(result.matchedConnections.size).toBe(1);
+
+      const connections = result.matchedConnections.get('player-1');
+      expect(connections).toEqual([
+        {
+          attendanceId: 'att-new',
+          providerName: 'SportAdmin',
+          providerId: 'sportadmin',
+          playerNameInProvider: 'Ebba Yngbrant',
+          lastSynced: '2024-02-15T00:00:00Z',
+          connectorStatus: 'connected',
+          connectorId: 'connector-1'
+        }
+      ]);
+    });
   });
 
   describe('getRecentSyncJobs', () => {
