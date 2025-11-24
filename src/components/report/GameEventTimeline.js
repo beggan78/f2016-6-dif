@@ -18,6 +18,7 @@ import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
+import { TEAM_CONFIG } from '../../constants/teamConstants';
 
 // Timeline preferences persistence manager
 const timelinePrefsManager = createPersistenceManager(STORAGE_KEYS.TIMELINE_PREFERENCES, {
@@ -50,7 +51,7 @@ export function GameEventTimeline({
   goalScorers = {},
   getPlayerName,
   onGoalClick,
-  ownTeamName = "Djurgården",
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   opponentTeam = "Opponent",
   matchStartTime,
   filterType = 'all',
@@ -316,7 +317,7 @@ export function GameEventTimeline({
       case EVENT_TYPES.PERIOD_END:
         return `Period ${eventData.periodNumber || 'Unknown'} ended`;
       case EVENT_TYPES.GOAL_SCORED:
-        // Extract score data for new format: "3-2 - Djurgården Scored - PlayerName"
+        // Extract score data for new format: "3-2 - Own Team Scored - PlayerName"
         const ownScore = eventData.ownScore;
         const opponentScore = eventData.opponentScore;
         const ownScorer = goalScorers[event.id]

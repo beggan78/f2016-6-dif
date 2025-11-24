@@ -295,7 +295,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           id="clubLongName"
           value={clubForm.longName}
           onChange={(e) => setClubForm(prev => ({ ...prev, longName: sanitizeNameInput(e.target.value) }))}
-          placeholder="e.g., Djurgårdens IF FF"
+          placeholder="e.g., Sample Football Club"
           className={errors.clubLongName ? 'border-rose-500' : ''}
         />
         {errors.clubLongName && (

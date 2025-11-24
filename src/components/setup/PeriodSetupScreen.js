@@ -5,6 +5,7 @@ import { getPlayerLabel } from '../../utils/formatUtils';
 import { getPlayerDisplayName as getPlayerDisplayNameUtil, getPlayerDisplayNameById as getPlayerDisplayNameByIdUtil } from '../../utils/playerUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
+import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { useTeam } from '../../contexts/TeamContext';
 import { getPlayerStats } from '../../services/matchStateManager';
 
@@ -106,6 +107,7 @@ export function PeriodSetupScreen({
   ownScore,
   opponentScore,
   opponentTeam,
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   rotationQueue,
   setRotationQueue,
   preparePeriodWithGameLog,
@@ -885,7 +887,7 @@ export function PeriodSetupScreen({
         <div className="flex items-center justify-center space-x-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-sky-400">{ownScore}</div>
-            <div className="text-xs text-slate-300 font-semibold">Djurgården</div>
+            <div className="text-xs text-slate-300 font-semibold">{ownTeamName}</div>
           </div>
           <div className="text-xl font-mono font-bold text-slate-400">-</div>
           <div className="text-center">

@@ -8,6 +8,7 @@ import { hasPlayerParticipated } from '../../utils/playerUtils';
 import { updateMatchToConfirmed } from '../../services/matchStateManager';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { PlayerStatsTable } from '../report/PlayerStatsTable';
+import { TEAM_CONFIG } from '../../constants/teamConstants';
 
 export function GameFinishedScreen({
   allPlayers,
@@ -38,7 +39,8 @@ export function GameFinishedScreen({
   // New props for MatchSummaryHeader and PlayerStatsTable
   matchStartTime,
   periodDurationMinutes = 12,
-  formation = {}
+  formation = {},
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME
 }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -193,7 +195,7 @@ export function GameFinishedScreen({
       {/* Match Summary */}
       <div className="p-4 bg-slate-700 rounded-lg">
         <MatchSummaryHeader
-          ownTeamName="Djurgården"
+          ownTeamName={ownTeamName}
           opponentTeam={opponentTeam || 'Opponent'}
           ownScore={ownScore}
           opponentScore={opponentScore}

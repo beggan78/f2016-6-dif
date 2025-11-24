@@ -27,7 +27,7 @@ describe('MatchSummaryHeader', () => {
 
   beforeEach(() => {
     defaultProps = {
-      ownTeamName: 'Djurgården',
+      ownTeamName: 'Own Team',
       opponentTeam: 'Hammarby',
       ownScore: 2,
       opponentScore: 1,
@@ -45,7 +45,7 @@ describe('MatchSummaryHeader', () => {
       render(<MatchSummaryHeader />);
       
       // Check default team names
-      expect(screen.getByText('Djurgården')).toBeInTheDocument();
+      expect(screen.getByText('Own Team')).toBeInTheDocument();
       expect(screen.getByText('Opponent')).toBeInTheDocument();
       
       // Check default scores
@@ -56,7 +56,7 @@ describe('MatchSummaryHeader', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
       // Check custom team names
-      expect(screen.getByText('Djurgården')).toBeInTheDocument();
+      expect(screen.getByText('Own Team')).toBeInTheDocument();
       expect(screen.getByText('Hammarby')).toBeInTheDocument();
       
       // Check custom scores
@@ -83,7 +83,7 @@ describe('MatchSummaryHeader', () => {
       expect(screen.getByText('-')).toBeInTheDocument();
       
       // Check for winner indication
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
     });
 
     it('renders team names with proper styling and truncation', () => {
@@ -277,7 +277,7 @@ describe('MatchSummaryHeader', () => {
         />
       );
       
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
       
       // Check score styling - own score should be winner (emerald)
       const ownScoreElement = screen.getByText('3');
@@ -356,7 +356,7 @@ describe('MatchSummaryHeader', () => {
         />
       );
       
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
       expect(screen.getByText('15')).toBeInTheDocument();
       expect(screen.getByText('12')).toBeInTheDocument();
     });
@@ -381,7 +381,7 @@ describe('MatchSummaryHeader', () => {
     it('displays default team names when not provided', () => {
       render(<MatchSummaryHeader />);
       
-      expect(screen.getByText('Djurgården')).toBeInTheDocument();
+      expect(screen.getByText('Own Team')).toBeInTheDocument();
       expect(screen.getByText('Opponent')).toBeInTheDocument();
     });
 
@@ -413,7 +413,7 @@ describe('MatchSummaryHeader', () => {
     it('applies correct CSS classes to team name elements', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
-      const ownTeamElement = screen.getByText('Djurgården');
+      const ownTeamElement = screen.getByText('Own Team');
       const opponentTeamElement = screen.getByText('Hammarby');
       
       // Check team name styling
@@ -526,7 +526,7 @@ describe('MatchSummaryHeader', () => {
       
       expect(screen.getByText('-1')).toBeInTheDocument();
       expect(screen.getByText('-2')).toBeInTheDocument();
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument(); // -1 > -2
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument(); // -1 > -2
     });
 
     it('handles very large scores', () => {
@@ -568,7 +568,7 @@ describe('MatchSummaryHeader', () => {
       // Should still work with string values
       expect(screen.getByText('2')).toBeInTheDocument();
       expect(screen.getByText('1')).toBeInTheDocument();
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
     });
   });
 
@@ -591,7 +591,7 @@ describe('MatchSummaryHeader', () => {
     it('renders result indicator with trophy icon', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
-      const resultText = screen.getByText('Djurgården wins');
+      const resultText = screen.getByText('Own Team wins');
       expect(resultText).toHaveClass('text-slate-300');
       
       // Check that result indicator section exists
@@ -723,7 +723,7 @@ describe('MatchSummaryHeader', () => {
       
       expect(screen.getByText('2.5')).toBeInTheDocument();
       expect(screen.getByText('1.5')).toBeInTheDocument();
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
     });
 
     it('handles zero vs positive score edge case', () => {
@@ -752,7 +752,7 @@ describe('MatchSummaryHeader', () => {
         />
       );
       
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
     });
 
     it('handles NaN scores gracefully', () => {
@@ -781,7 +781,7 @@ describe('MatchSummaryHeader', () => {
         />
       );
       
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
     });
   });
 
@@ -887,7 +887,7 @@ describe('MatchSummaryHeader', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
       // Check team names have appropriate font sizes
-      const ownTeam = screen.getByText('Djurgården');
+      const ownTeam = screen.getByText('Own Team');
       const opponentTeam = screen.getByText('Hammarby');
       expect(ownTeam).toHaveClass('text-lg', 'font-semibold');
       expect(opponentTeam).toHaveClass('text-lg', 'font-semibold');
@@ -933,7 +933,7 @@ describe('MatchSummaryHeader', () => {
       render(<MatchSummaryHeader {...defaultProps} />);
       
       // Test that important information is available as text content
-      expect(screen.getByText('Djurgården wins')).toBeInTheDocument();
+      expect(screen.getByText('Own Team wins')).toBeInTheDocument();
       expect(screen.getByText('2 × 12min')).toBeInTheDocument();
       
       // Ensure score values are clearly readable
@@ -1203,7 +1203,7 @@ describePerformance('MatchSummaryHeader Performance', () => {
 
   beforeEach(() => {
     defaultProps = {
-      ownTeamName: 'Djurgården',
+      ownTeamName: 'Own Team',
       opponentTeam: 'Hammarby',
       ownScore: 2,
       opponentScore: 1,

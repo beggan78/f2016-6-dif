@@ -180,7 +180,7 @@ describe('GameScreen', () => {
     
     require('../../../hooks/useTeamNameAbbreviation').useTeamNameAbbreviation.mockReturnValue({
       scoreRowRef: { current: null },
-      displayOwnTeam: 'Djurgården',
+      displayOwnTeam: 'Own Team',
       displayOpponentTeam: 'Test Opponent'
     });
     
@@ -263,7 +263,7 @@ describe('GameScreen', () => {
       
       expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
       expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
-      expect(screen.getByText('Djurgården')).toBeInTheDocument();
+      expect(screen.getByText('Own Team')).toBeInTheDocument();
       expect(screen.getByText('Test Opponent')).toBeInTheDocument();
     });
 
@@ -320,7 +320,7 @@ describe('GameScreen', () => {
       
       require('../../../hooks/useTeamNameAbbreviation').useTeamNameAbbreviation.mockReturnValue({
         scoreRowRef: { current: null },
-        displayOwnTeam: 'Djurgården',
+        displayOwnTeam: 'Own Team',
         displayOpponentTeam: 'Opponent'
       });
       

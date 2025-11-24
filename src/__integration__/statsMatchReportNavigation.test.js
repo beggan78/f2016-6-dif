@@ -88,7 +88,7 @@ const reportProps = {
   ownScore: 3,
   opponentScore: 2,
   periodDurationMinutes: 12,
-  ownTeamName: 'Djurgården',
+  ownTeamName: 'Own Team',
   opponentTeam: 'Rivals',
   goalScorers: {},
   onGoalClick: jest.fn(),
