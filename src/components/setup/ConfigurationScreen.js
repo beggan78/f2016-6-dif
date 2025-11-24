@@ -21,7 +21,7 @@ import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
-import { discardPendingMatch } from '../../services/matchStateManager';
+import { discardPendingMatch, getPlayerStats } from '../../services/matchStateManager';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
 import { suggestUpcomingOpponent } from '../../services/opponentPrefillService';
 
@@ -90,6 +90,7 @@ export function ConfigurationScreen({
   const [resumeData, setResumeData] = useState(null);
   // Track if current match is a resumed match to prevent inappropriate state clearing
   const [isResumedMatch, setIsResumedMatch] = useState(false);
+  const [captainHistoryCounts, setCaptainHistoryCounts] = useState({});
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const effectiveVenueType = venueType ?? DEFAULT_VENUE_TYPE;
@@ -142,6 +143,53 @@ export function ConfigurationScreen({
       setPendingMatchModalClosed(false);
     }
   }, [user?.id]);
+
+  // Load captain history for dropdown context (last 6 months)
+  React.useEffect(() => {
+    let isActive = true;
+
+    const fetchCaptainHistory = async () => {
+      if (!isAuthenticated || !currentTeam?.id) {
+        setCaptainHistoryCounts({});
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(now.getMonth() - 6);
+
+        const result = await getPlayerStats(currentTeam.id, sixMonthsAgo, now);
+        if (!isActive) {
+          return;
+        }
+
+        if (result?.success && Array.isArray(result.players)) {
+          const captainCounts = {};
+          result.players.forEach(player => {
+            captainCounts[player.id] = player.matchesAsCaptain || 0;
+          });
+          setCaptainHistoryCounts(captainCounts);
+        } else {
+          if (result?.error) {
+            console.error('Failed to load captain history:', result.error);
+          }
+          setCaptainHistoryCounts({});
+        }
+      } catch (error) {
+        if (isActive) {
+          setCaptainHistoryCounts({});
+        }
+        console.error('Captain history load error:', error);
+      }
+    };
+
+    fetchCaptainHistory();
+
+    return () => {
+      isActive = false;
+    };
+  }, [isAuthenticated, currentTeam?.id]);
   
   // Function to load pending matches with error handling
   const loadPendingMatches = React.useCallback(async (teamId, showLoadingState = false) => {
@@ -755,6 +803,21 @@ export function ConfigurationScreen({
 
     setCaptain(captainId);
   };
+
+  const captainOptions = React.useMemo(() => {
+    const squadOptions = selectedSquadPlayers.map(player => {
+      const captainCount = captainHistoryCounts[player.id] ?? 0;
+      return {
+        value: player.id,
+        label: `${formatPlayerName(player)} (${captainCount})`
+      };
+    });
+
+    return [
+      { value: "", label: "No Captain" },
+      ...squadOptions
+    ];
+  }, [captainHistoryCounts, selectedSquadPlayers]);
 
   const setOpponentTeamValue = React.useCallback((value, options = {}) => {
     const { markActive = true } = options;
@@ -1391,10 +1454,7 @@ export function ConfigurationScreen({
               id="captain"
               value={captainId || ""}
               onChange={value => handleCaptainChange(value)}
-              options={[
-                { value: "", label: "No Captain" },
-                ...selectedSquadPlayers.map(p => ({ value: p.id, label: formatPlayerName(p) }))
-              ]}
+              options={captainOptions}
             />
             <p className="text-xs text-slate-400 mt-1">Optional - select a team captain for this game</p>
           </div>
