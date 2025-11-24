@@ -413,11 +413,29 @@ export async function getPlayerConnectionDetails(teamId) {
     };
 
     if (record.player_id) {
-      // Matched connection
-      if (!matchedConnections.has(record.player_id)) {
-        matchedConnections.set(record.player_id, []);
+      // Matched connection - keep only the latest record per connector to avoid duplicates
+      const existingConnections = matchedConnections.get(record.player_id) || [];
+      const existingIndex = existingConnections.findIndex(
+        conn => conn.connectorId === connector.id
+      );
+
+      if (existingIndex === -1) {
+        matchedConnections.set(record.player_id, [...existingConnections, connectionDetail]);
+      } else {
+        const existingConnection = existingConnections[existingIndex];
+        const existingSynced = existingConnection.lastSynced
+          ? new Date(existingConnection.lastSynced).getTime()
+          : 0;
+        const newSynced = connectionDetail.lastSynced
+          ? new Date(connectionDetail.lastSynced).getTime()
+          : 0;
+
+        // Replace the stored connection if this record is more recent
+        const shouldReplace = newSynced > existingSynced;
+        const updatedConnections = [...existingConnections];
+        updatedConnections[existingIndex] = shouldReplace ? connectionDetail : existingConnection;
+        matchedConnections.set(record.player_id, updatedConnections);
       }
-      matchedConnections.get(record.player_id).push(connectionDetail);
     } else {
       // Unmatched attendance record
       unmatchedAttendance.push(connectionDetail);
