@@ -115,7 +115,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
       {latestSyncJob && (
         <div className="bg-slate-800 rounded-lg p-3 mb-4 border border-slate-600">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-300 text-sm font-medium">Latest Sync</span>
+            <span className="text-slate-300 text-sm font-medium">Connection Created</span>
             <StatusBadge
               icon={syncJobIcon}
               iconClassName={`w-3 h-3 ${latestSyncJob.status === SYNC_JOB_STATUS.RUNNING ? 'animate-spin' : ''}`}
