@@ -96,14 +96,14 @@ describe('GameEventTimeline', () => {
         events={sampleEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
 
     // Check that events are displayed
     expect(screen.getByText('Match started')).toBeInTheDocument();
-    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
+    expect(screen.getByText('1-0 Own Team Scored - Alice')).toBeInTheDocument();
     expect(screen.getByText('Substitution: Bob (Out) → Charlie (In)')).toBeInTheDocument();
 
     // Check event count
@@ -147,12 +147,12 @@ describe('GameEventTimeline', () => {
         events={goalEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
 
-    expect(screen.getByText('Goal for Djurgården - Alice')).toBeInTheDocument();
+    expect(screen.getByText('Goal for Own Team - Alice')).toBeInTheDocument();
     expect(screen.getByText('Goal for Opponent')).toBeInTheDocument();
   });
 
@@ -239,12 +239,12 @@ describe('GameEventTimeline', () => {
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
         onGoalClick={mockOnGoalClick}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
       />
     );
 
     // Click on the goal event
-    fireEvent.click(screen.getByText('Goal for Djurgården - Alice'));
+    fireEvent.click(screen.getByText('Goal for Own Team - Alice'));
 
     expect(mockOnGoalClick).toHaveBeenCalledWith(goalEvent);
   });
@@ -324,13 +324,13 @@ describe('GameEventTimeline', () => {
       <GameEventTimeline
         events={[goalEvent]}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         // No getPlayerName prop provided
       />
     );
 
     // Should still render but with "Unknown scorer"
-    expect(screen.getByText('Goal for Djurgården - Unknown scorer')).toBeInTheDocument();
+    expect(screen.getByText('Goal for Own Team - Unknown scorer')).toBeInTheDocument();
   });
 
   it('displays periods with headers and intermissions', () => {
@@ -434,7 +434,7 @@ describe('GameEventTimeline', () => {
         events={multiPeriodEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
@@ -449,7 +449,7 @@ describe('GameEventTimeline', () => {
     expect(screen.getByText('3:00')).toBeInTheDocument(); // 3 minutes duration
 
     // Check that events are properly grouped
-    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument(); // Period 1 goal
+    expect(screen.getByText('1-0 Own Team Scored - Alice')).toBeInTheDocument(); // Period 1 goal
     expect(screen.getByText('1-1 Opponent Scored')).toBeInTheDocument(); // Period 2 goal
   });
 
@@ -516,7 +516,7 @@ describe('GameEventTimeline', () => {
       <GameEventTimeline
         events={shortIntermissionEvents}
         getPlayerName={mockGetPlayerName}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
       />
     );
 
@@ -555,12 +555,12 @@ describe('GameEventTimeline', () => {
         events={eventsWithoutPeriods}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
       />
     );
 
     // Should show the event and group it in period 1, but period header only shows for period > 1
-    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
+    expect(screen.getByText('1-0 Own Team Scored - Alice')).toBeInTheDocument();
     expect(screen.getByText('1 events')).toBeInTheDocument();
   });
 
@@ -595,7 +595,7 @@ describe('GameEventTimeline', () => {
       <GameEventTimeline
         events={individualSubstitutionEvents}
         getPlayerName={mockGetPlayerName}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
       />
     );
 
@@ -721,7 +721,7 @@ describe('GameEventTimeline', () => {
         events={eventsWithSubstitution}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
         selectedPlayerId="player1"
         availablePlayers={availablePlayers}
@@ -732,7 +732,7 @@ describe('GameEventTimeline', () => {
     expect(screen.getByText('Match started')).toBeInTheDocument();
     
     // Should show goal scored by Alice (player1)
-    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
+    expect(screen.getByText('1-0 Own Team Scored - Alice')).toBeInTheDocument();
     
     // Should show substitution involving Alice (player1)
     expect(screen.getByText('Substitution: Alice (Out) → Bob (In)')).toBeInTheDocument();
@@ -796,7 +796,7 @@ describe('GameEventTimeline', () => {
         events={eventsWithMultipleEvents}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
         selectedPlayerId="player1"
         availablePlayers={availablePlayers}
@@ -807,7 +807,7 @@ describe('GameEventTimeline', () => {
     expect(screen.getByText('Match started')).toBeInTheDocument();
     
     // Should show goal scored by Alice (player1)
-    expect(screen.getByText('1-0 Djurgården Scored - Alice')).toBeInTheDocument();
+    expect(screen.getByText('1-0 Own Team Scored - Alice')).toBeInTheDocument();
     
     // Should NOT show substitution not involving Alice
     expect(screen.queryByText('Substitution: Bob (Out) → Charlie (In)')).not.toBeInTheDocument();
@@ -1222,7 +1222,7 @@ describe('GameEventTimeline', () => {
             events={malformedEvents}
             getPlayerName={mockGetPlayerName}
             goalScorers={mockGoalScorers}
-            ownTeamName="Djurgården"
+            ownTeamName="Own Team"
           />
         );
       }).not.toThrow();
@@ -1231,7 +1231,7 @@ describe('GameEventTimeline', () => {
       expect(screen.getByText('2 events')).toBeInTheDocument();
       expect(screen.getByText('Substitution: Unknown (Out) → Unknown (In)')).toBeInTheDocument();
       // The goal event without goal scorer attribution would show this format
-      expect(screen.getByText(/Goal for Djurgården/)).toBeInTheDocument();
+      expect(screen.getByText(/Goal for Own Team/)).toBeInTheDocument();
     });
 
     it('should handle null data gracefully', () => {
@@ -1254,13 +1254,13 @@ describe('GameEventTimeline', () => {
             events={[eventWithNullData]}
             getPlayerName={mockGetPlayerName}
             goalScorers={mockGoalScorers}
-            ownTeamName="Djurgården"
+            ownTeamName="Own Team"
           />
         );
       }).not.toThrow();
       
       // Should render the event with fallback text for missing data
-      expect(screen.getByText(/Goal for Djurgården/)).toBeInTheDocument();
+      expect(screen.getByText(/Goal for Own Team/)).toBeInTheDocument();
     });
 
     it('should handle events with missing or null player IDs', () => {
@@ -1395,11 +1395,11 @@ describe('GameEventTimeline', () => {
           getPlayerName={mockGetPlayerName}
           goalScorers={mockGoalScorers}
           onGoalClick={mockOnGoalClick}
-          ownTeamName="Djurgården"
+          ownTeamName="Own Team"
         />
       );
 
-      const goalElement = screen.getByText(/Goal for Djurgården.*Unknown scorer/).closest('div');
+      const goalElement = screen.getByText(/Goal for Own Team.*Unknown scorer/).closest('div');
       
       // Test that the element is clickable (click should work)
       fireEvent.click(goalElement);

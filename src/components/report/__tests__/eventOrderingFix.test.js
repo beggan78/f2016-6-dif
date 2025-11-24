@@ -77,16 +77,16 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
 
-    const allEvents = screen.getAllByText(/Match started|1-0 Djurgården Scored|Match ended/);
+    const allEvents = screen.getAllByText(/Match started|1-0 Own Team Scored|Match ended/);
     
     // Check that Match started appears first
     expect(allEvents[0]).toHaveTextContent('Match started');
-    expect(allEvents[1]).toHaveTextContent('1-0 Djurgården Scored');
+    expect(allEvents[1]).toHaveTextContent('1-0 Own Team Scored');
     expect(allEvents[2]).toHaveTextContent('Match ended');
   });
 
@@ -137,7 +137,7 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
@@ -177,7 +177,7 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
@@ -187,7 +187,7 @@ describe('Event Ordering Fix', () => {
     
     // Should show the match start and goal events
     expect(screen.getByText('Match started')).toBeInTheDocument();
-    expect(screen.getByText('1-0 Djurgården Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
+    expect(screen.getByText('1-0 Own Team Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
   });
 
   it('should show period headers for periods > 1', () => {
@@ -238,7 +238,7 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
@@ -251,8 +251,8 @@ describe('Event Ordering Fix', () => {
     
     // Should show the match start and goal events
     expect(screen.getByText('Match started')).toBeInTheDocument();
-    expect(screen.getByText('1-0 Djurgården Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
-    expect(screen.getByText('2-0 Djurgården Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
+    expect(screen.getByText('1-0 Own Team Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
+    expect(screen.getByText('2-0 Own Team Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
   });
 
   it('should handle events with no match start or end events', () => {
@@ -284,7 +284,7 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
       />
     );
@@ -295,7 +295,7 @@ describe('Event Ordering Fix', () => {
     
     // Should show period start and goal events
     expect(screen.getByText('Period 1 started')).toBeInTheDocument();
-    expect(screen.getByText('1-0 Djurgården Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
+    expect(screen.getByText('1-0 Own Team Scored')).toBeInTheDocument(); // Without scorer name since goal scorer mapping issue
   });
 
   it('should display SUBSTITUTION_UNDONE events in the correct period section', () => {
@@ -366,7 +366,7 @@ describe('Event Ordering Fix', () => {
         events={events}
         getPlayerName={mockGetPlayerName}
         goalScorers={mockGoalScorers}
-        ownTeamName="Djurgården"
+        ownTeamName="Own Team"
         opponentTeam="Opponent"
         debugMode={true} // Enable debug mode to show SUBSTITUTION_UNDONE events
       />

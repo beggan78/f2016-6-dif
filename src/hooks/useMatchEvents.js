@@ -22,7 +22,7 @@ export function useMatchEvents(initialState = {}) {
   const [lastEventBackup, setLastEventBackup] = useState(initialState.lastEventBackup || null);
 
   // Score state
-  const [ownScore, setOwnScore] = useState(initialState.ownScore || 0); // Djurgården score
+  const [ownScore, setOwnScore] = useState(initialState.ownScore || 0); // Own team score
   const [opponentScore, setOpponentScore] = useState(initialState.opponentScore || 0); // Opponent score
 
   // Event logger synchronization

@@ -15,7 +15,7 @@ export function PlayerChip({
 }) {
   const chipClasses = CHIP_COLORS[color] || CHIP_COLORS.white;
   
-  // Special styling for Djurgården striped jersey
+  // Special styling for striped jersey pattern
   const isDjurgarden = color === 'djurgarden';
 
   const playerChipClasses = `
@@ -42,7 +42,7 @@ export function PlayerChip({
       style={style}
       className={playerChipClasses}
     >
-      {/* Djurgården striped pattern (winner: #3 - slightly thicker stripes) */}
+      {/* Striped jersey pattern (winner: #3 - slightly thicker stripes) */}
       {isDjurgarden && (
         <div className="absolute inset-0 rounded-full overflow-hidden bg-sky-400">
           <div className="absolute top-0 bottom-0 bg-blue-800" style={{left: '13.5%', width: '16%'}}></div>

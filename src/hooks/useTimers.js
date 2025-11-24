@@ -321,7 +321,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
           timestamp: now,
           periodDurationMinutes,
           teamConfig,
-          ownTeamName: ownTeamName || 'Djurgården',
+          ownTeamName: ownTeamName || 'Own Team',
           opponentTeam: opponentTeam || 'Opponent',
           numPeriods: numPeriods || 2, // Total number of periods planned for the match
           matchMetadata: {

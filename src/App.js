@@ -11,6 +11,7 @@ import { calculateUndoTimerTarget } from './game/time/timeCalculator';
 import { initializePlayers } from './utils/playerUtils';
 import { initialRoster } from './constants/defaultData';
 import { VIEWS } from './constants/viewConstants';
+import { TEAM_CONFIG } from './constants/teamConstants';
 import { clearAllEvents } from './utils/gameEventLogger';
 import { ConfigurationScreen } from './components/setup/ConfigurationScreen';
 import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
@@ -139,6 +140,13 @@ function AppContent() {
     canManageTeam,
     isMatchRunning
   } = useTeam();
+
+  const ownTeamName = useMemo(() => {
+    if (user && currentTeam?.club?.name) {
+      return currentTeam.club.name;
+    }
+    return TEAM_CONFIG.OWN_TEAM_NAME;
+  }, [user, currentTeam]);
 
   // Authentication modal
   const authModal = useAuthModal();
@@ -674,7 +682,7 @@ function AppContent() {
     timers.startTimers(
       gameState.currentPeriodNumber,
       gameState.teamConfig,
-      'Djurgården', // Own team name
+      ownTeamName, // Own team name
       gameState.opponentTeam,
       gameState.formation,
       gameState.numPeriods,
@@ -989,6 +997,7 @@ function AppContent() {
             ownScore={gameState.ownScore}
             opponentScore={gameState.opponentScore}
             opponentTeam={gameState.opponentTeam}
+            ownTeamName={ownTeamName}
             rotationQueue={gameState.rotationQueue}
             setRotationQueue={gameState.setRotationQueue}
             preparePeriodWithGameLog={gameState.preparePeriodWithGameLog}
@@ -1025,6 +1034,7 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
             alertMinutes={gameState.alertMinutes}
+            ownTeamName={ownTeamName}
             togglePlayerInactive={gameState.togglePlayerInactive}
             switchPlayerPositions={gameState.switchPlayerPositions}
             rotationQueue={gameState.rotationQueue}
@@ -1084,6 +1094,7 @@ function AppContent() {
             periodDurationMinutes={gameState.periodDurationMinutes}
             gameLog={gameState.gameLog}
             formation={gameState.formation}
+            ownTeamName={ownTeamName}
         />
       );
       case VIEWS.MATCH_REPORT:
@@ -1097,7 +1108,7 @@ function AppContent() {
             opponentScore={gameState.opponentScore}
             periodDurationMinutes={gameState.periodDurationMinutes}
             teamConfig={gameState.teamConfig}
-            ownTeamName={selectedSquadPlayers ? 'Djurgården' : 'Own'}
+            ownTeamName={ownTeamName}
             opponentTeam={gameState.opponentTeam || 'Opponent'}
             onNavigateBack={() => navigateBack(VIEWS.STATS)}
             goalScorers={gameState.goalScorers || {}}

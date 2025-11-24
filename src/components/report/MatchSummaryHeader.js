@@ -1,12 +1,13 @@
 import React from 'react';
 import { Clock, Trophy, Calendar, Timer } from 'lucide-react';
 import { formatTime } from '../../utils/formatUtils';
+import { TEAM_CONFIG } from '../../constants/teamConstants';
 
 /**
  * MatchSummaryHeader - Displays match summary information
  * 
  * @param {Object} props - Component props
- * @param {string} props.ownTeamName - Own team name (default: "Djurgården")
+ * @param {string} props.ownTeamName - Own team name (default: "Own Team")
  * @param {string} props.opponentTeam - Opponent team name
  * @param {number} props.ownScore - Own team score
  * @param {number} props.opponentScore - Opponent team score
@@ -16,7 +17,7 @@ import { formatTime } from '../../utils/formatUtils';
  * @param {number} props.periodDurationMinutes - Duration of each period in minutes
  */
 export function MatchSummaryHeader({
-  ownTeamName = "Djurgården",
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   opponentTeam = "Opponent",
   ownScore = 0,
   opponentScore = 0,

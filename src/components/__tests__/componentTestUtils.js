@@ -238,7 +238,7 @@ export const createMockHooks = () => ({
   
   useTeamNameAbbreviation: jest.fn(() => ({
     scoreRowRef: { current: null },
-    displayOwnTeam: 'Djurgården',
+    displayOwnTeam: 'Own Team',
     displayOpponentTeam: 'Test Opponent'
   })),
   

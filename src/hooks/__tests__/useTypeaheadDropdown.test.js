@@ -45,8 +45,8 @@ describe('useTypeaheadDropdown', () => {
   });
 
   it('initializes with provided initial value', () => {
-    const { getByTestId } = render(<TestComponent initialValue="Djurgården" />);
-    expect(getByTestId('query-value').textContent).toBe('Djurgården');
+    const { getByTestId } = render(<TestComponent initialValue="Own Team" />);
+    expect(getByTestId('query-value').textContent).toBe('Own Team');
   });
 
   it('opens on focus and closes on blur after delay', () => {

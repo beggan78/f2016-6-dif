@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
+import { TEAM_CONFIG } from '../../constants/teamConstants';
 
 export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
@@ -530,7 +531,7 @@ export function ScoreEditModal({
   onSave, 
   ownScore,
   opponentScore,
-  ownTeamName = "Djurgården",
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   opponentTeam = "Opponent"
 }) {
   const [editOwnScore, setEditOwnScore] = React.useState(ownScore);
@@ -639,7 +640,7 @@ export function ScoreManagerModal({
   onCancel, 
   ownScore,
   opponentScore,
-  ownTeamName = "Djurgården",
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   opponentTeam = "Opponent",
   matchEvents = [],
   goalScorers = {},

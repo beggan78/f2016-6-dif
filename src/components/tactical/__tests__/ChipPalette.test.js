@@ -141,7 +141,7 @@ describe('ChipPalette', () => {
       );
     });
 
-    it('should call onDragStart with correct data for Djurgården chip', () => {
+    it('should call onDragStart with correct data for striped chip', () => {
       render(<ChipPalette {...defaultProps} />);
       
       fireEvent.pointerDown(screen.getByTestId('palette-player-djurgarden'));

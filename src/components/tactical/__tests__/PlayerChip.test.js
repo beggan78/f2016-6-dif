@@ -86,7 +86,7 @@ describe('PlayerChip', () => {
       });
     });
 
-    it('should render Djurgården striped pattern for djurgarden color', () => {
+    it('should render striped pattern for djurgarden color', () => {
       const props = { ...defaultProps, color: 'djurgarden' };
       render(<PlayerChip {...props} />);
       

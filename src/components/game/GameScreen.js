@@ -83,7 +83,8 @@ export function GameScreen({
   periodDurationMinutes,
   getPlayerName,
   setView,
-  setShowNewGameModal
+  setShowNewGameModal,
+  ownTeamName
 }) {
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
@@ -91,10 +92,10 @@ export function GameScreen({
   const { setShouldResetSubTimerOnNextSub } = uiState;
   
   // Team name management
-  const ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME;
+  const resolvedOwnTeamName = ownTeamName || TEAM_CONFIG.OWN_TEAM_NAME;
   const opponentTeamName = opponentTeam || TEAM_CONFIG.DEFAULT_OPPONENT_TEAM_NAME;
   const { scoreRowRef, displayOwnTeam, displayOpponentTeam } = useTeamNameAbbreviation(
-    ownTeamName, opponentTeamName, ownScore, opponentScore
+    resolvedOwnTeamName, opponentTeamName, ownScore, opponentScore
   );
 
   // Animation state for start button
@@ -713,7 +714,7 @@ export function GameScreen({
         onCancel={modalHandlers.closeScoreEditModal}
         ownScore={ownScore}
         opponentScore={opponentScore}
-        ownTeamName={ownTeamName}
+        ownTeamName={resolvedOwnTeamName}
         opponentTeam={opponentTeamName}
         matchEvents={matchEvents}
         goalScorers={goalScorers}

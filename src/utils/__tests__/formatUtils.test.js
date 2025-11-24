@@ -272,7 +272,7 @@ describe('generateStatsText', () => {
   it('should generate complete stats text with all players', () => {
     const result = generateStatsText(mockSquadPlayers, 3, 1, 'Hammarby');
     
-    expect(result).toContain('Final Score: Djurgården 3 - 1 Hammarby');
+    expect(result).toContain('Final Score: Own Team 3 - 1 Hammarby');
     expect(result).toContain('Spelare\t\tStart\tM\tB\tMit\tA\tUte\tBack\tMid\tFw\tMv');
     expect(result).toContain('Player One\t\tM\t2.5\t1.5\t0\t1.5\t05:00\t02:30\t00:00\t02:30\t15:00');
     expect(result).toContain('Player Two\t\tS\t0\t4\t0\t2\t10:00\t06:40\t00:00\t03:20\t00:00');
@@ -282,25 +282,31 @@ describe('generateStatsText', () => {
   it('should handle missing opponent team name', () => {
     const result = generateStatsText(mockSquadPlayers, 2, 0);
     
-    expect(result).toContain('Final Score: Djurgården 2 - 0 Opponent');
+    expect(result).toContain('Final Score: Own Team 2 - 0 Opponent');
   });
 
   it('should handle empty opponent team name', () => {
     const result = generateStatsText(mockSquadPlayers, 1, 2, '');
     
-    expect(result).toContain('Final Score: Djurgården 1 - 2 Opponent');
+    expect(result).toContain('Final Score: Own Team 1 - 2 Opponent');
   });
 
   it('should handle zero scores', () => {
     const result = generateStatsText(mockSquadPlayers, 0, 0, 'AIK');
     
-    expect(result).toContain('Final Score: Djurgården 0 - 0 AIK');
+    expect(result).toContain('Final Score: Own Team 0 - 0 AIK');
   });
 
   it('should handle high scores', () => {
     const result = generateStatsText(mockSquadPlayers, 15, 12, 'IFK Göteborg');
     
-    expect(result).toContain('Final Score: Djurgården 15 - 12 IFK Göteborg');
+    expect(result).toContain('Final Score: Own Team 15 - 12 IFK Göteborg');
+  });
+
+  it('uses provided own team name when supplied', () => {
+    const result = generateStatsText(mockSquadPlayers, 2, 1, 'Rivals', 'My Club');
+
+    expect(result).toContain('Final Score: My Club 2 - 1 Rivals');
   });
 
   it('should handle players with unknown start position', () => {
@@ -333,7 +339,7 @@ describe('generateStatsText', () => {
   it('should handle empty squad', () => {
     const result = generateStatsText([], 0, 0, 'Empty Team');
     
-    expect(result).toContain('Final Score: Djurgården 0 - 0 Empty Team');
+    expect(result).toContain('Final Score: Own Team 0 - 0 Empty Team');
     expect(result).toContain('Spelare\t\tStart\tM\tB\tMit\tA\tUte\tBack\tMid\tFw\tMv');
     expect(result).toContain('------\t\t-------\t-\t-\t---\t-\t----------\t----\t---\t--\t--');
     // Should not contain any player data

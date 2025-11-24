@@ -22,7 +22,7 @@ import { ReportNavigation } from './ReportNavigation';
  * @param {number} props.ownScore - Final own team score
  * @param {number} props.opponentScore - Final opponent team score
  * @param {number} props.periodDurationMinutes - Duration of each period
- * @param {string} props.ownTeamName - Own team name (defaults to "Djurgården")
+ * @param {string} props.ownTeamName - Own team name (defaults to "Own Team")
  * @param {string} props.opponentTeam - Opponent team name
  * @param {Function} props.onNavigateBack - Navigation callback for general back navigation
  * @param {Object} props.goalScorers - Object mapping event IDs to player IDs for goal attribution
@@ -38,7 +38,7 @@ export function MatchReportScreen({
   ownScore = 0,
   opponentScore = 0,
   periodDurationMinutes = 12,
-  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME || "Djurgården",
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   opponentTeam = "Opponent",
   goalScorers = {},
 
