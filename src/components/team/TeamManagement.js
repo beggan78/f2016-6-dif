@@ -6,9 +6,9 @@ import {
   Shield,
   Clock,
   Target,
+  UserCheck,
   Trophy,
   CheckCircle,
-  UserCheck,
   Edit3,
   Trash2,
   Hash,
@@ -18,7 +18,7 @@ import {
   Link,
   Unlink
 } from 'lucide-react';
-import { Button, Select, Input } from '../shared/UI';
+import { Button, Select } from '../shared/UI';
 import { Tooltip } from '../shared';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
@@ -36,6 +36,13 @@ import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { getPlayerConnectionDetails } from '../../services/connectorService';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
+import { DEFAULT_PREFERENCES } from '../../types/preferences';
+import {
+  FORMATS,
+  FORMATION_DEFINITIONS,
+  FORMAT_CONFIGS,
+  getValidFormations
+} from '../../constants/teamConfiguration';
 
 const TAB_VIEWS = {
   OVERVIEW: 'overview',
@@ -1062,32 +1069,120 @@ function RosterManagement({ team, onRefresh }) {
 
 // Team Preferences Component
 function TeamPreferences({ team, onRefresh }) {
-  const [preferences, setPreferences] = useState({
-    matchFormat: '5v5',
-    formation: '2-2',
-    periodLength: 20,
-    numPeriods: 2,
-    substitutionLogic: 'equal_time',
-    trackGoalScorer: true,
-    teamCaptain: 'none',
-    fairPlayAward: false
-  });
+  const { loadTeamPreferences, saveTeamPreferences } = useTeam();
+  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Saving preferences:', preferences);
+  // Load preferences on mount
+  useEffect(() => {
+    const loadPrefs = async () => {
+      if (!team?.id) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+        const loadedPrefs = await loadTeamPreferences(team.id);
+
+        // Merge with defaults
+        setPreferences({
+          ...DEFAULT_PREFERENCES,
+          ...loadedPrefs
+        });
+      } catch (err) {
+        console.error('Failed to load preferences:', err);
+        setError('Failed to load preferences');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPrefs();
+  }, [team?.id, loadTeamPreferences]);
+
+  const handleFormatChange = useCallback((newFormat) => {
+    // Get valid formations for the new format (default squadSize to 6)
+    const validFormations = getValidFormations(newFormat, 6);
+
+    // Check if current formation is valid for new format
+    const currentFormationValid = validFormations.includes(preferences.formation);
+
+    // Get default formation for the new format
+    const formatConfig = FORMAT_CONFIGS[newFormat] || FORMAT_CONFIGS[FORMATS.FORMAT_5V5];
+    const defaultFormation = formatConfig.defaultFormation;
+
+    // Update preferences
+    setPreferences(prev => ({
+      ...prev,
+      matchFormat: newFormat,
+      // Keep current formation if valid, otherwise use default
+      formation: currentFormationValid ? prev.formation : defaultFormation
+    }));
+  }, [preferences.formation]);
+
+  const handleSave = async () => {
+    if (!team?.id) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccessMessage(null);
+
+      // Validate unsupported formats
+      if (['9v9', '11v11'].includes(preferences.matchFormat)) {
+        setError('Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.');
+        return;
+      }
+
+      await saveTeamPreferences(team.id, preferences);
+
+      setSuccessMessage('Preferences saved successfully');
+      setTimeout(() => setSuccessMessage(null), 3000);
+
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to save preferences:', err);
+      setError('Failed to save preferences. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="text-slate-400">Loading preferences...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="bg-yellow-800/20 border border-yellow-700 text-yellow-200 text-sm rounded-lg p-4">
-        <p className="font-bold">Not Yet Implemented</p>
-        <p>This section is a preview of upcoming features. Changes made here will not be saved.</p>
-      </div>
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-800/20 border border-green-700 text-green-200 text-sm rounded-lg p-4">
+          {successMessage}
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-800/20 border border-red-700 text-red-200 text-sm rounded-lg p-4">
+          {error}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-slate-200">Team Preferences</h3>
-        <Button onClick={handleSave} variant="primary" size="sm">
-          Save Changes
+        <Button
+          onClick={handleSave}
+          variant="primary"
+          size="sm"
+          disabled={saving}
+        >
+          {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
 
@@ -1097,7 +1192,7 @@ function TeamPreferences({ team, onRefresh }) {
           <Target className="w-4 h-4 mr-2" />
           Match Settings
         </h4>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -1105,14 +1200,13 @@ function TeamPreferences({ team, onRefresh }) {
             </label>
             <Select
               value={preferences.matchFormat}
-              onChange={(value) => setPreferences(prev => ({ ...prev, matchFormat: value }))}
+              onChange={handleFormatChange}
               options={[
                 { value: '5v5', label: '5v5' },
                 { value: '7v7', label: '7v7' },
                 { value: '9v9', label: '9v9 (Coming Soon)' },
                 { value: '11v11', label: '11v11 (Coming Soon)' }
               ]}
-              disabled={preferences.matchFormat !== '5v5'}
             />
           </div>
 
@@ -1123,12 +1217,16 @@ function TeamPreferences({ team, onRefresh }) {
             <Select
               value={preferences.formation}
               onChange={(value) => setPreferences(prev => ({ ...prev, formation: value }))}
-              options={[
-                { value: '2-2', label: '2-2' },
-                { value: '1-2-1', label: '1-2-1' },
-                { value: '1-3', label: '1-3 (Coming Soon)' },
-                { value: '1-1-2', label: '1-1-2  (Coming Soon)' }
-              ]}
+              options={getValidFormations(preferences.matchFormat, 6).map(formationKey => {
+                const formationDef = FORMATION_DEFINITIONS[formationKey];
+                const isAvailable = formationDef.status === 'available';
+
+                return {
+                  value: formationKey,
+                  label: isAvailable ? formationDef.label : `${formationDef.label} (Coming Soon)`,
+                  disabled: !isAvailable
+                };
+              })}
             />
           </div>
         </div>
@@ -1140,18 +1238,22 @@ function TeamPreferences({ team, onRefresh }) {
           <Clock className="w-4 h-4 mr-2" />
           Time Settings
         </h4>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Period Length (minutes)
             </label>
-            <Input
+            <input
               type="number"
               min="5"
               max="45"
               value={preferences.periodLength}
-              onChange={(e) => setPreferences(prev => ({ ...prev, periodLength: parseInt(e.target.value) }))}
+              onChange={(e) => setPreferences(prev => ({
+                ...prev,
+                periodLength: parseInt(e.target.value, 10)
+              }))}
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
 
@@ -1160,13 +1262,16 @@ function TeamPreferences({ team, onRefresh }) {
               Number of Periods
             </label>
             <Select
-              value={preferences.numPeriods.toString()}
-              onChange={(value) => setPreferences(prev => ({ ...prev, numPeriods: parseInt(value) }))}
+              value={preferences.numPeriods}
+              onChange={(value) => setPreferences(prev => ({
+                ...prev,
+                numPeriods: parseInt(value, 10)
+              }))}
               options={[
-                { value: '1', label: '1 Period' },
-                { value: '2', label: '2 Periods' },
-                { value: '3', label: '3 Periods' },
-                { value: '4', label: '4 Periods' }
+                { value: 1, label: '1 Period' },
+                { value: 2, label: '2 Periods' },
+                { value: 3, label: '3 Periods' },
+                { value: 4, label: '4 Periods' }
               ]}
             />
           </div>
@@ -1179,7 +1284,7 @@ function TeamPreferences({ team, onRefresh }) {
           <UserCheck className="w-4 h-4 mr-2" />
           Substitution Settings
         </h4>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -1203,9 +1308,9 @@ function TeamPreferences({ team, onRefresh }) {
           <Trophy className="w-4 h-4 mr-2" />
           Game Features
         </h4>
-        
+
         <div className="space-y-3">
-          <label className="flex items-center">
+          <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={preferences.trackGoalScorer}
@@ -1213,8 +1318,8 @@ function TeamPreferences({ team, onRefresh }) {
               className="sr-only"
             />
             <div className={`w-4 h-4 rounded border-2 mr-3 flex items-center justify-center ${
-              preferences.trackGoalScorer 
-                ? 'bg-sky-600 border-sky-600' 
+              preferences.trackGoalScorer
+                ? 'bg-sky-600 border-sky-600'
                 : 'border-slate-400'
             }`}>
               {preferences.trackGoalScorer && (
@@ -1224,24 +1329,22 @@ function TeamPreferences({ team, onRefresh }) {
             <span className="text-slate-300">Track Goal Scorers</span>
           </label>
 
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={preferences.fairPlayAward}
-              onChange={(e) => setPreferences(prev => ({ ...prev, fairPlayAward: e.target.checked }))}
-              className="sr-only"
-            />
-            <div className={`w-4 h-4 rounded border-2 mr-3 flex items-center justify-center ${
-              preferences.fairPlayAward 
-                ? 'bg-sky-600 border-sky-600' 
-                : 'border-slate-400'
-            }`}>
-              {preferences.fairPlayAward && (
-                <CheckCircle className="w-3 h-3 text-white" />
-              )}
-            </div>
-            <span className="text-slate-300">Fair Play Award</span>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Fair Play Award
           </label>
+          <Select
+            value={preferences.fairPlayAward}
+            onChange={(value) => setPreferences(prev => ({ ...prev, fairPlayAward: value }))}
+            options={[
+              { value: 'none', label: 'No Awards' },
+              { value: 'league_only', label: 'Only League' },
+              { value: 'competitive', label: 'League, Cup and Tournament' },
+              { value: 'all_games', label: 'All Games' }
+            ]}
+          />
         </div>
 
         <div>
@@ -1261,7 +1364,7 @@ function TeamPreferences({ team, onRefresh }) {
       </div>
 
       {/* Connectors Section */}
-      <div className="border-t border-slate-600 pt-6 mt-6">
+      <div className="pt-6 border-t border-slate-700">
         <ConnectorsSection team={team} onRefresh={onRefresh} />
       </div>
     </div>

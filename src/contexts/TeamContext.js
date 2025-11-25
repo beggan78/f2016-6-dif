@@ -7,6 +7,11 @@ import { sanitizeSearchInput } from '../utils/inputSanitization';
 import { syncTeamRosterToGameState } from '../utils/playerSyncUtils';
 import { createPersistenceManager } from '../utils/persistenceManager';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import {
+  PREFERENCE_CATEGORIES,
+  parsePreferenceValue,
+  serializePreferenceValue
+} from '../types/preferences';
 
 const TeamContext = createContext({});
 
@@ -1806,6 +1811,107 @@ export const TeamProvider = ({ children }) => {
     return club.created_by === user.id;
   }, [user]);
 
+  // ============================================================================
+  // TEAM PREFERENCE FUNCTIONS
+  // ============================================================================
+
+  // Helper to determine category from key
+  const getCategoryForKey = useCallback((key) => {
+    if (['matchFormat', 'formation'].includes(key)) return PREFERENCE_CATEGORIES.MATCH;
+    if (['periodLength', 'numPeriods'].includes(key)) return PREFERENCE_CATEGORIES.TIME;
+    if (['substitutionLogic'].includes(key)) return PREFERENCE_CATEGORIES.SUBSTITUTION;
+    if (['trackGoalScorer', 'fairPlayAward', 'teamCaptain'].includes(key)) return PREFERENCE_CATEGORIES.FEATURES;
+    return null;
+  }, []);
+
+  // Load team preferences
+  const loadTeamPreferences = useCallback(async (teamId) => {
+    if (!teamId) return {};
+
+    try {
+      const { data, error } = await supabase
+        .from('team_preference')
+        .select('key, value')
+        .eq('team_id', teamId);
+
+      if (error) {
+        console.error('Error loading team preferences:', error);
+        return {};
+      }
+
+      // Convert array to object
+      const preferences = {};
+      data?.forEach(pref => {
+        preferences[pref.key] = parsePreferenceValue(pref.key, pref.value);
+      });
+
+      return preferences;
+    } catch (err) {
+      console.error('Unexpected error loading preferences:', err);
+      return {};
+    }
+  }, []);
+
+  // Save team preferences (upsert)
+  const saveTeamPreferences = useCallback(async (teamId, preferences) => {
+    if (!teamId || !preferences) {
+      throw new Error('Team ID and preferences are required');
+    }
+
+    try {
+      // Convert preferences object to array of records
+      const records = Object.entries(preferences).map(([key, value]) => ({
+        team_id: teamId,
+        key,
+        value: serializePreferenceValue(value),
+        category: getCategoryForKey(key),
+      }));
+
+      // Upsert all preferences
+      const { error } = await supabase
+        .from('team_preference')
+        .upsert(records, {
+          onConflict: 'team_id,key',
+          ignoreDuplicates: false
+        });
+
+      if (error) {
+        console.error('Error saving team preferences:', error);
+        throw new Error('Failed to save preferences');
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Unexpected error saving preferences:', err);
+      throw err;
+    }
+  }, [getCategoryForKey]);
+
+  // Delete a specific preference
+  const deleteTeamPreference = useCallback(async (teamId, key) => {
+    if (!teamId || !key) {
+      throw new Error('Team ID and preference key are required');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('team_preference')
+        .delete()
+        .eq('team_id', teamId)
+        .eq('key', key);
+
+      if (error) {
+        console.error('Error deleting preference:', error);
+        throw new Error('Failed to delete preference');
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Unexpected error deleting preference:', err);
+      throw err;
+    }
+  }, []);
+
   const value = {
     // State
     currentTeam,
@@ -1864,7 +1970,12 @@ export const TeamProvider = ({ children }) => {
     removeRosterPlayer,
     checkPlayerGameHistory,
     getAvailableJerseyNumbers,
-    
+
+    // Team preference actions
+    loadTeamPreferences,
+    saveTeamPreferences,
+    deleteTeamPreference,
+
     // Pending request management
     checkPendingRequests,
     matchActivityStatus,
