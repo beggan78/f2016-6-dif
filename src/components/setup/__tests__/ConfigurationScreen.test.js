@@ -521,3 +521,139 @@ describe('ConfigurationScreen venue selection', () => {
     });
   });
 });
+
+describe('ConfigurationScreen formation visibility', () => {
+  beforeEach(() => {
+    mockUseAuth.mockImplementation(() => ({
+      isAuthenticated: false,
+      user: null,
+      sessionDetectionResult: null
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false
+    }));
+  });
+
+  it('shows formation controls with fewer than 5 players selected', () => {
+    const props = buildProps({
+      selectedSquadIds: ['player-1', 'player-2', 'player-3']
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    expect(screen.getByTestId('formation')).toBeInTheDocument();
+    expect(screen.getByTestId('formation-preview')).toBeInTheDocument();
+    expect(screen.queryByText(/Add between/i)).not.toBeInTheDocument();
+  });
+
+  it('shows formation controls with more than max players selected', () => {
+    const allPlayers = Array.from({ length: 12 }).map((_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`
+    }));
+
+    const props = buildProps({
+      allPlayers,
+      selectedSquadIds: allPlayers.map(p => p.id),
+      teamConfig: {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 12,
+        formation: FORMATIONS.FORMATION_2_2
+      }
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    expect(screen.getByTestId('formation')).toBeInTheDocument();
+    expect(screen.getByTestId('formation-preview')).toBeInTheDocument();
+    const validationMessages = screen.getAllByText(/You have selected 12 players, which exceeds the/i);
+    expect(validationMessages.length).toBeGreaterThan(0);
+  });
+
+  it('hides validation message with valid player count', () => {
+    const allPlayers = Array.from({ length: 6 }).map((_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`
+    }));
+
+    const props = buildProps({
+      allPlayers,
+      selectedSquadIds: allPlayers.map(p => p.id),
+      teamConfig: {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 6,
+        formation: FORMATIONS.FORMATION_2_2
+      }
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    expect(screen.getByTestId('formation')).toBeInTheDocument();
+    expect(screen.getByTestId('formation-preview')).toBeInTheDocument();
+    expect(screen.queryByText(/Add between/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/exceeds the/i)).not.toBeInTheDocument();
+  });
+
+  it('allows formation selection with invalid player count', () => {
+    const props = buildProps({
+      selectedSquadIds: ['player-1', 'player-2', 'player-3']
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const formationSelect = screen.getByTestId('formation');
+    expect(formationSelect).toBeInTheDocument();
+    expect(formationSelect).not.toBeDisabled();
+
+    fireEvent.change(formationSelect, { target: { value: FORMATIONS.FORMATION_1_2_1 } });
+
+    expect(props.updateFormationSelection).toHaveBeenCalledWith(FORMATIONS.FORMATION_1_2_1);
+  });
+
+  it('keeps Save Configuration button disabled with invalid player count', () => {
+    mockUseAuth.mockImplementation(() => ({
+      isAuthenticated: true,
+      user: { id: 'user-1' },
+      sessionDetectionResult: null
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false
+    }));
+
+    const props = buildProps({
+      selectedSquadIds: ['player-1', 'player-2', 'player-3']
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const buttons = screen.getAllByTestId('mock-button');
+    const saveButton = buttons.find(btn => btn.textContent.includes('Save Configuration'));
+
+    expect(saveButton).toBeDefined();
+    expect(saveButton).toBeDisabled();
+  });
+
+  it('keeps Proceed to Period Setup button disabled with invalid player count', () => {
+    const props = buildProps({
+      selectedSquadIds: ['player-1', 'player-2', 'player-3']
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    const buttons = screen.getAllByTestId('mock-button');
+    const proceedButton = buttons.find(btn => btn.textContent.includes('Proceed to Period Setup'));
+
+    expect(proceedButton).toBeDefined();
+    expect(proceedButton).toBeDisabled();
+  });
+});

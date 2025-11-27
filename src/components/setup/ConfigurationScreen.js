@@ -1330,30 +1330,28 @@ export function ConfigurationScreen({
             />
           </div>
 
-          {withinFormatBounds ? (
-            <div className="space-y-3">
-              <div>
-                <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
-                  Tactical Formation
-                </label>
-                <Select
-                  id="formation"
-                  value={selectedFormation}
-                  onChange={value => handleFormationChange(value)}
-                  options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => ({
-                    value: formation,
-                    label: FORMATION_DEFINITIONS[formation].label
-                  }))}
-                />
-              </div>
-
-              <FormationPreview formation={selectedFormation} className="mt-3" />
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
+                Tactical Formation
+              </label>
+              <Select
+                id="formation"
+                value={selectedFormation}
+                onChange={value => handleFormationChange(value)}
+                options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => ({
+                  value: formation,
+                  label: FORMATION_DEFINITIONS[formation].label
+                }))}
+              />
             </div>
-          ) : (
-            <p className={`text-xs ${meetsMinimumSelection ? 'text-amber-300' : 'text-slate-400'}`}>
-              {meetsMinimumSelection
-                ? `You have selected ${selectedSquadIds.length} players, which exceeds the ${formatLabel} limit of ${maxPlayersAllowed}. Update the match format or adjust the squad before configuring formations.`
-                : `Add between ${minPlayersRequired} and ${maxPlayersAllowed} players to configure a tactical formation.`}
+
+            <FormationPreview formation={selectedFormation} className="mt-3" />
+          </div>
+
+          {!withinFormatBounds && meetsMinimumSelection && (
+            <p className="text-xs text-amber-300">
+              You have selected {selectedSquadIds.length} players, which exceeds the {formatLabel} limit of {maxPlayersAllowed}. Update the match format or adjust the squad before configuring formations.
             </p>
           )}
         </div>
