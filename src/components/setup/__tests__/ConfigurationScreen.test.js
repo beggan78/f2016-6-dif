@@ -156,6 +156,8 @@ beforeEach(() => {
     loadTeamPreferences: jest.fn(() => Promise.resolve({}))
   }));
 
+  checkForPendingMatches.mockResolvedValue({ shouldShow: false, pendingMatches: [] });
+
   mockUseOpponentNameSuggestions.mockReset();
   mockUseOpponentNameSuggestions.mockReturnValue({
     names: ['Alpha FC', 'Beta United', 'Gamma City'],
@@ -236,7 +238,7 @@ describe('ConfigurationScreen team preferences', () => {
     render(<ConfigurationScreen {...props} />);
 
     await waitFor(() => {
-      expect(loadTeamPreferences).not.toHaveBeenCalled();
+      expect(loadTeamPreferences).toHaveBeenCalled();
     });
 
     expect(props.updateTeamConfig).not.toHaveBeenCalled();
@@ -283,6 +285,118 @@ describe('ConfigurationScreen team preferences', () => {
       formation: FORMATIONS.FORMATION_2_2,
       squadSize: 7
     });
+  });
+
+  it('hides captain assignment when team preferences disable captains', async () => {
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      teamCaptain: 'none'
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const players = Array.from({ length: 5 }, (_, index) => ({
+      id: `player-${index + 1}`,
+      displayName: `Player ${index + 1}`
+    }));
+
+    const props = buildProps({
+      selectedSquadIds: players.map(player => player.id),
+      selectedSquadPlayers: players
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Assign Captain')).not.toBeInTheDocument();
+    });
+  });
+
+  it('pre-populates captain from UUID preference when none is selected', async () => {
+    const preferredCaptainId = '00000000-0000-4000-8000-000000000001';
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      teamCaptain: preferredCaptainId
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const players = Array.from({ length: 5 }, (_, index) => ({
+      id: index === 0 ? preferredCaptainId : `player-${index}`,
+      displayName: `Player ${index + 1}`
+    }));
+
+    const setCaptain = jest.fn();
+
+    const props = buildProps({
+      selectedSquadIds: players.map(player => player.id),
+      selectedSquadPlayers: players,
+      setCaptain
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
+    });
+  });
+
+  it('does not override an existing captain selection with preference value', async () => {
+    const preferredCaptainId = '00000000-0000-4000-8000-000000000002';
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      teamCaptain: preferredCaptainId
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const players = Array.from({ length: 5 }, (_, index) => ({
+      id: index === 0 ? preferredCaptainId : `player-${index}`,
+      displayName: `Player ${index + 1}`
+    }));
+
+    const setCaptain = jest.fn();
+
+    const props = buildProps({
+      selectedSquadIds: players.map(player => player.id),
+      selectedSquadPlayers: players,
+      setCaptain,
+      captainId: 'existing-captain'
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    expect(setCaptain).not.toHaveBeenCalled();
   });
 });
 

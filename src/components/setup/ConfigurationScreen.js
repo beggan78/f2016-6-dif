@@ -25,6 +25,8 @@ import { discardPendingMatch } from '../../services/matchStateManager';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
 import { suggestUpcomingOpponent } from '../../services/opponentPrefillService';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -90,6 +92,7 @@ export function ConfigurationScreen({
   const [resumeData, setResumeData] = useState(null);
   // Track if current match is a resumed match to prevent inappropriate state clearing
   const [isResumedMatch, setIsResumedMatch] = useState(false);
+  const [teamCaptainPreference, setTeamCaptainPreference] = useState(null);
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const effectiveVenueType = venueType ?? DEFAULT_VENUE_TYPE;
@@ -244,23 +247,30 @@ export function ConfigurationScreen({
       return;
     }
 
-    if (hasActiveConfiguration) {
-      // User already configuring; do not override with preferences
-      preferencesAppliedSessionRef.current = sessionId;
-      pendingPreferencesSessionRef.current = null;
-      return;
-    }
-
     if (isApplyingPreferencesRef.current) {
       pendingPreferencesSessionRef.current = sessionId;
       return;
     }
 
     isApplyingPreferencesRef.current = true;
+    let shouldMarkApplied = true;
 
     try {
       const preferences = await loadTeamPreferences(currentTeam.id);
+      setTeamCaptainPreference(preferences?.teamCaptain ?? null);
+
+      if (isProcessingResumeDataRef.current || resumeDataAppliedRef.current || isResumedMatch) {
+        pendingPreferencesSessionRef.current = sessionId;
+        shouldMarkApplied = false;
+        return;
+      }
+
       if (!preferences || Object.keys(preferences).length === 0) {
+        return;
+      }
+
+      if (hasActiveConfiguration) {
+        // User already configuring; do not override with preferences (captain preference already captured)
         return;
       }
 
@@ -301,9 +311,11 @@ export function ConfigurationScreen({
       console.error('Failed to apply team preferences:', error);
     } finally {
       isApplyingPreferencesRef.current = false;
-      preferencesAppliedSessionRef.current = sessionId;
-      if (pendingPreferencesSessionRef.current === sessionId) {
-        pendingPreferencesSessionRef.current = null;
+      if (shouldMarkApplied) {
+        preferencesAppliedSessionRef.current = sessionId;
+        if (pendingPreferencesSessionRef.current === sessionId) {
+          pendingPreferencesSessionRef.current = null;
+        }
       }
 
       const queuedSessionId = pendingPreferencesSessionRef.current;
@@ -428,6 +440,9 @@ export function ConfigurationScreen({
     // Re-apply team preferences for the active configuration session
     applyTeamPreferencesForSession(configurationSessionId);
   }, [setOpponentTeam, setMatchType, setVenueType, setCaptain, clearStoredState, configurationSessionId, applyTeamPreferencesForSession]);
+  React.useEffect(() => {
+    setTeamCaptainPreference(null);
+  }, [currentTeam?.id, configurationSessionId]);
 
   // Modal closure handler specifically for resume flow - does NOT clear stored state
   const handleResumeMatchModalClose = React.useCallback(() => {
@@ -858,6 +873,35 @@ export function ConfigurationScreen({
       ? prev.filter(id => id !== playerId)
       : [...prev, playerId]);
   };
+
+  const preferredCaptainId = React.useMemo(() => {
+    if (!teamCaptainPreference) {
+      return null;
+    }
+
+    return isUuid(teamCaptainPreference) ? teamCaptainPreference : null;
+  }, [teamCaptainPreference]);
+
+  React.useEffect(() => {
+    if (!preferredCaptainId) {
+      return;
+    }
+
+    if (captainId) {
+      return;
+    }
+
+    if (!Array.isArray(selectedSquadPlayers) || selectedSquadPlayers.length === 0) {
+      return;
+    }
+
+    const captainInSquad = selectedSquadPlayers.some(player => player.id === preferredCaptainId);
+    if (!captainInSquad) {
+      return;
+    }
+
+    setCaptain(preferredCaptainId);
+  }, [preferredCaptainId, captainId, selectedSquadPlayers, setCaptain]);
 
   const handleSelectAllPlayers = React.useCallback(() => {
     if (areAllEligibleSelected || playersToShow.length === 0) {
@@ -1521,7 +1565,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Captain Assignment */}
-      {selectedSquadIds.length >= minPlayersRequired && (
+      {selectedSquadIds.length >= minPlayersRequired && teamCaptainPreference !== 'none' && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Captain</h3>
           <div>
