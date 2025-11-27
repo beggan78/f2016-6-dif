@@ -514,6 +514,9 @@ function TeamOverview({ team, members }) {
   );
 }
 
+// Exported for testing
+export { TeamPreferences };
+
 // Access Management Component
 function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onShowInviteModal, onShowRoleModal }) {
   return (
@@ -1069,12 +1072,23 @@ function RosterManagement({ team, onRefresh }) {
 
 // Team Preferences Component
 function TeamPreferences({ team, onRefresh }) {
-  const { loadTeamPreferences, saveTeamPreferences } = useTeam();
+  const { loadTeamPreferences, saveTeamPreferences, getTeamRoster } = useTeam();
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [teamCaptainMode, setTeamCaptainMode] = useState(DEFAULT_PREFERENCES.teamCaptain);
+  const [permanentCaptainId, setPermanentCaptainId] = useState('');
+  const [roster, setRoster] = useState([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
+
+  const deriveTeamCaptainMode = useCallback((value) => {
+    if (value === 'assign_each_match') return 'assign_each_match';
+    if (value === 'permanent') return 'permanent';
+    if (!value || value === 'none') return 'none';
+    return 'permanent';
+  }, []);
 
   // Load preferences on mount
   useEffect(() => {
@@ -1086,10 +1100,28 @@ function TeamPreferences({ team, onRefresh }) {
         setError(null);
         const loadedPrefs = await loadTeamPreferences(team.id);
 
-        // Merge with defaults
-        setPreferences({
+        // Merge with defaults and normalize captain preference
+        const mergedPrefs = {
           ...DEFAULT_PREFERENCES,
           ...loadedPrefs
+        };
+
+        const derivedMode = deriveTeamCaptainMode(mergedPrefs.teamCaptain);
+        const normalizedCaptainValue =
+          derivedMode === 'permanent' && mergedPrefs.teamCaptain === 'permanent'
+            ? ''
+            : mergedPrefs.teamCaptain || '';
+
+        setTeamCaptainMode(derivedMode);
+        setPermanentCaptainId(
+          derivedMode === 'permanent' && normalizedCaptainValue
+            ? normalizedCaptainValue
+            : ''
+        );
+
+        setPreferences({
+          ...mergedPrefs,
+          teamCaptain: derivedMode === 'permanent' ? normalizedCaptainValue : mergedPrefs.teamCaptain
         });
       } catch (err) {
         console.error('Failed to load preferences:', err);
@@ -1100,7 +1132,27 @@ function TeamPreferences({ team, onRefresh }) {
     };
 
     loadPrefs();
-  }, [team?.id, loadTeamPreferences]);
+  }, [team?.id, loadTeamPreferences, deriveTeamCaptainMode]);
+
+  // Load roster for captain selection
+  useEffect(() => {
+    const loadRoster = async () => {
+      if (!team?.id) return;
+
+      try {
+        setRosterLoading(true);
+        const rosterData = await getTeamRoster(team.id);
+        setRoster(rosterData || []);
+      } catch (err) {
+        console.error('Failed to load roster:', err);
+        setError('Failed to load team roster');
+      } finally {
+        setRosterLoading(false);
+      }
+    };
+
+    loadRoster();
+  }, [team?.id, getTeamRoster]);
 
   const handleFormatChange = useCallback((newFormat) => {
     // Get valid formations for the new format (default squadSize to 6)
@@ -1122,6 +1174,57 @@ function TeamPreferences({ team, onRefresh }) {
     }));
   }, [preferences.formation]);
 
+  const buildCaptainLabel = useCallback((player) => {
+    const baseName = player.display_name || [player.first_name, player.last_name].filter(Boolean).join(' ').trim();
+    const safeName = baseName || 'Unnamed Player';
+    return player.jersey_number ? `#${player.jersey_number} ${safeName}` : safeName;
+  }, []);
+
+  const captainOptions = useMemo(() => {
+    const activePlayers = roster.filter(player => player.on_roster);
+    const playersToUse = activePlayers.length > 0 ? activePlayers : roster;
+
+    const sortedPlayers = [...playersToUse].sort((a, b) => {
+      const nameA = (a.display_name || [a.first_name, a.last_name].filter(Boolean).join(' ')).trim();
+      const nameB = (b.display_name || [b.first_name, b.last_name].filter(Boolean).join(' ')).trim();
+      return nameA.localeCompare(nameB);
+    });
+
+    const options = sortedPlayers.map(player => ({
+      value: player.id,
+      label: buildCaptainLabel(player)
+    }));
+
+    if (
+      teamCaptainMode === 'permanent' &&
+      permanentCaptainId &&
+      !options.some(opt => opt.value === permanentCaptainId)
+    ) {
+      options.unshift({
+        value: permanentCaptainId,
+        label: 'Previously selected captain'
+      });
+    }
+
+    return options;
+  }, [roster, buildCaptainLabel, teamCaptainMode, permanentCaptainId]);
+
+  const handleTeamCaptainModeChange = useCallback((value) => {
+    setTeamCaptainMode(value);
+
+    if (value === 'permanent') {
+      setPreferences(prev => ({ ...prev, teamCaptain: permanentCaptainId || '' }));
+      return;
+    }
+
+    setPreferences(prev => ({ ...prev, teamCaptain: value }));
+  }, [permanentCaptainId]);
+
+  const handlePermanentCaptainChange = useCallback((playerId) => {
+    setPermanentCaptainId(playerId);
+    setPreferences(prev => ({ ...prev, teamCaptain: playerId }));
+  }, []);
+
   const handleSave = async () => {
     if (!team?.id) return;
 
@@ -1130,16 +1233,31 @@ function TeamPreferences({ team, onRefresh }) {
       setError(null);
       setSuccessMessage(null);
 
+      const teamCaptainValue = teamCaptainMode === 'permanent'
+        ? permanentCaptainId
+        : teamCaptainMode;
+
+      if (teamCaptainMode === 'permanent' && !teamCaptainValue) {
+        setError('Please select a player to serve as the permanent team captain.');
+        return;
+      }
+
       // Validate unsupported formats
       if (['9v9', '11v11'].includes(preferences.matchFormat)) {
         setError('Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.');
         return;
       }
 
-      await saveTeamPreferences(team.id, preferences);
+      const preferencesToSave = {
+        ...preferences,
+        teamCaptain: teamCaptainValue
+      };
+
+      await saveTeamPreferences(team.id, preferencesToSave);
 
       setSuccessMessage('Preferences saved successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
+      setPreferences(preferencesToSave);
 
       if (onRefresh) onRefresh();
     } catch (err) {
@@ -1352,14 +1470,33 @@ function TeamPreferences({ team, onRefresh }) {
             Team Captain
           </label>
           <Select
-            value={preferences.teamCaptain}
-            onChange={(value) => setPreferences(prev => ({ ...prev, teamCaptain: value }))}
+            value={teamCaptainMode}
+            onChange={handleTeamCaptainModeChange}
             options={[
               { value: 'none', label: 'No Team Captain' },
               { value: 'permanent', label: 'Permanent Team Captain' },
               { value: 'assign_each_match', label: 'Assign Each Match' }
             ]}
           />
+          {teamCaptainMode === 'permanent' && (
+            <div className="mt-3 space-y-1">
+              <label className="block text-xs font-medium text-slate-400">
+                Permanent Team Captain
+              </label>
+              <Select
+                value={permanentCaptainId}
+                onChange={handlePermanentCaptainChange}
+                options={captainOptions}
+                placeholder={rosterLoading ? 'Loading players...' : 'Select Team Captain'}
+                disabled={rosterLoading || captainOptions.length === 0}
+              />
+              {!rosterLoading && captainOptions.length === 0 && (
+                <p className="text-xs text-slate-400">
+                  Add players to your roster to choose a team captain.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

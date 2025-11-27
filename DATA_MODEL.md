@@ -762,7 +762,7 @@ Team-wide preferences for match configuration and gameplay settings.
 - `substitutionLogic`: 'equal_time', 'same_role'
 - `trackGoalScorer`: 'true', 'false'
 - `fairPlayAward`: 'true', 'false'
-- `teamCaptain`: 'none', 'permanent', 'assign_each_match'
+- `teamCaptain`: 'none', 'assign_each_match', or player UUID when a permanent captain is selected
 
 **Relationships:**
 - Many-to-one with `team`
