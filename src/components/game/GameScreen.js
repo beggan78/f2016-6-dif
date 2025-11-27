@@ -81,6 +81,7 @@ export function GameScreen({
   matchState,
   handleActualMatchStart,
   periodDurationMinutes,
+  trackGoalScorer = true,
   getPlayerName,
   setView,
   setShowNewGameModal,
@@ -287,8 +288,9 @@ export function GameScreen({
   const scoreHandlers = React.useMemo(() =>
     createScoreHandlers(
       stateUpdaters,
-      modalHandlers
-    ), [stateUpdaters, modalHandlers]
+      modalHandlers,
+      { shouldTrackGoalScorer: trackGoalScorer }
+    ), [stateUpdaters, modalHandlers, trackGoalScorer]
   );
 
   const goalieHandlerCallbacks = React.useMemo(() =>
@@ -726,6 +728,7 @@ export function GameScreen({
         calculateMatchTime={(timestamp) => calculateMatchTime(timestamp, matchStartTime)}
         formatTime={formatTime}
         getPlayerName={getPlayerName}
+        allowScorerSelection={trackGoalScorer}
       />
 
       {/* Undo Confirmation Modal */}
@@ -742,7 +745,7 @@ export function GameScreen({
 
       {/* Goal Scorer Modal */}
       <GoalScorerModal
-        isOpen={modalHandlers.modals.goalScorer.isOpen}
+        isOpen={trackGoalScorer && modalHandlers.modals.goalScorer.isOpen}
         onClose={scoreHandlers.handleCancelGoalScorer}
         onSelectScorer={(scorerId) => scoreHandlers.handleSelectGoalScorer(modalHandlers.modals.goalScorer.eventId, scorerId)}
         onCorrectGoal={(eventId, scorerId) => scoreHandlers.handleCorrectGoalScorer(eventId, scorerId)}
@@ -773,7 +776,8 @@ const arePropsEqual = (prevProps, nextProps) => {
   const primitiveProps = [
     'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
     'teamConfig', 'selectedFormation', 'nextPlayerToSubOut',
-    'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'ownScore', 'opponentScore'
+    'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'ownScore', 'opponentScore',
+    'trackGoalScorer'
   ];
   
   for (const prop of primitiveProps) {

@@ -1056,6 +1056,7 @@ function AppContent() {
             matchState={gameState.matchState}
             handleActualMatchStart={handleActualMatchStartWithTimers}
             periodDurationMinutes={gameState.periodDurationMinutes}
+            trackGoalScorer={gameState.trackGoalScorer}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
               return player ? formatPlayerName(player) : 'Unknown Player';

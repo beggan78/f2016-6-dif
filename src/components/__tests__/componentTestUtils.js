@@ -61,6 +61,7 @@ export const createMockGameScreenProps = (overrides = {}) => {
     setScore: jest.fn(),
     rotationQueue: ['1', '2', '3', '4', '5', '6'],
     setRotationQueue: jest.fn(),
+    trackGoalScorer: true,
     ...overrides
   };
 };

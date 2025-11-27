@@ -78,7 +78,7 @@ const findPlayerPositionKey = (playerId, formation, formationAwareTeamConfig) =>
 
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
-  const { currentTeam, updateMatchActivityStatus } = useTeam();
+  const { currentTeam, updateMatchActivityStatus, loadTeamPreferences } = useTeam();
   // Get preferences for various integrations
   const { audioPreferences } = usePreferences();
 
@@ -172,6 +172,9 @@ export function useGameState(navigateToView = null) {
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
   // Configuration activity tracking - prevents accidental clearing during active configuration
   const [hasActiveConfiguration, setHasActiveConfiguration] = useState(initialState.hasActiveConfiguration || false);
+  const [trackGoalScorer, setTrackGoalScorer] = useState(
+    initialState.trackGoalScorer ?? true
+  );
 
   useEffect(() => {
     if (updateMatchActivityStatus) {
@@ -179,12 +182,41 @@ export function useGameState(navigateToView = null) {
     }
   }, [matchState, updateMatchActivityStatus]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncGoalTrackingPreference = async () => {
+      if (!currentTeam?.id || !loadTeamPreferences) {
+        return;
+      }
+
+      try {
+        const preferences = await loadTeamPreferences(currentTeam.id);
+        if (!isMounted) return;
+
+        if (typeof preferences?.trackGoalScorer === 'boolean') {
+          setTrackGoalScorer(preferences.trackGoalScorer);
+        } else {
+          setTrackGoalScorer(true);
+        }
+      } catch (error) {
+        console.warn('Failed to load goal tracking preference:', error);
+      }
+    };
+
+    syncGoalTrackingPreference();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTeam?.id, loadTeamPreferences, view]);
+
   // Initialize match persistence hook
   const gameState = {
     allPlayers, selectedSquadIds, numPeriods, periodGoalieIds,
     teamConfig, selectedFormation, periodDurationMinutes,
     opponentTeam, captainId, matchType, venueType, formation,
-    currentMatchId, matchCreated
+    currentMatchId, matchCreated, trackGoalScorer
   };
   
   const setters = {
@@ -240,6 +272,7 @@ export function useGameState(navigateToView = null) {
         matchCreated,
         matchState,
         hasActiveConfiguration,
+        trackGoalScorer,
       };
 
       // Use the persistence manager's saveGameState method
@@ -248,7 +281,7 @@ export function useGameState(navigateToView = null) {
 
     // Cleanup timeout on dependency change or unmount
     return () => clearTimeout(timeoutId);
-  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration]);
+  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration, trackGoalScorer]);
 
 
 
@@ -1373,6 +1406,8 @@ export function useGameState(navigateToView = null) {
     setTotalMatchPausedDuration,
     captainId,
     setCaptainId,
+    trackGoalScorer,
+    setTrackGoalScorer,
     
     // Match lifecycle state
     currentMatchId,
