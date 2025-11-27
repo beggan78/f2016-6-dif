@@ -233,7 +233,19 @@ export function ConfigurationScreen({
       return;
     }
 
-    if (hasActiveConfiguration || isResumedMatch || resumeDataAppliedRef.current || isProcessingResumeDataRef.current) {
+    if (isProcessingResumeDataRef.current || resumeDataAppliedRef.current) {
+      pendingPreferencesSessionRef.current = sessionId;
+      return;
+    }
+
+    if (isResumedMatch) {
+      // Respect resumed setup; allow future application if user abandons resume flow
+      pendingPreferencesSessionRef.current = sessionId;
+      return;
+    }
+
+    if (hasActiveConfiguration) {
+      // User already configuring; do not override with preferences
       preferencesAppliedSessionRef.current = sessionId;
       pendingPreferencesSessionRef.current = null;
       return;
@@ -408,9 +420,14 @@ export function ConfigurationScreen({
     setIsResumedMatch(false);
     setResumeData(null);
     resumeDataAppliedRef.current = false;
+    preferencesAppliedSessionRef.current = null;
+    pendingPreferencesSessionRef.current = configurationSessionId;
 
     clearStoredState();   // Clear localStorage and match state
-  }, [setOpponentTeam, setMatchType, setVenueType, setCaptain, clearStoredState]);
+
+    // Re-apply team preferences for the active configuration session
+    applyTeamPreferencesForSession(configurationSessionId);
+  }, [setOpponentTeam, setMatchType, setVenueType, setCaptain, clearStoredState, configurationSessionId, applyTeamPreferencesForSession]);
 
   // Modal closure handler specifically for resume flow - does NOT clear stored state
   const handleResumeMatchModalClose = React.useCallback(() => {
