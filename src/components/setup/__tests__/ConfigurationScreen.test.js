@@ -16,7 +16,8 @@ const mockUseTeam = jest.fn(() => ({
   teamPlayers: [],
   hasTeams: true,
   hasClubs: true,
-  loading: false
+  loading: false,
+  loadTeamPreferences: jest.fn(() => Promise.resolve({}))
 }));
 
 jest.mock('lucide-react', () => ({
@@ -151,7 +152,8 @@ beforeEach(() => {
     teamPlayers: [],
     hasTeams: true,
     hasClubs: true,
-    loading: false
+    loading: false,
+    loadTeamPreferences: jest.fn(() => Promise.resolve({}))
   }));
 
   mockUseOpponentNameSuggestions.mockReset();
@@ -164,6 +166,124 @@ beforeEach(() => {
 
   mockSuggestUpcomingOpponent.mockReset();
   mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: null });
+});
+
+describe('ConfigurationScreen team preferences', () => {
+  it('applies saved preferences on new configuration session', async () => {
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      matchFormat: FORMATS.FORMAT_7V7,
+      formation: FORMATIONS.FORMATION_2_3_1,
+      numPeriods: 2,
+      periodLength: 20
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const props = buildProps({
+      configurationSessionId: 1,
+      teamConfig: {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_2_2
+      }
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalledWith('team-1');
+    });
+
+    expect(props.updateTeamConfig).toHaveBeenCalledWith({
+      format: FORMATS.FORMAT_7V7,
+      formation: FORMATIONS.FORMATION_2_3_1,
+      squadSize: 7
+    });
+    expect(props.setSelectedFormation).toHaveBeenCalledWith(FORMATIONS.FORMATION_2_3_1);
+    expect(props.setNumPeriods).toHaveBeenCalledWith(2);
+    expect(props.setPeriodDurationMinutes).toHaveBeenCalledWith(20);
+  });
+
+  it('skips applying preferences when configuration is already active', async () => {
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      matchFormat: FORMATS.FORMAT_7V7,
+      formation: FORMATIONS.FORMATION_2_3_1,
+      numPeriods: 2,
+      periodLength: 20
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const props = buildProps({
+      configurationSessionId: 2,
+      hasActiveConfiguration: true
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).not.toHaveBeenCalled();
+    });
+
+    expect(props.updateTeamConfig).not.toHaveBeenCalled();
+    expect(props.setSelectedFormation).not.toHaveBeenCalled();
+    expect(props.setNumPeriods).not.toHaveBeenCalledWith(2);
+    expect(props.setPeriodDurationMinutes).not.toHaveBeenCalledWith(20);
+  });
+
+  it('falls back to default formation when preference formation is unavailable', async () => {
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      matchFormat: FORMATS.FORMAT_5V5,
+      formation: '1-3',
+      numPeriods: 3,
+      periodLength: 15
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const props = buildProps({
+      configurationSessionId: 3,
+      teamConfig: {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_2_2
+      }
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    expect(props.setSelectedFormation).toHaveBeenCalledWith(FORMATIONS.FORMATION_2_2);
+    expect(props.updateTeamConfig).toHaveBeenCalledWith({
+      format: FORMATS.FORMAT_5V5,
+      formation: FORMATIONS.FORMATION_2_2,
+      squadSize: 7
+    });
+  });
 });
 
 const buildProps = (overrides = {}) => ({
@@ -535,7 +655,8 @@ describe('ConfigurationScreen formation visibility', () => {
       teamPlayers: [],
       hasTeams: true,
       hasClubs: true,
-      loading: false
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
     }));
   });
 
@@ -627,7 +748,8 @@ describe('ConfigurationScreen formation visibility', () => {
       teamPlayers: [],
       hasTeams: true,
       hasClubs: true,
-      loading: false
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
     }));
 
     const props = buildProps({
