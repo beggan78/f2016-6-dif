@@ -133,7 +133,8 @@ jest.mock('../../../services/opponentPrefillService', () => ({
 }));
 
 jest.mock('../../../services/matchStateManager', () => ({
-  discardPendingMatch: jest.fn(() => Promise.resolve())
+  discardPendingMatch: jest.fn(() => Promise.resolve()),
+  getPlayerStats: jest.fn(() => Promise.resolve({ success: true, players: [] }))
 }));
 
 jest.mock('../../match/PendingMatchResumeModal', () => ({
