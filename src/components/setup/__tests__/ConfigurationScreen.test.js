@@ -4,11 +4,12 @@ import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
+import { DETECTION_TYPES } from '../../../services/sessionDetectionService';
 
 const mockUseAuth = jest.fn(() => ({
   isAuthenticated: true,
   user: { id: 'user-1' },
-  sessionDetectionResult: null
+  sessionDetectionResult: { type: DETECTION_TYPES.NEW_SIGN_IN }
 }));
 
 const mockUseTeam = jest.fn(() => ({
@@ -143,7 +144,7 @@ beforeEach(() => {
   mockUseAuth.mockImplementation(() => ({
     isAuthenticated: true,
     user: { id: 'user-1' },
-    sessionDetectionResult: null
+    sessionDetectionResult: { type: DETECTION_TYPES.NEW_SIGN_IN }
   }));
 
   mockUseTeam.mockReset();
@@ -245,6 +246,49 @@ describe('ConfigurationScreen team preferences', () => {
     expect(props.setSelectedFormation).not.toHaveBeenCalled();
     expect(props.setNumPeriods).not.toHaveBeenCalledWith(2);
     expect(props.setPeriodDurationMinutes).not.toHaveBeenCalledWith(20);
+  });
+
+  it('does not reapply preferences on page refresh to preserve user changes', async () => {
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      matchFormat: FORMATS.FORMAT_7V7,
+      formation: FORMATIONS.FORMATION_2_3_1,
+      numPeriods: 2,
+      periodLength: 20
+    }));
+
+    mockUseAuth.mockImplementation(() => ({
+      isAuthenticated: true,
+      user: { id: 'user-1' },
+      sessionDetectionResult: { type: DETECTION_TYPES.PAGE_REFRESH }
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const props = buildProps({
+      configurationSessionId: 3,
+      updateTeamConfig: jest.fn(),
+      setSelectedFormation: jest.fn(),
+      setNumPeriods: jest.fn(),
+      setPeriodDurationMinutes: jest.fn()
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).not.toHaveBeenCalled();
+    });
+
+    expect(props.updateTeamConfig).not.toHaveBeenCalled();
+    expect(props.setSelectedFormation).not.toHaveBeenCalled();
+    expect(props.setNumPeriods).not.toHaveBeenCalled();
+    expect(props.setPeriodDurationMinutes).not.toHaveBeenCalled();
   });
 
   it('falls back to default formation when preference formation is unavailable', async () => {
@@ -382,6 +426,12 @@ describe('ConfigurationScreen team preferences', () => {
     }));
 
     const setCaptain = jest.fn();
+
+    mockUseAuth.mockImplementation(() => ({
+      isAuthenticated: true,
+      user: { id: 'user-1' },
+      sessionDetectionResult: { type: DETECTION_TYPES.PAGE_REFRESH }
+    }));
 
     const props = buildProps({
       selectedSquadIds: players.map(player => player.id),

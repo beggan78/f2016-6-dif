@@ -142,6 +142,8 @@ export function ConfigurationScreen({
   // Auth and Team hooks (must be before useEffect that use these values)
   const { isAuthenticated, user, sessionDetectionResult } = useAuth();
   const { currentTeam, teamPlayers, hasTeams, hasClubs, loading: teamLoading, loadTeamPreferences } = useTeam();
+  const sessionDetectionType = sessionDetectionResult?.type;
+  const isPageRefresh = sessionDetectionType === DETECTION_TYPES.PAGE_REFRESH;
   
   
   // Reset pending match modal closure state when user signs out
@@ -367,6 +369,17 @@ export function ConfigurationScreen({
       return;
     }
 
+    if (!sessionDetectionType) {
+      return;
+    }
+
+    if (isPageRefresh && preferencesAppliedSessionRef.current === null) {
+      // Preserve in-progress configuration on page reloads; allow reapplication only for new sessions
+      preferencesAppliedSessionRef.current = configurationSessionId;
+      pendingPreferencesSessionRef.current = null;
+      return;
+    }
+
     if (preferencesAppliedSessionRef.current === configurationSessionId) {
       return;
     }
@@ -377,7 +390,7 @@ export function ConfigurationScreen({
     }
 
     applyTeamPreferencesForSession(configurationSessionId);
-  }, [configurationSessionId, currentTeam?.id, teamLoading, applyTeamPreferencesForSession]);
+  }, [configurationSessionId, currentTeam?.id, teamLoading, applyTeamPreferencesForSession, sessionDetectionType, isPageRefresh]);
 
   React.useEffect(() => {
     if (!currentTeam?.id || teamLoading) {
@@ -654,12 +667,16 @@ export function ConfigurationScreen({
       // Explicitly clear configuration-specific state that might persist
       setOpponentTeam('');
       setPeriodGoalieIds({});
-      setCaptain(null);
+      setCaptain(null); // Always reset on new sign-in; preference reapply will set permanent captain if configured
+
+      // Allow preferences to reapply for this session after cleanup
+      preferencesAppliedSessionRef.current = null;
+      pendingPreferencesSessionRef.current = configurationSessionId;
 
       // Note: selectedSquadIds will be cleared by the existing effect below when team has no players
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionDetectionResult, hasActiveConfiguration, isResumedMatch, newSignInProcessed, clearStoredState]);
+  }, [sessionDetectionResult, hasActiveConfiguration, isResumedMatch, newSignInProcessed, clearStoredState, configurationSessionId]);
 
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
