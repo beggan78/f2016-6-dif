@@ -548,38 +548,6 @@ describe('ConfigurationScreen team preferences', () => {
     });
   });
 
-  it('stores a permanent captain preference in local storage', async () => {
-    const preferredCaptainId = '00000000-0000-4000-8000-000000000066';
-    const loadTeamPreferences = jest.fn(() => Promise.resolve({
-      teamCaptain: preferredCaptainId
-    }));
-
-    mockUseTeam.mockImplementation(() => ({
-      currentTeam: { id: 'team-1' },
-      teamPlayers: [],
-      hasTeams: true,
-      hasClubs: true,
-      loading: false,
-      loadTeamPreferences
-    }));
-
-    const props = buildProps({
-      selectedSquadIds: [],
-      selectedSquadPlayers: []
-    });
-
-    render(<ConfigurationScreen {...props} />);
-
-    await waitFor(() => {
-      expect(loadTeamPreferences).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      const storedPreference = JSON.parse(localStorage.getItem(STORAGE_KEYS.PREFERRED_CAPTAIN_ID));
-      expect(storedPreference).toEqual({ value: preferredCaptainId });
-    });
-  });
-
   it('does not override an existing captain selection with preference value', async () => {
     const preferredCaptainId = '00000000-0000-4000-8000-000000000002';
     const loadTeamPreferences = jest.fn(() => Promise.resolve({

@@ -9,7 +9,6 @@ export const STORAGE_KEYS = {
   GAME_STATE: 'sport-wizard-game-state',
   TIMER_STATE: 'sport-wizard-timer-state',
   SUBSTITUTION_COUNT: 'sport-wizard-substitution-count',
-  PREFERRED_CAPTAIN_ID: 'sport-wizard-preferred-captain-id',
   TEAM_PREFERENCES_CACHE: 'sport-wizard-team-preferences-cache',
 
   // Match events and history
@@ -102,7 +101,6 @@ export const SESSION_STORAGE_KEYS = [
   STORAGE_KEYS.CURRENT_TEAM_ID,
   STORAGE_KEYS.PENDING_INVITATION,
   STORAGE_KEYS.AUTH_SESSION,
-  STORAGE_KEYS.PREFERRED_CAPTAIN_ID,
   STORAGE_KEYS.TEAM_PREFERENCES_CACHE,
 ];
 

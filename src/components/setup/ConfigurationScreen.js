@@ -29,7 +29,6 @@ import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
-const captainPreferencePersistence = createPersistenceManager(STORAGE_KEYS.PREFERRED_CAPTAIN_ID, { value: null });
 const teamPreferencesCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_PREFERENCES_CACHE, { teamId: null, fetchedAt: 0, preferences: {} });
 const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -951,20 +950,6 @@ export function ConfigurationScreen({
 
     return isUuid(teamCaptainPreference) ? teamCaptainPreference : null;
   }, [teamCaptainPreference]);
-
-  React.useEffect(() => {
-    const captainIdToPersist = preferredCaptainId || null;
-
-    try {
-      if (captainIdToPersist) {
-        captainPreferencePersistence.saveState({ value: captainIdToPersist });
-      } else {
-        captainPreferencePersistence.clearState();
-      }
-    } catch (error) {
-      console.warn('Failed to persist preferred captain ID:', error);
-    }
-  }, [preferredCaptainId]);
 
   React.useEffect(() => {
     if (!preferredCaptainId) {
