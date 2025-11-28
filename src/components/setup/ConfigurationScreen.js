@@ -96,7 +96,7 @@ export function ConfigurationScreen({
   const [resumeData, setResumeData] = useState(null);
   // Track if current match is a resumed match to prevent inappropriate state clearing
   const [isResumedMatch, setIsResumedMatch] = useState(false);
-  const [teamCaptainPreference, setTeamCaptainPreference] = useState(null);
+  const [teamPreferences, setTeamPreferences] = useState(null);
   const [captainHistoryCounts, setCaptainHistoryCounts] = useState({});
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
@@ -119,9 +119,41 @@ export function ConfigurationScreen({
   const pendingMatchCheckQueuedRef = useRef(false);
   const pendingCheckAfterLoadingRef = useRef(false);
   const opponentPrefillAttemptedTeamRef = useRef(null);
-  const preferencesAppliedSessionRef = useRef(null);
-  const pendingPreferencesSessionRef = useRef(null);
-  const isApplyingPreferencesRef = useRef(false);
+  // Consolidated preference application state to avoid scattered refs
+  const preferenceStateRef = useRef({
+    status: 'idle', // idle | applying
+    appliedSessionId: null,
+    pendingSessionId: null
+  });
+
+  const updatePreferenceState = React.useCallback((updates) => {
+    preferenceStateRef.current = { ...preferenceStateRef.current, ...updates };
+  }, []);
+
+  const resetPreferenceState = React.useCallback(() => {
+    preferenceStateRef.current = { status: 'idle', appliedSessionId: null, pendingSessionId: null };
+  }, []);
+
+  const beginPreferenceApplication = React.useCallback(() => {
+    updatePreferenceState({ status: 'applying' });
+  }, [updatePreferenceState]);
+
+  const completePreferenceApplication = React.useCallback((sessionId) => {
+    const { pendingSessionId } = preferenceStateRef.current;
+    updatePreferenceState({
+      status: 'idle',
+      appliedSessionId: sessionId,
+      pendingSessionId: pendingSessionId === sessionId ? null : pendingSessionId
+    });
+  }, [updatePreferenceState]);
+
+  const setAppliedPreferencesSession = React.useCallback((sessionId) => {
+    updatePreferenceState({ appliedSessionId: sessionId });
+  }, [updatePreferenceState]);
+
+  const setPendingPreferencesSession = React.useCallback((sessionId) => {
+    updatePreferenceState({ pendingSessionId: sessionId });
+  }, [updatePreferenceState]);
   
   // Component unmount cleanup to prevent memory leaks
   React.useEffect(() => {
@@ -132,9 +164,7 @@ export function ConfigurationScreen({
       resumeDataAppliedRef.current = false;
       isProcessingResumeDataRef.current = false;
       teamSyncCompletedRef.current = false;
-      preferencesAppliedSessionRef.current = null;
-      pendingPreferencesSessionRef.current = null;
-      isApplyingPreferencesRef.current = false;
+      resetPreferenceState();
       
       // Clear any pending timeout
       if (processingTimeoutRef.current) {
@@ -142,13 +172,43 @@ export function ConfigurationScreen({
         processingTimeoutRef.current = null;
       }
     };
-  }, []); // Empty dependency array ensures this only runs on mount/unmount
+  }, [resetPreferenceState]); // Empty dependency array ensures this only runs on mount/unmount
   
   // Auth and Team hooks (must be before useEffect that use these values)
   const { isAuthenticated, user, sessionDetectionResult } = useAuth();
   const { currentTeam, teamPlayers, hasTeams, hasClubs, loading: teamLoading, loadTeamPreferences } = useTeam();
   const sessionDetectionType = sessionDetectionResult?.type;
   const isPageRefresh = sessionDetectionType === DETECTION_TYPES.PAGE_REFRESH;
+  const teamLoadingRef = React.useRef(teamLoading);
+  const hasActiveConfigurationRef = React.useRef(hasActiveConfiguration);
+  const teamConfigRef = React.useRef(teamConfig);
+  const selectedSquadCountRef = React.useRef(selectedSquadIds.length);
+  const formationGoalieRef = React.useRef(formation?.goalie || null);
+  const isResumedMatchRef = React.useRef(isResumedMatch);
+
+  React.useEffect(() => {
+    teamLoadingRef.current = teamLoading;
+  }, [teamLoading]);
+
+  React.useEffect(() => {
+    hasActiveConfigurationRef.current = hasActiveConfiguration;
+  }, [hasActiveConfiguration]);
+
+  React.useEffect(() => {
+    teamConfigRef.current = teamConfig;
+  }, [teamConfig]);
+
+  React.useEffect(() => {
+    selectedSquadCountRef.current = selectedSquadIds.length;
+  }, [selectedSquadIds.length]);
+
+  React.useEffect(() => {
+    formationGoalieRef.current = formation?.goalie || null;
+  }, [formation?.goalie]);
+
+  React.useEffect(() => {
+    isResumedMatchRef.current = isResumedMatch;
+  }, [isResumedMatch]);
   
   
   // Reset pending match modal closure state when user signs out
@@ -276,109 +336,110 @@ export function ConfigurationScreen({
     loadPendingMatches(teamId, true);
   }, [loadPendingMatches, pendingMatchLoading]);
 
+  const fetchTeamPreferences = React.useCallback(async (teamId) => {
+    if (!teamId || !loadTeamPreferences) {
+      return null;
+    }
+
+    const preferences = await loadTeamPreferences(teamId, { forceRefresh: true });
+    setTeamPreferences(preferences || null);
+    return preferences;
+  }, [loadTeamPreferences, setTeamPreferences]);
+
+  const applyPreferences = React.useCallback((preferences) => {
+    if (!preferences || Object.keys(preferences).length === 0) {
+      return;
+    }
+
+    const snapshotTeamConfig = teamConfigRef.current;
+    const preferredFormat = preferences.matchFormat;
+    const formatIsSupported = Object.values(FORMATS).includes(preferredFormat);
+    const fallbackFormat = snapshotTeamConfig?.format || FORMATS.FORMAT_5V5;
+    const formatToUse = formatIsSupported ? preferredFormat : fallbackFormat;
+
+    const minPlayersForFormat = getMinimumPlayersForFormat(formatToUse);
+    const maxPlayersForFormat = getMaximumPlayersForFormat(formatToUse);
+    const baseSquadSize = snapshotTeamConfig?.squadSize || selectedSquadCountRef.current || minPlayersForFormat;
+    const boundedSquadSize = Math.min(Math.max(baseSquadSize, minPlayersForFormat), maxPlayersForFormat);
+
+    const validFormations = getValidFormations(formatToUse, boundedSquadSize);
+    const preferredFormation = preferences.formation;
+    const formatDefaultFormation = FORMAT_CONFIGS[formatToUse]?.defaultFormation || FORMATIONS.FORMATION_2_2;
+    const formationDefinition = preferredFormation ? FORMATION_DEFINITIONS[preferredFormation] : null;
+    const formationSupported = preferredFormation && validFormations.includes(preferredFormation) && formationDefinition?.status !== 'coming-soon';
+    const formationToUse = formationSupported ? preferredFormation : formatDefaultFormation;
+
+    const newTeamConfig = createTeamConfig(formatToUse, boundedSquadSize, formationToUse);
+
+    updateTeamConfig(newTeamConfig);
+    setSelectedFormation(formationToUse);
+
+    const initialTemplate = getInitialFormationTemplate(newTeamConfig, formationGoalieRef.current);
+    if (initialTemplate && typeof setFormation === 'function') {
+      setFormation(initialTemplate);
+    }
+
+    if (PERIOD_OPTIONS.includes(preferences.numPeriods)) {
+      setNumPeriods(preferences.numPeriods);
+    }
+
+    if (DURATION_OPTIONS.includes(preferences.periodLength)) {
+      setPeriodDurationMinutes(preferences.periodLength);
+    }
+  }, [updateTeamConfig, setSelectedFormation, setFormation, setNumPeriods, setPeriodDurationMinutes]);
+
   const applyTeamPreferencesForSession = React.useCallback(async (sessionId) => {
-    if (!currentTeam?.id || !loadTeamPreferences) {
+    if (!currentTeam?.id) {
       return;
     }
 
-    if (teamLoading) {
-      pendingPreferencesSessionRef.current = sessionId;
+    const hasAppliedForSession = preferenceStateRef.current.appliedSessionId === sessionId;
+    const isResumeBlocked = () => isProcessingResumeDataRef.current || resumeDataAppliedRef.current || isResumedMatchRef.current;
+
+    if (hasAppliedForSession) {
       return;
     }
 
-    if (preferencesAppliedSessionRef.current === sessionId) {
+    const shouldQueueApplication = teamLoadingRef.current || preferenceStateRef.current.status === 'applying' || isResumeBlocked();
+    if (shouldQueueApplication) {
+      setPendingPreferencesSession(sessionId);
       return;
     }
 
-    if (isProcessingResumeDataRef.current || resumeDataAppliedRef.current) {
-      pendingPreferencesSessionRef.current = sessionId;
-      return;
-    }
-
-    if (isResumedMatch) {
-      // Respect resumed setup; allow future application if user abandons resume flow
-      pendingPreferencesSessionRef.current = sessionId;
-      return;
-    }
-
-    if (isApplyingPreferencesRef.current) {
-      pendingPreferencesSessionRef.current = sessionId;
-      return;
-    }
-
-    isApplyingPreferencesRef.current = true;
+    beginPreferenceApplication();
     let shouldMarkApplied = true;
 
     try {
-      const preferences = await loadTeamPreferences(currentTeam.id, { forceRefresh: true });
-      setTeamCaptainPreference(preferences?.teamCaptain ?? null);
+      const preferences = await fetchTeamPreferences(currentTeam.id);
 
-      if (isProcessingResumeDataRef.current || resumeDataAppliedRef.current || isResumedMatch) {
-        pendingPreferencesSessionRef.current = sessionId;
+      if (isResumeBlocked()) {
+        setPendingPreferencesSession(sessionId);
         shouldMarkApplied = false;
         return;
       }
 
-      if (hasActiveConfiguration) {
+      if (hasActiveConfigurationRef.current) {
         // User already configuring; only capture captain preference but skip overriding configuration
         return;
       }
 
-      if (!preferences || Object.keys(preferences).length === 0) {
-        return;
-      }
-
-      const preferredFormat = preferences.matchFormat;
-      const formatIsSupported = Object.values(FORMATS).includes(preferredFormat);
-      const formatToUse = formatIsSupported ? preferredFormat : (teamConfig?.format || FORMATS.FORMAT_5V5);
-
-      const minPlayersForFormat = getMinimumPlayersForFormat(formatToUse);
-      const maxPlayersForFormat = getMaximumPlayersForFormat(formatToUse);
-      const baseSquadSize = teamConfig?.squadSize || selectedSquadIds.length || minPlayersForFormat;
-      const boundedSquadSize = Math.min(Math.max(baseSquadSize, minPlayersForFormat), maxPlayersForFormat);
-
-      const validFormations = getValidFormations(formatToUse, boundedSquadSize);
-      const preferredFormation = preferences.formation;
-      const formatDefaultFormation = FORMAT_CONFIGS[formatToUse]?.defaultFormation || FORMATIONS.FORMATION_2_2;
-      const formationDefinition = preferredFormation ? FORMATION_DEFINITIONS[preferredFormation] : null;
-      const formationSupported = preferredFormation && validFormations.includes(preferredFormation) && formationDefinition?.status !== 'coming-soon';
-      const formationToUse = formationSupported ? preferredFormation : formatDefaultFormation;
-
-      const newTeamConfig = createTeamConfig(formatToUse, boundedSquadSize, formationToUse);
-
-      updateTeamConfig(newTeamConfig);
-      setSelectedFormation(formationToUse);
-
-      const initialTemplate = getInitialFormationTemplate(newTeamConfig, formation?.goalie || null);
-      if (initialTemplate && typeof setFormation === 'function') {
-        setFormation(initialTemplate);
-      }
-
-      if (PERIOD_OPTIONS.includes(preferences.numPeriods)) {
-        setNumPeriods(preferences.numPeriods);
-      }
-
-      if (DURATION_OPTIONS.includes(preferences.periodLength)) {
-        setPeriodDurationMinutes(preferences.periodLength);
-      }
+      applyPreferences(preferences);
     } catch (error) {
       console.error('Failed to apply team preferences:', error);
     } finally {
-      isApplyingPreferencesRef.current = false;
       if (shouldMarkApplied) {
-        preferencesAppliedSessionRef.current = sessionId;
-        if (pendingPreferencesSessionRef.current === sessionId) {
-          pendingPreferencesSessionRef.current = null;
-        }
+        completePreferenceApplication(sessionId);
+      } else {
+        updatePreferenceState({ status: 'idle' });
       }
 
-      const queuedSessionId = pendingPreferencesSessionRef.current;
-      if (queuedSessionId && queuedSessionId !== sessionId && currentTeam?.id && !teamLoading) {
-        pendingPreferencesSessionRef.current = null;
+      const queuedSessionId = preferenceStateRef.current.pendingSessionId;
+      if (queuedSessionId && queuedSessionId !== sessionId && currentTeam?.id && !teamLoadingRef.current) {
+        setPendingPreferencesSession(null);
         applyTeamPreferencesForSession(queuedSessionId);
       }
     }
-  }, [currentTeam?.id, loadTeamPreferences, teamLoading, hasActiveConfiguration, isResumedMatch, teamConfig, selectedSquadIds.length, setNumPeriods, setPeriodDurationMinutes, updateTeamConfig, setSelectedFormation, setFormation, formation?.goalie]);
+  }, [currentTeam?.id, fetchTeamPreferences, applyPreferences, setPendingPreferencesSession, beginPreferenceApplication, completePreferenceApplication, updatePreferenceState]);
 
   React.useEffect(() => {
     if (configurationSessionId === undefined || configurationSessionId === null) {
@@ -425,42 +486,44 @@ export function ConfigurationScreen({
       return;
     }
 
-    if (isPageRefresh && preferencesAppliedSessionRef.current === null) {
+    const { appliedSessionId } = preferenceStateRef.current;
+
+    if (isPageRefresh && appliedSessionId === null) {
       // Preserve in-progress configuration on page reloads; allow reapplication only for new sessions
-      preferencesAppliedSessionRef.current = configurationSessionId;
-      pendingPreferencesSessionRef.current = null;
+      setAppliedPreferencesSession(configurationSessionId);
+      setPendingPreferencesSession(null);
       return;
     }
 
-    if (preferencesAppliedSessionRef.current === configurationSessionId) {
+    if (appliedSessionId === configurationSessionId) {
       return;
     }
 
     if (!currentTeam?.id || teamLoading) {
-      pendingPreferencesSessionRef.current = configurationSessionId;
+      setPendingPreferencesSession(configurationSessionId);
       return;
     }
 
     applyTeamPreferencesForSession(configurationSessionId);
-  }, [configurationSessionId, currentTeam?.id, teamLoading, applyTeamPreferencesForSession, sessionDetectionType, isPageRefresh]);
+  }, [configurationSessionId, currentTeam?.id, teamLoading, applyTeamPreferencesForSession, sessionDetectionType, isPageRefresh, setAppliedPreferencesSession, setPendingPreferencesSession]);
 
   React.useEffect(() => {
     if (!currentTeam?.id || teamLoading) {
       return;
     }
 
-    const pendingPreferencesSessionId = pendingPreferencesSessionRef.current;
+    const pendingPreferencesSessionId = preferenceStateRef.current.pendingSessionId;
     if (pendingPreferencesSessionId === null || pendingPreferencesSessionId === undefined) {
       return;
     }
 
-    if (preferencesAppliedSessionRef.current === pendingPreferencesSessionId) {
-      pendingPreferencesSessionRef.current = null;
+    if (preferenceStateRef.current.appliedSessionId === pendingPreferencesSessionId) {
+      setPendingPreferencesSession(null);
       return;
     }
 
     applyTeamPreferencesForSession(pendingPreferencesSessionId);
-  }, [currentTeam?.id, teamLoading, applyTeamPreferencesForSession]);
+  }, [currentTeam?.id, teamLoading, applyTeamPreferencesForSession, setPendingPreferencesSession]);
 
   React.useEffect(() => {
     if (pendingMatchLoading) {
@@ -497,16 +560,16 @@ export function ConfigurationScreen({
     setIsResumedMatch(false);
     setResumeData(null);
     resumeDataAppliedRef.current = false;
-    preferencesAppliedSessionRef.current = null;
-    pendingPreferencesSessionRef.current = configurationSessionId;
+    setAppliedPreferencesSession(null);
+    setPendingPreferencesSession(configurationSessionId);
 
     clearStoredState();   // Clear localStorage and match state
 
     // Re-apply team preferences for the active configuration session
     applyTeamPreferencesForSession(configurationSessionId);
-  }, [setOpponentTeam, setMatchType, setVenueType, setCaptain, clearStoredState, configurationSessionId, applyTeamPreferencesForSession]);
+  }, [setOpponentTeam, setMatchType, setVenueType, setCaptain, clearStoredState, configurationSessionId, applyTeamPreferencesForSession, setAppliedPreferencesSession, setPendingPreferencesSession]);
   React.useEffect(() => {
-    setTeamCaptainPreference(null);
+    setTeamPreferences(null);
   }, [currentTeam?.id, configurationSessionId]);
 
   // Modal closure handler specifically for resume flow - does NOT clear stored state
@@ -722,13 +785,13 @@ export function ConfigurationScreen({
       setCaptain(null); // Always reset on new sign-in; preference reapply will set permanent captain if configured
 
       // Allow preferences to reapply for this session after cleanup
-      preferencesAppliedSessionRef.current = null;
-      pendingPreferencesSessionRef.current = configurationSessionId;
+      setAppliedPreferencesSession(null);
+      setPendingPreferencesSession(configurationSessionId);
 
       // Note: selectedSquadIds will be cleared by the existing effect below when team has no players
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionDetectionResult, hasActiveConfiguration, isResumedMatch, newSignInProcessed, clearStoredState, configurationSessionId]);
+  }, [sessionDetectionResult, hasActiveConfiguration, isResumedMatch, newSignInProcessed, clearStoredState, configurationSessionId, setAppliedPreferencesSession, setPendingPreferencesSession]);
 
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
@@ -944,12 +1007,13 @@ export function ConfigurationScreen({
   };
 
   const preferredCaptainId = React.useMemo(() => {
-    if (!teamCaptainPreference) {
+    const captainPreference = teamPreferences?.teamCaptain;
+    if (!captainPreference) {
       return null;
     }
 
-    return isUuid(teamCaptainPreference) ? teamCaptainPreference : null;
-  }, [teamCaptainPreference]);
+    return isUuid(captainPreference) ? captainPreference : null;
+  }, [teamPreferences]);
 
   React.useEffect(() => {
     if (!preferredCaptainId) {
@@ -1002,9 +1066,8 @@ export function ConfigurationScreen({
       return;
     }
 
-    setTeamCaptainPreference((prev) => prev || cachedCaptain);
-    setCaptain(cachedCaptain);
-  }, [captainId, currentTeam?.id, selectedSquadIds, minPlayersRequired, setCaptain]);
+    setTeamPreferences((prev) => prev || cached.preferences || null);
+  }, [captainId, currentTeam?.id, selectedSquadIds, minPlayersRequired, setTeamPreferences]);
 
   const handleSelectAllPlayers = React.useCallback(() => {
     if (areAllEligibleSelected || playersToShow.length === 0) {
@@ -1683,7 +1746,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Captain Assignment */}
-      {selectedSquadIds.length >= minPlayersRequired && teamCaptainPreference !== 'none' && (
+      {selectedSquadIds.length >= minPlayersRequired && teamPreferences?.teamCaptain !== 'none' && (
         <div className="p-3 bg-slate-700 rounded-md">
           <h3 className="text-base font-medium text-sky-200 mb-2">Assign Captain</h3>
           <div>
