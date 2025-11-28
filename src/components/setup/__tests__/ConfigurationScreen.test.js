@@ -442,10 +442,8 @@ describe('ConfigurationScreen team preferences', () => {
 
     render(<ConfigurationScreen {...props} />);
 
-    await waitFor(() => {
-      expect(loadTeamPreferences).toHaveBeenCalled();
-    });
-
+    // On page refresh we skip preference reapplication, so no calls and no overrides
+    expect(loadTeamPreferences).not.toHaveBeenCalled();
     expect(setCaptain).not.toHaveBeenCalled();
   });
 });
