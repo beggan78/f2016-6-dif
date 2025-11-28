@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
+import { STORAGE_KEYS } from '../../../constants/storageKeys';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
 import { DETECTION_TYPES } from '../../../services/sessionDetectionService';
 
@@ -169,6 +170,8 @@ beforeEach(() => {
 
   mockSuggestUpcomingOpponent.mockReset();
   mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: null });
+
+  localStorage.clear();
 });
 
 describe('ConfigurationScreen team preferences', () => {
@@ -487,7 +490,7 @@ describe('ConfigurationScreen team preferences', () => {
       expect(loadTeamPreferences).toHaveBeenCalled();
     });
 
-    expect(setCaptain).not.toHaveBeenCalled();
+    expect(setCaptain).not.toHaveBeenCalledWith(preferredCaptainId);
     expect(loadTeamPreferences).toHaveBeenCalledTimes(1);
 
     // Rerender with squad including preferred captain (regardless of selection order)
@@ -498,6 +501,82 @@ describe('ConfigurationScreen team preferences', () => {
     });
 
     expect(loadTeamPreferences).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not auto-assign captain until the minimum squad size is met', async () => {
+    const preferredCaptainId = '00000000-0000-4000-8000-000000000055';
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      teamCaptain: preferredCaptainId
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const players = Array.from({ length: 5 }, (_, index) => ({
+      id: index === 0 ? preferredCaptainId : `player-${index}`,
+      displayName: `Player ${index + 1}`
+    }));
+
+    const setCaptain = jest.fn();
+
+    const props = buildProps({
+      selectedSquadIds: players.slice(0, 3).map(player => player.id), // includes captain but under minimum
+      selectedSquadPlayers: players.slice(0, 3),
+      setCaptain,
+      configurationSessionId: 11
+    });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    expect(setCaptain).not.toHaveBeenCalledWith(preferredCaptainId);
+
+    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(player => player.id), selectedSquadPlayers: players }} />);
+
+    await waitFor(() => {
+      expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
+    });
+  });
+
+  it('stores a permanent captain preference in local storage', async () => {
+    const preferredCaptainId = '00000000-0000-4000-8000-000000000066';
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      teamCaptain: preferredCaptainId
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const props = buildProps({
+      selectedSquadIds: [],
+      selectedSquadPlayers: []
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      const storedPreference = JSON.parse(localStorage.getItem(STORAGE_KEYS.PREFERRED_CAPTAIN_ID));
+      expect(storedPreference).toEqual({ value: preferredCaptainId });
+    });
   });
 
   it('does not override an existing captain selection with preference value', async () => {

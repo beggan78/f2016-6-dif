@@ -7,6 +7,7 @@ import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
+import { createPersistenceManager } from '../../utils/persistenceManager';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useFormationVotes } from '../../hooks/useFormationVotes';
@@ -24,9 +25,11 @@ import { checkForPendingMatches, createResumeDataForConfiguration } from '../../
 import { discardPendingMatch } from '../../services/matchStateManager';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
 import { suggestUpcomingOpponent } from '../../services/opponentPrefillService';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
+const captainPreferencePersistence = createPersistenceManager(STORAGE_KEYS.PREFERRED_CAPTAIN_ID, { value: null });
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -900,6 +903,20 @@ export function ConfigurationScreen({
   }, [teamCaptainPreference]);
 
   React.useEffect(() => {
+    const captainIdToPersist = preferredCaptainId || null;
+
+    try {
+      if (captainIdToPersist) {
+        captainPreferencePersistence.saveState({ value: captainIdToPersist });
+      } else {
+        captainPreferencePersistence.clearState();
+      }
+    } catch (error) {
+      console.warn('Failed to persist preferred captain ID:', error);
+    }
+  }, [preferredCaptainId]);
+
+  React.useEffect(() => {
     if (!preferredCaptainId) {
       return;
     }
@@ -908,12 +925,16 @@ export function ConfigurationScreen({
       return;
     }
 
+    if (selectedSquadIds.length < minPlayersRequired) {
+      return;
+    }
+
     if (!selectedSquadIds.includes(preferredCaptainId)) {
       return;
     }
 
     setCaptain(preferredCaptainId);
-  }, [preferredCaptainId, captainId, selectedSquadIds, setCaptain]);
+  }, [preferredCaptainId, captainId, selectedSquadIds, minPlayersRequired, setCaptain]);
 
   const handleSelectAllPlayers = React.useCallback(() => {
     if (areAllEligibleSelected || playersToShow.length === 0) {
