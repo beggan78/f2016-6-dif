@@ -267,12 +267,12 @@ export function ConfigurationScreen({
         return;
       }
 
-      if (!preferences || Object.keys(preferences).length === 0) {
+      if (hasActiveConfiguration) {
+        // User already configuring; only capture captain preference but skip overriding configuration
         return;
       }
 
-      if (hasActiveConfiguration) {
-        // User already configuring; do not override with preferences (captain preference already captured)
+      if (!preferences || Object.keys(preferences).length === 0) {
         return;
       }
 
@@ -908,17 +908,12 @@ export function ConfigurationScreen({
       return;
     }
 
-    if (!Array.isArray(selectedSquadPlayers) || selectedSquadPlayers.length === 0) {
-      return;
-    }
-
-    const captainInSquad = selectedSquadPlayers.some(player => player.id === preferredCaptainId);
-    if (!captainInSquad) {
+    if (!selectedSquadIds.includes(preferredCaptainId)) {
       return;
     }
 
     setCaptain(preferredCaptainId);
-  }, [preferredCaptainId, captainId, selectedSquadPlayers, setCaptain]);
+  }, [preferredCaptainId, captainId, selectedSquadIds, setCaptain]);
 
   const handleSelectAllPlayers = React.useCallback(() => {
     if (areAllEligibleSelected || playersToShow.length === 0) {

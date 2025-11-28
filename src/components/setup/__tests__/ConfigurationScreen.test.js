@@ -248,6 +248,53 @@ describe('ConfigurationScreen team preferences', () => {
     expect(props.setPeriodDurationMinutes).not.toHaveBeenCalledWith(20);
   });
 
+  it('still captures permanent captain while skipping config overrides when active configuration exists', async () => {
+    const preferredCaptainId = '00000000-0000-4000-8000-000000000099';
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      teamCaptain: preferredCaptainId,
+      matchFormat: FORMATS.FORMAT_7V7
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const players = Array.from({ length: 8 }, (_, index) => ({
+      id: index === 7 ? preferredCaptainId : `player-${index}`,
+      displayName: `Player ${index + 1}`
+    }));
+
+    const setCaptain = jest.fn();
+
+    const props = buildProps({
+      configurationSessionId: 12,
+      hasActiveConfiguration: true,
+      selectedSquadIds: players.slice(0, 7).map(player => player.id), // preferred captain not yet selected
+      selectedSquadPlayers: players.slice(0, 7),
+      setCaptain
+    });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    expect(setCaptain).not.toHaveBeenCalled();
+
+    // Add preferred captain after minimum size reached
+    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(p => p.id), selectedSquadPlayers: players }} />);
+
+    await waitFor(() => {
+      expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
+    });
+  });
+
   it('does not reapply preferences on page refresh to preserve user changes', async () => {
     const loadTeamPreferences = jest.fn(() => Promise.resolve({
       matchFormat: FORMATS.FORMAT_7V7,
@@ -403,6 +450,54 @@ describe('ConfigurationScreen team preferences', () => {
     await waitFor(() => {
       expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
     });
+  });
+
+  it('auto-assigns permanent captain when added later without extra preference fetches', async () => {
+    const preferredCaptainId = '00000000-0000-4000-8000-000000000003';
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({
+      teamCaptain: preferredCaptainId
+    }));
+
+    mockUseTeam.mockImplementation(() => ({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    }));
+
+    const players = Array.from({ length: 5 }, (_, index) => ({
+      id: index === 0 ? preferredCaptainId : `player-${index}`,
+      displayName: `Player ${index + 1}`
+    }));
+
+    const setCaptain = jest.fn();
+
+    const props = buildProps({
+      selectedSquadIds: players.slice(0, 3).map(player => player.id), // preferred captain not selected yet
+      selectedSquadPlayers: players.slice(0, 3),
+      setCaptain,
+      configurationSessionId: 10
+    });
+
+    const { rerender } = render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(loadTeamPreferences).toHaveBeenCalled();
+    });
+
+    expect(setCaptain).not.toHaveBeenCalled();
+    expect(loadTeamPreferences).toHaveBeenCalledTimes(1);
+
+    // Rerender with squad including preferred captain (regardless of selection order)
+    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(player => player.id), selectedSquadPlayers: players }} />);
+
+    await waitFor(() => {
+      expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
+    });
+
+    expect(loadTeamPreferences).toHaveBeenCalledTimes(1);
   });
 
   it('does not override an existing captain selection with preference value', async () => {
