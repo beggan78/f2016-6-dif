@@ -16,6 +16,7 @@ import {
 const TeamContext = createContext({});
 
 const REFRESH_REVALIDATION_DELAY_MS = 0;
+const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export const useTeam = () => {
   const context = useContext(TeamContext);
@@ -31,6 +32,10 @@ export const TeamProvider = ({ children }) => {
   // Create persistence manager for currentTeamId
   const teamIdPersistence = useMemo(
     () => createPersistenceManager(STORAGE_KEYS.CURRENT_TEAM_ID, { teamId: null }),
+    []
+  );
+  const teamPreferencesCache = useMemo(
+    () => createPersistenceManager(STORAGE_KEYS.TEAM_PREFERENCES_CACHE, { teamId: null, fetchedAt: 0, preferences: {} }),
     []
   );
 
@@ -56,6 +61,46 @@ export const TeamProvider = ({ children }) => {
   const clearError = useCallback(() => {
     setError(null);
   }, []);
+
+  const readCachedTeamPreferences = useCallback((teamId) => {
+    if (!teamId) {
+      return null;
+    }
+
+    const cached = teamPreferencesCache.loadState();
+    if (!cached?.teamId || cached.teamId !== teamId) {
+      return null;
+    }
+
+    if (!cached.fetchedAt) {
+      return null;
+    }
+
+    const ageMs = Date.now() - cached.fetchedAt;
+    if (ageMs > TEAM_PREFERENCES_CACHE_TTL_MS) {
+      return null;
+    }
+
+    return cached.preferences || {};
+  }, [teamPreferencesCache]);
+
+  const writeCachedTeamPreferences = useCallback((teamId, preferences) => {
+    if (!teamId) {
+      return {};
+    }
+
+    const normalizedPreferences = preferences && typeof preferences === 'object' ? preferences : {};
+    teamPreferencesCache.saveState({
+      teamId,
+      fetchedAt: Date.now(),
+      preferences: normalizedPreferences
+    });
+    return normalizedPreferences;
+  }, [teamPreferencesCache]);
+
+  const clearTeamPreferencesCache = useCallback(() => {
+    teamPreferencesCache.clearState();
+  }, [teamPreferencesCache]);
 
   // Get all teams the user has access to
   const getUserTeams = useCallback(async () => {
@@ -487,8 +532,9 @@ export const TeamProvider = ({ children }) => {
       setTeamPlayers([]);
       setPendingRequests([]);
       teamIdPersistence.clearState();
+      clearTeamPreferencesCache();
     }
-  }, [user, getUserTeams, getClubMemberships, sessionDetectionResult, teamIdPersistence]);
+  }, [user, getUserTeams, getClubMemberships, sessionDetectionResult, teamIdPersistence, clearTeamPreferencesCache]);
 
   useEffect(() => {
     return () => {
@@ -1824,9 +1870,14 @@ export const TeamProvider = ({ children }) => {
     return null;
   }, []);
 
-  // Load team preferences
-  const loadTeamPreferences = useCallback(async (teamId) => {
+  // Load team preferences (cached in localStorage with TTL)
+  const loadTeamPreferences = useCallback(async (teamId, { forceRefresh = false } = {}) => {
     if (!teamId) return {};
+
+    const cachedPreferences = forceRefresh ? null : readCachedTeamPreferences(teamId);
+    if (cachedPreferences) {
+      return cachedPreferences;
+    }
 
     try {
       const { data, error } = await supabase
@@ -1836,21 +1887,22 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error loading team preferences:', error);
-        return {};
+        const fallback = readCachedTeamPreferences(teamId);
+        return fallback || {};
       }
 
-      // Convert array to object
       const preferences = {};
       data?.forEach(pref => {
         preferences[pref.key] = parsePreferenceValue(pref.key, pref.value);
       });
 
-      return preferences;
+      return writeCachedTeamPreferences(teamId, preferences);
     } catch (err) {
       console.error('Unexpected error loading preferences:', err);
-      return {};
+      const fallback = readCachedTeamPreferences(teamId);
+      return fallback || {};
     }
-  }, []);
+  }, [readCachedTeamPreferences, writeCachedTeamPreferences]);
 
   // Save team preferences (upsert)
   const saveTeamPreferences = useCallback(async (teamId, preferences) => {
@@ -1880,12 +1932,14 @@ export const TeamProvider = ({ children }) => {
         throw new Error('Failed to save preferences');
       }
 
+      writeCachedTeamPreferences(teamId, preferences);
+
       return true;
     } catch (err) {
       console.error('Unexpected error saving preferences:', err);
       throw err;
     }
-  }, [getCategoryForKey]);
+  }, [getCategoryForKey, writeCachedTeamPreferences]);
 
   // Delete a specific preference
   const deleteTeamPreference = useCallback(async (teamId, key) => {
@@ -1905,12 +1959,30 @@ export const TeamProvider = ({ children }) => {
         throw new Error('Failed to delete preference');
       }
 
+      const cached = readCachedTeamPreferences(teamId);
+      if (cached && Object.prototype.hasOwnProperty.call(cached, key)) {
+        const updated = { ...cached };
+        delete updated[key];
+        writeCachedTeamPreferences(teamId, updated);
+      }
+
       return true;
     } catch (err) {
       console.error('Unexpected error deleting preference:', err);
       throw err;
     }
-  }, []);
+  }, [readCachedTeamPreferences, writeCachedTeamPreferences]);
+
+  useEffect(() => {
+    if (!currentTeam?.id) {
+      clearTeamPreferencesCache();
+      return;
+    }
+
+    loadTeamPreferences(currentTeam.id, { forceRefresh: true }).catch((error) => {
+      console.error('Failed to prefetch team preferences:', error);
+    });
+  }, [currentTeam?.id, loadTeamPreferences, clearTeamPreferencesCache]);
 
   const value = {
     // State

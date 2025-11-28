@@ -30,6 +30,8 @@ import { STORAGE_KEYS } from '../../constants/storageKeys';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
 const captainPreferencePersistence = createPersistenceManager(STORAGE_KEYS.PREFERRED_CAPTAIN_ID, { value: null });
+const teamPreferencesCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_PREFERENCES_CACHE, { teamId: null, fetchedAt: 0, preferences: {} });
+const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function ConfigurationScreen({ 
   allPlayers, 
@@ -309,7 +311,7 @@ export function ConfigurationScreen({
     let shouldMarkApplied = true;
 
     try {
-      const preferences = await loadTeamPreferences(currentTeam.id);
+      const preferences = await loadTeamPreferences(currentTeam.id, { forceRefresh: true });
       setTeamCaptainPreference(preferences?.teamCaptain ?? null);
 
       if (isProcessingResumeDataRef.current || resumeDataAppliedRef.current || isResumedMatch) {
@@ -983,6 +985,41 @@ export function ConfigurationScreen({
 
     setCaptain(preferredCaptainId);
   }, [preferredCaptainId, captainId, selectedSquadIds, minPlayersRequired, setCaptain]);
+
+  React.useEffect(() => {
+    if (captainId) {
+      return;
+    }
+
+    if (!currentTeam?.id) {
+      return;
+    }
+
+    if (selectedSquadIds.length < minPlayersRequired) {
+      return;
+    }
+
+    const cached = teamPreferencesCacheManager.loadState();
+    if (!cached?.teamId || cached.teamId !== currentTeam.id) {
+      return;
+    }
+
+    if (!cached.fetchedAt || Date.now() - cached.fetchedAt > TEAM_PREFERENCES_CACHE_TTL_MS) {
+      return;
+    }
+
+    const cachedCaptain = cached.preferences?.teamCaptain;
+    if (!cachedCaptain || cachedCaptain === 'none' || !isUuid(cachedCaptain)) {
+      return;
+    }
+
+    if (!selectedSquadIds.includes(cachedCaptain)) {
+      return;
+    }
+
+    setTeamCaptainPreference((prev) => prev || cachedCaptain);
+    setCaptain(cachedCaptain);
+  }, [captainId, currentTeam?.id, selectedSquadIds, minPlayersRequired, setCaptain]);
 
   const handleSelectAllPlayers = React.useCallback(() => {
     if (areAllEligibleSelected || playersToShow.length === 0) {
