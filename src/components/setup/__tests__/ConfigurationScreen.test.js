@@ -205,7 +205,7 @@ describe('ConfigurationScreen team preferences', () => {
     render(<ConfigurationScreen {...props} />);
 
     await waitFor(() => {
-      expect(loadTeamPreferences).toHaveBeenCalledWith('team-1');
+      expect(loadTeamPreferences).toHaveBeenCalledWith('team-1', { forceRefresh: true });
     });
 
     expect(props.updateTeamConfig).toHaveBeenCalledWith({
