@@ -723,28 +723,49 @@ Formation voting system for user preferences.
 
 ---
 
-### settings
+### team_preference
 
-Application settings (team-level and global).
+Team-wide preferences for match configuration and gameplay settings.
 
 **Columns:**
 - `id` (uuid, PK) - Unique identifier
+- `team_id` (uuid, NOT NULL) - References `team(id)` with CASCADE delete
+- `key` (text, NOT NULL) - Preference key (matchFormat, formation, etc.)
+- `value` (text, NOT NULL) - Preference value stored as text
+- `category` (text, nullable) - Optional grouping (match, time, substitution, features)
+- `description` (text, nullable) - Optional user-facing description
 - `created_at` (timestamptz, NOT NULL) - Creation timestamp
 - `updated_at` (timestamptz, NOT NULL) - Last update timestamp
-- `team_id` (uuid, nullable) - References `team(id)` (null for global settings)
-- `key` (text, NOT NULL) - Setting key
-- `enabled` (boolean, NOT NULL) - Enabled flag (default: false)
-- `is_global` (boolean, NOT NULL) - Global setting flag (default: false)
-- `created_by` (uuid, nullable) - References `auth.users(id)` (default: auth.uid())
-- `last_updated_by` (uuid, nullable) - References `auth.users(id)` (default: auth.uid())
+- `created_by` (uuid, nullable) - References `auth.users(id)` for audit
+- `last_updated_by` (uuid, nullable) - References `auth.users(id)` for audit
 
 **Constraints:**
 - Primary key on `id`
-- Foreign key to `team(id)`
-- Foreign keys to `auth.users(id)` for audit fields
+- Foreign key to `team(id)` with CASCADE delete
+- Foreign keys to `auth.users(id)` with SET NULL for audit fields
+- Unique constraint on `(team_id, key)`
+
+**RLS Policies:**
+- Team members can SELECT
+- Team admins and coaches can INSERT/UPDATE/DELETE
+
+**Indexes:**
+- `idx_team_preference_team_id` on `team_id`
+- `idx_team_preference_key` on `key`
+- `idx_team_preference_category` on `category` (where not null)
+
+**Standard Preferences:**
+- `matchFormat`: '5v5', '7v7', '9v9', '11v11'
+- `formation`: '2-2', '1-2-1', '1-3', '1-1-2'
+- `periodLength`: Minutes per period (5-45)
+- `numPeriods`: Number of periods (1-4)
+- `substitutionLogic`: 'equal_time', 'same_role'
+- `trackGoalScorer`: 'true', 'false'
+- `fairPlayAward`: 'true', 'false'
+- `teamCaptain`: 'none', 'assign_each_match', or player UUID when a permanent captain is selected
 
 **Relationships:**
-- Many-to-one with `team` (nullable for global settings)
+- Many-to-one with `team`
 
 ---
 

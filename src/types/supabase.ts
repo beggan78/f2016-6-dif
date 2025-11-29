@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
-          operationName?: string
           extensions?: Json
-          variables?: Json
+          operationName?: string
           query?: string
+          variables?: Json
         }
         Returns: Json
       }
@@ -120,6 +120,136 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      connector: {
+        Row: {
+          config: Json | null
+          created_at: string
+          created_by: string | null
+          encrypted_password: string
+          encrypted_username: string
+          encryption_iv: string
+          encryption_key_version: number
+          encryption_salt: string
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          last_updated_by: string | null
+          last_verified_at: string | null
+          provider: Database["public"]["Enums"]["connector_provider"]
+          status: Database["public"]["Enums"]["connector_status"]
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          encrypted_password: string
+          encrypted_username: string
+          encryption_iv: string
+          encryption_key_version?: number
+          encryption_salt: string
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          last_updated_by?: string | null
+          last_verified_at?: string | null
+          provider: Database["public"]["Enums"]["connector_provider"]
+          status?: Database["public"]["Enums"]["connector_status"]
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          encrypted_password?: string
+          encrypted_username?: string
+          encryption_iv?: string
+          encryption_key_version?: number
+          encryption_salt?: string
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          last_updated_by?: string | null
+          last_verified_at?: string | null
+          provider?: Database["public"]["Enums"]["connector_provider"]
+          status?: Database["public"]["Enums"]["connector_status"]
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connector_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      connector_sync_job: {
+        Row: {
+          connector_id: string
+          created_at: string
+          created_by: string | null
+          error_code: string | null
+          error_details: Json | null
+          error_message: string | null
+          failure_count: number
+          id: string
+          job_type: Database["public"]["Enums"]["connector_sync_job_type"]
+          last_finished_at: string | null
+          last_started_at: string | null
+          last_updated_by: string | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["sync_job_status"]
+          updated_at: string
+        }
+        Insert: {
+          connector_id: string
+          created_at?: string
+          created_by?: string | null
+          error_code?: string | null
+          error_details?: Json | null
+          error_message?: string | null
+          failure_count?: number
+          id?: string
+          job_type?: Database["public"]["Enums"]["connector_sync_job_type"]
+          last_finished_at?: string | null
+          last_started_at?: string | null
+          last_updated_by?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["sync_job_status"]
+          updated_at?: string
+        }
+        Update: {
+          connector_id?: string
+          created_at?: string
+          created_by?: string | null
+          error_code?: string | null
+          error_details?: Json | null
+          error_message?: string | null
+          failure_count?: number
+          id?: string
+          job_type?: Database["public"]["Enums"]["connector_sync_job_type"]
+          last_finished_at?: string | null
+          last_started_at?: string | null
+          last_updated_by?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["sync_job_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connector_sync_job_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "connector"
             referencedColumns: ["id"]
           },
         ]
@@ -352,6 +482,63 @@ export type Database = {
           },
         ]
       }
+      player_attendance: {
+        Row: {
+          connector_id: string
+          created_at: string
+          id: string
+          last_synced_at: string
+          month: number
+          player_id: string | null
+          player_name: string
+          total_attendance: number
+          total_practices: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          connector_id: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          month?: number
+          player_id?: string | null
+          player_name: string
+          total_attendance: number
+          total_practices: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          connector_id?: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          month?: number
+          player_id?: string | null
+          player_name?: string
+          total_attendance?: number
+          total_practices?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_attendance_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "connector"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_match_stats: {
         Row: {
           attacker_time_seconds: number | null
@@ -500,50 +687,6 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "player"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      settings: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          enabled: boolean
-          id: string
-          is_global: boolean
-          key: string
-          last_updated_by: string | null
-          team_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          enabled?: boolean
-          id?: string
-          is_global?: boolean
-          key: string
-          last_updated_by?: string | null
-          team_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          enabled?: boolean
-          id?: string
-          is_global?: boolean
-          key?: string
-          last_updated_by?: string | null
-          team_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "settings_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "team"
             referencedColumns: ["id"]
           },
         ]
@@ -715,6 +858,53 @@ export type Database = {
           },
         ]
       }
+      team_preference: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          key: string
+          last_updated_by: string | null
+          team_id: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          last_updated_by?: string | null
+          team_id: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          last_updated_by?: string | null
+          team_id?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_preference_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_user: {
         Row: {
           created_at: string
@@ -763,6 +953,50 @@ export type Database = {
           },
         ]
       }
+      upcoming_match: {
+        Row: {
+          connector_id: string
+          created_at: string
+          id: string
+          match_date: string
+          match_time: string | null
+          opponent: string
+          synced_at: string
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          connector_id: string
+          created_at?: string
+          id?: string
+          match_date: string
+          match_time?: string | null
+          opponent: string
+          synced_at?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          connector_id?: string
+          created_at?: string
+          id?: string
+          match_date?: string
+          match_time?: string | null
+          opponent?: string
+          synced_at?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upcoming_match_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "connector"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profile: {
         Row: {
           created_at: string
@@ -790,27 +1024,31 @@ export type Database = {
     }
     Functions: {
       accept_team_invitation: {
-        Args: { p_user_email: string; p_invitation_id: string }
+        Args: { p_invitation_id: string; p_user_email: string }
         Returns: Json
       }
       check_invitation_expiry_status: {
         Args: Record<PropertyKey, never>
         Returns: {
-          accepted: number
-          expired_marked: number
-          cancelled: number
           total_invitations: number
           pending_valid: number
           pending_expired: number
+          expired_marked: number
+          accepted: number
+          cancelled: number
         }[]
       }
       create_club_with_admin: {
         Args: {
+          club_short_name?: string
           club_long_name?: string
           club_name: string
-          club_short_name?: string
         }
         Returns: Json
+      }
+      create_manual_sync_job: {
+        Args: { p_connector_id: string }
+        Returns: string
       }
       create_team_with_admin: {
         Args: { team_config?: Json; p_club_id: string; team_name: string }
@@ -831,6 +1069,19 @@ export type Database = {
           expired_count: number
         }[]
       }
+      get_connector: {
+        Args: {
+          p_team_id: string
+          p_provider: Database["public"]["Enums"]["connector_provider"]
+        }
+        Returns: {
+          id: string
+          status: Database["public"]["Enums"]["connector_status"]
+          last_error: string
+          last_sync_at: string
+          last_verified_at: string
+        }[]
+      }
       get_user_email_for_team_request: {
         Args: { request_user_id: string; team_id: string }
         Returns: string
@@ -839,18 +1090,22 @@ export type Database = {
         Args: { user_id_param?: string }
         Returns: string[]
       }
+      get_vault_secret_by_name: {
+        Args: { secret_name: string }
+        Returns: string
+      }
       invite_user_to_team: {
         Args: {
-          p_role: string
-          p_team_id: string
+          p_email: string
           p_redirect_url?: string
           p_message?: string
-          p_email: string
+          p_team_id: string
+          p_role: string
         }
         Returns: Json
       }
       is_club_admin: {
-        Args: { user_id_param?: string; club_id_param: string }
+        Args: { club_id_param: string; user_id_param?: string }
         Returns: boolean
       }
       is_team_admin: {
@@ -895,13 +1150,16 @@ export type Database = {
         }
       }
       submit_formation_vote: {
-        Args: { p_formation: string; p_format: string }
+        Args: { p_format: string; p_formation: string }
         Returns: Json
       }
     }
     Enums: {
       club_user_role: "admin" | "coach" | "member"
       club_user_status: "active" | "inactive" | "pending"
+      connector_provider: "sportadmin" | "svenska_lag"
+      connector_status: "connected" | "disconnected" | "error" | "verifying"
+      connector_sync_job_type: "manual" | "scheduled" | "verification"
       match_event_type:
         | "goal_scored"
         | "goal_conceded"
@@ -930,6 +1188,13 @@ export type Database = {
         | "substitute"
         | "unknown"
       request_status: "pending" | "approved" | "rejected" | "cancelled"
+      sync_job_status:
+        | "waiting"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+        | "retrying"
       user_role: "parent" | "player" | "coach" | "admin"
     }
     CompositeTypes: {
@@ -1063,6 +1328,9 @@ export const Constants = {
     Enums: {
       club_user_role: ["admin", "coach", "member"],
       club_user_status: ["active", "inactive", "pending"],
+      connector_provider: ["sportadmin", "svenska_lag"],
+      connector_status: ["connected", "disconnected", "error", "verifying"],
+      connector_sync_job_type: ["manual", "scheduled", "verification"],
       match_event_type: [
         "goal_scored",
         "goal_conceded",
@@ -1093,6 +1361,14 @@ export const Constants = {
         "unknown",
       ],
       request_status: ["pending", "approved", "rejected", "cancelled"],
+      sync_job_status: [
+        "waiting",
+        "running",
+        "completed",
+        "failed",
+        "cancelled",
+        "retrying",
+      ],
       user_role: ["parent", "player", "coach", "admin"],
     },
   },

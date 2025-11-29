@@ -19,7 +19,8 @@ import {
   isPlayerCaptain,
   setCaptain,
   hasActiveSubstitutes,
-  resetPlayerMatchStartState
+  resetPlayerMatchStartState,
+  resetPlayersForNewMatch
 } from '../playerUtils';
 import { PLAYER_STATUS, PLAYER_ROLES } from '../../constants/playerConstants';
 
@@ -139,6 +140,46 @@ describe('playerUtils', () => {
     it('should assign sequential IDs', () => {
       const players = initializePlayers(['A', 'B', 'C', 'D']);
       expect(players.map(p => p.id)).toEqual(['p1', 'p2', 'p3', 'p4']);
+    });
+  });
+
+  describe('resetPlayersForNewMatch', () => {
+    it('resets stats but preserves inactive and captain flags', () => {
+      const players = [
+        {
+          id: 'p1',
+          displayName: 'Player 1',
+          stats: {
+            timeOnFieldSeconds: 120,
+            isInactive: true,
+            isCaptain: false
+          }
+        },
+        {
+          id: 'p2',
+          displayName: 'Player 2',
+          stats: {
+            goals: 3,
+            isInactive: false,
+            isCaptain: true
+          }
+        }
+      ];
+
+      const reset = resetPlayersForNewMatch(players);
+
+      expect(reset).toHaveLength(2);
+      expect(reset[0]).not.toBe(players[0]);
+      expect(reset[0].stats).not.toBe(players[0].stats);
+      expect(reset[0].stats.timeOnFieldSeconds).toBe(0);
+      expect(reset[0].stats.isInactive).toBe(true);
+      expect(reset[1].stats.isCaptain).toBe(true);
+      expect(reset[1].stats.goals).toBe(0);
+    });
+
+    it('returns empty array when players input is invalid', () => {
+      expect(resetPlayersForNewMatch(null)).toEqual([]);
+      expect(resetPlayersForNewMatch('not-an-array')).toEqual([]);
     });
   });
 

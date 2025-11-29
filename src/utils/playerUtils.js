@@ -83,6 +83,29 @@ export const resetPlayerMatchStartState = (player) => {
 };
 
 /**
+ * Reset players for a new match while keeping identity and inactive flags intact.
+ *
+ * Useful when abandoning a match but wanting to keep the same configuration prefilled.
+ *
+ * @param {Array} players - Players to reset
+ * @returns {Array} New player objects with fresh stats
+ */
+export const resetPlayersForNewMatch = (players = []) => {
+  if (!Array.isArray(players)) {
+    return [];
+  }
+
+  return players.map((player) => ({
+    ...player,
+    stats: {
+      ...createEmptyPlayerStats(),
+      isInactive: player?.stats?.isInactive ?? false,
+      isCaptain: player?.stats?.isCaptain ?? false
+    }
+  }));
+};
+
+/**
  * Checks if there are any inactive players in the selected squad
  * @param {Array} allPlayers - Array of all players
  * @param {Array} selectedSquadIds - Array of selected squad player IDs

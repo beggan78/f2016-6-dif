@@ -328,6 +328,81 @@ describe('GameScreen', () => {
       
       expect(screen.getByText('Opponent')).toBeInTheDocument();
     });
+
+    it('should not render goal scorer modal when tracking is disabled', () => {
+      const useGameModals = require('../../../hooks/useGameModals');
+      useGameModals.useGameModals.mockReturnValueOnce({
+        modals: {
+          fieldPlayer: {
+            isOpen: false,
+            type: null,
+            target: null,
+            playerName: '',
+            sourcePlayerId: null,
+            availablePlayers: [],
+            showPositionOptions: false
+          },
+          substitute: {
+            isOpen: false,
+            playerId: null,
+            playerName: '',
+            isCurrentlyInactive: false,
+            canSetAsNextToGoIn: false
+          },
+          substituteSelection: {
+            isOpen: false,
+            fieldPlayerName: '',
+            fieldPlayerId: null,
+            availableSubstitutes: []
+          },
+          goalie: {
+            isOpen: false,
+            currentGoalieName: '',
+            availablePlayers: []
+          },
+          scoreEdit: {
+            isOpen: false
+          },
+          undoConfirm: {
+            isOpen: false
+          },
+          goalScorer: {
+            isOpen: true,
+            eventId: 'evt_test',
+            team: 'home',
+            mode: 'new',
+            matchTime: '00:00',
+            periodNumber: 1,
+            currentScorerId: null,
+            existingGoalData: null
+          }
+        },
+        openModal: jest.fn(),
+        closeModal: jest.fn(),
+        closeModalWithNavigation: jest.fn(),
+        openFieldPlayerModal: jest.fn(),
+        closeFieldPlayerModal: jest.fn(),
+        openSubstituteModal: jest.fn(),
+        closeSubstituteModal: jest.fn(),
+        openSubstituteSelectionModal: jest.fn(),
+        closeSubstituteSelectionModal: jest.fn(),
+        openGoalieModal: jest.fn(),
+        closeGoalieModal: jest.fn(),
+        openScoreEditModal: jest.fn(),
+        closeScoreEditModal: jest.fn(),
+        openUndoConfirmModal: jest.fn(),
+        closeUndoConfirmModal: jest.fn(),
+        openGoalScorerModal: jest.fn(),
+        closeGoalScorerModal: jest.fn(),
+        setPendingGoalData: jest.fn(),
+        getPendingGoalData: jest.fn(),
+        clearPendingGoal: jest.fn()
+      });
+
+      render(<GameScreen {...defaultProps} trackGoalScorer={false} />);
+
+      expect(screen.queryByText(/Who Scored/i)).not.toBeInTheDocument();
+    });
   });
 
   describe('Timer Controls', () => {

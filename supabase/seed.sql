@@ -131,13 +131,16 @@ INSERT INTO public.season_stats (
 ('33333333-3333-3333-3333-33333333333f', EXTRACT(YEAR FROM CURRENT_DATE), 5, 2, 0, 0, 8100, 1200, 4050, 4050, 4, 1), -- Sophie
 ('33333333-3333-3333-3333-333333333340', EXTRACT(YEAR FROM CURRENT_DATE), 4, 1, 0, 0, 6600, 1200, 3300, 3300, 3, 1); -- Tyra
 
--- Insert sample settings
-INSERT INTO public.settings (team_id, key, enabled, is_global) VALUES
-('22222222-2222-2222-2222-222222222222', 'auto_substitution_alerts', true, false),
-('22222222-2222-2222-2222-222222222222', 'fair_play_tracking', true, false),
-('22222222-2222-2222-2222-222222222222', 'detailed_time_tracking', true, false),
-(NULL, 'enable_analytics', true, true),
-(NULL, 'data_retention_months', true, true);
+-- Insert sample team preferences
+INSERT INTO public.team_preference (team_id, key, value, category) VALUES
+('22222222-2222-2222-2222-222222222222', 'matchFormat', '5v5', 'match'),
+('22222222-2222-2222-2222-222222222222', 'formation', '2-2', 'match'),
+('22222222-2222-2222-2222-222222222222', 'periodLength', '20', 'time'),
+('22222222-2222-2222-2222-222222222222', 'numPeriods', '2', 'time'),
+('22222222-2222-2222-2222-222222222222', 'substitutionLogic', 'equal_time', 'substitution'),
+('22222222-2222-2222-2222-222222222222', 'trackGoalScorer', 'true', 'features'),
+('22222222-2222-2222-2222-222222222222', 'fairPlayAward', 'false', 'features'),
+('22222222-2222-2222-2222-222222222222', 'teamCaptain', 'none', 'features');
 
 -- Note: User profile and team_user data would typically be created
 -- through authentication flows, not seeded directly

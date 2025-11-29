@@ -2,7 +2,8 @@ import { logEvent, EVENT_TYPES, calculateMatchTime, getAllEvents, markEventAsUnd
 
 export const createScoreHandlers = (
   stateUpdaters,
-  modalHandlers
+  modalHandlers,
+  options = {}
 ) => {
   const { 
     setScore,
@@ -19,6 +20,9 @@ export const createScoreHandlers = (
     getPendingGoalData,
     clearPendingGoal
   } = modalHandlers;
+  const {
+    shouldTrackGoalScorer = true
+  } = options;
 
   // Generate unique event ID for goals
   const generateEventId = () => {
@@ -76,8 +80,27 @@ export const createScoreHandlers = (
     const eventId = generateEventId();
     const pendingGoalData = createPendingGoalData(goalType, eventId, gameState);
     
-    // For own team goals: use modal flow for scorer attribution
     if (goalType === 'scored') {
+      // If goal scorer tracking is disabled, log immediately without modal flow
+      if (!shouldTrackGoalScorer) {
+        if (clearPendingGoal) {
+          clearPendingGoal();
+        }
+
+        addGoalScored();
+
+        logEvent(pendingGoalData.type, {
+          eventId: pendingGoalData.eventId,
+          periodNumber: pendingGoalData.periodNumber,
+          ownScore: pendingGoalData.ownScore,
+          opponentScore: pendingGoalData.opponentScore,
+          scorerId: null,
+          goalType: pendingGoalData.goalType
+        }, pendingGoalData.timestamp);
+
+        return;
+      }
+
       // Store as pending goal, don't increment score yet
       setPendingGoalData(pendingGoalData);
       
@@ -124,6 +147,11 @@ export const createScoreHandlers = (
   };
 
   const handleSelectGoalScorer = (eventId, scorerId) => {
+    if (!shouldTrackGoalScorer) {
+      closeGoalScorerModal();
+      return;
+    }
+
     // Get pending goal data
     const pendingGoal = getPendingGoalData();
     
@@ -154,6 +182,11 @@ export const createScoreHandlers = (
   };
 
   const handleCorrectGoalScorer = (eventId, newScorerId) => {
+    if (!shouldTrackGoalScorer) {
+      closeGoalScorerModal();
+      return;
+    }
+
     // Update the original goal event with new scorer
     const updateSuccess = updateEventData(eventId, { scorerId: newScorerId });
     
@@ -254,6 +287,10 @@ export const createScoreHandlers = (
   };
 
   const handleEditGoalScorer = (eventId) => {
+    if (!shouldTrackGoalScorer) {
+      return;
+    }
+
     // Open goal scorer modal for editing existing goal
     if (!openGoalScorerModal) {
       console.warn('Goal scorer modal not available for editing');

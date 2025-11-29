@@ -12,7 +12,7 @@
  */
 
 import { createScoreHandlers } from '../scoreHandlers';
-import { EVENT_TYPES, clearAllEvents, logEvent, getMatchEvents } from '../../../utils/gameEventLogger';
+import { EVENT_TYPES } from '../../../utils/gameEventLogger';
 
 // Mock the gameEventLogger functions that will be used by scoreHandlers
 jest.mock('../../../utils/gameEventLogger', () => {
@@ -152,6 +152,90 @@ describe('scoreHandlers', () => {
       expect(() => {
         handlersWithoutModal.handleEditGoalScorer('goal1');
       }).not.toThrow();
+    });
+  });
+
+  describe('goal scorer tracking preference', () => {
+    it('should log goal immediately without scorer selection when tracking is disabled', () => {
+      const goalTrackingStateUpdaters = {
+        setScore: mockSetScore,
+        addGoalScored: jest.fn(),
+        addGoalConceded: jest.fn()
+      };
+
+      const goalTrackingModalHandlers = {
+        openScoreEditModal: jest.fn(),
+        closeScoreEditModal: jest.fn(),
+        openGoalScorerModal: mockOpenGoalScorerModal,
+        closeGoalScorerModal: jest.fn(),
+        setPendingGoalData: jest.fn(),
+        getPendingGoalData: jest.fn(),
+        clearPendingGoal: jest.fn()
+      };
+
+      const logEventSpy = jest
+        .spyOn(require('../../../utils/gameEventLogger'), 'logEvent')
+        .mockImplementation(() => {});
+
+      const handlers = createScoreHandlers(
+        goalTrackingStateUpdaters,
+        goalTrackingModalHandlers,
+        { shouldTrackGoalScorer: false }
+      );
+
+      const gameState = {
+        ownScore: 1,
+        opponentScore: 0,
+        currentPeriodNumber: 1
+      };
+
+      handlers.handleAddGoalScored(gameState);
+
+      expect(goalTrackingStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
+      expect(goalTrackingModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
+      expect(goalTrackingModalHandlers.setPendingGoalData).not.toHaveBeenCalled();
+      expect(goalTrackingModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
+      expect(logEventSpy).toHaveBeenCalledWith(
+        EVENT_TYPES.GOAL_SCORED,
+        expect.objectContaining({
+          ownScore: 2,
+          opponentScore: 0,
+          scorerId: null,
+          goalType: 'scored'
+        }),
+        expect.any(Number)
+      );
+
+      logEventSpy.mockRestore();
+    });
+
+    it('should ignore scorer selection when tracking is disabled', () => {
+      const goalTrackingStateUpdaters = {
+        setScore: mockSetScore,
+        addGoalScored: jest.fn(),
+        addGoalConceded: jest.fn()
+      };
+
+      const goalTrackingModalHandlers = {
+        openScoreEditModal: jest.fn(),
+        closeScoreEditModal: jest.fn(),
+        openGoalScorerModal: mockOpenGoalScorerModal,
+        closeGoalScorerModal: jest.fn(),
+        setPendingGoalData: jest.fn(),
+        getPendingGoalData: jest.fn(),
+        clearPendingGoal: jest.fn()
+      };
+
+      const handlers = createScoreHandlers(
+        goalTrackingStateUpdaters,
+        goalTrackingModalHandlers,
+        { shouldTrackGoalScorer: false }
+      );
+
+      // Even if called, it should no-op
+      expect(() => handlers.handleSelectGoalScorer('evt_1', 'player1')).not.toThrow();
+      expect(goalTrackingStateUpdaters.addGoalScored).not.toHaveBeenCalled();
+      expect(goalTrackingModalHandlers.closeGoalScorerModal).toHaveBeenCalled();
     });
   });
 

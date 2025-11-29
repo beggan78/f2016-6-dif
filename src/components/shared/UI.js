@@ -651,7 +651,8 @@ export function ScoreManagerModal({
   onDeleteGoal,
   calculateMatchTime,
   formatTime,
-  getPlayerName
+  getPlayerName,
+  allowScorerSelection = true
 }) {
   // Filter and process goal events (using same pattern as MatchReportScreen)
   const goalEvents = React.useMemo(() => {
@@ -665,18 +666,22 @@ export function ScoreManagerModal({
         // Use same scorer resolution pattern as GameEventTimeline (with fallback to eventData.scorerId)
         const scorerId = goalScorers[event.id] || event.data?.scorerId;
         const scorerName = scorerId && getPlayerName ? getPlayerName(scorerId) : null;
+        const scorerLabel = allowScorerSelection
+          ? (scorerName || 'Unknown scorer')
+          : 'Scorer not tracked';
         
         return {
           ...event,
           matchTime,
           scorerName,
+          scorerLabel,
           isGoalScored: event.type === EVENT_TYPES.GOAL_SCORED
         };
       })
       .sort((a, b) => a.timestamp - b.timestamp);
     
     return goals;
-  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime]);
+  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime, allowScorerSelection]);
 
   const handleClose = () => {
     onCancel();
@@ -759,13 +764,13 @@ export function ScoreManagerModal({
                           </span>
                           {goal.isGoalScored && (
                             <>
-                              <span className="text-sm text-slate-400">|</span>
-                              <span className="text-sm text-sky-300">
-                                {goal.scorerName || 'Unknown scorer'}
-                              </span>
-                            </>
-                          )}
-                          {!goal.isGoalScored && (
+                          <span className="text-sm text-slate-400">|</span>
+                          <span className="text-sm text-sky-300">
+                                {goal.scorerLabel}
+                          </span>
+                        </>
+                      )}
+                      {!goal.isGoalScored && (
                             <>
                               <span className="text-sm text-slate-400">|</span>
                               <span className="text-sm text-slate-300">Opponent</span>
@@ -774,7 +779,7 @@ export function ScoreManagerModal({
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {goal.isGoalScored && (
+                        {goal.isGoalScored && allowScorerSelection && (
                           <Button
                             onClick={() => handleEditScorer(eventId)}
                             variant="secondary"

@@ -243,6 +243,7 @@ export class GamePersistenceManager extends PersistenceManager {
       venueType: DEFAULT_VENUE_TYPE,
       ownScore: 0,
       opponentScore: 0,
+      trackGoalScorer: true,
       // Match event tracking state for Match Report feature
       matchEvents: [],
       matchStartTime: null,
@@ -331,6 +332,7 @@ export class GamePersistenceManager extends PersistenceManager {
       venueType: gameState.venueType ?? defaults.venueType ?? DEFAULT_VENUE_TYPE,
       ownScore: gameState.ownScore ?? defaults.ownScore ?? 0,
       opponentScore: gameState.opponentScore ?? defaults.opponentScore ?? 0,
+      trackGoalScorer: gameState.trackGoalScorer ?? defaults.trackGoalScorer ?? true,
       // Match event tracking state for Match Report feature
       matchEvents: gameState.matchEvents ?? defaults.matchEvents ?? [],
       matchStartTime: gameState.matchStartTime ?? defaults.matchStartTime ?? null,
