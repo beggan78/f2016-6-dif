@@ -8,7 +8,7 @@ import { useNavigationHistoryContext } from './contexts/NavigationHistoryContext
 import { formatTime } from './utils/formatUtils';
 import { formatPlayerName } from './utils/formatUtils';
 import { calculateUndoTimerTarget } from './game/time/timeCalculator';
-import { initializePlayers } from './utils/playerUtils';
+import { initializePlayers, getSelectedSquadPlayers, getOutfieldPlayers, resetPlayersForNewMatch } from './utils/playerUtils';
 import { initialRoster } from './constants/defaultData';
 import { VIEWS } from './constants/viewConstants';
 import { TEAM_CONFIG } from './constants/teamConstants';
@@ -25,7 +25,6 @@ import { TeamManagement } from './components/team/TeamManagement';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
 import { MatchRecoveryModal } from './components/modals/MatchRecoveryModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
-import { getSelectedSquadPlayers, getOutfieldPlayers } from './utils/playerUtils';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
 import { PreferencesModal } from './components/shared/PreferencesModal';
@@ -748,8 +747,87 @@ function AppContent() {
     removeFromNavigationStack();
   };
 
-  const handleRestartMatch = () => {
-    
+  const handleRestartMatch = (options = {}) => {
+    const { preserveConfiguration = false } = options;
+
+    if (preserveConfiguration) {
+      const configSnapshot = {
+        selectedSquadIds: [...(gameState.selectedSquadIds || [])],
+        periodGoalieIds: { ...(gameState.periodGoalieIds || {}) },
+        formation: gameState.formation ? { ...gameState.formation } : null,
+        teamConfig: gameState.teamConfig ? { ...gameState.teamConfig } : null,
+        selectedFormation: gameState.selectedFormation,
+        numPeriods: gameState.numPeriods,
+        periodDurationMinutes: gameState.periodDurationMinutes,
+        opponentTeam: gameState.opponentTeam,
+        matchType: gameState.matchType,
+        venueType: gameState.venueType,
+        captainId: gameState.captainId,
+        alertMinutes: gameState.alertMinutes
+      };
+
+      const resetPlayers = resetPlayersForNewMatch(gameState.allPlayers || []);
+
+      // Clear runtime-only match state
+      clearAllEvents();
+      clearHistory();
+      timers.clearAllTimersForNewGame();
+
+      gameState.setView(VIEWS.CONFIG);
+      gameState.setCurrentPeriodNumber(1);
+      gameState.setGameLog([]);
+      gameState.setMatchEvents([]);
+      gameState.setMatchStartTime(null);
+      gameState.setGoalScorers({});
+      gameState.setEventSequenceNumber(0);
+      gameState.setLastEventBackup(null);
+      gameState.setRotationQueue([]);
+      gameState.setNextPlayerToSubOut(null, true);
+      gameState.setNextPlayerIdToSubOut(null);
+      gameState.setNextNextPlayerIdToSubOut(null);
+      gameState.setLastSubstitutionTimestamp(null);
+      gameState.setTimerPauseStartTime(null);
+      gameState.setTotalMatchPausedDuration(0);
+      gameState.setMatchState('not_started');
+      gameState.setMatchCreated(false);
+      gameState.setCurrentMatchId(null);
+      gameState.resetScore();
+
+      gameState.setAllPlayers(resetPlayers);
+      if (configSnapshot.teamConfig) {
+        gameState.updateTeamConfig(configSnapshot.teamConfig);
+      }
+      if (configSnapshot.selectedFormation) {
+        gameState.setSelectedFormation(configSnapshot.selectedFormation);
+      }
+      if (configSnapshot.formation) {
+        gameState.setFormation(configSnapshot.formation);
+      }
+      gameState.setSelectedSquadIds(configSnapshot.selectedSquadIds || []);
+      gameState.setPeriodGoalieIds(configSnapshot.periodGoalieIds || {});
+      if (typeof configSnapshot.numPeriods === 'number') {
+        gameState.setNumPeriods(configSnapshot.numPeriods);
+      }
+      if (typeof configSnapshot.periodDurationMinutes === 'number') {
+        gameState.setPeriodDurationMinutes(configSnapshot.periodDurationMinutes);
+      }
+      if (typeof configSnapshot.alertMinutes === 'number') {
+        gameState.setAlertMinutes(configSnapshot.alertMinutes);
+      }
+      gameState.setOpponentTeam(configSnapshot.opponentTeam || '');
+      if (configSnapshot.matchType) {
+        gameState.setMatchType(configSnapshot.matchType);
+      }
+      if (configSnapshot.venueType) {
+        gameState.setVenueType(configSnapshot.venueType);
+      }
+      gameState.setCaptain(configSnapshot.captainId || null);
+      gameState.setHasActiveConfiguration(true);
+
+      beginNewConfigurationSession();
+      return;
+    }
+
     // Clear all game events from previous games
     clearAllEvents();
     
@@ -760,7 +838,7 @@ function AppContent() {
     timers.clearAllTimersForNewGame();
     
     // Reset all game state
-    gameState.setView('config');
+    gameState.setView(VIEWS.CONFIG);
     gameState.setCurrentPeriodNumber(1);
     gameState.setGameLog([]);
     
@@ -799,8 +877,10 @@ function AppContent() {
   };
 
   const handleNewGameFromMenu = async () => {
+    const shouldPreserveConfiguration = gameState.matchState === 'running';
+
     await checkForActiveMatch(() => {
-      handleRestartMatch();
+      handleRestartMatch({ preserveConfiguration: shouldPreserveConfiguration });
     });
   };
 

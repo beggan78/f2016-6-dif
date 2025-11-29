@@ -80,28 +80,27 @@ export const createScoreHandlers = (
     const eventId = generateEventId();
     const pendingGoalData = createPendingGoalData(goalType, eventId, gameState);
     
-    // If goal scorer tracking is disabled, log immediately without modal flow
-    if (goalType === 'scored' && !shouldTrackGoalScorer) {
-      if (clearPendingGoal) {
-        clearPendingGoal();
+    if (goalType === 'scored') {
+      // If goal scorer tracking is disabled, log immediately without modal flow
+      if (!shouldTrackGoalScorer) {
+        if (clearPendingGoal) {
+          clearPendingGoal();
+        }
+
+        addGoalScored();
+
+        logEvent(pendingGoalData.type, {
+          eventId: pendingGoalData.eventId,
+          periodNumber: pendingGoalData.periodNumber,
+          ownScore: pendingGoalData.ownScore,
+          opponentScore: pendingGoalData.opponentScore,
+          scorerId: null,
+          goalType: pendingGoalData.goalType
+        }, pendingGoalData.timestamp);
+
+        return;
       }
 
-      addGoalScored();
-
-      logEvent(pendingGoalData.type, {
-        eventId: pendingGoalData.eventId,
-        periodNumber: pendingGoalData.periodNumber,
-        ownScore: pendingGoalData.ownScore,
-        opponentScore: pendingGoalData.opponentScore,
-        scorerId: null,
-        goalType: pendingGoalData.goalType
-      }, pendingGoalData.timestamp);
-
-      return;
-    }
-
-    // For own team goals: use modal flow for scorer attribution
-    if (goalType === 'scored') {
       // Store as pending goal, don't increment score yet
       setPendingGoalData(pendingGoalData);
       

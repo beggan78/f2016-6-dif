@@ -193,6 +193,8 @@ describe('scoreHandlers', () => {
 
       expect(goalTrackingStateUpdaters.addGoalScored).toHaveBeenCalledTimes(1);
       expect(goalTrackingModalHandlers.openGoalScorerModal).not.toHaveBeenCalled();
+      expect(goalTrackingModalHandlers.setPendingGoalData).not.toHaveBeenCalled();
+      expect(goalTrackingModalHandlers.clearPendingGoal).toHaveBeenCalledTimes(1);
       expect(logEventSpy).toHaveBeenCalledWith(
         EVENT_TYPES.GOAL_SCORED,
         expect.objectContaining({
