@@ -6,7 +6,6 @@ import { NavigationHistoryProvider } from '../contexts/NavigationHistoryContext'
 import { useScreenNavigation } from '../hooks/useNavigationHistory';
 import { VIEWS } from '../constants/viewConstants';
 import { MATCH_TYPES } from '../constants/matchTypes';
-import { FAIR_PLAY_AWARD_OPTIONS } from '../types/preferences';
 import { GameFinishedScreen } from '../components/stats/GameFinishedScreen';
 import { MatchReportScreen } from '../components/report/MatchReportScreen';
 import { createMockPlayers } from '../components/__tests__/componentTestUtils';
@@ -15,12 +14,16 @@ jest.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ isAuthenticated: true })
 }));
 
-jest.mock('../contexts/TeamContext', () => ({
-  useTeam: () => ({
-    currentTeam: { id: 'team-1' },
-    loadTeamPreferences: jest.fn(() => Promise.resolve({ fairPlayAward: FAIR_PLAY_AWARD_OPTIONS.ALL_GAMES }))
-  })
-}));
+jest.mock('../contexts/TeamContext', () => {
+  const { FAIR_PLAY_AWARD_OPTIONS } = require('../types/preferences');
+
+  return {
+    useTeam: () => ({
+      currentTeam: { id: 'team-1' },
+      loadTeamPreferences: jest.fn(() => Promise.resolve({ fairPlayAward: FAIR_PLAY_AWARD_OPTIONS.ALL_GAMES }))
+    })
+  };
+});
 
 jest.mock('../utils/formatUtils', () => ({
   formatPoints: jest.fn((points) => points.toString()),
