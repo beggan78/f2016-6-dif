@@ -103,8 +103,6 @@ export function GameFinishedScreen({
   };
 
   const normalizeFairPlayPreference = (value) => {
-    if (value === true || value === 'true') return FAIR_PLAY_AWARD_OPTIONS.ALL_GAMES;
-    if (value === false || value === 'false' || value === FAIR_PLAY_AWARD_OPTIONS.NONE) return FAIR_PLAY_AWARD_OPTIONS.NONE;
     if (Object.values(FAIR_PLAY_AWARD_OPTIONS).includes(value)) return value;
     return FAIR_PLAY_AWARD_OPTIONS.NONE;
   };
