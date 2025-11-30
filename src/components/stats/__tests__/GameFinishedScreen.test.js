@@ -13,15 +13,17 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameFinishedScreen } from '../GameFinishedScreen';
 import { PLAYER_ROLES } from '../../../constants/playerConstants';
+import { MATCH_TYPES } from '../../../constants/matchTypes';
+import { FAIR_PLAY_AWARD_OPTIONS } from '../../../types/preferences';
 import {
   createMockPlayers,
-  userInteractions
 } from '../../__tests__/componentTestUtils';
 import { updateMatchToConfirmed } from '../../../services/matchStateManager';
+import { useTeam } from '../../../contexts/TeamContext';
 
 // Mock utility functions
 jest.mock('../../../utils/formatUtils', () => ({
@@ -31,6 +33,11 @@ jest.mock('../../../utils/formatUtils', () => ({
 // Mock matchStateManager functions
 jest.mock('../../../services/matchStateManager', () => ({
   updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true })
+}));
+
+// Mock useTeam context
+jest.mock('../../../contexts/TeamContext', () => ({
+  useTeam: jest.fn()
 }));
 
 // Mock useAuth context
@@ -87,8 +94,20 @@ describe('GameFinishedScreen', () => {
   let defaultProps;
   let mockPlayers;
   let mockSetters;
+  let loadTeamPreferencesMock;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
+    loadTeamPreferencesMock = jest.fn(() => Promise.resolve({
+      fairPlayAward: FAIR_PLAY_AWARD_OPTIONS.ALL_GAMES
+    }));
+
+    useTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      loadTeamPreferences: loadTeamPreferencesMock
+    });
+
     // Create mock players for Fair Play Award testing
     const mockSquadForStats = createMockPlayers(5).map((player, index) => ({
       ...player,
@@ -144,11 +163,10 @@ describe('GameFinishedScreen', () => {
       formation: {},
       checkForActiveMatch: jest.fn(),
       onStartNewConfigurationSession: jest.fn(),
+      matchType: MATCH_TYPES.LEAGUE,
       ...mockSetters
     };
 
-    // Reset mocks
-    jest.clearAllMocks();
     updateMatchToConfirmed.mockResolvedValue({ success: true });
   });
 
@@ -239,7 +257,7 @@ describe('GameFinishedScreen', () => {
   describe('Fair Play Award', () => {
     // Test utility functions
     const selectFairPlayAward = async (playerDisplayName) => {
-      const dropdown = screen.getByTestId('fair-play-award-dropdown');
+      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
       // Find the player by display name and use their ID as the value to select
       const player = mockPlayers.find(p => p.displayName === playerDisplayName);
       if (!player) {
@@ -257,22 +275,44 @@ describe('GameFinishedScreen', () => {
       expect(screen.queryByTestId('fair-play-confirmation')).not.toBeInTheDocument();
     };
 
-    it('should display fair play award dropdown with default "Not awarded" option', () => {
+    const waitForFairPlaySection = async () => {
+      await screen.findByTestId('fair-play-award-section');
+    };
+
+    it('hides fair play award when preference disables it', async () => {
+      loadTeamPreferencesMock.mockResolvedValueOnce({ fairPlayAward: FAIR_PLAY_AWARD_OPTIONS.NONE });
+
       render(<GameFinishedScreen {...defaultProps} />);
+
+      await waitFor(() => expect(loadTeamPreferencesMock).toHaveBeenCalled());
+      expect(screen.queryByTestId('fair-play-award-section')).not.toBeInTheDocument();
+    });
+
+    it('hides fair play award when match type is not eligible', async () => {
+      loadTeamPreferencesMock.mockResolvedValueOnce({ fairPlayAward: FAIR_PLAY_AWARD_OPTIONS.COMPETITIVE });
+
+      render(<GameFinishedScreen {...defaultProps} matchType={MATCH_TYPES.FRIENDLY} />);
+
+      await waitFor(() => expect(loadTeamPreferencesMock).toHaveBeenCalled());
+      expect(screen.queryByTestId('fair-play-award-section')).not.toBeInTheDocument();
+    });
+
+    it('should display fair play award dropdown with default "Not awarded" option', async () => {
+      render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
-      expect(screen.getByTestId('fair-play-award-section')).toBeInTheDocument();
       expect(screen.getByText('🏆 Fair Play Award')).toBeInTheDocument();
       
-      const dropdown = screen.getByTestId('fair-play-award-dropdown');
-      expect(dropdown).toBeInTheDocument();
+      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
       expect(dropdown.value).toBe('');
       expect(screen.getByText('Not awarded')).toBeInTheDocument();
     });
 
-    it('should populate dropdown with participating players only', () => {
+    it('should populate dropdown with participating players only', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
-      const dropdown = screen.getByTestId('fair-play-award-dropdown');
+      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
       const options = dropdown.querySelectorAll('option');
       
       // Should have "Not awarded" plus one option for each participating player
@@ -287,8 +327,9 @@ describe('GameFinishedScreen', () => {
 
     it('should update fairPlayAwardPlayerId state when selection changes', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
-      const dropdown = screen.getByTestId('fair-play-award-dropdown');
+      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
       const firstPlayer = mockPlayers[0];
       
       // Select a player
@@ -299,6 +340,7 @@ describe('GameFinishedScreen', () => {
 
     it('should show emerald confirmation message when player selected', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
       const firstPlayer = mockPlayers[0];
       expectConfirmationHidden();
@@ -312,8 +354,9 @@ describe('GameFinishedScreen', () => {
 
     it('should hide confirmation when "Not awarded" is selected', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
-      const dropdown = screen.getByTestId('fair-play-award-dropdown');
+      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
       const firstPlayer = mockPlayers[0];
       
       // First select a player
@@ -327,6 +370,7 @@ describe('GameFinishedScreen', () => {
 
     it('should include award in player state when saving match', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
       const firstPlayer = mockPlayers[0];
       
@@ -354,6 +398,7 @@ describe('GameFinishedScreen', () => {
 
     it('should handle save workflow without award selection', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
       // Click save match button without selecting award
       const saveButton = screen.getByText('Save Match to History');
@@ -367,6 +412,7 @@ describe('GameFinishedScreen', () => {
 
     it('should pass fairPlayAwardId to updateMatchToConfirmed', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
       const firstPlayer = mockPlayers[0];
 
@@ -385,6 +431,7 @@ describe('GameFinishedScreen', () => {
 
     it('should update player hasFairPlayAward property correctly', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
       const firstPlayer = mockPlayers[0];
       const secondPlayer = mockPlayers[1];
@@ -411,6 +458,7 @@ describe('GameFinishedScreen', () => {
 
     it('should pass correct fair play award player ID to updateMatchToConfirmed', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
       
       const selectedPlayer = mockPlayers[1]; // Select second player
       
@@ -440,6 +488,7 @@ describe('GameFinishedScreen', () => {
       });
 
       render(<GameFinishedScreen {...defaultProps} />);
+      await waitForFairPlaySection();
 
       const saveButton = screen.getByText('Save Match to History');
       await userEvent.click(saveButton);

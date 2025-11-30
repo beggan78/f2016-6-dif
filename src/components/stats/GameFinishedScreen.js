@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ListChecks, PlusCircle, FileText, Save } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTeam } from '../../contexts/TeamContext';
 import { FeatureGate } from '../auth/FeatureGate';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { hasPlayerParticipated } from '../../utils/playerUtils';
@@ -9,6 +10,8 @@ import { updateMatchToConfirmed } from '../../services/matchStateManager';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { PlayerStatsTable } from '../report/PlayerStatsTable';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
+import { FAIR_PLAY_AWARD_OPTIONS } from '../../types/preferences';
+import { MATCH_TYPES } from '../../constants/matchTypes';
 
 export function GameFinishedScreen({
   allPlayers,
@@ -40,13 +43,16 @@ export function GameFinishedScreen({
   matchStartTime,
   periodDurationMinutes = 12,
   formation = {},
-  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME
+  ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
+  matchType = null
 }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
+  const [fairPlayAwardPreference, setFairPlayAwardPreference] = useState(FAIR_PLAY_AWARD_OPTIONS.NONE);
   const { isAuthenticated } = useAuth();
+  const { currentTeam, loadTeamPreferences } = useTeam();
 
   // Calculate match duration and total periods (same as MatchReportScreen)
   const matchDuration = useMemo(() => {
@@ -95,6 +101,63 @@ export function GameFinishedScreen({
     const player = players.find(p => p.id === playerId);
     return player ? formatPlayerName(player) : '';
   };
+
+  const normalizeFairPlayPreference = (value) => {
+    if (value === true || value === 'true') return FAIR_PLAY_AWARD_OPTIONS.ALL_GAMES;
+    if (value === false || value === 'false' || value === FAIR_PLAY_AWARD_OPTIONS.NONE) return FAIR_PLAY_AWARD_OPTIONS.NONE;
+    if (Object.values(FAIR_PLAY_AWARD_OPTIONS).includes(value)) return value;
+    return FAIR_PLAY_AWARD_OPTIONS.NONE;
+  };
+
+  // Load team preference for showing the fair play award block
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFairPlayPreference = async () => {
+      if (!currentTeam?.id || !loadTeamPreferences) {
+        setFairPlayAwardPreference(FAIR_PLAY_AWARD_OPTIONS.NONE);
+        return;
+      }
+
+      try {
+        const preferences = await loadTeamPreferences(currentTeam.id);
+        if (!isMounted) return;
+
+        const preferenceValue = normalizeFairPlayPreference(preferences?.fairPlayAward);
+        setFairPlayAwardPreference(preferenceValue);
+      } catch (error) {
+        console.warn('Failed to load fair play award preference:', error);
+        if (isMounted) {
+          setFairPlayAwardPreference(FAIR_PLAY_AWARD_OPTIONS.NONE);
+        }
+      }
+    };
+
+    fetchFairPlayPreference();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTeam?.id, loadTeamPreferences]);
+
+  const shouldShowFairPlayAward = useMemo(() => {
+    switch (fairPlayAwardPreference) {
+      case FAIR_PLAY_AWARD_OPTIONS.ALL_GAMES:
+        return true;
+      case FAIR_PLAY_AWARD_OPTIONS.LEAGUE_ONLY:
+        return matchType === MATCH_TYPES.LEAGUE;
+      case FAIR_PLAY_AWARD_OPTIONS.COMPETITIVE:
+        return [MATCH_TYPES.LEAGUE, MATCH_TYPES.CUP, MATCH_TYPES.TOURNAMENT].includes(matchType);
+      default:
+        return false;
+    }
+  }, [fairPlayAwardPreference, matchType]);
+
+  useEffect(() => {
+    if (!shouldShowFairPlayAward && fairPlayAwardPlayerId) {
+      setFairPlayAwardPlayerId(null);
+    }
+  }, [shouldShowFairPlayAward, fairPlayAwardPlayerId]);
 
   const updatePlayersWithFairPlayAward = (players, awardPlayerId) => {
     if (!awardPlayerId) return players;
@@ -207,46 +270,48 @@ export function GameFinishedScreen({
       </div>
 
       {/* Fair Play Award Selection */}
-      <div className={FAIR_PLAY_AWARD_STYLES.container} data-testid="fair-play-award-section">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className={FAIR_PLAY_AWARD_STYLES.header}>
-            🏆 Fair Play Award
-          </h3>
-        </div>
-
-        <div className="relative">
-          <select
-            value={fairPlayAwardPlayerId || ''}
-            onChange={handleFairPlayAwardChange}
-            className={FAIR_PLAY_AWARD_STYLES.dropdown}
-            data-testid="fair-play-award-dropdown"
-          >
-            <option value="" className="bg-slate-800">Not awarded</option>
-            {squadForStats.map(player => (
-              <option key={player.id} value={player.id} className="bg-slate-800">
-                {formatPlayerName(player)}
-              </option>
-            ))}
-          </select>
-          <div className={FAIR_PLAY_AWARD_STYLES.dropdownArrow}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+      {shouldShowFairPlayAward && (
+        <div className={FAIR_PLAY_AWARD_STYLES.container} data-testid="fair-play-award-section">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={FAIR_PLAY_AWARD_STYLES.header}>
+              🏆 Fair Play Award
+            </h3>
           </div>
-        </div>
 
-        {/* Selection confirmation */}
-        {fairPlayAwardPlayerId && (
-          <div className={FAIR_PLAY_AWARD_STYLES.confirmation} data-testid="fair-play-confirmation">
-            <div className="flex items-center justify-between">
-              <span className={FAIR_PLAY_AWARD_STYLES.confirmationText}>
-                ✨ {getSelectedPlayerName(fairPlayAwardPlayerId, squadForStats)}
-              </span>
-              <span className={FAIR_PLAY_AWARD_STYLES.confirmationBadge}>FAIR PLAY WINNER</span>
+          <div className="relative">
+            <select
+              value={fairPlayAwardPlayerId || ''}
+              onChange={handleFairPlayAwardChange}
+              className={FAIR_PLAY_AWARD_STYLES.dropdown}
+              data-testid="fair-play-award-dropdown"
+            >
+              <option value="" className="bg-slate-800">Not awarded</option>
+              {squadForStats.map(player => (
+                <option key={player.id} value={player.id} className="bg-slate-800">
+                  {formatPlayerName(player)}
+                </option>
+              ))}
+            </select>
+            <div className={FAIR_PLAY_AWARD_STYLES.dropdownArrow}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Selection confirmation */}
+          {fairPlayAwardPlayerId && (
+            <div className={FAIR_PLAY_AWARD_STYLES.confirmation} data-testid="fair-play-confirmation">
+              <div className="flex items-center justify-between">
+                <span className={FAIR_PLAY_AWARD_STYLES.confirmationText}>
+                  ✨ {getSelectedPlayerName(fairPlayAwardPlayerId, squadForStats)}
+                </span>
+                <span className={FAIR_PLAY_AWARD_STYLES.confirmationBadge}>FAIR PLAY WINNER</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Save Match to History - Protected */}
       {isAuthenticated ? (
