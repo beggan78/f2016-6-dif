@@ -1176,6 +1176,7 @@ function AppContent() {
             gameLog={gameState.gameLog}
             formation={gameState.formation}
             ownTeamName={ownTeamName}
+            matchType={gameState.matchType}
         />
       );
       case VIEWS.MATCH_REPORT:
