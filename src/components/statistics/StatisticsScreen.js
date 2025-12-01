@@ -12,6 +12,7 @@ import { AttendanceStatsView } from './AttendanceStatsView';
 import { TimeFilter } from './TimeFilter';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
+import { TIME_PRESETS } from '../../constants/timePresets';
 
 const STATS_TABS = {
   TEAM: 'team',
@@ -53,59 +54,6 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     }
 
     // For presets, calculate fresh dates
-    const TIME_PRESETS = [
-      {
-        id: 'last-30-days',
-        getValue: () => {
-          const end = new Date();
-          const start = new Date();
-          start.setDate(start.getDate() - 30);
-          return { start, end };
-        }
-      },
-      {
-        id: 'last-3-months',
-        getValue: () => {
-          const end = new Date();
-          const start = new Date();
-          start.setMonth(start.getMonth() - 3);
-          return { start, end };
-        }
-      },
-      {
-        id: 'last-6-months',
-        getValue: () => {
-          const end = new Date();
-          const start = new Date();
-          start.setMonth(start.getMonth() - 6);
-          return { start, end };
-        }
-      },
-      {
-        id: 'last-12-months',
-        getValue: () => {
-          const end = new Date();
-          const start = new Date();
-          start.setFullYear(start.getFullYear() - 1);
-          return { start, end };
-        }
-      },
-      {
-        id: 'year-to-date',
-        getValue: () => {
-          const end = new Date();
-          const start = new Date(end.getFullYear(), 0, 1);
-          return { start, end };
-        }
-      },
-      {
-        id: 'all-time',
-        getValue: () => {
-          return { start: null, end: null };
-        }
-      }
-    ];
-
     const preset = TIME_PRESETS.find(p => p.id === presetId);
     const range = preset ? preset.getValue() : { start: null, end: null };
 
