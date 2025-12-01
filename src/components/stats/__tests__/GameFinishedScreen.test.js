@@ -317,31 +317,32 @@ describe('GameFinishedScreen', () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
       await waitFor(() => expect(getPlayerStats).toHaveBeenCalled());
-      
-      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
-      const options = dropdown.querySelectorAll('option');
-      
-      // Should have "Not awarded" plus one option for each participating player
-      expect(options).toHaveLength(6); // 1 default + 5 players
-      expect(options[0]).toHaveTextContent('Not awarded');
 
-      const optionLabels = Array.from(options)
-        .slice(1)
-        .map(option => option.textContent);
+      await waitFor(() => {
+        const dropdown = screen.getByTestId('fair-play-award-dropdown');
+        const options = dropdown.querySelectorAll('option');
 
-      expect(optionLabels).toEqual([
-        'Player 2 (0)',
-        'Player 5 (0)',
-        'Player 4 (1)',
-        'Player 3 (2)',
-        'Player 1 (3)'
-      ]);
+        expect(options).toHaveLength(6); // 1 default + 5 players
+        expect(options[0]).toHaveTextContent('Not awarded');
 
-      const optionValues = Array.from(options)
-        .slice(1)
-        .map(option => option.value);
+        const optionLabels = Array.from(options)
+          .slice(1)
+          .map(option => option.textContent);
 
-      expect(new Set(optionValues)).toEqual(new Set(mockPlayers.map(player => player.id)));
+        expect(optionLabels).toEqual([
+          'Player 2 (0)',
+          'Player 5 (0)',
+          'Player 4 (1)',
+          'Player 3 (2)',
+          'Player 1 (3)'
+        ]);
+
+        const optionValues = Array.from(options)
+          .slice(1)
+          .map(option => option.value);
+
+        expect(new Set(optionValues)).toEqual(new Set(mockPlayers.map(player => player.id)));
+      });
     });
 
     it('should update fairPlayAwardPlayerId state when selection changes', async () => {
