@@ -26,22 +26,93 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     []
   );
   const timeRangePersistence = useMemo(
-    () => createPersistenceManager(STORAGE_KEYS.STATISTICS_TIME_RANGE, { startDate: null, endDate: null }),
+    () => createPersistenceManager(STORAGE_KEYS.STATISTICS_TIME_RANGE, {
+      presetId: 'all-time',
+      customStartDate: null,
+      customEndDate: null
+    }),
     []
   );
 
   const initialTimeRange = useMemo(() => {
     const stored = timeRangePersistence.loadState();
+    const presetId = stored?.presetId || 'all-time';
 
-    const parseDate = (value) => {
-      if (!value) return null;
-      const parsed = new Date(value);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
-    };
+    // If custom range, use stored dates
+    if (presetId === 'custom') {
+      const parseDate = (value) => {
+        if (!value) return null;
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      };
+      return {
+        start: parseDate(stored?.customStartDate),
+        end: parseDate(stored?.customEndDate),
+        presetId: 'custom'
+      };
+    }
+
+    // For presets, calculate fresh dates
+    const TIME_PRESETS = [
+      {
+        id: 'last-30-days',
+        getValue: () => {
+          const end = new Date();
+          const start = new Date();
+          start.setDate(start.getDate() - 30);
+          return { start, end };
+        }
+      },
+      {
+        id: 'last-3-months',
+        getValue: () => {
+          const end = new Date();
+          const start = new Date();
+          start.setMonth(start.getMonth() - 3);
+          return { start, end };
+        }
+      },
+      {
+        id: 'last-6-months',
+        getValue: () => {
+          const end = new Date();
+          const start = new Date();
+          start.setMonth(start.getMonth() - 6);
+          return { start, end };
+        }
+      },
+      {
+        id: 'last-12-months',
+        getValue: () => {
+          const end = new Date();
+          const start = new Date();
+          start.setFullYear(start.getFullYear() - 1);
+          return { start, end };
+        }
+      },
+      {
+        id: 'year-to-date',
+        getValue: () => {
+          const end = new Date();
+          const start = new Date(end.getFullYear(), 0, 1);
+          return { start, end };
+        }
+      },
+      {
+        id: 'all-time',
+        getValue: () => {
+          return { start: null, end: null };
+        }
+      }
+    ];
+
+    const preset = TIME_PRESETS.find(p => p.id === presetId);
+    const range = preset ? preset.getValue() : { start: null, end: null };
 
     return {
-      start: parseDate(stored?.startDate),
-      end: parseDate(stored?.endDate)
+      start: range.start,
+      end: range.end,
+      presetId: preset ? presetId : 'all-time'
     };
   }, [timeRangePersistence]);
 
@@ -54,6 +125,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [timeRangeStart, setTimeRangeStart] = useState(initialTimeRange.start);
   const [timeRangeEnd, setTimeRangeEnd] = useState(initialTimeRange.end);
+  const [selectedPresetId, setSelectedPresetId] = useState(initialTimeRange.presetId);
   const { loading: authLoading, isAuthenticated } = useAuth();
   const {
     loading: teamLoading,
@@ -69,11 +141,22 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   }, [activeTab, tabPersistence]);
 
   useEffect(() => {
-    timeRangePersistence.saveState({
-      startDate: timeRangeStart ? timeRangeStart.toISOString() : null,
-      endDate: timeRangeEnd ? timeRangeEnd.toISOString() : null
-    });
-  }, [timeRangeStart, timeRangeEnd, timeRangePersistence]);
+    if (selectedPresetId === 'custom') {
+      // For custom ranges, save the actual dates
+      timeRangePersistence.saveState({
+        presetId: 'custom',
+        customStartDate: timeRangeStart ? timeRangeStart.toISOString() : null,
+        customEndDate: timeRangeEnd ? timeRangeEnd.toISOString() : null
+      });
+    } else {
+      // For presets, only save the preset ID
+      timeRangePersistence.saveState({
+        presetId: selectedPresetId,
+        customStartDate: null,
+        customEndDate: null
+      });
+    }
+  }, [timeRangeStart, timeRangeEnd, selectedPresetId, timeRangePersistence]);
 
   const handleMatchSelect = (matchId) => {
     setSelectedMatchId(matchId);
@@ -85,7 +168,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     setIsCreatingMatch(false);
   };
 
-  const handleTimeRangeChange = (startDate, endDate) => {
+  const handleTimeRangeChange = (startDate, endDate, presetId = 'all-time') => {
     const normalizeDate = (value) => {
       if (!value) return null;
       const parsed = value instanceof Date ? value : new Date(value);
@@ -94,6 +177,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
 
     setTimeRangeStart(normalizeDate(startDate));
     setTimeRangeEnd(normalizeDate(endDate));
+    setSelectedPresetId(presetId);
   };
 
   const handleCreateMatch = () => {
@@ -312,6 +396,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
           <TimeFilter
             startDate={timeRangeStart}
             endDate={timeRangeEnd}
+            selectedPresetId={selectedPresetId}
             onTimeRangeChange={handleTimeRangeChange}
             className="flex-shrink-0 hidden sm:block"
           />
@@ -324,6 +409,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
           <TimeFilter
             startDate={timeRangeStart}
             endDate={timeRangeEnd}
+            selectedPresetId={selectedPresetId}
             onTimeRangeChange={handleTimeRangeChange}
             className="w-full"
           />
@@ -333,7 +419,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
       {/* Tab Navigation - only show when not viewing match details */}
       {!selectedMatchId && (
         <div className="border-b border-slate-600">
-          <nav className="flex space-x-8">
+          <nav className="flex flex-wrap gap-3 sm:gap-4 md:gap-8">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -342,7 +428,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`flex items-center space-x-1 sm:space-x-2 py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                     isActive
                       ? 'border-sky-400 text-sky-400'
                       : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-300'
