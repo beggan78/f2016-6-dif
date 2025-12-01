@@ -446,11 +446,11 @@ describe('ConfigurationScreen team preferences', () => {
     getPlayerStats.mockResolvedValue({
       success: true,
       players: [
-        { id: 'player-3', matchesAsCaptain: 3 },
-        { id: 'player-2', matchesAsCaptain: 1 },
-        { id: 'player-5', matchesAsCaptain: 1 },
-        { id: 'player-4', matchesAsCaptain: 2 },
-        { id: 'player-1', matchesAsCaptain: 5 }
+        { playerId: 'player-3', matchesAsCaptain: 3 },
+        { playerId: 'player-2', matchesAsCaptain: 1 },
+        { playerId: 'player-5', matchesAsCaptain: 1 },
+        { playerId: 'player-4', matchesAsCaptain: 2 },
+        { playerId: 'player-1', matchesAsCaptain: 5 }
       ]
     });
 

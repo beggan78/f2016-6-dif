@@ -242,7 +242,10 @@ export function ConfigurationScreen({
         if (result?.success && Array.isArray(result.players)) {
           const captainCounts = {};
           result.players.forEach(player => {
-            captainCounts[player.id] = player.matchesAsCaptain || 0;
+            if (!player.playerId) {
+              return;
+            }
+            captainCounts[player.playerId] = player.matchesAsCaptain || 0;
           });
           setCaptainHistoryCounts(captainCounts);
         } else {
