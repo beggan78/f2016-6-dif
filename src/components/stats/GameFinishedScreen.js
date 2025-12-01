@@ -6,7 +6,7 @@ import { useTeam } from '../../contexts/TeamContext';
 import { FeatureGate } from '../auth/FeatureGate';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { hasPlayerParticipated } from '../../utils/playerUtils';
-import { updateMatchToConfirmed } from '../../services/matchStateManager';
+import { updateMatchToConfirmed, getPlayerStats } from '../../services/matchStateManager';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { PlayerStatsTable } from '../report/PlayerStatsTable';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
@@ -51,6 +51,7 @@ export function GameFinishedScreen({
   const [saving, setSaving] = useState(false);
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const [fairPlayAwardPreference, setFairPlayAwardPreference] = useState(FAIR_PLAY_AWARD_OPTIONS.NONE);
+  const [fairPlayAwardCounts, setFairPlayAwardCounts] = useState({});
   const { isAuthenticated } = useAuth();
   const { currentTeam, loadTeamPreferences } = useTeam();
 
@@ -157,6 +158,53 @@ export function GameFinishedScreen({
     }
   }, [shouldShowFairPlayAward, fairPlayAwardPlayerId]);
 
+  // Load historical fair play award counts (last 6 months) for sorting/labels
+  useEffect(() => {
+    let isActive = true;
+
+    const fetchFairPlayHistory = async () => {
+      if (!shouldShowFairPlayAward || !isAuthenticated || !currentTeam?.id) {
+        if (isActive) {
+          setFairPlayAwardCounts({});
+        }
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(now.getMonth() - 6);
+
+        const result = await getPlayerStats(currentTeam.id, sixMonthsAgo, now);
+        if (!isActive) return;
+
+        if (result?.success && Array.isArray(result.players)) {
+          const counts = {};
+          result.players.forEach((player) => {
+            counts[player.id] = player.fairPlayAwards || 0;
+          });
+          setFairPlayAwardCounts(counts);
+        } else {
+          if (result?.error) {
+            console.error('Failed to load fair play award history:', result.error);
+          }
+          setFairPlayAwardCounts({});
+        }
+      } catch (error) {
+        if (isActive) {
+          setFairPlayAwardCounts({});
+        }
+        console.error('Fair play award history load error:', error);
+      }
+    };
+
+    fetchFairPlayHistory();
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentTeam?.id, isAuthenticated, shouldShowFairPlayAward]);
+
   const updatePlayersWithFairPlayAward = (players, awardPlayerId) => {
     if (!awardPlayerId) return players;
     
@@ -170,6 +218,25 @@ export function GameFinishedScreen({
     const selectedPlayerId = event.target.value || null;
     setFairPlayAwardPlayerId(selectedPlayerId);
   };
+
+  const fairPlayDropdownOptions = useMemo(() => {
+    return [...squadForStats]
+      .map((player) => {
+        const awardsCount = fairPlayAwardCounts[player.id] ?? 0;
+        const playerName = formatPlayerName(player);
+        return {
+          id: player.id,
+          awardsCount,
+          label: `${playerName} (${awardsCount})`
+        };
+      })
+      .sort((a, b) => {
+        if (a.awardsCount !== b.awardsCount) {
+          return a.awardsCount - b.awardsCount;
+        }
+        return a.label.localeCompare(b.label);
+      });
+  }, [fairPlayAwardCounts, squadForStats]);
 
   const handleSaveMatchHistory = async () => {
     setSaving(true);
@@ -284,9 +351,9 @@ export function GameFinishedScreen({
               data-testid="fair-play-award-dropdown"
             >
               <option value="" className="bg-slate-800">Not awarded</option>
-              {squadForStats.map(player => (
-                <option key={player.id} value={player.id} className="bg-slate-800">
-                  {formatPlayerName(player)}
+              {fairPlayDropdownOptions.map(option => (
+                <option key={option.id} value={option.id} className="bg-slate-800">
+                  {option.label}
                 </option>
               ))}
             </select>
