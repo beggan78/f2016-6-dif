@@ -242,7 +242,10 @@ export function ConfigurationScreen({
         if (result?.success && Array.isArray(result.players)) {
           const captainCounts = {};
           result.players.forEach(player => {
-            captainCounts[player.id] = player.matchesAsCaptain || 0;
+            if (!player.playerId) {
+              return;
+            }
+            captainCounts[player.playerId] = player.matchesAsCaptain || 0;
           });
           setCaptainHistoryCounts(captainCounts);
         } else {
@@ -1108,13 +1111,24 @@ export function ConfigurationScreen({
   };
 
   const captainOptions = React.useMemo(() => {
-    const squadOptions = selectedSquadPlayers.map(player => {
-      const captainCount = captainHistoryCounts[player.id] ?? 0;
-      return {
-        value: player.id,
-        label: `${formatPlayerName(player)} (${captainCount})`
-      };
-    });
+    const squadOptions = selectedSquadPlayers
+      .map(player => {
+        const captainCount = captainHistoryCounts[player.id] ?? 0;
+        const playerLabel = formatPlayerName(player);
+        return {
+          value: player.id,
+          label: `${playerLabel} (${captainCount})`,
+          captainCount,
+          playerLabel
+        };
+      })
+      .sort((a, b) => {
+        if (a.captainCount !== b.captainCount) {
+          return a.captainCount - b.captainCount;
+        }
+        return a.playerLabel.localeCompare(b.playerLabel, undefined, { sensitivity: 'base' });
+      })
+      .map(({ value, label }) => ({ value, label }));
 
     return [
       { value: "", label: "No Captain" },
