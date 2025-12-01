@@ -22,17 +22,13 @@ import { FAIR_PLAY_AWARD_OPTIONS } from '../../../types/preferences';
 import {
   createMockPlayers,
 } from '../../__tests__/componentTestUtils';
-import { updateMatchToConfirmed } from '../../../services/matchStateManager';
+import { updateMatchToConfirmed, getPlayerStats } from '../../../services/matchStateManager';
 import { useTeam } from '../../../contexts/TeamContext';
-
-// Mock utility functions
-jest.mock('../../../utils/formatUtils', () => ({
-  formatPlayerName: jest.fn((player) => player ? player.displayName : 'Unknown')
-}));
 
 // Mock matchStateManager functions
 jest.mock('../../../services/matchStateManager', () => ({
-  updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true })
+  updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true }),
+  getPlayerStats: jest.fn()
 }));
 
 // Mock useTeam context
@@ -124,6 +120,15 @@ describe('GameFinishedScreen', () => {
     }));
     
     mockPlayers = mockSquadForStats;
+
+    const fairPlayAwardHistory = [3, 0, 2, 1, 0];
+    getPlayerStats.mockResolvedValue({
+      success: true,
+      players: mockSquadForStats.map((player, index) => ({
+        id: player.id,
+        fairPlayAwards: fairPlayAwardHistory[index] ?? 0
+      }))
+    });
 
     mockSetters = {
       setView: jest.fn(),
@@ -308,20 +313,35 @@ describe('GameFinishedScreen', () => {
       expect(screen.getByText('Not awarded')).toBeInTheDocument();
     });
 
-    it('should populate dropdown with participating players only', async () => {
+    it('should populate dropdown with participating players sorted by fair play awards and show counts', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
-      
-      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
-      const options = dropdown.querySelectorAll('option');
-      
-      // Should have "Not awarded" plus one option for each participating player
-      expect(options).toHaveLength(6); // 1 default + 5 players
-      expect(options[0]).toHaveTextContent('Not awarded');
-      
-      // Verify each player option has the correct value (player ID)
-      mockPlayers.forEach((player, index) => {
-        expect(options[index + 1].value).toBe(player.id);
+      await waitFor(() => expect(getPlayerStats).toHaveBeenCalled());
+
+      await waitFor(() => {
+        const dropdown = screen.getByTestId('fair-play-award-dropdown');
+        const options = dropdown.querySelectorAll('option');
+
+        expect(options).toHaveLength(6); // 1 default + 5 players
+        expect(options[0]).toHaveTextContent('Not awarded');
+
+        const optionLabels = Array.from(options)
+          .slice(1)
+          .map(option => option.textContent);
+
+        expect(optionLabels).toEqual([
+          'Player 2 (0)',
+          'Player 5 (0)',
+          'Player 4 (1)',
+          'Player 3 (2)',
+          'Player 1 (3)'
+        ]);
+
+        const optionValues = Array.from(options)
+          .slice(1)
+          .map(option => option.value);
+
+        expect(new Set(optionValues)).toEqual(new Set(mockPlayers.map(player => player.id)));
       });
     });
 
