@@ -5,6 +5,7 @@ import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
 import { STORAGE_KEYS } from '../../../constants/storageKeys';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
+import { getPlayerStats } from '../../../services/matchStateManager';
 import { DETECTION_TYPES } from '../../../services/sessionDetectionService';
 
 const mockUseAuth = jest.fn(() => ({
@@ -160,6 +161,7 @@ beforeEach(() => {
   }));
 
   checkForPendingMatches.mockResolvedValue({ shouldShow: false, pendingMatches: [] });
+  getPlayerStats.mockResolvedValue({ success: true, players: [] });
 
   mockUseOpponentNameSuggestions.mockReset();
   mockUseOpponentNameSuggestions.mockReturnValue({
@@ -415,6 +417,69 @@ describe('ConfigurationScreen team preferences', () => {
     await waitFor(() => {
       expect(screen.queryByText('Assign Captain')).not.toBeInTheDocument();
     });
+  });
+
+  it('sorts captain options by recent captain count ascending', async () => {
+    const loadTeamPreferences = jest.fn(() => Promise.resolve({}));
+    const roster = [
+      { id: 'player-1', display_name: 'Echo', first_name: 'Echo', last_name: '', jersey_number: null },
+      { id: 'player-2', display_name: 'Alpha', first_name: 'Alpha', last_name: '', jersey_number: null },
+      { id: 'player-3', display_name: 'Charlie', first_name: 'Charlie', last_name: '', jersey_number: null },
+      { id: 'player-4', display_name: 'Bravo', first_name: 'Bravo', last_name: '', jersey_number: null },
+      { id: 'player-5', display_name: 'Delta', first_name: 'Delta', last_name: '', jersey_number: null }
+    ];
+
+    const syncPlayersFromTeamRoster = jest.fn(() => ({ success: true, message: 'No sync needed' }));
+
+    const currentTeam = { id: 'team-1' };
+    const teamContextValue = {
+      currentTeam,
+      teamPlayers: roster,
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences
+    };
+
+    mockUseTeam.mockImplementation(() => teamContextValue);
+
+    getPlayerStats.mockResolvedValue({
+      success: true,
+      players: [
+        { id: 'player-3', matchesAsCaptain: 3 },
+        { id: 'player-2', matchesAsCaptain: 1 },
+        { id: 'player-5', matchesAsCaptain: 1 },
+        { id: 'player-4', matchesAsCaptain: 2 },
+        { id: 'player-1', matchesAsCaptain: 5 }
+      ]
+    });
+
+    const props = buildProps({
+      selectedSquadIds: roster.map(player => player.id),
+      selectedSquadPlayers: roster.map(player => ({
+        id: player.id,
+        displayName: player.display_name
+      })),
+      syncPlayersFromTeamRoster
+    });
+
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Echo (5)')).toBeInTheDocument();
+    });
+
+    const optionTexts = Array.from(screen.getByTestId('captain').querySelectorAll('option'))
+      .map(option => option.textContent);
+
+    expect(optionTexts).toEqual([
+      'No Captain',
+      'Alpha (1)',
+      'Delta (1)',
+      'Bravo (2)',
+      'Charlie (3)',
+      'Echo (5)'
+    ]);
   });
 
   it('pre-populates captain from UUID preference when none is selected', async () => {
