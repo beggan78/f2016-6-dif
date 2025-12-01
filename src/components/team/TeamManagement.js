@@ -48,7 +48,8 @@ const TAB_VIEWS = {
   OVERVIEW: 'overview',
   ACCESS: 'access',
   ROSTER: 'roster',
-  PREFERENCES: 'preferences'
+  PREFERENCES: 'preferences',
+  CONNECTORS: 'connectors'
 };
 
 export function TeamManagement({ onNavigateBack, openToTab }) {
@@ -111,16 +112,22 @@ export function TeamManagement({ onNavigateBack, openToTab }) {
         icon: Rows4,
         description: 'Manage team players'
       } : null,
-      isTeamAdmin ? { 
-        id: TAB_VIEWS.ACCESS, 
-        label: 'Access Management', 
+      isTeamAdmin ? {
+        id: TAB_VIEWS.ACCESS,
+        label: 'Access Management',
         icon: Shield,
         description: 'Approve requests and invite users',
         badge: pendingRequestsCount > 0 ? pendingRequestsCount : null
       } : null,
-      canManageTeam ? { 
-        id: TAB_VIEWS.PREFERENCES, 
-        label: 'Preferences', 
+      isTeamAdmin ? {
+        id: TAB_VIEWS.CONNECTORS,
+        label: 'Connectors',
+        icon: Link,
+        description: 'Manage external provider integrations'
+      } : null,
+      canManageTeam ? {
+        id: TAB_VIEWS.PREFERENCES,
+        label: 'Preferences',
         icon: Settings,
         description: 'Team settings and preferences'
       } : null
@@ -294,8 +301,8 @@ export function TeamManagement({ onNavigateBack, openToTab }) {
       case TAB_VIEWS.OVERVIEW:
         return <TeamOverview team={currentTeam} members={teamMembers} />;
       case TAB_VIEWS.ACCESS:
-        return <AccessManagement 
-          team={currentTeam} 
+        return <AccessManagement
+          team={currentTeam}
           pendingRequests={pendingRequests}
           onRefresh={loadTeamData}
           onShowModal={() => setShowAccessModal(true)}
@@ -304,6 +311,8 @@ export function TeamManagement({ onNavigateBack, openToTab }) {
         />;
       case TAB_VIEWS.ROSTER:
         return <RosterManagement team={currentTeam} onRefresh={loadTeamData} />;
+      case TAB_VIEWS.CONNECTORS:
+        return <TeamConnectors team={currentTeam} onRefresh={loadTeamData} />;
       case TAB_VIEWS.PREFERENCES:
         return <TeamPreferences team={currentTeam} onRefresh={loadTeamData} />;
       default:
@@ -1070,6 +1079,15 @@ function RosterManagement({ team, onRefresh }) {
   );
 }
 
+// Team Connectors Component
+function TeamConnectors({ team, onRefresh }) {
+  return (
+    <div className="space-y-6">
+      <ConnectorsSection team={team} onRefresh={onRefresh} />
+    </div>
+  );
+}
+
 // Team Preferences Component
 function TeamPreferences({ team, onRefresh }) {
   const { loadTeamPreferences, saveTeamPreferences, getTeamRoster } = useTeam();
@@ -1498,11 +1516,6 @@ function TeamPreferences({ team, onRefresh }) {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Connectors Section */}
-      <div className="pt-6 border-t border-slate-700">
-        <ConnectorsSection team={team} onRefresh={onRefresh} />
       </div>
     </div>
   );
