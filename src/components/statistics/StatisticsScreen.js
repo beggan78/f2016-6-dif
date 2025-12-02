@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, BarChart3, Users, History, Calendar } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +21,33 @@ const STATS_TABS = {
   HISTORY: 'history'
 };
 
+const getInitialTimeRange = (timeRangePersistence) => {
+  const stored = timeRangePersistence.loadState();
+  const presetId = stored?.presetId || 'all-time';
+
+  if (presetId === 'custom') {
+    const parseDate = (value) => {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+    return {
+      start: parseDate(stored?.customStartDate),
+      end: parseDate(stored?.customEndDate),
+      presetId: 'custom'
+    };
+  }
+
+  const preset = TIME_PRESETS.find(p => p.id === presetId);
+  const range = preset ? preset.getValue() : { start: null, end: null };
+
+  return {
+    start: range.start,
+    end: range.end,
+    presetId: preset ? presetId : 'all-time'
+  };
+};
+
 export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
   const tabPersistence = useMemo(
     () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
@@ -35,34 +62,11 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
     []
   );
 
-  const initialTimeRange = useMemo(() => {
-    const stored = timeRangePersistence.loadState();
-    const presetId = stored?.presetId || 'all-time';
-
-    // If custom range, use stored dates
-    if (presetId === 'custom') {
-      const parseDate = (value) => {
-        if (!value) return null;
-        const parsed = new Date(value);
-        return Number.isNaN(parsed.getTime()) ? null : parsed;
-      };
-      return {
-        start: parseDate(stored?.customStartDate),
-        end: parseDate(stored?.customEndDate),
-        presetId: 'custom'
-      };
-    }
-
-    // For presets, calculate fresh dates
-    const preset = TIME_PRESETS.find(p => p.id === presetId);
-    const range = preset ? preset.getValue() : { start: null, end: null };
-
-    return {
-      start: range.start,
-      end: range.end,
-      presetId: preset ? presetId : 'all-time'
-    };
-  }, [timeRangePersistence]);
+  const initialTimeRangeRef = useRef(null);
+  if (!initialTimeRangeRef.current) {
+    initialTimeRangeRef.current = getInitialTimeRange(timeRangePersistence);
+  }
+  const initialTimeRange = initialTimeRangeRef.current;
 
   const [activeTab, setActiveTab] = useState(() => {
     const stored = tabPersistence.loadState();
