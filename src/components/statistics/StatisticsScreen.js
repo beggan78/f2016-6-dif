@@ -66,7 +66,8 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
 
   const [activeTab, setActiveTab] = useState(() => {
     const stored = tabPersistence.loadState();
-    return stored.tab && Object.values(STATS_TABS).includes(stored.tab) ? stored.tab : STATS_TABS.TEAM;
+    const storedTab = stored && typeof stored === 'object' ? stored.tab : null;
+    return storedTab && Object.values(STATS_TABS).includes(storedTab) ? storedTab : STATS_TABS.TEAM;
   });
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [isCreatingMatch, setIsCreatingMatch] = useState(false);

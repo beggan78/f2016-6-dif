@@ -87,14 +87,20 @@ jest.mock('../../../hooks/useAuthModalIntegration', () => ({
 }));
 
 // Mock persistence manager
-const mockPersistenceManager = {
-  loadState: jest.fn(),
-  saveState: jest.fn()
-};
+jest.mock('../../../utils/persistenceManager', () => {
+  const mockPersistenceManager = {
+    loadState: jest.fn(),
+    saveState: jest.fn()
+  };
 
-jest.mock('../../../utils/persistenceManager', () => ({
-  createPersistenceManager: jest.fn(() => mockPersistenceManager)
-}));
+  return {
+    __esModule: true,
+    createPersistenceManager: jest.fn(() => mockPersistenceManager),
+    mockPersistenceManager
+  };
+});
+
+const { createPersistenceManager, mockPersistenceManager } = require('../../../utils/persistenceManager');
 
 // Mock TIME_PRESETS
 jest.mock('../../../constants/timePresets', () => ({
@@ -121,6 +127,8 @@ describe('StatisticsScreen', () => {
   let mockAuthModal;
 
   beforeEach(() => {
+    createPersistenceManager.mockImplementation(() => mockPersistenceManager);
+
     mockOnNavigateBack = jest.fn();
     mockAuthModal = {
       openLogin: jest.fn(),
