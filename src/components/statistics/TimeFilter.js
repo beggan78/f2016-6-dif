@@ -1,65 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Calendar, Clock, ChevronDown, Check } from 'lucide-react';
 import { Button, Input } from '../shared/UI';
-
-const TIME_PRESETS = [
-  {
-    id: 'last-30-days',
-    label: 'Last 30 days',
-    getValue: () => {
-      const end = new Date();
-      const start = new Date();
-      start.setDate(start.getDate() - 30);
-      return { start, end };
-    }
-  },
-  {
-    id: 'last-3-months',
-    label: 'Last 3 months',
-    getValue: () => {
-      const end = new Date();
-      const start = new Date();
-      start.setMonth(start.getMonth() - 3);
-      return { start, end };
-    }
-  },
-  {
-    id: 'last-6-months',
-    label: 'Last 6 months',
-    getValue: () => {
-      const end = new Date();
-      const start = new Date();
-      start.setMonth(start.getMonth() - 6);
-      return { start, end };
-    }
-  },
-  {
-    id: 'last-12-months',
-    label: 'Last 12 months',
-    getValue: () => {
-      const end = new Date();
-      const start = new Date();
-      start.setFullYear(start.getFullYear() - 1);
-      return { start, end };
-    }
-  },
-  {
-    id: 'year-to-date',
-    label: 'Year to Date',
-    getValue: () => {
-      const end = new Date();
-      const start = new Date(end.getFullYear(), 0, 1);
-      return { start, end };
-    }
-  },
-  {
-    id: 'all-time',
-    label: 'All time',
-    getValue: () => {
-      return { start: null, end: null };
-    }
-  }
-];
+import { TIME_PRESETS } from '../../constants/timePresets';
 
 const formatDateForDisplay = (date) => {
   if (!date) return '';
@@ -102,50 +44,31 @@ const formatTimeRangeLabel = (start, end, presetLabel) => {
 export function TimeFilter({
   startDate,
   endDate,
+  selectedPresetId = 'all-time',
   onTimeRangeChange,
   className = ''
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState('all-time');
+  const [selectedPreset, setSelectedPreset] = useState(selectedPresetId);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomRange, setShowCustomRange] = useState(false);
 
   const dropdownRef = useRef(null);
 
-  // Initialize preset based on current time range
+  // Update internal state when parent changes the preset
   useEffect(() => {
-    if (!startDate && !endDate) {
-      setSelectedPreset('all-time');
-      return;
-    }
+    setSelectedPreset(selectedPresetId);
 
-    // Try to match current range to a preset
-    const matchingPreset = TIME_PRESETS.find(preset => {
-      const presetRange = preset.getValue();
-      if (!presetRange.start && !presetRange.end && !startDate && !endDate) {
-        return true;
-      }
-      if (!presetRange.start || !presetRange.end || !startDate || !endDate) {
-        return false;
-      }
-
-      // Allow some tolerance (1 day) for matching dates
-      const startDiff = Math.abs(presetRange.start.getTime() - startDate.getTime());
-      const endDiff = Math.abs(presetRange.end.getTime() - endDate.getTime());
-      return startDiff < 24 * 60 * 60 * 1000 && endDiff < 24 * 60 * 60 * 1000;
-    });
-
-    if (matchingPreset) {
-      setSelectedPreset(matchingPreset.id);
-      setShowCustomRange(false);
-    } else {
-      setSelectedPreset('custom');
+    // Handle custom range UI
+    if (selectedPresetId === 'custom') {
       setShowCustomRange(true);
       setCustomStartDate(formatDateForInput(startDate));
       setCustomEndDate(formatDateForInput(endDate));
+    } else {
+      setShowCustomRange(false);
     }
-  }, [startDate, endDate]);
+  }, [selectedPresetId, startDate, endDate]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -189,7 +112,7 @@ export function TimeFilter({
     const preset = TIME_PRESETS.find(p => p.id === presetId);
     if (preset) {
       const range = preset.getValue();
-      onTimeRangeChange(range.start, range.end);
+      onTimeRangeChange(range.start, range.end, presetId);
       setIsOpen(false);
     }
   };
@@ -236,12 +159,13 @@ export function TimeFilter({
       return;
     }
 
-    onTimeRangeChange(start, end);
+    onTimeRangeChange(start, end, 'custom');
     setIsOpen(false);
   };
 
   const handleCustomRangeCancel = () => {
     setShowCustomRange(false);
+    setIsOpen(false);
     // Reset to current values
     setCustomStartDate(formatDateForInput(startDate));
     setCustomEndDate(formatDateForInput(endDate));
