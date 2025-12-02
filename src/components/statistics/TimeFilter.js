@@ -165,6 +165,7 @@ export function TimeFilter({
 
   const handleCustomRangeCancel = () => {
     setShowCustomRange(false);
+    setIsOpen(false);
     // Reset to current values
     setCustomStartDate(formatDateForInput(startDate));
     setCustomEndDate(formatDateForInput(endDate));
