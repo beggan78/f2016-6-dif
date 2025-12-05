@@ -32,7 +32,7 @@ jest.mock('../utils/formatUtils', () => ({
 }));
 
 jest.mock('../services/matchStateManager', () => ({
-  updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true })
+  updateFinishedMatchMetadata: jest.fn().mockResolvedValue({ success: true })
 }));
 
 jest.mock('../components/report/MatchSummaryHeader', () => ({

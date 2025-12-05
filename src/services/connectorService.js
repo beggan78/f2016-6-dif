@@ -662,12 +662,12 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
       throw new Error('Failed to load match statistics');
     }
 
-    // Count matches per player (only confirmed matches within date range)
+    // Count matches per player (only finished matches within date range)
     const matchesPlayedMap = new Map();
 
     (matchStatsData || []).forEach(stat => {
       if (!stat.match || stat.match.team_id !== teamId) return;
-      if (stat.match.state !== 'confirmed') return;
+      if (stat.match.state !== 'finished') return;
       if (stat.match.deleted_at !== null) return;
 
       // Apply date filters

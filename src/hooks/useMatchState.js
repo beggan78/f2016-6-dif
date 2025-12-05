@@ -9,18 +9,16 @@ import { useRef } from 'react';
  * match state instead of UI view inference for reliability.
  * 
  * @returns {Object} Match state information
- * @returns {boolean} hasActiveMatch - True if there's any active match (running or finished)
- * @returns {boolean} hasUnsavedMatch - True if there's a finished match not yet saved to history
+ * @returns {boolean} hasActiveMatch - True if there's an active running match
  * @returns {boolean} isMatchRunning - True if there's an active running match
  * @returns {string|null} currentMatchId - The current match ID if any
- * @returns {string} matchState - Explicit match state: 'not_started', 'running', 'finished', 'saved'
+ * @returns {string} matchState - Explicit match state: 'not_started', 'pending', 'running', 'finished'
  */
 export function useMatchState() {
   const { currentMatchId, matchState } = useGameState();
   
   // Match state calculations using explicit state instead of view inference
-  const hasActiveMatch = Boolean(currentMatchId && (matchState === 'running' || matchState === 'finished'));
-  const hasUnsavedMatch = Boolean(currentMatchId && matchState === 'finished');
+  const hasActiveMatch = Boolean(currentMatchId && matchState === 'running');
   const isMatchRunning = Boolean(currentMatchId && matchState === 'running');
   
   // Debug: Only log when match state becomes ready for abandonment guard
@@ -34,7 +32,6 @@ export function useMatchState() {
       currentMatchId,
       matchState,
       hasActiveMatch,
-      hasUnsavedMatch,
       isMatchRunning
     });
   }
@@ -42,7 +39,6 @@ export function useMatchState() {
   
   return {
     hasActiveMatch,
-    hasUnsavedMatch,
     isMatchRunning,
     currentMatchId,
     matchState

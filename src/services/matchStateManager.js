@@ -3,8 +3,7 @@
  * 
  * Handles the lifecycle of match records in the database with proper state transitions:
  * - running: Match is actively being played
- * - finished: Match completed but not yet saved to history  
- * - confirmed: Match saved to history by user
+ * - finished: Match completed and saved to history
  * - pending: Match created but not yet started (user hasn't clicked Start Match button)
  */
 
@@ -151,7 +150,7 @@ export async function createMatch(matchData, allPlayers = [], selectedSquadIds =
 }
 
 /**
- * Create a fully confirmed match record directly from manual input.
+ * Create a finished match record directly from manual input.
  * Inserts both the match metadata and optional player statistics so the entry
  * appears immediately in match history.
  * @param {Object} matchData - Manual match details collected from the UI
@@ -243,7 +242,7 @@ export async function createManualMatch(matchData, playerStats = []) {
       started_at: startedAt,
       finished_at: startedAt,
       updated_at: nowIso,
-      state: 'confirmed',
+      state: 'finished',
       fair_play_award: fairPlayAwardPlayerId,
       captain: captainId
     };
@@ -436,18 +435,29 @@ export async function updateMatchToFinished(matchId, finalStats, allPlayers = []
 }
 
 /**
- * Update match to confirmed state when user saves to history
+ * Update metadata for a finished match (e.g., fair play award)
  * @param {string} matchId - Match ID
- * @param {string} fairPlayAwardId - Fair play award player ID (optional)
+ * @param {Object} options - Metadata updates
+ * @param {string|null} options.fairPlayAwardId - Player ID for fair play award (null to clear)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
+export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId } = {}) {
   try {
-    const updateData = { state: 'confirmed' };
-    
-    // Include fair play award if provided
-    if (fairPlayAwardId !== null) {
+    if (!matchId) {
+      return {
+        success: false,
+        error: 'Match ID is required'
+      };
+    }
+
+    const updateData = {};
+
+    if (fairPlayAwardId !== undefined) {
       updateData.fair_play_award = fairPlayAwardId;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return { success: true };
     }
 
     const { data: updatedMatches, error } = await supabase
@@ -459,7 +469,7 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
       .select('id'); // Ensure at least one row was updated
 
     if (error) {
-      console.error('❌ Failed to update match to confirmed:', error);
+      console.error('❌ Failed to update finished match metadata:', error);
       return {
         success: false,
         error: `Database error: ${error.message}`
@@ -467,19 +477,18 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
     }
 
     if (!updatedMatches || updatedMatches.length === 0) {
-      const warningMessage = 'Match must be finished before it can be saved to history.';
-      console.warn(`⚠️  No finished match found to confirm for matchId=${matchId}`);
+      const warningMessage = 'Match must be finished before updates can be applied.';
+      console.warn(`⚠️  No finished match found to update for matchId=${matchId}`);
       return {
         success: false,
         error: warningMessage
       };
     }
 
-    // If fair play award was provided, also update player_match_stats
-    if (fairPlayAwardId !== null) {
+    if (fairPlayAwardId !== undefined) {
       const statsResult = await updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAwardId);
       if (!statsResult.success) {
-        console.error('❌ Failed to persist fair play award update during match confirmation:', statsResult.error);
+        console.error('❌ Failed to persist fair play award update for finished match:', statsResult.error);
         return {
           success: false,
           error: statsResult.error || 'Unable to assign fair play award for this match.'
@@ -490,7 +499,7 @@ export async function updateMatchToConfirmed(matchId, fairPlayAwardId = null) {
     return { success: true };
 
   } catch (error) {
-    console.error('❌ Exception while confirming match:', error);
+    console.error('❌ Exception while updating finished match metadata:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`
@@ -510,14 +519,20 @@ export async function updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAward
     const { error: clearError } = await supabase
       .from('player_match_stats')
       .update({ got_fair_play_award: false })
-      .eq('match_id', matchId)
-      .eq('got_fair_play_award', true);
+      .eq('match_id', matchId);
 
     if (clearError) {
       console.error('❌ Failed to clear existing fair play awards:', clearError);
       return {
         success: false,
         error: `Database error: ${clearError.message}`
+      };
+    }
+
+    if (!fairPlayAwardPlayerId) {
+      return {
+        success: true,
+        updated: 0
       };
     }
 
@@ -637,13 +652,13 @@ export async function checkForRunningMatch(teamId) {
 }
 
 /**
- * Get confirmed matches for a team (match history)
+ * Get finished matches for a team (match history)
  * @param {string} teamId - Team ID
  * @param {Date} startDate - Optional start date filter
  * @param {Date} endDate - Optional end date filter
  * @returns {Promise<{success: boolean, matches?: Array, error?: string}>}
  */
-export async function getConfirmedMatches(teamId, startDate = null, endDate = null) {
+export async function getFinishedMatches(teamId, startDate = null, endDate = null) {
   try {
     if (!teamId) {
       return {
@@ -677,7 +692,7 @@ export async function getConfirmedMatches(teamId, startDate = null, endDate = nu
       )
       `)
       .eq('team_id', teamId)
-      .eq('state', 'confirmed')
+      .eq('state', 'finished')
       .is('deleted_at', null)
       .order('started_at', { ascending: false });
 
@@ -695,7 +710,7 @@ export async function getConfirmedMatches(teamId, startDate = null, endDate = nu
     const { data, error } = await query;
 
     if (error) {
-      console.error('❌ Failed to get confirmed matches:', error);
+      console.error('❌ Failed to get finished matches:', error);
       return {
         success: false,
         error: `Database error: ${error.message}`
@@ -729,7 +744,7 @@ export async function getConfirmedMatches(teamId, startDate = null, endDate = nu
     };
 
   } catch (error) {
-    console.error('❌ Exception while getting confirmed matches:', error);
+    console.error('❌ Exception while getting finished matches:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`
@@ -925,7 +940,7 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
       return outcome;
     };
 
-    // Query to get all player match stats for the team's confirmed matches
+    // Query to get all player match stats for the team's finished matches
     let query = supabase
       .from('player_match_stats')
       .select(`
@@ -975,7 +990,7 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
     const matchDetailsMap = new Map();
 
     (allStats || []).forEach((stat) => {
-      if (!stat.match || stat.match.team_id !== teamId || stat.match.state !== 'confirmed' || stat.match.deleted_at !== null) {
+      if (!stat.match || stat.match.team_id !== teamId || stat.match.state !== 'finished' || stat.match.deleted_at !== null) {
         return;
       }
 
@@ -1005,11 +1020,11 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
       matchDetailsMap.set(matchId, matchDetails);
     });
 
-    // Filter for confirmed matches of this team only and apply match filters
+    // Filter for finished matches of this team only and apply match filters
     const filteredStats = (allStats || []).filter(stat => {
       if (!stat.match || !stat.player) return false;
       if (stat.match.team_id !== teamId) return false;
-      if (stat.match.state !== 'confirmed') return false;
+      if (stat.match.state !== 'finished') return false;
       if (stat.match.deleted_at !== null) return false;
 
       // Apply date filters if provided
@@ -1159,12 +1174,12 @@ export async function getTeamStats(teamId, startDate = null, endDate = null) {
       };
     }
 
-    // Query all confirmed matches for the team
+    // Query all finished matches for the team
     let query = supabase
       .from('match')
       .select('*')
       .eq('team_id', teamId)
-      .eq('state', 'confirmed')
+      .eq('state', 'finished')
       .is('deleted_at', null)
       .order('started_at', { ascending: false });
 
@@ -1951,7 +1966,7 @@ export async function discardPendingMatch(matchId) {
   }
 }
 
-export async function deleteConfirmedMatch(matchId) {
+export async function deleteFinishedMatch(matchId) {
   try {
     if (!matchId) {
       return {
@@ -1985,10 +2000,10 @@ export async function deleteConfirmedMatch(matchId) {
       )
       .eq('id', matchId)
       .is('deleted_at', null)
-      .in('state', ['finished', 'confirmed']);
+      .eq('state', 'finished');
 
     if (matchResult.error) {
-      console.error('❌ Failed to delete confirmed match:', matchResult.error);
+      console.error('❌ Failed to delete finished match:', matchResult.error);
       return {
         success: false,
         error: `Database error: ${matchResult.error.message}`
@@ -2005,7 +2020,7 @@ export async function deleteConfirmedMatch(matchId) {
     return { success: true };
 
   } catch (error) {
-    console.error('❌ Exception while deleting confirmed match:', error);
+    console.error('❌ Exception while deleting finished match:', error);
     return {
       success: false,
       error: `Unexpected error: ${error.message}`

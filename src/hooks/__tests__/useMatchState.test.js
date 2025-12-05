@@ -21,7 +21,6 @@ describe('useMatchState', () => {
 
     expect(result.current).toEqual({
       hasActiveMatch: false,
-      hasUnsavedMatch: false,
       isMatchRunning: false,
       currentMatchId: null,
       matchState: 'not_started'
@@ -38,14 +37,13 @@ describe('useMatchState', () => {
 
     expect(result.current).toEqual({
       hasActiveMatch: true,
-      hasUnsavedMatch: false,
       isMatchRunning: true,
       currentMatchId: 'match-123',
       matchState: 'running'
     });
   });
 
-  it('returns unsaved match when matchState is finished', () => {
+  it('treats finished matches as inactive for abandonment guard', () => {
     mockUseGameState.mockReturnValue({
       currentMatchId: 'match-123',
       matchState: 'finished'
@@ -54,8 +52,7 @@ describe('useMatchState', () => {
     const { result } = renderHook(() => useMatchState());
 
     expect(result.current).toEqual({
-      hasActiveMatch: true,
-      hasUnsavedMatch: true,
+      hasActiveMatch: false,
       isMatchRunning: false,
       currentMatchId: 'match-123',
       matchState: 'finished'
@@ -72,7 +69,6 @@ describe('useMatchState', () => {
 
     expect(result.current).toEqual({
       hasActiveMatch: false,
-      hasUnsavedMatch: false,
       isMatchRunning: false,
       currentMatchId: 'match-123',
       matchState: 'not_started'

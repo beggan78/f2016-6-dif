@@ -22,12 +22,12 @@ import { FAIR_PLAY_AWARD_OPTIONS } from '../../../types/preferences';
 import {
   createMockPlayers,
 } from '../../__tests__/componentTestUtils';
-import { updateMatchToConfirmed, getPlayerStats } from '../../../services/matchStateManager';
+import { updateFinishedMatchMetadata, getPlayerStats } from '../../../services/matchStateManager';
 import { useTeam } from '../../../contexts/TeamContext';
 
 // Mock matchStateManager functions
 jest.mock('../../../services/matchStateManager', () => ({
-  updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true }),
+  updateFinishedMatchMetadata: jest.fn().mockResolvedValue({ success: true }),
   getPlayerStats: jest.fn()
 }));
 
@@ -172,7 +172,7 @@ describe('GameFinishedScreen', () => {
       ...mockSetters
     };
 
-    updateMatchToConfirmed.mockResolvedValue({ success: true });
+    updateFinishedMatchMetadata.mockResolvedValue({ success: true });
   });
 
   it('omits bench players with no playing time from the statistics table', () => {
@@ -398,7 +398,7 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(firstPlayer.displayName);
       
       // Click save match button
-      const saveButton = screen.getByText('Save Match to History');
+      const saveButton = screen.getByText('Save Match Updates');
       await userEvent.click(saveButton);
       
       // Should update players with fair play award
@@ -421,16 +421,16 @@ describe('GameFinishedScreen', () => {
       await waitForFairPlaySection();
       
       // Click save match button without selecting award
-      const saveButton = screen.getByText('Save Match to History');
+      const saveButton = screen.getByText('Save Match Updates');
       await userEvent.click(saveButton);
       
       // Should still save successfully
       await waitFor(() => {
-        expect(updateMatchToConfirmed).toHaveBeenCalledWith('test-match-123', null);
+        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', { fairPlayAwardId: null });
       });
     });
 
-    it('should pass fairPlayAwardId to updateMatchToConfirmed', async () => {
+    it('should pass fairPlayAwardId to updateFinishedMatchMetadata', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
       
@@ -440,12 +440,12 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(firstPlayer.displayName);
       
       // Click save match button
-      const saveButton = screen.getByText('Save Match to History');
+      const saveButton = screen.getByText('Save Match Updates');
       await userEvent.click(saveButton);
       
-      // Should call updateMatchToConfirmed with the player ID
+      // Should call updateFinishedMatchMetadata with the player ID
       await waitFor(() => {
-        expect(updateMatchToConfirmed).toHaveBeenCalledWith('test-match-123', firstPlayer.id);
+        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', { fairPlayAwardId: firstPlayer.id });
       });
     });
 
@@ -460,7 +460,7 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(firstPlayer.displayName);
       
       // Click save to apply the change
-      const saveButton = screen.getByText('Save Match to History');
+      const saveButton = screen.getByText('Save Match Updates');
       await userEvent.click(saveButton);
       
       await waitFor(() => {
@@ -476,7 +476,7 @@ describe('GameFinishedScreen', () => {
       expect(updatedPlayers.find(p => p.id === secondPlayer.id).hasFairPlayAward).toBe(false);
     });
 
-    it('should pass correct fair play award player ID to updateMatchToConfirmed', async () => {
+    it('should pass correct fair play award player ID to updateFinishedMatchMetadata', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
       
@@ -486,38 +486,38 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(selectedPlayer.displayName);
       
       // Click save match button
-      const saveButton = screen.getByText('Save Match to History');
+      const saveButton = screen.getByText('Save Match Updates');
       await userEvent.click(saveButton);
       
       // Wait for database calls to complete
       await waitFor(() => {
-        expect(updateMatchToConfirmed).toHaveBeenCalled();
+        expect(updateFinishedMatchMetadata).toHaveBeenCalled();
       });
       
-      // Verify updateMatchToConfirmed was called with correct parameters
-      expect(updateMatchToConfirmed).toHaveBeenCalledWith(
+      // Verify updateFinishedMatchMetadata was called with correct parameters
+      expect(updateFinishedMatchMetadata).toHaveBeenCalledWith(
         'test-match-123', // matchId
-        selectedPlayer.id // fairPlayAwardPlayerId
+        { fairPlayAwardId: selectedPlayer.id } // fairPlayAwardPlayerId
       );
     });
 
     it('should surface an error message when saving fails', async () => {
-      updateMatchToConfirmed.mockResolvedValue({
+      updateFinishedMatchMetadata.mockResolvedValue({
         success: false,
-        error: 'Match must be finished before it can be saved to history.'
+        error: 'Match must be finished before updates can be applied.'
       });
 
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
 
-      const saveButton = screen.getByText('Save Match to History');
+      const saveButton = screen.getByText('Save Match Updates');
       await userEvent.click(saveButton);
 
       await waitFor(() => {
-        expect(screen.getByText('❌ Match must be finished before it can be saved to history.')).toBeInTheDocument();
+        expect(screen.getByText('❌ Match must be finished before updates can be applied.')).toBeInTheDocument();
       });
 
-      expect(screen.queryByText('✓ Match saved successfully!')).not.toBeInTheDocument();
+      expect(screen.queryByText('✓ Match updated successfully!')).not.toBeInTheDocument();
     });
   });
 });

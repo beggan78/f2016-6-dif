@@ -6,7 +6,7 @@ import { useTeam } from '../../contexts/TeamContext';
 import { FeatureGate } from '../auth/FeatureGate';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { hasPlayerParticipated } from '../../utils/playerUtils';
-import { updateMatchToConfirmed, getPlayerStats } from '../../services/matchStateManager';
+import { updateFinishedMatchMetadata, getPlayerStats } from '../../services/matchStateManager';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { PlayerStatsTable } from '../report/PlayerStatsTable';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
@@ -260,14 +260,14 @@ export function GameFinishedScreen({
       }
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Confirming match in database:', currentMatchId, fairPlayAwardPlayerId ? 'with fair play award' : 'without fair play award');
+        console.log('💾 Updating finished match in database:', currentMatchId, fairPlayAwardPlayerId ? 'with fair play award' : 'without fair play award');
       }
       
-      const result = await updateMatchToConfirmed(currentMatchId, fairPlayAwardPlayerId);
+      const result = await updateFinishedMatchMetadata(currentMatchId, { fairPlayAwardId: fairPlayAwardPlayerId ?? null });
       
       if (result.success) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Match confirmed successfully');
+          console.log('✅ Match updated successfully');
           if (fairPlayAwardPlayerId) {
             console.log('🏆 Fair play award updated in player stats');
           }
@@ -281,8 +281,8 @@ export function GameFinishedScreen({
         }, 3000);
       } else {
         setSaveSuccess(false);
-        setSaveError(result.error || 'Failed to confirm match');
-        console.error('❌ Failed to confirm match:', result);
+        setSaveError(result.error || 'Failed to save match updates');
+        console.error('❌ Failed to update finished match:', result);
       }
     } catch (err) {
       console.error('❌ Exception while saving match:', err);
@@ -378,7 +378,7 @@ export function GameFinishedScreen({
         </div>
       )}
 
-      {/* Save Match to History - Protected */}
+      {/* Save Match Updates - Protected */}
       {isAuthenticated ? (
         <div className="space-y-2">
           <div className="flex gap-3 items-center">
@@ -389,11 +389,11 @@ export function GameFinishedScreen({
               className="bg-emerald-600 hover:bg-emerald-700"
               disabled={saving}
             >
-              {saving ? 'Saving...' : 'Save Match to History'}
+              {saving ? 'Saving...' : 'Save Match Updates'}
             </Button>
             {saveSuccess && (
               <span className="text-emerald-400 text-sm font-medium">
-                ✓ Match saved successfully!
+                ✓ Match updated successfully!
               </span>
             )}
           </div>
@@ -407,12 +407,12 @@ export function GameFinishedScreen({
       ) : (
         <FeatureGate
           feature="match history"
-          description="Save this match to your history and track your team's performance over time"
+          description="Update this finished match in your history and track your team's performance over time"
           compact
           authModal={authModal}
         >
           <Button Icon={Save} variant="primary" disabled>
-            Save Match to History
+            Save Match Updates
           </Button>
         </FeatureGate>
       )}

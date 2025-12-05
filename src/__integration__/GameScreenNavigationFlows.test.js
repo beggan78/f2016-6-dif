@@ -719,7 +719,7 @@ describe('GameScreen Navigation Integration Tests', () => {
       const { rerender } = render(<GameScreen {...props} />);
 
       // Rapid state transitions
-      const states = ['running', 'finished', 'confirmed', 'pending'];
+      const states = ['running', 'finished', 'pending'];
       states.forEach(state => {
         rerender(<GameScreen {...props} matchState={state} />);
       });

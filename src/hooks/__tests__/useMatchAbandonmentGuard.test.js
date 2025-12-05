@@ -14,7 +14,6 @@ describe('useMatchAbandonmentGuard', () => {
   it('executes callback immediately when no active match', () => {
     mockUseMatchState.mockReturnValue({
       hasActiveMatch: false,
-      hasUnsavedMatch: false,
       isMatchRunning: false,
       currentMatchId: null
     });
@@ -33,7 +32,6 @@ describe('useMatchAbandonmentGuard', () => {
   it('shows modal when active match exists', () => {
     mockUseMatchState.mockReturnValue({
       hasActiveMatch: true,
-      hasUnsavedMatch: false,
       isMatchRunning: true,
       currentMatchId: 'match-123'
     });
@@ -49,11 +47,28 @@ describe('useMatchAbandonmentGuard', () => {
     expect(result.current.showModal).toBe(true);
   });
 
+  it('treats finished matches as safe to reset', () => {
+    mockUseMatchState.mockReturnValue({
+      hasActiveMatch: false,
+      isMatchRunning: false,
+      currentMatchId: 'match-123'
+    });
+
+    const mockCallback = jest.fn();
+    const { result } = renderHook(() => useMatchAbandonmentGuard());
+
+    act(() => {
+      result.current.requestNewGame(mockCallback);
+    });
+
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(result.current.showModal).toBe(false);
+  });
+
   it('executes callback when user abandons match', () => {
     mockUseMatchState.mockReturnValue({
       hasActiveMatch: true,
-      hasUnsavedMatch: true,
-      isMatchRunning: false,
+      isMatchRunning: true,
       currentMatchId: 'match-123'
     });
 
@@ -80,8 +95,7 @@ describe('useMatchAbandonmentGuard', () => {
   it('cancels abandonment without executing callback', () => {
     mockUseMatchState.mockReturnValue({
       hasActiveMatch: true,
-      hasUnsavedMatch: true,
-      isMatchRunning: false,
+      isMatchRunning: true,
       currentMatchId: 'match-123'
     });
 
@@ -107,7 +121,6 @@ describe('useMatchAbandonmentGuard', () => {
   it('warns when requestNewGame called without callback function', () => {
     mockUseMatchState.mockReturnValue({
       hasActiveMatch: false,
-      hasUnsavedMatch: false,
       isMatchRunning: false,
       currentMatchId: null
     });

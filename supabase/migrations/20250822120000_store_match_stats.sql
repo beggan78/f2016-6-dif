@@ -19,7 +19,7 @@ ALTER TABLE public.match
 ALTER TABLE public.match 
   ALTER COLUMN match_duration_seconds DROP NOT NULL;
 
-COMMENT ON COLUMN public.match.state IS 'Match state: running (active), finished (completed), confirmed (saved to history), pending (unused). Defaults to running when match is created.';
+COMMENT ON COLUMN public.match.state IS 'Match state: running (active), finished (completed), pending (unused). Defaults to running when match is created.';
 COMMENT ON COLUMN public.match.format IS 'Match format (3v3, 5v5, 7v7, 9v9, 11v11) - must be explicitly set, no default';
 COMMENT ON COLUMN public.match.formation IS 'Formation configuration used - must be explicitly set, no default';
 COMMENT ON COLUMN public.match.periods IS 'Number of periods in match - must be explicitly set, no default';

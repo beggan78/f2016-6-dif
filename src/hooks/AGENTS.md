@@ -17,13 +17,13 @@ Primary hook for game state management. Delegates to specialized hooks for separ
 
 **Critical Patterns:**
 - Composition over monolithic state (delegates to 6+ specialized hooks)
-- Match lifecycle tracking: `matchState` ('not_started', 'pending', 'running', 'finished', 'confirmed')
+- Match lifecycle tracking: `matchState` ('not_started', 'pending', 'running', 'finished')
 - Match ID management: `currentMatchId` and `matchCreated` flags prevent duplicate database records
 - Immutable state updates (never mutate, always return new objects/arrays)
 
 **Database Integration:**
 - Uses `matchStateManager` service for match CRUD operations
-- Tracks match lifecycle with three-state pattern: running → finished → confirmed
+- Tracks match lifecycle with two-state pattern: running → finished
 - Upserts player stats during substitutions and period transitions
 
 ### useTimers.js
@@ -54,8 +54,7 @@ Manages UI-specific state separate from game logic.
 Centralized match state detection for abandonment warnings and navigation guards.
 
 **Returns:**
-- `hasActiveMatch` - True if match is running or finished (not saved)
-- `hasUnsavedMatch` - True if match is finished but not confirmed
+- `hasActiveMatch` - True if match is currently running
 - `isMatchRunning` - True if match state is 'running'
 - `matchState` - Explicit state: 'not_started', 'running', 'finished', 'saved'
 
@@ -95,13 +94,7 @@ Database operations and localStorage persistence.
 - `clearPersistedState()` - Clear localStorage state
 
 ### useMatchRecovery.js
-Handles recovery of finished matches not saved to history.
-
-**Recovery Flow:**
-1. Check for recoverable match on login (1.5s delay)
-2. Show recovery modal if found
-3. User choice: save to history or delete match
-4. Update match state to 'confirmed' or delete from database
+Kept for API compatibility; recovery prompts are disabled now that finished is the terminal state.
 
 ## Browser Interaction Hooks
 
