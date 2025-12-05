@@ -22,6 +22,11 @@ class EventPersistenceService {
    */
   async persistEvent(event, matchId) {
     try {
+      const resolvedMatchId = matchId || event?.matchId || event?.data?.matchId;
+      if (!resolvedMatchId) {
+        return { success: true, skipped: true, reason: 'Missing matchId' };
+      }
+
       // Check authentication
       const user = await getCurrentUser();
       if (!user) {
@@ -29,7 +34,7 @@ class EventPersistenceService {
       }
 
       // Transform event to database format
-      const dbEvents = this.transformEventForDatabase(event, matchId);
+      const dbEvents = this.transformEventForDatabase(event, resolvedMatchId);
       if (!dbEvents) {
         return { success: true, skipped: true, reason: 'No database mapping' };
       }

@@ -94,6 +94,10 @@ const clearDismissedModals = () => {
 function AppContent() {
   // Create the main gameState instance without circular dependencies
   const gameState = useGameState();
+  const matchIdRef = useRef(gameState.currentMatchId);
+  useEffect(() => {
+    matchIdRef.current = gameState.currentMatchId;
+  }, [gameState.currentMatchId]);
   
   // Set up navigation system using gameState.setView directly
   // Disable global browser back when GameScreen is active with pending or running match to avoid handler conflicts
@@ -193,9 +197,13 @@ function AppContent() {
 
   // Initialize event persistence for real-time database writes
   useEffect(() => {
-    initializeEventPersistence(gameState);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount - gameState object is captured in closure
+    const unsubscribe = initializeEventPersistence(() => matchIdRef.current);
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, []);
 
 
   const [showSignOutConfirmModal, setShowSignOutConfirmModal] = useState(false);
