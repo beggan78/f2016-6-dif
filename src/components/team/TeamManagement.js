@@ -1099,7 +1099,6 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
   const { loadTeamPreferences, saveTeamPreferences, getTeamRoster } = useTeam();
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [teamCaptainMode, setTeamCaptainMode] = useState(DEFAULT_PREFERENCES.teamCaptain);
@@ -1284,13 +1283,11 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
     if (teamCaptainMode === 'permanent' && !teamCaptainValue) {
       setError('Please select a player to serve as the permanent team captain.');
-      setSaving(false);
       return;
     }
 
     if (['9v9', '11v11'].includes(preferences.matchFormat)) {
       setError('Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.');
-      setSaving(false);
       return;
     }
 
@@ -1303,7 +1300,6 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
     const savePreferences = async () => {
       try {
-        setSaving(true);
         setError(null);
 
         await saveTeamPreferences(team.id, preferencesToSave);
@@ -1325,10 +1321,6 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         if (!isActive) return;
         setError('Failed to save preferences. Please try again.');
         setSuccessMessage(null);
-      } finally {
-        if (isActive) {
-          setSaving(false);
-        }
       }
     };
 
@@ -1343,7 +1335,8 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     permanentCaptainId,
     team?.id,
     onRefresh,
-    saveTeamPreferences
+    saveTeamPreferences,
+    onShowFloatingSuccess
   ]);
 
   if (loading) {
