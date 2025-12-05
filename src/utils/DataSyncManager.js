@@ -4,6 +4,7 @@ import { roleToDatabase, normalizeRole } from '../constants/roleConstants';
 import { FORMATS } from '../constants/teamConfiguration';
 import { createPersistenceManager } from './persistenceManager';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { eventPersistenceService } from '../services/eventPersistenceService';
 
 // Create persistence managers
 const matchHistoryPersistence = createPersistenceManager(STORAGE_KEYS.MATCH_HISTORY, { matches: [] });
@@ -185,27 +186,48 @@ export class DataSyncManager {
    */
   async saveMatchEvents(matchId, matchEvents) {
     try {
-      const events = matchEvents.map(event => ({
-        match_id: matchId,
-        player_id: event.playerId || null,
-        event_type: this.mapEventTypeToDatabase(event.type),
-        data: event.data || {},
-        correlation_id: event.correlationId || null,
-        occurred_at_seconds: event.timestamp || 0,
-        period: event.period || 1
-      }));
-
-      if (events.length > 0) {
-        const { error } = await supabase
-          .from('match_log_event')
-          .insert(events);
-
-        if (error) {
-          console.error('Error saving match events:', error);
-        }
+      if (!matchId || !Array.isArray(matchEvents) || matchEvents.length === 0) {
+        return { success: true, skipped: true, reason: 'no_events' };
       }
+
+      // Skip batch insert when real-time persistence already wrote events for this match
+      const { count: existingCount, error: countError } = await supabase
+        .from('match_log_event')
+        .select('id', { count: 'exact', head: true })
+        .eq('match_id', matchId);
+
+      if (countError) {
+        console.error('Error checking existing match events:', countError);
+        return { success: false, error: countError.message };
+      }
+
+      if ((existingCount || 0) > 0) {
+        return { success: true, skipped: true, reason: 'already_synced' };
+      }
+
+      const normalizedEvents = matchEvents.flatMap(event => {
+        const mapped = eventPersistenceService.transformEventForDatabase(event, matchId);
+        if (!mapped) return [];
+        return Array.isArray(mapped) ? mapped : [mapped];
+      });
+
+      if (normalizedEvents.length === 0) {
+        return { success: true, skipped: true, reason: 'no_mappable_events' };
+      }
+
+      const { error } = await supabase
+        .from('match_log_event')
+        .insert(normalizedEvents);
+
+      if (error) {
+        console.error('Error saving match events:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, inserted: normalizedEvents.length };
     } catch (error) {
       console.error('Error in saveMatchEvents:', error);
+      return { success: false, error: error.message };
     }
   }
 
