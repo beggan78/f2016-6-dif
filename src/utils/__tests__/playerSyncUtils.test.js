@@ -110,6 +110,7 @@ describe('playerSyncUtils', () => {
           currentStatus: 'substitute',
           isCaptain: false,
           isInactive: false,
+          hasFairPlayAward: false,
           lastStintStartTimeEpoch: null,
           startedMatchAs: null,
           timeAsAttackerSeconds: 0,
@@ -166,6 +167,7 @@ describe('playerSyncUtils', () => {
         firstName: 'John',
         lastName: 'Doe',
         jerseyNumber: 10,          // Updated from team
+        hasFairPlayAward: false,   // Reset during sync
         stats: mockExistingGamePlayer.stats
       });
     });

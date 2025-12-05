@@ -634,6 +634,7 @@ function AppContent() {
 
   const handleRestartMatch = (options = {}) => {
     const { preserveConfiguration = false } = options;
+    const resetPlayers = resetPlayersForNewMatch(gameState.allPlayers || []);
 
     if (preserveConfiguration) {
       const configSnapshot = {
@@ -650,8 +651,6 @@ function AppContent() {
         captainId: gameState.captainId,
         alertMinutes: gameState.alertMinutes
       };
-
-      const resetPlayers = resetPlayersForNewMatch(gameState.allPlayers || []);
 
       // Clear runtime-only match state
       clearAllEvents();
@@ -718,6 +717,9 @@ function AppContent() {
     
     // Clear navigation history for new game
     clearHistory();
+
+    // Clear fair play awards and reset player state centrally
+    gameState.setAllPlayers(resetPlayers);
     
     // Reset all timer state and clear localStorage
     timers.clearAllTimersForNewGame();

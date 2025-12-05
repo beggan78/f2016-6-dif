@@ -462,7 +462,7 @@ describe('GameFinishedScreen', () => {
       });
     });
 
-    it('clears fair play award when starting a new game', async () => {
+    it('delegates fair play clearing to the restart handler when starting a new game', async () => {
       // Set up players with an existing award from a previous match
       const playersWithAward = mockPlayers.map((player, index) => ({
         ...player,
@@ -487,25 +487,10 @@ describe('GameFinishedScreen', () => {
       const newGameButton = screen.getByRole('button', { name: /Start New Game/i });
       await userEvent.click(newGameButton);
 
-      // Verify that setAllPlayers was called
-      expect(mockSetters.setAllPlayers).toHaveBeenCalled();
-
-      // Get the argument passed to setAllPlayers (should be the result of resetPlayersForNewMatch)
-      const resetPlayersCall = mockSetters.setAllPlayers.mock.calls.find(call => {
-        // Find the call that reset all players
-        const arg = call[0];
-        // Check if it's an array (direct value) or function (state updater)
-        const players = typeof arg === 'function' ? arg(playersWithAward) : arg;
-        return Array.isArray(players);
-      });
-
-      expect(resetPlayersCall).toBeDefined();
-
-      const resetArg = resetPlayersCall[0];
-      const resetPlayers = typeof resetArg === 'function' ? resetArg(playersWithAward) : resetArg;
-
-      // Verify all players have hasFairPlayAward set to false
-      expect(resetPlayers.every(player => player.hasFairPlayAward === false)).toBe(true);
+      expect(checkForActiveMatch).toHaveBeenCalled();
+      expect(mockSetters.handleRestartMatch).toHaveBeenCalledWith({ preserveConfiguration: false });
+      // Component should delegate clearing logic to handleRestartMatch instead of mutating players directly
+      expect(mockSetters.setAllPlayers).not.toHaveBeenCalled();
     });
   });
 
