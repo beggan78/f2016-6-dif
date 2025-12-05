@@ -1229,6 +1229,7 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
+            onShowSuccessMessage={showSuccessMessage}
           />
         );
       case VIEWS.STATISTICS:

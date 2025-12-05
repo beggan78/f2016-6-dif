@@ -52,7 +52,7 @@ const TAB_VIEWS = {
   CONNECTORS: 'connectors'
 };
 
-export function TeamManagement({ onNavigateBack, openToTab }) {
+export function TeamManagement({ onNavigateBack, openToTab, onShowSuccessMessage }) {
   const { user } = useAuth();
   const { 
     hasTeams, 
@@ -314,7 +314,13 @@ export function TeamManagement({ onNavigateBack, openToTab }) {
       case TAB_VIEWS.CONNECTORS:
         return <TeamConnectors team={currentTeam} onRefresh={loadTeamData} />;
       case TAB_VIEWS.PREFERENCES:
-        return <TeamPreferences team={currentTeam} onRefresh={loadTeamData} />;
+        return (
+          <TeamPreferences
+            team={currentTeam}
+            onRefresh={loadTeamData}
+            onShowFloatingSuccess={onShowSuccessMessage}
+          />
+        );
       default:
         return <TeamOverview team={currentTeam} members={teamMembers} />;
     }
@@ -1089,7 +1095,7 @@ function TeamConnectors({ team, onRefresh }) {
 }
 
 // Team Preferences Component
-function TeamPreferences({ team, onRefresh }) {
+function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
   const { loadTeamPreferences, saveTeamPreferences, getTeamRoster } = useTeam();
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
@@ -1100,6 +1106,17 @@ function TeamPreferences({ team, onRefresh }) {
   const [permanentCaptainId, setPermanentCaptainId] = useState('');
   const [roster, setRoster] = useState([]);
   const [rosterLoading, setRosterLoading] = useState(false);
+  const autoSaveReadyRef = useRef(false);
+  const hasAppliedInitialPreferencesRef = useRef(false);
+  const successMessageTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (successMessageTimeoutRef.current) {
+        clearTimeout(successMessageTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const deriveTeamCaptainMode = useCallback((value) => {
     if (value === 'assign_each_match') return 'assign_each_match';
@@ -1111,7 +1128,13 @@ function TeamPreferences({ team, onRefresh }) {
   // Load preferences on mount
   useEffect(() => {
     const loadPrefs = async () => {
-      if (!team?.id) return;
+      if (!team?.id) {
+        autoSaveReadyRef.current = false;
+        return;
+      }
+
+      autoSaveReadyRef.current = false;
+      hasAppliedInitialPreferencesRef.current = false;
 
       try {
         setLoading(true);
@@ -1146,6 +1169,7 @@ function TeamPreferences({ team, onRefresh }) {
         setError('Failed to load preferences');
       } finally {
         setLoading(false);
+        autoSaveReadyRef.current = true;
       }
     };
 
@@ -1243,48 +1267,84 @@ function TeamPreferences({ team, onRefresh }) {
     setPreferences(prev => ({ ...prev, teamCaptain: playerId }));
   }, []);
 
-  const handleSave = async () => {
+  useEffect(() => {
     if (!team?.id) return;
+    if (!autoSaveReadyRef.current) return;
 
-    try {
-      setSaving(true);
-      setError(null);
-      setSuccessMessage(null);
-
-      const teamCaptainValue = teamCaptainMode === 'permanent'
-        ? permanentCaptainId
-        : teamCaptainMode;
-
-      if (teamCaptainMode === 'permanent' && !teamCaptainValue) {
-        setError('Please select a player to serve as the permanent team captain.');
-        return;
-      }
-
-      // Validate unsupported formats
-      if (['9v9', '11v11'].includes(preferences.matchFormat)) {
-        setError('Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.');
-        return;
-      }
-
-      const preferencesToSave = {
-        ...preferences,
-        teamCaptain: teamCaptainValue
-      };
-
-      await saveTeamPreferences(team.id, preferencesToSave);
-
-      setSuccessMessage('Preferences saved successfully');
-      setTimeout(() => setSuccessMessage(null), 3000);
-      setPreferences(preferencesToSave);
-
-      if (onRefresh) onRefresh();
-    } catch (err) {
-      console.error('Failed to save preferences:', err);
-      setError('Failed to save preferences. Please try again.');
-    } finally {
-      setSaving(false);
+    if (!hasAppliedInitialPreferencesRef.current) {
+      hasAppliedInitialPreferencesRef.current = true;
+      return;
     }
-  };
+
+    const teamCaptainValue = teamCaptainMode === 'permanent'
+      ? permanentCaptainId
+      : teamCaptainMode;
+
+    setSuccessMessage(null);
+
+    if (teamCaptainMode === 'permanent' && !teamCaptainValue) {
+      setError('Please select a player to serve as the permanent team captain.');
+      setSaving(false);
+      return;
+    }
+
+    if (['9v9', '11v11'].includes(preferences.matchFormat)) {
+      setError('Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.');
+      setSaving(false);
+      return;
+    }
+
+    const preferencesToSave = {
+      ...preferences,
+      teamCaptain: teamCaptainValue
+    };
+
+    let isActive = true;
+
+    const savePreferences = async () => {
+      try {
+        setSaving(true);
+        setError(null);
+
+        await saveTeamPreferences(team.id, preferencesToSave);
+        if (!isActive) return;
+
+        if (onShowFloatingSuccess) {
+          onShowFloatingSuccess('Preferences saved successfully');
+        } else {
+          setSuccessMessage('Preferences saved successfully');
+          if (successMessageTimeoutRef.current) {
+            clearTimeout(successMessageTimeoutRef.current);
+          }
+          successMessageTimeoutRef.current = setTimeout(() => setSuccessMessage(null), 3000);
+        }
+
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        console.error('Failed to save preferences:', err);
+        if (!isActive) return;
+        setError('Failed to save preferences. Please try again.');
+        setSuccessMessage(null);
+      } finally {
+        if (isActive) {
+          setSaving(false);
+        }
+      }
+    };
+
+    savePreferences();
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    preferences,
+    teamCaptainMode,
+    permanentCaptainId,
+    team?.id,
+    onRefresh,
+    saveTeamPreferences
+  ]);
 
   if (loading) {
     return (
@@ -1297,7 +1357,7 @@ function TeamPreferences({ team, onRefresh }) {
   return (
     <div className="space-y-6">
       {/* Success Message */}
-      {successMessage && (
+      {!onShowFloatingSuccess && successMessage && (
         <div className="bg-green-800/20 border border-green-700 text-green-200 text-sm rounded-lg p-4">
           {successMessage}
         </div>
@@ -1312,14 +1372,6 @@ function TeamPreferences({ team, onRefresh }) {
 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-slate-200">Team Preferences</h3>
-        <Button
-          onClick={handleSave}
-          variant="primary"
-          size="sm"
-          disabled={saving}
-        >
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
       </div>
 
       {/* Match Settings */}
