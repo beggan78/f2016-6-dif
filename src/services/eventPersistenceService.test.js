@@ -81,7 +81,7 @@ describe('EventPersistenceService', () => {
         timestamp: Date.now(),
         matchTime: '05:30',
         periodNumber: 1,
-        data: { playerId: 'player_456', scorerId: 'player_456' }
+        data: { playerId: 'player_456', scorerId: 'player_456', ownScore: 2, opponentScore: 1 }
       };
 
       const result = eventPersistenceService.transformEventForDatabase(event, 'match_789');
@@ -93,10 +93,9 @@ describe('EventPersistenceService', () => {
         period: 1,
         player_id: 'player_456'
       });
-      expect(result.data).toMatchObject({
-        originalEventType: 'goal_scored',
-        playerId: 'player_456',
-        localStorageEventId: 'evt_123'
+      expect(result.data).toEqual({
+        ownScore: 2,
+        opponentScore: 1
       });
     });
 
@@ -114,6 +113,7 @@ describe('EventPersistenceService', () => {
 
       expect(result.player_id).toBeUndefined();
       expect(result.event_type).toBe('match_started');
+      expect(result.data).toBeNull();
     });
 
     it('should create TWO events for goalie switch', () => {
@@ -141,6 +141,8 @@ describe('EventPersistenceService', () => {
       expect(result[1].player_id).toBe('goalie_2');
       expect(result[0].correlation_id).toBe(result[1].correlation_id);
       expect(result[0].correlation_id).toBeTruthy();
+      expect(result[0].data).toBeNull();
+      expect(result[1].data).toBeNull();
     });
 
     it('should handle goalie switch with only new goalie', () => {
@@ -161,9 +163,48 @@ describe('EventPersistenceService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].event_type).toBe('goalie_enters');
       expect(result[0].player_id).toBe('goalie_2');
+      expect(result[0].data).toBeNull();
     });
 
-    it('should add match end reason for abandoned/suspended matches', () => {
+    it('should create minimal events for substitution with shared correlation', () => {
+      const event = {
+        id: 'evt_999',
+        type: 'substitution',
+        matchTime: '08:10',
+        periodNumber: 1,
+        data: {
+          playersOff: ['p1', 'p2'],
+          playersOn: ['p3', 'p4']
+        }
+      };
+
+      const result = eventPersistenceService.transformEventForDatabase(event, 'match_sub');
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(4);
+      const correlationIds = new Set(result.map(r => r.correlation_id));
+      expect(correlationIds.size).toBe(1);
+      expect(result.filter(r => r.event_type === 'substitution_out').map(r => r.player_id)).toEqual(['p1', 'p2']);
+      expect(result.filter(r => r.event_type === 'substitution_in').map(r => r.player_id)).toEqual(['p3', 'p4']);
+      result.forEach(r => expect(r.data).toBeNull());
+    });
+
+    it('should set player_id for goalie_enters from goalie assignment', () => {
+      const event = {
+        id: 'evt_goalie',
+        type: 'goalie_assignment',
+        matchTime: '00:30',
+        periodNumber: 1,
+        data: { goalieId: 'g1' }
+      };
+
+      const result = eventPersistenceService.transformEventForDatabase(event, 'match_goalie');
+      expect(result.event_type).toBe('goalie_enters');
+      expect(result.player_id).toBe('g1');
+      expect(result.data).toBeNull();
+    });
+
+    it('should keep match end reason for abandoned/suspended matches', () => {
       const abandonedEvent = {
         id: 'evt_123',
         type: 'match_abandoned',

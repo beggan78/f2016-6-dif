@@ -108,27 +108,21 @@ class EventPersistenceService {
     // Convert match time "MM:SS" to seconds
     const occurredAtSeconds = this.parseMatchTimeToSeconds(event.matchTime);
 
-    // Base event structure
-    const baseEvent = {
+    const buildBaseEvent = (overrides = {}) => ({
       match_id: matchId,
       event_type: dbEventType,
       occurred_at_seconds: occurredAtSeconds,
       period: event.periodNumber || 1,
-      data: {
-        originalEventType: event.type, // Audit trail
-        ...event.data,
-        localStorageEventId: event.id
-      },
-      correlation_id: event.relatedEventId || null
-    };
+      data: null,
+      correlation_id: event.relatedEventId || null,
+      ...overrides
+    });
 
-    // Add player_id if present
-    if (event.data?.playerId) {
-      baseEvent.player_id = event.data.playerId;
-    } else if (event.data?.scorerId) {
-      // For goal events, scorerId might be the player reference
-      baseEvent.player_id = event.data.scorerId;
-    }
+    const getCorrelationId = () =>
+      event?.data?.correlationId ||
+      event?.relatedEventId ||
+      event?.id ||
+      this.generateCorrelationId();
 
     // Special handling: Goalie switch creates TWO events
     if (event.type === 'goalie_switch') {
@@ -139,7 +133,10 @@ class EventPersistenceService {
       // Goalie exiting
       if (event.data.previousGoalieId || event.data.oldGoalieId) {
         events.push({
-          ...baseEvent,
+          ...buildBaseEvent({
+            occurred_at_seconds: occurredAtSeconds,
+            period: event.periodNumber || 1
+          }),
           event_type: 'goalie_exits',
           player_id: event.data.previousGoalieId || event.data.oldGoalieId,
           correlation_id: correlationId
@@ -149,7 +146,10 @@ class EventPersistenceService {
       // Goalie entering
       if (event.data.goalieId || event.data.newGoalieId) {
         events.push({
-          ...baseEvent,
+          ...buildBaseEvent({
+            occurred_at_seconds: occurredAtSeconds,
+            period: event.periodNumber || 1
+          }),
           event_type: 'goalie_enters',
           player_id: event.data.goalieId || event.data.newGoalieId,
           correlation_id: correlationId
@@ -161,10 +161,77 @@ class EventPersistenceService {
 
     // Special handling: Match end reasons
     if (event.type === 'match_abandoned' || event.type === 'match_suspended') {
-      baseEvent.data.matchEndReason = event.type;
+      return buildBaseEvent({
+        data: {
+          matchEndReason: event.type
+        }
+      });
     }
 
-    return baseEvent;
+    // Minimal payloads by event type
+    if (dbEventType === 'match_started') {
+      return buildBaseEvent({ data: null });
+    }
+
+    if (dbEventType === 'goalie_enters') {
+      const goalieId = event.data?.goalieId || event.data?.newGoalieId || event.data?.playerId || event.data?.scorerId;
+      return buildBaseEvent({
+        player_id: goalieId || undefined,
+        data: null
+      });
+    }
+
+    if (event.type === 'substitution') {
+      const correlationId = getCorrelationId();
+      const playersOff = Array.isArray(event.data?.playersOff) ? event.data.playersOff : [];
+      const playersOn = Array.isArray(event.data?.playersOn) ? event.data.playersOn : [];
+      const substitutionEvents = [];
+
+      playersOff.forEach(playerId => {
+        substitutionEvents.push({
+          ...buildBaseEvent({
+            event_type: 'substitution_out',
+            player_id: playerId,
+            correlation_id: correlationId
+          })
+        });
+      });
+
+      playersOn.forEach(playerId => {
+        substitutionEvents.push({
+          ...buildBaseEvent({
+            event_type: 'substitution_in',
+            player_id: playerId,
+            correlation_id: correlationId
+          })
+        });
+      });
+
+      return substitutionEvents.length > 0 ? substitutionEvents : null;
+    }
+
+    if (dbEventType === 'goal_scored' || dbEventType === 'goal_conceded') {
+      const payload = {
+        ownScore: event.data?.ownScore,
+        opponentScore: event.data?.opponentScore
+      };
+
+      const base = buildBaseEvent({
+        data: payload,
+        player_id: event.data?.playerId || event.data?.scorerId || undefined
+      });
+
+      return base;
+    }
+
+    if (dbEventType === 'period_ended') {
+      return buildBaseEvent({ data: null });
+    }
+
+    return buildBaseEvent({
+      data: event.data ? { ...event.data } : null,
+      player_id: event.data?.playerId || event.data?.scorerId || undefined
+    });
   }
 
   /**
