@@ -1054,6 +1054,7 @@ function AppContent() {
             goalScorers={gameState.goalScorers || {}}
             showSuccessMessage={showSuccessMessage}
             checkForActiveMatch={checkForActiveMatch}
+            handleRestartMatch={handleRestartMatch}
             selectedSquadIds={gameState.selectedSquadIds}
             onStartNewConfigurationSession={beginNewConfigurationSession}
             matchStartTime={gameState.matchStartTime}

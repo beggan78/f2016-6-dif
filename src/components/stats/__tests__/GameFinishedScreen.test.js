@@ -140,7 +140,8 @@ describe('GameFinishedScreen', () => {
       clearTimerState: jest.fn(),
       resetScore: jest.fn(),
       setOpponentTeam: jest.fn(),
-      navigateToMatchReport: jest.fn()
+      navigateToMatchReport: jest.fn(),
+      handleRestartMatch: jest.fn()
     };
 
     defaultProps = {
@@ -158,7 +159,7 @@ describe('GameFinishedScreen', () => {
       periodDurationMinutes: 12,
       gameLog: [{ period: 1 }, { period: 2 }, { period: 3 }],
       formation: {},
-      checkForActiveMatch: jest.fn(),
+      checkForActiveMatch: jest.fn((callback) => callback()),
       onStartNewConfigurationSession: jest.fn(),
       matchType: MATCH_TYPES.LEAGUE,
       ...mockSetters
@@ -505,6 +506,53 @@ describe('GameFinishedScreen', () => {
 
       // Verify all players have hasFairPlayAward set to false
       expect(resetPlayers.every(player => player.hasFairPlayAward === false)).toBe(true);
+    });
+  });
+
+  describe('New Game Button', () => {
+    it('calls handleRestartMatch with preserveConfiguration=false when clicking Start New Game', async () => {
+      const handleRestartMatch = jest.fn();
+      const checkForActiveMatch = jest.fn((callback) => callback());
+
+      render(
+        <GameFinishedScreen
+          {...defaultProps}
+          handleRestartMatch={handleRestartMatch}
+          checkForActiveMatch={checkForActiveMatch}
+        />
+      );
+
+      // Click "Start New Game" button
+      const newGameButton = screen.getByRole('button', { name: /Start New Game/i });
+      await userEvent.click(newGameButton);
+
+      // Verify handleRestartMatch was called with preserveConfiguration=false
+      expect(handleRestartMatch).toHaveBeenCalledWith({ preserveConfiguration: false });
+      expect(handleRestartMatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('delegates state clearing to handleRestartMatch', async () => {
+      const handleRestartMatch = jest.fn();
+      const checkForActiveMatch = jest.fn((callback) => callback());
+
+      render(
+        <GameFinishedScreen
+          {...defaultProps}
+          handleRestartMatch={handleRestartMatch}
+          checkForActiveMatch={checkForActiveMatch}
+        />
+      );
+
+      // Click "Start New Game" button
+      const newGameButton = screen.getByRole('button', { name: /Start New Game/i });
+      await userEvent.click(newGameButton);
+
+      // Verify that the component delegated to handleRestartMatch instead of doing its own clearing
+      expect(handleRestartMatch).toHaveBeenCalled();
+
+      // The old individual state setters should NOT be called from handleNewGame
+      // (they may be called from other parts of the component like Fair Play Award)
+      // We're just verifying that handleRestartMatch is the primary reset mechanism
     });
   });
 });

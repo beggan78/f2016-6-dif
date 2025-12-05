@@ -4,7 +4,7 @@ import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { formatPlayerName } from '../../utils/formatUtils';
-import { hasPlayerParticipated, resetPlayersForNewMatch } from '../../utils/playerUtils';
+import { hasPlayerParticipated } from '../../utils/playerUtils';
 import { updateFinishedMatchMetadata, getPlayerStats } from '../../services/matchStateManager';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { PlayerStatsTable } from '../report/PlayerStatsTable';
@@ -36,6 +36,7 @@ export function GameFinishedScreen({
   goalScorers = {},
   showSuccessMessage = () => {},
   checkForActiveMatch,
+  handleRestartMatch,
   selectedSquadIds = [],
   onStartNewConfigurationSession = () => {},
   // New props for MatchSummaryHeader and PlayerStatsTable
@@ -308,19 +309,10 @@ export function GameFinishedScreen({
   const handleNewGame = async () => {
     console.log('📊 New Game from Stats Screen - calling checkForActiveMatch()');
     await checkForActiveMatch(() => {
-      console.log('📊 New Game from Stats - executing callback (full reset)');
-      // Reset global state for a new game configuration and clear localStorage
-      clearStoredState(); // Clear localStorage state
-      clearTimerState(); // Clear timer localStorage state
-      // Use resetPlayersForNewMatch to ensure all match-related fields (including hasFairPlayAward) are properly cleared
-      setAllPlayers(resetPlayersForNewMatch(allPlayers));
-      setSelectedSquadIds([]);
-      setPeriodGoalieIds({});
-      setGameLog([]);
-      resetScore(); // Clear score
-      setOpponentTeam(''); // Clear opponent team name
-      onStartNewConfigurationSession();
-      setView('config');
+      console.log('📊 New Game from Stats - delegating to handleRestartMatch');
+      // Delegate to the main reset function to ensure consistent state clearing
+      // This ensures formation and all other state is properly reset
+      handleRestartMatch({ preserveConfiguration: false });
     });
   };
 
