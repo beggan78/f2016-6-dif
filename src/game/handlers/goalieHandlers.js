@@ -102,7 +102,8 @@ export const createGoalieHandlers = (
               timestamp: currentTime,
               periodNumber: gameState.currentPeriodNumber || 1,
               teamConfig: gameState.teamConfig,
-              description: `${formatPlayerName(newGoaliePlayer)} is goalie`
+              description: `${formatPlayerName(newGoaliePlayer)} is goalie`,
+              matchId: gameState.currentMatchId
             });
           }
         } catch (error) {

@@ -38,7 +38,7 @@ const calculateSubTimer = (lastSubstitutionTime, totalPausedDuration, pauseStart
   return Math.max(0, elapsedSeconds);
 };
 
-export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSounds = null, currentPeriodNumber = 1, isDisplayActive = true) {
+export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSounds = null, currentPeriodNumber = 1, isDisplayActive = true, currentMatchId = null) {
   // Initialize timer state from localStorage or defaults
   const initializeTimerState = () => {
     const saved = loadTimerState();
@@ -324,6 +324,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
           ownTeamName: ownTeamName || 'Own Team',
           opponentTeam: opponentTeam || 'Opponent',
           numPeriods: numPeriods || 2, // Total number of periods planned for the match
+          matchId: currentMatchId,
           matchMetadata: {
             startTime: now,
             venue: null,
@@ -341,6 +342,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
           periodDurationMinutes,
           startingFormation: startingFormation ? JSON.parse(JSON.stringify(startingFormation)) : null,
           teamConfig,
+          matchId: currentMatchId,
           periodMetadata: {
             startTime: now,
             plannedDurationMinutes: periodDurationMinutes,
@@ -366,7 +368,8 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
           timestamp: now,
           periodNumber: periodNumber,
           teamConfig: teamConfig,
-          description: goalieName ? `${goalieName} is goalie` : `Goalie assigned for period ${periodNumber}`
+          description: goalieName ? `${goalieName} is goalie` : `Goalie assigned for period ${periodNumber}`,
+          matchId: currentMatchId
         });
       }
       
@@ -397,7 +400,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
       pauseStartTime: null,
       totalPausedDuration: 0
     });
-  }, [saveTimerStateWithOverrides, periodDurationMinutes]);
+  }, [saveTimerStateWithOverrides, periodDurationMinutes, currentMatchId]);
 
   const stopTimers = useCallback((periodNumber = null, isMatchEnd = false, finalFormation = null, teamConfig = null) => {
     const now = Date.now();
@@ -415,6 +418,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
           finalPeriodNumber: periodNumber,
           matchDurationMs: periodStartTime ? now - periodStartTime : 0,
           teamConfig,
+          matchId: currentMatchId,
           matchMetadata: {
             endTime: now,
             endReason: 'normal_completion',
@@ -436,6 +440,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
             plannedDurationMinutes: periodDurationMinutes,
             endingFormation: finalFormation ? JSON.parse(JSON.stringify(finalFormation)) : null,
             teamConfig,
+            matchId: currentMatchId,
             periodMetadata: {
               endTime: now,
               startTime: periodStartTime,
@@ -469,7 +474,7 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
     saveTimerStateWithOverrides({
       isPeriodActive: false
     });
-  }, [saveTimerStateWithOverrides, periodStartTime, periodDurationMinutes]);
+  }, [saveTimerStateWithOverrides, periodStartTime, periodDurationMinutes, currentMatchId]);
 
   // Clear stored timer state - useful for starting fresh
   const clearTimerState = useCallback(() => {

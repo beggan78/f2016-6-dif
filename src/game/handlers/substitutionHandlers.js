@@ -145,18 +145,19 @@ export const createSubstitutionHandlers = (
    * Log substitution event with comprehensive data
    */
   const logSubstitutionEvent = (
-    playersGoingOff, 
-    playersComingOn, 
-    beforeFormation, 
-    afterFormation, 
-    teamConfig, 
-    allPlayers, 
+    playersGoingOff,
+    playersComingOn,
+    beforeFormation,
+    afterFormation,
+    teamConfig,
+    allPlayers,
     currentTime,
-    periodNumber = 1
+    periodNumber = 1,
+    currentMatchId = null
   ) => {
     try {
       const eventId = generateEventId();
-      
+
       const eventData = {
         eventId,
         playersOff: playersGoingOff,
@@ -168,7 +169,8 @@ export const createSubstitutionHandlers = (
         afterFormation: getFormationDescription(afterFormation, teamConfig),
         periodNumber,
         matchTime: calculateMatchTime(currentTime),
-        timestamp: currentTime
+        timestamp: currentTime,
+        matchId: currentMatchId
       };
 
       // Always log as regular substitution event
@@ -691,7 +693,8 @@ export const createSubstitutionHandlers = (
           teamConfig,
           gameState.allPlayers,
           substitutionTimestamp,
-          gameState.currentPeriodNumber || 1
+          gameState.currentPeriodNumber || 1,
+          gameState.currentMatchId
         );
         
         // Create lastSubstitution object for undo functionality

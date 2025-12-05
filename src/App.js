@@ -48,6 +48,7 @@ import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { updateMatchToConfirmed } from './services/matchStateManager';
+import { initializeEventPersistence } from './services/initializeServices';
 import { createPersistenceManager } from './utils/persistenceManager';
 import { STORAGE_KEYS, migrateStorageKeys } from './constants/storageKeys';
 
@@ -118,7 +119,8 @@ function AppContent() {
     gameState.alertMinutes,
     gameState.playAlertSounds,
     gameState.currentPeriodNumber,
-    gameState.view === VIEWS.GAME
+    gameState.view === VIEWS.GAME,
+    gameState.currentMatchId
   );
   const {
     showSessionWarning,
@@ -188,8 +190,14 @@ function AppContent() {
     }
     syncCurrentView(gameState.view);
   }, [gameState.view, syncCurrentView]);
-  
-  
+
+  // Initialize event persistence for real-time database writes
+  useEffect(() => {
+    initializeEventPersistence(gameState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount - gameState object is captured in closure
+
+
   const [showSignOutConfirmModal, setShowSignOutConfirmModal] = useState(false);
   const [configSessionToken, setConfigSessionToken] = useState(0);
 
@@ -1134,6 +1142,7 @@ function AppContent() {
             goalScorers={gameState.goalScorers || {}}
             matchStartTime={gameState.matchStartTime}
             matchState={gameState.matchState}
+            currentMatchId={gameState.currentMatchId}
             handleActualMatchStart={handleActualMatchStartWithTimers}
             periodDurationMinutes={gameState.periodDurationMinutes}
             trackGoalScorer={gameState.trackGoalScorer}

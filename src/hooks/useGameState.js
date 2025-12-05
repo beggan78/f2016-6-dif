@@ -76,6 +76,64 @@ const findPlayerPositionKey = (playerId, formation, formationAwareTeamConfig) =>
   return null;
 };
 
+const spreadFieldPlayersAcrossRoles = (fieldPlayers, formation, fieldPositions) => {
+  if (!Array.isArray(fieldPlayers) || fieldPlayers.length === 0) {
+    return fieldPlayers;
+  }
+
+  const roleLookup = fieldPositions.reduce((acc, positionKey) => {
+    const playerId = formation[positionKey];
+    if (playerId) {
+      acc[playerId] = getPositionRole(positionKey);
+    }
+    return acc;
+  }, {});
+
+  const roleBuckets = {
+    [PLAYER_ROLES.DEFENDER]: [],
+    [PLAYER_ROLES.MIDFIELDER]: [],
+    [PLAYER_ROLES.ATTACKER]: [],
+    other: []
+  };
+
+  fieldPlayers.forEach(player => {
+    const role = roleLookup[player.id];
+    if (roleBuckets[role]) {
+      roleBuckets[role].push(player);
+    } else {
+      roleBuckets.other.push(player);
+    }
+  });
+
+  const prioritizedRoles = [PLAYER_ROLES.DEFENDER, PLAYER_ROLES.MIDFIELDER, PLAYER_ROLES.ATTACKER];
+  const interleaved = [];
+  let rolePointer = 0;
+
+  while (prioritizedRoles.some(role => roleBuckets[role].length > 0)) {
+    let added = false;
+
+    for (let offset = 0; offset < prioritizedRoles.length; offset++) {
+      const roleIndex = (rolePointer + offset) % prioritizedRoles.length;
+      const roleKey = prioritizedRoles[roleIndex];
+
+      if (roleBuckets[roleKey].length === 0) {
+        continue;
+      }
+
+      interleaved.push(roleBuckets[roleKey].shift());
+      rolePointer = (roleIndex + 1) % prioritizedRoles.length;
+      added = true;
+      break;
+    }
+
+    if (!added) {
+      break;
+    }
+  }
+
+  return [...interleaved, ...roleBuckets.other];
+};
+
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
   const { currentTeam, updateMatchActivityStatus, loadTeamPreferences } = useTeam();
@@ -522,8 +580,10 @@ export function useGameState(navigateToView = null) {
         .filter(p => substitutePlayersInFormation.includes(p.id))
         .sort((a, b) => a.totalOutfieldTime - b.totalOutfieldTime);
 
-      initialQueue = [...fieldPlayersSorted.map(p => p.id), ...substitutePlayersSorted.map(p => p.id)];
-      nextPlayerToRotateOff = fieldPlayersSorted[0]?.id || null;
+      const fieldPlayersWithRolesSpread = spreadFieldPlayersAcrossRoles(fieldPlayersSorted, formation, fieldPositions);
+
+      initialQueue = [...fieldPlayersWithRolesSpread.map(p => p.id), ...substitutePlayersSorted.map(p => p.id)];
+      nextPlayerToRotateOff = fieldPlayersWithRolesSpread[0]?.id || null;
 
       if (nextPlayerToRotateOff && initialQueue.length >= fieldPositions.length) {
         setNextPlayerIdToSubOut(nextPlayerToRotateOff);
