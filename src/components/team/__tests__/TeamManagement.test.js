@@ -1141,15 +1141,29 @@ describe('TeamManagement', () => {
       });
     });
 
-    it('should display save changes button', async () => {
+    it('should auto-save when a preference changes', async () => {
       render(<TeamManagement {...defaultProps} />);
 
       const preferencesTab = screen.getByRole('button', { name: /Preferences/i });
       await userEvent.click(preferencesTab);
 
+      const selects = await screen.findAllByRole('combobox');
+      const matchFormatSelect = selects.find((select) =>
+        Array.from(select.options || []).some((option) => option.value === '5v5')
+      );
+
+      expect(matchFormatSelect).toBeDefined();
+
+      await userEvent.selectOptions(matchFormatSelect, '7v7');
+
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Save Changes/i })).toBeInTheDocument();
+        expect(mockTeamContext.saveTeamPreferences).toHaveBeenCalledWith(
+          mockTeam.id,
+          expect.objectContaining({ matchFormat: '7v7' })
+        );
       });
+
+      expect(screen.getByText(/Team Preferences/i)).toBeInTheDocument();
     });
   });
 

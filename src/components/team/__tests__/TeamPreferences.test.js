@@ -75,9 +75,9 @@ describe('TeamPreferences - Team Captain', () => {
     const captainModeSelect = await findTeamCaptainSelect();
     await userEvent.selectOptions(captainModeSelect, 'permanent');
 
-    await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
-
-    expect(await screen.findByText(/Please select a player to serve as the permanent team captain/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Please select a player to serve as the permanent team captain/i)).toBeInTheDocument();
+    });
     expect(saveTeamPreferences).not.toHaveBeenCalled();
   });
 
@@ -90,8 +90,6 @@ describe('TeamPreferences - Team Captain', () => {
     const permanentCaptainSelect = await waitFor(findPermanentCaptainSelect);
     await waitFor(() => expect(permanentCaptainSelect).not.toBeDisabled());
     await userEvent.selectOptions(permanentCaptainSelect, 'player-1');
-
-    await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => expect(saveTeamPreferences).toHaveBeenCalled());
     expect(saveTeamPreferences).toHaveBeenCalledWith(
