@@ -478,6 +478,12 @@ export function useGameState(navigateToView = null) {
     if (nonSelectedInFormation.length > 0) {
       console.warn('⚠️  [handleStartGame] Non-selected players found in formation:', nonSelectedInFormation);
     }
+
+    // Clear any leftover fair play awards from previous matches before starting a new one
+    setAllPlayers(prevPlayers => prevPlayers.map(player => ({
+      ...player,
+      hasFairPlayAward: false
+    })));
     
     // Save match configuration using shared function
     saveMatchConfiguration({ shouldNavigate: true })

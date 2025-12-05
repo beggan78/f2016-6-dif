@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ListChecks, PlusCircle, FileText, Save } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ListChecks, PlusCircle, FileText } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
-import { FeatureGate } from '../auth/FeatureGate';
 import { formatPlayerName } from '../../utils/formatUtils';
-import { hasPlayerParticipated } from '../../utils/playerUtils';
+import { hasPlayerParticipated, resetPlayersForNewMatch } from '../../utils/playerUtils';
 import { updateFinishedMatchMetadata, getPlayerStats } from '../../services/matchStateManager';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { PlayerStatsTable } from '../report/PlayerStatsTable';
@@ -35,7 +34,7 @@ export function GameFinishedScreen({
   gameLog = [],
   currentMatchId,
   goalScorers = {},
-  authModal,
+  showSuccessMessage = () => {},
   checkForActiveMatch,
   selectedSquadIds = [],
   onStartNewConfigurationSession = () => {},
@@ -46,14 +45,14 @@ export function GameFinishedScreen({
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   matchType = null
 }) {
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [savingFairPlayAward, setSavingFairPlayAward] = useState(false);
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
   const [fairPlayAwardPreference, setFairPlayAwardPreference] = useState(FAIR_PLAY_AWARD_OPTIONS.NONE);
   const [fairPlayAwardCounts, setFairPlayAwardCounts] = useState({});
   const { isAuthenticated } = useAuth();
   const { currentTeam, loadTeamPreferences } = useTeam();
+  const saveRequestIdRef = useRef(0);
 
   // Calculate match duration and total periods (same as MatchReportScreen)
   const matchDuration = useMemo(() => {
@@ -74,16 +73,21 @@ export function GameFinishedScreen({
     return gameLog.length;
   }, [gameLog]);
 
-  const participantSet = Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0
-    ? new Set(selectedSquadIds)
-    : null;
-
-  const squadForStats = allPlayers.filter(player => {
-    if (participantSet && !participantSet.has(player.id)) {
-      return false;
+  const participantSet = useMemo(() => {
+    if (Array.isArray(selectedSquadIds) && selectedSquadIds.length > 0) {
+      return new Set(selectedSquadIds);
     }
-    return hasPlayerParticipated(player);
-  }); // Hide bench players who never stepped on the field
+    return null;
+  }, [selectedSquadIds]);
+
+  const squadForStats = useMemo(() => {
+    return allPlayers.filter(player => {
+      if (participantSet && !participantSet.has(player.id)) {
+        return false;
+      }
+      return hasPlayerParticipated(player);
+    });
+  }, [allPlayers, participantSet]); // Hide bench players who never stepped on the field
   
 
   // Fair Play Award styling constants
@@ -158,6 +162,21 @@ export function GameFinishedScreen({
     }
   }, [shouldShowFairPlayAward, fairPlayAwardPlayerId]);
 
+  useEffect(() => {
+    if (!shouldShowFairPlayAward) {
+      return;
+    }
+
+    const existingAwardPlayerId = squadForStats.find(player => player.hasFairPlayAward)?.id || null;
+
+    setFairPlayAwardPlayerId(prevId => {
+      if (prevId === existingAwardPlayerId) {
+        return prevId;
+      }
+      return existingAwardPlayerId;
+    });
+  }, [shouldShowFairPlayAward, squadForStats]);
+
   // Load historical fair play award counts (last 6 months) for sorting/labels
   useEffect(() => {
     let isActive = true;
@@ -206,18 +225,66 @@ export function GameFinishedScreen({
   }, [currentTeam?.id, isAuthenticated, shouldShowFairPlayAward]);
 
   const updatePlayersWithFairPlayAward = (players, awardPlayerId) => {
-    if (!awardPlayerId) return players;
-    
+    const awardId = awardPlayerId || null;
+
     return players.map(player => ({
       ...player,
-      hasFairPlayAward: player.id === awardPlayerId
+      hasFairPlayAward: Boolean(awardId && player.id === awardId)
     }));
   };
 
-  const handleFairPlayAwardChange = (event) => {
+  const persistFairPlayAwardSelection = useCallback(async (selectedPlayerId) => {
+    if (!shouldShowFairPlayAward) {
+      return;
+    }
+
+    if (!currentMatchId) {
+      setSaveError('No match ID found. Please restart the match to enable saving.');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setSaveError('Please sign in to save match updates.');
+      return;
+    }
+
+    const requestId = saveRequestIdRef.current + 1;
+    saveRequestIdRef.current = requestId;
+
+    setSaveError(null);
+    setSavingFairPlayAward(true);
+
+    setAllPlayers(prevPlayers => updatePlayersWithFairPlayAward(prevPlayers, selectedPlayerId));
+
+    try {
+      const result = await updateFinishedMatchMetadata(currentMatchId, { fairPlayAwardId: selectedPlayerId ?? null });
+
+      // Ignore outdated responses if another save started after this one
+      if (saveRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (result.success) {
+        showSuccessMessage('Match saved to history');
+      } else {
+        setSaveError(result.error || 'Failed to save match updates');
+      }
+    } catch (error) {
+      if (saveRequestIdRef.current === requestId) {
+        setSaveError(error.message || 'Failed to save match updates');
+      }
+    } finally {
+      if (saveRequestIdRef.current === requestId) {
+        setSavingFairPlayAward(false);
+      }
+    }
+  }, [currentMatchId, isAuthenticated, setAllPlayers, shouldShowFairPlayAward, showSuccessMessage]);
+
+  const handleFairPlayAwardChange = useCallback((event) => {
     const selectedPlayerId = event.target.value || null;
     setFairPlayAwardPlayerId(selectedPlayerId);
-  };
+    persistFairPlayAwardSelection(selectedPlayerId);
+  }, [persistFairPlayAwardSelection]);
 
   const fairPlayDropdownOptions = useMemo(() => {
     return [...squadForStats]
@@ -238,60 +305,6 @@ export function GameFinishedScreen({
       });
   }, [fairPlayAwardCounts, squadForStats]);
 
-  const handleSaveMatchHistory = async () => {
-    setSaving(true);
-    setSaveError(null);
-    setSaveSuccess(false);
-    
-    try {
-      if (!currentMatchId) {
-        setSaveError('No match ID found. Please restart the match to enable saving.');
-        console.error('❌ Cannot save match: currentMatchId is missing');
-        return;
-      }
-
-      // Update player state with fair play award selection before saving
-      if (fairPlayAwardPlayerId) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🏆 Setting fair play award for player:', fairPlayAwardPlayerId);
-        }
-        
-        setAllPlayers(prevPlayers => updatePlayersWithFairPlayAward(prevPlayers, fairPlayAwardPlayerId));
-      }
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Updating finished match in database:', currentMatchId, fairPlayAwardPlayerId ? 'with fair play award' : 'without fair play award');
-      }
-      
-      const result = await updateFinishedMatchMetadata(currentMatchId, { fairPlayAwardId: fairPlayAwardPlayerId ?? null });
-      
-      if (result.success) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Match updated successfully');
-          if (fairPlayAwardPlayerId) {
-            console.log('🏆 Fair play award updated in player stats');
-          }
-        }
-        
-        setSaveSuccess(true);
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
-      } else {
-        setSaveSuccess(false);
-        setSaveError(result.error || 'Failed to save match updates');
-        console.error('❌ Failed to update finished match:', result);
-      }
-    } catch (err) {
-      console.error('❌ Exception while saving match:', err);
-      setSaveError(err.message || 'An unexpected error occurred');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleNewGame = async () => {
     console.log('📊 New Game from Stats Screen - calling checkForActiveMatch()');
     await checkForActiveMatch(() => {
@@ -299,7 +312,8 @@ export function GameFinishedScreen({
       // Reset global state for a new game configuration and clear localStorage
       clearStoredState(); // Clear localStorage state
       clearTimerState(); // Clear timer localStorage state
-      setAllPlayers(initializePlayers(initialRoster)); // Full reset of all player stats
+      // Use resetPlayersForNewMatch to ensure all match-related fields (including hasFairPlayAward) are properly cleared
+      setAllPlayers(resetPlayersForNewMatch(allPlayers));
       setSelectedSquadIds([]);
       setPeriodGoalieIds({});
       setGameLog([]);
@@ -375,46 +389,17 @@ export function GameFinishedScreen({
               </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* Save Match Updates - Protected */}
-      {isAuthenticated ? (
-        <div className="space-y-2">
-          <div className="flex gap-3 items-center">
-            <Button
-              onClick={handleSaveMatchHistory}
-              Icon={Save}
-              variant="primary"
-              className="bg-emerald-600 hover:bg-emerald-700"
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save Match Updates'}
-            </Button>
-            {saveSuccess && (
-              <span className="text-emerald-400 text-sm font-medium">
-                ✓ Match updated successfully!
-              </span>
-            )}
+          <div className="mt-3 text-xs text-slate-300">
+            {savingFairPlayAward ? 'Saving selection...' : 'Selection saves automatically'}
           </div>
 
           {saveError && (
-            <div className="p-2 bg-rose-900/20 border border-rose-600 rounded text-rose-200 text-sm">
+            <div className="mt-3 p-2 bg-rose-900/20 border border-rose-600 rounded text-rose-200 text-sm">
               ❌ {saveError}
             </div>
           )}
         </div>
-      ) : (
-        <FeatureGate
-          feature="match history"
-          description="Update this finished match in your history and track your team's performance over time"
-          compact
-          authModal={authModal}
-        >
-          <Button Icon={Save} variant="primary" disabled>
-            Save Match Updates
-          </Button>
-        </FeatureGate>
       )}
 
       {/* Player Statistics */}

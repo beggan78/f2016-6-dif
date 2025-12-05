@@ -30,7 +30,8 @@ export const createEmptyPlayerStats = () => ({
   goals: 0,
   saves: 0,
   blocks: 0,
-  cards: []
+  cards: [],
+  hasFairPlayAward: false // Fair play award flag - reset to false for each new match
 });
 
 // Helper to initialize player objects
@@ -97,6 +98,7 @@ export const resetPlayersForNewMatch = (players = []) => {
 
   return players.map((player) => ({
     ...player,
+    hasFairPlayAward: false,
     stats: {
       ...createEmptyPlayerStats(),
       isInactive: player?.stats?.isInactive ?? false,

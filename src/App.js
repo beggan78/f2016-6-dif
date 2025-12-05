@@ -1032,7 +1032,7 @@ function AppContent() {
       case VIEWS.STATS:
         return (
           <GameFinishedScreen
-            allPlayers={gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
+            allPlayers={gameState.allPlayers?.length ? gameState.allPlayers : gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
             setView={navigateToView}
             onNavigateBack={navigateBack}
             setAllPlayers={gameState.setAllPlayers}
@@ -1052,7 +1052,7 @@ function AppContent() {
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
-            authModal={authModal}
+            showSuccessMessage={showSuccessMessage}
             checkForActiveMatch={checkForActiveMatch}
             selectedSquadIds={gameState.selectedSquadIds}
             onStartNewConfigurationSession={beginNewConfigurationSession}

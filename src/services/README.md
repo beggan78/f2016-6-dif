@@ -131,12 +131,11 @@ got_fair_play_award: BOOLEAN (default false)
 ### Integration Points
 
 #### GameFinishedScreen Integration
-The GameFinishedScreen component handles the user-facing match saving workflow:
+The GameFinishedScreen component auto-saves finished match metadata (like the fair play award) as soon as the user makes a selection:
 
 ```javascript
 // Save workflow in GameFinishedScreen.js
-const handleSaveMatchHistory = async () => {
-  // Update finished match metadata (e.g., fair play award)
+const handleFairPlayAwardChange = async (fairPlayAwardId) => {
   await updateFinishedMatchMetadata(currentMatchId, { fairPlayAwardId });
 };
 ```
