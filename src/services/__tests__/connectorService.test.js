@@ -512,7 +512,7 @@ describe('connectorService', () => {
         match: {
           id: 'match-1',
           team_id: teamId,
-          state: 'confirmed',
+          state: 'finished',
           deleted_at: null,
           started_at: '2025-01-15T10:00:00Z'
         }
@@ -522,7 +522,7 @@ describe('connectorService', () => {
         match: {
           id: 'match-2',
           team_id: teamId,
-          state: 'confirmed',
+          state: 'finished',
           deleted_at: null,
           started_at: '2025-01-20T10:00:00Z'
         }
@@ -532,7 +532,7 @@ describe('connectorService', () => {
         match: {
           id: 'match-1',
           team_id: teamId,
-          state: 'confirmed',
+          state: 'finished',
           deleted_at: null,
           started_at: '2025-01-15T10:00:00Z'
         }
@@ -740,7 +740,7 @@ describe('connectorService', () => {
           match: {
             id: 'match-other',
             team_id: 'other-team',
-            state: 'confirmed',
+            state: 'finished',
             deleted_at: null,
             started_at: '2025-01-15T10:00:00Z'
           }
@@ -786,7 +786,7 @@ describe('connectorService', () => {
       expect(alice.matchesPlayed).toBe(2); // Should not count other-team match
     });
 
-    it('filters match stats by confirmed state', async () => {
+    it('filters match stats by finished state', async () => {
       const mixedMatchStats = [
         mockMatchStats[0],
         {
@@ -848,7 +848,7 @@ describe('connectorService', () => {
           match: {
             id: 'match-deleted',
             team_id: teamId,
-            state: 'confirmed',
+            state: 'finished',
             deleted_at: '2025-01-25T10:00:00Z',
             started_at: '2025-01-20T10:00:00Z'
           }
@@ -910,7 +910,7 @@ describe('connectorService', () => {
           match: {
             id: 'match-future',
             team_id: teamId,
-            state: 'confirmed',
+            state: 'finished',
             deleted_at: null,
             started_at: '2025-02-15T10:00:00Z' // Outside date range
           }

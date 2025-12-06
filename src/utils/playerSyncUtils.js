@@ -29,6 +29,7 @@ export const convertTeamPlayerToGamePlayer = (teamPlayer) => {
         currentStatus: "substitute",
         isCaptain: false,
         isInactive: false,
+        hasFairPlayAward: false,
         lastStintStartTimeEpoch: null,
         startedMatchAs: null,
         timeAsAttackerSeconds: 0,
@@ -47,7 +48,9 @@ export const convertTeamPlayerToGamePlayer = (teamPlayer) => {
  * @returns {Object} Merged player with updated roster info but preserved stats
  */
 export const mergePlayerData = (teamPlayer, existingGamePlayer) => {
-  const restOfExistingPlayer = existingGamePlayer ? { ...existingGamePlayer } : {};
+  // Destructure to exclude hasFairPlayAward from preservation
+  // Award state should not carry over when team roster is synced
+  const { hasFairPlayAward, ...restOfExistingPlayer } = existingGamePlayer ? { ...existingGamePlayer } : {};
 
   return {
     ...restOfExistingPlayer,
@@ -56,7 +59,8 @@ export const mergePlayerData = (teamPlayer, existingGamePlayer) => {
     firstName: teamPlayer.first_name,
     lastName: teamPlayer.last_name,
     jerseyNumber: teamPlayer.jersey_number || restOfExistingPlayer.jerseyNumber,
-    // stats object is already preserved by ...existingGamePlayer spread
+    hasFairPlayAward: false, // Always reset to false during sync
+    // stats object is already preserved by ...restOfExistingPlayer spread
   };
 };
 

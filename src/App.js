@@ -23,7 +23,6 @@ import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
-import { MatchRecoveryModal } from './components/modals/MatchRecoveryModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
 import { AddPlayerModal } from './components/shared/AddPlayerModal';
@@ -42,12 +41,10 @@ import { InvitationNotificationModal } from './components/team/InvitationNotific
 import { detectResetTokens, shouldShowPasswordResetModal } from './utils/resetTokenUtils';
 import { getInvitationStatus } from './utils/invitationUtils';
 import { supabase } from './lib/supabase';
-import { useMatchRecovery } from './hooks/useMatchRecovery';
 import { useInvitationDetection } from './hooks/useInvitationDetection';
 import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
-import { updateMatchToConfirmed } from './services/matchStateManager';
 import { initializeEventPersistence } from './services/initializeServices';
 import { createPersistenceManager } from './utils/persistenceManager';
 import { STORAGE_KEYS, migrateStorageKeys } from './constants/storageKeys';
@@ -430,9 +427,8 @@ function AppContent() {
   
   // Database-based match abandonment state for preventing accidental data loss
   const [showAbandonModal, setShowAbandonModal] = useState(false);
-  const [showFinishedMatchModal, setShowFinishedMatchModal] = useState(false);
   const [pendingNewGameCallback, setPendingNewGameCallback] = useState(null);
-  const [foundMatchState, setFoundMatchState] = useState(null);
+  const [hasRunningMatch, setHasRunningMatch] = useState(false);
 
   // Database-based abandonment check - uses database as source of truth
   const checkForActiveMatch = useCallback(async (callback) => {
@@ -443,51 +439,50 @@ function AppContent() {
 
     // If no currentMatchId, proceed immediately
     if (!gameState.currentMatchId) {
+      setHasRunningMatch(false);
       callback();
       return;
     }
 
     try {
-      // Query database to check if match exists and is running or finished
+      // Query database to check if match exists and is running
       const { data: match, error } = await supabase
         .from('match')
         .select('id, state')
         .eq('id', gameState.currentMatchId)
         .is('deleted_at', null)
-        .in('state', ['running', 'finished'])
+        .eq('state', 'running')
         .single();
 
       if (error) {
         if (error.code === 'PGRST116') {
           // No match found - safe to proceed
+          setHasRunningMatch(false);
           callback();
           return;
         }
         
         console.error('Database error checking match:', error);
         // On error, err on side of caution and show abandon modal (safest default)
-        setFoundMatchState('running'); // Default to running for safety
+        setHasRunningMatch(true);
         setPendingNewGameCallback(() => callback);
         setShowAbandonModal(true);
         return;
       }
 
       if (match) {
-        setFoundMatchState(match.state);
+        setHasRunningMatch(true);
         setPendingNewGameCallback(() => callback);
-        
-        if (match.state === 'running') {
-          setShowAbandonModal(true);
-        } else if (match.state === 'finished') {
-          setShowFinishedMatchModal(true);
-        }
+        setShowAbandonModal(true);
       } else {
+        setHasRunningMatch(false);
+        setPendingNewGameCallback(null);
         callback();
       }
     } catch (err) {
       console.error('Unexpected error checking active match:', err);
       // On unexpected error, show abandon modal as precaution (safest default)
-      setFoundMatchState('running'); // Default to running for safety
+      setHasRunningMatch(true);
       setPendingNewGameCallback(() => callback);
       setShowAbandonModal(true);
     }
@@ -521,6 +516,7 @@ function AppContent() {
       // Clean up modal state
       setShowAbandonModal(false);
       setPendingNewGameCallback(null);
+      setHasRunningMatch(false);
       
     } catch (err) {
       console.error('Unexpected error during match abandonment:', err);
@@ -532,6 +528,7 @@ function AppContent() {
       
       setShowAbandonModal(false);
       setPendingNewGameCallback(null);
+      setHasRunningMatch(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.currentMatchId, pendingNewGameCallback]);
@@ -540,121 +537,9 @@ function AppContent() {
   const handleCancelAbandon = useCallback(() => {
     setShowAbandonModal(false);
     setPendingNewGameCallback(null);
+    setHasRunningMatch(false);
   }, []); 
 
-  // Three-option modal handlers for finished matches
-  
-  // Handle "Save Match" option - save to history and proceed
-  const handleSaveFinishedMatch = useCallback(async () => {
-    
-    try {
-      if (gameState.currentMatchId) {
-        
-        const result = await updateMatchToConfirmed(gameState.currentMatchId);
-        
-        if (result.success) {
-          showSuccessMessage('Match saved successfully!');
-        } else {
-          console.error('Failed to save match:', result.error);
-          showSuccessMessage('Error saving match. Please try again.');
-        }
-      }
-      
-      // Execute pending callback (proceed to new game)
-      if (pendingNewGameCallback) {
-        pendingNewGameCallback();
-      }
-      
-      // Clean up modal state
-      setShowFinishedMatchModal(false);
-      setPendingNewGameCallback(null);
-      setFoundMatchState(null);
-      
-    } catch (err) {
-      console.error('Unexpected error saving match:', err);
-      showSuccessMessage('Error saving match. Please try again.');
-      
-      // Don't proceed with new game if save failed - keep user on current screen
-      setShowFinishedMatchModal(false);
-      setPendingNewGameCallback(null);
-      setFoundMatchState(null);
-    }
-    
-  }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
-
-  // Handle "Delete Match" option - mark database record as deleted and proceed
-  const handleDeleteFinishedMatch = useCallback(async () => {
-    try {
-      if (gameState.currentMatchId) {
-        const nowIso = new Date().toISOString();
-
-        const { error } = await supabase
-          .from('match')
-          .update({
-            deleted_at: nowIso
-          })
-          .eq('id', gameState.currentMatchId)
-          .is('deleted_at', null);
-          
-        if (error) {
-          console.error('Error marking match as deleted:', error);
-          showSuccessMessage('Error deleting match. Please try again.');
-        } else {
-          showSuccessMessage('Match deleted successfully!');
-        }
-      }
-      
-      // Execute pending callback (proceed to new game)
-      if (pendingNewGameCallback) {
-        pendingNewGameCallback();
-      }
-      
-      // Clean up modal state
-      setShowFinishedMatchModal(false);
-      setPendingNewGameCallback(null);
-      setFoundMatchState(null);
-      
-    } catch (err) {
-      console.error('Unexpected error during match deletion:', err);
-      showSuccessMessage('Error deleting match. Please try again.');
-      
-      // Even if deletion fails, proceed with callback to avoid blocking user
-      if (pendingNewGameCallback) {
-        pendingNewGameCallback();
-      }
-      
-      setShowFinishedMatchModal(false);
-      setPendingNewGameCallback(null);
-      setFoundMatchState(null);
-    }
-    
-  }, [gameState.currentMatchId, pendingNewGameCallback, showSuccessMessage]);
-
-  // Handle "Cancel" option for finished match modal
-  const handleCancelFinishedMatch = useCallback(() => {
-    setShowFinishedMatchModal(false);
-    setPendingNewGameCallback(null);
-    setFoundMatchState(null);
-  }, []);
-
-  // Match recovery functionality
-  const {
-    showRecoveryModal,
-    recoveryMatch,
-    isProcessingRecovery,
-    handleSaveRecovery,
-    handleAbandonRecovery,
-    handleCloseRecovery
-  } = useMatchRecovery({
-    user,
-    currentTeam,
-    invitationParams: invitationDetection.invitationParams,
-    needsProfileCompletion,
-    gameState,
-    setSuccessMessage
-  });
-  
-  
   // Store the pushNavigationState function in the ref
   useEffect(() => {
     pushNavigationStateRef.current = pushNavigationState;
@@ -765,6 +650,7 @@ function AppContent() {
 
   const handleRestartMatch = (options = {}) => {
     const { preserveConfiguration = false } = options;
+    const resetPlayers = resetPlayersForNewMatch(gameState.allPlayers || []);
 
     if (preserveConfiguration) {
       const configSnapshot = {
@@ -781,8 +667,6 @@ function AppContent() {
         captainId: gameState.captainId,
         alertMinutes: gameState.alertMinutes
       };
-
-      const resetPlayers = resetPlayersForNewMatch(gameState.allPlayers || []);
 
       // Clear runtime-only match state
       clearAllEvents();
@@ -849,6 +733,9 @@ function AppContent() {
     
     // Clear navigation history for new game
     clearHistory();
+
+    // Clear fair play awards and reset player state centrally
+    gameState.setAllPlayers(resetPlayers);
     
     // Reset all timer state and clear localStorage
     timers.clearAllTimersForNewGame();
@@ -1164,7 +1051,7 @@ function AppContent() {
       case VIEWS.STATS:
         return (
           <GameFinishedScreen
-            allPlayers={gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
+            allPlayers={gameState.allPlayers?.length ? gameState.allPlayers : gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
             setView={navigateToView}
             onNavigateBack={navigateBack}
             setAllPlayers={gameState.setAllPlayers}
@@ -1184,8 +1071,9 @@ function AppContent() {
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
-            authModal={authModal}
+            showSuccessMessage={showSuccessMessage}
             checkForActiveMatch={checkForActiveMatch}
+            handleRestartMatch={handleRestartMatch}
             selectedSquadIds={gameState.selectedSquadIds}
             onStartNewConfigurationSession={beginNewConfigurationSession}
             matchStartTime={gameState.matchStartTime}
@@ -1246,6 +1134,7 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
+            onShowSuccessMessage={showSuccessMessage}
           />
         );
       case VIEWS.STATISTICS:
@@ -1347,35 +1236,7 @@ function AppContent() {
         isOpen={showAbandonModal}
         onAbandon={handleAbandonMatch}
         onCancel={handleCancelAbandon}
-        isMatchRunning={foundMatchState === 'running'}
-        hasUnsavedMatch={foundMatchState === 'finished'}
-      />
-
-      {/* Finished Match Three-Option Modal */}
-      <ThreeOptionModal
-        isOpen={showFinishedMatchModal}
-        onPrimary={handleSaveFinishedMatch}
-        onSecondary={handleDeleteFinishedMatch}
-        onTertiary={handleCancelFinishedMatch}
-        title="Finished match found"
-        message="You have a finished match that hasn't been saved to history yet. What would you like to do?"
-        primaryText="Save Match"
-        secondaryText="Delete Match"
-        tertiaryText="Cancel"
-        primaryVariant="primary"
-        secondaryVariant="danger"
-        tertiaryVariant="accent"
-      />
-
-      {/* Match Recovery Modal */}
-      <MatchRecoveryModal
-        isOpen={showRecoveryModal}
-        match={recoveryMatch}
-        onSave={handleSaveRecovery}
-        onDelete={handleAbandonRecovery}
-        onClose={handleCloseRecovery}
-        saving={isProcessingRecovery}
-        deleting={isProcessingRecovery}
+        isMatchRunning={hasRunningMatch}
       />
 
 

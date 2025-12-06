@@ -4,6 +4,7 @@
 
 import {
   initializePlayers,
+  createEmptyPlayerStats,
   hasInactivePlayersInSquad,
   findPlayerById,
   findPlayerByIdWithValidation,
@@ -93,6 +94,28 @@ describe('playerUtils', () => {
     formation: '2-2'
   };
 
+  describe('createEmptyPlayerStats', () => {
+    it('should initialize hasFairPlayAward to false', () => {
+      const stats = createEmptyPlayerStats();
+
+      expect(stats.hasFairPlayAward).toBe(false);
+    });
+
+    it('should initialize all required stat fields', () => {
+      const stats = createEmptyPlayerStats();
+
+      // Verify key fields are present
+      expect(stats).toHaveProperty('hasFairPlayAward', false);
+      expect(stats).toHaveProperty('isInactive', false);
+      expect(stats).toHaveProperty('isCaptain', false);
+      expect(stats).toHaveProperty('goals', 0);
+      expect(stats).toHaveProperty('saves', 0);
+      expect(stats).toHaveProperty('blocks', 0);
+      expect(stats).toHaveProperty('cards');
+      expect(Array.isArray(stats.cards)).toBe(true);
+    });
+  });
+
   describe('initializePlayers', () => {
     it('should initialize players from roster', () => {
       const roster = ['Alice', 'Bob', 'Charlie'];
@@ -128,7 +151,8 @@ describe('playerUtils', () => {
           goals: 0,
           saves: 0,
           blocks: 0,
-          cards: []
+          cards: [],
+          hasFairPlayAward: false
         }
       });
     });
@@ -175,6 +199,18 @@ describe('playerUtils', () => {
       expect(reset[0].stats.isInactive).toBe(true);
       expect(reset[1].stats.isCaptain).toBe(true);
       expect(reset[1].stats.goals).toBe(0);
+    });
+
+    it('clears fair play award flags when resetting players', () => {
+      const players = [
+        { id: 'p1', displayName: 'Player 1', hasFairPlayAward: true, stats: { isInactive: false, isCaptain: false } },
+        { id: 'p2', displayName: 'Player 2', hasFairPlayAward: false, stats: { isInactive: true, isCaptain: true } }
+      ];
+
+      const reset = resetPlayersForNewMatch(players);
+
+      expect(reset[0].hasFairPlayAward).toBe(false);
+      expect(reset[1].hasFairPlayAward).toBe(false);
     });
 
     it('returns empty array when players input is invalid', () => {

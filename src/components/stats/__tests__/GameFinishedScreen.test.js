@@ -22,12 +22,12 @@ import { FAIR_PLAY_AWARD_OPTIONS } from '../../../types/preferences';
 import {
   createMockPlayers,
 } from '../../__tests__/componentTestUtils';
-import { updateMatchToConfirmed, getPlayerStats } from '../../../services/matchStateManager';
+import { updateFinishedMatchMetadata, getPlayerStats } from '../../../services/matchStateManager';
 import { useTeam } from '../../../contexts/TeamContext';
 
 // Mock matchStateManager functions
 jest.mock('../../../services/matchStateManager', () => ({
-  updateMatchToConfirmed: jest.fn().mockResolvedValue({ success: true }),
+  updateFinishedMatchMetadata: jest.fn().mockResolvedValue({ success: true }),
   getPlayerStats: jest.fn()
 }));
 
@@ -45,8 +45,7 @@ jest.mock('../../../contexts/AuthContext', () => ({
 jest.mock('lucide-react', () => ({
   ListChecks: ({ className, ...props }) => <div data-testid="list-checks-icon" className={className} {...props} />,
   PlusCircle: ({ className, ...props }) => <div data-testid="plus-circle-icon" className={className} {...props} />,
-  FileText: ({ className, ...props }) => <div data-testid="file-text-icon" className={className} {...props} />,
-  Save: ({ className, ...props }) => <div data-testid="save-icon" className={className} {...props} />
+  FileText: ({ className, ...props }) => <div data-testid="file-text-icon" className={className} {...props} />
 }));
 
 // Mock UI components
@@ -141,7 +140,8 @@ describe('GameFinishedScreen', () => {
       clearTimerState: jest.fn(),
       resetScore: jest.fn(),
       setOpponentTeam: jest.fn(),
-      navigateToMatchReport: jest.fn()
+      navigateToMatchReport: jest.fn(),
+      handleRestartMatch: jest.fn()
     };
 
     defaultProps = {
@@ -153,26 +153,19 @@ describe('GameFinishedScreen', () => {
       currentMatchId: 'test-match-123',
       matchEvents: [],
       goalScorers: {},
-      authModal: {
-        isOpen: false,
-        mode: 'login',
-        openModal: jest.fn(),
-        closeModal: jest.fn(),
-        openLogin: jest.fn(),
-        openSignup: jest.fn()
-      },
+      showSuccessMessage: jest.fn(),
       selectedSquadIds: mockPlayers.map(player => player.id),
       matchStartTime: Date.now() - 3600000, // 1 hour ago
       periodDurationMinutes: 12,
       gameLog: [{ period: 1 }, { period: 2 }, { period: 3 }],
       formation: {},
-      checkForActiveMatch: jest.fn(),
+      checkForActiveMatch: jest.fn((callback) => callback()),
       onStartNewConfigurationSession: jest.fn(),
       matchType: MATCH_TYPES.LEAGUE,
       ...mockSetters
     };
 
-    updateMatchToConfirmed.mockResolvedValue({ success: true });
+    updateFinishedMatchMetadata.mockResolvedValue({ success: true });
   });
 
   it('omits bench players with no playing time from the statistics table', () => {
@@ -345,6 +338,25 @@ describe('GameFinishedScreen', () => {
       });
     });
 
+    it('restores a saved fair play selection when players carry the award flag', async () => {
+      const awardedPlayer = mockPlayers[2];
+      const playersWithAward = mockPlayers.map(player => ({
+        ...player,
+        hasFairPlayAward: player.id === awardedPlayer.id
+      }));
+
+      render(<GameFinishedScreen {...defaultProps} allPlayers={playersWithAward} />);
+      await waitForFairPlaySection();
+
+      await waitFor(() => {
+        const dropdown = screen.getByTestId('fair-play-award-dropdown');
+        expect(dropdown.value).toBe(awardedPlayer.id);
+      });
+
+      expect(screen.getByTestId('fair-play-confirmation')).toBeInTheDocument();
+      expect(screen.getByText(awardedPlayer.displayName)).toBeInTheDocument();
+    });
+
     it('should update fairPlayAwardPlayerId state when selection changes', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
@@ -388,136 +400,144 @@ describe('GameFinishedScreen', () => {
       expectConfirmationHidden();
     });
 
-    it('should include award in player state when saving match', async () => {
+    it('updates player state and persists selection immediately', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
       
       const firstPlayer = mockPlayers[0];
       
-      // Select a player for fair play award
       await selectFairPlayAward(firstPlayer.displayName);
       
-      // Click save match button
-      const saveButton = screen.getByText('Save Match to History');
-      await userEvent.click(saveButton);
-      
-      // Should update players with fair play award
       await waitFor(() => {
-        expect(mockSetters.setAllPlayers).toHaveBeenCalledWith(
-          expect.any(Function)
-        );
+        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', { fairPlayAwardId: firstPlayer.id });
       });
-      
-      // Verify the state update function was called correctly
+
       const stateUpdateFunction = mockSetters.setAllPlayers.mock.calls[0][0];
       const updatedPlayers = stateUpdateFunction(mockPlayers);
       
       expect(updatedPlayers.find(p => p.id === firstPlayer.id).hasFairPlayAward).toBe(true);
       expect(updatedPlayers.filter(p => p.id !== firstPlayer.id).every(p => p.hasFairPlayAward === false)).toBe(true);
+      expect(defaultProps.showSuccessMessage).toHaveBeenCalledWith('Match saved to history');
     });
 
-    it('should handle save workflow without award selection', async () => {
+    it('clears fair play award when selecting "Not awarded"', async () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
       
-      // Click save match button without selecting award
-      const saveButton = screen.getByText('Save Match to History');
-      await userEvent.click(saveButton);
-      
-      // Should still save successfully
-      await waitFor(() => {
-        expect(updateMatchToConfirmed).toHaveBeenCalledWith('test-match-123', null);
-      });
-    });
-
-    it('should pass fairPlayAwardId to updateMatchToConfirmed', async () => {
-      render(<GameFinishedScreen {...defaultProps} />);
-      await waitForFairPlaySection();
-      
+      const dropdown = await screen.findByTestId('fair-play-award-dropdown');
       const firstPlayer = mockPlayers[0];
 
-      // Select a player for fair play award
       await selectFairPlayAward(firstPlayer.displayName);
-      
-      // Click save match button
-      const saveButton = screen.getByText('Save Match to History');
-      await userEvent.click(saveButton);
-      
-      // Should call updateMatchToConfirmed with the player ID
-      await waitFor(() => {
-        expect(updateMatchToConfirmed).toHaveBeenCalledWith('test-match-123', firstPlayer.id);
-      });
-    });
 
-    it('should update player hasFairPlayAward property correctly', async () => {
-      render(<GameFinishedScreen {...defaultProps} />);
-      await waitForFairPlaySection();
-      
-      const firstPlayer = mockPlayers[0];
-      const secondPlayer = mockPlayers[1];
-      
-      // Select first player
-      await selectFairPlayAward(firstPlayer.displayName);
-      
-      // Click save to apply the change
-      const saveButton = screen.getByText('Save Match to History');
-      await userEvent.click(saveButton);
-      
       await waitFor(() => {
-        expect(mockSetters.setAllPlayers).toHaveBeenCalled();
+        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', { fairPlayAwardId: firstPlayer.id });
       });
-      
-      // Get the state update function and verify it works correctly
-      const stateUpdateFunction = mockSetters.setAllPlayers.mock.calls[0][0];
+
+      await userEvent.selectOptions(dropdown, '');
+
+      await waitFor(() => {
+        expect(updateFinishedMatchMetadata).toHaveBeenLastCalledWith('test-match-123', { fairPlayAwardId: null });
+      });
+
+      const stateUpdateFunction = mockSetters.setAllPlayers.mock.calls[mockSetters.setAllPlayers.mock.calls.length - 1][0];
       const updatedPlayers = stateUpdateFunction(mockPlayers);
-      
-      // Only the selected player should have the award
-      expect(updatedPlayers.find(p => p.id === firstPlayer.id).hasFairPlayAward).toBe(true);
-      expect(updatedPlayers.find(p => p.id === secondPlayer.id).hasFairPlayAward).toBe(false);
+
+      expect(updatedPlayers.every(player => player.hasFairPlayAward === false)).toBe(true);
     });
 
-    it('should pass correct fair play award player ID to updateMatchToConfirmed', async () => {
-      render(<GameFinishedScreen {...defaultProps} />);
-      await waitForFairPlaySection();
-      
-      const selectedPlayer = mockPlayers[1]; // Select second player
-      
-      // Select a player for fair play award
-      await selectFairPlayAward(selectedPlayer.displayName);
-      
-      // Click save match button
-      const saveButton = screen.getByText('Save Match to History');
-      await userEvent.click(saveButton);
-      
-      // Wait for database calls to complete
-      await waitFor(() => {
-        expect(updateMatchToConfirmed).toHaveBeenCalled();
-      });
-      
-      // Verify updateMatchToConfirmed was called with correct parameters
-      expect(updateMatchToConfirmed).toHaveBeenCalledWith(
-        'test-match-123', // matchId
-        selectedPlayer.id // fairPlayAwardPlayerId
-      );
-    });
-
-    it('should surface an error message when saving fails', async () => {
-      updateMatchToConfirmed.mockResolvedValue({
+    it('surfaces an error message when saving fails', async () => {
+      updateFinishedMatchMetadata.mockResolvedValueOnce({
         success: false,
-        error: 'Match must be finished before it can be saved to history.'
+        error: 'Match must be finished before updates can be applied.'
       });
 
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
 
-      const saveButton = screen.getByText('Save Match to History');
-      await userEvent.click(saveButton);
+      const firstPlayer = mockPlayers[0];
+      await selectFairPlayAward(firstPlayer.displayName);
 
       await waitFor(() => {
-        expect(screen.getByText('❌ Match must be finished before it can be saved to history.')).toBeInTheDocument();
+        expect(screen.getByText('❌ Match must be finished before updates can be applied.')).toBeInTheDocument();
+      });
+    });
+
+    it('delegates fair play clearing to the restart handler when starting a new game', async () => {
+      // Set up players with an existing award from a previous match
+      const playersWithAward = mockPlayers.map((player, index) => ({
+        ...player,
+        hasFairPlayAward: index === 0 // First player has the award
+      }));
+
+      const checkForActiveMatch = jest.fn((callback) => {
+        callback(); // Immediately execute the callback
       });
 
-      expect(screen.queryByText('✓ Match saved successfully!')).not.toBeInTheDocument();
+      render(
+        <GameFinishedScreen
+          {...defaultProps}
+          allPlayers={playersWithAward}
+          checkForActiveMatch={checkForActiveMatch}
+        />
+      );
+
+      await waitForFairPlaySection();
+
+      // Click "Start New Game" button
+      const newGameButton = screen.getByRole('button', { name: /Start New Game/i });
+      await userEvent.click(newGameButton);
+
+      expect(checkForActiveMatch).toHaveBeenCalled();
+      expect(mockSetters.handleRestartMatch).toHaveBeenCalledWith({ preserveConfiguration: false });
+      // Component should delegate clearing logic to handleRestartMatch instead of mutating players directly
+      expect(mockSetters.setAllPlayers).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('New Game Button', () => {
+    it('calls handleRestartMatch with preserveConfiguration=false when clicking Start New Game', async () => {
+      const handleRestartMatch = jest.fn();
+      const checkForActiveMatch = jest.fn((callback) => callback());
+
+      render(
+        <GameFinishedScreen
+          {...defaultProps}
+          handleRestartMatch={handleRestartMatch}
+          checkForActiveMatch={checkForActiveMatch}
+        />
+      );
+
+      // Click "Start New Game" button
+      const newGameButton = screen.getByRole('button', { name: /Start New Game/i });
+      await userEvent.click(newGameButton);
+
+      // Verify handleRestartMatch was called with preserveConfiguration=false
+      expect(handleRestartMatch).toHaveBeenCalledWith({ preserveConfiguration: false });
+      expect(handleRestartMatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('delegates state clearing to handleRestartMatch', async () => {
+      const handleRestartMatch = jest.fn();
+      const checkForActiveMatch = jest.fn((callback) => callback());
+
+      render(
+        <GameFinishedScreen
+          {...defaultProps}
+          handleRestartMatch={handleRestartMatch}
+          checkForActiveMatch={checkForActiveMatch}
+        />
+      );
+
+      // Click "Start New Game" button
+      const newGameButton = screen.getByRole('button', { name: /Start New Game/i });
+      await userEvent.click(newGameButton);
+
+      // Verify that the component delegated to handleRestartMatch instead of doing its own clearing
+      expect(handleRestartMatch).toHaveBeenCalled();
+
+      // The old individual state setters should NOT be called from handleNewGame
+      // (they may be called from other parts of the component like Fair Play Award)
+      // We're just verifying that handleRestartMatch is the primary reset mechanism
     });
   });
 });

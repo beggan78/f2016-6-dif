@@ -3,7 +3,6 @@ import { logEvent, EVENT_TYPES, calculateMatchTime } from '../utils/gameEventLog
 import { formatPlayerName } from '../utils/formatUtils';
 import { createPersistenceManager } from '../utils/persistenceManager';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import { hasPlayerParticipated } from '../utils/playerUtils';
 
 // Create persistence manager for timer state
 const timerPersistence = createPersistenceManager(STORAGE_KEYS.TIMER_STATE, null);

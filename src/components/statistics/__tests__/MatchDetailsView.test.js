@@ -7,7 +7,7 @@ import {
   getMatchDetails,
   updateMatchDetails,
   updatePlayerMatchStatsBatch,
-  deleteConfirmedMatch
+  deleteFinishedMatch
 } from '../../../services/matchStateManager';
 
 jest.mock('../../../services/matchStateManager', () => ({
@@ -15,7 +15,7 @@ jest.mock('../../../services/matchStateManager', () => ({
   updateMatchDetails: jest.fn(),
   updatePlayerMatchStatsBatch: jest.fn(),
   createManualMatch: jest.fn(),
-  deleteConfirmedMatch: jest.fn()
+  deleteFinishedMatch: jest.fn()
 }));
 
 const buildTeamPlayer = (player) => {
@@ -52,7 +52,7 @@ describe('MatchDetailsView - manual creation mode', () => {
     getMatchDetails.mockResolvedValue({ success: true, match: {}, playerStats: [] });
     updateMatchDetails.mockResolvedValue({ success: true });
     updatePlayerMatchStatsBatch.mockResolvedValue({ success: true });
-    deleteConfirmedMatch.mockResolvedValue({ success: true });
+    deleteFinishedMatch.mockResolvedValue({ success: true });
   });
 
   it('creates a manual match and notifies parent', async () => {
@@ -183,7 +183,7 @@ describe('MatchDetailsView - existing match mode', () => {
     });
     updateMatchDetails.mockResolvedValue({ success: true });
     updatePlayerMatchStatsBatch.mockResolvedValue({ success: true });
-    deleteConfirmedMatch.mockResolvedValue({ success: true });
+    deleteFinishedMatch.mockResolvedValue({ success: true });
   });
 
   it('deletes a match after confirmation', async () => {
@@ -209,7 +209,7 @@ describe('MatchDetailsView - existing match mode', () => {
 
     await userEvent.click(confirmButton);
 
-    await waitFor(() => expect(deleteConfirmedMatch).toHaveBeenCalledWith('match-1'));
+    await waitFor(() => expect(deleteFinishedMatch).toHaveBeenCalledWith('match-1'));
     await waitFor(() => expect(handleMatchDeleted).toHaveBeenCalledWith('match-1'));
     await waitFor(() => expect(handleNavigateBack).toHaveBeenCalled());
   });
@@ -237,7 +237,7 @@ describe('MatchDetailsView - existing match mode', () => {
 
     await userEvent.click(cancelButton);
 
-    expect(deleteConfirmedMatch).not.toHaveBeenCalled();
+    expect(deleteFinishedMatch).not.toHaveBeenCalled();
     expect(handleMatchDeleted).not.toHaveBeenCalled();
     expect(handleNavigateBack).not.toHaveBeenCalled();
   });

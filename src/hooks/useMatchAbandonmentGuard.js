@@ -41,7 +41,6 @@ export function useMatchAbandonmentGuard() {
     matchState.currentMatchId, 
     matchState.matchState, 
     matchState.hasActiveMatch,
-    matchState.hasUnsavedMatch,
     matchState.isMatchRunning
   ]);
 
@@ -65,7 +64,6 @@ export function useMatchAbandonmentGuard() {
       currentMatchId: currentMatchState.currentMatchId,
       matchState: currentMatchState.matchState,
       hasActiveMatch: currentMatchState.hasActiveMatch,
-      hasUnsavedMatch: currentMatchState.hasUnsavedMatch,
       isMatchRunning: currentMatchState.isMatchRunning
     });
 

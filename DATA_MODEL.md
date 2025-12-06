@@ -134,9 +134,8 @@ This document describes the database schema for the Sport Wizard application, a 
 
 ### match_state
 - `running` - Match in progress
-- `finished` - Match finished but not confirmed
+- `finished` - Match finished and finalized
 - `pending` - Match pending/scheduled
-- `confirmed` - Match confirmed and finalized
 
 ### match_type
 - `friendly` - Friendly match
@@ -841,10 +840,9 @@ Always use `mapFormationPositionToRole()` utility function for conversion when p
 
 ### Match Lifecycle
 
-Matches follow a three-state lifecycle:
+Matches follow a two-state lifecycle:
 1. **`running`** - Match in progress
-2. **`finished`** - Match finished, statistics calculated
-3. **`confirmed`** - Match confirmed and finalized, stats aggregated to season
+2. **`finished`** - Match finished and finalized, statistics calculated
 
 Additional state:
 - **`pending`** - Match scheduled but not started

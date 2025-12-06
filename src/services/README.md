@@ -8,11 +8,10 @@ The Match State Manager is responsible for the complete lifecycle of match recor
 
 ### Match Lifecycle Overview
 
-The system implements a three-state lifecycle for matches:
+The system implements a two-state lifecycle for matches:
 
 1. **`running`** - Match is actively being played
-2. **`finished`** - Match completed but not yet saved to history  
-3. **`confirmed`** - Match saved to history by user
+2. **`finished`** - Match completed and finalized
 
 ### Core Concepts for AI Understanding
 
@@ -78,7 +77,7 @@ const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 #### Match Lifecycle Functions
 - `createMatch(matchData, allPlayers, selectedSquadIds)` - Creates initial match record and seeds stats for the active squad
 - `updateMatchToFinished(matchId, finalStats)` - Transitions to 'finished' state with match results
-- `updateMatchToConfirmed(matchId)` - Final transition to 'confirmed' state (user saves to history)
+- `updateFinishedMatchMetadata(matchId, options)` - Updates metadata for finished matches (e.g., fair play award)
 
 #### Data Formatting Functions
 - `formatMatchDataFromGameState(gameState, teamId)` - Converts game state to database format
@@ -97,7 +96,7 @@ const goalsScored = countPlayerGoals(goalScorers, matchEvents, player.id);
 ```sql
 id: UUID (Primary key)
 team_id: UUID (Foreign key to teams)
-state: ENUM('running', 'finished', 'confirmed', 'pending')
+state: ENUM('running', 'finished', 'pending')
 format: TEXT (e.g., '5v5')
 formation: TEXT (e.g., '2-2', '1-2-1')
 periods: INTEGER
@@ -132,18 +131,12 @@ got_fair_play_award: BOOLEAN (default false)
 ### Integration Points
 
 #### GameFinishedScreen Integration
-The GameFinishedScreen component handles the user-facing match saving workflow:
+The GameFinishedScreen component auto-saves finished match metadata (like the fair play award) as soon as the user makes a selection:
 
 ```javascript
 // Save workflow in GameFinishedScreen.js
-const handleSaveMatchHistory = async () => {
-  // 1. Confirm match in database (running -> confirmed)
-  const result = await updateMatchToConfirmed(currentMatchId);
-  
-  // 2. Insert player statistics
-  if (result.success) {
-    await updatePlayerMatchStatsOnFinish(currentMatchId, allPlayers, goalScorers, matchEvents);
-  }
+const handleFairPlayAwardChange = async (fairPlayAwardId) => {
+  await updateFinishedMatchMetadata(currentMatchId, { fairPlayAwardId });
 };
 ```
 
@@ -173,11 +166,10 @@ const finalStats = formatFinalStatsFromGameState(gameState, totalMatchDuration);
 await updateMatchToFinished(currentMatchId, finalStats);
 ```
 
-#### 3. Saving to History
+#### 3. Updating Finished Match Metadata
 ```javascript
-// When user clicks "Save Match to History"
-await updateMatchToConfirmed(currentMatchId);
-await updatePlayerMatchStatsOnFinish(currentMatchId, allPlayers, goalScorers, matchEvents);
+// When user assigns fair play award after the match is finished
+await updateFinishedMatchMetadata(currentMatchId, { fairPlayAwardId });
 ```
 
 ### Error Handling Patterns
@@ -222,8 +214,7 @@ The resume system extends the existing match lifecycle with a `pending` state:
 
 1. **`pending`** - Configuration saved but match not yet started
 2. **`running`** - Match is actively being played
-3. **`finished`** - Match completed but not yet saved to history
-4. **`confirmed`** - Match saved to history by user
+3. **`finished`** - Match completed and saved to history
 
 #### 2. Configuration Data Structure
 The `initial_config` JSON field stores the complete configuration needed to resume:

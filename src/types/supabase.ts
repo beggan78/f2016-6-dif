@@ -1177,7 +1177,7 @@ export type Database = {
         | "player_reactivated"
       match_format: "3v3" | "5v5" | "7v7" | "9v9" | "11v11"
       match_outcome: "win" | "loss" | "draw"
-      match_state: "running" | "finished" | "pending" | "confirmed"
+      match_state: "running" | "finished" | "pending"
       match_type: "friendly" | "internal" | "league" | "tournament" | "cup"
       match_venue_type: "home" | "away" | "neutral"
       player_role:
@@ -1349,7 +1349,7 @@ export const Constants = {
       ],
       match_format: ["3v3", "5v5", "7v7", "9v9", "11v11"],
       match_outcome: ["win", "loss", "draw"],
-      match_state: ["running", "finished", "pending", "confirmed"],
+      match_state: ["running", "finished", "pending"],
       match_type: ["friendly", "internal", "league", "tournament", "cup"],
       match_venue_type: ["home", "away", "neutral"],
       player_role: [
@@ -1373,4 +1373,3 @@ export const Constants = {
     },
   },
 } as const
-

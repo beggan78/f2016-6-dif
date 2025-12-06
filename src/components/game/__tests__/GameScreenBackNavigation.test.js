@@ -483,7 +483,7 @@ describe('GameScreen Back Navigation Tests', () => {
       // Rapid transitions
       rerender(<GameScreen {...props} matchState="running" />);
       rerender(<GameScreen {...props} matchState="finished" />);
-      rerender(<GameScreen {...props} matchState="confirmed" />);
+      rerender(<GameScreen {...props} matchState="finished" />);
       
       // Should handle all transitions without crashing
       expect(mockRemoveFromNavigationStack).toHaveBeenCalled();

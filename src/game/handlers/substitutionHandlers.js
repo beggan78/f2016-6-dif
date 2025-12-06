@@ -440,7 +440,6 @@ export const createSubstitutionHandlers = (
                           !gameState.allPlayers.find(p => p.id === playerId)?.stats?.isInactive;
       
       if (canSetAsNext) {
-        const currentTime = getCurrentTimestamp();
         const substitutionCount = getSubstitutionCount();
 
         // Use the new substitute reorder function
@@ -466,7 +465,6 @@ export const createSubstitutionHandlers = (
 
   const handleInactivatePlayer = (substituteModal, allPlayers, formation) => {
     if (substituteModal.playerId && supportsInactive) {
-      const currentTime = getCurrentTimestamp();
       const gameState = gameStateFactory();
       const playerBeingInactivated = findPlayerById(allPlayers, substituteModal.playerId);
       const bottomSubPosition = getBottomSubstitutePosition(teamConfig);
@@ -537,7 +535,6 @@ export const createSubstitutionHandlers = (
 
   const handleActivatePlayer = (substituteModal) => {
     if (substituteModal.playerId && supportsInactive) {
-      const currentTime = getCurrentTimestamp();
       const gameState = gameStateFactory();
       const playerBeingActivated = findPlayerById(gameState.allPlayers, substituteModal.playerId);
       

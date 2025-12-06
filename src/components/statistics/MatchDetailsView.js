@@ -5,7 +5,7 @@ import { Button, Input, Select, ConfirmationModal } from '../shared/UI';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
-import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch, createManualMatch, calculateMatchOutcome, deleteConfirmedMatch } from '../../services/matchStateManager';
+import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch, createManualMatch, calculateMatchOutcome, deleteFinishedMatch } from '../../services/matchStateManager';
 
 const SmartTimeInput = ({ value, onChange, className = '' }) => {
   const [displayValue, setDisplayValue] = useState('');
@@ -978,7 +978,7 @@ export function MatchDetailsView({
           setIsDeleting(true);
           setDeleteError(null);
 
-          const result = await deleteConfirmedMatch(matchId);
+          const result = await deleteFinishedMatch(matchId);
 
           if (!result.success) {
             setDeleteError(result.error || 'Failed to delete match');

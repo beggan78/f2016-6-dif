@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { TeamStatsView } from '../TeamStatsView';
 import { useTeam } from '../../../contexts/TeamContext';
-import { getConfirmedMatches } from '../../../services/matchStateManager';
+import { getFinishedMatches } from '../../../services/matchStateManager';
 import { STORAGE_KEYS } from '../../../constants/storageKeys';
 
 // Mock dependencies
@@ -86,7 +86,7 @@ describe('TeamStatsView', () => {
       currentTeam: { id: 'team-123', name: 'Test Team' }
     });
 
-    getConfirmedMatches.mockResolvedValue({
+    getFinishedMatches.mockResolvedValue({
       success: true,
       matches: mockMatches
     });

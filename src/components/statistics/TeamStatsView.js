@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
-import { getConfirmedMatches } from '../../services/matchStateManager';
+import { getFinishedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
@@ -40,7 +40,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
       setLoading(true);
       setError(null);
 
-      const result = await getConfirmedMatches(currentTeam.id, startDate, endDate);
+      const result = await getFinishedMatches(currentTeam.id, startDate, endDate);
 
       if (result.success) {
         setMatches(result.matches || []);
