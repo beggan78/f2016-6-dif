@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, Award, Clock, Users, Target } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
-import { getConfirmedMatches, getPlayerStats } from '../../services/matchStateManager';
+import { getFinishedMatches, getPlayerStats } from '../../services/matchStateManager';
 import { formatMinutesAsTime, formatSecondsAsTime } from '../../utils/formatUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
@@ -67,7 +67,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       setMatchesLoading(true);
       setMatchesError(null);
 
-      const result = await getConfirmedMatches(currentTeam.id, startDate, endDate);
+      const result = await getFinishedMatches(currentTeam.id, startDate, endDate);
 
       if (result.success) {
         setMatches(result.matches || []);

@@ -7,20 +7,17 @@ import { AlertTriangle, X } from 'lucide-react';
  * 
  * Shows different messages based on match state:
  * - Running match: Warns about losing active match data
- * - Finished match: Warns about losing unsaved match history
  * 
  * @param {boolean} isOpen - Whether modal is visible
  * @param {function} onAbandon - Called when user confirms abandonment
  * @param {function} onCancel - Called when user cancels abandonment
  * @param {boolean} isMatchRunning - Whether match is currently running
- * @param {boolean} hasUnsavedMatch - Whether there's a finished unsaved match
  */
 export function AbandonMatchModal({ 
   isOpen, 
   onAbandon, 
   onCancel, 
-  isMatchRunning, 
-  hasUnsavedMatch 
+  isMatchRunning 
 }) {
   if (!isOpen) return null;
 
@@ -32,13 +29,6 @@ export function AbandonMatchModal({
         message: 'You have an active match in progress. All match data, player statistics, and game history will be permanently lost if you start a new game.',
         icon: <AlertTriangle className="w-6 h-6 text-amber-400" />,
         iconBg: 'bg-amber-600'
-      };
-    } else if (hasUnsavedMatch) {
-      return {
-        title: 'Abandon Finished Match?',
-        message: 'You have a finished match that hasn\'t been saved to history. All match statistics and player performance data will be permanently lost if you start a new game.',
-        icon: <AlertTriangle className="w-6 h-6 text-orange-400" />,
-        iconBg: 'bg-orange-600'
       };
     } else {
       return {
@@ -64,7 +54,7 @@ export function AbandonMatchModal({
             <div>
               <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
               <p className="text-sm text-slate-400">
-                {isMatchRunning || hasUnsavedMatch ? 'Data will be permanently lost' : 'Current session will be reset'}
+                {isMatchRunning ? 'Data will be permanently lost' : 'Current session will be reset'}
               </p>
             </div>
           </div>
@@ -96,18 +86,9 @@ export function AbandonMatchModal({
               variant="danger"
               className="w-full"
             >
-              {isMatchRunning || hasUnsavedMatch ? 'Abandon Match' : 'Start New Game'}
+              {isMatchRunning ? 'Abandon Match' : 'Start New Game'}
             </Button>
           </div>
-          
-          {/* Additional warning for unsaved matches */}
-          {hasUnsavedMatch && (
-            <div className="mt-4 p-3 bg-slate-700 rounded-lg border border-slate-600">
-              <p className="text-xs text-slate-300 text-center">
-                💡 <strong>Tip:</strong> Go back to the Statistics screen to save your match to history first
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>

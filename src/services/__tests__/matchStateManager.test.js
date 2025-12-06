@@ -10,7 +10,7 @@ import {
   createManualMatch,
   updateMatchToRunning,
   updateMatchToFinished,
-  updateMatchToConfirmed,
+  updateFinishedMatchMetadata,
   insertInitialPlayerMatchStats,
   upsertPlayerMatchStats,
   updatePlayerMatchStatsFairPlayAward,
@@ -19,7 +19,7 @@ import {
   countPlayerGoals,
   mapFormationPositionToRole,
   mapStartingRoleToDBRole,
-  deleteConfirmedMatch
+  deleteFinishedMatch
 } from '../matchStateManager';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { supabase } from '../../lib/supabase';
@@ -213,7 +213,7 @@ describe('matchStateManager', () => {
       goalsConceded: 1
     };
 
-    it('should create a confirmed match and insert player stats', async () => {
+    it('should create a finished match and insert player stats', async () => {
       const mockInsert = jest.fn(() => ({
         select: jest.fn(() => ({
           single: jest.fn().mockResolvedValue({ data: { id: 'match-manual-1' }, error: null })
@@ -250,7 +250,7 @@ describe('matchStateManager', () => {
       expect(result.matchId).toBe('match-manual-1');
       expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
         team_id: baseManualPayload.teamId,
-        state: 'confirmed',
+        state: 'finished',
         goals_scored: baseManualPayload.goalsScored,
         goals_conceded: baseManualPayload.goalsConceded
       }));
@@ -326,13 +326,13 @@ describe('matchStateManager', () => {
     });
   });
 
-  describe('deleteConfirmedMatch', () => {
-    it('soft deletes confirmed match and related stats', async () => {
+  describe('deleteFinishedMatch', () => {
+    it('soft deletes finished match and related stats', async () => {
       const deleteChain = createDeleteChain();
       const updateMock = jest.fn(() => ({
         eq: jest.fn(() => ({
           is: jest.fn(() => ({
-            in: jest.fn(() => Promise.resolve({ data: [{ id: 'match-1' }], error: null }))
+            eq: jest.fn(() => Promise.resolve({ data: [{ id: 'match-1' }], error: null }))
           }))
         }))
       }));
@@ -341,7 +341,7 @@ describe('matchStateManager', () => {
         .mockReturnValueOnce({ delete: deleteChain.delete })
         .mockReturnValueOnce({ update: updateMock });
 
-      const result = await deleteConfirmedMatch('match-1');
+      const result = await deleteFinishedMatch('match-1');
 
       expect(result.success).toBe(true);
       expect(deleteChain.delete).toHaveBeenCalled();
@@ -349,7 +349,7 @@ describe('matchStateManager', () => {
     });
 
     it('returns error when matchId missing', async () => {
-      const result = await deleteConfirmedMatch();
+      const result = await deleteFinishedMatch();
       expect(result.success).toBe(false);
       expect(result.error).toBe('Match ID is required');
     });
@@ -359,7 +359,7 @@ describe('matchStateManager', () => {
       const updateMock = jest.fn(() => ({
         eq: jest.fn(() => ({
           is: jest.fn(() => ({
-            in: jest.fn(() => Promise.resolve({ data: null, error: { message: 'Failed' } }))
+            eq: jest.fn(() => Promise.resolve({ data: null, error: { message: 'Failed' } }))
           }))
         }))
       }));
@@ -368,7 +368,7 @@ describe('matchStateManager', () => {
         .mockReturnValueOnce({ delete: deleteChain.delete })
         .mockReturnValueOnce({ update: updateMock });
 
-      const result = await deleteConfirmedMatch('match-err');
+      const result = await deleteFinishedMatch('match-err');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Database error: Failed');
@@ -434,14 +434,42 @@ describe('matchStateManager', () => {
     });
   });
 
-  describe('updateMatchToConfirmed', () => {
-    it('should update match to confirmed successfully', async () => {
-      const chain = createUpdateChain({ selectResult: { data: [{ id: 'match-123' }], error: null } });
-      supabase.from.mockReturnValue({ update: chain.update });
+  describe('updateFinishedMatchMetadata', () => {
+    it('should update finished match metadata successfully', async () => {
+      const matchUpdateChain = createUpdateChain({ selectResult: { data: [{ id: 'match-123' }], error: null } });
+      const clearAwardUpdate = {
+        update: jest.fn(() => ({
+          eq: jest.fn().mockResolvedValue({ data: [{ id: 'clear-1' }], error: null })
+        }))
+      };
+      const setAwardUpdate = {
+        update: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            eq: jest.fn(() => ({
+              select: jest.fn().mockResolvedValue({ data: [{ id: 'stat-1' }], error: null })
+            }))
+          }))
+        }))
+      };
 
-      const result = await updateMatchToConfirmed('match-123');
+      supabase.from
+        .mockReturnValueOnce({ update: matchUpdateChain.update })
+        .mockReturnValueOnce(clearAwardUpdate)
+        .mockReturnValueOnce(setAwardUpdate);
+
+      const result = await updateFinishedMatchMetadata('match-123', { fairPlayAwardId: 'player-1' });
 
       expect(result.success).toBe(true);
+      expect(matchUpdateChain.update).toHaveBeenCalled();
+    });
+
+    it('should return failure when no finished match is updated', async () => {
+      const chain = createUpdateChain({ selectResult: { data: [], error: null } });
+      supabase.from.mockReturnValue({ update: chain.update });
+
+      const result = await updateFinishedMatchMetadata('missing-match', { fairPlayAwardId: null });
+
+      expect(result.success).toBe(false);
     });
   });
 

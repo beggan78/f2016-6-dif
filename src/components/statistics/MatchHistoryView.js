@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Calendar, MapPin, Trophy, History, PlusCircle } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
-import { getConfirmedMatches } from '../../services/matchStateManager';
+import { getFinishedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { getOutcomeBadgeClasses, getMatchTypeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
@@ -44,7 +44,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
       setLoading(true);
       setError(null);
 
-      const result = await getConfirmedMatches(currentTeam.id, startDate, endDate);
+      const result = await getFinishedMatches(currentTeam.id, startDate, endDate);
 
       if (result.success) {
         setMatches(result.matches || []);

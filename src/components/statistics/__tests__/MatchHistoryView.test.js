@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { MatchHistoryView } from '../MatchHistoryView';
 import { useTeam } from '../../../contexts/TeamContext';
-import { getConfirmedMatches } from '../../../services/matchStateManager';
+import { getFinishedMatches } from '../../../services/matchStateManager';
 import { STORAGE_KEYS } from '../../../constants/storageKeys';
 
 /* eslint-disable testing-library/no-node-access */
@@ -159,8 +159,8 @@ describe('MatchHistoryView', () => {
       currentTeam: { id: 'team-123', name: 'Test Team' }
     });
 
-    // Mock getConfirmedMatches
-    getConfirmedMatches.mockResolvedValue({
+    // Mock getFinishedMatches
+    getFinishedMatches.mockResolvedValue({
       success: true,
       matches: mockMatches
     });
@@ -237,16 +237,16 @@ describe('MatchHistoryView', () => {
     );
 
     await screen.findByText(/10 matches found/i);
-    expect(getConfirmedMatches).toHaveBeenCalledTimes(1);
+    expect(getFinishedMatches).toHaveBeenCalledTimes(1);
 
-    getConfirmedMatches.mockClear();
+    getFinishedMatches.mockClear();
 
     rerender(
       <MatchHistoryView onMatchSelect={mockOnMatchSelect} refreshKey={1} />
     );
 
     await waitFor(() => {
-      expect(getConfirmedMatches).toHaveBeenCalledTimes(1);
+      expect(getFinishedMatches).toHaveBeenCalledTimes(1);
     });
   });
 
