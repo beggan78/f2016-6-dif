@@ -3,9 +3,30 @@ import { logEvent, EVENT_TYPES, calculateMatchTime } from '../utils/gameEventLog
 import { formatPlayerName } from '../utils/formatUtils';
 import { createPersistenceManager } from '../utils/persistenceManager';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { hasPlayerParticipated } from '../utils/playerUtils';
 
 // Create persistence manager for timer state
 const timerPersistence = createPersistenceManager(STORAGE_KEYS.TIMER_STATE, null);
+
+const buildStartingLineupData = (startingFormation, allPlayers = []) => {
+  if (!startingFormation || typeof startingFormation !== 'object') return [];
+
+  const findPlayerName = (playerId) => {
+    if (!playerId) return null;
+    const player = allPlayers.find(p => p.id === playerId);
+    return player ? formatPlayerName(player) : null;
+  };
+
+  return Object.entries(startingFormation)
+    .filter(([, playerId]) => Boolean(playerId))
+    .map(([position, playerId]) => {
+      const name = findPlayerName(playerId);
+      return {
+        position,
+        name: name || 'Unknown'
+      };
+    });
+};
 
 const loadTimerState = () => {
   const stored = timerPersistence.loadState();
@@ -332,7 +353,8 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
             referee: null,
             plannedPeriods: numPeriods || 2,
             periodDurationMinutes
-          }
+          },
+          startingLineup: buildStartingLineupData(startingFormation, allPlayers)
         });
       } else {
         // Log period start event for periods > 1
@@ -347,7 +369,8 @@ export function useTimers(periodDurationMinutes, alertMinutes = 0, playAlertSoun
             startTime: now,
             plannedDurationMinutes: periodDurationMinutes,
             isFirstPeriod: false
-          }
+          },
+          startingLineup: buildStartingLineupData(startingFormation, allPlayers)
         });
       }
       

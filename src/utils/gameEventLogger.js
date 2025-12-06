@@ -27,6 +27,9 @@ export const EVENT_TYPES = {
   GOALIE_SWITCH: 'goalie_switch',
   GOALIE_ASSIGNMENT: 'goalie_assignment',
   POSITION_CHANGE: 'position_change',
+  FAIR_PLAY_AWARD: 'fair_play_award',
+  PLAYER_INACTIVATED: 'player_inactivated',
+  PLAYER_ACTIVATED: 'player_activated',
   
   // Scoring events
   GOAL_SCORED: 'goal_scored',

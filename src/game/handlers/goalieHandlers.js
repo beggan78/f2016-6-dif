@@ -97,6 +97,7 @@ export const createGoalieHandlers = (
               goalieName: formatPlayerName(newGoaliePlayer),
               previousGoalieId: gameState.formation.goalie,
               previousGoalieName: gameState.formation.goalie ? getPlayerNameById(gameState.formation.goalie) : null,
+              newGoaliePosition: newGoaliePlayer?.stats?.currentPositionKey || null,
               eventType: 'replacement',
               matchTime: calculateMatchTime(currentTime),
               timestamp: currentTime,

@@ -451,33 +451,6 @@ export const createSubstitutionHandlers = (
             // Apply the state changes
             setFormation(newGameState.formation);
             setAllPlayers(newGameState.allPlayers);
-
-            // Log substitute order change event
-            try {
-              const targetPlayer = gameState.allPlayers.find(p => p.id === playerId);
-
-              if (targetPlayer) {
-                // Determine the target position based on substitutionCount
-                const substitutePositions = definition.substitutePositions;
-                const toPosition = substitutePositions[Math.min(substitutionCount - 1, substitutePositions.length - 1)];
-
-                logEvent(EVENT_TYPES.POSITION_CHANGE, {
-                  type: 'substitute_order_reorder',
-                  playerId: playerId,
-                  playerName: getFormattedPlayerName(targetPlayer),
-                  fromPosition: currentPosition,
-                  toPosition: toPosition,
-                  description: `${getFormattedPlayerName(targetPlayer)} moved to next-to-go-in position with cascading reorder`,
-                  beforeFormation: getFormationDescription(gameState.formation, teamConfig),
-                  afterFormation: getFormationDescription(newGameState.formation, teamConfig),
-                  teamConfig,
-                  matchTime: calculateMatchTime(currentTime),
-                  timestamp: currentTime,
-                  periodNumber: gameState.currentPeriodNumber || 1
-                });
-              }
-            } catch (error) {
-            }
           },
           setAnimationState,
           setHideNextOffIndicator,
@@ -515,16 +488,8 @@ export const createSubstitutionHandlers = (
         // Log player inactivation event
         try {
           if (playerBeingInactivated) {
-            logEvent(EVENT_TYPES.POSITION_CHANGE, {
-              type: 'player_inactivated',
+            logEvent(EVENT_TYPES.PLAYER_INACTIVATED, {
               playerId: substituteModal.playerId,
-              playerName: getFormattedPlayerName(playerBeingInactivated),
-              previousStatus: 'active_substitute',
-              newStatus: 'inactive',
-              description: `${getFormattedPlayerName(playerBeingInactivated)} marked as inactive`,
-              teamConfig,
-              matchTime: calculateMatchTime(currentTime),
-              timestamp: currentTime,
               periodNumber: gameState.currentPeriodNumber || 1
             });
           }
@@ -548,18 +513,8 @@ export const createSubstitutionHandlers = (
             // Log player inactivation event with position swap
             try {
               if (playerBeingInactivated) {
-                logEvent(EVENT_TYPES.POSITION_CHANGE, {
-                  type: 'player_inactivated_with_swap',
+                logEvent(EVENT_TYPES.PLAYER_INACTIVATED, {
                   playerId: substituteModal.playerId,
-                  playerName: getFormattedPlayerName(playerBeingInactivated),
-                  previousStatus: 'active_substitute',
-                  newStatus: 'inactive',
-                  description: `${getFormattedPlayerName(playerBeingInactivated)} marked as inactive (with position swap)`,
-                  beforeFormation: getFormationDescription(gameState.formation, teamConfig),
-                  afterFormation: getFormationDescription(newGameState.formation, teamConfig),
-                  teamConfig,
-                  matchTime: calculateMatchTime(currentTime),
-                  timestamp: currentTime,
                   periodNumber: gameState.currentPeriodNumber || 1
                 });
               }
@@ -603,18 +558,8 @@ export const createSubstitutionHandlers = (
           // Log player activation event
           try {
             if (playerBeingActivated) {
-              logEvent(EVENT_TYPES.POSITION_CHANGE, {
-                type: 'player_activated',
+              logEvent(EVENT_TYPES.PLAYER_ACTIVATED, {
                 playerId: substituteModal.playerId,
-                playerName: getFormattedPlayerName(playerBeingActivated),
-                previousStatus: 'inactive',
-                newStatus: 'active_substitute',
-                description: `${getFormattedPlayerName(playerBeingActivated)} reactivated`,
-                beforeFormation: getFormationDescription(gameState.formation, teamConfig),
-                afterFormation: getFormationDescription(newGameState.formation, teamConfig),
-                teamConfig,
-                matchTime: calculateMatchTime(currentTime),
-                timestamp: currentTime,
                 periodNumber: gameState.currentPeriodNumber || 1
               });
             }

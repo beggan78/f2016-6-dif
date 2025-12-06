@@ -71,6 +71,9 @@ class EventPersistenceService {
       'substitution': 'substitution_in',
       'goalie_assignment': 'goalie_enters',
       'position_change': 'position_switch',
+      'player_inactivated': 'player_inactivated',
+      'player_activated': 'player_activated',
+      'fair_play_award': 'fair_play_award',
 
       // Special cases
       'goalie_switch': 'goalie_exits', // Will create TWO events
@@ -108,20 +111,24 @@ class EventPersistenceService {
     // Convert match time "MM:SS" to seconds
     const occurredAtSeconds = this.parseMatchTimeToSeconds(event.matchTime);
 
+    const baseCorrelationId = this.normalizeCorrelationId(
+      event?.data?.correlationId ||
+      event?.relatedEventId ||
+      event?.id
+    );
+
     const buildBaseEvent = (overrides = {}) => ({
       match_id: matchId,
       event_type: dbEventType,
       occurred_at_seconds: occurredAtSeconds,
       period: event.periodNumber || 1,
       data: null,
-      correlation_id: event.relatedEventId || null,
+      correlation_id: baseCorrelationId || null,
       ...overrides
     });
 
     const getCorrelationId = () =>
-      event?.data?.correlationId ||
-      event?.relatedEventId ||
-      event?.id ||
+      baseCorrelationId ||
       this.generateCorrelationId();
 
     // Special handling: Goalie switch creates TWO events
@@ -168,17 +175,48 @@ class EventPersistenceService {
       });
     }
 
+    if (dbEventType === 'match_ended' && event.type === 'match_end') {
+      return buildBaseEvent({ data: null });
+    }
+
     // Minimal payloads by event type
     if (dbEventType === 'match_started') {
-      return buildBaseEvent({ data: null });
+      const startingLineup = Array.isArray(event.data?.startingLineup) ? event.data.startingLineup : null;
+      return buildBaseEvent({
+        data: startingLineup ? { startingLineup } : null
+      });
     }
 
     if (dbEventType === 'goalie_enters') {
       const goalieId = event.data?.goalieId || event.data?.newGoalieId || event.data?.playerId || event.data?.scorerId;
-      return buildBaseEvent({
+      const correlationId = getCorrelationId();
+      const baseEvent = buildBaseEvent({
         player_id: goalieId || undefined,
-        data: null
+        data: null,
+        correlation_id: correlationId
       });
+
+      const isReplacement = event.data?.eventType === 'replacement';
+      const previousGoalieId = event.data?.previousGoalieId || event.data?.oldGoalieId;
+      const replacementTargetPosition = event.data?.newGoaliePosition || null;
+
+      if (isReplacement && previousGoalieId) {
+        const positionSwitchEvent = {
+          ...buildBaseEvent({
+            event_type: 'position_switch',
+            player_id: previousGoalieId,
+            correlation_id: correlationId,
+            data: {
+              old_position: 'goalie',
+              new_position: replacementTargetPosition
+            }
+          })
+        };
+
+        return [baseEvent, positionSwitchEvent];
+      }
+
+      return baseEvent;
     }
 
     if (event.type === 'substitution') {
@@ -210,6 +248,41 @@ class EventPersistenceService {
       return substitutionEvents.length > 0 ? substitutionEvents : null;
     }
 
+    if (dbEventType === 'position_switch') {
+      const sourcePlayerId = event.data?.sourcePlayerId;
+      const targetPlayerId = event.data?.targetPlayerId;
+      const sourcePosition = event.data?.sourcePosition || null;
+      const targetPosition = event.data?.targetPosition || null;
+
+      // Only create paired events when both players are present
+      if (sourcePlayerId && targetPlayerId) {
+        const correlationId = getCorrelationId();
+
+        return [
+          {
+            ...buildBaseEvent({
+              player_id: sourcePlayerId,
+              correlation_id: correlationId,
+              data: {
+                old_position: sourcePosition,
+                new_position: targetPosition
+              }
+            })
+          },
+          {
+            ...buildBaseEvent({
+              player_id: targetPlayerId,
+              correlation_id: correlationId,
+              data: {
+                old_position: targetPosition,
+                new_position: sourcePosition
+              }
+            })
+          }
+        ];
+      }
+    }
+
     if (dbEventType === 'goal_scored' || dbEventType === 'goal_conceded') {
       const payload = {
         ownScore: event.data?.ownScore,
@@ -224,8 +297,30 @@ class EventPersistenceService {
       return base;
     }
 
-    if (dbEventType === 'period_ended') {
+    if (dbEventType === 'period_started' || dbEventType === 'period_ended') {
+      if (dbEventType === 'period_started') {
+        const startingLineup = Array.isArray(event.data?.startingLineup) ? event.data.startingLineup : null;
+        return buildBaseEvent({
+          data: startingLineup ? { startingLineup } : null
+        });
+      }
       return buildBaseEvent({ data: null });
+    }
+
+    if (dbEventType === 'player_inactivated' || dbEventType === 'player_activated') {
+      return buildBaseEvent({
+        event_type: dbEventType,
+        player_id: event.data?.playerId || undefined,
+        data: null
+      });
+    }
+
+    if (dbEventType === 'fair_play_award') {
+      return buildBaseEvent({
+        event_type: dbEventType,
+        player_id: event.data?.playerId || undefined,
+        data: null
+      });
     }
 
     return buildBaseEvent({
@@ -325,11 +420,40 @@ class EventPersistenceService {
   }
 
   /**
+   * Validate UUID strings for correlation_id to satisfy DB constraints
+   * @param {string} value - Possible UUID value
+   * @returns {boolean} True if value is a valid UUID
+   */
+  isValidUuid(value) {
+    if (!value || typeof value !== 'string') return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(value.trim());
+  }
+
+  /**
+   * Normalize correlation ID to a valid UUID or null
+   * @param {string} value - Raw correlation ID value
+   * @returns {string|null} Valid UUID string or null
+   */
+  normalizeCorrelationId(value) {
+    return this.isValidUuid(value) ? value : null;
+  }
+
+  /**
    * Generate unique correlation ID for related events
    * @returns {string} Correlation ID
    */
   generateCorrelationId() {
-    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+
+    // Fallback UUID v4 generator for environments without crypto.randomUUID
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+      const random = Math.random() * 16 | 0;
+      const value = char === 'x' ? random : (random & 0x3) | 0x8;
+      return value.toString(16);
+    });
   }
 
   /**

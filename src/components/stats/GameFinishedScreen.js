@@ -12,6 +12,7 @@ import { PlayerStatsTable } from '../report/PlayerStatsTable';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { FAIR_PLAY_AWARD_OPTIONS } from '../../types/preferences';
 import { MATCH_TYPES } from '../../constants/matchTypes';
+import { logEvent, EVENT_TYPES } from '../../utils/gameEventLogger';
 
 export function GameFinishedScreen({
   allPlayers,
@@ -270,6 +271,19 @@ export function GameFinishedScreen({
           console.log('✅ Match confirmed successfully');
           if (fairPlayAwardPlayerId) {
             console.log('🏆 Fair play award updated in player stats');
+          }
+        }
+
+        // Log fair play award event for match history
+        if (fairPlayAwardPlayerId) {
+          try {
+            logEvent(EVENT_TYPES.FAIR_PLAY_AWARD, {
+              playerId: fairPlayAwardPlayerId,
+              matchId: currentMatchId,
+              periodNumber: totalPeriods || 1
+            });
+          } catch (error) {
+            console.warn('Failed to log fair play award event', error);
           }
         }
         
