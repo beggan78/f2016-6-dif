@@ -404,18 +404,6 @@ export class DataSyncManager {
     // Default to substitute when we cannot determine a meaningful role
     return roleToDatabase(PLAYER_ROLES.SUBSTITUTE);
   }
-
-  mapEventTypeToDatabase(eventType) {
-    const eventMap = {
-      'goal': 'goal_scored',
-      'substitution': 'substitution_in',
-      'period_start': 'period_started',
-      'period_end': 'period_ended',
-      'match_start': 'match_started',
-      'match_end': 'match_ended'
-    };
-    return eventMap[eventType] || eventType;
-  }
 }
 
 // Singleton instance for use throughout the app
