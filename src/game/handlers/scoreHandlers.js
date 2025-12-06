@@ -51,9 +51,9 @@ export const createScoreHandlers = (
 
   // Helper to create pending goal data structure
   const createPendingGoalData = (goalType, eventId, gameState) => {
-    const { ownScore, opponentScore, currentPeriodNumber } = gameState;
+    const { ownScore, opponentScore, currentPeriodNumber, currentMatchId } = gameState;
     const now = Date.now();
-    
+
     return {
       eventId,
       type: goalType === 'scored' ? EVENT_TYPES.GOAL_SCORED : EVENT_TYPES.GOAL_CONCEDED,
@@ -61,6 +61,7 @@ export const createScoreHandlers = (
       ownScore: goalType === 'scored' ? ownScore + 1 : ownScore,
       opponentScore: goalType === 'conceded' ? opponentScore + 1 : opponentScore,
       goalType: goalType,
+      matchId: currentMatchId,
       timestamp: now
     };
   };
@@ -95,7 +96,8 @@ export const createScoreHandlers = (
           ownScore: pendingGoalData.ownScore,
           opponentScore: pendingGoalData.opponentScore,
           scorerId: null,
-          goalType: pendingGoalData.goalType
+          goalType: pendingGoalData.goalType,
+          matchId: gameState.currentMatchId
         }, pendingGoalData.timestamp);
 
         return;
@@ -133,7 +135,8 @@ export const createScoreHandlers = (
         ownScore: pendingGoalData.ownScore,
         opponentScore: pendingGoalData.opponentScore,
         scorerId: null, // No scorer attribution for opponent goals
-        goalType: pendingGoalData.goalType
+        goalType: pendingGoalData.goalType,
+        matchId: gameState.currentMatchId
       }, pendingGoalData.timestamp);
     }
   };
@@ -171,7 +174,8 @@ export const createScoreHandlers = (
         ownScore: pendingGoal.ownScore,
         opponentScore: pendingGoal.opponentScore,
         scorerId: scorerId || null,
-        goalType: pendingGoal.goalType
+        goalType: pendingGoal.goalType,
+        matchId: pendingGoal.matchId
       }, pendingGoal.timestamp);
       
       // Clear pending goal

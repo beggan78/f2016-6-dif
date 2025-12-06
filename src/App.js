@@ -45,6 +45,7 @@ import { useInvitationDetection } from './hooks/useInvitationDetection';
 import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
+import { initializeEventPersistence } from './services/initializeServices';
 import { createPersistenceManager } from './utils/persistenceManager';
 import { STORAGE_KEYS, migrateStorageKeys } from './constants/storageKeys';
 
@@ -90,6 +91,10 @@ const clearDismissedModals = () => {
 function AppContent() {
   // Create the main gameState instance without circular dependencies
   const gameState = useGameState();
+  const matchIdRef = useRef(gameState.currentMatchId);
+  useEffect(() => {
+    matchIdRef.current = gameState.currentMatchId;
+  }, [gameState.currentMatchId]);
   
   // Set up navigation system using gameState.setView directly
   // Disable global browser back when GameScreen is active with pending or running match to avoid handler conflicts
@@ -115,7 +120,8 @@ function AppContent() {
     gameState.alertMinutes,
     gameState.playAlertSounds,
     gameState.currentPeriodNumber,
-    gameState.view === VIEWS.GAME
+    gameState.view === VIEWS.GAME,
+    gameState.currentMatchId
   );
   const {
     showSessionWarning,
@@ -185,8 +191,18 @@ function AppContent() {
     }
     syncCurrentView(gameState.view);
   }, [gameState.view, syncCurrentView]);
-  
-  
+
+  // Initialize event persistence for real-time database writes
+  useEffect(() => {
+    const unsubscribe = initializeEventPersistence(() => matchIdRef.current);
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, []);
+
+
   const [showSignOutConfirmModal, setShowSignOutConfirmModal] = useState(false);
   const [configSessionToken, setConfigSessionToken] = useState(0);
 
@@ -1021,6 +1037,7 @@ function AppContent() {
             goalScorers={gameState.goalScorers || {}}
             matchStartTime={gameState.matchStartTime}
             matchState={gameState.matchState}
+            currentMatchId={gameState.currentMatchId}
             handleActualMatchStart={handleActualMatchStartWithTimers}
             periodDurationMinutes={gameState.periodDurationMinutes}
             trackGoalScorer={gameState.trackGoalScorer}

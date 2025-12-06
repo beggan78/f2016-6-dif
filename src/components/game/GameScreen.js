@@ -40,21 +40,21 @@ const getOrdinalSuffix = (number) => {
   return `${number}th`;
 };
 
-export function GameScreen({ 
-  currentPeriodNumber, 
+export function GameScreen({
+  currentPeriodNumber,
   formation,
   setFormation,
-  allPlayers, 
+  allPlayers,
   setAllPlayers,
-  matchTimerSeconds, 
-  subTimerSeconds, 
+  matchTimerSeconds,
+  subTimerSeconds,
   isSubTimerPaused,
   pauseSubTimer,
   resumeSubTimer,
-  formatTime, 
-  resetSubTimer, 
+  formatTime,
+  resetSubTimer,
   handleUndoSubstitution: handleUndoSubstitutionTimer,
-  handleEndPeriod, 
+  handleEndPeriod,
   nextPlayerToSubOut,
   nextPlayerIdToSubOut,
   nextNextPlayerIdToSubOut,
@@ -79,6 +79,7 @@ export function GameScreen({
   goalScorers,
   matchStartTime,
   matchState,
+  currentMatchId,
   handleActualMatchStart,
   periodDurationMinutes,
   trackGoalScorer = true,
@@ -168,6 +169,7 @@ export function GameScreen({
       matchTimerSeconds,
       ownScore,
       opponentScore,
+      currentMatchId,
       substitutionCount: effectiveSubstitutionCount,
       substitutionOverride: uiState.substitutionOverride,
       shouldResetSubTimerOnNextSub: uiState.shouldResetSubTimerOnNextSub
@@ -192,6 +194,7 @@ export function GameScreen({
     matchTimerSeconds,
     ownScore,
     opponentScore,
+    currentMatchId,
     substitutionCount,
     uiState.substitutionCountOverride,
     uiState.substitutionOverride,
