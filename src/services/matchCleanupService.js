@@ -12,7 +12,7 @@ import { supabase } from '../lib/supabase';
 /**
  * Clean up orphaned match records based on age and state
  *
- * @returns {Promise<{success: boolean, cleanedRunning: number, cleanedFinished: number, error?: string}>}
+ * @returns {Promise<{success: boolean, cleanedRunning: number, error?: string}>}
  */
 export async function cleanupAbandonedMatches() {
   try {
@@ -39,7 +39,6 @@ export async function cleanupAbandonedMatches() {
       return {
         success: false,
         cleanedRunning: 0,
-        cleanedFinished: 0,
         error: `Failed to fetch running matches: ${runningFetchError.message}`
       };
     }
@@ -57,25 +56,21 @@ export async function cleanupAbandonedMatches() {
         return {
           success: false,
           cleanedRunning: 0,
-          cleanedFinished: 0,
           error: `Failed to cleanup running matches: ${runningUpdateError.message}`
         };
       }
     }
 
     const cleanedRunning = runningIds.length;
-    const cleanedFinished = 0;
-    const totalCleaned = cleanedRunning + cleanedFinished;
 
-    if (totalCleaned > 0) {
+    if (cleanedRunning > 0) {
       // Log in production only when cleanup actually occurred
-      console.log(`🧹 Cleaned up ${totalCleaned} orphaned matches (${cleanedRunning} running, ${cleanedFinished} finished)`);
+      console.log(`🧹 Cleaned up ${cleanedRunning} orphaned running matches`);
     }
 
     return {
       success: true,
-      cleanedRunning,
-      cleanedFinished
+      cleanedRunning
     };
 
   } catch (error) {
@@ -83,7 +78,6 @@ export async function cleanupAbandonedMatches() {
     return {
       success: false,
       cleanedRunning: 0,
-      cleanedFinished: 0,
       error: `Unexpected error: ${error.message}`
     };
   }

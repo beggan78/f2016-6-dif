@@ -57,7 +57,7 @@ describe('matchCleanupService', () => {
 
       const result = await cleanupAbandonedMatches();
 
-      expect(result).toEqual({ success: true, cleanedRunning: 2, cleanedFinished: 0 });
+      expect(result).toEqual({ success: true, cleanedRunning: 2 });
       expect(supabase.from).toHaveBeenCalledTimes(2);
       expect(runningUpdateChain.update).toHaveBeenCalledWith(expect.objectContaining({
         deleted_at: expect.any(String)
@@ -72,7 +72,7 @@ describe('matchCleanupService', () => {
 
       const result = await cleanupAbandonedMatches();
 
-      expect(result).toEqual({ success: true, cleanedRunning: 0, cleanedFinished: 0 });
+      expect(result).toEqual({ success: true, cleanedRunning: 0 });
     });
 
     it('returns an error when the running match cleanup fails', async () => {
@@ -85,7 +85,6 @@ describe('matchCleanupService', () => {
       expect(result).toEqual({
         success: false,
         cleanedRunning: 0,
-        cleanedFinished: 0,
         error: 'Failed to fetch running matches: Database connection failed'
       });
       expect(console.error).toHaveBeenCalledWith(
@@ -104,7 +103,6 @@ describe('matchCleanupService', () => {
       expect(result).toEqual({
         success: false,
         cleanedRunning: 0,
-        cleanedFinished: 0,
         error: 'Unexpected error: Unexpected network error'
       });
       expect(console.error).toHaveBeenCalledWith(
