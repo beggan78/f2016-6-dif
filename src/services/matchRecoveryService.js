@@ -85,6 +85,34 @@ export async function deleteAbandonedMatch(matchId) {
       };
     }
 
+    // Only allow abandonment cleanup for running matches; finished matches must be deleted manually from Match History
+    const { data: match, error: fetchError } = await supabase
+      .from('match')
+      .select('state')
+      .eq('id', matchId)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('❌ Failed to fetch match before abandonment cleanup:', fetchError);
+      return {
+        success: false,
+        error: `Database error: ${fetchError.message}`
+      };
+    }
+
+    if (!match) {
+      return {
+        success: false,
+        error: 'Match not found'
+      };
+    }
+
+    if (match.state !== 'running') {
+      return {
+        success: false,
+        error: 'Finished matches can only be deleted from Match History.'
+      };
+    }
 
     const nowIso = new Date().toISOString();
 
@@ -94,7 +122,7 @@ export async function deleteAbandonedMatch(matchId) {
         deleted_at: nowIso
       })
       .eq('id', matchId)
-      .eq('state', 'finished')
+      .eq('state', 'running')
       .is('deleted_at', null);
 
     if (error) {
@@ -104,7 +132,6 @@ export async function deleteAbandonedMatch(matchId) {
         error: `Database error: ${error.message}`
       };
     }
-
 
     return { success: true };
 
