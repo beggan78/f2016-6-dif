@@ -235,10 +235,7 @@ export function ConnectorsSection({ team }) {
                 }`}
               >
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center space-x-3 min-w-0">
-                    {renderProviderLogo(provider)}
-                    <h6 className="text-slate-100 font-medium truncate">{provider.name}</h6>
-                  </div>
+                  <div className="flex items-center space-x-3 min-w-0">{renderProviderLogo(provider)}</div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     {isConnected && (
                       <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">

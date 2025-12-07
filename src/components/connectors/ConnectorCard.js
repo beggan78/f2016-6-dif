@@ -89,11 +89,6 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           {renderLogo()}
-          <div className="min-w-0">
-            <h4 className="text-slate-100 font-medium text-lg leading-tight truncate">
-              {provider?.name || connector.provider}
-            </h4>
-          </div>
         </div>
 
         {/* Status Badge */}
