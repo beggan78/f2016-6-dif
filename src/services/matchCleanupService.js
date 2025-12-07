@@ -87,7 +87,7 @@ export async function cleanupAbandonedMatches() {
  * Get statistics about potentially orphaned matches without deleting them
  * Useful for monitoring and debugging
  *
- * @returns {Promise<{success: boolean, runningCount: number, finishedCount: number, error?: string}>}
+ * @returns {Promise<{success: boolean, runningCount: number, error?: string}>}
  */
 export async function getOrphanedMatchStats() {
   try {
@@ -107,15 +107,13 @@ export async function getOrphanedMatchStats() {
       return {
         success: false,
         runningCount: 0,
-        finishedCount: 0,
         error: `Failed to count running matches: ${runningError.message}`
       };
     }
 
     return {
       success: true,
-      runningCount: runningCount || 0,
-      finishedCount: 0
+      runningCount: runningCount || 0
     };
 
   } catch (error) {
@@ -123,7 +121,6 @@ export async function getOrphanedMatchStats() {
     return {
       success: false,
       runningCount: 0,
-      finishedCount: 0,
       error: `Unexpected error: ${error.message}`
     };
   }

@@ -121,7 +121,7 @@ describe('matchCleanupService', () => {
 
       const result = await getOrphanedMatchStats();
 
-      expect(result).toEqual({ success: true, runningCount: 3, finishedCount: 0 });
+      expect(result).toEqual({ success: true, runningCount: 3 });
     });
 
     it('returns an error when counting running matches fails', async () => {
@@ -134,7 +134,6 @@ describe('matchCleanupService', () => {
       expect(result).toEqual({
         success: false,
         runningCount: 0,
-        finishedCount: 0,
         error: 'Failed to count running matches: Timeout'
       });
     });
@@ -149,7 +148,6 @@ describe('matchCleanupService', () => {
       expect(result).toEqual({
         success: false,
         runningCount: 0,
-        finishedCount: 0,
         error: 'Unexpected error: Unexpected failure'
       });
       expect(console.error).toHaveBeenCalledWith(
