@@ -1,5 +1,5 @@
 // Connector provider definitions and metadata
-// Supports SportAdmin (active) and Svenska Lag (coming soon)
+// Supports SportAdmin (active) and Svenska Lag/MyClub (coming soon)
 
 export const CONNECTOR_PROVIDERS = {
   SPORTADMIN: {
@@ -13,6 +13,13 @@ export const CONNECTOR_PROVIDERS = {
     id: 'svenska_lag',
     name: 'Svenska Lag',
     description: 'Swedish team management platform',
+    features: ['Coming Soon'],
+    comingSoon: true
+  },
+  MYCLUB: {
+    id: 'myclub',
+    name: 'MyClub',
+    description: 'Team management platform',
     features: ['Coming Soon'],
     comingSoon: true
   }

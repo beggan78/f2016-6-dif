@@ -227,7 +227,6 @@ export function ConnectorsSection({ team }) {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h6 className="text-slate-100 font-medium">{provider.name}</h6>
-                    <p className="text-slate-400 text-sm">{provider.description}</p>
                   </div>
                   {isConnected && (
                     <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">

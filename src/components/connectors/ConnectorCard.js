@@ -79,7 +79,6 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h4 className="text-slate-100 font-medium text-lg">{provider?.name || connector.provider}</h4>
-          <p className="text-slate-400 text-sm">{provider?.description}</p>
         </div>
 
         {/* Status Badge */}
