@@ -30,6 +30,13 @@ const createUpdateChain = response => {
   return { update, eqId, eqState, isDeleted };
 };
 
+const createMaybeSingleChain = result => {
+  const maybeSingle = jest.fn().mockResolvedValue(result);
+  const eq = jest.fn(() => ({ maybeSingle }));
+  const select = jest.fn(() => ({ eq }));
+  return { select, eq, maybeSingle };
+};
+
 // Mock the persistence manager
 jest.mock('../../utils/persistenceManager', () => {
   const mockLoadState = jest.fn();
@@ -184,21 +191,24 @@ describe('matchRecoveryService', () => {
   });
 
   describe('deleteAbandonedMatch', () => {
-    it('successfully soft deletes a match', async () => {
-      const chain = createUpdateChain({ error: null });
+    it('successfully soft deletes a running match', async () => {
+      const fetchChain = createMaybeSingleChain({ data: { state: 'running' }, error: null });
+      const updateChain = createUpdateChain({ error: null });
 
-      supabase.from.mockReturnValue({ update: chain.update });
+      supabase.from
+        .mockReturnValueOnce({ select: fetchChain.select })
+        .mockReturnValueOnce({ update: updateChain.update });
 
       const result = await deleteAbandonedMatch('match-123');
 
       expect(result).toEqual({ success: true });
       expect(supabase.from).toHaveBeenCalledWith('match');
-      expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({
+      expect(updateChain.update).toHaveBeenCalledWith(expect.objectContaining({
         deleted_at: expect.any(String)
       }));
-      expect(chain.eqId).toHaveBeenCalledWith('id', 'match-123');
-      expect(chain.eqState).toHaveBeenCalledWith('state', 'finished');
-      expect(chain.isDeleted).toHaveBeenCalledWith('deleted_at', null);
+      expect(updateChain.eqId).toHaveBeenCalledWith('id', 'match-123');
+      expect(updateChain.eqState).toHaveBeenCalledWith('state', 'running');
+      expect(updateChain.isDeleted).toHaveBeenCalledWith('deleted_at', null);
     });
 
     it('returns error when matchId is missing', async () => {
@@ -221,10 +231,27 @@ describe('matchRecoveryService', () => {
       });
     });
 
-    it('handles database update errors', async () => {
-      const chain = createUpdateChain({ error: { message: 'Permission denied' } });
+    it('returns error when match is finished', async () => {
+      const fetchChain = createMaybeSingleChain({ data: { state: 'finished' }, error: null });
 
-      supabase.from.mockReturnValue({ update: chain.update });
+      supabase.from.mockReturnValueOnce({ select: fetchChain.select });
+
+      const result = await deleteAbandonedMatch('match-123');
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Finished matches can only be deleted from Match History.'
+      });
+      expect(supabase.from).toHaveBeenCalledWith('match');
+    });
+
+    it('handles database update errors', async () => {
+      const fetchChain = createMaybeSingleChain({ data: { state: 'running' }, error: null });
+      const updateChain = createUpdateChain({ error: { message: 'Permission denied' } });
+
+      supabase.from
+        .mockReturnValueOnce({ select: fetchChain.select })
+        .mockReturnValueOnce({ update: updateChain.update });
 
       const result = await deleteAbandonedMatch('match-123');
 

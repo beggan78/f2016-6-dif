@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase';
  *
  * Removes matches that have been abandoned or left unfinished:
  * - Running matches older than 5 hours (likely abandoned)
- * - Finished matches older than 14 days (user forgot to save)
  *
  * Respects existing RLS policies - only marks matches the user manages as deleted.
  */
@@ -20,7 +19,6 @@ export async function cleanupAbandonedMatches() {
     // Calculate cutoff dates
     const now = new Date();
     const runningCutoff = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
-    const finishedCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000); // 14 days ago
     const nowIso = now.toISOString();
 
     const softDeletePayload = {
@@ -65,46 +63,8 @@ export async function cleanupAbandonedMatches() {
       }
     }
 
-    // Clean up finished matches older than 14 days
-    const { data: finishedCandidates, error: finishedFetchError } = await supabase
-      .from('match')
-      .select('id')
-      .eq('state', 'finished')
-      .is('deleted_at', null)
-      .not('finished_at', 'is', null)
-      .lt('finished_at', finishedCutoff.toISOString());
-
-    if (finishedFetchError) {
-      console.error('❌ Failed to fetch finished matches for cleanup:', finishedFetchError);
-      return {
-        success: false,
-        cleanedRunning: runningIds.length,
-        cleanedFinished: 0,
-        error: `Failed to fetch finished matches: ${finishedFetchError.message}`
-      };
-    }
-
-    const finishedIds = finishedCandidates?.map(match => match.id) || [];
-
-    if (finishedIds.length > 0) {
-      const { error: finishedUpdateError } = await supabase
-        .from('match')
-        .update(softDeletePayload, { returning: 'minimal' })
-        .in('id', finishedIds);
-
-      if (finishedUpdateError) {
-        console.error('❌ Failed to cleanup finished matches:', finishedUpdateError);
-        return {
-          success: false,
-          cleanedRunning: runningIds.length,
-          cleanedFinished: 0,
-          error: `Failed to cleanup finished matches: ${finishedUpdateError.message}`
-        };
-      }
-    }
-
     const cleanedRunning = runningIds.length;
-    const cleanedFinished = finishedIds.length;
+    const cleanedFinished = 0;
     const totalCleaned = cleanedRunning + cleanedFinished;
 
     if (totalCleaned > 0) {
@@ -139,7 +99,6 @@ export async function getOrphanedMatchStats() {
   try {
     const now = new Date();
     const runningCutoff = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
-    const finishedCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000); // 14 days ago
 
     // Count running matches older than 5 hours
     const { count: runningCount, error: runningError } = await supabase
@@ -159,28 +118,10 @@ export async function getOrphanedMatchStats() {
       };
     }
 
-    // Count finished matches older than 14 days
-    const { count: finishedCount, error: finishedError } = await supabase
-      .from('match')
-      .select('id', { count: 'exact', head: true })
-      .eq('state', 'finished')
-      .is('deleted_at', null)
-      .not('finished_at', 'is', null)
-      .lt('finished_at', finishedCutoff.toISOString());
-
-    if (finishedError) {
-      return {
-        success: false,
-        runningCount: runningCount || 0,
-        finishedCount: 0,
-        error: `Failed to count finished matches: ${finishedError.message}`
-      };
-    }
-
     return {
       success: true,
       runningCount: runningCount || 0,
-      finishedCount: finishedCount || 0
+      finishedCount: 0
     };
 
   } catch (error) {

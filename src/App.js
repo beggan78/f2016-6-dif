@@ -500,6 +500,7 @@ function AppContent() {
             deleted_at: nowIso
           })
           .eq('id', gameState.currentMatchId)
+          .eq('state', 'running') // Only abandon running matches; finished matches must remain
           .is('deleted_at', null);
           
         if (error) {
