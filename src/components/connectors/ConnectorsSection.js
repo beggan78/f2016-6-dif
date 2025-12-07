@@ -226,7 +226,7 @@ export function ConnectorsSection({ team }) {
             return (
               <div
                 key={provider.id}
-                className={`bg-slate-700 rounded-lg border p-4 ${
+                className={`bg-slate-700 rounded-lg border p-3 ${
                   isComingSoon
                     ? 'border-slate-600 opacity-60'
                     : isConnected
@@ -234,7 +234,7 @@ export function ConnectorsSection({ team }) {
                     : 'border-slate-600'
                 }`}
               >
-                <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center space-x-3 min-w-0">{renderProviderLogo(provider)}</div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     {isConnected && (
@@ -247,20 +247,19 @@ export function ConnectorsSection({ team }) {
                         Coming Soon
                       </span>
                     )}
+                    {!isConnected && !isComingSoon && (
+                      <Button
+                        onClick={() => handleConnect(provider.id)}
+                        variant="primary"
+                        size="sm"
+                        className="shrink-0"
+                        Icon={Plus}
+                      >
+                        Connect
+                      </Button>
+                    )}
                   </div>
                 </div>
-
-                {!isConnected && !isComingSoon && (
-                  <Button
-                    onClick={() => handleConnect(provider.id)}
-                    variant="primary"
-                    size="sm"
-                    className="w-full"
-                    Icon={Plus}
-                  >
-                    Connect
-                  </Button>
-                )}
               </div>
             );
           })}
