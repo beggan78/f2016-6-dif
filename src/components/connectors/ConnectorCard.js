@@ -47,6 +47,16 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
     setIsSyncing(loading);
   }, [loading]);
 
+  const renderLogo = () => {
+    if (!provider?.logo) return null;
+
+    return (
+      <div className="w-32 h-10 flex-shrink-0 overflow-hidden rounded-md border border-slate-600">
+        <img src={provider.logo} alt={`${provider.name} logo`} className="w-full h-full object-cover block" />
+      </div>
+    );
+  };
+
   const handleManualSync = async () => {
     setIsSyncing(true);
     try {
@@ -77,8 +87,13 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
     <div className="bg-slate-700 rounded-lg border border-slate-600 p-4">
       {/* Provider Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h4 className="text-slate-100 font-medium text-lg">{provider?.name || connector.provider}</h4>
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          {renderLogo()}
+          <div className="min-w-0">
+            <h4 className="text-slate-100 font-medium text-lg leading-tight truncate">
+              {provider?.name || connector.provider}
+            </h4>
+          </div>
         </div>
 
         {/* Status Badge */}

@@ -1,3 +1,7 @@
+import sportAdminLogo from '../assets/images/sportAdmin-250-80.png';
+import svenskaLagLogo from '../assets/images/svenskalag-250-80.png';
+import myClubLogo from '../assets/images/myClub-250-80.png';
+
 // Connector provider definitions and metadata
 // Supports SportAdmin (active) and Svenska Lag/MyClub (coming soon)
 
@@ -7,6 +11,7 @@ export const CONNECTOR_PROVIDERS = {
     name: 'SportAdmin',
     description: 'Swedish team management platform',
     features: ['Practice Attendance', 'Upcoming Matches'],
+    logo: sportAdminLogo,
     comingSoon: false
   },
   SVENSKA_LAG: {
@@ -14,6 +19,7 @@ export const CONNECTOR_PROVIDERS = {
     name: 'Svenska Lag',
     description: 'Swedish team management platform',
     features: ['Coming Soon'],
+    logo: svenskaLagLogo,
     comingSoon: true
   },
   MYCLUB: {
@@ -21,6 +27,7 @@ export const CONNECTOR_PROVIDERS = {
     name: 'MyClub',
     description: 'Team management platform',
     features: ['Coming Soon'],
+    logo: myClubLogo,
     comingSoon: true
   }
 };

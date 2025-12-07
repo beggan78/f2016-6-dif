@@ -135,6 +135,16 @@ export function ConnectorsSection({ team }) {
     }
   };
 
+  const renderProviderLogo = (provider) => {
+    if (!provider.logo) return null;
+
+    return (
+      <div className="w-32 h-10 flex-shrink-0 overflow-hidden rounded-md border border-slate-600">
+        <img src={provider.logo} alt={`${provider.name} logo`} className="w-full h-full object-cover block" />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Section Header */}
@@ -224,20 +234,23 @@ export function ConnectorsSection({ team }) {
                     : 'border-slate-600'
                 }`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h6 className="text-slate-100 font-medium">{provider.name}</h6>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    {renderProviderLogo(provider)}
+                    <h6 className="text-slate-100 font-medium truncate">{provider.name}</h6>
                   </div>
-                  {isConnected && (
-                    <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">
-                      Connected
-                    </span>
-                  )}
-                  {isComingSoon && (
-                    <span className="px-2 py-1 bg-slate-600 text-slate-300 rounded text-xs font-medium">
-                      Coming Soon
-                    </span>
-                  )}
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    {isConnected && (
+                      <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">
+                        Connected
+                      </span>
+                    )}
+                    {isComingSoon && (
+                      <span className="px-2 py-1 bg-slate-600 text-slate-300 rounded text-xs font-medium">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {!isConnected && !isComingSoon && (
