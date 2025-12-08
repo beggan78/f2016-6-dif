@@ -20,6 +20,7 @@ import { GameFinishedScreen } from './components/stats/GameFinishedScreen';
 import { StatisticsScreen } from './components/statistics/StatisticsScreen';
 import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
+import { LiveMatchScreen } from './components/live/LiveMatchScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
@@ -45,6 +46,7 @@ import { useInvitationDetection } from './hooks/useInvitationDetection';
 import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
+import { useLiveMatchRouting } from './hooks/useLiveMatchRouting';
 import { initializeEventPersistence } from './services/initializeServices';
 import { createPersistenceManager } from './utils/persistenceManager';
 import { STORAGE_KEYS, migrateStorageKeys } from './constants/storageKeys';
@@ -153,7 +155,11 @@ function AppContent() {
   // Authentication modal
   const authModal = useAuthModal();
 
+  // Live match state for /live/{matchId} routing
+  const [liveMatchId, setLiveMatchId] = useState(null);
+
   useStatisticsRouting(gameState.view, navigateToView);
+  useLiveMatchRouting(gameState.view, navigateToView, setLiveMatchId);
 
 
 
@@ -1138,6 +1144,14 @@ function AppContent() {
             onShowSuccessMessage={showSuccessMessage}
           />
         );
+      case VIEWS.LIVE_MATCH:
+        return liveMatchId ? (
+          <LiveMatchScreen matchId={liveMatchId} />
+        ) : (
+          <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+            <p className="text-slate-400">Invalid match ID</p>
+          </div>
+        );
       case VIEWS.STATISTICS:
         return (
           <StatisticsScreen
@@ -1155,8 +1169,8 @@ function AppContent() {
       
       <header className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl relative text-center mb-4">
         <div className="absolute top-0 right-0">
-          <HamburgerMenu 
-            onRestartMatch={handleNewGameFromMenu} 
+          <HamburgerMenu
+            onRestartMatch={handleNewGameFromMenu}
             onAddPlayer={handleAddPlayer}
             onNavigateToTacticalBoard={handleNavigateToTacticalBoard}
             currentView={gameState.view}
@@ -1168,6 +1182,8 @@ function AppContent() {
             onOpenTeamAdminModal={handleOpenTeamAdminModal}
             onOpenPreferencesModal={handleOpenPreferencesModal}
             onSignOut={handleSignOut}
+            currentMatchId={gameState.currentMatchId}
+            matchState={gameState.matchState}
           />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-sky-400">Sport Wizard</h1>

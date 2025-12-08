@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Users, UserPen, Dice5, Settings } from 'lucide-react';
+import { Users, UserPen, Dice5, Settings, Share2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, userProfile } = useAuth();
   const { hasTeams, canManageTeam, hasPendingRequests, pendingRequestsCount, canViewStatistics } = useTeam();
@@ -78,6 +78,30 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     setIsOpen(false);
     if (onOpenPreferencesModal) {
       onOpenPreferencesModal();
+    }
+  };
+
+  const handleCopyLiveLink = () => {
+    setIsOpen(false);
+
+    if (!currentMatchId) {
+      console.warn('No current match ID available');
+      return;
+    }
+
+    const liveMatchUrl = `${window.location.origin}/live/${currentMatchId}`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(liveMatchUrl)
+        .then(() => {
+          alert('Live match link copied to clipboard!');
+        })
+        .catch(err => {
+          console.error('Failed to copy to clipboard:', err);
+          alert(`Live match URL: ${liveMatchUrl}`);
+        });
+    } else {
+      alert(`Live match URL: ${liveMatchUrl}`);
     }
   };
 
@@ -310,13 +334,27 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                 onClick={handleAddPlayer}
                 disabled={!isConfigScreen}
                 className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                  isConfigScreen 
-                    ? 'text-slate-100 hover:bg-slate-600 hover:text-sky-400' 
+                  isConfigScreen
+                    ? 'text-slate-100 hover:bg-slate-600 hover:text-sky-400'
                     : 'text-slate-400 cursor-not-allowed'
                 }`}
               >
                 Add Player
               </button>
+
+              {/* Copy Live Match Link - Show when match is running or pending */}
+              {isAuthenticated && currentMatchId && (matchState === 'running' || matchState === 'pending') && (
+                <button
+                  onClick={handleCopyLiveLink}
+                  className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Share2 className="w-4 h-4" />
+                    <span>Copy Live Match Link</span>
+                  </div>
+                </button>
+              )}
+
               <button
                 onClick={handleRestartMatch}
                 className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"

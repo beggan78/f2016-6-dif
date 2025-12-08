@@ -182,8 +182,21 @@ class EventPersistenceService {
     // Minimal payloads by event type
     if (dbEventType === 'match_started') {
       const startingLineup = Array.isArray(event.data?.startingLineup) ? event.data.startingLineup : null;
+      const ownTeamName = event.data?.ownTeamName || null;      // NEW: Store own team name for live view
+      const opponentName = event.data?.opponentName || null;    // NEW: Store opponent name for live view
+
+      // Build data object only if we have data to store
+      const dataObj = {
+        ...(startingLineup ? { startingLineup } : {}),
+        ...(ownTeamName ? { ownTeamName } : {}),
+        ...(opponentName ? { opponentName } : {})
+      };
+
+      // Return null if data object is empty, otherwise return the data
+      const hasData = Object.keys(dataObj).length > 0;
+
       return buildBaseEvent({
-        data: startingLineup ? { startingLineup } : null
+        data: hasData ? dataObj : null
       });
     }
 
