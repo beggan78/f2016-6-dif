@@ -33,6 +33,10 @@ export function useStatisticsRouting(view, navigateToView) {
     }
 
     const normalizedPath = (window.location.pathname || '').replace(/\/+$/, '') || '/';
+    if (normalizedPath.startsWith('/live/')) {
+      // Let live match routing handle /live/{matchId} URLs to avoid clobbering the path
+      return;
+    }
     const targetPath = view === VIEWS.STATISTICS ? '/stats' : '/';
 
     if (normalizedPath !== targetPath) {
