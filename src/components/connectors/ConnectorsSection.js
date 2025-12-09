@@ -6,6 +6,7 @@ import { SportAdminConnectModal } from './SportAdminConnectModal';
 import { DisconnectConfirmModal } from './DisconnectConfirmModal';
 import { useTeamConnector } from '../../hooks/useTeamConnector';
 import { useTeam } from '../../contexts/TeamContext';
+import { ProviderLogo } from './ProviderLogo';
 import {
   getAllProviders,
   CONNECTOR_PROVIDERS
@@ -135,16 +136,6 @@ export function ConnectorsSection({ team }) {
     }
   };
 
-  const renderProviderLogo = (provider) => {
-    if (!provider.logo) return null;
-
-    return (
-      <div className="w-32 h-10 flex-shrink-0 overflow-hidden rounded-md border border-slate-600">
-        <img src={provider.logo} alt={`${provider.name} logo`} className="w-full h-full object-cover block" />
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       {/* Section Header */}
@@ -235,7 +226,9 @@ export function ConnectorsSection({ team }) {
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center space-x-3 min-w-0">{renderProviderLogo(provider)}</div>
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <ProviderLogo provider={provider} />
+                  </div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     {isConnected && (
                       <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">

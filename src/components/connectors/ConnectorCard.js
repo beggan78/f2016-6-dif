@@ -18,6 +18,7 @@ import {
   CONNECTOR_STATUS,
   SYNC_JOB_STATUS
 } from '../../constants/connectorProviders';
+import { ProviderLogo } from './ProviderLogo';
 
 const STATUS_ICON_MAP = {
   [CONNECTOR_STATUS.CONNECTED]: CheckCircle,
@@ -46,16 +47,6 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
   useEffect(() => {
     setIsSyncing(loading);
   }, [loading]);
-
-  const renderLogo = () => {
-    if (!provider?.logo) return null;
-
-    return (
-      <div className="w-32 h-10 flex-shrink-0 overflow-hidden rounded-md border border-slate-600">
-        <img src={provider.logo} alt={`${provider.name} logo`} className="w-full h-full object-cover block" />
-      </div>
-    );
-  };
 
   const handleManualSync = async () => {
     setIsSyncing(true);
@@ -88,7 +79,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
       {/* Provider Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
-          {renderLogo()}
+          <ProviderLogo provider={provider} />
         </div>
 
         {/* Status Badge */}

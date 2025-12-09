@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { RefreshCw } from 'lucide-react';
 import { ConnectorCard } from '../ConnectorCard';
 import { CONNECTOR_STATUS, SYNC_JOB_STATUS } from '../../../constants/connectorProviders';
+import * as connectorProviders from '../../../constants/connectorProviders';
 
 const statusBadgeProps = [];
 
@@ -39,6 +40,10 @@ describe('ConnectorCard', () => {
     statusBadgeProps.length = 0;
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('disables manual sync while a retrying sync job is active', () => {
     render(
       <ConnectorCard
@@ -69,5 +74,27 @@ describe('ConnectorCard', () => {
     const retryBadgeProps = statusBadgeProps.find((props) => props.label === 'Retrying');
     expect(retryBadgeProps).toBeDefined();
     expect(retryBadgeProps.icon).toBe(RefreshCw);
+  });
+
+  it('shows fallback provider label when logo is missing', () => {
+    jest.spyOn(connectorProviders, 'getProviderById').mockReturnValue({
+      id: 'sportadmin',
+      name: 'SportAdmin',
+      logo: null
+    });
+
+    render(
+      <ConnectorCard
+        connector={baseConnector}
+        latestSyncJob={null}
+        onManualSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        onRetry={jest.fn()}
+        loading={false}
+      />
+    );
+
+    expect(screen.getByText('SportAdmin')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /sportadmin logo/i })).not.toBeInTheDocument();
   });
 });
