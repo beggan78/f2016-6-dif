@@ -76,9 +76,23 @@ export function LiveMatchScreen({ matchId }) {
 
     // Calculate match start time from match_started event
     const matchStartTime = matchStartEvent ? new Date(matchStartEvent.created_at).getTime() : null;
+    const matchEndTime = matchEndEvent ? new Date(matchEndEvent.created_at).getTime() : null;
 
     // Check if match is live (no match_ended event)
     const isLive = !matchEndEvent;
+
+    const totalPeriods = matchStartEvent?.data?.totalPeriods
+      || matchStartEvent?.data?.numPeriods
+      || matchStartEvent?.data?.matchMetadata?.plannedPeriods
+      || matchEndEvent?.data?.totalPeriods
+      || currentPeriod;
+
+    const periodDurationMinutes = matchStartEvent?.data?.periodDurationMinutes
+      || matchEndEvent?.data?.matchMetadata?.plannedDurationMinutes
+      || 15;
+
+    const matchDurationSeconds = matchEndEvent?.data?.matchDurationSeconds
+      || (matchStartTime && matchEndTime ? Math.max(0, Math.round((matchEndTime - matchStartTime) / 1000)) : 0);
 
     return {
       ownTeamName,
@@ -87,7 +101,11 @@ export function LiveMatchScreen({ matchId }) {
       opponentScore,
       currentPeriod,
       matchStartTime,
-      isLive
+      matchEndTime,
+      isLive,
+      totalPeriods,
+      periodDurationMinutes,
+      matchDurationSeconds
     };
   }, [events]);
 
@@ -667,14 +685,14 @@ export function LiveMatchScreen({ matchId }) {
               ownScore={matchMetadata.ownScore}
               opponentScore={matchMetadata.opponentScore}
               matchStartTime={matchMetadata.matchStartTime}
-              totalPeriods={matchMetadata.currentPeriod}
-              periodDurationMinutes={15} // Default, could be extracted from config if available
-              matchDuration={0} // Not calculated for live view
+              totalPeriods={matchMetadata.totalPeriods || matchMetadata.currentPeriod}
+              periodDurationMinutes={matchMetadata.periodDurationMinutes || 15}
+              matchDuration={matchMetadata.matchDurationSeconds || 0}
             />
           </ReportSection>
 
           {/* Event Timeline */}
-          <ReportSection icon={Clock} title="Match Events">
+          <ReportSection icon={Clock} title="Game Events">
             <GameEventTimeline
               events={transformedEvents}
               ownTeamName={matchMetadata.ownTeamName}

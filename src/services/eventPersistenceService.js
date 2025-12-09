@@ -192,12 +192,21 @@ class EventPersistenceService {
         || event.data?.opponentTeam
         || event.data?.opponentName
         || null;
+      const periodDurationMinutes = event.data?.periodDurationMinutes
+        || event.data?.matchMetadata?.periodDurationMinutes
+        || null;
+      const totalPeriods = event.data?.numPeriods
+        || event.data?.totalPeriods
+        || event.data?.matchMetadata?.plannedPeriods
+        || null;
 
       // Build data object only if we have data to store
       const dataObj = {
         ...(startingLineup ? { startingLineup } : {}),
         ...(ownTeamName ? { ownTeamName } : {}),
-        ...(opponentTeamName ? { opponentTeamName, opponentName: opponentTeamName } : {})
+        ...(opponentTeamName ? { opponentTeamName, opponentName: opponentTeamName } : {}),
+        ...(typeof periodDurationMinutes === 'number' ? { periodDurationMinutes } : {}),
+        ...(typeof totalPeriods === 'number' ? { totalPeriods } : {})
       };
 
       // Return null if data object is empty, otherwise return the data
@@ -205,6 +214,24 @@ class EventPersistenceService {
 
       return buildBaseEvent({
         data: hasData ? dataObj : null
+      });
+    }
+
+    if (dbEventType === 'match_ended' && event.type === 'match_end') {
+      let matchDurationSeconds = typeof event.data?.matchDurationMs === 'number'
+        ? Math.round(event.data.matchDurationMs / 1000)
+        : null;
+      if (matchDurationSeconds === null && event.matchTime) {
+        matchDurationSeconds = this.parseMatchTimeToSeconds(event.matchTime);
+      }
+      const totalPeriods = event.data?.finalPeriodNumber || event.data?.matchMetadata?.totalPeriods || null;
+
+      return buildBaseEvent({
+        data: {
+          ...(matchDurationSeconds !== null ? { matchDurationSeconds } : {}),
+          ...(typeof totalPeriods === 'number' ? { totalPeriods } : {}),
+          ...(event.data?.matchMetadata ? { matchMetadata: event.data.matchMetadata } : null)
+        }
       });
     }
 
@@ -502,6 +529,15 @@ class EventPersistenceService {
    */
   async writeEventToDatabase(dbEvent, retryCount = 0) {
     try {
+      // Fair play award should be unique per match - replace existing entry
+      if (dbEvent.event_type === 'fair_play_award') {
+        await supabase
+          .from('match_log_event')
+          .delete()
+          .eq('match_id', dbEvent.match_id)
+          .eq('event_type', 'fair_play_award');
+      }
+
       const { data, error } = await supabase
         .from('match_log_event')
         .insert(dbEvent);
