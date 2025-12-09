@@ -235,10 +235,9 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOAL_CONCEDED:
         return Trophy;
       case EVENT_TYPES.SUBSTITUTION:
-        return RotateCcw;
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
-        return Shield;
+        return ArrowUpDown;
       case EVENT_TYPES.TIMER_PAUSED:
       case EVENT_TYPES.PERIOD_PAUSED:
         return Pause;
@@ -768,19 +767,20 @@ export function GameEventTimeline({
             const periodEvents = groupedEventsByPeriod.groups[periodNumber];
             const nextPeriod = parseInt(periodNumber) + 1;
             const intermission = groupedEventsByPeriod.intermissions[nextPeriod];
+            const periodHeader = (periodNumber > 1 || (periodNumber === 1 && !groupedEventsByPeriod.matchStartEvent)) ? (
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="h-px bg-slate-600 flex-1"></div>
+                <h3 className="text-sm font-medium text-slate-300 px-3">
+                  Period {periodNumber}
+                </h3>
+                <div className="h-px bg-slate-600 flex-1"></div>
+              </div>
+            ) : null;
             
             return (
               <div key={`period-${periodNumber}`} className="space-y-4">
-                {/* Period Header - show for periods > 1, or period 1 when there's no match start event */}
-                {(periodNumber > 1 || (periodNumber === 1 && !groupedEventsByPeriod.matchStartEvent)) && (
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="h-px bg-slate-600 flex-1"></div>
-                    <h3 className="text-sm font-medium text-slate-300 px-3">
-                      Period {periodNumber}
-                    </h3>
-                    <div className="h-px bg-slate-600 flex-1"></div>
-                  </div>
-                )}
+                {/* Period Header placement depends on sort order: show near chronological start */}
+                {sortOrder === 'asc' && periodHeader}
                 
                 {/* Period Events */}
                 <div className="relative">
@@ -792,6 +792,8 @@ export function GameEventTimeline({
                     {periodEvents.map((event) => renderEvent(event))}
                   </div>
                 </div>
+
+                {sortOrder === 'desc' && periodHeader}
                 
                 {/* Intermission after this period (if exists) */}
                 {intermission && renderIntermission(intermission)}
