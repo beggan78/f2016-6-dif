@@ -123,10 +123,22 @@ export function GameEventTimeline({
         if (type === EVENT_TYPES.GOALIE_ASSIGNMENT) {
           return eventData.goalieId === selectedPlayerId;
         }
+
+        if (type === EVENT_TYPES.GOALIE_SWITCH) {
+          if (eventData.oldGoalieId === selectedPlayerId || eventData.newGoalieId === selectedPlayerId) {
+            return true;
+          }
+          const goalieChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+          return goalieChanges.some(change => change.playerId === selectedPlayerId);
+        }
         
         // Show position change events if the selected player is involved
         if (type === EVENT_TYPES.POSITION_CHANGE) {
-          return eventData.player1Id === selectedPlayerId || eventData.player2Id === selectedPlayerId;
+          if (eventData.player1Id === selectedPlayerId || eventData.player2Id === selectedPlayerId) {
+            return true;
+          }
+          const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+          return positionChanges.some(change => change.playerId === selectedPlayerId);
         }
 
         // Show player inactivation/activation events if the selected player is involved
@@ -307,6 +319,16 @@ export function GameEventTimeline({
     }
   };
 
+  const formatPositionLabel = (positionKey) => {
+    if (!positionKey || typeof positionKey !== 'string') return 'Unknown position';
+    return positionKey
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   // Format event description
   const formatEventDescription = (event) => {
     const { type, data } = event;
@@ -318,9 +340,11 @@ export function GameEventTimeline({
       case EVENT_TYPES.MATCH_END:
         return `Match ended`;
       case EVENT_TYPES.PERIOD_START:
-        return `Period ${eventData.periodNumber || 'Unknown'} started`;
+        const periodStartNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || 'Unknown';
+        return `Period ${periodStartNumber} started`;
       case EVENT_TYPES.PERIOD_END:
-        return `Period ${eventData.periodNumber || 'Unknown'} ended`;
+        const periodEndNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || 'Unknown';
+        return `Period ${periodEndNumber} ended`;
       case EVENT_TYPES.GOAL_SCORED:
         // Extract score data for new format: "3-2 - Own Team Scored - PlayerName"
         const ownScore = eventData.ownScore;
@@ -371,15 +395,61 @@ export function GameEventTimeline({
         
         return `Substitution: ${offPlayersDisplay} → ${onPlayersDisplay}`;
       case EVENT_TYPES.GOALIE_SWITCH:
-        const oldGoalie = eventData.oldGoalieId ? (getPlayerName ? (getPlayerName(eventData.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const newGoalie = eventData.newGoalieId ? (getPlayerName ? (getPlayerName(eventData.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
+        const goaliePositionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+        const oldGoalieName = eventData.oldGoalieName ||
+          (eventData.oldGoalieId && getPlayerName ? (getPlayerName(eventData.oldGoalieId) || null) : null);
+        const newGoalieName = eventData.newGoalieName ||
+          (eventData.newGoalieId && getPlayerName ? (getPlayerName(eventData.newGoalieId) || null) : null);
+        const newGoaliePreviousPosition = eventData.newGoaliePreviousPosition ||
+          goaliePositionChanges.find(change => (change.newPosition || '').toLowerCase() === 'goalie')?.oldPosition;
+        const oldGoalieNewPosition = eventData.oldGoalieNewPosition ||
+          goaliePositionChanges.find(change => (change.oldPosition || '').toLowerCase() === 'goalie')?.newPosition;
+
+        const newGoalieSegment = newGoalieName
+          ? `${newGoalieName}${newGoaliePreviousPosition ? ` (from ${formatPositionLabel(newGoaliePreviousPosition)})` : ''}`
+          : 'New goalie assigned';
+        const oldGoalieSegment = oldGoalieName
+          ? `${oldGoalieName}${oldGoalieNewPosition ? ` moves to ${formatPositionLabel(oldGoalieNewPosition)}` : ''}`
+          : null;
+
+        if (newGoalieSegment && oldGoalieSegment) {
+          return `New Goalie: ${newGoalieSegment} (${oldGoalieSegment})`;
+        }
+
+        if (goaliePositionChanges.length > 0) {
+          const summary = goaliePositionChanges.map(change => {
+            const name =
+              change.playerName ||
+              (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+              'Unknown';
+            const oldPos = formatPositionLabel(change.oldPosition);
+            const newPos = formatPositionLabel(change.newPosition);
+            return `${name} (${oldPos} → ${newPos})`;
+          }).join(' | ');
+          return `Goalie change: ${summary}`;
+        }
+
+        const oldGoalie = oldGoalieName || 'Unknown';
+        const newGoalie = newGoalieName || 'Unknown';
         return `Goalie change: ${oldGoalie} → ${newGoalie}`;
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         const goalieId = eventData.goalieId || event.playerId;
         const goalieNameFromId = goalieId ? (getPlayerName ? (getPlayerName(goalieId) || null) : null) : null;
         const assignedGoalieName = eventData.goalieName || eventData.display_name || goalieNameFromId || 'Unknown';
-        return eventData.description || `${assignedGoalieName} is goalie`;
+        return eventData.description || `Goalie: ${assignedGoalieName}`;
       case EVENT_TYPES.POSITION_CHANGE:
+        const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+        if (positionChanges.length > 0) {
+          const summary = positionChanges.map(change => {
+            const name =
+              change.playerName ||
+              (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+              'Unknown';
+            const newPos = formatPositionLabel(change.newPosition);
+            return `${name} → ${newPos}`;
+          }).join(' | ');
+          return `Position switch: ${summary}`;
+        }
         if (eventData.player1Id && eventData.player2Id) {
           const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
           const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
@@ -397,7 +467,7 @@ export function GameEventTimeline({
         const newPosition = eventData.new_position || eventData.newPosition;
 
         if (newPosition || oldPosition) {
-          const movement = oldPosition ? `${oldPosition} → ${newPosition || 'Unknown'}` : `→ ${newPosition || 'Unknown'}`;
+          const movement = oldPosition ? `${formatPositionLabel(oldPosition)} → ${formatPositionLabel(newPosition || 'Unknown')}` : `→ ${formatPositionLabel(newPosition || 'Unknown')}`;
           return `Position change: ${positionChangeName} ${movement}`;
         }
 
@@ -576,16 +646,6 @@ export function GameEventTimeline({
   };
 
   // Render event details
-  const formatPositionLabel = (positionKey) => {
-    if (!positionKey || typeof positionKey !== 'string') return 'Unknown position';
-    return positionKey
-      .replace(/_/g, ' ')
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  };
-
   const renderEventDetails = (event) => {
     const { data } = event;
     const eventData = data || {};
@@ -608,6 +668,20 @@ export function GameEventTimeline({
 
     if (event.relatedEventId) {
       details.push(`Related to: ${event.relatedEventId}`);
+    }
+
+    const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+    if (positionChanges.length > 0) {
+      details.push('Position changes:');
+      positionChanges.forEach(change => {
+        const name =
+          change.playerName ||
+          (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+          'Unknown';
+        const oldPos = formatPositionLabel(change.oldPosition);
+        const newPos = formatPositionLabel(change.newPosition);
+        details.push(`- ${name}: ${oldPos} → ${newPos}`);
+      });
     }
 
     const startingLineup = Array.isArray(eventData.startingLineup) ? eventData.startingLineup : [];

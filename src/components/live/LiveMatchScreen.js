@@ -15,7 +15,9 @@ const EVENT_TYPE_MAPPING = {
   substitution_out: 'substitution',
   goalie_enters: 'goalie_assignment',
   goalie_exits: 'goalie_switch',
+  goalie_switch: 'goalie_switch',
   position_switch: 'position_change',
+  position_switch_group: 'position_change',
   player_inactivated: 'player_inactivated',
   player_activated: 'player_activated',
   player_reactivated: 'player_activated'
@@ -223,6 +225,7 @@ export function LiveMatchScreen({ matchId }) {
     if (!events || events.length === 0) return [];
 
     const substitutionGroups = new Map();
+    const positionSwitchGroups = new Map();
     const mergedEvents = [];
 
     const getNameFromEvent = (event) => {
@@ -240,6 +243,9 @@ export function LiveMatchScreen({ matchId }) {
       const isSubIn = event.event_type === 'substitution_in';
       const isSubOut = event.event_type === 'substitution_out';
       const correlationId = event.correlation_id;
+      const isPositionSwitch = event.event_type === 'position_switch';
+      const isGoalieEnter = event.event_type === 'goalie_enters';
+      const isGoalieExit = event.event_type === 'goalie_exits';
 
       if ((isSubIn || isSubOut) && correlationId) {
         let group = substitutionGroups.get(correlationId);
@@ -296,6 +302,42 @@ export function LiveMatchScreen({ matchId }) {
         return;
       }
 
+      if (correlationId && (isPositionSwitch || isGoalieEnter || isGoalieExit)) {
+        let group = positionSwitchGroups.get(correlationId);
+        if (!group) {
+          group = {
+            correlationId,
+            created_at: event.created_at,
+            occurred_at_seconds: event.occurred_at_seconds,
+            ordinal: event.ordinal,
+            period: event.period,
+            events: []
+          };
+          positionSwitchGroups.set(correlationId, group);
+        }
+
+        group.events.push(event);
+
+        if (event.created_at && (!group.created_at || Date.parse(event.created_at) < Date.parse(group.created_at))) {
+          group.created_at = event.created_at;
+        }
+
+        if (typeof event.occurred_at_seconds === 'number' &&
+          (group.occurred_at_seconds === undefined || event.occurred_at_seconds < group.occurred_at_seconds)) {
+          group.occurred_at_seconds = event.occurred_at_seconds;
+        }
+
+        if (typeof event.ordinal === 'number') {
+          group.ordinal = typeof group.ordinal === 'number' ? Math.min(group.ordinal, event.ordinal) : event.ordinal;
+        }
+
+        if (!group.period && event.period) {
+          group.period = event.period;
+        }
+
+        return;
+      }
+
       mergedEvents.push(event);
     });
 
@@ -316,6 +358,92 @@ export function LiveMatchScreen({ matchId }) {
           ...(group.playersOnNames.length ? { playersOnNames: group.playersOnNames } : {})
         }
       });
+    });
+
+    const buildPositionSwitchEvent = (group) => {
+      const changes = [];
+      let goalieEnterEvent = null;
+      let goalieExitEvent = null;
+
+      group.events.forEach(ev => {
+        if (ev.event_type === 'position_switch') {
+          changes.push({
+            playerId: ev.player_id,
+            playerName: getNameFromEvent(ev),
+            oldPosition: ev.data?.old_position || ev.data?.oldPosition || null,
+            newPosition: ev.data?.new_position || ev.data?.newPosition || null
+          });
+        } else if (ev.event_type === 'goalie_enters') {
+          goalieEnterEvent = ev;
+        } else if (ev.event_type === 'goalie_exits') {
+          goalieExitEvent = ev;
+        }
+      });
+
+      const hasGoalieChange = Boolean(goalieExitEvent) ||
+        changes.some(change => (change.oldPosition || '').toLowerCase() === 'goalie' || (change.newPosition || '').toLowerCase() === 'goalie');
+      const hasAnyGoalieEvent = Boolean(goalieEnterEvent || goalieExitEvent) ||
+        changes.some(change => (change.oldPosition || '').toLowerCase() === 'goalie' || (change.newPosition || '').toLowerCase() === 'goalie');
+
+      const newGoalieId = goalieEnterEvent?.player_id ||
+        changes.find(change => (change.newPosition || '').toLowerCase() === 'goalie')?.playerId ||
+        null;
+      const goalieFromOldPosition = changes.find(change => (change.oldPosition || '').toLowerCase() === 'goalie');
+      const goalieFromNewPosition = changes.find(change => (change.newPosition || '').toLowerCase() === 'goalie');
+      const oldGoalieId = goalieFromOldPosition?.playerId ||
+        goalieExitEvent?.player_id ||
+        null;
+
+      const newGoalieName = goalieEnterEvent
+        ? getNameFromEvent(goalieEnterEvent)
+        : (goalieFromNewPosition ? goalieFromNewPosition.playerName : null);
+      const oldGoalieName = goalieExitEvent
+        ? getNameFromEvent(goalieExitEvent)
+        : (goalieFromOldPosition ? goalieFromOldPosition.playerName : null);
+
+      const oldGoalieNewPosition = goalieFromOldPosition?.newPosition || null;
+      const newGoaliePreviousPosition = goalieFromNewPosition?.oldPosition || null;
+
+      // If it's only a goalie enters event without any goalie position change info, treat as a simple goalie assignment
+      if (!hasGoalieChange && !goalieExitEvent && !goalieFromOldPosition && hasAnyGoalieEvent && !changes.length) {
+        return {
+          id: group.correlationId ? `pos-${group.correlationId}` : undefined,
+          event_type: 'goalie_enters',
+          correlation_id: group.correlationId,
+          created_at: group.created_at || new Date().toISOString(),
+          occurred_at_seconds: typeof group.occurred_at_seconds === 'number' ? group.occurred_at_seconds : 0,
+          ordinal: group.ordinal,
+          period: group.period,
+          data: {
+            ...(goalieEnterEvent?.data || {}),
+            goalieId: newGoalieId,
+            goalieName: newGoalieName || (newGoalieId ? playerNameMap.get(newGoalieId) : null)
+          }
+        };
+      }
+
+      return {
+        id: group.correlationId ? `pos-${group.correlationId}` : undefined,
+        event_type: hasGoalieChange ? 'goalie_switch' : 'position_switch_group',
+        correlation_id: group.correlationId,
+        created_at: group.created_at || new Date().toISOString(),
+        occurred_at_seconds: typeof group.occurred_at_seconds === 'number' ? group.occurred_at_seconds : 0,
+        ordinal: group.ordinal,
+        period: group.period,
+        data: {
+          positionChanges: changes,
+          ...(oldGoalieId ? { oldGoalieId } : {}),
+          ...(newGoalieId ? { newGoalieId } : {}),
+          ...(oldGoalieName ? { oldGoalieName } : {}),
+          ...(newGoalieName ? { newGoalieName } : {}),
+          ...(oldGoalieNewPosition ? { oldGoalieNewPosition } : {}),
+          ...(newGoaliePreviousPosition ? { newGoaliePreviousPosition } : {})
+        }
+      };
+    };
+
+    positionSwitchGroups.forEach(group => {
+      mergedEvents.push(buildPositionSwitchEvent(group));
     });
 
     return mergedEvents.sort((a, b) => getSortValue(a) - getSortValue(b));
@@ -393,6 +521,39 @@ export function LiveMatchScreen({ matchId }) {
           const name = playerNameMap.get(event.player_id);
           if (name) {
             normalizedData.playersOnNames = [name];
+          }
+        }
+      }
+
+      if (Array.isArray(normalizedData.positionChanges)) {
+        normalizedData.positionChanges = normalizedData.positionChanges.map(change => {
+          const playerName = change.playerName || (change.playerId ? playerNameMap.get(change.playerId) : null);
+          return {
+            ...change,
+            playerName
+          };
+        });
+      }
+
+      if (event.event_type === 'goalie_switch') {
+        if (!normalizedData.oldGoalieName && normalizedData.oldGoalieId) {
+          const name = playerNameMap.get(normalizedData.oldGoalieId);
+          if (name) normalizedData.oldGoalieName = name;
+        }
+        if (!normalizedData.newGoalieName && normalizedData.newGoalieId) {
+          const name = playerNameMap.get(normalizedData.newGoalieId);
+          if (name) normalizedData.newGoalieName = name;
+        }
+        if (!normalizedData.oldGoalieNewPosition && Array.isArray(normalizedData.positionChanges)) {
+          const oldGoalieChange = normalizedData.positionChanges.find(change => (change.oldPosition || '').toLowerCase() === 'goalie');
+          if (oldGoalieChange?.newPosition) {
+            normalizedData.oldGoalieNewPosition = oldGoalieChange.newPosition;
+          }
+        }
+        if (!normalizedData.newGoaliePreviousPosition && Array.isArray(normalizedData.positionChanges)) {
+          const newGoalieChange = normalizedData.positionChanges.find(change => (change.newPosition || '').toLowerCase() === 'goalie');
+          if (newGoalieChange?.oldPosition) {
+            normalizedData.newGoaliePreviousPosition = newGoalieChange.oldPosition;
           }
         }
       }
