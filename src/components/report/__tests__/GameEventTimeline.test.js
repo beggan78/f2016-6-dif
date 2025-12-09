@@ -1573,4 +1573,215 @@ describe('GameEventTimeline', () => {
       expect(screen.getByText('Timer paused')).toBeInTheDocument();
     });
   });
+
+  describe('Display fallbacks', () => {
+    it('shows goalie assignment using display_name fallback', () => {
+      const events = [
+        {
+          id: 'goalie-assignment-1',
+          type: EVENT_TYPES.GOALIE_ASSIGNMENT,
+          timestamp: 1000000100000,
+          matchTime: '01:40',
+          sequence: 1,
+          data: { display_name: 'Sam Keeper' },
+          undone: false
+        }
+      ];
+
+      render(<GameEventTimeline events={events} />);
+
+      expect(screen.getByText('Sam Keeper is goalie')).toBeInTheDocument();
+    });
+
+    it('shows position change with single player using display_name and positions', () => {
+      const events = [
+        {
+          id: 'position-change-single',
+          type: EVENT_TYPES.POSITION_CHANGE,
+          timestamp: 1000000100000,
+          matchTime: '01:40',
+          sequence: 1,
+          data: { display_name: 'Casey', old_position: 'left_attacker', new_position: 'right_attacker' },
+          undone: false
+        }
+      ];
+
+      render(<GameEventTimeline events={events} />);
+
+      expect(screen.getByText('Position change: Casey left_attacker → right_attacker')).toBeInTheDocument();
+    });
+  });
+
+  describe('Player inactivation and activation events', () => {
+    it('displays player inactivation event with player name', () => {
+      const events = [
+        {
+          id: 'player-inactivated-1',
+          type: EVENT_TYPES.PLAYER_INACTIVATED,
+          timestamp: 1000000100000,
+          matchTime: '01:40',
+          sequence: 1,
+          data: { display_name: 'Isabelle' },
+          playerId: 'player1',
+          undone: false
+        }
+      ];
+
+      render(<GameEventTimeline events={events} />);
+
+      expect(screen.getByText('Isabelle inactivated')).toBeInTheDocument();
+    });
+
+    it('displays player activation event with player name', () => {
+      const events = [
+        {
+          id: 'player-activated-1',
+          type: EVENT_TYPES.PLAYER_ACTIVATED,
+          timestamp: 1000000100000,
+          matchTime: '01:40',
+          sequence: 1,
+          data: { display_name: 'Isabelle' },
+          playerId: 'player1',
+          undone: false
+        }
+      ];
+
+      render(<GameEventTimeline events={events} />);
+
+      expect(screen.getByText('Isabelle re-activated')).toBeInTheDocument();
+    });
+
+    it('filters player inactivation/activation events for selected player', () => {
+      mockGetPlayerName.mockImplementation((playerId) => {
+        const playerNames = {
+          'player1': 'Alice',
+          'player2': 'Bob'
+        };
+        return playerNames[playerId] || null;
+      });
+
+      const events = [
+        {
+          id: 'match-start',
+          type: EVENT_TYPES.MATCH_START,
+          timestamp: 1000000000000,
+          matchTime: '00:00',
+          sequence: 1,
+          data: {},
+          undone: false
+        },
+        {
+          id: 'player-inactivated-1',
+          type: EVENT_TYPES.PLAYER_INACTIVATED,
+          timestamp: 1000000060000,
+          matchTime: '01:00',
+          sequence: 2,
+          data: { display_name: 'Alice' },
+          playerId: 'player1',
+          undone: false
+        },
+        {
+          id: 'player-activated-1',
+          type: EVENT_TYPES.PLAYER_ACTIVATED,
+          timestamp: 1000000120000,
+          matchTime: '02:00',
+          sequence: 3,
+          data: { display_name: 'Alice' },
+          playerId: 'player1',
+          undone: false
+        },
+        {
+          id: 'player-inactivated-2',
+          type: EVENT_TYPES.PLAYER_INACTIVATED,
+          timestamp: 1000000180000,
+          matchTime: '03:00',
+          sequence: 4,
+          data: { display_name: 'Bob' },
+          playerId: 'player2',
+          undone: false
+        }
+      ];
+
+      render(
+        <GameEventTimeline
+          events={events}
+          getPlayerName={mockGetPlayerName}
+          selectedPlayerId="player1"
+          availablePlayers={[{ id: 'player1', displayName: 'Alice', firstName: 'Alice' }]}
+        />
+      );
+
+      // Should show match start + events involving player1 only
+      expect(screen.getByText('3 events')).toBeInTheDocument();
+      expect(screen.getByText('Alice inactivated')).toBeInTheDocument();
+      expect(screen.getByText('Alice re-activated')).toBeInTheDocument();
+      expect(screen.queryByText('Bob inactivated')).not.toBeInTheDocument();
+    });
+
+    it('uses playerName fallback when display_name is not available', () => {
+      const events = [
+        {
+          id: 'player-inactivated-fallback',
+          type: EVENT_TYPES.PLAYER_INACTIVATED,
+          timestamp: 1000000100000,
+          matchTime: '01:40',
+          sequence: 1,
+          data: { playerName: 'Charlie' },
+          playerId: 'player3',
+          undone: false
+        }
+      ];
+
+      render(<GameEventTimeline events={events} />);
+
+      expect(screen.getByText('Charlie inactivated')).toBeInTheDocument();
+    });
+
+    it('uses getPlayerName fallback when data names are not available', () => {
+      mockGetPlayerName.mockImplementation((playerId) => {
+        if (playerId === 'player1') return 'David';
+        return null;
+      });
+
+      const events = [
+        {
+          id: 'player-activated-fallback',
+          type: EVENT_TYPES.PLAYER_ACTIVATED,
+          timestamp: 1000000100000,
+          matchTime: '01:40',
+          sequence: 1,
+          data: {},
+          playerId: 'player1',
+          undone: false
+        }
+      ];
+
+      render(
+        <GameEventTimeline
+          events={events}
+          getPlayerName={mockGetPlayerName}
+        />
+      );
+
+      expect(screen.getByText('David re-activated')).toBeInTheDocument();
+    });
+
+    it('shows Unknown when no player name is available', () => {
+      const events = [
+        {
+          id: 'player-inactivated-unknown',
+          type: EVENT_TYPES.PLAYER_INACTIVATED,
+          timestamp: 1000000100000,
+          matchTime: '01:40',
+          sequence: 1,
+          data: {},
+          undone: false
+        }
+      ];
+
+      render(<GameEventTimeline events={events} />);
+
+      expect(screen.getByText('Unknown inactivated')).toBeInTheDocument();
+    });
+  });
 });

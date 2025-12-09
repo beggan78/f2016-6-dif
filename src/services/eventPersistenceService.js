@@ -72,7 +72,8 @@ class EventPersistenceService {
       'goalie_assignment': 'goalie_enters',
       'position_change': 'position_switch',
       'player_inactivated': 'player_inactivated',
-      'player_activated': 'player_activated',
+      'player_activated': 'player_reactivated',
+      'player_reactivated': 'player_reactivated',
       'fair_play_award': 'fair_play_award',
 
       // Special cases
@@ -139,6 +140,7 @@ class EventPersistenceService {
 
       // Goalie exiting
       if (event.data.previousGoalieId || event.data.oldGoalieId) {
+        const exitName = this.getDisplayNameForPlayer(event, event.data.previousGoalieId || event.data.oldGoalieId);
         events.push({
           ...buildBaseEvent({
             occurred_at_seconds: occurredAtSeconds,
@@ -146,12 +148,14 @@ class EventPersistenceService {
           }),
           event_type: 'goalie_exits',
           player_id: event.data.previousGoalieId || event.data.oldGoalieId,
-          correlation_id: correlationId
+          correlation_id: correlationId,
+          data: exitName ? { display_name: exitName } : null
         });
       }
 
       // Goalie entering
       if (event.data.goalieId || event.data.newGoalieId) {
+        const enterName = this.getDisplayNameForPlayer(event, event.data.goalieId || event.data.newGoalieId);
         events.push({
           ...buildBaseEvent({
             occurred_at_seconds: occurredAtSeconds,
@@ -159,7 +163,8 @@ class EventPersistenceService {
           }),
           event_type: 'goalie_enters',
           player_id: event.data.goalieId || event.data.newGoalieId,
-          correlation_id: correlationId
+          correlation_id: correlationId,
+          data: enterName ? { display_name: enterName } : null
         });
       }
 
@@ -182,14 +187,17 @@ class EventPersistenceService {
     // Minimal payloads by event type
     if (dbEventType === 'match_started') {
       const startingLineup = Array.isArray(event.data?.startingLineup) ? event.data.startingLineup : null;
-      const ownTeamName = event.data?.ownTeamName || null;      // NEW: Store own team name for live view
-      const opponentName = event.data?.opponentName || null;    // NEW: Store opponent name for live view
+      const ownTeamName = event.data?.ownTeamName || event.data?.teamName || null;
+      const opponentTeamName = event.data?.opponentTeamName
+        || event.data?.opponentTeam
+        || event.data?.opponentName
+        || null;
 
       // Build data object only if we have data to store
       const dataObj = {
         ...(startingLineup ? { startingLineup } : {}),
         ...(ownTeamName ? { ownTeamName } : {}),
-        ...(opponentName ? { opponentName } : {})
+        ...(opponentTeamName ? { opponentTeamName, opponentName: opponentTeamName } : {})
       };
 
       // Return null if data object is empty, otherwise return the data
@@ -205,7 +213,7 @@ class EventPersistenceService {
       const correlationId = getCorrelationId();
       const baseEvent = buildBaseEvent({
         player_id: goalieId || undefined,
-        data: null,
+        data: goalieId ? this.buildDisplayNameData(event, goalieId) : null,
         correlation_id: correlationId
       });
 
@@ -221,7 +229,8 @@ class EventPersistenceService {
             correlation_id: correlationId,
             data: {
               old_position: 'goalie',
-              new_position: replacementTargetPosition
+              new_position: replacementTargetPosition,
+              ...(this.buildDisplayNameData(event, previousGoalieId) || {})
             }
           })
         };
@@ -239,21 +248,25 @@ class EventPersistenceService {
       const substitutionEvents = [];
 
       playersOff.forEach(playerId => {
+        const displayData = this.buildDisplayNameData(event, playerId);
         substitutionEvents.push({
           ...buildBaseEvent({
             event_type: 'substitution_out',
             player_id: playerId,
-            correlation_id: correlationId
+            correlation_id: correlationId,
+            data: displayData
           })
         });
       });
 
       playersOn.forEach(playerId => {
+        const displayData = this.buildDisplayNameData(event, playerId);
         substitutionEvents.push({
           ...buildBaseEvent({
             event_type: 'substitution_in',
             player_id: playerId,
-            correlation_id: correlationId
+            correlation_id: correlationId,
+            data: displayData
           })
         });
       });
@@ -278,7 +291,8 @@ class EventPersistenceService {
               correlation_id: correlationId,
               data: {
                 old_position: sourcePosition,
-                new_position: targetPosition
+                new_position: targetPosition,
+                ...(this.buildDisplayNameData(event, sourcePlayerId) || {})
               }
             })
           },
@@ -288,7 +302,8 @@ class EventPersistenceService {
               correlation_id: correlationId,
               data: {
                 old_position: targetPosition,
-                new_position: sourcePosition
+                new_position: sourcePosition,
+                ...(this.buildDisplayNameData(event, targetPlayerId) || {})
               }
             })
           }
@@ -301,6 +316,11 @@ class EventPersistenceService {
         ownScore: event.data?.ownScore,
         opponentScore: event.data?.opponentScore
       };
+
+      const scorerName = this.getDisplayNameForPlayer(event, event.data?.playerId || event.data?.scorerId || event.player_id);
+      if (scorerName) {
+        payload.display_name = scorerName;
+      }
 
       const base = buildBaseEvent({
         data: payload,
@@ -320,19 +340,22 @@ class EventPersistenceService {
       return buildBaseEvent({ data: null });
     }
 
-    if (dbEventType === 'player_inactivated' || dbEventType === 'player_activated') {
+    if (dbEventType === 'player_inactivated' || dbEventType === 'player_reactivated') {
+      const playerId = event.data?.playerId || event.player_id;
+      const displayData = this.buildDisplayNameData(event, playerId);
       return buildBaseEvent({
         event_type: dbEventType,
-        player_id: event.data?.playerId || undefined,
-        data: null
+        player_id: playerId || undefined,
+        data: displayData
       });
     }
 
     if (dbEventType === 'fair_play_award') {
+      const displayData = this.buildDisplayNameData(event, event.data?.playerId);
       return buildBaseEvent({
         event_type: dbEventType,
         player_id: event.data?.playerId || undefined,
-        data: null
+        data: displayData
       });
     }
 
@@ -340,6 +363,135 @@ class EventPersistenceService {
       data: event.data ? { ...event.data } : null,
       player_id: event.data?.playerId || event.data?.scorerId || undefined
     });
+  }
+
+  /**
+   * Build minimal data payload containing a display name when available
+   * @param {Object} event - Original logged event
+   * @param {string} playerId - Player ID associated with the database event
+   * @returns {Object|null} Data payload with display_name or null
+   */
+  buildDisplayNameData(event, playerId) {
+    const displayName = this.getDisplayNameForPlayer(event, playerId);
+    return displayName ? { display_name: displayName } : null;
+  }
+
+  /**
+   * Extract a player's display name from event data when available
+   * @param {Object} event - Original logged event
+   * @param {string} playerId - Player ID to match
+   * @returns {string|null} Display name string or null
+   */
+  getDisplayNameForPlayer(event, playerId) {
+    if (!event || !playerId) {
+      return null;
+    }
+
+    const data = event.data || {};
+    const normalizeName = (value) => {
+      if (!value || typeof value !== 'string') {
+        return null;
+      }
+      const trimmed = value.trim();
+      if (!trimmed || trimmed.toLowerCase() === 'unknown') {
+        return null;
+      }
+      return trimmed;
+    };
+
+    const directDisplayName = normalizeName(data.display_name);
+    if (directDisplayName) {
+      return directDisplayName;
+    }
+
+    const playerDisplayName = normalizeName(data.playerDisplayName);
+    if (playerDisplayName) {
+      return playerDisplayName;
+    }
+
+    if (typeof data.playerName === 'string' && (!data.playerId || data.playerId === playerId)) {
+      const normalized = normalizeName(data.playerName);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if (typeof data.scorerName === 'string' && (!data.scorerId || data.scorerId === playerId)) {
+      const normalized = normalizeName(data.scorerName);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if (typeof data.goalieName === 'string' && (
+      (data.goalieId && data.goalieId === playerId) ||
+      (data.newGoalieId && data.newGoalieId === playerId)
+    )) {
+      const normalized = normalizeName(data.goalieName);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if (typeof data.previousGoalieName === 'string' && (
+      (data.previousGoalieId && data.previousGoalieId === playerId) ||
+      (data.oldGoalieId && data.oldGoalieId === playerId)
+    )) {
+      const normalized = normalizeName(data.previousGoalieName);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if (data.playerNameMap && typeof data.playerNameMap === 'object' && data.playerNameMap[playerId]) {
+      const normalized = normalizeName(data.playerNameMap[playerId]);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if (Array.isArray(data.playersOff) && Array.isArray(data.playersOffNames)) {
+      const index = data.playersOff.findIndex(id => id === playerId);
+      if (index !== -1 && data.playersOffNames[index]) {
+        const normalized = normalizeName(data.playersOffNames[index]);
+        if (normalized) {
+          return normalized;
+        }
+      }
+    }
+
+    if (Array.isArray(data.playersOn) && Array.isArray(data.playersOnNames)) {
+      const index = data.playersOn.findIndex(id => id === playerId);
+      if (index !== -1 && data.playersOnNames[index]) {
+        const normalized = normalizeName(data.playersOnNames[index]);
+        if (normalized) {
+          return normalized;
+        }
+      }
+    }
+
+    if (typeof data.sourcePlayerName === 'string' && data.sourcePlayerId === playerId) {
+      const normalized = normalizeName(data.sourcePlayerName);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if (typeof data.targetPlayerName === 'string' && data.targetPlayerId === playerId) {
+      const normalized = normalizeName(data.targetPlayerName);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if (typeof data.swapPlayerName === 'string' && data.swapPlayerId === playerId) {
+      const normalized = normalizeName(data.swapPlayerName);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return null;
   }
 
   /**

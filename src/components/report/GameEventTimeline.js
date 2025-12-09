@@ -128,7 +128,12 @@ export function GameEventTimeline({
         if (type === EVENT_TYPES.POSITION_CHANGE) {
           return eventData.player1Id === selectedPlayerId || eventData.player2Id === selectedPlayerId;
         }
-        
+
+        // Show player inactivation/activation events if the selected player is involved
+        if (type === EVENT_TYPES.PLAYER_INACTIVATED || type === EVENT_TYPES.PLAYER_ACTIVATED) {
+          return event.playerId === selectedPlayerId;
+        }
+
         // Hide other events for specific player filter
         return false;
       });
@@ -370,13 +375,47 @@ export function GameEventTimeline({
         const newGoalie = eventData.newGoalieId ? (getPlayerName ? (getPlayerName(eventData.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
         return `Goalie change: ${oldGoalie} → ${newGoalie}`;
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
-        const assignedGoalie = eventData.goalieId ? (getPlayerName ? (getPlayerName(eventData.goalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const assignedGoalieName = eventData.goalieName || assignedGoalie;
+        const goalieId = eventData.goalieId || event.playerId;
+        const goalieNameFromId = goalieId ? (getPlayerName ? (getPlayerName(goalieId) || null) : null) : null;
+        const assignedGoalieName = eventData.goalieName || eventData.display_name || goalieNameFromId || 'Unknown';
         return eventData.description || `${assignedGoalieName} is goalie`;
       case EVENT_TYPES.POSITION_CHANGE:
-        const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        return `Position switch: ${player1} ↔ ${player2}`;
+        if (eventData.player1Id && eventData.player2Id) {
+          const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
+          const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
+          return `Position switch: ${player1} ↔ ${player2}`;
+        }
+
+        const positionChangeName =
+          eventData.display_name ||
+          (eventData.player1Id && getPlayerName ? (getPlayerName(eventData.player1Id) || null) : null) ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          eventData.playerName ||
+          'Unknown';
+
+        const oldPosition = eventData.old_position || eventData.oldPosition;
+        const newPosition = eventData.new_position || eventData.newPosition;
+
+        if (newPosition || oldPosition) {
+          const movement = oldPosition ? `${oldPosition} → ${newPosition || 'Unknown'}` : `→ ${newPosition || 'Unknown'}`;
+          return `Position change: ${positionChangeName} ${movement}`;
+        }
+
+        return `Position change: ${positionChangeName}`;
+      case EVENT_TYPES.PLAYER_INACTIVATED:
+        const inactivatedPlayerName =
+          eventData.display_name ||
+          eventData.playerName ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          'Unknown';
+        return `${inactivatedPlayerName} inactivated`;
+      case EVENT_TYPES.PLAYER_ACTIVATED:
+        const activatedPlayerName =
+          eventData.display_name ||
+          eventData.playerName ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          'Unknown';
+        return `${activatedPlayerName} re-activated`;
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;
       case EVENT_TYPES.TIMER_RESUMED:
@@ -537,6 +576,16 @@ export function GameEventTimeline({
   };
 
   // Render event details
+  const formatPositionLabel = (positionKey) => {
+    if (!positionKey || typeof positionKey !== 'string') return 'Unknown position';
+    return positionKey
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   const renderEventDetails = (event) => {
     const { data } = event;
     const eventData = data || {};
@@ -561,8 +610,29 @@ export function GameEventTimeline({
       details.push(`Related to: ${event.relatedEventId}`);
     }
 
+    const startingLineup = Array.isArray(eventData.startingLineup) ? eventData.startingLineup : [];
+    if (startingLineup.length > 0) {
+      details.push('Starting positions:');
+      startingLineup.forEach((entry) => {
+        const positionLabel = formatPositionLabel(entry.position);
+        const playerName = entry.name || 'Unknown';
+        details.push(`- ${positionLabel}: ${playerName}`);
+      });
+    }
+
     return details;
   };
+
+  const renderBoundaryEvent = (event) => (
+    <div className="space-y-4">
+      <div className="relative">
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
+        <div className="space-y-4">
+          {renderEvent(event)}
+        </div>
+      </div>
+    </div>
+  );
 
   if (!events || events.length === 0) {
     return (
@@ -613,17 +683,9 @@ export function GameEventTimeline({
 
       {/* Timeline - Chronological with match-level events */}
       <div className="space-y-6">
-        {/* Match Start Event */}
-        {groupedEventsByPeriod.matchStartEvent && (
-          <div className="space-y-4">
-            <div className="relative">
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
-              <div className="space-y-4">
-                {renderEvent(groupedEventsByPeriod.matchStartEvent)}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Boundary Events - respect sort order */}
+        {sortOrder === 'desc' && groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+        {sortOrder === 'asc' && groupedEventsByPeriod.matchStartEvent && renderBoundaryEvent(groupedEventsByPeriod.matchStartEvent)}
         
         {/* Period Events */}
         {Object.keys(groupedEventsByPeriod.groups)
@@ -663,17 +725,9 @@ export function GameEventTimeline({
             );
           })}
           
-        {/* Match End Event */}
-        {groupedEventsByPeriod.matchEndEvent && (
-          <div className="space-y-4">
-            <div className="relative">
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
-              <div className="space-y-4">
-                {renderEvent(groupedEventsByPeriod.matchEndEvent)}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Boundary Events - respect sort order */}
+        {sortOrder === 'asc' && groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+        {sortOrder === 'desc' && groupedEventsByPeriod.matchStartEvent && renderBoundaryEvent(groupedEventsByPeriod.matchStartEvent)}
       </div>
     </div>
   );
