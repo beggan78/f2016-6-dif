@@ -6,6 +6,7 @@ import { SportAdminConnectModal } from './SportAdminConnectModal';
 import { DisconnectConfirmModal } from './DisconnectConfirmModal';
 import { useTeamConnector } from '../../hooks/useTeamConnector';
 import { useTeam } from '../../contexts/TeamContext';
+import { ProviderLogo } from './ProviderLogo';
 import {
   getAllProviders,
   CONNECTOR_PROVIDERS
@@ -216,7 +217,7 @@ export function ConnectorsSection({ team }) {
             return (
               <div
                 key={provider.id}
-                className={`bg-slate-700 rounded-lg border p-4 ${
+                className={`bg-slate-700 rounded-lg border p-3 ${
                   isComingSoon
                     ? 'border-slate-600 opacity-60'
                     : isConnected
@@ -224,34 +225,34 @@ export function ConnectorsSection({ team }) {
                     : 'border-slate-600'
                 }`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h6 className="text-slate-100 font-medium">{provider.name}</h6>
-                    <p className="text-slate-400 text-sm">{provider.description}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <ProviderLogo provider={provider} />
                   </div>
-                  {isConnected && (
-                    <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">
-                      Connected
-                    </span>
-                  )}
-                  {isComingSoon && (
-                    <span className="px-2 py-1 bg-slate-600 text-slate-300 rounded text-xs font-medium">
-                      Coming Soon
-                    </span>
-                  )}
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    {isConnected && (
+                      <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">
+                        Connected
+                      </span>
+                    )}
+                    {isComingSoon && (
+                      <span className="px-2 py-1 bg-slate-600 text-slate-300 rounded text-xs font-medium">
+                        Coming Soon
+                      </span>
+                    )}
+                    {!isConnected && !isComingSoon && (
+                      <Button
+                        onClick={() => handleConnect(provider.id)}
+                        variant="primary"
+                        size="sm"
+                        className="shrink-0"
+                        Icon={Plus}
+                      >
+                        Connect
+                      </Button>
+                    )}
+                  </div>
                 </div>
-
-                {!isConnected && !isComingSoon && (
-                  <Button
-                    onClick={() => handleConnect(provider.id)}
-                    variant="primary"
-                    size="sm"
-                    className="w-full"
-                    Icon={Plus}
-                  >
-                    Connect
-                  </Button>
-                )}
               </div>
             );
           })}

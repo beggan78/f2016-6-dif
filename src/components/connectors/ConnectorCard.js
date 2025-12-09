@@ -18,6 +18,7 @@ import {
   CONNECTOR_STATUS,
   SYNC_JOB_STATUS
 } from '../../constants/connectorProviders';
+import { ProviderLogo } from './ProviderLogo';
 
 const STATUS_ICON_MAP = {
   [CONNECTOR_STATUS.CONNECTED]: CheckCircle,
@@ -77,9 +78,8 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
     <div className="bg-slate-700 rounded-lg border border-slate-600 p-4">
       {/* Provider Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h4 className="text-slate-100 font-medium text-lg">{provider?.name || connector.provider}</h4>
-          <p className="text-slate-400 text-sm">{provider?.description}</p>
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <ProviderLogo provider={provider} />
         </div>
 
         {/* Status Badge */}
