@@ -465,7 +465,7 @@ export function LiveMatchScreen({ matchId }) {
     });
 
     return mergedEvents.sort((a, b) => getSortValue(a) - getSortValue(b));
-  }, [events]);
+  }, [events, playerNameMap]);
 
   const goalScorers = useMemo(() => {
     const map = {};

@@ -1,12 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  Play, 
-  Square, 
-  Trophy, 
-  RotateCcw, 
-  Shield, 
-  Pause, 
-  Clock, 
+import {
+  Play,
+  Square,
+  Trophy,
+  Pause,
+  Clock,
   ArrowUpDown,
   AlertCircle,
   CheckCircle,

@@ -3,9 +3,11 @@ import { Users, UserPen, Dice5, Settings, Share2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
+import { NotificationModal } from './UI';
 
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const { isAuthenticated, user, userProfile } = useAuth();
   const { hasTeams, canManageTeam, hasPendingRequests, pendingRequestsCount, canViewStatistics } = useTeam();
 
@@ -94,14 +96,26 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     if (navigator.clipboard) {
       navigator.clipboard.writeText(liveMatchUrl)
         .then(() => {
-          alert('Live match link copied to clipboard!');
+          setNotification({
+            isOpen: true,
+            title: 'Link Copied',
+            message: 'Live match link copied to clipboard!'
+          });
         })
         .catch(err => {
           console.error('Failed to copy to clipboard:', err);
-          alert(`Live match URL: ${liveMatchUrl}`);
+          setNotification({
+            isOpen: true,
+            title: 'Live Match URL',
+            message: liveMatchUrl
+          });
         });
     } else {
-      alert(`Live match URL: ${liveMatchUrl}`);
+      setNotification({
+        isOpen: true,
+        title: 'Live Match URL',
+        message: liveMatchUrl
+      });
     }
   };
 
@@ -378,6 +392,13 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
           </div>
         </>
       )}
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ isOpen: false, title: '', message: '' })}
+        title={notification.title}
+        message={notification.message}
+      />
     </div>
   );
 }
