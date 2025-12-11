@@ -265,6 +265,20 @@ describe('MatchSummaryHeader', () => {
         formatTime.mockReset();
       });
     });
+
+    it('uses matchDurationDisplay when provided', () => {
+      const { formatTime } = require('../../../utils/formatUtils');
+      render(
+        <MatchSummaryHeader 
+          {...defaultProps} 
+          matchDuration={900}
+          matchDurationDisplay={"4'"}
+        />
+      );
+
+      expect(screen.getByText("4'")).toBeInTheDocument();
+      expect(formatTime).not.toHaveBeenCalled();
+    });
   });
 
   describe('Score Display and Winner Determination', () => {

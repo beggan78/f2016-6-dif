@@ -13,6 +13,7 @@ import { TEAM_CONFIG } from '../../constants/teamConstants';
  * @param {number} props.opponentScore - Opponent team score
  * @param {number} props.matchStartTime - Match start timestamp or null
  * @param {number} props.matchDuration - Match duration in seconds or null
+ * @param {string|null} props.matchDurationDisplay - Optional override text for match duration
  * @param {number} props.totalPeriods - Total number of periods played
  * @param {number} props.periodDurationMinutes - Duration of each period in minutes
  */
@@ -23,6 +24,7 @@ export function MatchSummaryHeader({
   opponentScore = 0,
   matchStartTime = null,
   matchDuration = null,
+  matchDurationDisplay = null,
   totalPeriods = 0,
   periodDurationMinutes = 12
 }) {
@@ -50,6 +52,7 @@ export function MatchSummaryHeader({
 
   // Format match duration
   const formatMatchDuration = () => {
+    if (matchDurationDisplay) return matchDurationDisplay;
     if (!matchDuration || matchDuration <= 0) return "Duration unknown";
     
     const formatted = formatTime(matchDuration);

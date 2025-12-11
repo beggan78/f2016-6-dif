@@ -32,6 +32,119 @@ const formatMatchTime = seconds => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+const parseEventTime = (event) => {
+  if (!event?.created_at) return null;
+  const parsed = Date.parse(event.created_at);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getOrdinal = (event) => typeof event?.ordinal === 'number' ? event.ordinal : null;
+
+const compareEvents = (a, b) => {
+  const ordA = getOrdinal(a);
+  const ordB = getOrdinal(b);
+
+  if (ordA !== null && ordB !== null && ordA !== ordB) {
+    return ordA - ordB;
+  }
+  if (ordA !== null && ordB === null) return -1;
+  if (ordA === null && ordB !== null) return 1;
+
+  const timeA = parseEventTime(a);
+  const timeB = parseEventTime(b);
+  if (timeA !== null && timeB !== null && timeA !== timeB) {
+    return timeA - timeB;
+  }
+  if (timeA !== null && timeB === null) return -1;
+  if (timeA === null && timeB !== null) return 1;
+
+  const occA = typeof a?.occurred_at_seconds === 'number' ? a.occurred_at_seconds : null;
+  const occB = typeof b?.occurred_at_seconds === 'number' ? b.occurred_at_seconds : null;
+  if (occA !== null && occB !== null && occA !== occB) {
+    return occA - occB;
+  }
+  if (occA !== null && occB === null) return -1;
+  if (occA === null && occB !== null) return 1;
+
+  const idxA = typeof a?.__sourceIndex === 'number' ? a.__sourceIndex : Infinity;
+  const idxB = typeof b?.__sourceIndex === 'number' ? b.__sourceIndex : Infinity;
+  return idxA - idxB;
+};
+
+export const sortEventsByOrdinal = (events = []) => [...events].sort(compareEvents);
+
+export const formatLiveMatchMinuteDisplay = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds < 0) return "1'";
+  const minute = Math.floor(seconds / 60) + 1;
+  return `${Math.max(1, minute)}'`;
+};
+
+/**
+ * Calculate effective match duration (playing time only).
+ * Sums active period time using start/end events and excludes intermissions.
+ *
+ * @param {Array} events - Raw match events from Supabase
+ * @param {boolean} isLive - Whether the match is still in progress
+ * @param {number} [currentTimeMs] - Override for "now" (primarily for tests)
+ * @returns {number} Total active play time in seconds
+ */
+export function calculateEffectiveMatchDurationSeconds(events = [], isLive = false, currentTimeMs = Date.now()) {
+  if (!Array.isArray(events) || events.length === 0) return 0;
+
+  const sortedEvents = [...events].sort((a, b) => {
+    const timeA = parseEventTime(a);
+    const timeB = parseEventTime(b);
+    if (timeA !== null && timeB !== null && timeA !== timeB) {
+      return timeA - timeB;
+    }
+
+    const ordinalA = typeof a?.ordinal === 'number' ? a.ordinal : 0;
+    const ordinalB = typeof b?.ordinal === 'number' ? b.ordinal : 0;
+    return ordinalA - ordinalB;
+  });
+
+  let totalMs = 0;
+  let currentPeriodStart = null;
+  let lastEventTime = null;
+
+  const closePeriod = (endTime) => {
+    if (currentPeriodStart === null || !Number.isFinite(endTime)) return;
+    if (endTime > currentPeriodStart) {
+      totalMs += endTime - currentPeriodStart;
+    }
+    currentPeriodStart = null;
+  };
+
+  sortedEvents.forEach(event => {
+    const eventTime = parseEventTime(event);
+    if (Number.isFinite(eventTime)) {
+      lastEventTime = eventTime;
+    }
+
+    if (!Number.isFinite(eventTime)) {
+      return;
+    }
+
+    if ((event.event_type === 'match_started' || event.event_type === 'period_started') && currentPeriodStart === null) {
+      currentPeriodStart = eventTime;
+      return;
+    }
+
+    if (event.event_type === 'period_ended' || event.event_type === 'match_ended') {
+      closePeriod(eventTime);
+    }
+  });
+
+  if (currentPeriodStart !== null) {
+    const liveEndTime = isLive ? currentTimeMs : lastEventTime;
+    if (Number.isFinite(liveEndTime) && liveEndTime > currentPeriodStart) {
+      totalMs += liveEndTime - currentPeriodStart;
+    }
+  }
+
+  return Math.max(0, Math.floor(totalMs / 1000));
+}
+
 /**
  * LiveMatchScreen - Real-time match event display for public viewing
  *
@@ -109,6 +222,15 @@ export function LiveMatchScreen({ matchId }) {
       matchDurationSeconds
     };
   }, [events]);
+
+  const effectiveMatchDurationSeconds = useMemo(() => {
+    return calculateEffectiveMatchDurationSeconds(events, matchMetadata?.isLive);
+  }, [events, matchMetadata?.isLive]);
+
+  const liveMatchMinuteDisplay = useMemo(() => {
+    if (!matchMetadata?.isLive) return null;
+    return formatLiveMatchMinuteDisplay(effectiveMatchDurationSeconds);
+  }, [effectiveMatchDurationSeconds, matchMetadata?.isLive]);
 
   // Calculate current minute of period
   const currentPeriodMinute = useMemo(() => {
@@ -252,13 +374,7 @@ export function LiveMatchScreen({ matchId }) {
       return data.display_name || data.playerName || data.scorerName || data.goalieName || data.previousGoalieName || null;
     };
 
-    const getSortValue = (event) => {
-      if (typeof event?.ordinal === 'number') return event.ordinal;
-      const createdTime = event?.created_at ? Date.parse(event.created_at) : null;
-      return Number.isFinite(createdTime) ? createdTime : 0;
-    };
-
-    events.forEach(event => {
+    events.forEach((event, index) => {
       const isSubIn = event.event_type === 'substitution_in';
       const isSubOut = event.event_type === 'substitution_out';
       const correlationId = event.correlation_id;
@@ -279,10 +395,13 @@ export function LiveMatchScreen({ matchId }) {
             playersOn: [],
             playersOff: [],
             playersOnNames: [],
-            playersOffNames: []
+            playersOffNames: [],
+            sourceIndices: []
           };
           substitutionGroups.set(correlationId, group);
         }
+
+        group.sourceIndices.push(index);
 
         const playerId = event.player_id;
         const playerName = getNameFromEvent(event);
@@ -330,11 +449,13 @@ export function LiveMatchScreen({ matchId }) {
             occurred_at_seconds: event.occurred_at_seconds,
             ordinal: event.ordinal,
             period: event.period,
-            events: []
+            events: [],
+            sourceIndices: []
           };
           positionSwitchGroups.set(correlationId, group);
         }
 
+        group.sourceIndices.push(index);
         group.events.push(event);
 
         if (event.created_at && (!group.created_at || Date.parse(event.created_at) < Date.parse(group.created_at))) {
@@ -357,10 +478,13 @@ export function LiveMatchScreen({ matchId }) {
         return;
       }
 
-      mergedEvents.push(event);
+      mergedEvents.push({ ...event, __sourceIndex: index });
     });
 
     substitutionGroups.forEach(group => {
+      const sourceIndex = group.sourceIndices.length
+        ? Math.min(...group.sourceIndices)
+        : undefined;
       mergedEvents.push({
         id: group.correlationId ? `sub-${group.correlationId}` : undefined,
         event_type: 'substitution',
@@ -375,7 +499,8 @@ export function LiveMatchScreen({ matchId }) {
           playersOn: group.playersOn,
           ...(group.playersOffNames.length ? { playersOffNames: group.playersOffNames } : {}),
           ...(group.playersOnNames.length ? { playersOnNames: group.playersOnNames } : {})
-        }
+        },
+        __sourceIndex: sourceIndex
       });
     });
 
@@ -462,10 +587,16 @@ export function LiveMatchScreen({ matchId }) {
     };
 
     positionSwitchGroups.forEach(group => {
-      mergedEvents.push(buildPositionSwitchEvent(group));
+      const sourceIndex = group.sourceIndices.length
+        ? Math.min(...group.sourceIndices)
+        : undefined;
+      mergedEvents.push({
+        ...buildPositionSwitchEvent(group),
+        __sourceIndex: sourceIndex
+      });
     });
 
-    return mergedEvents.sort((a, b) => getSortValue(a) - getSortValue(b));
+    return sortEventsByOrdinal(mergedEvents);
   }, [events, playerNameMap]);
 
   const goalScorers = useMemo(() => {
@@ -585,8 +716,10 @@ export function LiveMatchScreen({ matchId }) {
       return {
         id: event.id,
         type: mapDatabaseEventToUIType(event.event_type),
-        timestamp: new Date(event.created_at).getTime(),
-        matchTime: formatMatchTime(event.occurred_at_seconds),
+        ordinal: typeof event.ordinal === 'number' ? event.ordinal : null,
+        timestamp: parseEventTime(event),
+        occurredAtSeconds: typeof event.occurred_at_seconds === 'number' ? event.occurred_at_seconds : null,
+        matchTime: Number.isFinite(event.occurred_at_seconds) ? formatMatchTime(event.occurred_at_seconds) : '00:00',
         periodNumber: event.period,
         data: {
           ...normalizedData,
@@ -595,7 +728,8 @@ export function LiveMatchScreen({ matchId }) {
           ownScore: normalizedData.ownScore,
           opponentScore: normalizedData.opponentScore
         },
-        playerId: event.player_id
+        playerId: event.player_id,
+        __sourceIndex: event.__sourceIndex
       };
     });
   }, [consolidatedEvents, playerNameMap]);
@@ -688,7 +822,8 @@ export function LiveMatchScreen({ matchId }) {
               matchStartTime={matchMetadata.matchStartTime}
               totalPeriods={matchMetadata.totalPeriods || matchMetadata.currentPeriod}
               periodDurationMinutes={matchMetadata.periodDurationMinutes || 15}
-              matchDuration={matchMetadata.matchDurationSeconds || 0}
+              matchDuration={matchMetadata.isLive ? matchMetadata.matchDurationSeconds || 0 : effectiveMatchDurationSeconds}
+              matchDurationDisplay={liveMatchMinuteDisplay}
             />
           </ReportSection>
 

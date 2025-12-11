@@ -19,6 +19,42 @@ import { formatPlayerName } from '../../utils/formatUtils';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 
+const getOrdinal = (event) => typeof event?.ordinal === 'number' ? event.ordinal : null;
+const getTimestamp = (event) => typeof event?.timestamp === 'number' ? event.timestamp : null;
+const getOccurredSeconds = (event) => typeof event?.occurredAtSeconds === 'number' ? event.occurredAtSeconds : null;
+const getSourceIndex = (event) => typeof event?.__sourceIndex === 'number' ? event.__sourceIndex : Infinity;
+
+export const compareEventsForSort = (a, b, sortOrder = 'asc') => {
+  const ordA = getOrdinal(a);
+  const ordB = getOrdinal(b);
+
+  if (ordA !== null || ordB !== null) {
+    if (ordA === null) return sortOrder === 'desc' ? 1 : -1;
+    if (ordB === null) return sortOrder === 'desc' ? -1 : 1;
+    if (ordA !== ordB) return sortOrder === 'desc' ? ordB - ordA : ordA - ordB;
+  }
+
+  const timeA = getTimestamp(a);
+  const timeB = getTimestamp(b);
+  if (timeA !== null || timeB !== null) {
+    if (timeA === null) return sortOrder === 'desc' ? 1 : -1;
+    if (timeB === null) return sortOrder === 'desc' ? -1 : 1;
+    if (timeA !== timeB) return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+  }
+
+  const occA = getOccurredSeconds(a);
+  const occB = getOccurredSeconds(b);
+  if (occA !== null || occB !== null) {
+    if (occA === null) return sortOrder === 'desc' ? 1 : -1;
+    if (occB === null) return sortOrder === 'desc' ? -1 : 1;
+    if (occA !== occB) return sortOrder === 'desc' ? occB - occA : occA - occB;
+  }
+
+  const idxA = getSourceIndex(a);
+  const idxB = getSourceIndex(b);
+  return idxA - idxB;
+};
+
 // Timeline preferences persistence manager
 const timelinePrefsManager = createPersistenceManager(STORAGE_KEYS.TIMELINE_PREFERENCES, {
   sortOrder: 'asc'
@@ -154,11 +190,8 @@ export function GameEventTimeline({
       });
     }
 
-    // Sort by timestamp
-    filtered.sort((a, b) => {
-      const comparison = a.timestamp - b.timestamp;
-      return sortOrder === 'desc' ? -comparison : comparison;
-    });
+    // Sort by ordinal first, then timestamp, respecting requested order
+    filtered.sort((a, b) => compareEventsForSort(a, b, sortOrder));
 
     return filtered;
   }, [events, sortOrder, selectedPlayerId, goalScorers, debugMode]);
