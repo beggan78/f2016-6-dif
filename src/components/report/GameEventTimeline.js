@@ -360,7 +360,7 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'bg-purple-900/20 border-purple-700/30';
       case EVENT_TYPES.FAIR_PLAY_AWARD:
-        return 'bg-emerald-900/25 border-emerald-700/40';
+        return 'bg-emerald-800/30 border-emerald-500/60';
       default:
         return 'bg-slate-700/30 border-slate-600/30';
     }
