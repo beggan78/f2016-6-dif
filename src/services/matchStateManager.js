@@ -14,6 +14,8 @@ import { FORMATS, FORMAT_CONFIGS, FORMATIONS } from '../constants/teamConfigurat
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 import { normalizeFormationStructure } from '../utils/formationUtils';
 import { matchPassesFilters } from '../utils/matchFilterUtils';
+import { EVENT_TYPES } from '../utils/gameEventLogger';
+import { eventPersistenceService } from './eventPersistenceService';
 
 const DISPLAY_ROLE_TO_DB_ROLE_MAP = {
   Goalkeeper: roleToDatabase(PLAYER_ROLES.GOALIE),
@@ -441,7 +443,7 @@ export async function updateMatchToFinished(matchId, finalStats, allPlayers = []
  * @param {string|null} options.fairPlayAwardId - Player ID for fair play award (null to clear)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId } = {}) {
+export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId, fairPlayAwardName } = {}) {
   try {
     if (!matchId) {
       return {
@@ -493,6 +495,29 @@ export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId } =
           success: false,
           error: statsResult.error || 'Unable to assign fair play award for this match.'
         };
+      }
+
+      // Persist fair play award as a single match_log_event entry (replace existing)
+      if (fairPlayAwardId) {
+        await eventPersistenceService.persistEvent({
+          type: EVENT_TYPES.FAIR_PLAY_AWARD,
+          timestamp: Date.now(),
+          matchTime: '00:00',
+          periodNumber: 1,
+          data: {
+            playerId: fairPlayAwardId,
+            display_name: fairPlayAwardName || null,
+            playerName: fairPlayAwardName || null
+          },
+          player_id: fairPlayAwardId
+        }, matchId);
+      } else {
+        // Clearing selection removes any prior fair play award event for the match
+        await supabase
+          .from('match_log_event')
+          .delete()
+          .eq('match_id', matchId)
+          .eq('event_type', 'fair_play_award');
       }
     }
 

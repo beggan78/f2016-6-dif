@@ -20,7 +20,8 @@ const EVENT_TYPE_MAPPING = {
   position_switch_group: 'position_change',
   player_inactivated: 'player_inactivated',
   player_activated: 'player_activated',
-  player_reactivated: 'player_activated'
+  player_reactivated: 'player_activated',
+  fair_play_award: 'fair_play_award'
 };
 
 const mapDatabaseEventToUIType = dbEventType => EVENT_TYPE_MAPPING[dbEventType] || dbEventType;

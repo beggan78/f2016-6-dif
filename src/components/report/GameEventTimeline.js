@@ -3,6 +3,7 @@ import {
   Play,
   Square,
   Trophy,
+  Award,
   Pause,
   Clock,
   ArrowUpDown,
@@ -144,6 +145,10 @@ export function GameEventTimeline({
           return event.playerId === selectedPlayerId;
         }
 
+        if (type === EVENT_TYPES.FAIR_PLAY_AWARD) {
+          return event.playerId === selectedPlayerId;
+        }
+
         // Hide other events for specific player filter
         return false;
       });
@@ -164,6 +169,7 @@ export function GameEventTimeline({
     let intermissionEvents = [];
     let matchStartEvent = null;
     let matchEndEvent = null;
+    let fairPlayAwardEvent = null;
     
     filteredAndSortedEvents.forEach(event => {
       // Handle match-level events specially (not grouped with periods)
@@ -174,6 +180,11 @@ export function GameEventTimeline({
       
       if (event.type === EVENT_TYPES.MATCH_END) {
         matchEndEvent = event;
+        return;
+      }
+
+      if (event.type === EVENT_TYPES.FAIR_PLAY_AWARD) {
+        fairPlayAwardEvent = event;
         return;
       }
       
@@ -215,7 +226,7 @@ export function GameEventTimeline({
       }
     });
     
-    return { groups, intermissions: processedIntermissions, matchStartEvent, matchEndEvent };
+    return { groups, intermissions: processedIntermissions, matchStartEvent, matchEndEvent, fairPlayAwardEvent };
   }, [filteredAndSortedEvents]);
 
   // Get event icon based on type
@@ -250,6 +261,8 @@ export function GameEventTimeline({
         return XCircle;
       case EVENT_TYPES.SUBSTITUTION_UNDONE:
         return XCircle;
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        return Award;
       case EVENT_TYPES.TECHNICAL_TIMEOUT:
         return AlertCircle;
       default:
@@ -279,6 +292,8 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'text-purple-400';
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        return 'text-amber-300';
       case EVENT_TYPES.TIMER_PAUSED:
       case EVENT_TYPES.PERIOD_PAUSED:
         return 'text-orange-400';
@@ -311,6 +326,8 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'bg-purple-900/20 border-purple-700/30';
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        return 'bg-amber-900/25 border-amber-700/40';
       default:
         return 'bg-slate-700/30 border-slate-600/30';
     }
@@ -483,6 +500,13 @@ export function GameEventTimeline({
           (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
           'Unknown';
         return `${activatedPlayerName} re-activated`;
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        const fairPlayName =
+          eventData.display_name ||
+          eventData.playerName ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          'Unknown player';
+        return `Fair Play Award: ${fairPlayName}`;
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;
       case EVENT_TYPES.TIMER_RESUMED:
@@ -648,12 +672,23 @@ export function GameEventTimeline({
     const eventData = data || {};
     const details = [];
 
-    if (event.periodNumber) {
+    if (event.periodNumber && event.type !== EVENT_TYPES.MATCH_END && event.type !== EVENT_TYPES.FAIR_PLAY_AWARD) {
       details.push(`Period: ${event.periodNumber}`);
     }
 
     if (eventData.ownScore !== undefined && eventData.opponentScore !== undefined) {
       details.push(`Score: ${eventData.ownScore} - ${eventData.opponentScore}`);
+    }
+
+    if (event.type === EVENT_TYPES.FAIR_PLAY_AWARD) {
+      const recipientName =
+        eventData.display_name ||
+        eventData.playerName ||
+        (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+        null;
+      if (recipientName) {
+        details.push(`Awarded to: ${recipientName}`);
+      }
     }
 
     if (event.undone) {
@@ -755,7 +790,12 @@ export function GameEventTimeline({
       {/* Timeline - Chronological with match-level events */}
       <div className="space-y-6">
         {/* Boundary Events - respect sort order */}
-        {sortOrder === 'desc' && groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+        {sortOrder === 'desc' && (
+          <>
+            {groupedEventsByPeriod.fairPlayAwardEvent && renderBoundaryEvent(groupedEventsByPeriod.fairPlayAwardEvent)}
+            {groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+          </>
+        )}
         {sortOrder === 'asc' && groupedEventsByPeriod.matchStartEvent && renderBoundaryEvent(groupedEventsByPeriod.matchStartEvent)}
         
         {/* Period Events */}
@@ -800,7 +840,12 @@ export function GameEventTimeline({
           })}
           
         {/* Boundary Events - respect sort order */}
-        {sortOrder === 'asc' && groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+        {sortOrder === 'asc' && (
+          <>
+            {groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+            {groupedEventsByPeriod.fairPlayAwardEvent && renderBoundaryEvent(groupedEventsByPeriod.fairPlayAwardEvent)}
+          </>
+        )}
         {sortOrder === 'desc' && groupedEventsByPeriod.matchStartEvent && renderBoundaryEvent(groupedEventsByPeriod.matchStartEvent)}
       </div>
     </div>

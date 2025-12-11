@@ -364,7 +364,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                 >
                   <div className="flex items-center space-x-2">
                     <Share2 className="w-4 h-4" />
-                    <span>Copy Live Match Link</span>
+                    <span>Get Live Match Link</span>
                   </div>
                 </button>
               )}
