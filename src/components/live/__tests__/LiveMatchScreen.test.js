@@ -1,4 +1,4 @@
-import { calculateEffectiveMatchDurationSeconds, formatLiveMatchMinuteDisplay } from '../LiveMatchScreen';
+import { calculateEffectiveMatchDurationSeconds, createEffectiveTimeCalculator, formatLiveMatchMinuteDisplay } from '../LiveMatchScreen';
 import { sortEventsByOrdinal } from '../LiveMatchScreen';
 
 const baseTime = Date.parse('2024-01-01T10:00:00Z');
@@ -41,6 +41,26 @@ describe('calculateEffectiveMatchDurationSeconds', () => {
         baseTime + 60000
       )
     ).toBe(0);
+  });
+});
+
+describe('createEffectiveTimeCalculator', () => {
+  it('returns effective seconds that ignore intermissions', () => {
+    const events = [
+      buildEvent('match_started', 0),
+      buildEvent('period_ended', 600000), // 10 minutes
+      buildEvent('period_started', 900000), // 5-minute intermission
+      buildEvent('goal_scored', 920000)
+    ];
+
+    const calculator = createEffectiveTimeCalculator(events, true, baseTime + 920000);
+
+    // Start of period 2 should pick up where period 1 ended
+    expect(calculator(baseTime + 900000)).toBe(600);
+    // Events during intermission should not advance time
+    expect(calculator(baseTime + 750000)).toBe(600);
+    // Events inside the next period accumulate from the prior periods
+    expect(calculator(baseTime + 920000)).toBe(620);
   });
 });
 

@@ -79,17 +79,8 @@ export const formatLiveMatchMinuteDisplay = (seconds) => {
   return `${Math.max(1, minute)}'`;
 };
 
-/**
- * Calculate effective match duration (playing time only).
- * Sums active period time using start/end events and excludes intermissions.
- *
- * @param {Array} events - Raw match events from Supabase
- * @param {boolean} isLive - Whether the match is still in progress
- * @param {number} [currentTimeMs] - Override for "now" (primarily for tests)
- * @returns {number} Total active play time in seconds
- */
-export function calculateEffectiveMatchDurationSeconds(events = [], isLive = false, currentTimeMs = Date.now()) {
-  if (!Array.isArray(events) || events.length === 0) return 0;
+const buildEffectiveTimeSegments = (events = [], isLive = false, currentTimeMs = Date.now()) => {
+  if (!Array.isArray(events) || events.length === 0) return [];
 
   const sortedEvents = [...events].sort((a, b) => {
     const timeA = parseEventTime(a);
@@ -103,14 +94,14 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
     return ordinalA - ordinalB;
   });
 
-  let totalMs = 0;
+  const segments = [];
   let currentPeriodStart = null;
   let lastEventTime = null;
 
-  const closePeriod = (endTime) => {
+  const closeSegment = (endTime) => {
     if (currentPeriodStart === null || !Number.isFinite(endTime)) return;
     if (endTime > currentPeriodStart) {
-      totalMs += endTime - currentPeriodStart;
+      segments.push({ start: currentPeriodStart, end: endTime });
     }
     currentPeriodStart = null;
   };
@@ -119,9 +110,7 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
     const eventTime = parseEventTime(event);
     if (Number.isFinite(eventTime)) {
       lastEventTime = eventTime;
-    }
-
-    if (!Number.isFinite(eventTime)) {
+    } else {
       return;
     }
 
@@ -131,16 +120,62 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
     }
 
     if (event.event_type === 'period_ended' || event.event_type === 'match_ended') {
-      closePeriod(eventTime);
+      closeSegment(eventTime);
     }
   });
 
   if (currentPeriodStart !== null) {
-    const liveEndTime = isLive ? currentTimeMs : lastEventTime;
-    if (Number.isFinite(liveEndTime) && liveEndTime > currentPeriodStart) {
-      totalMs += liveEndTime - currentPeriodStart;
+    const fallbackEnd = isLive ? currentTimeMs : lastEventTime;
+    if (Number.isFinite(fallbackEnd) && fallbackEnd > currentPeriodStart) {
+      segments.push({ start: currentPeriodStart, end: fallbackEnd });
     }
   }
+
+  return segments;
+};
+
+export const createEffectiveTimeCalculator = (events = [], isLive = false, currentTimeMs = Date.now()) => {
+  const segments = buildEffectiveTimeSegments(events, isLive, currentTimeMs);
+
+  return (timestampMs) => {
+    if (!Number.isFinite(timestampMs) || segments.length === 0) return null;
+
+    let totalMs = 0;
+    segments.forEach(({ start, end }) => {
+      if (!Number.isFinite(start)) return;
+
+      const segmentEnd = Number.isFinite(end)
+        ? end
+        : (isLive ? currentTimeMs : timestampMs);
+
+      if (timestampMs <= start) return;
+      const effectiveEnd = Math.min(timestampMs, segmentEnd);
+      if (effectiveEnd > start) {
+        totalMs += effectiveEnd - start;
+      }
+    });
+
+    return Math.max(0, Math.floor(totalMs / 1000));
+  };
+};
+
+/**
+ * Calculate effective match duration (playing time only).
+ * Sums active period time using start/end events and excludes intermissions.
+ *
+ * @param {Array} events - Raw match events from Supabase
+ * @param {boolean} isLive - Whether the match is still in progress
+ * @param {number} [currentTimeMs] - Override for "now" (primarily for tests)
+ * @returns {number} Total active play time in seconds
+ */
+export function calculateEffectiveMatchDurationSeconds(events = [], isLive = false, currentTimeMs = Date.now()) {
+  const segments = buildEffectiveTimeSegments(events, isLive, currentTimeMs);
+  if (!segments.length) return 0;
+
+  const totalMs = segments.reduce((sum, segment) => {
+    if (!Number.isFinite(segment?.start) || !Number.isFinite(segment?.end)) return sum;
+    return sum + Math.max(0, segment.end - segment.start);
+  }, 0);
 
   return Math.max(0, Math.floor(totalMs / 1000));
 }
@@ -225,6 +260,10 @@ export function LiveMatchScreen({ matchId }) {
 
   const effectiveMatchDurationSeconds = useMemo(() => {
     return calculateEffectiveMatchDurationSeconds(events, matchMetadata?.isLive);
+  }, [events, matchMetadata?.isLive]);
+
+  const effectiveTimeCalculator = useMemo(() => {
+    return createEffectiveTimeCalculator(events, matchMetadata?.isLive);
   }, [events, matchMetadata?.isLive]);
 
   const liveMatchMinuteDisplay = useMemo(() => {
@@ -618,6 +657,11 @@ export function LiveMatchScreen({ matchId }) {
   const transformedEvents = useMemo(() => {
     return consolidatedEvents.map(event => {
       const normalizedData = { ...(event.data || {}) };
+      const eventTimestamp = parseEventTime(event);
+      const effectiveSeconds = effectiveTimeCalculator(eventTimestamp);
+      const occurredSeconds = Number.isFinite(effectiveSeconds)
+        ? effectiveSeconds
+        : (Number.isFinite(event.occurred_at_seconds) ? event.occurred_at_seconds : null);
 
       if (event.event_type === 'substitution') {
         normalizedData.playersOff = Array.isArray(normalizedData.playersOff) ? normalizedData.playersOff : [];
@@ -717,9 +761,9 @@ export function LiveMatchScreen({ matchId }) {
         id: event.id,
         type: mapDatabaseEventToUIType(event.event_type),
         ordinal: typeof event.ordinal === 'number' ? event.ordinal : null,
-        timestamp: parseEventTime(event),
-        occurredAtSeconds: typeof event.occurred_at_seconds === 'number' ? event.occurred_at_seconds : null,
-        matchTime: Number.isFinite(event.occurred_at_seconds) ? formatMatchTime(event.occurred_at_seconds) : '00:00',
+        timestamp: eventTimestamp,
+        occurredAtSeconds: occurredSeconds,
+        matchTime: Number.isFinite(occurredSeconds) ? formatMatchTime(occurredSeconds) : '00:00',
         periodNumber: event.period,
         data: {
           ...normalizedData,

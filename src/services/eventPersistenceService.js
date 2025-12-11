@@ -42,10 +42,18 @@ class EventPersistenceService {
       // Handle single event or array (goalie switch creates TWO)
       const eventsToWrite = Array.isArray(dbEvents) ? dbEvents : [dbEvents];
 
-      // Write all events (non-blocking)
-      const results = await Promise.allSettled(
-        eventsToWrite.map(dbEvent => this.writeEventToDatabase(dbEvent))
-      );
+      // Write all events sequentially to preserve order
+      const results = [];
+      for (const dbEvent of eventsToWrite) {
+        try {
+          const result = await this.writeEventToDatabase(dbEvent);
+          results.push({ status: 'fulfilled', value: result });
+        } catch (error) {
+          results.push({ status: 'rejected', reason: error });
+          console.warn('Event write failed (continuing sequence):', error);
+          // Continue writing remaining events even if one fails
+        }
+      }
 
       return { success: true, results };
     } catch (error) {
