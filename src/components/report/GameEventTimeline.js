@@ -326,7 +326,7 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'text-purple-400';
       case EVENT_TYPES.FAIR_PLAY_AWARD:
-        return 'text-amber-300';
+        return 'text-emerald-300';
       case EVENT_TYPES.TIMER_PAUSED:
       case EVENT_TYPES.PERIOD_PAUSED:
         return 'text-orange-400';
@@ -360,7 +360,7 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'bg-purple-900/20 border-purple-700/30';
       case EVENT_TYPES.FAIR_PLAY_AWARD:
-        return 'bg-amber-900/25 border-amber-700/40';
+        return 'bg-emerald-900/25 border-emerald-700/40';
       default:
         return 'bg-slate-700/30 border-slate-600/30';
     }
