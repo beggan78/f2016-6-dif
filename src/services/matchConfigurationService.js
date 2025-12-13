@@ -243,10 +243,11 @@ export async function saveMatchConfiguration(params) {
       selectedFormation,
       periods: numPeriods,
       periodDurationMinutes,
-      opponentTeam,
+      opponentTeam: opponentTeam?.trim() || null,
       captainId,
       matchType,
-      venueType
+      venueType,
+      teamName: currentTeam.club?.name || null
     }, currentTeam.id);
 
     // Create initial configuration object

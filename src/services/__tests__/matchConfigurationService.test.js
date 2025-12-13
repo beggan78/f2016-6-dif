@@ -18,7 +18,8 @@ import {
   createMatch,
   formatMatchDataFromGameState,
   updateExistingMatch,
-  saveInitialMatchConfig
+  saveInitialMatchConfig,
+  logMatchCreatedEvent
 } from '../matchStateManager';
 import { FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 
@@ -27,7 +28,8 @@ jest.mock('../matchStateManager', () => ({
   createMatch: jest.fn(),
   formatMatchDataFromGameState: jest.fn(),
   updateExistingMatch: jest.fn(),
-  saveInitialMatchConfig: jest.fn()
+  saveInitialMatchConfig: jest.fn(),
+  logMatchCreatedEvent: jest.fn(() => Promise.resolve())
 }));
 
 // Mock console methods
@@ -45,6 +47,9 @@ describe('matchConfigurationService', () => {
     console.warn = mockConsole.warn;
     console.error = mockConsole.error;
     console.log = mockConsole.log;
+
+    // Setup logMatchCreatedEvent mock to return a resolved promise
+    logMatchCreatedEvent.mockResolvedValue(undefined);
   });
 
   describe('formatTeamConfigForDatabase', () => {

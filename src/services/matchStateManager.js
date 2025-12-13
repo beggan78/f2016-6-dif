@@ -1385,7 +1385,8 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     opponentTeam,
     captainId,
     matchType = 'league', // Default to league if not provided
-    venueType = DEFAULT_VENUE_TYPE
+    venueType = DEFAULT_VENUE_TYPE,
+    teamName
   } = gameState;
 
   const formatKey = teamConfig?.format || FORMATS.FORMAT_5V5;
@@ -1401,7 +1402,8 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     type: matchType,
     opponent: opponentTeam || null,
     captainId: captainId || null,
-    venueType: venueType || DEFAULT_VENUE_TYPE
+    venueType: venueType || DEFAULT_VENUE_TYPE,
+    teamName: teamName || null
   };
 }
 
