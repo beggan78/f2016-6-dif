@@ -452,6 +452,7 @@ Historical practice attendance imported from external providers and matched to r
 - `player_name` (varchar(100), NOT NULL) - Raw player name received from the provider
 - `year` (integer, NOT NULL) - Year the attendance summary covers
 - `month` (integer, NOT NULL) - Month the attendance summary covers (1-12)
+- `day_of_month` (integer, NOT NULL) - Day within the month for the attendance entry (1-31, default: 1)
 - `total_practices` (integer, NOT NULL) - Total number of practices tracked
 - `total_attendance` (integer, NOT NULL) - Number of attended practices
 - `last_synced_at` (timestamptz, NOT NULL) - Timestamp of the most recent sync (default: now())
@@ -462,11 +463,12 @@ Historical practice attendance imported from external providers and matched to r
 
 **Constraints:**
 - Primary key on `id`
-- Unique constraint on `(connector_id, player_name, year, month)` prevents duplicate monthly stats per provider
+- Unique constraint on `(connector_id, player_name, year, month, day_of_month)` prevents duplicate daily stats per provider
 - Foreign key to `connector(id)` with ON DELETE CASCADE
 - Foreign key to `player(id)` with ON DELETE SET NULL
 - Foreign keys to `auth.users(id)` for audit columns
 - Check: `month` between 1 and 12
+- Check: `day_of_month` between 1 and 31
 - Check: `total_attendance` between 0 and `total_practices`
 - Check: `year` between 2020 and 2099
 
