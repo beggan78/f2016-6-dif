@@ -1152,8 +1152,8 @@ export function useGameState(navigateToView = null) {
         setMatchCreated
       });
 
-      return result.success 
-        ? { success: true, message: result.message }
+      return result.success
+        ? { success: true, message: result.message, matchId: result.matchId }
         : { success: false, error: result.error };
         
     } catch (error) {

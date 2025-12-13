@@ -72,6 +72,7 @@ class EventPersistenceService {
       // Direct mappings
       'match_start': 'match_started',
       'match_end': 'match_ended',
+      'match_created': 'match_created',
       'period_start': 'period_started',
       'period_end': 'period_ended',
       'goal_scored': 'goal_scored',
@@ -193,6 +194,27 @@ class EventPersistenceService {
     }
 
     // Minimal payloads by event type
+    if (dbEventType === 'match_created') {
+      const ownTeamName = event.data?.ownTeamName || null;
+      const opponentTeamName = event.data?.opponentTeamName || null;
+      const periodDurationMinutes = event.data?.periodDurationMinutes || null;
+      const totalPeriods = event.data?.totalPeriods || null;
+
+      // Build data object only if we have data to store
+      const dataObj = {
+        ...(ownTeamName ? { ownTeamName } : {}),
+        ...(opponentTeamName ? { opponentTeamName } : {}),
+        ...(typeof periodDurationMinutes === 'number' ? { periodDurationMinutes } : {}),
+        ...(typeof totalPeriods === 'number' ? { totalPeriods } : {})
+      };
+
+      const hasData = Object.keys(dataObj).length > 0;
+
+      return buildBaseEvent({
+        data: hasData ? dataObj : null
+      });
+    }
+
     if (dbEventType === 'match_started') {
       const startingLineup = Array.isArray(event.data?.startingLineup) ? event.data.startingLineup : null;
       const ownTeamName = event.data?.ownTeamName || event.data?.teamName || null;

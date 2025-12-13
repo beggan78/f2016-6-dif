@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 import { NotificationModal } from './UI';
+import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -83,7 +84,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     }
   };
 
-  const handleCopyLiveLink = () => {
+  const handleCopyLiveLink = async () => {
     setIsOpen(false);
 
     if (!currentMatchId) {
@@ -91,30 +92,29 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
       return;
     }
 
-    const liveMatchUrl = `${window.location.origin}/live/${currentMatchId}`;
+    try {
+      const result = await copyLiveMatchUrlToClipboard(currentMatchId);
 
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(liveMatchUrl)
-        .then(() => {
-          setNotification({
-            isOpen: true,
-            title: 'Link Copied',
-            message: 'Live match link copied to clipboard!'
-          });
-        })
-        .catch(err => {
-          console.error('Failed to copy to clipboard:', err);
-          setNotification({
-            isOpen: true,
-            title: 'Live Match URL',
-            message: liveMatchUrl
-          });
+      if (result.success) {
+        setNotification({
+          isOpen: true,
+          title: 'Link Copied',
+          message: 'Live match link copied to clipboard!'
         });
-    } else {
+      } else {
+        // Fallback: Show URL in modal
+        setNotification({
+          isOpen: true,
+          title: 'Live Match URL',
+          message: result.url
+        });
+      }
+    } catch (error) {
+      console.error('Failed to handle live link:', error);
       setNotification({
         isOpen: true,
-        title: 'Live Match URL',
-        message: liveMatchUrl
+        title: 'Error',
+        message: 'Failed to generate live match link'
       });
     }
   };

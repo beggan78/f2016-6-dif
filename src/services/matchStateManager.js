@@ -152,6 +152,49 @@ export async function createMatch(matchData, allPlayers = [], selectedSquadIds =
 }
 
 /**
+ * Log match_created event to database
+ *
+ * Non-blocking - failures don't fail match creation.
+ * This event is logged when a pending match is first created via:
+ * - Save Configuration button
+ * - Get Live Match Link button
+ * - Proceed to Period Setup button
+ *
+ * @param {string} matchId - Match ID (UUID)
+ * @param {Object} eventData - Event data
+ * @param {string} eventData.ownTeamName - Own team name (club name)
+ * @param {string} eventData.opponentTeamName - Opponent team name
+ * @param {number} eventData.totalPeriods - Number of periods
+ * @param {number} eventData.periodDurationMinutes - Period duration in minutes
+ * @returns {Promise<void>}
+ */
+export async function logMatchCreatedEvent(matchId, eventData) {
+  if (!matchId) {
+    console.warn('Cannot log match_created event: missing matchId');
+    return;
+  }
+
+  try {
+    const event = {
+      type: 'match_created',
+      matchTime: '00:00',
+      periodNumber: 0,
+      data: {
+        ownTeamName: eventData.ownTeamName || null,
+        opponentTeamName: eventData.opponentTeamName || null,
+        totalPeriods: eventData.totalPeriods || null,
+        periodDurationMinutes: eventData.periodDurationMinutes || null
+      }
+    };
+
+    await eventPersistenceService.persistEvent(event, matchId);
+  } catch (error) {
+    console.warn('Failed to log match_created event:', error);
+    // Non-blocking - don't fail the operation if event logging fails
+  }
+}
+
+/**
  * Create a finished match record directly from manual input.
  * Inserts both the match metadata and optional player statistics so the entry
  * appears immediately in match history.
