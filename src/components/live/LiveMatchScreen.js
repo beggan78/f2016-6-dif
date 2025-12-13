@@ -204,14 +204,21 @@ export function LiveMatchScreen({ matchId }) {
     if (!events || events.length === 0) return null;
 
     const matchStartEvent = events.find(e => e.event_type === 'match_started');
+    const matchCreatedEvent = events.find(e => e.event_type === 'match_created');
     const matchEndEvent = events.find(e => e.event_type === 'match_ended');
     const periodStartEvents = events.filter(e => e.event_type === 'period_started');
     const goalScoredEvents = events.filter(e => e.event_type === 'goal_scored');
     const goalConcededEvents = events.filter(e => e.event_type === 'goal_conceded');
 
-    // Extract team names from match_started event data
-    const ownTeamName = matchStartEvent?.data?.ownTeamName || 'Own Team';
-    const opponentName = matchStartEvent?.data?.opponentTeamName
+    // Determine if match has actually started
+    const matchHasStarted = !!matchStartEvent;
+
+    // Use match_started data if available, otherwise fall back to match_created
+    const eventForMetadata = matchStartEvent || matchCreatedEvent;
+
+    // Extract team names from match_started or match_created event data
+    const ownTeamName = eventForMetadata?.data?.ownTeamName || 'Own Team';
+    const opponentName = eventForMetadata?.data?.opponentTeamName
       || matchStartEvent?.data?.opponentTeam
       || matchStartEvent?.data?.opponentName
       || 'Opponent';
@@ -230,13 +237,13 @@ export function LiveMatchScreen({ matchId }) {
     // Check if match is live (no match_ended event)
     const isLive = !matchEndEvent;
 
-    const totalPeriods = matchStartEvent?.data?.totalPeriods
+    const totalPeriods = eventForMetadata?.data?.totalPeriods
       || matchStartEvent?.data?.numPeriods
       || matchStartEvent?.data?.matchMetadata?.plannedPeriods
       || matchEndEvent?.data?.totalPeriods
       || currentPeriod;
 
-    const periodDurationMinutes = matchStartEvent?.data?.periodDurationMinutes
+    const periodDurationMinutes = eventForMetadata?.data?.periodDurationMinutes
       || matchEndEvent?.data?.matchMetadata?.plannedDurationMinutes
       || 15;
 
@@ -252,6 +259,7 @@ export function LiveMatchScreen({ matchId }) {
       matchStartTime,
       matchEndTime,
       isLive,
+      matchHasStarted,
       totalPeriods,
       periodDurationMinutes,
       matchDurationSeconds
@@ -827,7 +835,12 @@ export function LiveMatchScreen({ matchId }) {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              {matchMetadata.isLive ? (
+              {!matchMetadata.matchHasStarted ? (
+                <>
+                  <Clock className="h-6 w-6 text-slate-400 mr-2" />
+                  <h1 className="text-2xl font-bold text-slate-300">Match Not Started</h1>
+                </>
+              ) : matchMetadata.isLive ? (
                 <>
                   <Radio className="h-6 w-6 text-red-500 mr-2 animate-pulse" />
                   <h1 className="text-2xl font-bold text-sky-300">LIVE Match</h1>
