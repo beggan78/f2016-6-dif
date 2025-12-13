@@ -103,10 +103,10 @@ export function GameFinishedScreen({
   };
 
   // Helper functions
-  const getSelectedPlayerName = (playerId, players) => {
+  const getSelectedPlayerName = useCallback((playerId, players) => {
     const player = players.find(p => p.id === playerId);
     return player ? formatPlayerName(player) : '';
-  };
+  }, []);
 
   const normalizeFairPlayPreference = (value) => {
     if (Object.values(FAIR_PLAY_AWARD_OPTIONS).includes(value)) return value;

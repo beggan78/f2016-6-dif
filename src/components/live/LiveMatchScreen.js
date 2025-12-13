@@ -3,6 +3,8 @@ import { Radio, Clock, AlertCircle } from 'lucide-react';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { GameEventTimeline } from '../report/GameEventTimeline';
 import { ReportSection } from '../report/ReportSection';
+import { useTeam } from '../../contexts/TeamContext';
+import { findUpcomingMatchByOpponent } from '../../services/matchIntegrationService';
 
 const EVENT_TYPE_MAPPING = {
   match_started: 'match_start',
@@ -191,11 +193,13 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
  * @param {string} props.matchId - UUID of the match to display
  */
 export function LiveMatchScreen({ matchId }) {
+  const { currentTeam } = useTeam();
   const [events, setEvents] = useState([]);
   const [latestOrdinal, setLatestOrdinal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
+  const [upcomingMatch, setUpcomingMatch] = useState(null);
   const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
   const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
@@ -278,6 +282,22 @@ export function LiveMatchScreen({ matchId }) {
     if (!matchMetadata?.isLive) return null;
     return formatLiveMatchMinuteDisplay(effectiveMatchDurationSeconds);
   }, [effectiveMatchDurationSeconds, matchMetadata?.isLive]);
+
+  // Calculate scheduled start time from upcoming match
+  const scheduledStartTime = useMemo(() => {
+    if (!upcomingMatch || matchMetadata?.matchHasStarted) return null;
+
+    // Combine match_date and match_time
+    if (upcomingMatch.match_date && upcomingMatch.match_time) {
+      return {
+        date: upcomingMatch.match_date,
+        time: upcomingMatch.match_time,
+        venue: upcomingMatch.venue
+      };
+    }
+
+    return null;
+  }, [upcomingMatch, matchMetadata?.matchHasStarted]);
 
   // Calculate current minute of period
   const currentPeriodMinute = useMemo(() => {
@@ -368,6 +388,16 @@ export function LiveMatchScreen({ matchId }) {
 
     return () => clearInterval(interval);
   }, [fetchEvents, latestOrdinal, matchMetadata?.isLive]);
+
+  // Fetch upcoming match data when match hasn't started
+  useEffect(() => {
+    // Only fetch if match hasn't started and we have opponent name
+    if (!matchMetadata?.matchHasStarted && matchMetadata?.opponentName && currentTeam?.id) {
+      findUpcomingMatchByOpponent(currentTeam.id, matchMetadata.opponentName)
+        .then(match => setUpcomingMatch(match))
+        .catch(error => console.error('Failed to fetch upcoming match:', error));
+    }
+  }, [matchMetadata?.matchHasStarted, matchMetadata?.opponentName, currentTeam?.id]);
 
   const playerNameMap = useMemo(() => {
     const map = new Map();
@@ -663,7 +693,12 @@ export function LiveMatchScreen({ matchId }) {
 
   // Transform database events to UI format for GameEventTimeline
   const transformedEvents = useMemo(() => {
-    return consolidatedEvents.map(event => {
+    // Filter out events with unmapped/unknown event types (like match_created)
+    const mappableEvents = consolidatedEvents.filter(event =>
+      EVENT_TYPE_MAPPING.hasOwnProperty(event.event_type)
+    );
+
+    return mappableEvents.map(event => {
       const normalizedData = { ...(event.data || {}) };
       const eventTimestamp = parseEventTime(event);
       const effectiveSeconds = effectiveTimeCalculator(eventTimestamp);
@@ -784,7 +819,7 @@ export function LiveMatchScreen({ matchId }) {
         __sourceIndex: event.__sourceIndex
       };
     });
-  }, [consolidatedEvents, playerNameMap]);
+  }, [consolidatedEvents, playerNameMap, effectiveTimeCalculator]);
 
   // Loading state
   if (isLoading && events.length === 0) {
@@ -853,7 +888,7 @@ export function LiveMatchScreen({ matchId }) {
               )}
             </div>
 
-            {matchMetadata.isLive && matchMetadata.currentPeriod > 0 && (
+            {matchMetadata.isLive && matchMetadata.matchHasStarted && matchMetadata.currentPeriod > 0 && (
               <div className="text-sm text-slate-400">
                 Period {matchMetadata.currentPeriod} - {currentPeriodMinute}'
               </div>
@@ -877,10 +912,12 @@ export function LiveMatchScreen({ matchId }) {
               ownScore={matchMetadata.ownScore}
               opponentScore={matchMetadata.opponentScore}
               matchStartTime={matchMetadata.matchStartTime}
+              scheduledStartTime={scheduledStartTime}
               totalPeriods={matchMetadata.totalPeriods || matchMetadata.currentPeriod}
               periodDurationMinutes={matchMetadata.periodDurationMinutes || 15}
               matchDuration={matchMetadata.isLive ? matchMetadata.matchDurationSeconds || 0 : effectiveMatchDurationSeconds}
               matchDurationDisplay={liveMatchMinuteDisplay}
+              matchHasStarted={matchMetadata.matchHasStarted}
             />
           </ReportSection>
 
