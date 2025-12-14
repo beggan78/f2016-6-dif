@@ -4,7 +4,7 @@
  */
 
 import { findUpcomingMatchByOpponent } from '../matchIntegrationService';
-import * as fixtures from './__fixtures__/upcomingMatches';
+import * as fixtures from '../__fixtures__/upcomingMatches';
 
 // Mock dependencies
 jest.mock('../../lib/supabase');

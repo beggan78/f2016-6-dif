@@ -4,8 +4,8 @@
  */
 
 import { eventPersistenceService } from '../eventPersistenceService';
-import * as fixtures from './__fixtures__/events';
-import { sampleMatchId } from './__fixtures__/matchData';
+import * as fixtures from '../__fixtures__/events';
+import { sampleMatchId } from '../__fixtures__/matchData';
 
 // Mock dependencies
 jest.mock('../../lib/supabase');
