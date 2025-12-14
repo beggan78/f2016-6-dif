@@ -471,9 +471,9 @@ Historical practice attendance imported from external providers and matched to r
 - Check: `day_of_month` between 1 and 31
 - Check: `total_attendance` between 0 and `total_practices`
 - Check: `year` between 2020 and 2099
-ª
+
 **Indexes:**
-- `idx_player_attendance_connector` on `connector_id`ª
+- `idx_player_attendance_connector` on `connector_id`
 - `idx_player_attendance_player` on `player_id` (filtered on non-null)
 - `idx_player_attendance_synced` on `last_synced_at DESC`
 - `idx_player_attendance_year` on `year DESC`
