@@ -33,6 +33,7 @@ jest.mock('lucide-react', () => ({
   UserPlus: (props) => <svg data-testid="icon-user-plus" {...props} />,
   HelpCircle: (props) => <svg data-testid="icon-help" {...props} />,
   Save: (props) => <svg data-testid="icon-save" {...props} />,
+  Share2: (props) => <svg data-testid="icon-share" {...props} />,
   Home: (props) => <svg data-testid="icon-home" {...props} />,
   Plane: (props) => <svg data-testid="icon-plane" {...props} />,
   Globe2: (props) => <svg data-testid="icon-globe" {...props} />,
@@ -65,6 +66,15 @@ jest.mock('../../shared/UI', () => {
         {IconComponent ? <IconComponent data-testid="mock-button-icon" /> : null}
         {children}
       </button>
+    ),
+    NotificationModal: ({ isOpen, title, message, onClose }) => (
+      isOpen ? (
+        <div data-testid="notification-modal">
+          <div>{title}</div>
+          <div>{message}</div>
+          <button onClick={onClose}>Close</button>
+        </div>
+      ) : null
     ),
     Input: mockReact.forwardRef(({ value = '', onChange, ...props }, ref) => (
       <input data-testid="mock-input" value={value} onChange={onChange} ref={ref} {...props} />

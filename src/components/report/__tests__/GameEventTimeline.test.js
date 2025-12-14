@@ -1092,8 +1092,8 @@ describe('GameEventTimeline', () => {
 
       // Should show match start + first goalie switch (involves player1)
       expect(screen.getByText('2 events')).toBeInTheDocument();
-      expect(screen.getByText('Goalie change: Alice → Bob')).toBeInTheDocument();
-      expect(screen.queryByText('Goalie change: Bob → Charlie')).not.toBeInTheDocument();
+      expect(screen.getByText('Goalie change: New goalie: Bob | Alice leaves goal')).toBeInTheDocument();
+      expect(screen.queryByText('Goalie change: New goalie: Charlie')).not.toBeInTheDocument();
     });
 
     it('should filter position change events for selected player', () => {
@@ -1608,7 +1608,7 @@ describe('GameEventTimeline', () => {
 
       render(<GameEventTimeline events={events} />);
 
-      expect(screen.getByText('Position change: Casey left_attacker → right_attacker')).toBeInTheDocument();
+      expect(screen.getByText('Position change: Casey Left Attacker → Right Attacker')).toBeInTheDocument();
     });
   });
 
