@@ -1092,8 +1092,51 @@ describe('GameEventTimeline', () => {
 
       // Should show match start + first goalie switch (involves player1)
       expect(screen.getByText('2 events')).toBeInTheDocument();
-      expect(screen.getByText('Goalie change: New goalie: Bob | Alice leaves goal')).toBeInTheDocument();
-      expect(screen.queryByText('Goalie change: New goalie: Charlie')).not.toBeInTheDocument();
+      expect(screen.getByText('New goalie: Bob | Old goalie: Alice leaves goal')).toBeInTheDocument();
+      expect(screen.queryByText('New goalie: Charlie | Old goalie: Bob leaves goal')).not.toBeInTheDocument();
+    });
+
+    it('should show both new goalie and old goalie destination for correlated goalie change events', () => {
+      mockGetPlayerName.mockImplementation((playerId) => {
+        const playerNames = {
+          'old-goalie': 'Ines',
+          'new-goalie': 'Sofia'
+        };
+        return playerNames[playerId] || null;
+      });
+
+      const events = [
+        {
+          id: 'goalie-switch-detailed',
+          type: EVENT_TYPES.GOALIE_SWITCH,
+          timestamp: 1000000060000,
+          matchTime: '01:00',
+          sequence: 1,
+          data: {
+            positionChanges: [
+              { playerId: 'old-goalie', playerName: 'Ines', oldPosition: 'goalie', newPosition: 'left_midfielder' }
+            ],
+            newGoalieId: 'new-goalie',
+            newGoalieName: 'Sofia',
+            newGoaliePreviousPosition: 'right_attacker'
+          },
+          undone: false
+        }
+      ];
+
+      render(
+        <GameEventTimeline
+          events={events}
+          getPlayerName={mockGetPlayerName}
+          availablePlayers={[
+            { id: 'old-goalie', displayName: 'Ines', firstName: 'Ines' },
+            { id: 'new-goalie', displayName: 'Sofia', firstName: 'Sofia' }
+          ]}
+        />
+      );
+
+      expect(screen.getByText('1 events')).toBeInTheDocument();
+      expect(screen.getByText('New goalie: Sofia (from Right Attacker) | Old goalie: Ines → Left Midfielder')).toBeInTheDocument();
     });
 
     it('should filter position change events for selected player', () => {

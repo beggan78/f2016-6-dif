@@ -443,50 +443,71 @@ export function GameEventTimeline({
         return `Substitution: ${offPlayersDisplay} → ${onPlayersDisplay}`;
       case EVENT_TYPES.GOALIE_SWITCH:
         const goaliePositionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+        const oldGoalieChange = goaliePositionChanges.find(change => (change.oldPosition || '').toLowerCase() === 'goalie');
+        const newGoalieChange = goaliePositionChanges.find(change => (change.newPosition || '').toLowerCase() === 'goalie');
+        const otherPositionChanges = goaliePositionChanges.filter(change =>
+          change !== oldGoalieChange && change !== newGoalieChange
+        );
+
+        const resolveChangeName = (change) =>
+          change?.playerName ||
+          (change?.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+          null;
+
         const oldGoalieName = eventData.oldGoalieName ||
-          (eventData.oldGoalieId && getPlayerName ? (getPlayerName(eventData.oldGoalieId) || null) : null);
+          (eventData.oldGoalieId && getPlayerName ? (getPlayerName(eventData.oldGoalieId) || null) : null) ||
+          resolveChangeName(oldGoalieChange);
         const newGoalieName = eventData.newGoalieName ||
-          (eventData.newGoalieId && getPlayerName ? (getPlayerName(eventData.newGoalieId) || null) : null);
+          (eventData.newGoalieId && getPlayerName ? (getPlayerName(eventData.newGoalieId) || null) : null) ||
+          resolveChangeName(newGoalieChange);
         const newGoaliePreviousPosition = eventData.newGoaliePreviousPosition ||
-          goaliePositionChanges.find(change => (change.newPosition || '').toLowerCase() === 'goalie')?.oldPosition;
+          newGoalieChange?.oldPosition;
         const oldGoalieNewPosition = eventData.oldGoalieNewPosition ||
-          goaliePositionChanges.find(change => (change.oldPosition || '').toLowerCase() === 'goalie')?.newPosition;
+          oldGoalieChange?.newPosition;
+
+        const parts = [];
+
+        if (newGoalieName || newGoaliePreviousPosition || newGoalieChange) {
+          const previousRole = newGoaliePreviousPosition ? ` (from ${formatPositionLabel(newGoaliePreviousPosition)})` : '';
+          parts.push(`New goalie: ${newGoalieName || 'Unknown'}${previousRole}`);
+        }
+
+        if (oldGoalieName || oldGoalieNewPosition || oldGoalieChange) {
+          const destination = oldGoalieNewPosition
+            ? ` → ${formatPositionLabel(oldGoalieNewPosition)}`
+            : ' leaves goal';
+          parts.push(`Old goalie: ${oldGoalieName || 'Unknown'}${destination}`);
+        }
+
+        if (otherPositionChanges.length > 0) {
+          const summary = otherPositionChanges.map(change => {
+            const name = resolveChangeName(change) || 'Unknown';
+            const oldPos = formatPositionLabel(change.oldPosition);
+            const newPos = formatPositionLabel(change.newPosition);
+            return `${name} (${oldPos} → ${newPos})`;
+          }).join(' | ');
+          parts.push(`Other switches: ${summary}`);
+        }
+
+        if (parts.length > 0) {
+          return parts.join(' | ');
+        }
 
         if (goaliePositionChanges.length > 0) {
           const summary = goaliePositionChanges.map(change => {
             const name =
-              change.playerName ||
-              (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+              resolveChangeName(change) ||
               'Unknown';
             const oldPos = formatPositionLabel(change.oldPosition);
             const newPos = formatPositionLabel(change.newPosition);
             return `${name} (${oldPos} → ${newPos})`;
           }).join(' | ');
-          return `Goalie change: ${summary}`;
-        }
-
-        const parts = [];
-        if (newGoalieName) {
-          const previousRole = newGoaliePreviousPosition ? ` (from ${formatPositionLabel(newGoaliePreviousPosition)})` : '';
-          parts.push(`New goalie: ${newGoalieName}${previousRole}`);
-        } else {
-          parts.push('New goalie assigned');
-        }
-
-        if (oldGoalieName) {
-          const oldGoalieDestination = oldGoalieNewPosition
-            ? `${oldGoalieName} → ${formatPositionLabel(oldGoalieNewPosition)}`
-            : `${oldGoalieName} leaves goal`;
-          parts.push(oldGoalieDestination);
-        }
-
-        if (parts.length > 0) {
-          return `Goalie change: ${parts.join(' | ')}`;
+          return summary;
         }
 
         const oldGoalie = oldGoalieName || 'Unknown';
         const newGoalie = newGoalieName || 'Unknown';
-        return `Goalie change: ${oldGoalie} → ${newGoalie}`;
+        return `New goalie: ${newGoalie} | Old goalie: ${oldGoalie}`;
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         const goalieId = eventData.goalieId || event.playerId;
         const goalieNameFromId = goalieId ? (getPlayerName ? (getPlayerName(goalieId) || null) : null) : null;
