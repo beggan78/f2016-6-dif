@@ -19,7 +19,6 @@ const SORT_COLUMNS = {
   PRACTICES_PER_MATCH: 'practicesPerMatch',
   ATTENDANCE: 'totalAttendance',
   RATE: 'attendanceRate',
-  TOTAL_PRACTICES: 'totalPractices',
   MATCHES: 'matchesPlayed'
 };
 
@@ -125,15 +124,6 @@ export function AttendanceStatsView({ startDate, endDate }) {
         className: 'text-center',
         render: (player) => (
           <span className="text-slate-300 font-mono">{player.attendanceRate}%</span>
-        )
-      },
-      {
-        key: SORT_COLUMNS.TOTAL_PRACTICES,
-        label: 'Total practices',
-        sortable: true,
-        className: 'text-center',
-        render: (player) => (
-          <span className="text-slate-300 font-mono">{player.totalPractices}</span>
         )
       },
       {
