@@ -23,7 +23,7 @@ COMMENT ON COLUMN public.match_log_event.ordinal IS
   'Auto-incrementing sequence number for efficient ordering and incremental event fetching. Used by live match reporting to fetch only new events since last poll.';
 
 -- 3. Add day-of-month tracking to player_attendance
-TRUNCATE TABLE player_attendance;
+-- TRUNCATE TABLE player_attendance;
 
 ALTER TABLE player_attendance
   ADD COLUMN day_of_month integer NOT NULL;
