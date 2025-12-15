@@ -22,6 +22,8 @@ import { corsHeaders } from '../../../_shared/cors.ts';
 
 // UUID validation regex (from the Edge Function)
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MATCH_LOG_EVENT_COLUMNS =
+  'id, match_id, event_type, period, occurred_at_seconds, ordinal, data, created_at, correlation_id, player_id';
 
 describe('get-live-match-events Edge Function', () => {
   describe('UUID_REGEX validation', () => {
@@ -246,12 +248,12 @@ describe('get-live-match-events Edge Function', () => {
       const querySteps: string[] = [];
 
       querySteps.push('from(match_log_event)');
-      querySteps.push('select(*)');
+      querySteps.push(`select(${MATCH_LOG_EVENT_COLUMNS})`);
       querySteps.push(`eq(match_id, ${matchId})`);
       querySteps.push('order(ordinal, ascending)');
 
       expect(querySteps).toContain('from(match_log_event)');
-      expect(querySteps).toContain('select(*)');
+      expect(querySteps).toContain(`select(${MATCH_LOG_EVENT_COLUMNS})`);
       expect(querySteps).toContain(`eq(match_id, ${matchId})`);
       expect(querySteps).toContain('order(ordinal, ascending)');
     });
@@ -263,7 +265,7 @@ describe('get-live-match-events Edge Function', () => {
       const querySteps: string[] = [];
 
       querySteps.push('from(match_log_event)');
-      querySteps.push('select(*)');
+      querySteps.push(`select(${MATCH_LOG_EVENT_COLUMNS})`);
       querySteps.push(`eq(match_id, ${matchId})`);
       querySteps.push('order(ordinal, ascending)');
 
@@ -281,7 +283,7 @@ describe('get-live-match-events Edge Function', () => {
       const querySteps: string[] = [];
 
       querySteps.push('from(match_log_event)');
-      querySteps.push('select(*)');
+      querySteps.push(`select(${MATCH_LOG_EVENT_COLUMNS})`);
       querySteps.push(`eq(match_id, ${matchId})`);
       querySteps.push('order(ordinal, ascending)');
 

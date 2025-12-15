@@ -6,6 +6,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // UUID validation regex (RFC 4122 compliant)
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+// Explicitly whitelist public fields to avoid exposing internal metadata
+const MATCH_LOG_EVENT_COLUMNS =
+  'id, match_id, event_type, period, occurred_at_seconds, ordinal, data, created_at, correlation_id, player_id'
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -73,7 +76,7 @@ Deno.serve(async (req) => {
     // Build query for match events
     let query = supabase
       .from('match_log_event')
-      .select('*')
+      .select(MATCH_LOG_EVENT_COLUMNS)
       .eq('match_id', matchId)
       .order('ordinal', { ascending: true })
 
