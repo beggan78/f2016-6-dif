@@ -443,18 +443,18 @@ Queue of sync requests for pulling data from external providers.
 
 ### player_attendance
 
-Historical practice attendance imported from external providers and matched to roster players when possible.
+Historical practice attendance imported from external providers and matched to roster players when possible. Each row now represents a single practice date for a player (daily granularity).
 
 **Columns:**
 - `id` (uuid, PK) - Unique identifier (default `uuid_generate_v4()`)
 - `connector_id` (uuid, NOT NULL) - References `connector(id)`; cascade on delete
 - `player_id` (uuid, nullable) - References `player(id)`; set NULL if player record is removed
 - `player_name` (varchar(100), NOT NULL) - Raw player name received from the provider
-- `year` (integer, NOT NULL) - Year the attendance summary covers
-- `month` (integer, NOT NULL) - Month the attendance summary covers (1-12)
-- `day_of_month` (integer, NOT NULL) - Day within the month for the attendance entry (1-31, default: 1)
-- `total_practices` (integer, NOT NULL) - Total number of practices tracked
-- `total_attendance` (integer, NOT NULL) - Number of attended practices
+- `year` (integer, NOT NULL) - Year of the practice date
+- `month` (integer, NOT NULL) - Month of the practice date (1-12)
+- `day_of_month` (integer, NOT NULL) - Day of month for the practice date (1-31)
+- `total_practices` (integer, NOT NULL) - Total practices tracked for that date (usually 1)
+- `total_attendance` (integer, NOT NULL) - Number of attended practices for that date
 - `last_synced_at` (timestamptz, NOT NULL) - Timestamp of the most recent sync (default: now())
 - `created_at` (timestamptz, NOT NULL) - Creation timestamp (default: now())
 - `created_by` (uuid, nullable) - References `auth.users(id)`; set NULL on delete
