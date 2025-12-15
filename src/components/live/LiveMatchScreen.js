@@ -1,79 +1,27 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Radio, Clock, AlertCircle } from 'lucide-react';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { GameEventTimeline } from '../report/GameEventTimeline';
 import { ReportSection } from '../report/ReportSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { findUpcomingMatchByOpponent } from '../../services/matchIntegrationService';
+import { useMatchEvents } from '../../hooks/useMatchEvents';
+import {
+  buildPlayerNameMap,
+  consolidateMatchEvents,
+  EVENT_TYPE_MAPPING,
+  mapDatabaseEventToUIType,
+  parseEventTime
+} from '../../utils/matchEventConsolidation';
+import { extractMatchMetadata } from '../../utils/matchMetadataExtractor';
 
-const EVENT_TYPE_MAPPING = {
-  match_started: 'match_start',
-  match_ended: 'match_end',
-  period_started: 'period_start',
-  period_ended: 'period_end',
-  goal_scored: 'goal_scored',
-  goal_conceded: 'goal_conceded',
-  substitution_in: 'substitution',
-  substitution_out: 'substitution',
-  goalie_enters: 'goalie_assignment',
-  goalie_exits: 'goalie_switch',
-  goalie_switch: 'goalie_switch',
-  position_switch: 'position_change',
-  position_switch_group: 'position_change',
-  player_inactivated: 'player_inactivated',
-  player_activated: 'player_activated',
-  player_reactivated: 'player_activated',
-  fair_play_award: 'fair_play_award'
-};
-
-const mapDatabaseEventToUIType = dbEventType => EVENT_TYPE_MAPPING[dbEventType] || dbEventType;
+export { sortEventsByOrdinal } from '../../utils/matchEventConsolidation';
 
 const formatMatchTime = seconds => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
-
-const parseEventTime = (event) => {
-  if (!event?.created_at) return null;
-  const parsed = Date.parse(event.created_at);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const getOrdinal = (event) => typeof event?.ordinal === 'number' ? event.ordinal : null;
-
-const compareEvents = (a, b) => {
-  const ordA = getOrdinal(a);
-  const ordB = getOrdinal(b);
-
-  if (ordA !== null && ordB !== null && ordA !== ordB) {
-    return ordA - ordB;
-  }
-  if (ordA !== null && ordB === null) return -1;
-  if (ordA === null && ordB !== null) return 1;
-
-  const timeA = parseEventTime(a);
-  const timeB = parseEventTime(b);
-  if (timeA !== null && timeB !== null && timeA !== timeB) {
-    return timeA - timeB;
-  }
-  if (timeA !== null && timeB === null) return -1;
-  if (timeA === null && timeB !== null) return 1;
-
-  const occA = typeof a?.occurred_at_seconds === 'number' ? a.occurred_at_seconds : null;
-  const occB = typeof b?.occurred_at_seconds === 'number' ? b.occurred_at_seconds : null;
-  if (occA !== null && occB !== null && occA !== occB) {
-    return occA - occB;
-  }
-  if (occA !== null && occB === null) return -1;
-  if (occA === null && occB !== null) return 1;
-
-  const idxA = typeof a?.__sourceIndex === 'number' ? a.__sourceIndex : Infinity;
-  const idxB = typeof b?.__sourceIndex === 'number' ? b.__sourceIndex : Infinity;
-  return idxA - idxB;
-};
-
-export const sortEventsByOrdinal = (events = []) => [...events].sort(compareEvents);
 
 export const formatLiveMatchMinuteDisplay = (seconds) => {
   if (!Number.isFinite(seconds) || seconds < 0) return "1'";
@@ -194,81 +142,21 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
  */
 export function LiveMatchScreen({ matchId }) {
   const { currentTeam } = useTeam();
-  const [events, setEvents] = useState([]);
-  const [latestOrdinal, setLatestOrdinal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastUpdateTime, setLastUpdateTime] = useState(null);
   const [upcomingMatch, setUpcomingMatch] = useState(null);
-  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-  const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+  const [isLiveRefreshEnabled, setIsLiveRefreshEnabled] = useState(false);
 
-  // Extract match metadata from events
-  const matchMetadata = useMemo(() => {
-    if (!events || events.length === 0) return null;
+  const {
+    events,
+    isLoading,
+    error,
+    lastUpdateTime
+  } = useMatchEvents(matchId, { isLive: isLiveRefreshEnabled });
 
-    const matchStartEvent = events.find(e => e.event_type === 'match_started');
-    const matchCreatedEvent = events.find(e => e.event_type === 'match_created');
-    const matchEndEvent = events.find(e => e.event_type === 'match_ended');
-    const periodStartEvents = events.filter(e => e.event_type === 'period_started');
-    const goalScoredEvents = events.filter(e => e.event_type === 'goal_scored');
-    const goalConcededEvents = events.filter(e => e.event_type === 'goal_conceded');
+  const matchMetadata = useMemo(() => extractMatchMetadata(events), [events]);
 
-    // Determine if match has actually started
-    const matchHasStarted = !!matchStartEvent;
-
-    // Use match_started data if available, otherwise fall back to match_created
-    const eventForMetadata = matchStartEvent || matchCreatedEvent;
-
-    // Extract team names from match_started or match_created event data
-    const ownTeamName = eventForMetadata?.data?.ownTeamName || 'Own Team';
-    const opponentName = eventForMetadata?.data?.opponentTeamName
-      || matchStartEvent?.data?.opponentTeam
-      || matchStartEvent?.data?.opponentName
-      || 'Opponent';
-
-    // Calculate scores
-    const ownScore = goalScoredEvents.length;
-    const opponentScore = goalConcededEvents.length;
-
-    // Determine current period
-    const currentPeriod = periodStartEvents.length;
-
-    // Calculate match start time from match_started event
-    const matchStartTime = matchStartEvent ? new Date(matchStartEvent.created_at).getTime() : null;
-    const matchEndTime = matchEndEvent ? new Date(matchEndEvent.created_at).getTime() : null;
-
-    // Check if match is live (no match_ended event)
-    const isLive = !matchEndEvent;
-
-    const totalPeriods = eventForMetadata?.data?.totalPeriods
-      || matchStartEvent?.data?.numPeriods
-      || matchStartEvent?.data?.matchMetadata?.plannedPeriods
-      || matchEndEvent?.data?.totalPeriods
-      || currentPeriod;
-
-    const periodDurationMinutes = eventForMetadata?.data?.periodDurationMinutes
-      || matchEndEvent?.data?.matchMetadata?.plannedDurationMinutes
-      || 15;
-
-    const matchDurationSeconds = matchEndEvent?.data?.matchDurationSeconds
-      || (matchStartTime && matchEndTime ? Math.max(0, Math.round((matchEndTime - matchStartTime) / 1000)) : 0);
-
-    return {
-      ownTeamName,
-      opponentName,
-      ownScore,
-      opponentScore,
-      currentPeriod,
-      matchStartTime,
-      matchEndTime,
-      isLive,
-      matchHasStarted,
-      totalPeriods,
-      periodDurationMinutes,
-      matchDurationSeconds
-    };
-  }, [events]);
+  useEffect(() => {
+    setIsLiveRefreshEnabled(Boolean(matchMetadata?.isLive));
+  }, [matchMetadata?.isLive]);
 
   const effectiveMatchDurationSeconds = useMemo(() => {
     return calculateEffectiveMatchDurationSeconds(events, matchMetadata?.isLive);
@@ -306,7 +194,7 @@ export function LiveMatchScreen({ matchId }) {
     // Find most recent period_started event
     const periodStartEvents = events
       .filter(e => e.event_type === 'period_started')
-      .sort((a, b) => b.ordinal - a.ordinal);
+      .sort((a, b) => (b.ordinal || 0) - (a.ordinal || 0));
 
     if (periodStartEvents.length === 0) return 0;
 
@@ -317,77 +205,7 @@ export function LiveMatchScreen({ matchId }) {
     const elapsedMinutes = Math.floor(elapsedSeconds / 60) + 1; // First 60 seconds = minute 1
 
     return elapsedMinutes;
-  }, [events, matchMetadata]);
-
-  // Fetch events from Edge Function
-  const fetchEvents = useCallback(async (since = null) => {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase configuration for live match events');
-      setError('Supabase configuration missing. Please check environment variables.');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const url = new URL(`${supabaseUrl}/functions/v1/get-live-match-events`);
-      url.searchParams.set('match_id', matchId);
-
-      if (since !== null) {
-        url.searchParams.set('since_ordinal', since.toString());
-      }
-
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch events');
-      }
-
-      const data = await response.json();
-
-      if (since !== null) {
-        // Incremental update - append new events
-        setEvents(prev => [...prev, ...(data.events || [])]);
-      } else {
-        // Initial load - replace all events
-        setEvents(data.events || []);
-      }
-
-      setLatestOrdinal(data.latest_ordinal || 0);
-      setLastUpdateTime(new Date());
-      setError(null);
-
-    } catch (err) {
-      console.error('Failed to fetch match events:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [matchId, supabaseAnonKey, supabaseUrl]);
-
-  // Initial load
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
-  // Auto-refresh every 60 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Only fetch if match is still live
-      if (matchMetadata?.isLive) {
-        fetchEvents(latestOrdinal);
-      }
-    }, 60000); // 60 seconds
-
-    return () => clearInterval(interval);
-  }, [fetchEvents, latestOrdinal, matchMetadata?.isLive]);
+  }, [events, matchMetadata?.currentPeriod]);
 
   // Fetch upcoming match data when match hasn't started
   useEffect(() => {
@@ -399,282 +217,12 @@ export function LiveMatchScreen({ matchId }) {
     }
   }, [matchMetadata?.matchHasStarted, matchMetadata?.opponentName, currentTeam?.id]);
 
-  const playerNameMap = useMemo(() => {
-    const map = new Map();
-    const addName = (id, name) => {
-      if (!id || !name || map.has(id)) return;
-      map.set(id, name);
-    };
+  const playerNameMap = useMemo(() => buildPlayerNameMap(events), [events]);
 
-    events.forEach(event => {
-      const data = event?.data || {};
-      const primaryName = data.display_name || data.playerName || data.scorerName || data.goalieName || data.previousGoalieName;
-
-      if (event.player_id) {
-        addName(event.player_id, primaryName);
-      }
-
-      if (data.playerNameMap && typeof data.playerNameMap === 'object') {
-        Object.entries(data.playerNameMap).forEach(([id, name]) => addName(id, name));
-      }
-
-      if (Array.isArray(data.playersOff)) {
-        data.playersOff.forEach((id, index) => addName(id, data.playersOffNames?.[index] || primaryName));
-      }
-
-      if (Array.isArray(data.playersOn)) {
-        data.playersOn.forEach((id, index) => addName(id, data.playersOnNames?.[index] || primaryName));
-      }
-
-      if (data.sourcePlayerId) addName(data.sourcePlayerId, data.sourcePlayerName);
-      if (data.targetPlayerId) addName(data.targetPlayerId, data.targetPlayerName);
-      if (data.swapPlayerId) addName(data.swapPlayerId, data.swapPlayerName);
-
-      if (data.goalieId) addName(data.goalieId, data.goalieName || primaryName);
-      if (data.previousGoalieId || data.oldGoalieId) {
-        addName(data.previousGoalieId || data.oldGoalieId, data.previousGoalieName || primaryName);
-      }
-    });
-
-    return map;
-  }, [events]);
-
-  const consolidatedEvents = useMemo(() => {
-    if (!events || events.length === 0) return [];
-
-    const substitutionGroups = new Map();
-    const positionSwitchGroups = new Map();
-    const mergedEvents = [];
-
-    const getNameFromEvent = (event) => {
-      const data = event?.data || {};
-      return data.display_name || data.playerName || data.scorerName || data.goalieName || data.previousGoalieName || null;
-    };
-
-    events.forEach((event, index) => {
-      const isSubIn = event.event_type === 'substitution_in';
-      const isSubOut = event.event_type === 'substitution_out';
-      const correlationId = event.correlation_id;
-      const isPositionSwitch = event.event_type === 'position_switch';
-      const isGoalieEnter = event.event_type === 'goalie_enters';
-      const isGoalieExit = event.event_type === 'goalie_exits';
-
-      if ((isSubIn || isSubOut) && correlationId) {
-        let group = substitutionGroups.get(correlationId);
-        if (!group) {
-          group = {
-            correlationId,
-            created_at: event.created_at,
-            occurred_at_seconds: event.occurred_at_seconds,
-            ordinal: event.ordinal,
-            period: event.period,
-            data: event.data ? { ...event.data } : {},
-            playersOn: [],
-            playersOff: [],
-            playersOnNames: [],
-            playersOffNames: [],
-            sourceIndices: []
-          };
-          substitutionGroups.set(correlationId, group);
-        }
-
-        group.sourceIndices.push(index);
-
-        const playerId = event.player_id;
-        const playerName = getNameFromEvent(event);
-
-        if (isSubIn && playerId && !group.playersOn.includes(playerId)) {
-          group.playersOn.push(playerId);
-          if (playerName) {
-            group.playersOnNames.push(playerName);
-          }
-        }
-
-        if (isSubOut && playerId && !group.playersOff.includes(playerId)) {
-          group.playersOff.push(playerId);
-          if (playerName) {
-            group.playersOffNames.push(playerName);
-          }
-        }
-
-        if (event.created_at && (!group.created_at || Date.parse(event.created_at) < Date.parse(group.created_at))) {
-          group.created_at = event.created_at;
-        }
-
-        if (typeof event.occurred_at_seconds === 'number' &&
-          (group.occurred_at_seconds === undefined || event.occurred_at_seconds < group.occurred_at_seconds)) {
-          group.occurred_at_seconds = event.occurred_at_seconds;
-        }
-
-        if (typeof event.ordinal === 'number') {
-          group.ordinal = typeof group.ordinal === 'number' ? Math.min(group.ordinal, event.ordinal) : event.ordinal;
-        }
-
-        if (!group.period && event.period) {
-          group.period = event.period;
-        }
-
-        return;
-      }
-
-      if (correlationId && (isPositionSwitch || isGoalieEnter || isGoalieExit)) {
-        let group = positionSwitchGroups.get(correlationId);
-        if (!group) {
-          group = {
-            correlationId,
-            created_at: event.created_at,
-            occurred_at_seconds: event.occurred_at_seconds,
-            ordinal: event.ordinal,
-            period: event.period,
-            events: [],
-            sourceIndices: []
-          };
-          positionSwitchGroups.set(correlationId, group);
-        }
-
-        group.sourceIndices.push(index);
-        group.events.push(event);
-
-        if (event.created_at && (!group.created_at || Date.parse(event.created_at) < Date.parse(group.created_at))) {
-          group.created_at = event.created_at;
-        }
-
-        if (typeof event.occurred_at_seconds === 'number' &&
-          (group.occurred_at_seconds === undefined || event.occurred_at_seconds < group.occurred_at_seconds)) {
-          group.occurred_at_seconds = event.occurred_at_seconds;
-        }
-
-        if (typeof event.ordinal === 'number') {
-          group.ordinal = typeof group.ordinal === 'number' ? Math.min(group.ordinal, event.ordinal) : event.ordinal;
-        }
-
-        if (!group.period && event.period) {
-          group.period = event.period;
-        }
-
-        return;
-      }
-
-      mergedEvents.push({ ...event, __sourceIndex: index });
-    });
-
-    substitutionGroups.forEach(group => {
-      const sourceIndex = group.sourceIndices.length
-        ? Math.min(...group.sourceIndices)
-        : undefined;
-      mergedEvents.push({
-        id: group.correlationId ? `sub-${group.correlationId}` : undefined,
-        event_type: 'substitution',
-        correlation_id: group.correlationId,
-        created_at: group.created_at,
-        occurred_at_seconds: group.occurred_at_seconds,
-        ordinal: group.ordinal,
-        period: group.period,
-        data: {
-          ...group.data,
-          playersOff: group.playersOff,
-          playersOn: group.playersOn,
-          ...(group.playersOffNames.length ? { playersOffNames: group.playersOffNames } : {}),
-          ...(group.playersOnNames.length ? { playersOnNames: group.playersOnNames } : {})
-        },
-        __sourceIndex: sourceIndex
-      });
-    });
-
-    const buildPositionSwitchEvent = (group) => {
-      const changes = [];
-      let goalieEnterEvent = null;
-      let goalieExitEvent = null;
-
-      group.events.forEach(ev => {
-        if (ev.event_type === 'position_switch') {
-          changes.push({
-            playerId: ev.player_id,
-            playerName: getNameFromEvent(ev),
-            oldPosition: ev.data?.old_position || ev.data?.oldPosition || null,
-            newPosition: ev.data?.new_position || ev.data?.newPosition || null
-          });
-        } else if (ev.event_type === 'goalie_enters') {
-          goalieEnterEvent = ev;
-        } else if (ev.event_type === 'goalie_exits') {
-          goalieExitEvent = ev;
-        }
-      });
-
-      const hasGoalieChange = Boolean(goalieExitEvent) ||
-        changes.some(change => (change.oldPosition || '').toLowerCase() === 'goalie' || (change.newPosition || '').toLowerCase() === 'goalie');
-      const hasAnyGoalieEvent = Boolean(goalieEnterEvent || goalieExitEvent) ||
-        changes.some(change => (change.oldPosition || '').toLowerCase() === 'goalie' || (change.newPosition || '').toLowerCase() === 'goalie');
-
-      const newGoalieId = goalieEnterEvent?.player_id ||
-        changes.find(change => (change.newPosition || '').toLowerCase() === 'goalie')?.playerId ||
-        null;
-      const goalieFromOldPosition = changes.find(change => (change.oldPosition || '').toLowerCase() === 'goalie');
-      const goalieFromNewPosition = changes.find(change => (change.newPosition || '').toLowerCase() === 'goalie');
-      const oldGoalieId = goalieFromOldPosition?.playerId ||
-        goalieExitEvent?.player_id ||
-        null;
-
-      const newGoalieName = goalieEnterEvent
-        ? getNameFromEvent(goalieEnterEvent)
-        : (goalieFromNewPosition ? goalieFromNewPosition.playerName : null);
-      const oldGoalieName = goalieExitEvent
-        ? getNameFromEvent(goalieExitEvent)
-        : (goalieFromOldPosition ? goalieFromOldPosition.playerName : null);
-
-      const oldGoalieNewPosition = goalieFromOldPosition?.newPosition || null;
-      const newGoaliePreviousPosition = goalieFromNewPosition?.oldPosition || null;
-
-      // If it's only a goalie enters event without any goalie position change info, treat as a simple goalie assignment
-      if (!hasGoalieChange && !goalieExitEvent && !goalieFromOldPosition && hasAnyGoalieEvent && !changes.length) {
-        return {
-          id: group.correlationId ? `pos-${group.correlationId}` : undefined,
-          event_type: 'goalie_enters',
-          correlation_id: group.correlationId,
-          created_at: group.created_at || new Date().toISOString(),
-          occurred_at_seconds: typeof group.occurred_at_seconds === 'number' ? group.occurred_at_seconds : 0,
-          ordinal: group.ordinal,
-          period: group.period,
-          data: {
-            ...(goalieEnterEvent?.data || {}),
-            goalieId: newGoalieId,
-            goalieName: newGoalieName || (newGoalieId ? playerNameMap.get(newGoalieId) : null)
-          }
-        };
-      }
-
-      return {
-        id: group.correlationId ? `pos-${group.correlationId}` : undefined,
-        event_type: hasGoalieChange ? 'goalie_switch' : 'position_switch_group',
-        correlation_id: group.correlationId,
-        created_at: group.created_at || new Date().toISOString(),
-        occurred_at_seconds: typeof group.occurred_at_seconds === 'number' ? group.occurred_at_seconds : 0,
-        ordinal: group.ordinal,
-        period: group.period,
-        data: {
-          positionChanges: changes,
-          ...(oldGoalieId ? { oldGoalieId } : {}),
-          ...(newGoalieId ? { newGoalieId } : {}),
-          ...(oldGoalieName ? { oldGoalieName } : {}),
-          ...(newGoalieName ? { newGoalieName } : {}),
-          ...(oldGoalieNewPosition ? { oldGoalieNewPosition } : {}),
-          ...(newGoaliePreviousPosition ? { newGoaliePreviousPosition } : {})
-        }
-      };
-    };
-
-    positionSwitchGroups.forEach(group => {
-      const sourceIndex = group.sourceIndices.length
-        ? Math.min(...group.sourceIndices)
-        : undefined;
-      mergedEvents.push({
-        ...buildPositionSwitchEvent(group),
-        __sourceIndex: sourceIndex
-      });
-    });
-
-    return sortEventsByOrdinal(mergedEvents);
-  }, [events, playerNameMap]);
+  const consolidatedEvents = useMemo(
+    () => consolidateMatchEvents(events, { playerNameMap }),
+    [events, playerNameMap]
+  );
 
   const goalScorers = useMemo(() => {
     const map = {};
@@ -695,7 +243,7 @@ export function LiveMatchScreen({ matchId }) {
   const transformedEvents = useMemo(() => {
     // Filter out events with unmapped/unknown event types (like match_created)
     const mappableEvents = consolidatedEvents.filter(event =>
-      EVENT_TYPE_MAPPING.hasOwnProperty(event.event_type)
+      Object.prototype.hasOwnProperty.call(EVENT_TYPE_MAPPING, event.event_type)
     );
 
     return mappableEvents.map(event => {
