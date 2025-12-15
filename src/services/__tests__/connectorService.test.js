@@ -666,11 +666,6 @@ describe('connectorService', () => {
           { date: '2025-01-05', year: 2025, month: 1, day: 5, practices: 5, attendance: 4 },
           { date: '2025-01-20', year: 2025, month: 1, day: 20, practices: 5, attendance: 5 },
           { date: '2025-02-02', year: 2025, month: 2, day: 2, practices: 8, attendance: 7 }
-        ]),
-        monthlyRecords: expect.arrayContaining([
-          { date: '2025-01-05', year: 2025, month: 1, day: 5, practices: 5, attendance: 4 },
-          { date: '2025-01-20', year: 2025, month: 1, day: 20, practices: 5, attendance: 5 },
-          { date: '2025-02-02', year: 2025, month: 2, day: 2, practices: 8, attendance: 7 }
         ])
       });
 
@@ -683,8 +678,7 @@ describe('connectorService', () => {
         attendanceRate: 80.0,
         matchesPlayed: 1,
         practicesPerMatch: 8.0,
-        attendanceRecords: [{ date: '2025-01-15', year: 2025, month: 1, day: 15, practices: 10, attendance: 8 }],
-        monthlyRecords: [{ date: '2025-01-15', year: 2025, month: 1, day: 15, practices: 10, attendance: 8 }]
+        attendanceRecords: [{ date: '2025-01-15', year: 2025, month: 1, day: 15, practices: 10, attendance: 8 }]
       });
     });
 

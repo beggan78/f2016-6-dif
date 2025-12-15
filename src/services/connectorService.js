@@ -715,8 +715,7 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
         attendanceRate: Math.round(attendanceRate * 10) / 10, // 1 decimal place
         matchesPlayed,
         practicesPerMatch: Math.round(practicesPerMatch * 100) / 100, // 2 decimal places
-        attendanceRecords: attendanceData.attendanceRecords,
-        monthlyRecords: attendanceData.attendanceRecords
+        attendanceRecords: attendanceData.attendanceRecords
       };
     });
 

@@ -30,8 +30,7 @@ describe('AttendanceStatsView', () => {
       totalAttendance: 18,
       attendanceRate: 90.0,
       matchesPlayed: 8,
-      practicesPerMatch: 2.25,
-      monthlyRecords: []
+      practicesPerMatch: 2.25
     },
     {
       playerId: 'player-2',
@@ -40,8 +39,7 @@ describe('AttendanceStatsView', () => {
       totalAttendance: 15,
       attendanceRate: 75.0,
       matchesPlayed: 7,
-      practicesPerMatch: 2.14,
-      monthlyRecords: []
+      practicesPerMatch: 2.14
     },
     {
       playerId: 'player-3',
@@ -50,8 +48,7 @@ describe('AttendanceStatsView', () => {
       totalAttendance: 12,
       attendanceRate: 60.0,
       matchesPlayed: 6,
-      practicesPerMatch: 2.0,
-      monthlyRecords: []
+      practicesPerMatch: 2.0
     }
   ];
 
