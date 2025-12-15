@@ -4,7 +4,7 @@ import { Calendar, MapPin, Trophy, History, PlusCircle } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getFinishedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
-import { getOutcomeBadgeClasses, getMatchTypeBadgeClasses } from '../../utils/badgeUtils';
+import { getOutcomeBadgeClasses, getMatchTypeBadgeClasses, getFormatBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
 import { Button } from '../shared/UI';
@@ -29,8 +29,8 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
     setFormatFilter,
     clearFilters
   } = useStatsFilters();
-  const [needsCollapse, setNeedsCollapse] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
+  const [isAtLeastSm, setIsAtLeastSm] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth >= 640; // sm breakpoint
   });
 
   // Fetch match data from database
@@ -62,7 +62,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
   // Detect screen size for responsive layout
   useEffect(() => {
     const checkScreenSize = () => {
-      setNeedsCollapse(window.innerWidth < 1024);
+      setIsAtLeastSm(window.innerWidth >= 640);
     };
 
     checkScreenSize();
@@ -189,8 +189,8 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
 
                     {/* Match Details Row */}
                     <div className="flex items-center gap-3 mt-1">
-                      {/* Venue Type - Hidden on narrow screens */}
-                      {!needsCollapse && (
+                      {/* Venue Type - Hidden on extra narrow screens */}
+                      {isAtLeastSm && (
                         <div className="flex items-center gap-1 text-slate-400">
                           <MapPin className="h-3 w-3" />
                           <span className="text-sm">
@@ -199,9 +199,14 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
                         </div>
                       )}
 
-                      {/* Match Type - Hidden on narrow screens */}
-                      {!needsCollapse && (
+                      {/* Match Type - Hidden on extra narrow screens */}
+                      {isAtLeastSm && (
                         <span className={getMatchTypeBadgeClasses(match.type)}>{match.type}</span>
+                      )}
+
+                      {/* Match Format - Hidden on extra narrow screens */}
+                      {isAtLeastSm && match.format && (
+                        <span className={getFormatBadgeClasses(match.format)}>{match.format}</span>
                       )}
                     </div>
                   </div>
@@ -212,8 +217,8 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
                   <div className="text-2xl font-mono font-bold text-slate-100 mb-1">
                     {formatScore(match)}
                   </div>
-                  {/* Win/Loss/Draw - Hidden on narrow screens */}
-                  {!needsCollapse && (
+                  {/* Win/Loss/Draw - Hidden on extra narrow screens */}
+                  {isAtLeastSm && (
                     <span className={getOutcomeBadgeClasses(match.outcome)}>
                       {match.outcome === 'W' ? 'Win' :
                        match.outcome === 'D' ? 'Draw' : 'Loss'}
