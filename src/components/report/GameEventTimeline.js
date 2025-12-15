@@ -1,12 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  Play, 
-  Square, 
-  Trophy, 
-  RotateCcw, 
-  Shield, 
-  Pause, 
-  Clock, 
+import {
+  Play,
+  Square,
+  Trophy,
+  Award,
+  Pause,
+  Clock,
   ArrowUpDown,
   AlertCircle,
   CheckCircle,
@@ -19,6 +18,42 @@ import { createPersistenceManager } from '../../utils/persistenceManager';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
+
+const getOrdinal = (event) => typeof event?.ordinal === 'number' ? event.ordinal : null;
+const getTimestamp = (event) => typeof event?.timestamp === 'number' ? event.timestamp : null;
+const getOccurredSeconds = (event) => typeof event?.occurredAtSeconds === 'number' ? event.occurredAtSeconds : null;
+const getSourceIndex = (event) => typeof event?.__sourceIndex === 'number' ? event.__sourceIndex : Infinity;
+
+export const compareEventsForSort = (a, b, sortOrder = 'asc') => {
+  const ordA = getOrdinal(a);
+  const ordB = getOrdinal(b);
+
+  if (ordA !== null || ordB !== null) {
+    if (ordA === null) return sortOrder === 'desc' ? 1 : -1;
+    if (ordB === null) return sortOrder === 'desc' ? -1 : 1;
+    if (ordA !== ordB) return sortOrder === 'desc' ? ordB - ordA : ordA - ordB;
+  }
+
+  const timeA = getTimestamp(a);
+  const timeB = getTimestamp(b);
+  if (timeA !== null || timeB !== null) {
+    if (timeA === null) return sortOrder === 'desc' ? 1 : -1;
+    if (timeB === null) return sortOrder === 'desc' ? -1 : 1;
+    if (timeA !== timeB) return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+  }
+
+  const occA = getOccurredSeconds(a);
+  const occB = getOccurredSeconds(b);
+  if (occA !== null || occB !== null) {
+    if (occA === null) return sortOrder === 'desc' ? 1 : -1;
+    if (occB === null) return sortOrder === 'desc' ? -1 : 1;
+    if (occA !== occB) return sortOrder === 'desc' ? occB - occA : occA - occB;
+  }
+
+  const idxA = getSourceIndex(a);
+  const idxB = getSourceIndex(b);
+  return idxA - idxB;
+};
 
 // Timeline preferences persistence manager
 const timelinePrefsManager = createPersistenceManager(STORAGE_KEYS.TIMELINE_PREFERENCES, {
@@ -123,22 +158,40 @@ export function GameEventTimeline({
         if (type === EVENT_TYPES.GOALIE_ASSIGNMENT) {
           return eventData.goalieId === selectedPlayerId;
         }
+
+        if (type === EVENT_TYPES.GOALIE_SWITCH) {
+          if (eventData.oldGoalieId === selectedPlayerId || eventData.newGoalieId === selectedPlayerId) {
+            return true;
+          }
+          const goalieChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+          return goalieChanges.some(change => change.playerId === selectedPlayerId);
+        }
         
         // Show position change events if the selected player is involved
         if (type === EVENT_TYPES.POSITION_CHANGE) {
-          return eventData.player1Id === selectedPlayerId || eventData.player2Id === selectedPlayerId;
+          if (eventData.player1Id === selectedPlayerId || eventData.player2Id === selectedPlayerId) {
+            return true;
+          }
+          const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+          return positionChanges.some(change => change.playerId === selectedPlayerId);
         }
-        
+
+        // Show player inactivation/activation events if the selected player is involved
+        if (type === EVENT_TYPES.PLAYER_INACTIVATED || type === EVENT_TYPES.PLAYER_ACTIVATED) {
+          return event.playerId === selectedPlayerId;
+        }
+
+        if (type === EVENT_TYPES.FAIR_PLAY_AWARD) {
+          return event.playerId === selectedPlayerId;
+        }
+
         // Hide other events for specific player filter
         return false;
       });
     }
 
-    // Sort by timestamp
-    filtered.sort((a, b) => {
-      const comparison = a.timestamp - b.timestamp;
-      return sortOrder === 'desc' ? -comparison : comparison;
-    });
+    // Sort by ordinal first, then timestamp, respecting requested order
+    filtered.sort((a, b) => compareEventsForSort(a, b, sortOrder));
 
     return filtered;
   }, [events, sortOrder, selectedPlayerId, goalScorers, debugMode]);
@@ -149,6 +202,7 @@ export function GameEventTimeline({
     let intermissionEvents = [];
     let matchStartEvent = null;
     let matchEndEvent = null;
+    let fairPlayAwardEvent = null;
     
     filteredAndSortedEvents.forEach(event => {
       // Handle match-level events specially (not grouped with periods)
@@ -159,6 +213,11 @@ export function GameEventTimeline({
       
       if (event.type === EVENT_TYPES.MATCH_END) {
         matchEndEvent = event;
+        return;
+      }
+
+      if (event.type === EVENT_TYPES.FAIR_PLAY_AWARD) {
+        fairPlayAwardEvent = event;
         return;
       }
       
@@ -200,7 +259,7 @@ export function GameEventTimeline({
       }
     });
     
-    return { groups, intermissions: processedIntermissions, matchStartEvent, matchEndEvent };
+    return { groups, intermissions: processedIntermissions, matchStartEvent, matchEndEvent, fairPlayAwardEvent };
   }, [filteredAndSortedEvents]);
 
   // Get event icon based on type
@@ -218,10 +277,9 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOAL_CONCEDED:
         return Trophy;
       case EVENT_TYPES.SUBSTITUTION:
-        return RotateCcw;
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
-        return Shield;
+        return ArrowUpDown;
       case EVENT_TYPES.TIMER_PAUSED:
       case EVENT_TYPES.PERIOD_PAUSED:
         return Pause;
@@ -236,6 +294,8 @@ export function GameEventTimeline({
         return XCircle;
       case EVENT_TYPES.SUBSTITUTION_UNDONE:
         return XCircle;
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        return Award;
       case EVENT_TYPES.TECHNICAL_TIMEOUT:
         return AlertCircle;
       default:
@@ -265,6 +325,8 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'text-purple-400';
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        return 'text-emerald-300';
       case EVENT_TYPES.TIMER_PAUSED:
       case EVENT_TYPES.PERIOD_PAUSED:
         return 'text-orange-400';
@@ -297,9 +359,21 @@ export function GameEventTimeline({
       case EVENT_TYPES.GOALIE_SWITCH:
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         return 'bg-purple-900/20 border-purple-700/30';
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        return 'bg-emerald-800/30 border-emerald-500/60';
       default:
         return 'bg-slate-700/30 border-slate-600/30';
     }
+  };
+
+  const formatPositionLabel = (positionKey) => {
+    if (!positionKey || typeof positionKey !== 'string') return 'Unknown position';
+    return positionKey
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
   // Format event description
@@ -313,9 +387,11 @@ export function GameEventTimeline({
       case EVENT_TYPES.MATCH_END:
         return `Match ended`;
       case EVENT_TYPES.PERIOD_START:
-        return `Period ${eventData.periodNumber || 'Unknown'} started`;
+        const periodStartNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || 'Unknown';
+        return `Period ${periodStartNumber} started`;
       case EVENT_TYPES.PERIOD_END:
-        return `Period ${eventData.periodNumber || 'Unknown'} ended`;
+        const periodEndNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || 'Unknown';
+        return `Period ${periodEndNumber} ended`;
       case EVENT_TYPES.GOAL_SCORED:
         // Extract score data for new format: "3-2 - Own Team Scored - PlayerName"
         const ownScore = eventData.ownScore;
@@ -366,17 +442,139 @@ export function GameEventTimeline({
         
         return `Substitution: ${offPlayersDisplay} → ${onPlayersDisplay}`;
       case EVENT_TYPES.GOALIE_SWITCH:
-        const oldGoalie = eventData.oldGoalieId ? (getPlayerName ? (getPlayerName(eventData.oldGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const newGoalie = eventData.newGoalieId ? (getPlayerName ? (getPlayerName(eventData.newGoalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        return `Goalie change: ${oldGoalie} → ${newGoalie}`;
+        const goaliePositionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+        const oldGoalieChange = goaliePositionChanges.find(change => (change.oldPosition || '').toLowerCase() === 'goalie');
+        const newGoalieChange = goaliePositionChanges.find(change => (change.newPosition || '').toLowerCase() === 'goalie');
+        const otherPositionChanges = goaliePositionChanges.filter(change =>
+          change !== oldGoalieChange && change !== newGoalieChange
+        );
+
+        const resolveChangeName = (change) =>
+          change?.playerName ||
+          (change?.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+          null;
+
+        const oldGoalieName = eventData.oldGoalieName ||
+          (eventData.oldGoalieId && getPlayerName ? (getPlayerName(eventData.oldGoalieId) || null) : null) ||
+          resolveChangeName(oldGoalieChange);
+        const newGoalieName = eventData.newGoalieName ||
+          (eventData.newGoalieId && getPlayerName ? (getPlayerName(eventData.newGoalieId) || null) : null) ||
+          resolveChangeName(newGoalieChange);
+        const newGoaliePreviousPosition = eventData.newGoaliePreviousPosition ||
+          newGoalieChange?.oldPosition;
+        const oldGoalieNewPosition = eventData.oldGoalieNewPosition ||
+          oldGoalieChange?.newPosition;
+
+        const parts = [];
+
+        if (newGoalieName || newGoaliePreviousPosition || newGoalieChange) {
+          const previousRole = newGoaliePreviousPosition ? ` (from ${formatPositionLabel(newGoaliePreviousPosition)})` : '';
+          parts.push(`New goalie: ${newGoalieName || 'Unknown'}${previousRole}`);
+        }
+
+        if (oldGoalieName || oldGoalieNewPosition || oldGoalieChange) {
+          const destination = oldGoalieNewPosition
+            ? ` → ${formatPositionLabel(oldGoalieNewPosition)}`
+            : ' leaves goal';
+          parts.push(`Old goalie: ${oldGoalieName || 'Unknown'}${destination}`);
+        }
+
+        if (otherPositionChanges.length > 0) {
+          const summary = otherPositionChanges.map(change => {
+            const name = resolveChangeName(change) || 'Unknown';
+            const oldPos = formatPositionLabel(change.oldPosition);
+            const newPos = formatPositionLabel(change.newPosition);
+            return `${name} (${oldPos} → ${newPos})`;
+          }).join(' | ');
+          parts.push(`Other switches: ${summary}`);
+        }
+
+        if (parts.length > 0) {
+          return parts.join(' | ');
+        }
+
+        if (goaliePositionChanges.length > 0) {
+          const summary = goaliePositionChanges.map(change => {
+            const name =
+              resolveChangeName(change) ||
+              'Unknown';
+            const oldPos = formatPositionLabel(change.oldPosition);
+            const newPos = formatPositionLabel(change.newPosition);
+            return `${name} (${oldPos} → ${newPos})`;
+          }).join(' | ');
+          return summary;
+        }
+
+        const oldGoalie = oldGoalieName || 'Unknown';
+        const newGoalie = newGoalieName || 'Unknown';
+        return `New goalie: ${newGoalie} | Old goalie: ${oldGoalie}`;
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
-        const assignedGoalie = eventData.goalieId ? (getPlayerName ? (getPlayerName(eventData.goalieId) || 'Unknown') : 'Unknown') : 'Unknown';
-        const assignedGoalieName = eventData.goalieName || assignedGoalie;
-        return eventData.description || `${assignedGoalieName} is goalie`;
+        const goalieId = eventData.goalieId || event.playerId;
+        const goalieNameFromId = goalieId ? (getPlayerName ? (getPlayerName(goalieId) || null) : null) : null;
+        const assignedGoalieName = eventData.goalieName || eventData.display_name || goalieNameFromId || null;
+        if (eventData.description) {
+          return eventData.description;
+        }
+        if (assignedGoalieName) {
+          return `${assignedGoalieName} is goalie`;
+        }
+        return 'Goalie assigned';
       case EVENT_TYPES.POSITION_CHANGE:
-        const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
-        return `Position switch: ${player1} ↔ ${player2}`;
+        const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+        if (positionChanges.length > 0) {
+          const summary = positionChanges.map(change => {
+            const name =
+              change.playerName ||
+              (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+              'Unknown';
+            const newPos = formatPositionLabel(change.newPosition);
+            return `${name} → ${newPos}`;
+          }).join(' | ');
+          return `Position switch: ${summary}`;
+        }
+        if (eventData.player1Id && eventData.player2Id) {
+          const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
+          const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
+          return `Position switch: ${player1} ↔ ${player2}`;
+        }
+
+        const positionChangeName =
+          eventData.display_name ||
+          (eventData.player1Id && getPlayerName ? (getPlayerName(eventData.player1Id) || null) : null) ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          eventData.playerName ||
+          'Unknown';
+
+        const oldPosition = eventData.old_position || eventData.oldPosition;
+        const newPosition = eventData.new_position || eventData.newPosition;
+
+        if (newPosition || oldPosition) {
+          const movement = oldPosition ? `${formatPositionLabel(oldPosition)} → ${formatPositionLabel(newPosition || 'Unknown')}` : `→ ${formatPositionLabel(newPosition || 'Unknown')}`;
+          return `Position change: ${positionChangeName} ${movement}`;
+        }
+
+        return `Position change: ${positionChangeName}`;
+      case EVENT_TYPES.PLAYER_INACTIVATED:
+        const inactivatedPlayerName =
+          eventData.display_name ||
+          eventData.playerName ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          'Unknown';
+        return `${inactivatedPlayerName} inactivated`;
+      case EVENT_TYPES.PLAYER_ACTIVATED:
+        const activatedPlayerName =
+          eventData.display_name ||
+          eventData.playerName ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          'Unknown';
+        return `${activatedPlayerName} re-activated`;
+      case EVENT_TYPES.FAIR_PLAY_AWARD:
+        const fairPlayName =
+          eventData.display_name ||
+          eventData.playerName ||
+          (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+          'Unknown player';
+        return `Fair Play Award: ${fairPlayName}`;
       case EVENT_TYPES.TIMER_PAUSED:
         return `Timer paused`;
       case EVENT_TYPES.TIMER_RESUMED:
@@ -542,12 +740,23 @@ export function GameEventTimeline({
     const eventData = data || {};
     const details = [];
 
-    if (event.periodNumber) {
+    if (event.periodNumber && event.type !== EVENT_TYPES.MATCH_END && event.type !== EVENT_TYPES.FAIR_PLAY_AWARD) {
       details.push(`Period: ${event.periodNumber}`);
     }
 
     if (eventData.ownScore !== undefined && eventData.opponentScore !== undefined) {
       details.push(`Score: ${eventData.ownScore} - ${eventData.opponentScore}`);
+    }
+
+    if (event.type === EVENT_TYPES.FAIR_PLAY_AWARD) {
+      const recipientName =
+        eventData.display_name ||
+        eventData.playerName ||
+        (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
+        null;
+      if (recipientName) {
+        details.push(`Awarded to: ${recipientName}`);
+      }
     }
 
     if (event.undone) {
@@ -561,8 +770,43 @@ export function GameEventTimeline({
       details.push(`Related to: ${event.relatedEventId}`);
     }
 
+    const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+    if (positionChanges.length > 0) {
+      details.push('Position changes:');
+      positionChanges.forEach(change => {
+        const name =
+          change.playerName ||
+          (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
+          'Unknown';
+        const oldPos = formatPositionLabel(change.oldPosition);
+        const newPos = formatPositionLabel(change.newPosition);
+        details.push(`- ${name}: ${oldPos} → ${newPos}`);
+      });
+    }
+
+    const startingLineup = Array.isArray(eventData.startingLineup) ? eventData.startingLineup : [];
+    if (startingLineup.length > 0) {
+      details.push('Starting positions:');
+      startingLineup.forEach((entry) => {
+        const positionLabel = formatPositionLabel(entry.position);
+        const playerName = entry.name || 'Unknown';
+        details.push(`- ${positionLabel}: ${playerName}`);
+      });
+    }
+
     return details;
   };
+
+  const renderBoundaryEvent = (event) => (
+    <div className="space-y-4">
+      <div className="relative">
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
+        <div className="space-y-4">
+          {renderEvent(event)}
+        </div>
+      </div>
+    </div>
+  );
 
   if (!events || events.length === 0) {
     return (
@@ -613,17 +857,14 @@ export function GameEventTimeline({
 
       {/* Timeline - Chronological with match-level events */}
       <div className="space-y-6">
-        {/* Match Start Event */}
-        {groupedEventsByPeriod.matchStartEvent && (
-          <div className="space-y-4">
-            <div className="relative">
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
-              <div className="space-y-4">
-                {renderEvent(groupedEventsByPeriod.matchStartEvent)}
-              </div>
-            </div>
-          </div>
+        {/* Boundary Events - respect sort order */}
+        {sortOrder === 'desc' && (
+          <>
+            {groupedEventsByPeriod.fairPlayAwardEvent && renderBoundaryEvent(groupedEventsByPeriod.fairPlayAwardEvent)}
+            {groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+          </>
         )}
+        {sortOrder === 'asc' && groupedEventsByPeriod.matchStartEvent && renderBoundaryEvent(groupedEventsByPeriod.matchStartEvent)}
         
         {/* Period Events */}
         {Object.keys(groupedEventsByPeriod.groups)
@@ -632,19 +873,20 @@ export function GameEventTimeline({
             const periodEvents = groupedEventsByPeriod.groups[periodNumber];
             const nextPeriod = parseInt(periodNumber) + 1;
             const intermission = groupedEventsByPeriod.intermissions[nextPeriod];
+            const periodHeader = (periodNumber > 1 || (periodNumber === 1 && !groupedEventsByPeriod.matchStartEvent)) ? (
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="h-px bg-slate-600 flex-1"></div>
+                <h3 className="text-sm font-medium text-slate-300 px-3">
+                  Period {periodNumber}
+                </h3>
+                <div className="h-px bg-slate-600 flex-1"></div>
+              </div>
+            ) : null;
             
             return (
               <div key={`period-${periodNumber}`} className="space-y-4">
-                {/* Period Header - show for periods > 1, or period 1 when there's no match start event */}
-                {(periodNumber > 1 || (periodNumber === 1 && !groupedEventsByPeriod.matchStartEvent)) && (
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="h-px bg-slate-600 flex-1"></div>
-                    <h3 className="text-sm font-medium text-slate-300 px-3">
-                      Period {periodNumber}
-                    </h3>
-                    <div className="h-px bg-slate-600 flex-1"></div>
-                  </div>
-                )}
+                {/* Period Header placement depends on sort order: show near chronological start */}
+                {sortOrder === 'asc' && periodHeader}
                 
                 {/* Period Events */}
                 <div className="relative">
@@ -656,6 +898,8 @@ export function GameEventTimeline({
                     {periodEvents.map((event) => renderEvent(event))}
                   </div>
                 </div>
+
+                {sortOrder === 'desc' && periodHeader}
                 
                 {/* Intermission after this period (if exists) */}
                 {intermission && renderIntermission(intermission)}
@@ -663,17 +907,14 @@ export function GameEventTimeline({
             );
           })}
           
-        {/* Match End Event */}
-        {groupedEventsByPeriod.matchEndEvent && (
-          <div className="space-y-4">
-            <div className="relative">
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-600"></div>
-              <div className="space-y-4">
-                {renderEvent(groupedEventsByPeriod.matchEndEvent)}
-              </div>
-            </div>
-          </div>
+        {/* Boundary Events - respect sort order */}
+        {sortOrder === 'asc' && (
+          <>
+            {groupedEventsByPeriod.matchEndEvent && renderBoundaryEvent(groupedEventsByPeriod.matchEndEvent)}
+            {groupedEventsByPeriod.fairPlayAwardEvent && renderBoundaryEvent(groupedEventsByPeriod.fairPlayAwardEvent)}
+          </>
         )}
+        {sortOrder === 'desc' && groupedEventsByPeriod.matchStartEvent && renderBoundaryEvent(groupedEventsByPeriod.matchStartEvent)}
       </div>
     </div>
   );

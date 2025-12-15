@@ -311,6 +311,25 @@ describe('EventPersistenceService', () => {
       expect(result.data).toBeNull();
     });
 
+    it('should store display name for player inactivated when provided', () => {
+      const event = {
+        id: 'evt_inactivated_named',
+        type: 'player_inactivated',
+        matchTime: '12:34',
+        periodNumber: 1,
+        data: {
+          playerId: 'player_123',
+          display_name: 'Inactive Player'
+        }
+      };
+
+      const result = eventPersistenceService.transformEventForDatabase(event, 'match_1');
+
+      expect(result.event_type).toBe('player_inactivated');
+      expect(result.player_id).toBe('player_123');
+      expect(result.data).toEqual({ display_name: 'Inactive Player' });
+    });
+
     it('should store minimal payload for player activated', () => {
       const event = {
         id: 'evt_activated',
@@ -325,9 +344,28 @@ describe('EventPersistenceService', () => {
 
       const result = eventPersistenceService.transformEventForDatabase(event, 'match_1');
 
-      expect(result.event_type).toBe('player_activated');
+      expect(result.event_type).toBe('player_reactivated');
       expect(result.player_id).toBe('player_999');
       expect(result.data).toBeNull();
+    });
+
+    it('should map player_activated to player_reactivated with display name when provided', () => {
+      const event = {
+        id: 'evt_reactivated',
+        type: 'player_activated',
+        matchTime: '00:45',
+        periodNumber: 2,
+        data: {
+          playerId: 'player_999',
+          display_name: 'Reactivated Player'
+        }
+      };
+
+      const result = eventPersistenceService.transformEventForDatabase(event, 'match_1');
+
+      expect(result.event_type).toBe('player_reactivated');
+      expect(result.player_id).toBe('player_999');
+      expect(result.data).toEqual({ display_name: 'Reactivated Player' });
     });
 
     it('should generate UUID correlation IDs for substitutions with non-UUID event ids', () => {

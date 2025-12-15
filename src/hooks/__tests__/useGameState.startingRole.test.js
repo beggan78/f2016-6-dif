@@ -27,9 +27,14 @@ jest.mock('../useTeamConfig', () => ({
   useTeamConfig: jest.fn()
 }));
 
-jest.mock('../useMatchEvents', () => ({
-  useMatchEvents: jest.fn()
-}));
+jest.mock('../useMatchEvents', () => {
+  const legacyMock = jest.fn();
+  return {
+    __esModule: true,
+    useLegacyMatchEvents: legacyMock,
+    useMatchEvents: jest.fn()
+  };
+});
 
 jest.mock('../useMatchPersistence', () => ({
   useMatchPersistence: jest.fn()
@@ -98,7 +103,7 @@ jest.mock('../../utils/formationGenerator', () => ({
 
 import { usePlayerState } from '../usePlayerState';
 import { useTeamConfig } from '../useTeamConfig';
-import { useMatchEvents } from '../useMatchEvents';
+import { useLegacyMatchEvents as useMatchEvents } from '../useMatchEvents';
 import { useMatchPersistence } from '../useMatchPersistence';
 import { upsertPlayerMatchStats } from '../../services/matchStateManager';
 import { useGameState } from '../useGameState';

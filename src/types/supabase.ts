@@ -1178,6 +1178,7 @@ export type Database = {
         | "sub_order_changed"
         | "player_inactivated"
         | "player_reactivated"
+        | "fair_play_award"
       match_format: "3v3" | "5v5" | "7v7" | "9v9" | "11v11"
       match_outcome: "win" | "loss" | "draw"
       match_state: "running" | "finished" | "pending"
@@ -1349,6 +1350,7 @@ export const Constants = {
         "sub_order_changed",
         "player_inactivated",
         "player_reactivated",
+        "fair_play_award",
       ],
       match_format: ["3v3", "5v5", "7v7", "9v9", "11v11"],
       match_outcome: ["win", "loss", "draw"],

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Users, UserPen, Dice5, Settings } from 'lucide-react';
+import { Users, UserPen, Dice5, Settings, Share2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
+import { NotificationModal } from './UI';
+import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const { isAuthenticated, user, userProfile } = useAuth();
   const { hasTeams, canManageTeam, hasPendingRequests, pendingRequestsCount, canViewStatistics } = useTeam();
 
@@ -78,6 +81,41 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     setIsOpen(false);
     if (onOpenPreferencesModal) {
       onOpenPreferencesModal();
+    }
+  };
+
+  const handleCopyLiveLink = async () => {
+    setIsOpen(false);
+
+    if (!currentMatchId) {
+      console.warn('No current match ID available');
+      return;
+    }
+
+    try {
+      const result = await copyLiveMatchUrlToClipboard(currentMatchId);
+
+      if (result.success) {
+        setNotification({
+          isOpen: true,
+          title: 'Link Copied',
+          message: 'Live match link copied to clipboard!'
+        });
+      } else {
+        // Fallback: Show URL in modal
+        setNotification({
+          isOpen: true,
+          title: 'Live Match URL',
+          message: result.url
+        });
+      }
+    } catch (error) {
+      console.error('Failed to handle live link:', error);
+      setNotification({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to generate live match link'
+      });
     }
   };
 
@@ -310,13 +348,27 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                 onClick={handleAddPlayer}
                 disabled={!isConfigScreen}
                 className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                  isConfigScreen 
-                    ? 'text-slate-100 hover:bg-slate-600 hover:text-sky-400' 
+                  isConfigScreen
+                    ? 'text-slate-100 hover:bg-slate-600 hover:text-sky-400'
                     : 'text-slate-400 cursor-not-allowed'
                 }`}
               >
                 Add Player
               </button>
+
+              {/* Copy Live Match Link - Show when match is running or pending */}
+              {isAuthenticated && currentMatchId && (matchState === 'running' || matchState === 'pending') && (
+                <button
+                  onClick={handleCopyLiveLink}
+                  className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Share2 className="w-4 h-4" />
+                    <span>Get Live Match Link</span>
+                  </div>
+                </button>
+              )}
+
               <button
                 onClick={handleRestartMatch}
                 className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
@@ -340,6 +392,13 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
           </div>
         </>
       )}
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ isOpen: false, title: '', message: '' })}
+        title={notification.title}
+        message={notification.message}
+      />
     </div>
   );
 }

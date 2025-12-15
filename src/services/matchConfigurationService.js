@@ -8,11 +8,12 @@
  * - Match configuration updates
  */
 
-import { 
-  createMatch, 
-  formatMatchDataFromGameState, 
-  updateExistingMatch, 
-  saveInitialMatchConfig 
+import {
+  createMatch,
+  formatMatchDataFromGameState,
+  updateExistingMatch,
+  saveInitialMatchConfig,
+  logMatchCreatedEvent
 } from './matchStateManager';
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 import { FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../constants/teamConfiguration';
@@ -107,12 +108,22 @@ export async function saveNewMatchConfiguration(params) {
     if (createResult.success) {
       setCurrentMatchId(createResult.matchId);
       setMatchCreated(true); // Prevent duplicate match creation
-      
+
+      // Log match_created event (non-blocking)
+      logMatchCreatedEvent(createResult.matchId, {
+        ownTeamName: matchData.teamName || null,
+        opponentTeamName: matchData.opponent || null,
+        totalPeriods: matchData.periods || null,
+        periodDurationMinutes: matchData.periodDurationMinutes || null
+      }).catch(error => {
+        console.warn('⚠️ Failed to log match_created event:', error);
+      });
+
       // Save complete initial configuration for resuming (non-blocking)
       saveInitialMatchConfig(createResult.matchId, initialConfig).catch(error => {
         console.warn('⚠️ Failed to save initial match config:', error);
       });
-      
+
       return {
         success: true,
         matchId: createResult.matchId
@@ -232,10 +243,11 @@ export async function saveMatchConfiguration(params) {
       selectedFormation,
       periods: numPeriods,
       periodDurationMinutes,
-      opponentTeam,
+      opponentTeam: opponentTeam?.trim() || null,
       captainId,
       matchType,
-      venueType
+      venueType,
+      teamName: currentTeam.club?.name || null
     }, currentTeam.id);
 
     // Create initial configuration object

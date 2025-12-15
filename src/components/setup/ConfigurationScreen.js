@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save } from 'lucide-react';
-import { Select, Button } from '../shared/UI';
+import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
+import { Select, Button, NotificationModal } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
@@ -8,6 +8,7 @@ import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
+import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useFormationVotes } from '../../hooks/useFormationVotes';
@@ -79,6 +80,7 @@ export function ConfigurationScreen({
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
   const [saveConfigStatus, setSaveConfigStatus] = React.useState({ loading: false, message: '', error: null });
+  const [shareLinkNotification, setShareLinkNotification] = React.useState({ isOpen: false, title: '', message: '' });
   
   // Direct pending match state (no navigation complexity)
   const [pendingMatches, setPendingMatches] = useState([]);
@@ -1425,6 +1427,67 @@ export function ConfigurationScreen({
     }
   };
 
+  const handleGetLiveLinkClick = async () => {
+    if (!handleSaveConfiguration) {
+      console.warn('handleSaveConfiguration is not provided');
+      return;
+    }
+
+    if (!isAuthenticated || !currentTeam) {
+      setShareLinkNotification({
+        isOpen: true,
+        title: 'Authentication Required',
+        message: 'You must be signed in with a team to share a live match link.'
+      });
+      return;
+    }
+
+    setSaveConfigStatus({ loading: true, message: 'Creating live match link...', error: null });
+
+    try {
+      const result = await handleSaveConfiguration();
+
+      if (result.success) {
+        const matchId = result.matchId;
+
+        if (!matchId) {
+          throw new Error('No match ID returned from save operation');
+        }
+
+        const copyResult = await copyLiveMatchUrlToClipboard(matchId);
+
+        if (copyResult.success) {
+          setShareLinkNotification({
+            isOpen: true,
+            title: 'Link Copied!',
+            message: 'Live match link copied to clipboard!'
+          });
+        } else {
+          setShareLinkNotification({
+            isOpen: true,
+            title: 'Live Match URL',
+            message: copyResult.url
+          });
+        }
+
+        setSaveConfigStatus({ loading: false, message: '', error: null });
+      } else {
+        setSaveConfigStatus({
+          loading: false,
+          message: '',
+          error: result.error || 'Failed to create live match link'
+        });
+      }
+    } catch (error) {
+      console.error('Get live link error:', error);
+      setSaveConfigStatus({
+        loading: false,
+        message: '',
+        error: 'Failed to create live match link: ' + error.message
+      });
+    }
+  };
+
   // Show team management for authenticated users who need to set up teams
   // If user has no clubs at all, they need to create/join a club first
   // If user has clubs but no teams, they need to create/join a team
@@ -1778,7 +1841,7 @@ export function ConfigurationScreen({
 
       {/* Save Configuration Button - Only show for authenticated users with team context */}
       {isAuthenticated && currentTeam && handleSaveConfiguration && (
-        <Button 
+        <Button
           onClick={handleSaveConfigClick}
           disabled={
             saveConfigStatus.loading ||
@@ -1791,12 +1854,27 @@ export function ConfigurationScreen({
         </Button>
       )}
 
-      <Button 
-        onClick={handleStartPeriodSetup} 
+      {/* Get Live Match Link Button - Only show for authenticated users with team context */}
+      {isAuthenticated && currentTeam && handleSaveConfiguration && (
+        <Button
+          onClick={handleGetLiveLinkClick}
+          disabled={
+            saveConfigStatus.loading ||
+            !withinFormatBounds
+          }
+          variant="secondary"
+          Icon={Share2}
+        >
+          {saveConfigStatus.loading ? 'Creating Link...' : 'Get Live Match Link'}
+        </Button>
+      )}
+
+      <Button
+        onClick={handleStartPeriodSetup}
         disabled={
           (!withinFormatBounds) ||
           !Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean)
-        } 
+        }
         Icon={Play}
       >
         Proceed to Period Setup
@@ -1841,6 +1919,14 @@ export function ConfigurationScreen({
         onClose={handleClosePendingMatchModal}
         pendingMatches={pendingMatches}
         isLoading={pendingMatchLoading}
+      />
+
+      {/* Notification modal for live link sharing */}
+      <NotificationModal
+        isOpen={shareLinkNotification.isOpen}
+        onClose={() => setShareLinkNotification({ isOpen: false, title: '', message: '' })}
+        title={shareLinkNotification.title}
+        message={shareLinkNotification.message}
       />
     </div>
   );

@@ -103,4 +103,17 @@ describe('Statistics Routing', () => {
       screen.getByText('You need a team membership before you can view statistics. Ask a coach or admin to add you to the team.')
     ).toBeInTheDocument();
   });
+
+  it('does not override live match URLs', async () => {
+    const navigateToView = jest.fn();
+    const liveMatchId = 'ad125c2d-46b9-4940-9664-cac9ff24e1f4';
+    window.history.replaceState({}, '', `/live/${liveMatchId}`);
+
+    renderHook(() => useStatisticsRouting(VIEWS.CONFIG, navigateToView));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe(`/live/${liveMatchId}`);
+    });
+    expect(navigateToView).not.toHaveBeenCalled();
+  });
 });

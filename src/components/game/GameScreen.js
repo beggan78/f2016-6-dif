@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw, ArrowLeft } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal, SubstituteSelectionModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
@@ -11,6 +11,7 @@ import { getCurrentTimestamp } from '../../utils/timeUtils';
 import { calculateMatchTime } from '../../utils/gameEventLogger';
 import { getExpectedOnFieldPlayerCount } from '../../game/logic/positionUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
+import { formatPlayerName } from '../../utils/formatUtils';
 
 // New modular imports
 import { useGameModals } from '../../hooks/useGameModals';
@@ -234,6 +235,11 @@ export function GameScreen({
     setShouldResetSubTimerOnNextSub
   ]);
 
+  const getPlayerDisplayNameById = useCallback((playerId) => {
+    const player = findPlayerById(allPlayers, playerId);
+    return player ? formatPlayerName(player) : null;
+  }, [allPlayers]);
+
   // Animation hooks object for handlers
   const animationHooks = React.useMemo(() => ({
     setAnimationState: uiState.setAnimationState,
@@ -292,8 +298,8 @@ export function GameScreen({
     createScoreHandlers(
       stateUpdaters,
       modalHandlers,
-      { shouldTrackGoalScorer: trackGoalScorer }
-    ), [stateUpdaters, modalHandlers, trackGoalScorer]
+      { shouldTrackGoalScorer: trackGoalScorer, getPlayerNameById: getPlayerDisplayNameById }
+    ), [stateUpdaters, modalHandlers, trackGoalScorer, getPlayerDisplayNameById]
   );
 
   const goalieHandlerCallbacks = React.useMemo(() =>

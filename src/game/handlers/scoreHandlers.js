@@ -21,8 +21,21 @@ export const createScoreHandlers = (
     clearPendingGoal
   } = modalHandlers;
   const {
-    shouldTrackGoalScorer = true
+    shouldTrackGoalScorer = true,
+    getPlayerNameById = null
   } = options;
+
+  const resolvePlayerDisplayName = (playerId) => {
+    if (!playerId || typeof getPlayerNameById !== 'function') {
+      return null;
+    }
+
+    try {
+      return getPlayerNameById(playerId) || null;
+    } catch (error) {
+      return null;
+    }
+  };
 
   // Generate unique event ID for goals
   const generateEventId = () => {
@@ -166,6 +179,8 @@ export const createScoreHandlers = (
       } else if (pendingGoal.type === EVENT_TYPES.GOAL_CONCEDED) {
         addGoalConceded();
       }
+
+      const scorerName = resolvePlayerDisplayName(scorerId);
       
       // Log the goal event with original timestamp from when goal was clicked
       logEvent(pendingGoal.type, {
@@ -174,6 +189,7 @@ export const createScoreHandlers = (
         ownScore: pendingGoal.ownScore,
         opponentScore: pendingGoal.opponentScore,
         scorerId: scorerId || null,
+        ...(scorerName ? { scorerName, display_name: scorerName } : {}),
         goalType: pendingGoal.goalType,
         matchId: pendingGoal.matchId
       }, pendingGoal.timestamp);
@@ -191,8 +207,18 @@ export const createScoreHandlers = (
       return;
     }
 
+    const scorerName = resolvePlayerDisplayName(newScorerId);
+    const updatePayload = {
+      scorerId: newScorerId
+    };
+
+    if (scorerName) {
+      updatePayload.scorerName = scorerName;
+      updatePayload.display_name = scorerName;
+    }
+
     // Update the original goal event with new scorer
-    const updateSuccess = updateEventData(eventId, { scorerId: newScorerId });
+    const updateSuccess = updateEventData(eventId, updatePayload);
     
     if (updateSuccess) {
       // Log correction event for audit trail

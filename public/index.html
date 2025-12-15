@@ -17,7 +17,7 @@
         try {
           var redirect = sessionStorage.getItem('redirect');
           if (redirect) {
-            sessionStorage.removeItem('redirect');
+            // Don't remove - let React read it for route detection
             history.replaceState(null, null, redirect);
           }
         } catch (e) {
