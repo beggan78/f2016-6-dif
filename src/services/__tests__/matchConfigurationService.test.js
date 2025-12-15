@@ -18,7 +18,8 @@ import {
   createMatch,
   formatMatchDataFromGameState,
   updateExistingMatch,
-  saveInitialMatchConfig
+  saveInitialMatchConfig,
+  logMatchCreatedEvent
 } from '../matchStateManager';
 import { FORMATS, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 
@@ -27,7 +28,8 @@ jest.mock('../matchStateManager', () => ({
   createMatch: jest.fn(),
   formatMatchDataFromGameState: jest.fn(),
   updateExistingMatch: jest.fn(),
-  saveInitialMatchConfig: jest.fn()
+  saveInitialMatchConfig: jest.fn(),
+  logMatchCreatedEvent: jest.fn(() => Promise.resolve())
 }));
 
 // Mock console methods
@@ -45,6 +47,9 @@ describe('matchConfigurationService', () => {
     console.warn = mockConsole.warn;
     console.error = mockConsole.error;
     console.log = mockConsole.log;
+
+    // Setup logMatchCreatedEvent mock to return a resolved promise
+    logMatchCreatedEvent.mockResolvedValue(undefined);
   });
 
   describe('formatTeamConfigForDatabase', () => {
@@ -685,6 +690,81 @@ describe('matchConfigurationService', () => {
         '❌ Error in match create/update flow:',
         expect.any(Error)
       );
+    });
+  });
+
+  describe('Event logging integration', () => {
+    describe('saveNewMatchConfiguration - event logging', () => {
+      it('should call logMatchCreatedEvent with team names', async () => {
+        const params = {
+          matchData: {
+            format: '5v5',
+            teamId: 'team123',
+            venueType: 'home',
+            teamName: 'Lightning FC',
+            opponent: 'Thunder United',
+            periodDurationMinutes: 25,
+            periods: 2
+          },
+          allPlayers: [],
+          selectedSquadIds: [],
+          initialConfig: { formation: {}, teamConfig: {}, matchConfig: {} },
+          setCurrentMatchId: jest.fn(),
+          setMatchCreated: jest.fn()
+        };
+
+        createMatch.mockResolvedValue({
+          success: true,
+          matchId: 'match123'
+        });
+        saveInitialMatchConfig.mockResolvedValue({ success: true });
+
+        await saveNewMatchConfiguration(params);
+
+        expect(logMatchCreatedEvent).toHaveBeenCalledWith(
+          'match123',
+          expect.objectContaining({
+            ownTeamName: 'Lightning FC',
+            opponentTeamName: 'Thunder United',
+            periodDurationMinutes: 25,
+            totalPeriods: 2
+          })
+        );
+      });
+
+      it('should not block on event logging failure', async () => {
+        const params = {
+          matchData: {
+            format: '5v5',
+            teamId: 'team123',
+            venueType: 'home',
+            teamName: 'Lightning FC',
+            opponent: 'Thunder United'
+          },
+          allPlayers: [],
+          selectedSquadIds: [],
+          initialConfig: { formation: {}, teamConfig: {}, matchConfig: {} },
+          setCurrentMatchId: jest.fn(),
+          setMatchCreated: jest.fn()
+        };
+
+        createMatch.mockResolvedValue({
+          success: true,
+          matchId: 'match123'
+        });
+        saveInitialMatchConfig.mockResolvedValue({ success: true });
+        logMatchCreatedEvent.mockRejectedValue(new Error('Event logging failed'));
+
+        const result = await saveNewMatchConfiguration(params);
+
+        // Should still succeed even if event logging fails
+        expect(result.success).toBe(true);
+        expect(result.matchId).toBe('match123');
+        expect(mockConsole.warn).toHaveBeenCalledWith(
+          '⚠️ Failed to log match_created event:',
+          expect.any(Error)
+        );
+      });
     });
   });
 });

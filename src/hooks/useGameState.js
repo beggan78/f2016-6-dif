@@ -13,7 +13,7 @@ import { getPositionRole } from '../game/logic/positionUtils';
 import { createGamePersistenceManager } from '../utils/persistenceManager';
 import { useMatchPersistence } from './useMatchPersistence';
 import { createPlayerLookup, findPlayerById, getSelectedSquadPlayers, getOutfieldPlayers, createEmptyPlayerStats } from '../utils/playerUtils';
-import { useMatchEvents } from './useMatchEvents';
+import { useLegacyMatchEvents as useMatchEvents } from './useMatchEvents';
 import { useTeamConfig } from './useTeamConfig';
 import { useMatchAudio } from './useMatchAudio';
 import { usePlayerState } from './usePlayerState';
@@ -1152,8 +1152,8 @@ export function useGameState(navigateToView = null) {
         setMatchCreated
       });
 
-      return result.success 
-        ? { success: true, message: result.message }
+      return result.success
+        ? { success: true, message: result.message, matchId: result.matchId }
         : { success: false, error: result.error };
         
     } catch (error) {

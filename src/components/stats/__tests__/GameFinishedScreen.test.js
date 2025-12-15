@@ -409,7 +409,10 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(firstPlayer.displayName);
       
       await waitFor(() => {
-        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', { fairPlayAwardId: firstPlayer.id });
+        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', {
+          fairPlayAwardId: firstPlayer.id,
+          fairPlayAwardName: firstPlayer.displayName
+        });
       });
 
       const stateUpdateFunction = mockSetters.setAllPlayers.mock.calls[0][0];
@@ -430,13 +433,19 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(firstPlayer.displayName);
 
       await waitFor(() => {
-        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', { fairPlayAwardId: firstPlayer.id });
+        expect(updateFinishedMatchMetadata).toHaveBeenCalledWith('test-match-123', {
+          fairPlayAwardId: firstPlayer.id,
+          fairPlayAwardName: firstPlayer.displayName
+        });
       });
 
       await userEvent.selectOptions(dropdown, '');
 
       await waitFor(() => {
-        expect(updateFinishedMatchMetadata).toHaveBeenLastCalledWith('test-match-123', { fairPlayAwardId: null });
+        expect(updateFinishedMatchMetadata).toHaveBeenLastCalledWith('test-match-123', {
+          fairPlayAwardId: null,
+          fairPlayAwardName: null
+        });
       });
 
       const stateUpdateFunction = mockSetters.setAllPlayers.mock.calls[mockSetters.setAllPlayers.mock.calls.length - 1][0];

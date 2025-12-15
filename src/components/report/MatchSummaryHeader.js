@@ -13,6 +13,7 @@ import { TEAM_CONFIG } from '../../constants/teamConstants';
  * @param {number} props.opponentScore - Opponent team score
  * @param {number} props.matchStartTime - Match start timestamp or null
  * @param {number} props.matchDuration - Match duration in seconds or null
+ * @param {string|null} props.matchDurationDisplay - Optional override text for match duration
  * @param {number} props.totalPeriods - Total number of periods played
  * @param {number} props.periodDurationMinutes - Duration of each period in minutes
  */
@@ -22,34 +23,50 @@ export function MatchSummaryHeader({
   ownScore = 0,
   opponentScore = 0,
   matchStartTime = null,
+  scheduledStartTime = null,
   matchDuration = null,
+  matchDurationDisplay = null,
   totalPeriods = 0,
-  periodDurationMinutes = 12
+  periodDurationMinutes = 12,
+  matchHasStarted = true
 }) {
   
   // Format match start time
   const formatMatchStartTime = () => {
-    if (!matchStartTime) return "No start time recorded";
-    
-    const date = new Date(matchStartTime);
-    
-    const dateStr = date.toLocaleDateString('sv-SE', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit' 
-    });
-    const timeStr = date.toLocaleTimeString('sv-SE', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-    
-    const formatted = `${dateStr} ${timeStr}`;
-    
-    return formatted;
+    // If match has started, show actual start time
+    if (matchHasStarted && matchStartTime) {
+      const date = new Date(matchStartTime);
+
+      const dateStr = date.toLocaleDateString('sv-SE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const timeStr = date.toLocaleTimeString('sv-SE', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      return `${dateStr} ${timeStr}`;
+    }
+
+    // If match hasn't started, show scheduled time from upcoming_match
+    if (!matchHasStarted && scheduledStartTime) {
+      const { date, time, venue } = scheduledStartTime;
+
+      // Format: "Scheduled: 2024-03-15 09:45 - 11:30" or include venue if available
+      return venue
+        ? `Scheduled: ${date} ${time} (${venue})`
+        : `Scheduled: ${date} ${time}`;
+    }
+
+    // Fallback
+    return "No start time recorded";
   };
 
   // Format match duration
   const formatMatchDuration = () => {
+    if (matchDurationDisplay) return matchDurationDisplay;
     if (!matchDuration || matchDuration <= 0) return "Duration unknown";
     
     const formatted = formatTime(matchDuration);
@@ -106,24 +123,28 @@ export function MatchSummaryHeader({
           </div>
         </div>
 
-        {/* Result indicator */}
-        <div className="flex items-center justify-center space-x-2 text-sm">
-          <Trophy className="h-4 w-4 text-yellow-400" />
-          <span className="text-slate-300">
-            {ownScore > opponentScore ? `${ownTeamName} wins` :
-             opponentScore > ownScore ? `${opponentTeam} wins` :
-             'Match tied'}
-          </span>
-        </div>
+        {/* Result indicator - only show when match has started */}
+        {matchHasStarted && (
+          <div className="flex items-center justify-center space-x-2 text-sm">
+            <Trophy className="h-4 w-4 text-yellow-400" />
+            <span className="text-slate-300">
+              {ownScore > opponentScore ? `${ownTeamName} wins` :
+               opponentScore > ownScore ? `${opponentTeam} wins` :
+               'Match tied'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Match Statistics */}
       <div className="flex items-center justify-center space-x-6 text-sm text-slate-400">
-        {/* Duration */}
-        <div className="flex items-center space-x-1">
-          <Clock className="h-4 w-4" />
-          <span>{formatMatchDuration()}</span>
-        </div>
+        {/* Duration - only show when match has started */}
+        {matchHasStarted && (
+          <div className="flex items-center space-x-1">
+            <Clock className="h-4 w-4" />
+            <span>{formatMatchDuration()}</span>
+          </div>
+        )}
 
         {/* Periods */}
         <div className="flex items-center space-x-1">

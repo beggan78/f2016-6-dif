@@ -252,6 +252,33 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message,
   );
 }
 
+export function NotificationModal({ isOpen, onClose, title, message, buttonText = "OK" }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div
+        className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notification-modal-title"
+      >
+        <div className="p-4 border-b border-slate-600">
+          <h3 id="notification-modal-title" className="text-lg font-semibold text-sky-300">{title}</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-slate-200 mb-6">{message}</p>
+          <div className="flex justify-center">
+            <Button onClick={onClose} variant="primary">
+              {buttonText}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ThreeOptionModal({ 
   isOpen, 
   onPrimary, 

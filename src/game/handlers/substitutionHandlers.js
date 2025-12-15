@@ -137,7 +137,7 @@ export const createSubstitutionHandlers = (
     return playerIds.map(id => {
       const player = allPlayers.find(p => p.id === id);
       return player ? formatPlayerName(player) : 'Unknown';
-    }).filter(name => name !== 'Unknown');
+    });
   };
 
 
@@ -488,7 +488,9 @@ export const createSubstitutionHandlers = (
           if (playerBeingInactivated) {
             logEvent(EVENT_TYPES.PLAYER_INACTIVATED, {
               playerId: substituteModal.playerId,
-              periodNumber: gameState.currentPeriodNumber || 1
+              periodNumber: gameState.currentPeriodNumber || 1,
+              playerName: getFormattedPlayerName(playerBeingInactivated),
+              display_name: getFormattedPlayerName(playerBeingInactivated)
             });
           }
         } catch (error) {
@@ -513,7 +515,9 @@ export const createSubstitutionHandlers = (
               if (playerBeingInactivated) {
                 logEvent(EVENT_TYPES.PLAYER_INACTIVATED, {
                   playerId: substituteModal.playerId,
-                  periodNumber: gameState.currentPeriodNumber || 1
+                  periodNumber: gameState.currentPeriodNumber || 1,
+                  playerName: getFormattedPlayerName(playerBeingInactivated),
+                  display_name: getFormattedPlayerName(playerBeingInactivated)
                 });
               }
             } catch (error) {
@@ -557,7 +561,9 @@ export const createSubstitutionHandlers = (
             if (playerBeingActivated) {
               logEvent(EVENT_TYPES.PLAYER_ACTIVATED, {
                 playerId: substituteModal.playerId,
-                periodNumber: gameState.currentPeriodNumber || 1
+                periodNumber: gameState.currentPeriodNumber || 1,
+                playerName: getFormattedPlayerName(playerBeingActivated),
+                display_name: getFormattedPlayerName(playerBeingActivated)
               });
             }
           } catch (error) {

@@ -14,6 +14,8 @@ import { FORMATS, FORMAT_CONFIGS, FORMATIONS } from '../constants/teamConfigurat
 import { DEFAULT_VENUE_TYPE } from '../constants/matchVenues';
 import { normalizeFormationStructure } from '../utils/formationUtils';
 import { matchPassesFilters } from '../utils/matchFilterUtils';
+import { EVENT_TYPES } from '../utils/gameEventLogger';
+import { eventPersistenceService } from './eventPersistenceService';
 
 const DISPLAY_ROLE_TO_DB_ROLE_MAP = {
   Goalkeeper: roleToDatabase(PLAYER_ROLES.GOALIE),
@@ -146,6 +148,49 @@ export async function createMatch(matchData, allPlayers = [], selectedSquadIds =
       success: false,
       error: `Unexpected error: ${error.message}`
     };
+  }
+}
+
+/**
+ * Log match_created event to database
+ *
+ * Non-blocking - failures don't fail match creation.
+ * This event is logged when a pending match is first created via:
+ * - Save Configuration button
+ * - Get Live Match Link button
+ * - Proceed to Period Setup button
+ *
+ * @param {string} matchId - Match ID (UUID)
+ * @param {Object} eventData - Event data
+ * @param {string} eventData.ownTeamName - Own team name (club name)
+ * @param {string} eventData.opponentTeamName - Opponent team name
+ * @param {number} eventData.totalPeriods - Number of periods
+ * @param {number} eventData.periodDurationMinutes - Period duration in minutes
+ * @returns {Promise<void>}
+ */
+export async function logMatchCreatedEvent(matchId, eventData) {
+  if (!matchId) {
+    console.warn('Cannot log match_created event: missing matchId');
+    return;
+  }
+
+  try {
+    const event = {
+      type: 'match_created',
+      matchTime: '00:00',
+      periodNumber: 0,
+      data: {
+        ownTeamName: eventData.ownTeamName || null,
+        opponentTeamName: eventData.opponentTeamName || null,
+        totalPeriods: eventData.totalPeriods || null,
+        periodDurationMinutes: eventData.periodDurationMinutes || null
+      }
+    };
+
+    await eventPersistenceService.persistEvent(event, matchId);
+  } catch (error) {
+    console.warn('Failed to log match_created event:', error);
+    // Non-blocking - don't fail the operation if event logging fails
   }
 }
 
@@ -441,7 +486,7 @@ export async function updateMatchToFinished(matchId, finalStats, allPlayers = []
  * @param {string|null} options.fairPlayAwardId - Player ID for fair play award (null to clear)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId } = {}) {
+export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId, fairPlayAwardName } = {}) {
   try {
     if (!matchId) {
       return {
@@ -493,6 +538,29 @@ export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId } =
           success: false,
           error: statsResult.error || 'Unable to assign fair play award for this match.'
         };
+      }
+
+      // Persist fair play award as a single match_log_event entry (replace existing)
+      if (fairPlayAwardId) {
+        await eventPersistenceService.persistEvent({
+          type: EVENT_TYPES.FAIR_PLAY_AWARD,
+          timestamp: Date.now(),
+          matchTime: '00:00',
+          periodNumber: 1,
+          data: {
+            playerId: fairPlayAwardId,
+            display_name: fairPlayAwardName || null,
+            playerName: fairPlayAwardName || null
+          },
+          player_id: fairPlayAwardId
+        }, matchId);
+      } else {
+        // Clearing selection removes any prior fair play award event for the match
+        await supabase
+          .from('match_log_event')
+          .delete()
+          .eq('match_id', matchId)
+          .eq('event_type', 'fair_play_award');
       }
     }
 
@@ -1317,7 +1385,8 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     opponentTeam,
     captainId,
     matchType = 'league', // Default to league if not provided
-    venueType = DEFAULT_VENUE_TYPE
+    venueType = DEFAULT_VENUE_TYPE,
+    teamName
   } = gameState;
 
   const formatKey = teamConfig?.format || FORMATS.FORMAT_5V5;
@@ -1333,7 +1402,8 @@ export function formatMatchDataFromGameState(gameState, teamId) {
     type: matchType,
     opponent: opponentTeam || null,
     captainId: captainId || null,
-    venueType: venueType || DEFAULT_VENUE_TYPE
+    venueType: venueType || DEFAULT_VENUE_TYPE,
+    teamName: teamName || null
   };
 }
 

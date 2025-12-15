@@ -103,10 +103,10 @@ export function GameFinishedScreen({
   };
 
   // Helper functions
-  const getSelectedPlayerName = (playerId, players) => {
+  const getSelectedPlayerName = useCallback((playerId, players) => {
     const player = players.find(p => p.id === playerId);
     return player ? formatPlayerName(player) : '';
-  };
+  }, []);
 
   const normalizeFairPlayPreference = (value) => {
     if (Object.values(FAIR_PLAY_AWARD_OPTIONS).includes(value)) return value;
@@ -235,6 +235,7 @@ export function GameFinishedScreen({
   };
 
   const persistFairPlayAwardSelection = useCallback(async (selectedPlayerId) => {
+    const selectedPlayerName = selectedPlayerId ? getSelectedPlayerName(selectedPlayerId, squadForStats) : null;
     if (!shouldShowFairPlayAward) {
       return;
     }
@@ -258,7 +259,10 @@ export function GameFinishedScreen({
     setAllPlayers(prevPlayers => updatePlayersWithFairPlayAward(prevPlayers, selectedPlayerId));
 
     try {
-      const result = await updateFinishedMatchMetadata(currentMatchId, { fairPlayAwardId: selectedPlayerId ?? null });
+      const result = await updateFinishedMatchMetadata(currentMatchId, {
+        fairPlayAwardId: selectedPlayerId ?? null,
+        fairPlayAwardName: selectedPlayerName
+      });
 
       // Ignore outdated responses if another save started after this one
       if (saveRequestIdRef.current !== requestId) {
@@ -279,7 +283,7 @@ export function GameFinishedScreen({
         setSavingFairPlayAward(false);
       }
     }
-  }, [currentMatchId, isAuthenticated, setAllPlayers, shouldShowFairPlayAward, showSuccessMessage]);
+  }, [currentMatchId, getSelectedPlayerName, isAuthenticated, setAllPlayers, shouldShowFairPlayAward, showSuccessMessage, squadForStats]);
 
   const handleFairPlayAwardChange = useCallback((event) => {
     const selectedPlayerId = event.target.value || null;

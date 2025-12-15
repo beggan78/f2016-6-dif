@@ -2,42 +2,30 @@ import { useState, useCallback, useEffect } from 'react';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 
 /**
- * Hook for managing match events, scoring, and event logging
+ * Legacy match events hook used by game state for local event logging and scoring.
  *
- * Handles:
- * - Match events array and goal scorers tracking
- * - Score management (own score, opponent score)
- * - Integration with external event logger
- * - Event sequence numbering and backup
- *
- * @param {Object} initialState - Initial state from persistence
- * @returns {Object} Match events state and handlers
+ * @param {Object} initialState
+ * @returns {Object} Match event state and handlers
  */
-export function useMatchEvents(initialState = {}) {
-  // Event-related state
+export function useLegacyMatchEvents(initialState = {}) {
   const [matchEvents, setMatchEvents] = useState(initialState.matchEvents || []);
   const [matchStartTime, setMatchStartTime] = useState(initialState.matchStartTime || null);
-  const [goalScorers, setGoalScorers] = useState(initialState.goalScorers || {}); // { eventId: playerId }
+  const [goalScorers, setGoalScorers] = useState(initialState.goalScorers || {});
   const [eventSequenceNumber, setEventSequenceNumber] = useState(initialState.eventSequenceNumber || 0);
   const [lastEventBackup, setLastEventBackup] = useState(initialState.lastEventBackup || null);
 
-  // Score state
-  const [ownScore, setOwnScore] = useState(initialState.ownScore || 0); // Own team score
-  const [opponentScore, setOpponentScore] = useState(initialState.opponentScore || 0); // Opponent score
+  const [ownScore, setOwnScore] = useState(initialState.ownScore || 0);
+  const [opponentScore, setOpponentScore] = useState(initialState.opponentScore || 0);
 
-  // Event logger synchronization
   const syncMatchDataFromEventLogger = useCallback(() => {
     const loggerStartTime = getMatchStartTime();
     const loggerEvents = getAllEvents();
 
-    // Check if event logger has data but local state doesn't
     if (!loggerStartTime && loggerEvents.length === 0 && (matchStartTime || matchEvents.length > 0)) {
-      // Event logger is empty but local state has data - initialize logger from local state
       initializeEventLogger(matchStartTime);
       return;
     }
 
-    // Check if we need to sync from event logger
     const lengthChanged = loggerEvents.length !== matchEvents.length;
     let contentChanged = false;
 
@@ -46,7 +34,6 @@ export function useMatchEvents(initialState = {}) {
     }
 
     if (lengthChanged || contentChanged || (!matchStartTime && loggerStartTime)) {
-      // Sync from event logger
       if (loggerStartTime && loggerStartTime !== matchStartTime) {
         setMatchStartTime(loggerStartTime);
       }
@@ -54,21 +41,18 @@ export function useMatchEvents(initialState = {}) {
         setMatchEvents([...loggerEvents]);
       }
     }
-  }, [matchStartTime, matchEvents]);
+  }, [matchEvents, matchStartTime]);
 
-  // Handle event logger changes
   const handleEventLoggerChange = useCallback(() => {
     syncMatchDataFromEventLogger();
   }, [syncMatchDataFromEventLogger]);
 
-  // Initialize event logger and set up listener
   useEffect(() => {
     initializeEventLogger();
     const unsubscribe = addEventListener(handleEventLoggerChange);
     return unsubscribe;
   }, [handleEventLoggerChange]);
 
-  // Score management functions
   const addGoalScored = useCallback(() => {
     setOwnScore(prev => prev + 1);
   }, []);
@@ -87,7 +71,6 @@ export function useMatchEvents(initialState = {}) {
     setOpponentScore(0);
   }, []);
 
-  // Clear all events and reset state
   const clearAllMatchEvents = useCallback(() => {
     const eventsCleared = clearAllEvents();
     setMatchEvents([]);
@@ -99,7 +82,6 @@ export function useMatchEvents(initialState = {}) {
   }, []);
 
   return {
-    // State
     matchEvents,
     matchStartTime,
     goalScorers,
@@ -108,7 +90,6 @@ export function useMatchEvents(initialState = {}) {
     ownScore,
     opponentScore,
 
-    // Setters (for external state management)
     setMatchEvents,
     setMatchStartTime,
     setGoalScorers,
@@ -117,7 +98,6 @@ export function useMatchEvents(initialState = {}) {
     setOwnScore,
     setOpponentScore,
 
-    // Actions
     addGoalScored,
     addGoalConceded,
     setScore,
@@ -125,7 +105,6 @@ export function useMatchEvents(initialState = {}) {
     clearAllMatchEvents,
     syncMatchDataFromEventLogger,
 
-    // Computed values for persistence
     getEventState: () => ({
       matchEvents,
       matchStartTime,
@@ -133,7 +112,109 @@ export function useMatchEvents(initialState = {}) {
       eventSequenceNumber,
       lastEventBackup,
       ownScore,
-      opponentScore,
-    }),
+      opponentScore
+    })
   };
 }
+
+/**
+ * Live match events hook for public live match screen.
+ *
+ * @param {string} matchId
+ * @param {Object} options
+ * @param {boolean} [options.isLive=false]
+ * @param {number} [options.refreshIntervalMs=60000]
+ * @returns {Object} Live event state and helpers
+ */
+export function useMatchEvents(matchId, { isLive = false, refreshIntervalMs = 60000 } = {}) {
+  const [events, setEvents] = useState([]);
+  const [latestOrdinal, setLatestOrdinal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
+
+  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+  const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+  const fetchEvents = useCallback(async (since = null) => {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase configuration for live match events');
+      setError('Supabase configuration missing. Please check environment variables.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const url = new URL(`${supabaseUrl}/functions/v1/get-live-match-events`);
+      url.searchParams.set('match_id', matchId);
+
+      if (since !== null) {
+        url.searchParams.set('since_ordinal', since.toString());
+      }
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch events');
+      }
+
+      const data = await response.json();
+
+      if (since !== null) {
+        setEvents(prev => [...prev, ...(data.events || [])]);
+      } else {
+        setEvents(data.events || []);
+      }
+
+      setLatestOrdinal(data.latest_ordinal || 0);
+      setLastUpdateTime(new Date());
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch match events:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [matchId, supabaseAnonKey, supabaseUrl]);
+
+  useEffect(() => {
+    setEvents([]);
+    setLatestOrdinal(0);
+    setError(null);
+    setIsLoading(true);
+    setLastUpdateTime(null);
+  }, [matchId]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  useEffect(() => {
+    if (!isLive) return undefined;
+
+    const interval = setInterval(() => {
+      fetchEvents(latestOrdinal);
+    }, refreshIntervalMs);
+
+    return () => clearInterval(interval);
+  }, [fetchEvents, isLive, latestOrdinal, refreshIntervalMs]);
+
+  return {
+    events,
+    isLoading,
+    error,
+    lastUpdateTime,
+    latestOrdinal,
+    refreshEvents: fetchEvents
+  };
+}
+
+export const useLiveMatchEvents = useMatchEvents;
