@@ -424,7 +424,7 @@ describe('AttendanceStatsView', () => {
       });
 
       const callArgs = mockUseColumnOrderPersistence.useColumnOrderPersistence.mock.calls[0];
-      expect(callArgs[0]).toHaveLength(6); // 6 columns
+      expect(callArgs[0]).toHaveLength(5); // 5 columns (total practices column removed)
       expect(callArgs[1]).toBe('sport-wizard-stats-attendance-column-order');
     });
   });

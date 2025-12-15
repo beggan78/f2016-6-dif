@@ -532,6 +532,35 @@ function formatAttendanceDate({ year, month, day_of_month: dayOfMonth }) {
   return `${safeYear}-${paddedMonth}-${paddedDay}`;
 }
 
+// Build a PostgREST filter that compares year/month/day parts without needing a date column
+function buildAttendanceDateFilter(startDate, endDate) {
+  const filters = [];
+
+  if (startDate) {
+    const startYear = startDate.getFullYear();
+    const startMonth = startDate.getMonth() + 1;
+    const startDay = startDate.getDate();
+    filters.push(
+      `or(year.gt.${startYear},and(year.eq.${startYear},month.gt.${startMonth}),and(year.eq.${startYear},month.eq.${startMonth},day_of_month.gte.${startDay}))`
+    );
+  }
+
+  if (endDate) {
+    const endYear = endDate.getFullYear();
+    const endMonth = endDate.getMonth() + 1;
+    const endDay = endDate.getDate();
+    filters.push(
+      `or(year.lt.${endYear},and(year.eq.${endYear},month.lt.${endMonth}),and(year.eq.${endYear},month.eq.${endMonth},day_of_month.lte.${endDay}))`
+    );
+  }
+
+  if (filters.length === 0) {
+    return null;
+  }
+
+  return filters.length === 1 ? filters[0] : `and(${filters.join(',')})`;
+}
+
 /**
  * Get attendance statistics for all players in a team
  * Combines attendance data from connectors with match stats
@@ -554,10 +583,14 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
       return [];
     }
 
-    // Fetch all attendance data for all connectors
+    const normalizedStart = toStartOfDay(startDate);
+    const normalizedEnd = toEndOfDay(endDate);
+    const attendanceDateFilter = buildAttendanceDateFilter(normalizedStart, normalizedEnd);
+
+    // Fetch attendance data for all connectors with optional date filtering
     const connectorIds = connectedConnectors.map(c => c.id);
 
-    const { data: attendanceData, error: attendanceError } = await supabase
+    let attendanceQuery = supabase
       .from('player_attendance')
       .select(`
         id,
@@ -574,7 +607,13 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
         )
       `)
       .in('connector_id', connectorIds)
-      .not('player_id', 'is', null) // Only include matched players
+      .not('player_id', 'is', null); // Only include matched players
+
+    if (attendanceDateFilter) {
+      attendanceQuery = attendanceQuery.or(attendanceDateFilter);
+    }
+
+    const { data: attendanceData, error: attendanceError } = await attendanceQuery
       .order('year', { ascending: true })
       .order('month', { ascending: true })
       .order('day_of_month', { ascending: true });
@@ -584,10 +623,11 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
       throw new Error('Failed to load attendance data');
     }
 
-    const normalizedStart = toStartOfDay(startDate);
-    const normalizedEnd = toEndOfDay(endDate);
+    const attendanceRecords = (attendanceData || []).filter(record => {
+      if (!normalizedStart && !normalizedEnd) {
+        return true;
+      }
 
-    const filteredAttendance = (attendanceData || []).filter(record => {
       const attendanceDate = createAttendanceDate(record);
 
       if (normalizedStart && attendanceDate < normalizedStart) {
@@ -603,24 +643,32 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
 
     // Aggregate attendance data by player
     const playerAttendanceMap = new Map();
+    const dailyPracticeCounts = new Map();
 
-    filteredAttendance.forEach(record => {
+    attendanceRecords.forEach(record => {
       const playerId = record.player_id;
+      const dateKey = formatAttendanceDate(record);
+      const attendanceCount = Number.isFinite(record.total_attendance)
+        ? record.total_attendance
+        : 0;
+      const currentDailyMax = dailyPracticeCounts.get(dateKey) || 0;
+
+      if (attendanceCount > currentDailyMax) {
+        dailyPracticeCounts.set(dateKey, attendanceCount);
+      }
 
       if (!playerAttendanceMap.has(playerId)) {
         playerAttendanceMap.set(playerId, {
           playerId,
-          totalPractices: 0,
           totalAttendance: 0,
           attendanceRecords: []
         });
       }
 
       const playerData = playerAttendanceMap.get(playerId);
-      playerData.totalPractices += record.total_practices || 0;
-      playerData.totalAttendance += record.total_attendance || 0;
+      playerData.totalAttendance += attendanceCount;
       playerData.attendanceRecords.push({
-        date: formatAttendanceDate(record),
+        date: dateKey,
         year: record.year,
         month: record.month,
         day: record.day_of_month || 1,
@@ -628,6 +676,10 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
         attendance: record.total_attendance
       });
     });
+
+    const totalPracticesForPeriod = Array.from(dailyPracticeCounts.values())
+      .filter(count => count > 0)
+      .reduce((sum, count) => sum + count, 0);
 
     // Get player info and match stats
     const playerIds = Array.from(playerAttendanceMap.keys());
@@ -700,8 +752,8 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
     const result = Array.from(playerAttendanceMap.entries()).map(([playerId, attendanceData]) => {
       const playerName = playerNameMap.get(playerId) || 'Unknown Player';
       const matchesPlayed = matchesPlayedMap.get(playerId) || 0;
-      const attendanceRate = attendanceData.totalPractices > 0
-        ? (attendanceData.totalAttendance / attendanceData.totalPractices) * 100
+      const attendanceRate = totalPracticesForPeriod > 0
+        ? (attendanceData.totalAttendance / totalPracticesForPeriod) * 100
         : 0;
       const practicesPerMatch = matchesPlayed > 0
         ? attendanceData.totalAttendance / matchesPlayed
@@ -710,7 +762,7 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
       return {
         playerId,
         playerName,
-        totalPractices: attendanceData.totalPractices,
+        totalPractices: totalPracticesForPeriod,
         totalAttendance: attendanceData.totalAttendance,
         attendanceRate: Math.round(attendanceRate * 10) / 10, // 1 decimal place
         matchesPlayed,

@@ -463,6 +463,7 @@ describe('connectorService', () => {
     const teamId = 'team-123';
     const startDate = new Date('2025-01-01');
     const endDate = new Date('2025-01-31');
+    let attendanceChain;
 
     const mockConnectors = [
       { id: 'connector-1', status: 'connected', provider: 'sportadmin' }
@@ -564,10 +565,11 @@ describe('connectorService', () => {
       const dayOrder = jest.fn().mockResolvedValue({ data, error });
       const monthOrder = jest.fn(() => ({ order: dayOrder }));
       const yearOrder = jest.fn(() => ({ order: monthOrder }));
-      const attendanceNot = jest.fn(() => ({ order: yearOrder }));
+      const attendanceOr = jest.fn(() => ({ order: yearOrder }));
+      const attendanceNot = jest.fn(() => ({ or: attendanceOr, order: yearOrder }));
       const attendanceIn = jest.fn(() => ({ not: attendanceNot }));
       const attendanceSelect = jest.fn(() => ({ in: attendanceIn }));
-      return { attendanceSelect };
+      return { attendanceSelect, attendanceOr };
     };
 
     const buildPlayersChain = (data, error = null) => {
@@ -594,7 +596,7 @@ describe('connectorService', () => {
       matchStatsError = null
     } = {}) => {
       const connectorChain = buildConnectorsChain(connectorsData, connectorsError);
-      const attendanceChain = buildAttendanceChain(attendanceData, attendanceError);
+      attendanceChain = buildAttendanceChain(attendanceData, attendanceError);
       const playersChain = buildPlayersChain(playersData, playersError);
       const matchStatsChain = buildMatchStatsChain(matchStatsData, matchStatsError);
 
@@ -616,6 +618,7 @@ describe('connectorService', () => {
     };
 
     beforeEach(() => {
+      attendanceChain = null;
       setupSupabase();
     });
 
@@ -657,9 +660,9 @@ describe('connectorService', () => {
       expect(alice).toEqual({
         playerId: 'player-1',
         playerName: 'Alice Johnson',
-        totalPractices: 18, // 5 + 5 + 8
+        totalPractices: 24, // Max total_attendance per date: 4 + 5 + 7 + 8
         totalAttendance: 16, // 4 + 5 + 7
-        attendanceRate: 88.9,
+        attendanceRate: 66.7,
         matchesPlayed: 2,
         practicesPerMatch: 8.0,
         attendanceRecords: expect.arrayContaining([
@@ -673,9 +676,9 @@ describe('connectorService', () => {
       expect(bob).toEqual({
         playerId: 'player-2',
         playerName: 'Bob Smith',
-        totalPractices: 10,
+        totalPractices: 24,
         totalAttendance: 8,
-        attendanceRate: 80.0,
+        attendanceRate: 33.3,
         matchesPlayed: 1,
         practicesPerMatch: 8.0,
         attendanceRecords: [{ date: '2025-01-15', year: 2025, month: 1, day: 15, practices: 10, attendance: 8 }]
@@ -684,16 +687,19 @@ describe('connectorService', () => {
 
     it('filters attendance records by exact date range', async () => {
       const result = await getAttendanceStats(teamId, startDate, endDate);
+      const expectedDateFilter =
+        'and(or(year.gt.2025,and(year.eq.2025,month.gt.1),and(year.eq.2025,month.eq.1,day_of_month.gte.1)),or(year.lt.2025,and(year.eq.2025,month.lt.1),and(year.eq.2025,month.eq.1,day_of_month.lte.31)))';
 
       const alice = result.find(p => p.playerId === 'player-1');
-      expect(alice.totalPractices).toBe(10); // Only January entries
+      expect(alice.totalPractices).toBe(17); // Daily max attendance for January dates (4 + 8 + 5)
       expect(alice.totalAttendance).toBe(9);
       expect(alice.attendanceRecords).toHaveLength(2);
       expect(alice.attendanceRecords.every(r => r.month === 1)).toBe(true);
 
       const bob = result.find(p => p.playerId === 'player-2');
-      expect(bob.totalPractices).toBe(10);
+      expect(bob.totalPractices).toBe(17);
       expect(bob.totalAttendance).toBe(8);
+      expect(attendanceChain.attendanceOr).toHaveBeenCalledWith(expectedDateFilter);
     });
 
     it('sorts results by player name', async () => {
