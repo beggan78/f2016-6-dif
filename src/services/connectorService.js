@@ -9,12 +9,6 @@ import { supabase } from '../lib/supabase';
 import { getProviderById } from '../constants/connectorProviders';
 
 /**
- * Minimum number of days a month must overlap with a date range
- * to be included in attendance calculations
- */
-const MIN_DAYS_FOR_MONTH_INCLUSION = 10;
-
-/**
  * Get all connectors for a team
  * @param {string} teamId - Team UUID
  * @returns {Promise<Array>} Array of connector objects
@@ -207,7 +201,7 @@ export async function getLatestSyncJob(connectorId) {
  * Get player attendance data for a connector
  * @param {string} connectorId - Connector UUID
  * @param {number} year - Year to filter by (optional, defaults to current year)
- * @returns {Promise<Array>} Array of player attendance objects
+ * @returns {Promise<Array>} Array of daily player attendance objects
  */
 export async function getPlayerAttendance(connectorId, year = null) {
   if (!connectorId) {
@@ -221,7 +215,9 @@ export async function getPlayerAttendance(connectorId, year = null) {
     .select('*')
     .eq('connector_id', connectorId)
     .eq('year', currentYear)
-    .order('player_name', { ascending: true });
+    .order('player_name', { ascending: true })
+    .order('month', { ascending: true })
+    .order('day_of_month', { ascending: true });
 
   if (error) {
     console.error('Error fetching player attendance:', error);
@@ -498,39 +494,42 @@ export async function matchPlayerToAttendance(attendanceId, playerId) {
   }
 }
 
-/**
- * Check if a month should be included based on the 10-day rule
- * A month is included if at least 10 days of that month fall within [startDate, endDate]
- * @param {number} year - Year of the month
- * @param {number} month - Month (1-12)
- * @param {Date|null} startDate - Start date filter
- * @param {Date|null} endDate - End date filter
- * @returns {boolean} True if the month should be included
- */
-function shouldIncludeMonth(year, month, startDate, endDate) {
-  // If no date filters, include all months
-  if (!startDate && !endDate) {
-    return true;
-  }
+// Normalize dates so comparisons are inclusive and time-agnostic
+function toStartOfDay(date) {
+  if (!date) return null;
+  const normalized = new Date(date);
+  if (Number.isNaN(normalized.getTime())) return null;
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+}
 
-  // Create date range for the month
-  const monthStart = new Date(year, month - 1, 1); // month is 1-indexed, Date constructor uses 0-indexed
-  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999); // Last day of month
+function toEndOfDay(date) {
+  if (!date) return null;
+  const normalized = new Date(date);
+  if (Number.isNaN(normalized.getTime())) return null;
+  normalized.setHours(23, 59, 59, 999);
+  return normalized;
+}
 
-  // Determine the overlap range
-  const rangeStart = startDate && startDate > monthStart ? startDate : monthStart;
-  const rangeEnd = endDate && endDate < monthEnd ? endDate : monthEnd;
+function createAttendanceDate(record) {
+  const safeYear = typeof record.year === 'number' ? record.year : 1970;
+  const safeMonth = typeof record.month === 'number' ? record.month : 1;
+  const safeDay =
+    typeof record.day_of_month === 'number' && !Number.isNaN(record.day_of_month)
+      ? record.day_of_month
+      : 1;
 
-  // No overlap
-  if (rangeStart > rangeEnd) {
-    return false;
-  }
+  return new Date(safeYear, safeMonth - 1, safeDay, 0, 0, 0, 0);
+}
 
-  // Count days in the overlap
-  const daysDiff = Math.floor((rangeEnd - rangeStart) / (1000 * 60 * 60 * 24)) + 1;
-
-  // Include if at least MIN_DAYS_FOR_MONTH_INCLUSION days overlap
-  return daysDiff >= MIN_DAYS_FOR_MONTH_INCLUSION;
+function formatAttendanceDate({ year, month, day_of_month: dayOfMonth }) {
+  const safeYear = typeof year === 'number' && !Number.isNaN(year) ? year : 1970;
+  const safeDay =
+    typeof dayOfMonth === 'number' && !Number.isNaN(dayOfMonth) ? dayOfMonth : 1;
+  const safeMonth = typeof month === 'number' && !Number.isNaN(month) ? month : 1;
+  const paddedMonth = String(safeMonth).padStart(2, '0');
+  const paddedDay = String(safeDay).padStart(2, '0');
+  return `${safeYear}-${paddedMonth}-${paddedDay}`;
 }
 
 /**
@@ -566,6 +565,7 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
         player_name,
         year,
         month,
+        day_of_month,
         total_practices,
         total_attendance,
         connector:connector_id (
@@ -576,16 +576,29 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
       .in('connector_id', connectorIds)
       .not('player_id', 'is', null) // Only include matched players
       .order('year', { ascending: true })
-      .order('month', { ascending: true });
+      .order('month', { ascending: true })
+      .order('day_of_month', { ascending: true });
 
     if (attendanceError) {
       console.error('Error fetching attendance data:', attendanceError);
       throw new Error('Failed to load attendance data');
     }
 
-    // Filter attendance data by the 10-day rule
+    const normalizedStart = toStartOfDay(startDate);
+    const normalizedEnd = toEndOfDay(endDate);
+
     const filteredAttendance = (attendanceData || []).filter(record => {
-      return shouldIncludeMonth(record.year, record.month, startDate, endDate);
+      const attendanceDate = createAttendanceDate(record);
+
+      if (normalizedStart && attendanceDate < normalizedStart) {
+        return false;
+      }
+
+      if (normalizedEnd && attendanceDate > normalizedEnd) {
+        return false;
+      }
+
+      return true;
     });
 
     // Aggregate attendance data by player
@@ -599,16 +612,18 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
           playerId,
           totalPractices: 0,
           totalAttendance: 0,
-          monthlyRecords: []
+          attendanceRecords: []
         });
       }
 
       const playerData = playerAttendanceMap.get(playerId);
       playerData.totalPractices += record.total_practices || 0;
       playerData.totalAttendance += record.total_attendance || 0;
-      playerData.monthlyRecords.push({
+      playerData.attendanceRecords.push({
+        date: formatAttendanceDate(record),
         year: record.year,
         month: record.month,
+        day: record.day_of_month || 1,
         practices: record.total_practices,
         attendance: record.total_attendance
       });
@@ -700,7 +715,8 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
         attendanceRate: Math.round(attendanceRate * 10) / 10, // 1 decimal place
         matchesPlayed,
         practicesPerMatch: Math.round(practicesPerMatch * 100) / 100, // 2 decimal places
-        monthlyRecords: attendanceData.monthlyRecords
+        attendanceRecords: attendanceData.attendanceRecords,
+        monthlyRecords: attendanceData.attendanceRecords
       };
     });
 

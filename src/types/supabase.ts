@@ -486,6 +486,7 @@ export type Database = {
         Row: {
           connector_id: string
           created_at: string
+          day_of_month: number
           id: string
           last_synced_at: string
           month: number
@@ -499,6 +500,7 @@ export type Database = {
         Insert: {
           connector_id: string
           created_at?: string
+          day_of_month?: number
           id?: string
           last_synced_at?: string
           month?: number
@@ -512,6 +514,7 @@ export type Database = {
         Update: {
           connector_id?: string
           created_at?: string
+          day_of_month?: number
           id?: string
           last_synced_at?: string
           month?: number
