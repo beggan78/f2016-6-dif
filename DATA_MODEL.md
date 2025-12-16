@@ -839,7 +839,7 @@ Automatic cleanup function for removing old match_log_event records.
 - Runs automatically via pg_cron daily at 2 AM UTC
 - Can be called manually for immediate cleanup
 - Returns count of deleted events and the date of the oldest remaining event
-- Execution rights granted to `authenticated` role
+- Execution restricted to `service_role`; execution revoked from `PUBLIC`
 
 ### public.check_match_event_stats()
 
@@ -879,6 +879,7 @@ The database uses **pg_cron** extension for scheduled maintenance tasks:
 - **Schedule**: Hourly at minute 0 (`0 * * * *`)
 - **Function**: `expire_old_team_invitations()`
 - **Purpose**: Marks expired invitations as 'expired' and removes very old ones (30+ days)
+- **Notes**: Execution restricted to `service_role`; manual execution by other roles is revoked
 
 ---
 

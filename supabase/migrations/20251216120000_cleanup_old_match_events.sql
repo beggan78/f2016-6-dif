@@ -145,9 +145,9 @@ COMMENT ON EXTENSION pg_cron IS
 -- Grant Permissions
 -- ========================================
 
--- Grant execute permission to authenticated users for monitoring
+-- Allow authenticated users to run monitoring; restrict cleanup execution to service_role (cron)
 GRANT EXECUTE ON FUNCTION check_match_event_stats TO authenticated;
-GRANT EXECUTE ON FUNCTION cleanup_old_match_events TO authenticated;
+REVOKE EXECUTE ON FUNCTION cleanup_old_match_events FROM PUBLIC;
 
 -- ========================================
 -- Initial Statistics (No Cleanup on Install)

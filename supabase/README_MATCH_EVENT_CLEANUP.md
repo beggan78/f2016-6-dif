@@ -220,6 +220,6 @@ This cleanup system follows the same pattern as:
 ## Security
 
 - Functions are `SECURITY DEFINER` to ensure proper permissions
-- Execution granted to `authenticated` role
+- Execution restricted to `service_role` (default cron role); execution revoked from `PUBLIC`
 - No sensitive data exposed in function outputs
 - Respects foreign key constraints (ON DELETE CASCADE from matches)
