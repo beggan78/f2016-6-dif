@@ -631,7 +631,7 @@ Event log for match activities.
 
 **Data Lifecycle:**
 - Events older than 3 months are automatically deleted by scheduled job
-- Cleanup runs daily at 2 AM UTC via `cleanup_old_match_events()` function
+- Cleanup runs daily at 2 AM UTC via batched `cleanup_old_match_events()` function (10k rows per batch, up to 50 batches per run with a brief pause)
 - Rationale: Detailed events are most valuable for live match tracking and recent analysis
 
 ---
@@ -824,19 +824,23 @@ Security-definer function used by trusted services to retrieve decrypted secrets
 - Only the `service_role` may execute this function; all other roles are revoked.
 - Raises an exception when the secret is not present in `vault.decrypted_secrets`.
 
-### public.cleanup_old_match_events(p_retention_months integer DEFAULT 3)
+### public.cleanup_old_match_events(p_retention_months integer DEFAULT 3, p_batch_size integer DEFAULT 10000, p_max_batches integer DEFAULT 50, p_pause_ms integer DEFAULT 50)
 
 Automatic cleanup function for removing old match_log_event records.
 
 **Parameters:**
 - `p_retention_months` (integer, optional) - Retention period in months (default: 3)
+- `p_batch_size` (integer, optional) - Number of rows deleted per batch (default: 10,000)
+- `p_max_batches` (integer, optional) - Maximum batches per invocation (default: 50; caps per-run lock time)
+- `p_pause_ms` (integer, optional) - Pause between batches in milliseconds (default: 50; use 0 to disable)
 
 **Returns:**
 - Table columns: `deleted_count` (integer), `oldest_remaining_date` (timestamptz)
 
 **Notes:**
-- Deletes all match_log_event records older than the retention period
-- Runs automatically via pg_cron daily at 2 AM UTC
+- Deletes match_log_event records older than the retention period in batches to reduce lock duration on large tables
+- Uses `SKIP LOCKED` when selecting batches; raises a notice if the batch limit is reached and more rows remain
+- Runs automatically via pg_cron daily at 2 AM UTC (defaults: 3 months retention, 10k rows per batch, up to 50 batches with 50ms pause)
 - Can be called manually for immediate cleanup
 - Returns count of deleted events and the date of the oldest remaining event
 - Execution restricted to `service_role`; execution revoked from `PUBLIC`
@@ -872,7 +876,7 @@ The database uses **pg_cron** extension for scheduled maintenance tasks:
 ### Match Event Cleanup
 - **Schedule**: Daily at 2 AM UTC (`0 2 * * *`)
 - **Function**: `cleanup_old_match_events()`
-- **Purpose**: Removes match_log_event records older than 3 months
+- **Purpose**: Removes match_log_event records older than 3 months using batched deletes (defaults: 10k rows/batch, 50 batches max, 50ms pause)
 - **Rationale**: Detailed event logs are useful for live matches and recent analysis, but become less valuable over time
 
 ### Team Invitation Expiry

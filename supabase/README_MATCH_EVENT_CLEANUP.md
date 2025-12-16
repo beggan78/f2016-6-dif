@@ -9,7 +9,8 @@ The match_log_event table stores detailed event logs for live match tracking and
 - **Retention Period**: 3 months (configurable)
 - **Schedule**: Daily at 2 AM UTC
 - **Implementation**: pg_cron scheduled job
-- **Migration**: `20251216120000_cleanup_old_match_events.sql`
+- **Batching**: Deletes in batches (10k rows per batch, up to 50 batches per run, 50ms pause between batches)
+- **Migrations**: `20251216120000_cleanup_old_match_events.sql`, `20251217120000_batched_cleanup_old_match_events.sql`
 
 ## Why 3 Months?
 
@@ -48,6 +49,12 @@ With custom retention period (e.g., 6 months):
 
 ```sql
 SELECT * FROM cleanup_old_match_events(6);
+```
+
+With custom batching (6-month retention, 5k rows per batch, 20 batches max, 100ms pause):
+
+```sql
+SELECT * FROM cleanup_old_match_events(6, 5000, 20, 100);
 ```
 
 ### View Scheduled Jobs
@@ -161,31 +168,14 @@ ORDER BY start_time DESC;
 
 ### Cleanup Taking Too Long
 
-If you have millions of events, consider batching:
+The cleanup function now deletes in batches by default (10k rows per batch, 50 batches per run, 50ms pause). For very large tables, reduce the batch size or batch count to shorten lock duration and re-run cleanup until the notices stop:
 
 ```sql
--- Delete in smaller batches
-DO $$
-DECLARE
-  v_batch_size INTEGER := 10000;
-  v_deleted INTEGER;
-BEGIN
-  LOOP
-    DELETE FROM match_log_event
-    WHERE id IN (
-      SELECT id FROM match_log_event
-      WHERE created_at < NOW() - INTERVAL '3 months'
-      LIMIT v_batch_size
-    );
-
-    GET DIAGNOSTICS v_deleted = ROW_COUNT;
-    EXIT WHEN v_deleted = 0;
-
-    RAISE NOTICE 'Deleted % events', v_deleted;
-    PERFORM pg_sleep(1);  -- Brief pause between batches
-  END LOOP;
-END $$;
+-- Smaller batches for heavily loaded databases
+SELECT * FROM cleanup_old_match_events(3, 2000, 25, 200);
 ```
+
+The function uses `SKIP LOCKED` when selecting batches and raises a notice when it stops early because the batch limit was reached. Re-running the function continues cleanup without needing a manual DO block.
 
 ## Data Recovery
 
