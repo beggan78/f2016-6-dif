@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Filter, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { MultiSelect, Button } from '../shared/UI';
 
-const MATCH_TYPES = [
-  { value: 'League', label: 'League' },
-  { value: 'Cup', label: 'Cup' },
-  { value: 'Friendly', label: 'Friendly' }
-];
+const MATCH_TYPES = MATCH_TYPE_OPTIONS.map(({ label }) => ({ value: label, label }));
 
 const OUTCOMES = [
   { value: 'W', label: 'Win' },

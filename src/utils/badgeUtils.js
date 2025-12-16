@@ -6,9 +6,11 @@ const OUTCOME_VARIANTS = {
 };
 
 const TYPE_VARIANTS = {
-  League: 'bg-sky-900/50 text-sky-300 border border-sky-600',
-  Cup: 'bg-purple-900/50 text-purple-300 border border-purple-600',
-  Friendly: 'bg-slate-700 text-slate-300 border border-slate-600',
+  league: 'bg-sky-900/50 text-sky-300 border border-sky-600',
+  cup: 'bg-purple-900/50 text-purple-300 border border-purple-600',
+  friendly: 'bg-slate-700 text-slate-300 border border-slate-600',
+  tournament: 'bg-amber-900/50 text-amber-200 border border-amber-600',
+  internal: 'bg-teal-900/50 text-teal-200 border border-teal-600',
   default: 'bg-slate-700 text-slate-300'
 };
 
@@ -28,7 +30,8 @@ export function getOutcomeBadgeClasses(outcome, { baseClasses = DEFAULT_OUTCOME_
 }
 
 export function getMatchTypeBadgeClasses(type, { baseClasses = DEFAULT_TYPE_BASE } = {}) {
-  const variant = TYPE_VARIANTS[type] || TYPE_VARIANTS.default;
+  const typeKey = typeof type === 'string' ? type.toLowerCase() : type;
+  const variant = TYPE_VARIANTS[typeKey] || TYPE_VARIANTS.default;
   return `${baseClasses} ${variant}`.trim();
 }
 
