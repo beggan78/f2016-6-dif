@@ -3,6 +3,7 @@ import { Radio, Clock, AlertCircle } from 'lucide-react';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { GameEventTimeline } from '../report/GameEventTimeline';
 import { ReportSection } from '../report/ReportSection';
+import { EventToggleButton } from '../report/EventToggleButton';
 import { useTeam } from '../../contexts/TeamContext';
 import { findUpcomingMatchByOpponent } from '../../services/matchIntegrationService';
 import { useMatchEvents } from '../../hooks/useMatchEvents';
@@ -14,6 +15,8 @@ import {
   parseEventTime
 } from '../../utils/matchEventConsolidation';
 import { extractMatchMetadata } from '../../utils/matchMetadataExtractor';
+import { createPersistenceManager } from '../../utils/persistenceManager';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 export { sortEventsByOrdinal } from '../../utils/matchEventConsolidation';
 
@@ -130,6 +133,12 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
   return Math.max(0, Math.floor(totalMs / 1000));
 }
 
+// Shared preferences with MatchReportScreen for timeline display
+const liveTimelinePrefsManager = createPersistenceManager(
+  STORAGE_KEYS.TIMELINE_PREFERENCES,
+  { sortOrder: 'asc', showSubstitutions: true }
+);
+
 /**
  * LiveMatchScreen - Real-time match event display for public viewing
  *
@@ -144,6 +153,10 @@ export function LiveMatchScreen({ matchId }) {
   const { currentTeam } = useTeam();
   const [upcomingMatch, setUpcomingMatch] = useState(null);
   const [isLiveRefreshEnabled, setIsLiveRefreshEnabled] = useState(false);
+  const [showSubstitutionEvents, setShowSubstitutionEvents] = useState(() => {
+    const preferences = liveTimelinePrefsManager.loadState();
+    return preferences.showSubstitutions ?? true;  // Default ON
+  });
 
   const {
     events,
@@ -157,6 +170,13 @@ export function LiveMatchScreen({ matchId }) {
   useEffect(() => {
     setIsLiveRefreshEnabled(Boolean(matchMetadata?.isLive));
   }, [matchMetadata?.isLive]);
+
+  useEffect(() => {
+    liveTimelinePrefsManager.saveState({
+      ...liveTimelinePrefsManager.loadState(),
+      showSubstitutions: showSubstitutionEvents
+    });
+  }, [showSubstitutionEvents]);
 
   const effectiveMatchDurationSeconds = useMemo(() => {
     return calculateEffectiveMatchDurationSeconds(events, matchMetadata?.isLive);
@@ -369,6 +389,44 @@ export function LiveMatchScreen({ matchId }) {
     });
   }, [consolidatedEvents, playerNameMap, effectiveTimeCalculator]);
 
+  const filteredEvents = useMemo(() => {
+    if (!showSubstitutionEvents) {
+      return transformedEvents.filter(event => {
+        const type = event.type;
+
+        // Always show match/period/goal/award events
+        if (
+          type === 'match_start' ||
+          type === 'match_end' ||
+          type === 'period_start' ||
+          type === 'period_end' ||
+          type === 'goal_scored' ||
+          type === 'goal_conceded' ||
+          type === 'fair_play_award'
+        ) {
+          return true;
+        }
+
+        // Hide substitution-related events
+        if (
+          type === 'substitution' ||
+          type === 'goalie_assignment' ||
+          type === 'goalie_switch' ||
+          type === 'position_change' ||
+          type === 'player_inactivated' ||
+          type === 'player_activated'
+        ) {
+          return false;
+        }
+
+        // Show all other events (if any)
+        return true;
+      });
+    }
+
+    return transformedEvents;
+  }, [transformedEvents, showSubstitutionEvents]);
+
   // Loading state
   if (isLoading && events.length === 0) {
     return (
@@ -470,13 +528,23 @@ export function LiveMatchScreen({ matchId }) {
           </ReportSection>
 
           {/* Event Timeline */}
-          <ReportSection icon={Clock} title="Game Events">
+          <ReportSection
+            icon={Clock}
+            title="Game Events"
+            headerExtra={
+              <EventToggleButton
+                isVisible={showSubstitutionEvents}
+                onToggle={() => setShowSubstitutionEvents(!showSubstitutionEvents)}
+                label="Substitutions"
+              />
+            }
+          >
             <GameEventTimeline
-              events={transformedEvents}
+              events={filteredEvents}
               ownTeamName={matchMetadata.ownTeamName}
               opponentTeam={matchMetadata.opponentName}
               matchStartTime={matchMetadata.matchStartTime}
-              showSubstitutions={true}
+              showSubstitutions={showSubstitutionEvents}
               goalScorers={goalScorers}
               getPlayerName={getPlayerDisplayName}
               onGoalClick={null}
