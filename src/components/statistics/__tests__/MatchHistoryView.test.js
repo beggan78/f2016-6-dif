@@ -258,6 +258,27 @@ describe('MatchHistoryView', () => {
     expect(screen.getByText(/matches found/i)).toBeInTheDocument();
   });
 
+  test('displays match format badges on wide screens', async () => {
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 1280;
+
+    try {
+      render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
+
+      await screen.findByText(/10 matches found/i);
+
+      const hammarbyCard = screen.getByText('Hammarby IF').closest('.bg-slate-800');
+      expect(hammarbyCard).not.toBeNull();
+      expect(within(hammarbyCard).getByText('5v5')).toBeInTheDocument();
+
+      const aikCard = screen.getByText('AIK').closest('.bg-slate-800');
+      expect(aikCard).not.toBeNull();
+      expect(within(aikCard).getByText('7v7')).toBeInTheDocument();
+    } finally {
+      window.innerWidth = originalWidth;
+    }
+  });
+
   test('filters matches by venue type including neutral', async () => {
     render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
 
@@ -294,5 +315,41 @@ describe('MatchHistoryView', () => {
     expect(screen.getByLabelText('Home')).toBeInTheDocument();
     expect(screen.getByLabelText('Away')).toBeInTheDocument();
     expect(screen.getByLabelText('Neutral')).toBeInTheDocument();
+  });
+
+  test('shows outcome badge at sm breakpoint and above', async () => {
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 800;
+
+    try {
+      render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
+
+      await screen.findByText(/10 matches found/i);
+
+      const hammarbyCard = screen.getByText('Hammarby IF').closest('.bg-slate-800');
+      expect(hammarbyCard).not.toBeNull();
+      expect(within(hammarbyCard).getByText('Win')).toBeInTheDocument();
+    } finally {
+      window.innerWidth = originalWidth;
+    }
+  });
+
+  test('shows venue, match type, and format badges at sm breakpoint and above', async () => {
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 800;
+
+    try {
+      render(<MatchHistoryView onMatchSelect={mockOnMatchSelect} />);
+
+      await screen.findByText(/10 matches found/i);
+
+      const hammarbyCard = screen.getByText('Hammarby IF').closest('.bg-slate-800');
+      expect(hammarbyCard).not.toBeNull();
+      expect(within(hammarbyCard).getByText('Home')).toBeInTheDocument();
+      expect(within(hammarbyCard).getByText('League')).toBeInTheDocument();
+      expect(within(hammarbyCard).getByText('5v5')).toBeInTheDocument();
+    } finally {
+      window.innerWidth = originalWidth;
+    }
   });
 });
