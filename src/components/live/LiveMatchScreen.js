@@ -176,7 +176,7 @@ export function LiveMatchScreen({ matchId }) {
       ...liveTimelinePrefsManager.loadState(),
       showSubstitutions: showSubstitutionEvents
     });
-  }, [showSubstitutionEvents]);
+  }, [showSubstitutionEvents, liveTimelinePrefsManager]);
 
   const effectiveMatchDurationSeconds = useMemo(() => {
     return calculateEffectiveMatchDurationSeconds(events, matchMetadata?.isLive);
