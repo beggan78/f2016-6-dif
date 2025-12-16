@@ -7,6 +7,7 @@ export const EVENT_TYPE_MAPPING = {
   goal_conceded: 'goal_conceded',
   substitution_in: 'substitution',
   substitution_out: 'substitution',
+  substitution: 'substitution',
   goalie_enters: 'goalie_assignment',
   goalie_exits: 'goalie_switch',
   goalie_switch: 'goalie_switch',

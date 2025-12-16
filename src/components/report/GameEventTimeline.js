@@ -23,6 +23,22 @@ const getOrdinal = (event) => typeof event?.ordinal === 'number' ? event.ordinal
 const getTimestamp = (event) => typeof event?.timestamp === 'number' ? event.timestamp : null;
 const getOccurredSeconds = (event) => typeof event?.occurredAtSeconds === 'number' ? event.occurredAtSeconds : null;
 const getSourceIndex = (event) => typeof event?.__sourceIndex === 'number' ? event.__sourceIndex : Infinity;
+const ALWAYS_VISIBLE_EVENTS = [
+  EVENT_TYPES.MATCH_START,
+  EVENT_TYPES.MATCH_END,
+  EVENT_TYPES.PERIOD_START,
+  EVENT_TYPES.PERIOD_END,
+  EVENT_TYPES.INTERMISSION
+];
+const GOAL_EVENTS = [EVENT_TYPES.GOAL_SCORED, EVENT_TYPES.GOAL_CONCEDED];
+const SUBSTITUTION_EVENTS = [
+  EVENT_TYPES.SUBSTITUTION,
+  EVENT_TYPES.GOALIE_ASSIGNMENT,
+  EVENT_TYPES.GOALIE_SWITCH,
+  EVENT_TYPES.POSITION_CHANGE,
+  EVENT_TYPES.PLAYER_INACTIVATED,
+  EVENT_TYPES.PLAYER_ACTIVATED
+];
 
 export const compareEventsForSort = (a, b, sortOrder = 'asc') => {
   const ordA = getOrdinal(a);
@@ -129,56 +145,43 @@ export function GameEventTimeline({
         const { type, data } = event;
         const eventData = data || {};
         
-        // Always show match/period events
-        if (type === EVENT_TYPES.MATCH_START || type === EVENT_TYPES.MATCH_END || 
-            type === EVENT_TYPES.PERIOD_START || type === EVENT_TYPES.PERIOD_END ||
-            type === EVENT_TYPES.INTERMISSION) {
+        if (ALWAYS_VISIBLE_EVENTS.includes(type)) {
           return true;
         }
         
-        // Show goal events if the selected player is the scorer
-        if (type === EVENT_TYPES.GOAL_SCORED || type === EVENT_TYPES.GOAL_CONCEDED) {
+        if (GOAL_EVENTS.includes(type)) {
           const scorerId = goalScorers[event.id] || eventData.scorerId;
           return scorerId === selectedPlayerId;
         }
         
-        // Show substitution events if the selected player is involved
-        if (type === EVENT_TYPES.SUBSTITUTION) {
-          const playersOff = eventData.playersOff || (eventData.outPlayerId ? [eventData.outPlayerId] : []);
-          const playersOn = eventData.playersOn || (eventData.inPlayerId ? [eventData.inPlayerId] : []);
-          return playersOff.includes(selectedPlayerId) || playersOn.includes(selectedPlayerId);
-        }
-        
-        // Show goalie switch events if the selected player is involved
-        if (type === EVENT_TYPES.GOALIE_SWITCH) {
-          return eventData.oldGoalieId === selectedPlayerId || eventData.newGoalieId === selectedPlayerId;
-        }
-        
-        // Show goalie assignment events if the selected player is involved
-        if (type === EVENT_TYPES.GOALIE_ASSIGNMENT) {
-          return eventData.goalieId === selectedPlayerId;
-        }
-
-        if (type === EVENT_TYPES.GOALIE_SWITCH) {
-          if (eventData.oldGoalieId === selectedPlayerId || eventData.newGoalieId === selectedPlayerId) {
-            return true;
+        if (SUBSTITUTION_EVENTS.includes(type)) {
+          if (type === EVENT_TYPES.SUBSTITUTION) {
+            const playersOff = eventData.playersOff || (eventData.outPlayerId ? [eventData.outPlayerId] : []);
+            const playersOn = eventData.playersOn || (eventData.inPlayerId ? [eventData.inPlayerId] : []);
+            return playersOff.includes(selectedPlayerId) || playersOn.includes(selectedPlayerId);
           }
-          const goalieChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
-          return goalieChanges.some(change => change.playerId === selectedPlayerId);
-        }
-        
-        // Show position change events if the selected player is involved
-        if (type === EVENT_TYPES.POSITION_CHANGE) {
-          if (eventData.player1Id === selectedPlayerId || eventData.player2Id === selectedPlayerId) {
-            return true;
-          }
-          const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
-          return positionChanges.some(change => change.playerId === selectedPlayerId);
-        }
 
-        // Show player inactivation/activation events if the selected player is involved
-        if (type === EVENT_TYPES.PLAYER_INACTIVATED || type === EVENT_TYPES.PLAYER_ACTIVATED) {
-          return event.playerId === selectedPlayerId;
+          if (type === EVENT_TYPES.GOALIE_ASSIGNMENT) {
+            return eventData.goalieId === selectedPlayerId;
+          }
+
+          if (type === EVENT_TYPES.GOALIE_SWITCH) {
+            const goalieChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+            return eventData.oldGoalieId === selectedPlayerId ||
+              eventData.newGoalieId === selectedPlayerId ||
+              goalieChanges.some(change => change.playerId === selectedPlayerId);
+          }
+          
+          if (type === EVENT_TYPES.POSITION_CHANGE) {
+            const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
+            return eventData.player1Id === selectedPlayerId ||
+              eventData.player2Id === selectedPlayerId ||
+              positionChanges.some(change => change.playerId === selectedPlayerId);
+          }
+
+          if (type === EVENT_TYPES.PLAYER_INACTIVATED || type === EVENT_TYPES.PLAYER_ACTIVATED) {
+            return event.playerId === selectedPlayerId;
+          }
         }
 
         if (type === EVENT_TYPES.FAIR_PLAY_AWARD) {

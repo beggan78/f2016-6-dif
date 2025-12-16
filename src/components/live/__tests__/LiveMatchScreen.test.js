@@ -1,11 +1,90 @@
-import { calculateEffectiveMatchDurationSeconds, createEffectiveTimeCalculator, formatLiveMatchMinuteDisplay } from '../LiveMatchScreen';
-import { sortEventsByOrdinal } from '../LiveMatchScreen';
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {
+  LiveMatchScreen,
+  calculateEffectiveMatchDurationSeconds,
+  createEffectiveTimeCalculator,
+  formatLiveMatchMinuteDisplay,
+  sortEventsByOrdinal
+} from '../LiveMatchScreen';
+import { STORAGE_KEYS } from '../../../constants/storageKeys';
+import { useMatchEvents } from '../../../hooks/useMatchEvents';
+import { useTeam } from '../../../contexts/TeamContext';
+
+const mockTimelineRender = jest.fn();
 
 const baseTime = Date.parse('2024-01-01T10:00:00Z');
 const buildEvent = (type, offsetMs) => ({
   event_type: type,
   created_at: new Date(baseTime + offsetMs).toISOString()
 });
+
+const buildLiveEvent = (type, offsetMs = 0, overrides = {}) => ({
+  id: overrides.id || `${type}-${offsetMs}`,
+  event_type: type,
+  created_at: overrides.created_at || new Date(baseTime + offsetMs).toISOString(),
+  ordinal: overrides.ordinal ?? offsetMs,
+  period: overrides.period ?? 1,
+  data: overrides.data || {},
+  player_id: overrides.player_id,
+  correlation_id: overrides.correlation_id,
+  occurred_at_seconds: overrides.occurred_at_seconds
+});
+
+jest.mock('lucide-react', () => ({
+  Printer: () => null,
+  Share2: () => null,
+  Settings: () => null,
+  Radio: () => null,
+  Clock: () => null,
+  AlertCircle: () => null
+}));
+
+jest.mock('../../report/MatchSummaryHeader', () => ({
+  MatchSummaryHeader: () => <div data-testid="match-summary-header" />
+}));
+
+jest.mock('../../report/GameEventTimeline', () => ({
+  GameEventTimeline: (props) => {
+    mockTimelineRender(props);
+    return <div data-testid="game-event-timeline" />;
+  }
+}));
+
+jest.mock('../../report/ReportSection', () => ({
+  ReportSection: ({ children, headerExtra }) => (
+    <div data-testid="report-section">
+      {headerExtra}
+      <div data-testid="report-content">{children}</div>
+    </div>
+  )
+}));
+
+jest.mock('../../report/EventToggleButton', () => ({
+  EventToggleButton: ({ isVisible, onToggle, label }) => (
+    <button
+      type="button"
+      data-testid="toggle-substitutions"
+      data-visible={isVisible}
+      onClick={onToggle}
+    >
+      {label}
+    </button>
+  )
+}));
+
+jest.mock('../../../services/matchIntegrationService', () => ({
+  findUpcomingMatchByOpponent: jest.fn().mockResolvedValue(null)
+}));
+
+jest.mock('../../../contexts/TeamContext', () => ({
+  useTeam: jest.fn()
+}));
+
+jest.mock('../../../hooks/useMatchEvents', () => ({
+  useMatchEvents: jest.fn()
+}));
 
 describe('calculateEffectiveMatchDurationSeconds', () => {
   it('sums completed periods and excludes intermissions', () => {
@@ -95,5 +174,123 @@ describe('sortEventsByOrdinal', () => {
 
     const sorted = sortEventsByOrdinal(unordered);
     expect(sorted.map(e => e.id)).toEqual(['earlier', 'later']);
+  });
+});
+
+describe('LiveMatchScreen event filtering', () => {
+  const mockUseMatchEvents = useMatchEvents;
+  const mockUseTeam = useTeam;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+
+    mockUseTeam.mockReturnValue({ currentTeam: { id: 'team-123' } });
+    mockUseMatchEvents.mockReturnValue({
+      events: [],
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+  });
+
+  const createBaseEvents = () => ([
+    buildLiveEvent('match_started', 0, {
+      ordinal: 1,
+      data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' }
+    }),
+    buildLiveEvent('goal_scored', 2000, { ordinal: 2, player_id: 'p1' }),
+    buildLiveEvent('substitution', 3000, {
+      ordinal: 3,
+      data: { playersOff: ['p2'], playersOn: ['p3'] }
+    }),
+    buildLiveEvent('match_ended', 4000, { ordinal: 4 })
+  ]);
+
+  it('hides substitution events when toggle is off', async () => {
+    const events = createBaseEvents();
+    mockUseMatchEvents.mockReturnValue({
+      events,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    const initialProps = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+    expect(initialProps.events.some(event => event.type === 'substitution')).toBe(true);
+
+    fireEvent.click(screen.getByTestId('toggle-substitutions'));
+
+    await waitFor(() => {
+      const updatedProps = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+      expect(updatedProps.events.some(event => event.type === 'substitution')).toBe(false);
+      expect(updatedProps.events.some(event => event.type === 'goal_scored')).toBe(true);
+    });
+  });
+
+  it('persists toggle preference to localStorage', async () => {
+    const events = createBaseEvents();
+    mockUseMatchEvents.mockReturnValue({
+      events,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    const { unmount } = render(<LiveMatchScreen matchId="match-123" />);
+
+    fireEvent.click(screen.getByTestId('toggle-substitutions'));
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.TIMELINE_PREFERENCES));
+      expect(stored.showSubstitutions).toBe(false);
+    });
+
+    unmount();
+    mockTimelineRender.mockClear();
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    const remountProps = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+    expect(screen.getByTestId('toggle-substitutions').dataset.visible).toBe('false');
+    expect(remountProps.events.some(event => event.type === 'substitution')).toBe(false);
+  });
+
+  it('filters all substitution-related event types when hidden', () => {
+    const events = [
+      buildLiveEvent('match_started', 0, {
+        ordinal: 1,
+        data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' }
+      }),
+      buildLiveEvent('substitution', 1000, { ordinal: 2 }),
+      buildLiveEvent('goalie_enters', 2000, { ordinal: 3 }),
+      buildLiveEvent('goalie_switch', 3000, { ordinal: 4 }),
+      buildLiveEvent('position_switch', 4000, { ordinal: 5, player_id: 'player-3' }),
+      buildLiveEvent('player_inactivated', 5000, { ordinal: 6, player_id: 'player-4' }),
+      buildLiveEvent('player_activated', 6000, { ordinal: 7, player_id: 'player-5' }),
+      buildLiveEvent('goal_scored', 7000, { ordinal: 8, player_id: 'scorer-1' }),
+      buildLiveEvent('match_ended', 8000, { ordinal: 9 })
+    ];
+
+    mockUseMatchEvents.mockReturnValue({
+      events,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    localStorage.setItem(
+      STORAGE_KEYS.TIMELINE_PREFERENCES,
+      JSON.stringify({ sortOrder: 'asc', showSubstitutions: false })
+    );
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    const timelineProps = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+    const eventTypes = timelineProps.events.map(event => event.type);
+
+    expect(eventTypes).toEqual(['match_start', 'goal_scored', 'match_end']);
   });
 });
