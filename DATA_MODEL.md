@@ -622,9 +622,17 @@ Event log for match activities.
 - Foreign key to `match(id)`
 - Foreign key to `player(id)`
 
+**Indexes:**
+- `idx_match_log_event_created_at` on `created_at DESC` - Supports efficient cleanup queries
+
 **Relationships:**
 - Many-to-one with `match`
 - Many-to-one with `player`
+
+**Data Lifecycle:**
+- Events older than 3 months are automatically deleted by scheduled job
+- Cleanup runs daily at 2 AM UTC via batched `cleanup_old_match_events()` function (10k rows per batch, up to 50 batches per run with a brief pause)
+- Rationale: Detailed events are most valuable for live match tracking and recent analysis
 
 ---
 
@@ -816,6 +824,67 @@ Security-definer function used by trusted services to retrieve decrypted secrets
 - Only the `service_role` may execute this function; all other roles are revoked.
 - Raises an exception when the secret is not present in `vault.decrypted_secrets`.
 
+### public.cleanup_old_match_events(p_retention_months integer DEFAULT 3, p_batch_size integer DEFAULT 10000, p_max_batches integer DEFAULT 50, p_pause_ms integer DEFAULT 50)
+
+Automatic cleanup function for removing old match_log_event records.
+
+**Parameters:**
+- `p_retention_months` (integer, optional) - Retention period in months (default: 3)
+- `p_batch_size` (integer, optional) - Number of rows deleted per batch (default: 10,000)
+- `p_max_batches` (integer, optional) - Maximum batches per invocation (default: 50; caps per-run lock time)
+- `p_pause_ms` (integer, optional) - Pause between batches in milliseconds (default: 50; use 0 to disable)
+
+**Returns:**
+- Table columns: `deleted_count` (integer), `oldest_remaining_date` (timestamptz)
+
+**Notes:**
+- Deletes match_log_event records older than the retention period in batches to reduce lock duration on large tables
+- Uses `SKIP LOCKED` when selecting batches; raises a notice if the batch limit is reached and more rows remain
+- Runs automatically via pg_cron daily at 2 AM UTC (defaults: 3 months retention, 10k rows per batch, up to 50 batches with 50ms pause)
+- Can be called manually for immediate cleanup
+- Returns count of deleted events and the date of the oldest remaining event
+- Execution restricted to `service_role`; execution revoked from `PUBLIC`
+
+### public.check_match_event_stats()
+
+Monitoring function that provides statistics about match_log_event table contents.
+
+**Parameters:**
+- None
+
+**Returns:**
+- Table columns:
+  - `total_events` (bigint) - Total number of match events
+  - `events_last_30_days` (bigint) - Events created in last 30 days
+  - `events_last_90_days` (bigint) - Events created in last 90 days
+  - `events_older_than_90_days` (bigint) - Events older than 90 days (cleanup candidates)
+  - `oldest_event_date` (timestamptz) - Date of oldest event
+  - `newest_event_date` (timestamptz) - Date of newest event
+  - `total_matches_with_events` (bigint) - Count of unique matches with events
+
+**Notes:**
+- Used for monitoring and capacity planning
+- Execution rights granted to `authenticated` role
+- No data modifications - read-only statistics
+
+---
+
+## Scheduled Jobs
+
+The database uses **pg_cron** extension for scheduled maintenance tasks:
+
+### Match Event Cleanup
+- **Schedule**: Daily at 2 AM UTC (`0 2 * * *`)
+- **Function**: `cleanup_old_match_events()`
+- **Purpose**: Removes match_log_event records older than 3 months using batched deletes (defaults: 10k rows/batch, 50 batches max, 50ms pause)
+- **Rationale**: Detailed event logs are useful for live matches and recent analysis, but become less valuable over time
+
+### Team Invitation Expiry
+- **Schedule**: Hourly at minute 0 (`0 * * * *`)
+- **Function**: `expire_old_team_invitations()`
+- **Purpose**: Marks expired invitations as 'expired' and removes very old ones (30+ days)
+- **Notes**: Execution restricted to `service_role`; manual execution by other roles is revoked
+
 ---
 
 ## Key Patterns
@@ -867,14 +936,13 @@ Some tables support soft deletion:
 
 ## Index Recommendations
 
-While not explicitly defined in this schema dump, consider these indexes for performance:
-
 **High-priority indexes:**
 - `match(team_id, state)` - For fetching team matches by state
 - `player_match_stats(match_id)` - For loading match statistics
 - `player_match_stats(player_id)` - For player history
 - `season_stats(player_id, season_year)` - Already covered by unique constraint
 - `match_log_event(match_id, occurred_at_seconds)` - For event timeline
+- `match_log_event(created_at)` - ✅ Implemented - For efficient cleanup of old events
 - `team_user(user_id)` - For finding user's teams
 - `club_user(user_id)` - For finding user's clubs
 
