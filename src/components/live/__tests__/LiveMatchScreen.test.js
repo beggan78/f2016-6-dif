@@ -177,6 +177,96 @@ describe('sortEventsByOrdinal', () => {
   });
 });
 
+describe('LiveMatchScreen polling configuration', () => {
+  const mockUseMatchEvents = useMatchEvents;
+  const mockUseTeam = useTeam;
+
+  let pollingCalls;
+  let currentEvents;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    pollingCalls = [];
+    currentEvents = [];
+
+    mockUseTeam.mockReturnValue({ currentTeam: { id: 'team-123' } });
+    mockUseMatchEvents.mockImplementation((_matchId, options) => {
+      pollingCalls.push(options);
+      return {
+        events: currentEvents,
+        isLoading: false,
+        error: null,
+        lastUpdateTime: new Date(baseTime)
+      };
+    });
+  });
+
+  it('enables 30s polling when match transitions from not started to live', async () => {
+    const { rerender } = render(<LiveMatchScreen matchId="match-123" />);
+
+    expect(pollingCalls[pollingCalls.length - 1]).toEqual({
+      pollingEnabled: false,
+      refreshIntervalMs: 60000
+    });
+
+    currentEvents = [
+      buildLiveEvent('match_started', 0, { ordinal: 1 })
+    ];
+    rerender(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const latest = pollingCalls[pollingCalls.length - 1];
+      expect(latest).toEqual({
+        pollingEnabled: true,
+        refreshIntervalMs: 30000
+      });
+    });
+  });
+
+  it('switches to 5-minute polling when match transitions from live to ended', async () => {
+    currentEvents = [
+      buildLiveEvent('match_started', 0, { ordinal: 1 })
+    ];
+
+    const { rerender } = render(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const latest = pollingCalls[pollingCalls.length - 1];
+      expect(latest).toEqual({
+        pollingEnabled: true,
+        refreshIntervalMs: 30000
+      });
+    });
+
+    currentEvents = [
+      ...currentEvents,
+      buildLiveEvent('match_ended', 1000, { ordinal: 2 })
+    ];
+    rerender(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const latest = pollingCalls[pollingCalls.length - 1];
+      expect(latest).toEqual({
+        pollingEnabled: true,
+        refreshIntervalMs: 300000
+      });
+    });
+  });
+
+  it('does not change polling config when already correct for not-started matches', async () => {
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      expect(pollingCalls).toHaveLength(1);
+      expect(pollingCalls[0]).toEqual({
+        pollingEnabled: false,
+        refreshIntervalMs: 60000
+      });
+    });
+  });
+});
+
 describe('LiveMatchScreen event filtering', () => {
   const mockUseMatchEvents = useMatchEvents;
   const mockUseTeam = useTeam;

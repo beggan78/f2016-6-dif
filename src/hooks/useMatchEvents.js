@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 
 /**
@@ -123,15 +123,17 @@ export function useLegacyMatchEvents(initialState = {}) {
  * @param {string} matchId
  * @param {Object} options
  * @param {boolean} [options.isLive=false]
+ * @param {boolean} [options.pollingEnabled] - Override to control auto-refresh independent of isLive
  * @param {number} [options.refreshIntervalMs=60000]
  * @returns {Object} Live event state and helpers
  */
-export function useMatchEvents(matchId, { isLive = false, refreshIntervalMs = 60000 } = {}) {
+export function useMatchEvents(matchId, { isLive = false, pollingEnabled, refreshIntervalMs = 60000 } = {}) {
   const [events, setEvents] = useState([]);
   const [latestOrdinal, setLatestOrdinal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
+  const latestOrdinalRef = useRef(latestOrdinal);
 
   const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
   const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -198,14 +200,20 @@ export function useMatchEvents(matchId, { isLive = false, refreshIntervalMs = 60
   }, [fetchEvents]);
 
   useEffect(() => {
-    if (!isLive) return undefined;
+    latestOrdinalRef.current = latestOrdinal;
+  }, [latestOrdinal]);
+
+  const shouldPoll = typeof pollingEnabled === 'boolean' ? pollingEnabled : isLive;
+
+  useEffect(() => {
+    if (!shouldPoll) return undefined;
 
     const interval = setInterval(() => {
-      fetchEvents(latestOrdinal);
+      fetchEvents(latestOrdinalRef.current);
     }, refreshIntervalMs);
 
     return () => clearInterval(interval);
-  }, [fetchEvents, isLive, latestOrdinal, refreshIntervalMs]);
+  }, [fetchEvents, shouldPoll, refreshIntervalMs]);
 
   return {
     events,
