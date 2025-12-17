@@ -143,7 +143,7 @@ const liveTimelinePrefsManager = createPersistenceManager(
  * LiveMatchScreen - Real-time match event display for public viewing
  *
  * Accessible via /live/{matchId} route
- * Auto-refreshes every 60 seconds to fetch new events
+ * Auto-refreshes every 30 seconds while live, every 5 minutes after the final whistle
  * Works for both authenticated and anonymous users
  *
  * @param {Object} props
@@ -152,7 +152,7 @@ const liveTimelinePrefsManager = createPersistenceManager(
 export function LiveMatchScreen({ matchId }) {
   const { currentTeam } = useTeam();
   const [upcomingMatch, setUpcomingMatch] = useState(null);
-  const [isLiveRefreshEnabled, setIsLiveRefreshEnabled] = useState(false);
+  const [pollingConfig, setPollingConfig] = useState({ enabled: false, intervalMs: 60000 });
   const [showSubstitutionEvents, setShowSubstitutionEvents] = useState(() => {
     const preferences = liveTimelinePrefsManager.loadState();
     return preferences.showSubstitutions ?? true;  // Default ON
@@ -163,13 +163,29 @@ export function LiveMatchScreen({ matchId }) {
     isLoading,
     error,
     lastUpdateTime
-  } = useMatchEvents(matchId, { isLive: isLiveRefreshEnabled });
+  } = useMatchEvents(matchId, {
+    pollingEnabled: pollingConfig.enabled,
+    refreshIntervalMs: pollingConfig.intervalMs
+  });
 
   const matchMetadata = useMemo(() => extractMatchMetadata(events), [events]);
 
   useEffect(() => {
-    setIsLiveRefreshEnabled(Boolean(matchMetadata?.isLive));
-  }, [matchMetadata?.isLive]);
+    const isLive = Boolean(matchMetadata?.isLive);
+    const hasEnded = Boolean(matchMetadata?.matchHasStarted && !matchMetadata?.isLive);
+    const nextIntervalMs = isLive ? 30000 : (hasEnded ? 300000 : 60000);
+    const nextConfig = {
+      enabled: isLive || hasEnded,
+      intervalMs: nextIntervalMs
+    };
+
+    setPollingConfig(prev => {
+      if (prev.enabled === nextConfig.enabled && prev.intervalMs === nextConfig.intervalMs) {
+        return prev;
+      }
+      return nextConfig;
+    });
+  }, [matchMetadata?.isLive, matchMetadata?.matchHasStarted]);
 
   useEffect(() => {
     liveTimelinePrefsManager.saveState({

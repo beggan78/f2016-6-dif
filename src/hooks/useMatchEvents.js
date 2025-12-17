@@ -123,10 +123,11 @@ export function useLegacyMatchEvents(initialState = {}) {
  * @param {string} matchId
  * @param {Object} options
  * @param {boolean} [options.isLive=false]
+ * @param {boolean} [options.pollingEnabled] - Override to control auto-refresh independent of isLive
  * @param {number} [options.refreshIntervalMs=60000]
  * @returns {Object} Live event state and helpers
  */
-export function useMatchEvents(matchId, { isLive = false, refreshIntervalMs = 60000 } = {}) {
+export function useMatchEvents(matchId, { isLive = false, pollingEnabled, refreshIntervalMs = 60000 } = {}) {
   const [events, setEvents] = useState([]);
   const [latestOrdinal, setLatestOrdinal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,15 +198,17 @@ export function useMatchEvents(matchId, { isLive = false, refreshIntervalMs = 60
     fetchEvents();
   }, [fetchEvents]);
 
+  const shouldPoll = typeof pollingEnabled === 'boolean' ? pollingEnabled : isLive;
+
   useEffect(() => {
-    if (!isLive) return undefined;
+    if (!shouldPoll) return undefined;
 
     const interval = setInterval(() => {
       fetchEvents(latestOrdinal);
     }, refreshIntervalMs);
 
     return () => clearInterval(interval);
-  }, [fetchEvents, isLive, latestOrdinal, refreshIntervalMs]);
+  }, [fetchEvents, shouldPoll, latestOrdinal, refreshIntervalMs]);
 
   return {
     events,
