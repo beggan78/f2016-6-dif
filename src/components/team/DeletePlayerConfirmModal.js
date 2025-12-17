@@ -61,7 +61,7 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
           </div>
 
           {/* Warning Message */}
-          <div className="bg-rose-900/20 border border-rose-600 rounded-lg p-4 mb-6">
+          <div className="bg-rose-900/20 border border-rose-600 rounded-lg p-4 mb-4">
             <div className="flex items-start space-x-3">
               <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
               <div className="space-y-2">
@@ -71,20 +71,38 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
                 {willBeDeleted ? (
                   <ul className="text-rose-300 text-sm space-y-1">
                     <li>• Player has no game history and will be <strong>permanently deleted</strong></li>
-                    <li>• Jersey number will become available for other players</li>
                     <li>• This action cannot be undone</li>
                   </ul>
                 ) : (
                   <ul className="text-rose-300 text-sm space-y-1">
                     <li>• Player has game history and will be <strong>deactivated</strong> (set as inactive)</li>
-                    <li>• All match statistics and history will be preserved</li>
-                    <li>• Jersey number will become available for other players</li>
-                    <li>• Player can be reactivated later if needed</li>
                   </ul>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Additional info for permanent delete path */}
+          {willBeDeleted && (
+            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+              <p className="text-slate-200 font-medium mb-2">What happens next</p>
+              <ul className="text-slate-300 text-sm space-y-1">
+                <li>• Jersey number will become available for other players</li>
+              </ul>
+            </div>
+          )}
+
+          {/* Reassurance for deactivation path */}
+          {!willBeDeleted && (
+            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+              <p className="text-slate-200 font-medium mb-2">What happens next</p>
+              <ul className="text-slate-300 text-sm space-y-1">
+                <li>• All match statistics and history will be preserved</li>
+                <li>• Jersey number will become available for other players</li>
+                <li>• Player can be reactivated later if needed</li>
+              </ul>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex space-x-3">
