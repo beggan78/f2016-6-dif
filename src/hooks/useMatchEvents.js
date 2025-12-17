@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 
 /**
@@ -133,6 +133,7 @@ export function useMatchEvents(matchId, { isLive = false, pollingEnabled, refres
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
+  const latestOrdinalRef = useRef(latestOrdinal);
 
   const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
   const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -198,17 +199,21 @@ export function useMatchEvents(matchId, { isLive = false, pollingEnabled, refres
     fetchEvents();
   }, [fetchEvents]);
 
+  useEffect(() => {
+    latestOrdinalRef.current = latestOrdinal;
+  }, [latestOrdinal]);
+
   const shouldPoll = typeof pollingEnabled === 'boolean' ? pollingEnabled : isLive;
 
   useEffect(() => {
     if (!shouldPoll) return undefined;
 
     const interval = setInterval(() => {
-      fetchEvents(latestOrdinal);
+      fetchEvents(latestOrdinalRef.current);
     }, refreshIntervalMs);
 
     return () => clearInterval(interval);
-  }, [fetchEvents, shouldPoll, latestOrdinal, refreshIntervalMs]);
+  }, [fetchEvents, shouldPoll, refreshIntervalMs]);
 
   return {
     events,
