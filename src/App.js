@@ -1145,34 +1145,32 @@ function AppContent() {
           />
         );
       case VIEWS.LIVE_MATCH:
-        {
-          const showLiveMatchBackButton = Boolean(user) && liveMatchEntryPoint === VIEWS.STATS;
+        const showLiveMatchBackButton = Boolean(user) && liveMatchEntryPoint === VIEWS.STATS;
 
-          return liveMatchId ? (
-            <LiveMatchScreen
-              matchId={liveMatchId}
-              showBackButton={showLiveMatchBackButton}
-              onNavigateBack={showLiveMatchBackButton ? handleLiveMatchNavigateBack : undefined}
-            />
-          ) : (
-            <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
-              <div className="text-center space-y-4">
-                {showLiveMatchBackButton && (
-                  <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={handleLiveMatchNavigateBack}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-slate-100 rounded-md hover:bg-slate-600 transition-colors"
-                    >
-                      Back
-                    </button>
-                  </div>
-                )}
-                <p className="text-slate-400">Invalid match ID</p>
-              </div>
+        return liveMatchId ? (
+          <LiveMatchScreen
+            matchId={liveMatchId}
+            showBackButton={showLiveMatchBackButton}
+            onNavigateBack={showLiveMatchBackButton ? handleLiveMatchNavigateBack : undefined}
+          />
+        ) : (
+          <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+            <div className="text-center space-y-4">
+              {showLiveMatchBackButton && (
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleLiveMatchNavigateBack}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-slate-100 rounded-md hover:bg-slate-600 transition-colors"
+                  >
+                    Back
+                  </button>
+                </div>
+              )}
+              <p className="text-slate-400">Invalid match ID</p>
             </div>
-          );
-        }
+          </div>
+        );
       case VIEWS.STATISTICS:
         return (
           <StatisticsScreen
