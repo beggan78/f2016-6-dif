@@ -18,7 +18,6 @@ import { PeriodSetupScreen } from './components/setup/PeriodSetupScreen';
 import { GameScreen } from './components/game/GameScreen';
 import { GameFinishedScreen } from './components/stats/GameFinishedScreen';
 import { StatisticsScreen } from './components/statistics/StatisticsScreen';
-import { MatchReportScreen } from './components/report/MatchReportScreen';
 import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { LiveMatchScreen } from './components/live/LiveMatchScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
@@ -157,9 +156,12 @@ function AppContent() {
 
   // Live match state for /live/{matchId} routing
   const [liveMatchId, setLiveMatchId] = useState(null);
+  const [liveMatchEntryPoint, setLiveMatchEntryPoint] = useState(null);
 
   useStatisticsRouting(gameState.view, navigateToView);
-  useLiveMatchRouting(gameState.view, navigateToView, setLiveMatchId);
+  useLiveMatchRouting(gameState.view, navigateToView, setLiveMatchId, liveMatchId);
+
+  const { setView: setGameView } = gameState;
 
 
 
@@ -275,9 +277,9 @@ function AppContent() {
   const handleNavigateFromTacticalBoard = useCallback((fallbackView) => {
     // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
     if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
+      setGameView(fromView || fallbackView || VIEWS.CONFIG);
     }
-  }, [gameState, fromView]);
+  }, [gameState.view, fromView, setGameView]);
 
   // Navigation data state (for passing data between views)
   const [navigationData, setNavigationData] = useState(null);
@@ -307,6 +309,14 @@ function AppContent() {
     }
   }, [gameState.view, navigationData]);
 
+  useEffect(() => {
+    setLiveMatchEntryPoint((currentEntryPoint) => {
+      if (gameState.view !== VIEWS.LIVE_MATCH && currentEntryPoint) {
+        return null;
+      }
+      return currentEntryPoint;
+    });
+  }, [gameState.view]);
 
 
   // Handle invitation processed callback from InvitationWelcome - now delegated to hook
@@ -392,7 +402,7 @@ function AppContent() {
     } else if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1 && !canNavigateWithHistory) {
       // Exception: PeriodSetupScreen -> ConfigurationScreen (only when no history available)
       console.log('🌐 App: PERIOD_SETUP -> CONFIG (no history available)');
-      gameState.setView(VIEWS.CONFIG);
+      setGameView(VIEWS.CONFIG);
     } else if (canNavigateWithHistory) {
       // Use navigation history when available
       console.log('🌐 App: Using navigation history to go back', {
@@ -412,7 +422,17 @@ function AppContent() {
         }, 'App-NewGameModal');
       }
     }
-  }, [gameState, handleNavigateFromTacticalBoard, navigationHistory.canNavigateBack, navigationHistory.navigationHistory, navigationHistory.previousView, navigateBack]);
+  }, [
+    gameState.currentPeriodNumber,
+    gameState.matchState,
+    gameState.view,
+    handleNavigateFromTacticalBoard,
+    navigationHistory.canNavigateBack,
+    navigationHistory.navigationHistory,
+    navigationHistory.previousView,
+    navigateBack,
+    setGameView
+  ]);
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
 
@@ -573,6 +593,26 @@ function AppContent() {
     if (!gameState.formation.goalie) return [];
     return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie);
   }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie]);
+
+  const handleNavigateToLiveMatchReport = useCallback(() => {
+    if (!gameState.currentMatchId) {
+      console.warn('No match ID available for live match navigation');
+      return;
+    }
+
+    setLiveMatchId(gameState.currentMatchId);
+    setLiveMatchEntryPoint(VIEWS.STATS);
+    navigateToView(VIEWS.LIVE_MATCH);
+  }, [gameState.currentMatchId, navigateToView]);
+
+  const handleLiveMatchNavigateBack = useCallback(() => {
+    setLiveMatchEntryPoint(null);
+    const targetView = navigateBack(VIEWS.STATS);
+
+    if (targetView !== VIEWS.STATS) {
+      setGameView(VIEWS.STATS);
+    }
+  }, [navigateBack, setGameView]);
 
   // Enhanced game handlers that integrate with timers
   const handleStartGame = () => {
@@ -1074,7 +1114,7 @@ function AppContent() {
             opponentTeam={gameState.opponentTeam}
             resetScore={gameState.resetScore}
             setOpponentTeam={gameState.setOpponentTeam}
-            navigateToMatchReport={gameState.navigateToMatchReport}
+            navigateToMatchReport={handleNavigateToLiveMatchReport}
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
@@ -1089,31 +1129,6 @@ function AppContent() {
             formation={gameState.formation}
             ownTeamName={ownTeamName}
             matchType={gameState.matchType}
-        />
-      );
-      case VIEWS.MATCH_REPORT:
-        return (
-          <MatchReportScreen 
-            matchEvents={gameState.matchEvents || []}
-            matchStartTime={gameState.matchStartTime}
-            allPlayers={gameState.allPlayers}
-            gameLog={gameState.gameLog}
-            ownScore={gameState.ownScore}
-            opponentScore={gameState.opponentScore}
-            periodDurationMinutes={gameState.periodDurationMinutes}
-            teamConfig={gameState.teamConfig}
-            ownTeamName={ownTeamName}
-            opponentTeam={gameState.opponentTeam || 'Opponent'}
-            onNavigateBack={() => navigateBack(VIEWS.STATS)}
-            goalScorers={gameState.goalScorers || {}}
-            getPlayerName={(playerId) => {
-              const player = gameState.allPlayers.find(p => p.id === playerId);
-              return player ? formatPlayerName(player) : 'Unknown Player';
-            }}
-            formatTime={formatTime}
-            selectedSquadIds={gameState.selectedSquadIds}
-            formation={gameState.formation}
-            debugMode={debugMode}
           />
         );
       case VIEWS.PROFILE:
@@ -1145,11 +1160,30 @@ function AppContent() {
           />
         );
       case VIEWS.LIVE_MATCH:
+        const showLiveMatchBackButton = Boolean(user) && liveMatchEntryPoint === VIEWS.STATS;
+
         return liveMatchId ? (
-          <LiveMatchScreen matchId={liveMatchId} />
+          <LiveMatchScreen
+            matchId={liveMatchId}
+            showBackButton={showLiveMatchBackButton}
+            onNavigateBack={showLiveMatchBackButton ? handleLiveMatchNavigateBack : undefined}
+          />
         ) : (
           <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
-            <p className="text-slate-400">Invalid match ID</p>
+            <div className="text-center space-y-4">
+              {showLiveMatchBackButton && (
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleLiveMatchNavigateBack}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-slate-100 rounded-md hover:bg-slate-600 transition-colors"
+                  >
+                    Back
+                  </button>
+                </div>
+              )}
+              <p className="text-slate-400">Invalid match ID</p>
+            </div>
           </div>
         );
       case VIEWS.STATISTICS:

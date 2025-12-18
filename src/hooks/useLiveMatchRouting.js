@@ -11,8 +11,9 @@ import { VIEWS } from '../constants/viewConstants';
  * @param {string} view - Current view from game state
  * @param {Function} navigateToView - Function to navigate to a view
  * @param {Function} setLiveMatchId - Function to set the live match ID
+ * @param {string|null} activeMatchId - Currently selected live match ID (for programmatic navigation)
  */
-export function useLiveMatchRouting(view, navigateToView, setLiveMatchId) {
+export function useLiveMatchRouting(view, navigateToView, setLiveMatchId, activeMatchId = null) {
   const initialPathRef = useRef(null);
   const initialRouteHandledRef = useRef(false);
   const currentMatchIdRef = useRef(null);
@@ -72,6 +73,12 @@ export function useLiveMatchRouting(view, navigateToView, setLiveMatchId) {
     initialRouteHandledRef.current = true;
   }, [navigateToView, setLiveMatchId]);
 
+  useEffect(() => {
+    if (activeMatchId && activeMatchId !== currentMatchIdRef.current) {
+      currentMatchIdRef.current = activeMatchId;
+    }
+  }, [activeMatchId]);
+
   // Update URL when navigating to/from live match view
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -98,8 +105,9 @@ export function useLiveMatchRouting(view, navigateToView, setLiveMatchId) {
 
     // Calculate target path based on view (mirrors useStatisticsRouting pattern)
     let targetPath = '/';
-    if (view === VIEWS.LIVE_MATCH && currentMatchIdRef.current) {
-      targetPath = `/live/${currentMatchIdRef.current}`;
+    const resolvedMatchId = currentMatchIdRef.current || activeMatchId;
+    if (view === VIEWS.LIVE_MATCH && resolvedMatchId) {
+      targetPath = `/live/${resolvedMatchId}`;
     }
 
     console.log('[useLiveMatchRouting] URL sync:', {
@@ -115,6 +123,11 @@ export function useLiveMatchRouting(view, navigateToView, setLiveMatchId) {
       const hash = window.location.hash || '';
       const newUrl = `${targetPath}${search}${hash}`;
       window.history.replaceState(window.history.state, '', newUrl);
+
+      // Mark sync when we programmatically set a live path so cleanup can occur later
+      if (targetPath.startsWith('/live/')) {
+        hasSyncedInitialLiveRouteRef.current = true;
+      }
     }
-  }, [view]);
+  }, [activeMatchId, view]);
 }

@@ -6,17 +6,13 @@ Post-match analysis and reporting system that transforms game data into visual r
 ## Component Architecture
 
 ### Main Orchestrator
-- **MatchReportScreen.js**: Coordinates all report functionality
-  - Manages UI state (filters, player selection, substitution visibility)
-  - Filters squad players by participation and selectedSquadIds
-  - Provides error handling for missing data
-  - Uses ReportSection wrapper for consistent layout
+- Reporting components are consumed by `LiveMatchScreen` (live/finished match view) and `GameFinishedScreen` (post-game summary). The legacy MatchReportScreen orchestrator has been removed.
+- Parent screens manage UI state (filters, player selection, substitution visibility) and pass processed data into these shared components.
 
 ### Core Components
 - **GameEventTimeline.js**: Chronological event visualization with filtering
 - **MatchSummaryHeader.js**: Match metadata, scores, and winner display
 - **PlayerStatsTable.js**: Sortable statistics table with dynamic columns
-- **ReportControls.js**: Print/share functionality
 - **ReportSection.js**: Standardized section wrapper with icon and header
 - **EventToggleButton.js**: Toggle for substitution event visibility
 - **ReportNavigation.js**: Back navigation button
@@ -46,22 +42,17 @@ Post-match analysis and reporting system that transforms game data into visual r
 - **Match Duration**: Formatted time display
 - **Period Info**: Shows count and duration (e.g., "3 × 12min")
 
-### Report Controls
-- **Print**: window.print() or custom onPrint callback
-- **Share**: Uses native share API or clipboard fallback
-- **Options Section**: Currently only used for display, substitution toggle in parent
-
 ## Data Flow
 
-### MatchReportScreen Props
-- **matchEvents**: Events from gameEventLogger (filtered by MatchReportScreen)
-- **allPlayers**: All player data (filtered to squad players internally)
+### Shared Data Inputs
+- **matchEvents**: Events from gameEventLogger or Supabase (filtered by parent screen)
+- **allPlayers**: All player data (filtered to squad players by parent)
 - **selectedSquadIds**: Array of player IDs to include in report
 - **goalScorers**: Object mapping event.id → playerId for goal attribution
 - **ownScore, opponentScore**: Final scores
 - **matchStartTime**: Timestamp for duration calculation
 - **formation**: Used by PlayerStatsTable for starting roles
-- **debugMode**: Shows SUBSTITUTION_UNDONE events in timeline
+- **debugMode**: Shows SUBSTITUTION_UNDONE events in timeline (LiveMatchScreen always false)
 
 ### Key Transformations
 1. **Squad Filtering**: allPlayers → squadPlayers (participantSet + hasPlayerParticipated check)
@@ -146,7 +137,7 @@ Post-match analysis and reporting system that transforms game data into visual r
 4. For conditional columns, check data existence in columns useMemo (like midfielder column)
 
 ### Modifying Event Filtering
-- **MatchReportScreen**: Controls high-level filtering (substitution visibility toggle)
+- **Parent screen**: Controls high-level filtering (substitution visibility toggle)
 - **GameEventTimeline**: Controls granular filtering (player filter, debug mode, undone events)
 - Both use useMemo for performance on filter changes
 
@@ -175,11 +166,9 @@ Post-match analysis and reporting system that transforms game data into visual r
 ## File Structure
 ```
 /src/components/report/
-├── MatchReportScreen.js      # Main orchestrator
 ├── GameEventTimeline.js      # Event timeline with filtering
 ├── MatchSummaryHeader.js     # Match metadata and scores
 ├── PlayerStatsTable.js       # Sortable statistics table
-├── ReportControls.js         # Print/share controls
 ├── ReportSection.js          # Section wrapper component
 ├── EventToggleButton.js      # Substitution visibility toggle
 ├── ReportNavigation.js       # Back button navigation

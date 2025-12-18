@@ -32,7 +32,7 @@ const UNTRACKED_VIEWS = new Set([
   // Automatic game flow transitions that shouldn't create navigation history:
   // - GAME is reached automatically after "Start Game" from PERIOD_SETUP  
   // Note: STATS was removed from untracked views because users often navigate TO stats 
-  // intentionally (not just automatically), and need proper back navigation from MatchReport
+  // intentionally (not just automatically)
   // Note: PERIOD_SETUP was removed to enable proper browser back navigation from GameScreen
   VIEWS.GAME          // Automatic transition from PERIOD_SETUP
 ]);
@@ -45,9 +45,9 @@ const MAX_HISTORY_ENTRIES = 10;
 
 // Context-aware fallback logic based on current app state
 const getContextAwareFallback = (currentView) => {
-  // If we're in a post-game view (STATS or MATCH_REPORT), prefer staying in that context
-  if (currentView === VIEWS.MATCH_REPORT) {
-    return VIEWS.STATS; // From match report, go to stats
+  // Prefer returning to post-game context when viewing live match summaries
+  if (currentView === VIEWS.LIVE_MATCH) {
+    return VIEWS.STATS;
   }
   
   // For most cases, CONFIG is the safest fallback
@@ -66,7 +66,15 @@ export function NavigationHistoryProvider({ children }) {
       return [];
     }
 
-    return Array.isArray(stored.history) ? stored.history : [];
+    if (!Array.isArray(stored.history)) {
+      return [];
+    }
+
+    const sanitizedHistory = stored.history
+      .map(view => view === 'matchReport' ? VIEWS.STATS : view)
+      .filter(view => typeof view === 'string' && VALID_VIEWS.includes(view));
+
+    return sanitizedHistory;
   });
   const [currentView, setCurrentView] = useState(null);
 

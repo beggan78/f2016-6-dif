@@ -134,6 +134,18 @@ const spreadFieldPlayersAcrossRoles = (fieldPlayers, formation, fieldPositions) 
   return [...interleaved, ...roleBuckets.other];
 };
 
+const normalizeView = (value) => {
+  if (value === 'matchReport') {
+    return VIEWS.STATS;
+  }
+
+  if (Object.values(VIEWS).includes(value)) {
+    return value;
+  }
+
+  return VIEWS.CONFIG;
+};
+
 export function useGameState(navigateToView = null) {
   // Get current team from context for database operations
   const { currentTeam, updateMatchActivityStatus, loadTeamPreferences } = useTeam();
@@ -166,7 +178,7 @@ export function useGameState(navigateToView = null) {
     updatePlayerRolesFromFormation
   } = playerStateHook;
 
-  const [view, setView] = useState(initialState.view);
+  const [view, setViewState] = useState(() => normalizeView(initialState.view));
   const [numPeriods, setNumPeriods] = useState(initialState.numPeriods);
   const [periodDurationMinutes, setPeriodDurationMinutes] = useState(initialState.periodDurationMinutes);
   const [periodGoalieIds, setPeriodGoalieIds] = useState(initialState.periodGoalieIds);
@@ -222,6 +234,9 @@ export function useGameState(navigateToView = null) {
     clearAllMatchEvents,
     syncMatchDataFromEventLogger
   } = matchEventsHook;
+  const setView = useCallback((nextView) => {
+    setViewState(normalizeView(nextView));
+  }, []);
   const [timerPauseStartTime, setTimerPauseStartTime] = useState(initialState.timerPauseStartTime || null);
   const [totalMatchPausedDuration, setTotalMatchPausedDuration] = useState(initialState.totalMatchPausedDuration || 0);
   // Match state management - track database match record lifecycle
@@ -1076,24 +1091,6 @@ export function useGameState(navigateToView = null) {
   }, [allPlayers, selectedSquadIds, formation.goalie]);
 
 
-  // Navigation to match report
-  const navigateToMatchReport = useCallback(() => {
-    // Sync match data before showing report
-    syncMatchDataFromEventLogger();
-    
-    // Use navigation system if available, otherwise fall back to direct setView
-    if (navigateToView) {
-      const success = navigateToView(VIEWS.MATCH_REPORT);
-      
-      // If navigation system failed or returned false, use direct setView as fallback
-      if (!success) {
-        setView(VIEWS.MATCH_REPORT);
-      }
-    } else {
-      setView(VIEWS.MATCH_REPORT);
-    }
-  }, [syncMatchDataFromEventLogger, navigateToView]);
-
   // Captain management functions
 
   // Save Configuration handler for ConfigurationScreen - extracts database save logic without navigation
@@ -1504,7 +1501,6 @@ export function useGameState(navigateToView = null) {
     addGoalConceded,
     setScore,
     resetScore,
-    navigateToMatchReport,
     setCaptain,
     
     // Audio alert function (called by visual timer logic)
