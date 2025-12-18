@@ -55,6 +55,12 @@ export function GameFinishedScreen({
   const { currentTeam, loadTeamPreferences } = useTeam();
   const saveRequestIdRef = useRef(0);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
   // Calculate match duration and total periods (same as MatchReportScreen)
   const matchDuration = useMemo(() => {
     if (!matchStartTime) {
