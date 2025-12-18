@@ -4,6 +4,7 @@ import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { GameEventTimeline } from '../report/GameEventTimeline';
 import { ReportSection } from '../report/ReportSection';
 import { EventToggleButton } from '../report/EventToggleButton';
+import { ReportNavigation } from '../report/ReportNavigation';
 import { useTeam } from '../../contexts/TeamContext';
 import { findUpcomingMatchByOpponent } from '../../services/matchIntegrationService';
 import { useMatchEvents } from '../../hooks/useMatchEvents';
@@ -133,7 +134,7 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
   return Math.max(0, Math.floor(totalMs / 1000));
 }
 
-// Shared preferences with MatchReportScreen for timeline display
+// Shared preferences with report-driven screens for timeline display
 const liveTimelinePrefsManager = createPersistenceManager(
   STORAGE_KEYS.TIMELINE_PREFERENCES,
   { sortOrder: 'asc', showSubstitutions: true }
@@ -149,7 +150,7 @@ const liveTimelinePrefsManager = createPersistenceManager(
  * @param {Object} props
  * @param {string} props.matchId - UUID of the match to display
  */
-export function LiveMatchScreen({ matchId }) {
+export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBack = null }) {
   const { currentTeam } = useTeam();
   const [upcomingMatch, setUpcomingMatch] = useState(null);
   const [pollingConfig, setPollingConfig] = useState({ enabled: false, intervalMs: 60000 });
@@ -167,6 +168,18 @@ export function LiveMatchScreen({ matchId }) {
     pollingEnabled: pollingConfig.enabled,
     refreshIntervalMs: pollingConfig.intervalMs
   });
+
+  const renderBackNavigation = useCallback(() => {
+    if (!showBackButton || !onNavigateBack) {
+      return null;
+    }
+
+    return (
+      <div className="mb-4">
+        <ReportNavigation onNavigateBack={onNavigateBack} />
+      </div>
+    );
+  }, [onNavigateBack, showBackButton]);
 
   const matchMetadata = useMemo(() => extractMatchMetadata(events), [events]);
 
@@ -446,10 +459,15 @@ export function LiveMatchScreen({ matchId }) {
   // Loading state
   if (isLoading && events.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading match events...</p>
+      <div className="min-h-screen bg-slate-900 text-slate-100">
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          {renderBackNavigation()}
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400 mx-auto mb-4"></div>
+            <p className="text-slate-400">Loading match events...</p>
+          </div>
         </div>
       </div>
     );
@@ -460,6 +478,7 @@ export function LiveMatchScreen({ matchId }) {
     return (
       <div className="min-h-screen bg-slate-900 text-slate-100">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
+          {renderBackNavigation()}
           <div className="bg-red-900/20 border border-red-700 rounded-lg p-6">
             <div className="flex items-center mb-4">
               <AlertCircle className="h-6 w-6 text-red-400 mr-2" />
@@ -477,6 +496,7 @@ export function LiveMatchScreen({ matchId }) {
     return (
       <div className="min-h-screen bg-slate-900 text-slate-100">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
+          {renderBackNavigation()}
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <p className="text-slate-400 text-center">No match events found</p>
           </div>
@@ -488,6 +508,7 @@ export function LiveMatchScreen({ matchId }) {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
       <div className="container mx-auto px-4 py-8 max-w-2xl md:max-w-4xl lg:max-w-5xl">
+        {renderBackNavigation()}
         {/* Live Match Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">

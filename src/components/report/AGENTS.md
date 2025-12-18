@@ -6,11 +6,8 @@ Post-match analysis and reporting system that transforms game data into visual r
 ## Component Architecture
 
 ### Main Orchestrator
-- **MatchReportScreen.js**: Coordinates all report functionality
-  - Manages UI state (filters, player selection, substitution visibility)
-  - Filters squad players by participation and selectedSquadIds
-  - Provides error handling for missing data
-  - Uses ReportSection wrapper for consistent layout
+- Reporting components are consumed by `LiveMatchScreen` (live/finished match view) and `GameFinishedScreen` (post-game summary). The legacy MatchReportScreen orchestrator has been removed.
+- Parent screens manage UI state (filters, player selection, substitution visibility) and pass processed data into these shared components.
 
 ### Core Components
 - **GameEventTimeline.js**: Chronological event visualization with filtering
@@ -53,15 +50,15 @@ Post-match analysis and reporting system that transforms game data into visual r
 
 ## Data Flow
 
-### MatchReportScreen Props
-- **matchEvents**: Events from gameEventLogger (filtered by MatchReportScreen)
-- **allPlayers**: All player data (filtered to squad players internally)
+### Shared Data Inputs
+- **matchEvents**: Events from gameEventLogger or Supabase (filtered by parent screen)
+- **allPlayers**: All player data (filtered to squad players by parent)
 - **selectedSquadIds**: Array of player IDs to include in report
 - **goalScorers**: Object mapping event.id → playerId for goal attribution
 - **ownScore, opponentScore**: Final scores
 - **matchStartTime**: Timestamp for duration calculation
 - **formation**: Used by PlayerStatsTable for starting roles
-- **debugMode**: Shows SUBSTITUTION_UNDONE events in timeline
+- **debugMode**: Shows SUBSTITUTION_UNDONE events in timeline (LiveMatchScreen always false)
 
 ### Key Transformations
 1. **Squad Filtering**: allPlayers → squadPlayers (participantSet + hasPlayerParticipated check)
@@ -146,7 +143,7 @@ Post-match analysis and reporting system that transforms game data into visual r
 4. For conditional columns, check data existence in columns useMemo (like midfielder column)
 
 ### Modifying Event Filtering
-- **MatchReportScreen**: Controls high-level filtering (substitution visibility toggle)
+- **Parent screen**: Controls high-level filtering (substitution visibility toggle)
 - **GameEventTimeline**: Controls granular filtering (player filter, debug mode, undone events)
 - Both use useMemo for performance on filter changes
 
@@ -175,7 +172,6 @@ Post-match analysis and reporting system that transforms game data into visual r
 ## File Structure
 ```
 /src/components/report/
-├── MatchReportScreen.js      # Main orchestrator
 ├── GameEventTimeline.js      # Event timeline with filtering
 ├── MatchSummaryHeader.js     # Match metadata and scores
 ├── PlayerStatsTable.js       # Sortable statistics table

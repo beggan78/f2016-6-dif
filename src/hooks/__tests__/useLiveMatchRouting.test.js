@@ -18,8 +18,8 @@ describe('useLiveMatchRouting', () => {
     window.history.replaceState({}, '', `/live/${matchId}`);
 
     const { rerender } = renderHook(
-      ({ view }) => useLiveMatchRouting(view, navigateToView, setLiveMatchId),
-      { initialProps: { view: VIEWS.CONFIG } }
+      ({ view, activeMatchId }) => useLiveMatchRouting(view, navigateToView, setLiveMatchId, activeMatchId),
+      { initialProps: { view: VIEWS.CONFIG, activeMatchId: null } }
     );
 
     await waitFor(() => {
@@ -29,10 +29,28 @@ describe('useLiveMatchRouting', () => {
 
     expect(window.location.pathname).toBe(`/live/${matchId}`);
 
-    rerender({ view: VIEWS.LIVE_MATCH });
+    rerender({ view: VIEWS.LIVE_MATCH, activeMatchId: matchId });
     await waitFor(() => expect(window.location.pathname).toBe(`/live/${matchId}`));
 
-    rerender({ view: VIEWS.CONFIG });
+    rerender({ view: VIEWS.CONFIG, activeMatchId: matchId });
     await waitFor(() => expect(window.location.pathname).toBe('/'));
+  });
+
+  it('updates the URL when navigating to a live match programmatically', async () => {
+    const navigateToView = jest.fn();
+    const setLiveMatchId = jest.fn();
+
+    const { rerender } = renderHook(
+      ({ view, activeMatchId }) => useLiveMatchRouting(view, navigateToView, setLiveMatchId, activeMatchId),
+      { initialProps: { view: VIEWS.CONFIG, activeMatchId: null } }
+    );
+
+    expect(window.location.pathname).toBe('/');
+
+    rerender({ view: VIEWS.LIVE_MATCH, activeMatchId: matchId });
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe(`/live/${matchId}`);
+    });
   });
 });
