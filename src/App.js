@@ -308,10 +308,13 @@ function AppContent() {
   }, [gameState.view, navigationData]);
 
   useEffect(() => {
-    if (gameState.view !== VIEWS.LIVE_MATCH && liveMatchEntryPoint) {
-      setLiveMatchEntryPoint(null);
-    }
-  }, [gameState.view, liveMatchEntryPoint]);
+    setLiveMatchEntryPoint((currentEntryPoint) => {
+      if (gameState.view !== VIEWS.LIVE_MATCH && currentEntryPoint) {
+        return null;
+      }
+      return currentEntryPoint;
+    });
+  }, [gameState.view]);
 
 
   // Handle invitation processed callback from InvitationWelcome - now delegated to hook

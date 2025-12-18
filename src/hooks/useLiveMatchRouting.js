@@ -123,6 +123,11 @@ export function useLiveMatchRouting(view, navigateToView, setLiveMatchId, active
       const hash = window.location.hash || '';
       const newUrl = `${targetPath}${search}${hash}`;
       window.history.replaceState(window.history.state, '', newUrl);
+
+      // Mark sync when we programmatically set a live path so cleanup can occur later
+      if (targetPath.startsWith('/live/')) {
+        hasSyncedInitialLiveRouteRef.current = true;
+      }
     }
   }, [activeMatchId, view]);
 }
