@@ -4,6 +4,7 @@ import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { formatPlayerName } from '../../utils/formatUtils';
+import { scrollToTopSmooth } from '../../utils/scrollUtils';
 import { hasPlayerParticipated } from '../../utils/playerUtils';
 import { updateFinishedMatchMetadata, getPlayerStats } from '../../services/matchStateManager';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
@@ -56,10 +57,8 @@ export function GameFinishedScreen({
   const saveRequestIdRef = useRef(0);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, []);
+    scrollToTopSmooth();
+  }, [scrollToTopSmooth]);
 
   // Calculate match duration and total periods (same as MatchReportScreen)
   const matchDuration = useMemo(() => {

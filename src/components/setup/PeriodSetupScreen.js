@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Users, Play, ArrowLeft, Shuffle, Save } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
 import { getPlayerLabel } from '../../utils/formatUtils';
+import { scrollToTopSmooth } from '../../utils/scrollUtils';
 import { getPlayerDisplayName as getPlayerDisplayNameUtil, getPlayerDisplayNameById as getPlayerDisplayNameByIdUtil } from '../../utils/playerUtils';
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
@@ -203,8 +204,8 @@ export function PeriodSetupScreen({
   });
   
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    scrollToTopSmooth();
+  }, [scrollToTopSmooth]);
 
   const recommendationDependenciesRef = useRef({
     teamId: null,
@@ -852,7 +853,7 @@ export function PeriodSetupScreen({
         });
         
         // Scroll to top to show success banner
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTopSmooth();
         
         // Clear success message after 3 seconds
         setTimeout(() => {
