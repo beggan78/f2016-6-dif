@@ -29,6 +29,7 @@ import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { PlayerMatchingModal } from './PlayerMatchingModal';
+import { RosterConnectorOnboarding } from './RosterConnectorOnboarding';
 import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -310,7 +311,7 @@ export function TeamManagement({ onNavigateBack, openToTab, onShowSuccessMessage
           onShowRoleModal={handleShowRoleModal}
         />;
       case TAB_VIEWS.ROSTER:
-        return <RosterManagement team={currentTeam} onRefresh={loadTeamData} />;
+        return <RosterManagement team={currentTeam} onRefresh={loadTeamData} onNavigateToConnectors={() => setActiveTab('connectors')} />;
       case TAB_VIEWS.CONNECTORS:
         return <TeamConnectors team={currentTeam} onRefresh={loadTeamData} />;
       case TAB_VIEWS.PREFERENCES:
@@ -618,7 +619,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
 }
 
 // Roster Management Component
-function RosterManagement({ team, onRefresh }) {
+function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
   const { 
     getTeamRoster, 
     addRosterPlayer, 
@@ -703,6 +704,10 @@ function RosterManagement({ team, onRefresh }) {
     const bName = b.display_name || '';
     return aName.localeCompare(bName);
   });
+
+  // Calculate if we should show the connector onboarding banner
+  const activeRosterCount = roster.filter(p => p.on_roster).length;
+  const shouldShowOnboarding = activeRosterCount < 4 && !connectionDetails.hasConnectedProvider;
 
   // Handle player matched successfully
   const handlePlayerMatched = async (matchedAttendance, rosterPlayer) => {
@@ -888,8 +893,13 @@ function RosterManagement({ team, onRefresh }) {
               </>
             ) : (
               <>
-                <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No active players found.</p>
+                <Users className="w-8 h-8 mx-auto mb-2 text-sky-200 opacity-50" />
+                <p className="text-sm text-sky-200">No active players found.</p>
+                {shouldShowOnboarding && (
+                  <div className="mt-4 px-4">
+                    <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1040,6 +1050,13 @@ function RosterManagement({ team, onRefresh }) {
           </div>
         )}
       </div>
+
+      {/* Connector Onboarding - shown below table when 1-3 active players */}
+      {shouldShowOnboarding && filteredRoster.length > 0 && (
+        <div className="mt-4">
+          <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />
+        </div>
+      )}
 
       {/* Add Player Modal */}
       {showAddModal && (
