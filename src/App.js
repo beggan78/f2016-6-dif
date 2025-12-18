@@ -161,6 +161,8 @@ function AppContent() {
   useStatisticsRouting(gameState.view, navigateToView);
   useLiveMatchRouting(gameState.view, navigateToView, setLiveMatchId, liveMatchId);
 
+  const { setView: setGameView } = gameState;
+
 
 
   // Check for password reset tokens or codes in URL on app load
@@ -275,9 +277,9 @@ function AppContent() {
   const handleNavigateFromTacticalBoard = useCallback((fallbackView) => {
     // Navigate back to the previous view - for now, go to GAME view if available, otherwise CONFIG
     if (gameState.view === VIEWS.TACTICAL_BOARD) {
-      gameState.setView(fromView || fallbackView || VIEWS.CONFIG);
+      setGameView(fromView || fallbackView || VIEWS.CONFIG);
     }
-  }, [gameState, fromView]);
+  }, [gameState.view, fromView, setGameView]);
 
   // Navigation data state (for passing data between views)
   const [navigationData, setNavigationData] = useState(null);
@@ -400,7 +402,7 @@ function AppContent() {
     } else if (gameState.view === VIEWS.PERIOD_SETUP && gameState.currentPeriodNumber === 1 && !canNavigateWithHistory) {
       // Exception: PeriodSetupScreen -> ConfigurationScreen (only when no history available)
       console.log('🌐 App: PERIOD_SETUP -> CONFIG (no history available)');
-      gameState.setView(VIEWS.CONFIG);
+      setGameView(VIEWS.CONFIG);
     } else if (canNavigateWithHistory) {
       // Use navigation history when available
       console.log('🌐 App: Using navigation history to go back', {
@@ -420,7 +422,17 @@ function AppContent() {
         }, 'App-NewGameModal');
       }
     }
-  }, [gameState, handleNavigateFromTacticalBoard, navigationHistory.canNavigateBack, navigationHistory.navigationHistory, navigationHistory.previousView, navigateBack]);
+  }, [
+    gameState.currentPeriodNumber,
+    gameState.matchState,
+    gameState.view,
+    handleNavigateFromTacticalBoard,
+    navigationHistory.canNavigateBack,
+    navigationHistory.navigationHistory,
+    navigationHistory.previousView,
+    navigateBack,
+    setGameView
+  ]);
   
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept(handleGlobalNavigation);
 
@@ -598,9 +610,9 @@ function AppContent() {
     const targetView = navigateBack(VIEWS.STATS);
 
     if (targetView !== VIEWS.STATS) {
-      gameState.setView(VIEWS.STATS);
+      setGameView(VIEWS.STATS);
     }
-  }, [navigateBack, gameState]);
+  }, [navigateBack, setGameView]);
 
   // Enhanced game handlers that integrate with timers
   const handleStartGame = () => {
