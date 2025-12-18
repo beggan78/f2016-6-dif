@@ -13,7 +13,6 @@ Post-match analysis and reporting system that transforms game data into visual r
 - **GameEventTimeline.js**: Chronological event visualization with filtering
 - **MatchSummaryHeader.js**: Match metadata, scores, and winner display
 - **PlayerStatsTable.js**: Sortable statistics table with dynamic columns
-- **ReportControls.js**: Print/share functionality
 - **ReportSection.js**: Standardized section wrapper with icon and header
 - **EventToggleButton.js**: Toggle for substitution event visibility
 - **ReportNavigation.js**: Back navigation button
@@ -42,11 +41,6 @@ Post-match analysis and reporting system that transforms game data into visual r
 - **Date/Time**: ISO format (YYYY-MM-DD HH:MM) using Swedish locale
 - **Match Duration**: Formatted time display
 - **Period Info**: Shows count and duration (e.g., "3 × 12min")
-
-### Report Controls
-- **Print**: window.print() or custom onPrint callback
-- **Share**: Uses native share API or clipboard fallback
-- **Options Section**: Currently only used for display, substitution toggle in parent
 
 ## Data Flow
 
@@ -175,7 +169,6 @@ Post-match analysis and reporting system that transforms game data into visual r
 ├── GameEventTimeline.js      # Event timeline with filtering
 ├── MatchSummaryHeader.js     # Match metadata and scores
 ├── PlayerStatsTable.js       # Sortable statistics table
-├── ReportControls.js         # Print/share controls
 ├── ReportSection.js          # Section wrapper component
 ├── EventToggleButton.js      # Substitution visibility toggle
 ├── ReportNavigation.js       # Back button navigation
