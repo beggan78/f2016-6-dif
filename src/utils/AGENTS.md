@@ -99,14 +99,8 @@ This directory contains cross-cutting utility functions for data transformation,
   - `useErrorHandler()`: React hook for component error handling
   - `logErrorBoundary()`: Error boundary logging
 
-### Match Report & Analytics
-- **`matchReportUtils.js`**: Match report data processing
-  - `generateMatchSummary()`: Creates comprehensive summary from events and game log
-  - `processPlayerStatistics()`: Processes player stats with time breakdowns and percentages
-  - `formatEventTimeline()`: Formats events for display with filtering options
-  - `calculateEffectivePlayingTime()`: Total time minus paused time
-  - `determinePlayerStartingRoles()`: Determines starting roles from game log and stats
-  - Includes event categorization, severity levels, human-readable descriptions
+### Match Analytics
+Utilities focused on live/finished match analytics (event consolidation, metadata extraction, filtering, and sharing).
 
 ## Architecture Principles
 
