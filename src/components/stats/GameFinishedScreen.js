@@ -58,7 +58,7 @@ export function GameFinishedScreen({
 
   useEffect(() => {
     scrollToTopSmooth();
-  }, [scrollToTopSmooth]);
+  }, []);
 
   // Calculate match duration and total periods (same as MatchReportScreen)
   const matchDuration = useMemo(() => {

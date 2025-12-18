@@ -205,7 +205,7 @@ export function PeriodSetupScreen({
   
   useEffect(() => {
     scrollToTopSmooth();
-  }, [scrollToTopSmooth]);
+  }, []);
 
   const recommendationDependenciesRef = useRef({
     teamId: null,
