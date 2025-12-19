@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RosterConnectorOnboarding } from '../RosterConnectorOnboarding';
 import { getAllProviders } from '../../../constants/connectorProviders';
@@ -176,18 +176,18 @@ describe('RosterConnectorOnboarding', () => {
       expect(sportadminLogo.parentElement).not.toHaveClass('opacity-60');
     });
 
-    it('should render "Soon" badge for coming-soon providers', () => {
+    it('should render "Coming Soon" badge for coming-soon providers', () => {
       render(<RosterConnectorOnboarding {...defaultProps} />);
 
-      const badges = screen.getAllByText('Soon');
+      const badges = screen.getAllByText('Coming Soon');
       expect(badges).toHaveLength(2); // MyClub and Svenska Lag
     });
 
-    it('should NOT render "Soon" badge for active providers', () => {
+    it('should NOT render "Coming Soon" badge for active providers', () => {
       render(<RosterConnectorOnboarding {...defaultProps} />);
 
       const sportadminLogo = screen.getByTestId('provider-logo-sportadmin');
-      const soonBadge = sportadminLogo.parentElement.querySelector('span');
+      const soonBadge = within(sportadminLogo.parentElement).queryByText('Coming Soon');
 
       expect(soonBadge).toBeNull();
     });
@@ -352,8 +352,10 @@ describe('RosterConnectorOnboarding', () => {
         render(<RosterConnectorOnboarding {...defaultProps} />);
       }).not.toThrow();
 
-      // Should render without "Soon" badge
-      expect(screen.queryByText('Soon')).not.toBeInTheDocument();
+      const providerLogo = screen.getByTestId('provider-logo-test');
+
+      // Should render without "Coming Soon" badge on the provider container
+      expect(within(providerLogo.parentElement).queryByText('Coming Soon')).toBeNull();
     });
 
     it('should handle provider with null/undefined values', () => {

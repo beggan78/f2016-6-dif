@@ -15,6 +15,8 @@ import { getAllProviders } from '../../constants/connectorProviders';
  */
 export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
   const providers = getAllProviders();
+  const comingSoonBadgeClass =
+    'px-2 py-[3px] text-[10px] font-semibold bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 text-slate-900 rounded-full shadow-sm shadow-rose-900/30 border border-white/60';
 
   return (
     <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4">
@@ -40,8 +42,10 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
           >
             <ProviderLogo provider={provider} className="w-28 h-9" />
             {provider.comingSoon && (
-              <span className="absolute -top-1.5 -right-1.5 px-2 py-0.5 bg-slate-600/90 text-slate-200 rounded text-[10px] font-medium shadow-sm border border-slate-500">
-                Soon
+              <span
+                className={`absolute -top-1.5 -right-1.5 ${comingSoonBadgeClass}`}
+              >
+                Coming Soon
               </span>
             )}
           </div>
