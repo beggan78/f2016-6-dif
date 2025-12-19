@@ -4,6 +4,7 @@ import { Link, Info, Plus } from 'lucide-react';
 import { ConnectorCard } from './ConnectorCard';
 import { SportAdminConnectModal } from './SportAdminConnectModal';
 import { DisconnectConfirmModal } from './DisconnectConfirmModal';
+import { ComingSoonBadge } from '../shared/ComingSoonBadge';
 import { useTeamConnector } from '../../hooks/useTeamConnector';
 import { useTeam } from '../../contexts/TeamContext';
 import { ProviderLogo } from './ProviderLogo';
@@ -209,7 +210,7 @@ export function ConnectorsSection({ team }) {
       {/* Available Providers */}
       <div className="space-y-4">
         <h5 className="text-sm font-medium text-slate-400">Available Providers</h5>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {allProviders.map((provider) => {
             const isConnected = connectedProviderIds.includes(provider.id);
             const isComingSoon = provider.comingSoon;
@@ -236,9 +237,7 @@ export function ConnectorsSection({ team }) {
                       </span>
                     )}
                     {isComingSoon && (
-                      <span className="px-2 py-1 bg-slate-600 text-slate-300 rounded text-xs font-medium">
-                        Coming Soon
-                      </span>
+                      <ComingSoonBadge className="shrink-0" />
                     )}
                     {!isConnected && !isComingSoon && (
                       <Button
