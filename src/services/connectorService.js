@@ -212,10 +212,17 @@ export async function getPlayerAttendance(connectorId, year = null) {
 
   const { data, error } = await supabase
     .from('player_attendance')
-    .select('*')
-    .eq('connector_id', connectorId)
+    .select(`
+      *,
+      connected_player:connected_player_id (
+        connector_id,
+        player_id,
+        player_name
+      )
+    `)
+    .eq('connected_player.connector_id', connectorId)
     .eq('year', currentYear)
-    .order('player_name', { ascending: true })
+    .order('connected_player.player_name', { ascending: true })
     .order('month', { ascending: true })
     .order('day_of_month', { ascending: true });
 
@@ -342,7 +349,7 @@ export async function getPlayerConnectorMappings(teamId) {
 
 /**
  * Get comprehensive connection details for all players in a team
- * Includes both matched and unmatched attendance records
+ * Includes both matched and unmatched connected_player records
  * @param {string} teamId - Team UUID
  * @returns {Promise<Object>} Object with matched and unmatched connection details
  */
@@ -354,14 +361,14 @@ export async function getPlayerConnectionDetails(teamId) {
   // Get all connectors for the team
   const connectors = await getTeamConnectors(teamId);
 
-  // Get all attendance records with connector info
-  const { data: attendanceData, error } = await supabase
-    .from('player_attendance')
+  // Get all connected_player records with connector info and latest attendance sync
+  const { data: connectedPlayerData, error } = await supabase
+    .from('connected_player')
     .select(`
       id,
       player_id,
       player_name,
-      last_synced_at,
+      last_seen_at,
       connector:connector_id (
         id,
         provider,
@@ -378,19 +385,19 @@ export async function getPlayerConnectionDetails(teamId) {
 
   // Organize data by player_id
   const matchedConnections = new Map(); // player_id -> array of connection details
-  const unmatchedAttendance = []; // attendance records without player_id
+  const unmatchedPlayers = []; // connected_player records without player_id
   const hasConnectedProvider = connectors.some(c => c.status === 'connected');
 
-  attendanceData?.forEach(record => {
+  connectedPlayerData?.forEach(record => {
     const connector = record.connector;
 
     if (!connector) {
-      unmatchedAttendance.push({
-        attendanceId: record.id,
+      unmatchedPlayers.push({
+        connectedPlayerId: record.id,
         providerName: 'Unknown connector',
         providerId: null,
         playerNameInProvider: record.player_name,
-        lastSynced: record.last_synced_at,
+        lastSynced: record.last_seen_at,
         connectorStatus: null,
         connectorId: null
       });
@@ -399,48 +406,28 @@ export async function getPlayerConnectionDetails(teamId) {
 
     const provider = getProviderById(connector.provider);
     const connectionDetail = {
-      attendanceId: record.id,
+      connectedPlayerId: record.id,
       providerName: provider?.name || connector.provider,
       providerId: connector.provider,
       playerNameInProvider: record.player_name,
-      lastSynced: record.last_synced_at,
+      lastSynced: record.last_seen_at,
       connectorStatus: connector.status,
       connectorId: connector.id
     };
 
     if (record.player_id) {
-      // Matched connection - keep only the latest record per connector to avoid duplicates
+      // Matched connection - one connected_player per connector, so no duplicates possible
       const existingConnections = matchedConnections.get(record.player_id) || [];
-      const existingIndex = existingConnections.findIndex(
-        conn => conn.connectorId === connector.id
-      );
-
-      if (existingIndex === -1) {
-        matchedConnections.set(record.player_id, [...existingConnections, connectionDetail]);
-      } else {
-        const existingConnection = existingConnections[existingIndex];
-        const existingSynced = existingConnection.lastSynced
-          ? new Date(existingConnection.lastSynced).getTime()
-          : 0;
-        const newSynced = connectionDetail.lastSynced
-          ? new Date(connectionDetail.lastSynced).getTime()
-          : 0;
-
-        // Replace the stored connection if this record is more recent
-        const shouldReplace = newSynced > existingSynced;
-        const updatedConnections = [...existingConnections];
-        updatedConnections[existingIndex] = shouldReplace ? connectionDetail : existingConnection;
-        matchedConnections.set(record.player_id, updatedConnections);
-      }
+      matchedConnections.set(record.player_id, [...existingConnections, connectionDetail]);
     } else {
-      // Unmatched attendance record
-      unmatchedAttendance.push(connectionDetail);
+      // Unmatched connected_player record
+      unmatchedPlayers.push(connectionDetail);
     }
   });
 
   return {
     matchedConnections,
-    unmatchedAttendance,
+    unmatchedAttendance: unmatchedPlayers,
     hasConnectedProvider
   };
 }
@@ -472,26 +459,52 @@ export async function getUnmatchedPlayerAttendance(connectorId) {
 }
 
 /**
- * Match a player attendance record to a roster player
- * Updates the player_id field in the attendance record
- * @param {string} attendanceId - player_attendance record UUID
+ * Match a connected_player record to a roster player
+ * Updates the player_id field in the connected_player record
+ * @param {string} connectedPlayerId - connected_player record UUID
  * @param {string} playerId - player UUID from roster
  * @returns {Promise<void>}
  */
-export async function matchPlayerToAttendance(attendanceId, playerId) {
-  if (!attendanceId || !playerId) {
-    throw new Error('Attendance ID and player ID are required');
+export async function matchPlayerToConnectedPlayer(connectedPlayerId, playerId) {
+  if (!connectedPlayerId || !playerId) {
+    throw new Error('Connected player ID and player ID are required');
   }
 
   const { error } = await supabase
-    .from('player_attendance')
+    .from('connected_player')
     .update({ player_id: playerId })
-    .eq('id', attendanceId);
+    .eq('id', connectedPlayerId);
 
   if (error) {
-    console.error('Error matching player to attendance:', error);
+    console.error('Error matching player to connected_player:', error);
     throw new Error('Failed to match player');
   }
+}
+
+/**
+ * Get unmatched connected_player records for a connector
+ * These are external players that haven't been matched to a roster player yet
+ * @param {string} connectorId - Connector UUID
+ * @returns {Promise<Array>} Array of unmatched connected_player objects
+ */
+export async function getUnmatchedConnectedPlayers(connectorId) {
+  if (!connectorId) {
+    throw new Error('Connector ID is required');
+  }
+
+  const { data, error } = await supabase
+    .from('connected_player')
+    .select('*')
+    .eq('connector_id', connectorId)
+    .is('player_id', null)
+    .order('player_name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching unmatched connected players:', error);
+    throw new Error('Failed to load unmatched players');
+  }
+
+  return data || [];
 }
 
 // Normalize dates so comparisons are inclusive and time-agnostic
@@ -594,20 +607,22 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
       .from('player_attendance')
       .select(`
         id,
-        player_id,
-        player_name,
         year,
         month,
         day_of_month,
         total_practices,
         total_attendance,
-        connector:connector_id (
-          id,
-          provider
+        connected_player:connected_player_id (
+          player_id,
+          player_name,
+          connector:connector_id (
+            id,
+            provider
+          )
         )
       `)
-      .in('connector_id', connectorIds)
-      .not('player_id', 'is', null); // Only include matched players
+      .in('connected_player.connector.id', connectorIds)
+      .not('connected_player.player_id', 'is', null); // Only include matched players
 
     if (attendanceDateFilter) {
       attendanceQuery = attendanceQuery.or(attendanceDateFilter);
@@ -646,7 +661,9 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
     const dailyPracticeCounts = new Map();
 
     attendanceRecords.forEach(record => {
-      const playerId = record.player_id;
+      const playerId = record.connected_player?.player_id;
+      if (!playerId) return; // Skip if no player_id (should not happen due to filter)
+
       const dateKey = formatAttendanceDate(record);
       const attendanceCount = Number.isFinite(record.total_attendance)
         ? record.total_attendance

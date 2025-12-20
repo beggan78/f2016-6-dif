@@ -1,18 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { Button, Select } from '../shared/UI';
 import { Link, X } from 'lucide-react';
-import { matchPlayerToAttendance } from '../../services/connectorService';
+import { matchPlayerToConnectedPlayer } from '../../services/connectorService';
 
 /**
- * Modal for manually matching a roster player to an unmatched player_attendance record
+ * Modal for manually matching a roster player to an unmatched connected_player record
  *
  * @param {Object} rosterPlayer - The roster player whose broken link was clicked
- * @param {Array} unmatchedAttendance - List of unmatched attendance records to choose from
+ * @param {Array} unmatchedAttendance - List of unmatched connected_player records to choose from
  * @param {Function} onClose - Close modal callback
  * @param {Function} onMatched - Success callback after matching
  */
 export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose, onMatched }) {
-  const [selectedAttendanceId, setSelectedAttendanceId] = useState('');
+  const [selectedConnectedPlayerId, setSelectedConnectedPlayerId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,7 +24,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
         const label = `${record.playerNameInProvider} (${record.providerName})`;
 
         return {
-          value: record.attendanceId,
+          value: record.connectedPlayerId,
           label
         };
       })
@@ -35,7 +35,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedAttendanceId) {
+    if (!selectedConnectedPlayerId) {
       setError('Please select a player from the provider');
       return;
     }
@@ -45,10 +45,10 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
 
     try {
       const matchedRecord = unmatchedAttendance.find(
-        (record) => record.attendanceId === selectedAttendanceId
+        (record) => record.connectedPlayerId === selectedConnectedPlayerId
       );
 
-      await matchPlayerToAttendance(selectedAttendanceId, rosterPlayer.id);
+      await matchPlayerToConnectedPlayer(selectedConnectedPlayerId, rosterPlayer.id);
 
       // Call success callback with context so parent can update state optimistically
       if (onMatched) {
@@ -117,9 +117,9 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
             </label>
             <Select
               name="provider_player"
-              value={selectedAttendanceId}
+              value={selectedConnectedPlayerId}
               onChange={(value) => {
-                setSelectedAttendanceId(value);
+                setSelectedConnectedPlayerId(value);
                 setError(null);
               }}
               options={attendanceOptions}
@@ -144,7 +144,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
             <Button
               type="submit"
               variant="primary"
-              disabled={loading || !selectedAttendanceId}
+              disabled={loading || !selectedConnectedPlayerId}
               Icon={Link}
             >
               {loading ? 'Matching...' : 'Match Player'}
