@@ -99,6 +99,14 @@ jest.mock('../../../hooks/useFormationVotes', () => ({
   })
 }));
 
+jest.mock('../../../services/connectorService', () => ({
+  getPlayerConnectionDetails: jest.fn(() => Promise.resolve({
+    matchedConnections: new Map(),
+    unmatchedAttendance: [],
+    hasConnectedProvider: false
+  }))
+}));
+
 const mockUseOpponentNameSuggestions = jest.fn();
 
 jest.mock('../../../hooks/useOpponentNameSuggestions', () => ({
@@ -107,6 +115,10 @@ jest.mock('../../../hooks/useOpponentNameSuggestions', () => ({
 
 jest.mock('../../team/TeamManagement', () => ({
   TeamManagement: () => null
+}));
+
+jest.mock('../../team/RosterConnectorOnboarding', () => ({
+  RosterConnectorOnboarding: () => null
 }));
 
 jest.mock('../../../utils/DataSyncManager', () => ({

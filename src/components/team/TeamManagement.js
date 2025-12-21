@@ -35,6 +35,7 @@ import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { getPlayerConnectionDetails } from '../../services/connectorService';
+import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { DEFAULT_PREFERENCES } from '../../types/preferences';
@@ -706,8 +707,10 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
   });
 
   // Calculate if we should show the connector onboarding banner
-  const activeRosterCount = roster.filter(p => p.on_roster).length;
-  const shouldShowOnboarding = activeRosterCount < 4 && !connectionDetails.hasConnectedProvider;
+  const shouldShowOnboarding = shouldShowRosterConnectorOnboarding(
+    roster,
+    connectionDetails.hasConnectedProvider
+  );
 
   // Handle player matched successfully
   const handlePlayerMatched = async (matchedAttendance, rosterPlayer) => {
@@ -890,6 +893,11 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
                     Add First Player
                   </Button>
                 </div>
+                {shouldShowOnboarding && (
+                  <div className="mt-4 px-4">
+                    <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -1051,7 +1059,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
         )}
       </div>
 
-      {/* Connector Onboarding - shown below table when 1-3 active players */}
+      {/* Connector Onboarding - shown below table when 0-3 active players */}
       {shouldShowOnboarding && filteredRoster.length > 0 && (
         <div className="mt-4">
           <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />

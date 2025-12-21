@@ -18,7 +18,7 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
   const providers = getAllProviders();
 
   return (
-    <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4">
+    <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4 text-center">
       {/* Header Section */}
       <div className="flex items-start space-x-3 mb-7">
         <Link className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -33,7 +33,7 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
       </div>
 
       {/* Provider Logos Grid */}
-      <div className="flex items-center justify-center gap-4 mb-4 flex-wrap">
+      <div className="flex items-center justify-center gap-4 mb-6 flex-wrap">
         {providers.map((provider) => (
           <div
             key={provider.id}
@@ -48,11 +48,10 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
       </div>
 
       {/* Call to Action */}
-      <div className="flex justify-end ml-8">
+      <div className="flex justify-center">
         <Button
           onClick={onNavigateToConnectors}
           variant="primary"
-          size="sm"
           Icon={ArrowRight}
         >
           Go to Connectors

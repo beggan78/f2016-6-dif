@@ -7,12 +7,14 @@ import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
+import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useFormationVotes } from '../../hooks/useFormationVotes';
 import { TeamManagement } from '../team/TeamManagement';
+import { RosterConnectorOnboarding } from '../team/RosterConnectorOnboarding';
 import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
@@ -24,6 +26,7 @@ import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVen
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch, getPlayerStats } from '../../services/matchStateManager';
+import { getPlayerConnectionDetails } from '../../services/connectorService';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
 import { suggestUpcomingOpponent } from '../../services/opponentPrefillService';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -31,6 +34,7 @@ import { STORAGE_KEYS } from '../../constants/storageKeys';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
 const teamPreferencesCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_PREFERENCES_CACHE, { teamId: null, fetchedAt: 0, preferences: {} });
+const teamManagementTabCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_MANAGEMENT_ACTIVE_TAB, { tab: 'overview' });
 const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function ConfigurationScreen({ 
@@ -100,6 +104,13 @@ export function ConfigurationScreen({
   const [isResumedMatch, setIsResumedMatch] = useState(false);
   const [teamPreferences, setTeamPreferences] = useState(null);
   const [captainHistoryCounts, setCaptainHistoryCounts] = useState({});
+
+  // Track connection details to determine if connector onboarding should show
+  const [connectionDetails, setConnectionDetails] = useState({
+    matchedConnections: new Map(),
+    unmatchedAttendance: [],
+    hasConnectedProvider: false
+  });
 
   const currentFormat = teamConfig?.format || FORMATS.FORMAT_5V5;
   const effectiveVenueType = venueType ?? DEFAULT_VENUE_TYPE;
@@ -712,6 +723,30 @@ export function ConfigurationScreen({
     }
   }, [user]);
 
+  // Load player connection details to determine if connector onboarding should show
+  useEffect(() => {
+    const loadConnectionDetails = async () => {
+      if (!currentTeam?.id || !isAuthenticated) {
+        setConnectionDetails({
+          matchedConnections: new Map(),
+          unmatchedAttendance: [],
+          hasConnectedProvider: false
+        });
+        return;
+      }
+
+      try {
+        const details = await getPlayerConnectionDetails(currentTeam.id);
+        setConnectionDetails(details);
+      } catch (error) {
+        console.error('Error loading connection details:', error);
+        // Keep default state on error
+      }
+    };
+
+    loadConnectionDetails();
+  }, [currentTeam?.id, isAuthenticated]);
+
   // Determine which players to show and if team has no players
   const hasNoTeamPlayers = isAuthenticated && currentTeam && teamPlayers.length === 0;
   const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0
@@ -727,7 +762,14 @@ export function ConfigurationScreen({
   const areAllEligibleSelected = playersToShow.length > 0 &&
     playersToShow.every(player => selectedIdsSet.has(player.id)) &&
     selectedSquadIds.length === playersToShow.length;
-  
+
+  // Determine if connector onboarding should be shown
+  const hasConnectedProvider = connectionDetails?.hasConnectedProvider ?? false;
+  const shouldShowOnboarding = Boolean(currentTeam && isAuthenticated) && shouldShowRosterConnectorOnboarding(
+    teamPlayers,
+    hasConnectedProvider
+  );
+
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
   // Only clear on NEW_SIGN_IN to preserve squad selection on page refresh
   // BUT: Skip this cleanup when resume data is being processed to avoid clearing resumed selections
@@ -1165,6 +1207,12 @@ export function ConfigurationScreen({
   const handleVenueTypeChange = (value) => {
     setVenueType(value);
     setHasActiveConfiguration(true);
+  };
+
+  // Navigate to Team Management Connectors tab
+  const handleNavigateToConnectors = () => {
+    teamManagementTabCacheManager.saveState({ tab: 'connectors' });
+    setView(VIEWS.TEAM_MANAGEMENT);
   };
 
   const handleFormatChange = React.useCallback((newFormat) => {
@@ -1696,6 +1744,13 @@ export function ConfigurationScreen({
           </>
         )}
       </div>
+
+      {/* Connector Onboarding - shown when 0-3 players and no connected provider */}
+      {shouldShowOnboarding && (
+        <div className="mt-4">
+          <RosterConnectorOnboarding onNavigateToConnectors={handleNavigateToConnectors} />
+        </div>
+      )}
 
       {/* Match Details */}
       <div className="p-3 bg-slate-700 rounded-md space-y-4">

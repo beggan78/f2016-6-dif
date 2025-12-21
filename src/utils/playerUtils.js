@@ -423,3 +423,32 @@ export const hasActiveSubstitutes = (allPlayers, teamConfig) => {
   
   return hasActive;
 };
+
+/**
+ * Determines if the roster connector onboarding banner should be displayed
+ *
+ * Banner shows when:
+ * - Team has 0-3 active roster players (on_roster = true)
+ * - No connected provider exists
+ *
+ * @param {Array} players - Array of player objects (must have on_roster field)
+ * @param {boolean} hasConnectedProvider - Whether team has a connected provider
+ * @returns {boolean} True if onboarding banner should be shown
+ */
+export const shouldShowRosterConnectorOnboarding = (players, hasConnectedProvider) => {
+  // Don't show if provider is already connected
+  if (hasConnectedProvider) {
+    return false;
+  }
+
+  // Defensive: handle invalid inputs
+  if (!Array.isArray(players)) {
+    return false;
+  }
+
+  // Count active roster players (on_roster = true)
+  const activeRosterCount = players.filter(p => p.on_roster === true).length;
+
+  // Show banner when 0-3 active roster players
+  return activeRosterCount <= 3;
+};
