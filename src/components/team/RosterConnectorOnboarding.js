@@ -52,6 +52,7 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
         <Button
           onClick={onNavigateToConnectors}
           variant="primary"
+          size="sm"
           Icon={ArrowRight}
         >
           Go to Connectors
