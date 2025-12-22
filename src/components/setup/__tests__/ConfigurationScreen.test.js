@@ -102,7 +102,7 @@ jest.mock('../../../hooks/useFormationVotes', () => ({
 jest.mock('../../../services/connectorService', () => ({
   getPlayerConnectionDetails: jest.fn(() => Promise.resolve({
     matchedConnections: new Map(),
-    unmatchedAttendance: [],
+    unmatchedExternalPlayers: [],
     hasConnectedProvider: false
   }))
 }));
@@ -1192,7 +1192,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     // Reset default mock
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [],
+      unmatchedExternalPlayers: [],
       hasConnectedProvider: false
     });
 
@@ -1224,15 +1224,15 @@ describe('ConfigurationScreen unmapped players banner', () => {
     // Setup: unmapped players from connected provider
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [
+      unmatchedExternalPlayers: [
         {
-          connectedPlayerId: 'cp1',
+          externalPlayerId: 'cp1',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 1',
           connectorStatus: 'connected'
         },
         {
-          connectedPlayerId: 'cp2',
+          externalPlayerId: 'cp2',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 2',
           connectorStatus: 'connected'
@@ -1271,9 +1271,9 @@ describe('ConfigurationScreen unmapped players banner', () => {
     // Setup: unmapped players exist but should be ignored
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [
+      unmatchedExternalPlayers: [
         {
-          connectedPlayerId: 'cp1',
+          externalPlayerId: 'cp1',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 1',
           connectorStatus: 'connected'
@@ -1310,7 +1310,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     // No unmapped players
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [],
+      unmatchedExternalPlayers: [],
       hasConnectedProvider: true
     });
 
@@ -1342,15 +1342,15 @@ describe('ConfigurationScreen unmapped players banner', () => {
     // Setup: unmapped players but from disconnected/error connectors
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [
+      unmatchedExternalPlayers: [
         {
-          connectedPlayerId: 'cp1',
+          externalPlayerId: 'cp1',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 1',
           connectorStatus: 'error'
         },
         {
-          connectedPlayerId: 'cp2',
+          externalPlayerId: 'cp2',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 2',
           connectorStatus: 'disconnected'
@@ -1387,15 +1387,15 @@ describe('ConfigurationScreen unmapped players banner', () => {
     // Setup: unmapped players from multiple providers
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [
+      unmatchedExternalPlayers: [
         {
-          connectedPlayerId: 'cp1',
+          externalPlayerId: 'cp1',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 1',
           connectorStatus: 'connected'
         },
         {
-          connectedPlayerId: 'cp2',
+          externalPlayerId: 'cp2',
           providerName: 'MyClub',
           playerNameInProvider: 'Ghost Player 2',
           connectorStatus: 'connected'
@@ -1432,9 +1432,9 @@ describe('ConfigurationScreen unmapped players banner', () => {
 
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [
+      unmatchedExternalPlayers: [
         {
-          connectedPlayerId: 'cp1',
+          externalPlayerId: 'cp1',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 1',
           connectorStatus: 'connected'
@@ -1473,9 +1473,9 @@ describe('ConfigurationScreen unmapped players banner', () => {
     // Setup: unmapped players exist
     getPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [
+      unmatchedExternalPlayers: [
         {
-          connectedPlayerId: 'cp1',
+          externalPlayerId: 'cp1',
           providerName: 'SportAdmin',
           playerNameInProvider: 'Ghost Player 1',
           connectorStatus: 'connected'

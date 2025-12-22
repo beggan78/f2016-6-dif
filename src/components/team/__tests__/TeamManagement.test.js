@@ -217,7 +217,7 @@ describe('TeamManagement', () => {
     // Set up default mock for getPlayerConnectionDetails
     mockGetPlayerConnectionDetails.mockResolvedValue({
       matchedConnections: new Map(),
-      unmatchedAttendance: [],
+      unmatchedExternalPlayers: [],
       hasConnectedProvider: false
     });
 

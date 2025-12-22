@@ -15,9 +15,9 @@ const rosterPlayer = {
   jersey_number: '10'
 };
 
-const unmatchedAttendance = [
+const unmatchedExternalPlayers = [
   {
-    connectedPlayerId: 'connected-player-1',
+    externalPlayerId: 'connected-player-1',
     providerName: 'SportAdmin',
     providerId: 'sportadmin',
     playerNameInProvider: 'A. Morgan',
@@ -35,7 +35,7 @@ describe('PlayerMatchingModal', () => {
     const { container } = render(
       <PlayerMatchingModal
         rosterPlayer={rosterPlayer}
-        unmatchedAttendance={unmatchedAttendance}
+        unmatchedExternalPlayers={unmatchedExternalPlayers}
         onClose={jest.fn()}
         onMatched={jest.fn()}
       />
@@ -58,7 +58,7 @@ describe('PlayerMatchingModal', () => {
     render(
       <PlayerMatchingModal
         rosterPlayer={rosterPlayer}
-        unmatchedAttendance={unmatchedAttendance}
+        unmatchedExternalPlayers={unmatchedExternalPlayers}
         onClose={onClose}
         onMatched={onMatched}
       />
@@ -73,7 +73,7 @@ describe('PlayerMatchingModal', () => {
     });
 
     expect(matchPlayerToConnectedPlayer).toHaveBeenCalledWith('connected-player-1', 'player-1');
-    expect(onMatched).toHaveBeenCalledWith(unmatchedAttendance[0], rosterPlayer);
+    expect(onMatched).toHaveBeenCalledWith(unmatchedExternalPlayers[0], rosterPlayer);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -83,7 +83,7 @@ describe('PlayerMatchingModal', () => {
     render(
       <PlayerMatchingModal
         rosterPlayer={rosterPlayer}
-        unmatchedAttendance={unmatchedAttendance}
+        unmatchedExternalPlayers={unmatchedExternalPlayers}
         onClose={jest.fn()}
         onMatched={jest.fn()}
       />

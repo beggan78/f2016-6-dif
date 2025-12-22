@@ -315,9 +315,9 @@ describe('connectorService', () => {
 
       expect(result.hasConnectedProvider).toBe(false);
       expect(result.matchedConnections.size).toBe(0);
-      expect(result.unmatchedAttendance).toEqual([
+      expect(result.unmatchedExternalPlayers).toEqual([
         {
-          connectedPlayerId: 'connected-1',
+          externalPlayerId: 'connected-1',
           providerName: 'Unknown connector',
           providerId: null,
           playerNameInProvider: 'Orphaned Player',
@@ -375,7 +375,7 @@ describe('connectorService', () => {
       const connections = result.matchedConnections.get('player-1');
       expect(connections).toEqual([
         {
-          connectedPlayerId: 'connected-1',
+          externalPlayerId: 'connected-1',
           providerName: 'SportAdmin',
           providerId: 'sportadmin',
           playerNameInProvider: 'Ebba Yngbrant',
@@ -383,7 +383,7 @@ describe('connectorService', () => {
           connectorId: 'connector-1'
         },
         {
-          connectedPlayerId: 'connected-2',
+          externalPlayerId: 'connected-2',
           providerName: 'Svenska Lag',
           providerId: 'svenska_lag',
           playerNameInProvider: 'Ebba Yngbrant',
@@ -514,10 +514,10 @@ describe('connectorService', () => {
   describe('matchPlayerToConnectedPlayer', () => {
     it('validates parameters', async () => {
       await expect(matchPlayerToConnectedPlayer(null, 'player')).rejects.toThrow(
-        'Connected player ID and player ID are required'
+        'External player ID and player ID are required'
       );
       await expect(matchPlayerToConnectedPlayer('connected-player', null)).rejects.toThrow(
-        'Connected player ID and player ID are required'
+        'External player ID and player ID are required'
       );
     });
 

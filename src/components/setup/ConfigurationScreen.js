@@ -110,7 +110,7 @@ export function ConfigurationScreen({
   // Track connection details to determine if connector onboarding should show
   const [connectionDetails, setConnectionDetails] = useState({
     matchedConnections: new Map(),
-    unmatchedAttendance: [],
+    unmatchedExternalPlayers: [],
     hasConnectedProvider: false
   });
 
@@ -731,7 +731,7 @@ export function ConfigurationScreen({
       if (!currentTeam?.id || !isAuthenticated) {
         setConnectionDetails({
           matchedConnections: new Map(),
-          unmatchedAttendance: [],
+          unmatchedExternalPlayers: [],
           hasConnectedProvider: false
         });
         return;
@@ -774,7 +774,7 @@ export function ConfigurationScreen({
 
   // Determine if unmapped players banner should be shown
   const activeRosterCount = teamPlayers.filter(p => p.on_roster === true).length;
-  const unmappedFromConnected = (connectionDetails?.unmatchedAttendance || [])
+  const unmappedFromConnected = (connectionDetails?.unmatchedExternalPlayers || [])
     .filter(record => record.connectorStatus === 'connected');
   const hasUnmappedPlayers = unmappedFromConnected.length > 0;
   const firstProviderName = hasUnmappedPlayers

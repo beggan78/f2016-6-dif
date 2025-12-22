@@ -385,7 +385,7 @@ export async function getPlayerConnectionDetails(teamId) {
 
   // Organize data by player_id
   const matchedConnections = new Map(); // player_id -> array of connection details
-  const unmatchedPlayers = []; // connected_player records without player_id
+  const unmatchedExternalPlayers = []; // connected_player records without player_id
   // Banner should hide if ANY connector exists that isn't disconnected
   // This includes 'verifying', 'connected', and 'error' states
   const hasConnectedProvider = connectors.some(c => c.status !== 'disconnected');
@@ -394,8 +394,8 @@ export async function getPlayerConnectionDetails(teamId) {
     const connector = record.connector;
 
     if (!connector) {
-      unmatchedPlayers.push({
-        connectedPlayerId: record.id,
+      unmatchedExternalPlayers.push({
+        externalPlayerId: record.id,
         providerName: 'Unknown connector',
         providerId: null,
         playerNameInProvider: record.player_name,
@@ -407,7 +407,7 @@ export async function getPlayerConnectionDetails(teamId) {
 
     const provider = getProviderById(connector.provider);
     const connectionDetail = {
-      connectedPlayerId: record.id,
+      externalPlayerId: record.id,
       providerName: provider?.name || connector.provider,
       providerId: connector.provider,
       playerNameInProvider: record.player_name,
@@ -421,13 +421,13 @@ export async function getPlayerConnectionDetails(teamId) {
       matchedConnections.set(record.player_id, [...existingConnections, connectionDetail]);
     } else {
       // Unmatched connected_player record
-      unmatchedPlayers.push(connectionDetail);
+      unmatchedExternalPlayers.push(connectionDetail);
     }
   });
 
   return {
     matchedConnections,
-    unmatchedAttendance: unmatchedPlayers,
+    unmatchedExternalPlayers,
     hasConnectedProvider
   };
 }
@@ -461,19 +461,19 @@ export async function getUnmatchedPlayerAttendance(connectorId) {
 /**
  * Match a connected_player record to a roster player
  * Updates the player_id field in the connected_player record
- * @param {string} connectedPlayerId - connected_player record UUID
+ * @param {string} externalPlayerId - connected_player record UUID
  * @param {string} playerId - player UUID from roster
  * @returns {Promise<void>}
  */
-export async function matchPlayerToConnectedPlayer(connectedPlayerId, playerId) {
-  if (!connectedPlayerId || !playerId) {
-    throw new Error('Connected player ID and player ID are required');
+export async function matchPlayerToConnectedPlayer(externalPlayerId, playerId) {
+  if (!externalPlayerId || !playerId) {
+    throw new Error('External player ID and player ID are required');
   }
 
   const { error } = await supabase
     .from('connected_player')
     .update({ player_id: playerId })
-    .eq('id', connectedPlayerId);
+    .eq('id', externalPlayerId);
 
   if (error) {
     console.error('Error matching player to connected_player:', error);
@@ -484,21 +484,21 @@ export async function matchPlayerToConnectedPlayer(connectedPlayerId, playerId) 
 /**
  * Accept a ghost player and add them to the roster
  * Creates a new roster player from connected_player data and links them
- * @param {string} connectedPlayerId - connected_player record UUID
+ * @param {string} externalPlayerId - connected_player record UUID
  * @param {string} teamId - Team UUID
  * @param {Function} addRosterPlayerFn - Function to create roster player (from TeamContext)
  * @returns {Promise<Object>} The newly created player object
  */
-export async function acceptGhostPlayer(connectedPlayerId, teamId, addRosterPlayerFn) {
-  if (!connectedPlayerId || !teamId || !addRosterPlayerFn) {
-    throw new Error('Connected player ID, team ID, and addRosterPlayer function are required');
+export async function acceptGhostPlayer(externalPlayerId, teamId, addRosterPlayerFn) {
+  if (!externalPlayerId || !teamId || !addRosterPlayerFn) {
+    throw new Error('External player ID, team ID, and addRosterPlayer function are required');
   }
 
   // 1. Fetch the connected_player record to get player_name
   const { data: connectedPlayer, error: fetchError } = await supabase
     .from('connected_player')
     .select('id, player_name, player_id')
-    .eq('id', connectedPlayerId)
+    .eq('id', externalPlayerId)
     .single();
 
   if (fetchError) {
@@ -543,7 +543,7 @@ export async function acceptGhostPlayer(connectedPlayerId, teamId, addRosterPlay
 
   // 4. Match the connected_player to the new roster player
   try {
-    await matchPlayerToConnectedPlayer(connectedPlayerId, newPlayer.id);
+    await matchPlayerToConnectedPlayer(externalPlayerId, newPlayer.id);
   } catch (matchError) {
     console.error('Error matching player to connected_player:', matchError);
     // Player was created but matching failed - still return the player

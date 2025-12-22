@@ -7,12 +7,12 @@ import { matchPlayerToConnectedPlayer } from '../../services/connectorService';
  * Modal for manually matching a roster player to an unmatched connected_player record
  *
  * @param {Object} rosterPlayer - The roster player whose broken link was clicked
- * @param {Array} unmatchedAttendance - List of unmatched connected_player records to choose from
+ * @param {Array} unmatchedExternalPlayers - List of unmatched connected_player records to choose from
  * @param {Function} onClose - Close modal callback
  * @param {Function} onMatched - Success callback after matching
  */
-export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose, onMatched }) {
-  const [selectedConnectedPlayerId, setSelectedConnectedPlayerId] = useState('');
+export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, onClose, onMatched }) {
+  const [selectedExternalPlayerId, setSelectedExternalPlayerId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,22 +20,22 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
   const attendanceOptions = useMemo(() => {
     return [
       { value: '', label: 'Select a player from provider...' },
-      ...unmatchedAttendance.map(record => {
+      ...unmatchedExternalPlayers.map(record => {
         const label = `${record.playerNameInProvider} (${record.providerName})`;
 
         return {
-          value: record.connectedPlayerId,
+          value: record.externalPlayerId,
           label
         };
       })
     ];
-  }, [unmatchedAttendance]);
+  }, [unmatchedExternalPlayers]);
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedConnectedPlayerId) {
+    if (!selectedExternalPlayerId) {
       setError('Please select a player from the provider');
       return;
     }
@@ -44,11 +44,11 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
     setError(null);
 
     try {
-      const matchedRecord = unmatchedAttendance.find(
-        (record) => record.connectedPlayerId === selectedConnectedPlayerId
+      const matchedRecord = unmatchedExternalPlayers.find(
+        (record) => record.externalPlayerId === selectedExternalPlayerId
       );
 
-      await matchPlayerToConnectedPlayer(selectedConnectedPlayerId, rosterPlayer.id);
+      await matchPlayerToConnectedPlayer(selectedExternalPlayerId, rosterPlayer.id);
 
       // Call success callback with context so parent can update state optimistically
       if (onMatched) {
@@ -117,9 +117,9 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
             </label>
             <Select
               name="provider_player"
-              value={selectedConnectedPlayerId}
+              value={selectedExternalPlayerId}
               onChange={(value) => {
-                setSelectedConnectedPlayerId(value);
+                setSelectedExternalPlayerId(value);
                 setError(null);
               }}
               options={attendanceOptions}
@@ -144,7 +144,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedAttendance, onClose
             <Button
               type="submit"
               variant="primary"
-              disabled={loading || !selectedConnectedPlayerId}
+              disabled={loading || !selectedExternalPlayerId}
               Icon={Link}
             >
               {loading ? 'Matching...' : 'Match Player'}

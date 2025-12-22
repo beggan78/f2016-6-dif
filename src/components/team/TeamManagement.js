@@ -644,7 +644,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
   const [matchingPlayer, setMatchingPlayer] = useState(null); // For player matching modal
   const [connectionDetails, setConnectionDetails] = useState({
     matchedConnections: new Map(),
-    unmatchedAttendance: [],
+    unmatchedExternalPlayers: [],
     hasConnectedProvider: false
   });
   const [acceptingGhostPlayerId, setAcceptingGhostPlayerId] = useState(null);
@@ -726,12 +726,12 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
     }
 
     // Filter ghost players: only show if connector status is 'connected'
-    const ghostPlayers = (connectionDetails.unmatchedAttendance || [])
+    const ghostPlayers = (connectionDetails.unmatchedExternalPlayers || [])
       .filter(ghost => ghost.connectorStatus === 'connected')
       .map(ghost => ({
-        id: `ghost-${ghost.connectedPlayerId}`,
+        id: `ghost-${ghost.externalPlayerId}`,
         isGhost: true,
-        connectedPlayerId: ghost.connectedPlayerId,
+        externalPlayerId: ghost.externalPlayerId,
         display_name: ghost.playerNameInProvider,
         playerNameInProvider: ghost.playerNameInProvider,
         providerName: ghost.providerName,
@@ -769,14 +769,14 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
 
         updatedMatched.set(rosterPlayer.id, [...existingMatches, normalizedRecord]);
 
-        const updatedUnmatched = prev.unmatchedAttendance.filter(
+        const updatedUnmatched = prev.unmatchedExternalPlayers.filter(
           record => record.attendanceId !== matchedAttendance.attendanceId
         );
 
         return {
           ...prev,
           matchedConnections: updatedMatched,
-          unmatchedAttendance: updatedUnmatched
+          unmatchedExternalPlayers: updatedUnmatched
         };
       });
     }
@@ -788,11 +788,11 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
   // Handle accept ghost player (add external player to roster)
   const handleAcceptGhostPlayer = async (ghostPlayer) => {
     try {
-      setAcceptingGhostPlayerId(ghostPlayer.connectedPlayerId);
+      setAcceptingGhostPlayerId(ghostPlayer.externalPlayerId);
       setError(null);
 
       // Create and match player
-      await acceptGhostPlayer(ghostPlayer.connectedPlayerId, team.id, addRosterPlayer);
+      await acceptGhostPlayer(ghostPlayer.externalPlayerId, team.id, addRosterPlayer);
 
       // Reload roster and connections
       await loadRoster();
@@ -1020,10 +1020,10 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => handleAcceptGhostPlayer(player)}
-                            disabled={acceptingGhostPlayerId === player.connectedPlayerId}
+                            disabled={acceptingGhostPlayerId === player.externalPlayerId}
                             className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors flex items-center justify-end space-x-1 ml-auto"
                           >
-                            {acceptingGhostPlayerId === player.connectedPlayerId ? (
+                            {acceptingGhostPlayerId === player.externalPlayerId ? (
                               <>
                                 <Loader className="w-4 h-4 animate-spin" />
                                 <span>Adding...</span>
@@ -1103,7 +1103,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
                                 <div className="text-slate-300">
                                   This player is not matched to any provider data yet.
                                 </div>
-                                {connectionDetails.unmatchedAttendance.length > 0 && (
+                                {connectionDetails.unmatchedExternalPlayers.length > 0 && (
                                   <button
                                     className="mt-2 w-full px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-medium transition-colors"
                                     onClick={(e) => {
@@ -1202,10 +1202,10 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
       )}
 
       {/* Player Matching Modal */}
-      {matchingPlayer && connectionDetails.unmatchedAttendance.length > 0 && (
+      {matchingPlayer && connectionDetails.unmatchedExternalPlayers.length > 0 && (
         <PlayerMatchingModal
           rosterPlayer={matchingPlayer}
-          unmatchedAttendance={connectionDetails.unmatchedAttendance}
+          unmatchedExternalPlayers={connectionDetails.unmatchedExternalPlayers}
           onClose={() => setMatchingPlayer(null)}
           onMatched={handlePlayerMatched}
         />
