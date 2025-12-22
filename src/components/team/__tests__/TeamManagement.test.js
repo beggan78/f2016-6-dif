@@ -245,6 +245,7 @@ describe('TeamManagement', () => {
       addRosterPlayer: jest.fn(() => Promise.resolve()),
       updateRosterPlayer: jest.fn(() => Promise.resolve()),
       removeRosterPlayer: jest.fn(() => Promise.resolve({ operation: 'deleted' })),
+      refreshTeamPlayers: jest.fn(() => Promise.resolve([])),
       loadTeamPreferences: jest.fn(() => Promise.resolve(DEFAULT_PREFERENCES)),
       saveTeamPreferences: jest.fn(() => Promise.resolve()),
       checkPlayerGameHistory: jest.fn(() => Promise.resolve(false)),

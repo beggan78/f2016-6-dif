@@ -628,6 +628,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
     addRosterPlayer, 
     updateRosterPlayer, 
     removeRosterPlayer, 
+    refreshTeamPlayers,
     checkPlayerGameHistory,
     getAvailableJerseyNumbers 
   } = useTeam();
@@ -787,6 +788,8 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
 
   // Handle accept ghost player (add external player to roster)
   const handleAcceptGhostPlayer = async (ghostPlayer) => {
+    let needsTeamRefresh = false;
+
     try {
       setAcceptingGhostPlayerId(ghostPlayer.externalPlayerId);
       setError(null);
@@ -803,8 +806,17 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
     } catch (error) {
       console.error('Error accepting ghost player:', error);
       setError(error.message || 'Failed to add player to roster');
+      needsTeamRefresh = true;
     } finally {
       setAcceptingGhostPlayerId(null);
+
+      if (needsTeamRefresh) {
+        try {
+          await refreshTeamPlayers(team.id);
+        } catch (refreshError) {
+          console.error('Error refreshing team players after ghost accept failure:', refreshError);
+        }
+      }
     }
   };
 

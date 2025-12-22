@@ -543,10 +543,35 @@ export async function acceptGhostPlayer(externalPlayerId, teamId, addRosterPlaye
 
   // 4. Match the connected_player to the new roster player
   try {
-    await matchPlayerToConnectedPlayer(externalPlayerId, newPlayer.id);
+    const { data: matchData, error: matchError } = await supabase
+      .from('connected_player')
+      .update({ player_id: newPlayer.id })
+      .eq('id', externalPlayerId)
+      .is('player_id', null)
+      .select('id');
+
+    if (matchError) {
+      throw matchError;
+    }
+
+    if (!matchData || matchData.length === 0) {
+      throw new Error('Connected player already matched');
+    }
   } catch (matchError) {
     console.error('Error matching player to connected_player:', matchError);
-    // Player was created but matching failed - still return the player
+    const { error: cleanupError } = await supabase
+      .from('player')
+      .delete()
+      .eq('id', newPlayer.id);
+
+    if (cleanupError) {
+      console.error('Error cleaning up roster player after match failure:', cleanupError);
+    }
+
+    if (matchError.message === 'Connected player already matched') {
+      throw new Error('This player has already been added to the roster');
+    }
+
     throw new Error('Player added to roster but failed to link to provider data');
   }
 
