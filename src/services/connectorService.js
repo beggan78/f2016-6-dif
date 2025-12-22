@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabase';
 import { getProviderById } from '../constants/connectorProviders';
+import { parseExternalPlayerName } from '../utils/playerUtils';
 
 /**
  * Get all connectors for a team
@@ -478,6 +479,78 @@ export async function matchPlayerToConnectedPlayer(connectedPlayerId, playerId) 
     console.error('Error matching player to connected_player:', error);
     throw new Error('Failed to match player');
   }
+}
+
+/**
+ * Accept a ghost player and add them to the roster
+ * Creates a new roster player from connected_player data and links them
+ * @param {string} connectedPlayerId - connected_player record UUID
+ * @param {string} teamId - Team UUID
+ * @param {Function} addRosterPlayerFn - Function to create roster player (from TeamContext)
+ * @returns {Promise<Object>} The newly created player object
+ */
+export async function acceptGhostPlayer(connectedPlayerId, teamId, addRosterPlayerFn) {
+  if (!connectedPlayerId || !teamId || !addRosterPlayerFn) {
+    throw new Error('Connected player ID, team ID, and addRosterPlayer function are required');
+  }
+
+  // 1. Fetch the connected_player record to get player_name
+  const { data: connectedPlayer, error: fetchError } = await supabase
+    .from('connected_player')
+    .select('id, player_name, player_id')
+    .eq('id', connectedPlayerId)
+    .single();
+
+  if (fetchError) {
+    console.error('Error fetching connected_player:', fetchError);
+    throw new Error('Failed to fetch player data from provider');
+  }
+
+  if (!connectedPlayer) {
+    throw new Error('Connected player not found');
+  }
+
+  // Check if already matched
+  if (connectedPlayer.player_id) {
+    throw new Error('This player has already been added to the roster');
+  }
+
+  // 2. Parse the external player name
+  let parsedName;
+  try {
+    parsedName = parseExternalPlayerName(connectedPlayer.player_name);
+  } catch (parseError) {
+    console.error('Error parsing player name:', parseError);
+    throw new Error(`Invalid player name format: ${parseError.message}`);
+  }
+
+  // 3. Create roster player
+  const playerData = {
+    first_name: parsedName.first_name,
+    last_name: parsedName.last_name,
+    display_name: parsedName.display_name,
+    on_roster: true,
+    jersey_number: null // No jersey number assigned initially
+  };
+
+  let newPlayer;
+  try {
+    newPlayer = await addRosterPlayerFn(teamId, playerData);
+  } catch (createError) {
+    console.error('Error creating roster player:', createError);
+    throw new Error(`Failed to add player to roster: ${createError.message}`);
+  }
+
+  // 4. Match the connected_player to the new roster player
+  try {
+    await matchPlayerToConnectedPlayer(connectedPlayerId, newPlayer.id);
+  } catch (matchError) {
+    console.error('Error matching player to connected_player:', matchError);
+    // Player was created but matching failed - still return the player
+    throw new Error('Player added to roster but failed to link to provider data');
+  }
+
+  return newPlayer;
 }
 
 /**

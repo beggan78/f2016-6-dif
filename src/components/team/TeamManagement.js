@@ -16,7 +16,9 @@ import {
   EyeOff,
   Rows4,
   Link,
-  Unlink
+  Unlink,
+  Ghost,
+  Loader
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Tooltip } from '../shared';
@@ -34,7 +36,7 @@ import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
-import { getPlayerConnectionDetails } from '../../services/connectorService';
+import { getPlayerConnectionDetails, acceptGhostPlayer } from '../../services/connectorService';
 import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -645,6 +647,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
     unmatchedAttendance: [],
     hasConnectedProvider: false
   });
+  const [acceptingGhostPlayerId, setAcceptingGhostPlayerId] = useState(null);
 
   // Load roster data
   const loadRoster = useCallback(async () => {
@@ -705,14 +708,41 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
   }, [successMessage]);
 
   // Filter roster based on visibility settings, then sort by display_name
-  const filteredRoster = roster.filter(player => {
-    // Show active players by default, include former players when toggle is enabled
-    return player.on_roster || showInactive;
-  }).sort((a, b) => {
-    const aName = a.display_name || '';
-    const bName = b.display_name || '';
-    return aName.localeCompare(bName);
-  });
+  // Also append ghost players (unmatched connected_player records) when provider is connected
+  const filteredRoster = useMemo(() => {
+    // Filter and sort roster players
+    const rosterPlayers = roster.filter(player => {
+      // Show active players by default, include former players when toggle is enabled
+      return player.on_roster || showInactive;
+    }).sort((a, b) => {
+      const aName = a.display_name || '';
+      const bName = b.display_name || '';
+      return aName.localeCompare(bName);
+    });
+
+    // Only show ghost players if provider is connected
+    if (!connectionDetails.hasConnectedProvider) {
+      return rosterPlayers;
+    }
+
+    // Filter ghost players: only show if connector status is 'connected'
+    const ghostPlayers = (connectionDetails.unmatchedAttendance || [])
+      .filter(ghost => ghost.connectorStatus === 'connected')
+      .map(ghost => ({
+        id: `ghost-${ghost.connectedPlayerId}`,
+        isGhost: true,
+        connectedPlayerId: ghost.connectedPlayerId,
+        display_name: ghost.playerNameInProvider,
+        playerNameInProvider: ghost.playerNameInProvider,
+        providerName: ghost.providerName,
+        connectorId: ghost.connectorId,
+        // No first_name, last_name, jersey_number, on_roster
+      }))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+    // Roster players first, then ghost players
+    return [...rosterPlayers, ...ghostPlayers];
+  }, [roster, showInactive, connectionDetails]);
 
   // Calculate if we should show the connector onboarding banner
   const shouldShowOnboarding = shouldShowRosterConnectorOnboarding(
@@ -753,6 +783,29 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
 
     await loadPlayerConnections(); // Reload connection data for consistency
     setSuccessMessage('Player successfully matched to attendance data');
+  };
+
+  // Handle accept ghost player (add external player to roster)
+  const handleAcceptGhostPlayer = async (ghostPlayer) => {
+    try {
+      setAcceptingGhostPlayerId(ghostPlayer.connectedPlayerId);
+      setError(null);
+
+      // Create and match player
+      await acceptGhostPlayer(ghostPlayer.connectedPlayerId, team.id, addRosterPlayer);
+
+      // Reload roster and connections
+      await loadRoster();
+      await loadPlayerConnections();
+
+      // Show success message
+      setSuccessMessage(`${ghostPlayer.playerNameInProvider} added to roster`);
+    } catch (error) {
+      console.error('Error accepting ghost player:', error);
+      setError(error.message || 'Failed to add player to roster');
+    } finally {
+      setAcceptingGhostPlayerId(null);
+    }
   };
 
   // Handle add player
@@ -939,6 +992,55 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
               </thead>
               <tbody className="divide-y divide-slate-600">
                 {filteredRoster.map((player) => {
+                  // Check if this is a ghost player (unmatched external player)
+                  if (player.isGhost) {
+                    return (
+                      <tr key={player.id} className="bg-slate-800/30 border-l-2 border-slate-600">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-slate-600">
+                              <Ghost className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-slate-400 italic">
+                                {player.display_name}
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                From {player.providerName}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-2 py-3 text-center">
+                          {/* No connection icon for ghost players */}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-slate-500 text-sm">-</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleAcceptGhostPlayer(player)}
+                            disabled={acceptingGhostPlayerId === player.connectedPlayerId}
+                            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors flex items-center justify-end space-x-1 ml-auto"
+                          >
+                            {acceptingGhostPlayerId === player.connectedPlayerId ? (
+                              <>
+                                <Loader className="w-4 h-4 animate-spin" />
+                                <span>Adding...</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="w-4 h-4" />
+                                <span>Accept</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  // Regular player row
                   // Build full name from first_name and last_name for display in roster
                   const fullName = player.last_name
                     ? `${player.first_name} ${player.last_name}`
