@@ -21,7 +21,6 @@ const unmatchedAttendance = [
     providerName: 'SportAdmin',
     providerId: 'sportadmin',
     playerNameInProvider: 'A. Morgan',
-    lastSynced: '2024-01-01T00:00:00Z',
     connectorStatus: 'connected',
     connectorId: 'connector-1'
   }

@@ -312,7 +312,7 @@ export function TeamManagement({ onNavigateBack, openToTab, onShowSuccessMessage
           onShowRoleModal={handleShowRoleModal}
         />;
       case TAB_VIEWS.ROSTER:
-        return <RosterManagement team={currentTeam} onRefresh={loadTeamData} onNavigateToConnectors={() => setActiveTab('connectors')} />;
+        return <RosterManagement team={currentTeam} onRefresh={loadTeamData} onNavigateToConnectors={() => setActiveTab('connectors')} activeTab={activeTab} />;
       case TAB_VIEWS.CONNECTORS:
         return <TeamConnectors team={currentTeam} onRefresh={loadTeamData} />;
       case TAB_VIEWS.PREFERENCES:
@@ -620,7 +620,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
 }
 
 // Roster Management Component
-function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
+function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }) {
   const { 
     getTeamRoster, 
     addRosterPlayer, 
@@ -686,6 +686,14 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
     loadPlayerConnections();
   }, [loadPlayerConnections]);
 
+  // Reload connection details when switching to Roster tab
+  // This ensures banner visibility reflects recent connector changes
+  useEffect(() => {
+    if (activeTab === TAB_VIEWS.ROSTER) {
+      loadPlayerConnections();
+    }
+  }, [activeTab, loadPlayerConnections]);
+
   // Auto-clear success message after timeout
   useEffect(() => {
     if (successMessage) {
@@ -725,7 +733,6 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
           providerName: matchedAttendance.providerName,
           providerId: matchedAttendance.providerId,
           playerNameInProvider: matchedAttendance.playerNameInProvider,
-          lastSynced: matchedAttendance.lastSynced,
           connectorStatus: matchedAttendance.connectorStatus,
           connectorId: matchedAttendance.connectorId
         };
@@ -985,11 +992,6 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors }) {
                                     <div className="pl-5 text-slate-300">
                                       Matched as: <span className="font-medium">{conn.playerNameInProvider}</span>
                                     </div>
-                                    {conn.lastSynced && (
-                                      <div className="pl-5 text-slate-400 text-xs">
-                                        Last synced: {new Date(conn.lastSynced).toLocaleDateString()}
-                                      </div>
-                                    )}
                                   </div>
                                 ))}
                               </>

@@ -291,7 +291,6 @@ describe('connectorService', () => {
           id: 'connected-1',
           player_id: null,
           player_name: 'Orphaned Player',
-          last_seen_at: '2024-01-01T00:00:00Z',
           connector: null
         }
       ];
@@ -322,7 +321,6 @@ describe('connectorService', () => {
           providerName: 'Unknown connector',
           providerId: null,
           playerNameInProvider: 'Orphaned Player',
-          lastSynced: '2024-01-01T00:00:00Z',
           connectorStatus: null,
           connectorId: null
         }
@@ -343,14 +341,12 @@ describe('connectorService', () => {
           id: 'connected-1',
           player_id: 'player-1',
           player_name: 'Ebba Yngbrant',
-          last_seen_at: '2024-01-10T00:00:00Z',
           connector: connectors[0]
         },
         {
           id: 'connected-2',
           player_id: 'player-1',
           player_name: 'Ebba Yngbrant',
-          last_seen_at: '2024-02-15T00:00:00Z',
           connector: connectors[1]
         }
       ];
@@ -383,7 +379,6 @@ describe('connectorService', () => {
           providerName: 'SportAdmin',
           providerId: 'sportadmin',
           playerNameInProvider: 'Ebba Yngbrant',
-          lastSynced: '2024-01-10T00:00:00Z',
           connectorStatus: 'connected',
           connectorId: 'connector-1'
         },
@@ -392,11 +387,93 @@ describe('connectorService', () => {
           providerName: 'Svenska Lag',
           providerId: 'svenska_lag',
           playerNameInProvider: 'Ebba Yngbrant',
-          lastSynced: '2024-02-15T00:00:00Z',
           connectorStatus: 'connected',
           connectorId: 'connector-2'
         }
       ]);
+    });
+
+    describe('hasConnectedProvider flag', () => {
+      const setupMockConnectors = (connectors) => {
+        const connectorOrder = jest.fn().mockResolvedValue({ data: connectors, error: null });
+        const connectorEq = jest.fn(() => ({ order: connectorOrder }));
+        const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
+
+        const connectedPlayerEq = jest.fn().mockResolvedValue({ data: [], error: null });
+        const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
+
+        supabase.from.mockImplementation(table => {
+          if (table === 'connector') {
+            return { select: connectorSelect };
+          }
+          if (table === 'connected_player') {
+            return { select: connectedPlayerSelect };
+          }
+          return { select: jest.fn() };
+        });
+      };
+
+      it('returns true when connector status is "connected"', async () => {
+        const connectors = [{ id: 'c1', status: 'connected', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns true when connector status is "verifying"', async () => {
+        const connectors = [{ id: 'c1', status: 'verifying', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns true when connector status is "error"', async () => {
+        const connectors = [{ id: 'c1', status: 'error', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns false when connector status is "disconnected"', async () => {
+        const connectors = [{ id: 'c1', status: 'disconnected', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(false);
+      });
+
+      it('returns false when no connectors exist', async () => {
+        setupMockConnectors([]);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(false);
+      });
+
+      it('returns true when multiple connectors exist with mixed statuses (at least one not disconnected)', async () => {
+        const connectors = [
+          { id: 'c1', status: 'verifying', provider: 'sportadmin' },
+          { id: 'c2', status: 'disconnected', provider: 'svenska_lag' },
+          { id: 'c3', status: 'error', provider: 'myclub' }
+        ];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns false when all connectors are disconnected', async () => {
+        const connectors = [
+          { id: 'c1', status: 'disconnected', provider: 'sportadmin' },
+          { id: 'c2', status: 'disconnected', provider: 'svenska_lag' }
+        ];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(false);
+      });
     });
   });
 

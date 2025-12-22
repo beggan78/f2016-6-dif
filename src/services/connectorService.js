@@ -361,14 +361,13 @@ export async function getPlayerConnectionDetails(teamId) {
   // Get all connectors for the team
   const connectors = await getTeamConnectors(teamId);
 
-  // Get all connected_player records with connector info and latest attendance sync
+  // Get all connected_player records with connector info
   const { data: connectedPlayerData, error } = await supabase
     .from('connected_player')
     .select(`
       id,
       player_id,
       player_name,
-      last_seen_at,
       connector:connector_id (
         id,
         provider,
@@ -386,7 +385,9 @@ export async function getPlayerConnectionDetails(teamId) {
   // Organize data by player_id
   const matchedConnections = new Map(); // player_id -> array of connection details
   const unmatchedPlayers = []; // connected_player records without player_id
-  const hasConnectedProvider = connectors.some(c => c.status === 'connected');
+  // Banner should hide if ANY connector exists that isn't disconnected
+  // This includes 'verifying', 'connected', and 'error' states
+  const hasConnectedProvider = connectors.some(c => c.status !== 'disconnected');
 
   connectedPlayerData?.forEach(record => {
     const connector = record.connector;
@@ -397,7 +398,6 @@ export async function getPlayerConnectionDetails(teamId) {
         providerName: 'Unknown connector',
         providerId: null,
         playerNameInProvider: record.player_name,
-        lastSynced: record.last_seen_at,
         connectorStatus: null,
         connectorId: null
       });
@@ -410,7 +410,6 @@ export async function getPlayerConnectionDetails(teamId) {
       providerName: provider?.name || connector.provider,
       providerId: connector.provider,
       playerNameInProvider: record.player_name,
-      lastSynced: record.last_seen_at,
       connectorStatus: connector.status,
       connectorId: connector.id
     };
