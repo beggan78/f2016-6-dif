@@ -25,6 +25,8 @@ import {
 import { updateFinishedMatchMetadata, getPlayerStats } from '../../../services/matchStateManager';
 import { useTeam } from '../../../contexts/TeamContext';
 
+const originalScrollTo = window.scrollTo;
+
 // Mock matchStateManager functions
 jest.mock('../../../services/matchStateManager', () => ({
   updateFinishedMatchMetadata: jest.fn().mockResolvedValue({ success: true }),
@@ -90,9 +92,13 @@ describe('GameFinishedScreen', () => {
   let mockPlayers;
   let mockSetters;
   let loadTeamPreferencesMock;
+  let scrollToMock;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    scrollToMock = jest.fn();
+    window.scrollTo = scrollToMock;
 
     loadTeamPreferencesMock = jest.fn(() => Promise.resolve({
       fairPlayAward: FAIR_PLAY_AWARD_OPTIONS.ALL_GAMES
@@ -168,6 +174,10 @@ describe('GameFinishedScreen', () => {
     updateFinishedMatchMetadata.mockResolvedValue({ success: true });
   });
 
+  afterAll(() => {
+    window.scrollTo = originalScrollTo;
+  });
+
   it('omits bench players with no playing time from the statistics table', () => {
     const benchPlayer = {
       id: 'bench-player',
@@ -240,6 +250,13 @@ describe('GameFinishedScreen', () => {
 
   describe('Basic Component Structure', () => {
 
+    it('scrolls to the top when rendered', async () => {
+      render(<GameFinishedScreen {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(scrollToMock).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+      });
+    });
 
     it('should handle empty players array gracefully', () => {
       const props = { ...defaultProps, allPlayers: [] };

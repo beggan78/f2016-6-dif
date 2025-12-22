@@ -8,6 +8,7 @@ import { sanitizeNameInput } from '../../utils/inputSanitization';
 import { getRandomPlayers, randomizeGoalieAssignments } from '../../utils/debugUtils';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
+import { scrollToTopSmooth } from '../../utils/scrollUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -1473,7 +1474,7 @@ export function ConfigurationScreen({
         });
         
         // Scroll to top to show success banner
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTopSmooth();
         
         // Clear success message after 3 seconds
         setTimeout(() => {

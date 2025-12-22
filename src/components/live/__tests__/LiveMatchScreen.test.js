@@ -383,4 +383,30 @@ describe('LiveMatchScreen event filtering', () => {
 
     expect(eventTypes).toEqual(['match_start', 'goal_scored', 'match_end']);
   });
+
+  it('shows back navigation when enabled', () => {
+    const events = createBaseEvents();
+    const onNavigateBack = jest.fn();
+
+    mockUseMatchEvents.mockReturnValue({
+      events,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    render(
+      <LiveMatchScreen
+        matchId="match-123"
+        showBackButton
+        onNavigateBack={onNavigateBack}
+      />
+    );
+
+    const backButton = screen.getByTestId('button-back');
+    expect(backButton).toBeInTheDocument();
+
+    fireEvent.click(backButton);
+    expect(onNavigateBack).toHaveBeenCalled();
+  });
 });

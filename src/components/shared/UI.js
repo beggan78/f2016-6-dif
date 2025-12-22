@@ -193,7 +193,17 @@ export function MultiSelect({
   );
 }
 
-export function Button({ onClick, children, Icon, variant = 'primary', size = 'md', disabled = false, className = '', type = 'button' }) {
+export function Button({
+  onClick,
+  children,
+  Icon,
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  className = '',
+  type = 'button',
+  ...rest
+}) {
   const baseStyle = "font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-150 ease-in-out flex items-center justify-center space-x-2";
 
   const sizeStyles = {
@@ -215,6 +225,7 @@ export function Button({ onClick, children, Icon, variant = 'primary', size = 'm
       onClick={onClick}
       disabled={disabled}
       className={`${baseStyle} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+      {...rest}
     >
       {Icon && <Icon className={`h-4 w-4 ${size === 'lg' ? 'h-5 w-5' : ''}`} />}
       <span>{children}</span>
@@ -681,13 +692,13 @@ export function ScoreManagerModal({
   getPlayerName,
   allowScorerSelection = true
 }) {
-  // Filter and process goal events (using same pattern as MatchReportScreen)
+  // Filter and process goal events (using same pattern as reporting screens)
   const goalEvents = React.useMemo(() => {
     const goals = matchEvents
       .filter(event => [EVENT_TYPES.GOAL_SCORED, EVENT_TYPES.GOAL_CONCEDED].includes(event.type))
       .filter(event => !event.undone)
       .map(event => {
-        // Use event.matchTime first, then calculate if missing (same as MatchReportScreen)
+        // Use event.matchTime first, then calculate if missing (same pattern as LiveMatch/report flows)
         const matchTime = event.matchTime || (calculateMatchTime ? calculateMatchTime(event.timestamp) : '0:00');
         
         // Use same scorer resolution pattern as GameEventTimeline (with fallback to eventData.scorerId)
@@ -769,7 +780,7 @@ export function ScoreManagerModal({
                 </div>
               ) : (
                 goalEvents.map((goal) => {
-                  const eventId = goal.id; // Use event.id consistently (same as MatchReportScreen)
+                  const eventId = goal.id; // Use event.id consistently (same as reporting flows)
                   return (
                   <div 
                     key={eventId} 

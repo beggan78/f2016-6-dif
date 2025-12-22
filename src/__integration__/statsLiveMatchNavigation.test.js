@@ -7,7 +7,7 @@ import { useScreenNavigation } from '../hooks/useNavigationHistory';
 import { VIEWS } from '../constants/viewConstants';
 import { MATCH_TYPES } from '../constants/matchTypes';
 import { GameFinishedScreen } from '../components/stats/GameFinishedScreen';
-import { MatchReportScreen } from '../components/report/MatchReportScreen';
+import { LiveMatchScreen } from '../components/live/LiveMatchScreen';
 import { createMockPlayers } from '../components/__tests__/componentTestUtils';
 
 jest.mock('../contexts/AuthContext', () => ({
@@ -43,20 +43,17 @@ jest.mock('../components/report/PlayerStatsTable', () => ({
   PlayerStatsTable: () => <div data-testid="player-stats-table" />
 }));
 
-jest.mock('../components/report/GameEventTimeline', () => ({
-  GameEventTimeline: () => <div data-testid="game-event-timeline" />
-}));
-
-jest.mock('../components/report/ReportControls', () => ({
-  ReportControls: () => <div data-testid="report-controls" />
-}));
-
-jest.mock('../components/report/ReportSection', () => ({
-  ReportSection: ({ children }) => <section>{children}</section>
-}));
-
-jest.mock('../components/report/EventToggleButton', () => ({
-  EventToggleButton: () => <button type="button">toggle</button>
+jest.mock('../components/live/LiveMatchScreen', () => ({
+  LiveMatchScreen: ({ showBackButton, onNavigateBack }) => (
+    <div>
+      <h2>Live Match</h2>
+      {showBackButton && (
+        <button type="button" onClick={onNavigateBack}>
+          Back
+        </button>
+      )}
+    </div>
+  )
 }));
 
 const mockPlayers = createMockPlayers(5);
@@ -93,46 +90,39 @@ const statsProps = {
   matchType: MATCH_TYPES.LEAGUE
 };
 
-const reportProps = {
-  matchEvents: [],
-  matchStartTime: Date.now(),
-  allPlayers: mockPlayers,
-  gameLog: [],
-  ownScore: 3,
-  opponentScore: 2,
-  periodDurationMinutes: 12,
-  ownTeamName: 'Own Team',
-  opponentTeam: 'Rivals',
-  goalScorers: {},
-  onGoalClick: jest.fn(),
-  formation: {},
-  debugMode: false,
-  selectedSquadIds: mockPlayers.map((player) => player.id)
-};
-
 function NavigationHarness() {
   const [view, setView] = useState(VIEWS.STATS);
+  const [entryPoint, setEntryPoint] = useState(null);
+  const [liveMatchId, setLiveMatchId] = useState(null);
   const navigation = useScreenNavigation(setView, { enableBrowserBack: false, fallbackView: VIEWS.CONFIG });
 
   if (view === VIEWS.STATS) {
     return (
       <GameFinishedScreen
         {...statsProps}
-        navigateToMatchReport={() => navigation.navigateTo(VIEWS.MATCH_REPORT)}
+        navigateToMatchReport={() => {
+          setLiveMatchId('match-123');
+          setEntryPoint(VIEWS.STATS);
+          navigation.navigateTo(VIEWS.LIVE_MATCH);
+        }}
       />
     );
   }
 
   return (
-    <MatchReportScreen
-      {...reportProps}
-      onNavigateBack={() => navigation.navigateBack(VIEWS.STATS)}
+    <LiveMatchScreen
+      matchId={liveMatchId}
+      showBackButton={entryPoint === VIEWS.STATS}
+      onNavigateBack={() => {
+        setEntryPoint(null);
+        navigation.navigateBack(VIEWS.STATS);
+      }}
     />
   );
 }
 
-describe('Stats to Match Report navigation flow', () => {
-  it('navigates from stats to match report and back using the Back button', async () => {
+describe('Stats to Live Match navigation flow', () => {
+  it('navigates from stats to live match and back using the Back button', async () => {
     render(
       <NavigationHistoryProvider>
         <NavigationHarness />
@@ -143,11 +133,11 @@ describe('Stats to Match Report navigation flow', () => {
 
     await userEvent.click(screen.getByText('View Match Report'));
 
-    expect(await screen.findByText('Match Report')).toBeInTheDocument();
+    expect(await screen.findByText('Live Match')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('Back'));
 
     expect(await screen.findByText('Game Finished - Statistics')).toBeInTheDocument();
-    expect(screen.queryByText('Match Report')).not.toBeInTheDocument();
+    expect(screen.queryByText('Live Match')).not.toBeInTheDocument();
   });
 });
