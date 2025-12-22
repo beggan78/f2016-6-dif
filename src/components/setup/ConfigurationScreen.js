@@ -15,6 +15,7 @@ import { useTeam } from '../../contexts/TeamContext';
 import { useFormationVotes } from '../../hooks/useFormationVotes';
 import { TeamManagement } from '../team/TeamManagement';
 import { RosterConnectorOnboarding } from '../team/RosterConnectorOnboarding';
+import { UnmappedPlayersBanner } from '../team/UnmappedPlayersBanner';
 import { dataSyncManager } from '../../utils/DataSyncManager';
 import { FeatureGate } from '../auth/FeatureGate';
 import { FormationPreview } from './FormationPreview';
@@ -770,6 +771,20 @@ export function ConfigurationScreen({
     hasConnectedProvider
   );
 
+  // Determine if unmapped players banner should be shown
+  const activeRosterCount = teamPlayers.filter(p => p.on_roster === true).length;
+  const unmappedFromConnected = (connectionDetails?.unmatchedAttendance || [])
+    .filter(record => record.connectorStatus === 'connected');
+  const hasUnmappedPlayers = unmappedFromConnected.length > 0;
+  const firstProviderName = hasUnmappedPlayers
+    ? unmappedFromConnected[0].providerName
+    : '';
+
+  const shouldShowUnmappedBanner =
+    Boolean(currentTeam && isAuthenticated) &&
+    activeRosterCount < 4 &&
+    hasUnmappedPlayers;
+
   // Clear selectedSquadIds when team has no players to avoid showing orphaned selections
   // Only clear on NEW_SIGN_IN to preserve squad selection on page refresh
   // BUT: Skip this cleanup when resume data is being processed to avoid clearing resumed selections
@@ -1212,6 +1227,12 @@ export function ConfigurationScreen({
   // Navigate to Team Management Connectors tab
   const handleNavigateToConnectors = () => {
     teamManagementTabCacheManager.saveState({ tab: 'connectors' });
+    setView(VIEWS.TEAM_MANAGEMENT);
+  };
+
+  // Navigate to Team Management Roster tab
+  const handleNavigateToRoster = () => {
+    teamManagementTabCacheManager.saveState({ tab: 'roster' });
     setView(VIEWS.TEAM_MANAGEMENT);
   };
 
@@ -1696,23 +1717,44 @@ export function ConfigurationScreen({
         </h3>
         {hasNoTeamPlayers ? (
           <div className="text-center py-8">
-            <UserPlus className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-            <p className="text-lg font-medium text-slate-300 mb-2">No Players Added Yet</p>
-            <p className="text-sm text-slate-400 mb-4">
-              Your team roster is empty. Add players to start setting up your game.
-            </p>
-            <div className="flex justify-center">
-              <Button
-                onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
-                variant="primary"
-                Icon={UserPlus}
-              >
-                Add Players
-              </Button>
-            </div>
+            {shouldShowUnmappedBanner ? (
+              /* Show ONLY unmapped players banner when available */
+              <UnmappedPlayersBanner
+                firstProviderName={firstProviderName}
+                onNavigateToRoster={handleNavigateToRoster}
+              />
+            ) : (
+              /* Show empty state when no unmapped players */
+              <>
+                <UserPlus className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+                <p className="text-lg font-medium text-slate-300 mb-2">No Players Added Yet</p>
+                <p className="text-sm text-slate-400 mb-4">
+                  Your team roster is empty. Add players to start setting up your game.
+                </p>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
+                    variant="primary"
+                    Icon={UserPlus}
+                  >
+                    Add Players
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <>
+            {/* Unmapped Players Banner */}
+            {shouldShowUnmappedBanner && (
+              <div className="mb-3">
+                <UnmappedPlayersBanner
+                  firstProviderName={firstProviderName}
+                  onNavigateToRoster={handleNavigateToRoster}
+                />
+              </div>
+            )}
+
             <div className="flex justify-end mb-2">
               <Button
                 onClick={handleSelectAllPlayers}
