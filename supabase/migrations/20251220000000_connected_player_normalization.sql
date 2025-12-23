@@ -159,7 +159,7 @@ CREATE POLICY player_attendance_update_team_member ON public.player_attendance
   WITH CHECK (
     connected_player_id IN (
       SELECT cp.id FROM public.connected_player cp
-      JOIN public.connector c ON c.id = cp.connector_idπ
+      JOIN public.connector c ON c.id = cp.connector_id
       JOIN public.team_user tu ON tu.team_id = c.team_id
       WHERE tu.user_id = auth.uid()
     )
