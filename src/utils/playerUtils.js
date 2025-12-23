@@ -423,3 +423,115 @@ export const hasActiveSubstitutes = (allPlayers, teamConfig) => {
   
   return hasActive;
 };
+
+/**
+ * Determines if the roster connector onboarding banner should be displayed
+ *
+ * Banner shows when:
+ * - Team has 0-3 active roster players (on_roster = true)
+ * - No connected provider exists
+ *
+ * @param {Array} players - Array of player objects (must have on_roster field)
+ * @param {boolean} hasConnectedProvider - Whether team has a connected provider
+ * @returns {boolean} True if onboarding banner should be shown
+ */
+export const shouldShowRosterConnectorOnboarding = (players, hasConnectedProvider) => {
+  // Don't show if provider is already connected
+  if (hasConnectedProvider) {
+    return false;
+  }
+
+  // Defensive: handle invalid inputs
+  if (!Array.isArray(players)) {
+    return false;
+  }
+
+  // Count active roster players (on_roster = true)
+  const activeRosterCount = players.filter(p => p.on_roster === true).length;
+
+  // Show banner when 0-3 active roster players
+  return activeRosterCount <= 3;
+};
+
+/**
+ * Parse external player name into first_name, last_name, and display_name components
+ * Handles multiple formats:
+ * - "LastName, FirstName" (common in SportAdmin) → {first_name: "FirstName", last_name: "LastName", display_name: "FirstName LastName"}
+ * - "FirstName LastName" → {first_name: "FirstName", last_name: "LastName", display_name: "FirstName LastName"}
+ * - "SingleName" → {first_name: "SingleName", last_name: null, display_name: "SingleName"}
+ * @param {string} externalName - Player name from external provider
+ * @returns {Object} Object with first_name, last_name, display_name
+ * @throws {Error} If name is invalid (too short or missing)
+ */
+export const parseExternalPlayerName = (externalName) => {
+  // Validate input
+  if (!externalName || typeof externalName !== 'string') {
+    throw new Error('Player name is required');
+  }
+
+  const trimmed = externalName.trim();
+
+  // Validate minimum length (DB constraint: min 2 chars for first_name)
+  if (trimmed.length < 2) {
+    throw new Error('Player name is too short (minimum 2 characters)');
+  }
+
+  // Handle comma-separated format: "LastName, FirstName"
+  if (trimmed.includes(',')) {
+    const parts = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (parts.length >= 2) {
+      const lastName = parts[0];
+      const firstName = parts[1];
+
+      // Validate first_name length
+      if (firstName.length < 2) {
+        throw new Error('First name is too short (minimum 2 characters)');
+      }
+
+      // Truncate if needed (DB constraint: max 50 chars)
+      const truncatedFirstName = firstName.substring(0, 50);
+      const truncatedLastName = lastName.substring(0, 50);
+
+      return {
+        first_name: truncatedFirstName,
+        last_name: truncatedLastName,
+        display_name: `${truncatedFirstName} ${truncatedLastName}`
+      };
+    } else if (parts.length === 1) {
+      // Only one part after comma split
+      const name = parts[0].substring(0, 50);
+      return {
+        first_name: name,
+        last_name: null,
+        display_name: name
+      };
+    }
+  }
+
+  // Handle space-separated format: "FirstName LastName" or "FirstName Middle LastName"
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    const firstName = parts[0];
+    const lastName = parts.slice(1).join(' ');
+
+    // Truncate if needed (DB constraint: max 50 chars)
+    const truncatedFirstName = firstName.substring(0, 50);
+    const truncatedLastName = lastName.substring(0, 50);
+
+    return {
+      first_name: truncatedFirstName,
+      last_name: truncatedLastName,
+      display_name: trimmed.substring(0, 100) // Display name can be longer
+    };
+  }
+
+  // Single name (no spaces or commas)
+  const singleName = trimmed.substring(0, 50);
+  return {
+    first_name: singleName,
+    last_name: null,
+    display_name: singleName
+  };
+};

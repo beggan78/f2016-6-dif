@@ -9,7 +9,7 @@ import {
   triggerManualSync,
   getLatestSyncJob,
   getRecentSyncJobs,
-  matchPlayerToAttendance,
+  matchPlayerToConnectedPlayer,
   retryConnector,
   getPlayerConnectionDetails,
   getAttendanceStats
@@ -281,33 +281,32 @@ describe('connectorService', () => {
   });
 
   describe('getPlayerConnectionDetails', () => {
-    it('handles attendance records with missing connector reference', async () => {
+    it('handles connected players with missing connector reference', async () => {
       const connectorOrder = jest.fn().mockResolvedValue({ data: [], error: null });
       const connectorEq = jest.fn(() => ({ order: connectorOrder }));
       const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
 
-      const attendanceRecords = [
+      const connectedPlayerRecords = [
         {
-          id: 'att-1',
+          id: 'connected-1',
           player_id: null,
           player_name: 'Orphaned Player',
-          last_synced_at: '2024-01-01T00:00:00Z',
           connector: null
         }
       ];
 
-      const attendanceEq = jest.fn().mockResolvedValue({
-        data: attendanceRecords,
+      const connectedPlayerEq = jest.fn().mockResolvedValue({
+        data: connectedPlayerRecords,
         error: null
       });
-      const attendanceSelect = jest.fn(() => ({ eq: attendanceEq }));
+      const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
       supabase.from.mockImplementation(table => {
         if (table === 'connector') {
           return { select: connectorSelect };
         }
-        if (table === 'player_attendance') {
-          return { select: attendanceSelect };
+        if (table === 'connected_player') {
+          return { select: connectedPlayerSelect };
         }
         return { select: jest.fn() };
       });
@@ -316,56 +315,54 @@ describe('connectorService', () => {
 
       expect(result.hasConnectedProvider).toBe(false);
       expect(result.matchedConnections.size).toBe(0);
-      expect(result.unmatchedAttendance).toEqual([
+      expect(result.unmatchedExternalPlayers).toEqual([
         {
-          attendanceId: 'att-1',
+          externalPlayerId: 'connected-1',
           providerName: 'Unknown connector',
           providerId: null,
           playerNameInProvider: 'Orphaned Player',
-          lastSynced: '2024-01-01T00:00:00Z',
           connectorStatus: null,
           connectorId: null
         }
       ]);
     });
 
-    it('deduplicates matched attendance records per connector using the latest sync', async () => {
+    it('groups matched connected players by roster player id', async () => {
       const connectors = [
-        { id: 'connector-1', provider: 'sportadmin', status: 'connected', team_id: 'team-1' }
+        { id: 'connector-1', provider: 'sportadmin', status: 'connected', team_id: 'team-1' },
+        { id: 'connector-2', provider: 'svenska_lag', status: 'connected', team_id: 'team-1' }
       ];
       const connectorOrder = jest.fn().mockResolvedValue({ data: connectors, error: null });
       const connectorEq = jest.fn(() => ({ order: connectorOrder }));
       const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
 
-      const attendanceRecords = [
+      const connectedPlayerRecords = [
         {
-          id: 'att-old',
+          id: 'connected-1',
           player_id: 'player-1',
           player_name: 'Ebba Yngbrant',
-          last_synced_at: '2024-01-10T00:00:00Z',
           connector: connectors[0]
         },
         {
-          id: 'att-new',
+          id: 'connected-2',
           player_id: 'player-1',
           player_name: 'Ebba Yngbrant',
-          last_synced_at: '2024-02-15T00:00:00Z',
-          connector: connectors[0]
+          connector: connectors[1]
         }
       ];
 
-      const attendanceEq = jest.fn().mockResolvedValue({
-        data: attendanceRecords,
+      const connectedPlayerEq = jest.fn().mockResolvedValue({
+        data: connectedPlayerRecords,
         error: null
       });
-      const attendanceSelect = jest.fn(() => ({ eq: attendanceEq }));
+      const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
       supabase.from.mockImplementation(table => {
         if (table === 'connector') {
           return { select: connectorSelect };
         }
-        if (table === 'player_attendance') {
-          return { select: attendanceSelect };
+        if (table === 'connected_player') {
+          return { select: connectedPlayerSelect };
         }
         return { select: jest.fn() };
       });
@@ -378,15 +375,105 @@ describe('connectorService', () => {
       const connections = result.matchedConnections.get('player-1');
       expect(connections).toEqual([
         {
-          attendanceId: 'att-new',
+          externalPlayerId: 'connected-1',
           providerName: 'SportAdmin',
           providerId: 'sportadmin',
           playerNameInProvider: 'Ebba Yngbrant',
-          lastSynced: '2024-02-15T00:00:00Z',
           connectorStatus: 'connected',
           connectorId: 'connector-1'
+        },
+        {
+          externalPlayerId: 'connected-2',
+          providerName: 'Svenska Lag',
+          providerId: 'svenska_lag',
+          playerNameInProvider: 'Ebba Yngbrant',
+          connectorStatus: 'connected',
+          connectorId: 'connector-2'
         }
       ]);
+    });
+
+    describe('hasConnectedProvider flag', () => {
+      const setupMockConnectors = (connectors) => {
+        const connectorOrder = jest.fn().mockResolvedValue({ data: connectors, error: null });
+        const connectorEq = jest.fn(() => ({ order: connectorOrder }));
+        const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
+
+        const connectedPlayerEq = jest.fn().mockResolvedValue({ data: [], error: null });
+        const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
+
+        supabase.from.mockImplementation(table => {
+          if (table === 'connector') {
+            return { select: connectorSelect };
+          }
+          if (table === 'connected_player') {
+            return { select: connectedPlayerSelect };
+          }
+          return { select: jest.fn() };
+        });
+      };
+
+      it('returns true when connector status is "connected"', async () => {
+        const connectors = [{ id: 'c1', status: 'connected', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns true when connector status is "verifying"', async () => {
+        const connectors = [{ id: 'c1', status: 'verifying', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns true when connector status is "error"', async () => {
+        const connectors = [{ id: 'c1', status: 'error', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns false when connector status is "disconnected"', async () => {
+        const connectors = [{ id: 'c1', status: 'disconnected', provider: 'sportadmin' }];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(false);
+      });
+
+      it('returns false when no connectors exist', async () => {
+        setupMockConnectors([]);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(false);
+      });
+
+      it('returns true when multiple connectors exist with mixed statuses (at least one not disconnected)', async () => {
+        const connectors = [
+          { id: 'c1', status: 'verifying', provider: 'sportadmin' },
+          { id: 'c2', status: 'disconnected', provider: 'svenska_lag' },
+          { id: 'c3', status: 'error', provider: 'myclub' }
+        ];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(true);
+      });
+
+      it('returns false when all connectors are disconnected', async () => {
+        const connectors = [
+          { id: 'c1', status: 'disconnected', provider: 'sportadmin' },
+          { id: 'c2', status: 'disconnected', provider: 'svenska_lag' }
+        ];
+        setupMockConnectors(connectors);
+
+        const result = await getPlayerConnectionDetails('team-1');
+        expect(result.hasConnectedProvider).toBe(false);
+      });
     });
   });
 
@@ -424,13 +511,13 @@ describe('connectorService', () => {
     });
   });
 
-  describe('matchPlayerToAttendance', () => {
+  describe('matchPlayerToConnectedPlayer', () => {
     it('validates parameters', async () => {
-      await expect(matchPlayerToAttendance(null, 'player')).rejects.toThrow(
-        'Attendance ID and player ID are required'
+      await expect(matchPlayerToConnectedPlayer(null, 'player')).rejects.toThrow(
+        'External player ID and player ID are required'
       );
-      await expect(matchPlayerToAttendance('attendance', null)).rejects.toThrow(
-        'Attendance ID and player ID are required'
+      await expect(matchPlayerToConnectedPlayer('connected-player', null)).rejects.toThrow(
+        'External player ID and player ID are required'
       );
     });
 
@@ -441,11 +528,11 @@ describe('connectorService', () => {
       };
       supabase.from.mockReturnValue(chain);
 
-      await matchPlayerToAttendance('attendance', 'player');
+      await matchPlayerToConnectedPlayer('connected-player', 'player');
 
-      expect(supabase.from).toHaveBeenCalledWith('player_attendance');
+      expect(supabase.from).toHaveBeenCalledWith('connected_player');
       expect(chain.update).toHaveBeenCalledWith({ player_id: 'player' });
-      expect(chain.eq).toHaveBeenCalledWith('id', 'attendance');
+      expect(chain.eq).toHaveBeenCalledWith('id', 'connected-player');
     });
 
     it('throws on update failure', async () => {
@@ -455,7 +542,7 @@ describe('connectorService', () => {
       };
       supabase.from.mockReturnValue(chain);
 
-      await expect(matchPlayerToAttendance('attendance', 'player')).rejects.toThrow('Failed to match player');
+      await expect(matchPlayerToConnectedPlayer('connected-player', 'player')).rejects.toThrow('Failed to match player');
     });
   });
 
@@ -472,47 +559,55 @@ describe('connectorService', () => {
     const mockAttendanceData = [
       {
         id: 'att-1',
-        player_id: 'player-1',
-        player_name: 'Alice Johnson',
         year: 2025,
         month: 1,
         day_of_month: 5,
         total_practices: 5,
         total_attendance: 4,
-        connector: { id: 'connector-1', provider: 'sportadmin' }
+        connected_player: {
+          player_id: 'player-1',
+          player_name: 'Alice Johnson',
+          connector: { id: 'connector-1', provider: 'sportadmin' }
+        }
       },
       {
         id: 'att-2',
-        player_id: 'player-1',
-        player_name: 'Alice Johnson',
         year: 2025,
         month: 1,
         day_of_month: 20,
         total_practices: 5,
         total_attendance: 5,
-        connector: { id: 'connector-1', provider: 'sportadmin' }
+        connected_player: {
+          player_id: 'player-1',
+          player_name: 'Alice Johnson',
+          connector: { id: 'connector-1', provider: 'sportadmin' }
+        }
       },
       {
         id: 'att-3',
-        player_id: 'player-1',
-        player_name: 'Alice Johnson',
         year: 2025,
         month: 2,
         day_of_month: 2,
         total_practices: 8,
         total_attendance: 7,
-        connector: { id: 'connector-1', provider: 'sportadmin' }
+        connected_player: {
+          player_id: 'player-1',
+          player_name: 'Alice Johnson',
+          connector: { id: 'connector-1', provider: 'sportadmin' }
+        }
       },
       {
         id: 'att-4',
-        player_id: 'player-2',
-        player_name: 'Bob Smith',
         year: 2025,
         month: 1,
         day_of_month: 15,
         total_practices: 10,
         total_attendance: 8,
-        connector: { id: 'connector-1', provider: 'sportadmin' }
+        connected_player: {
+          player_id: 'player-2',
+          player_name: 'Bob Smith',
+          connector: { id: 'connector-1', provider: 'sportadmin' }
+        }
       }
     ];
 
@@ -839,14 +934,16 @@ describe('connectorService', () => {
       const zeroAttendance = [
         {
           id: 'att-1',
-          player_id: 'player-1',
-          player_name: 'Alice Johnson',
           year: 2025,
           month: 1,
           day_of_month: 10,
           total_practices: 0,
           total_attendance: 0,
-          connector: { id: 'connector-1', provider: 'sportadmin' }
+          connected_player: {
+            player_id: 'player-1',
+            player_name: 'Alice Johnson',
+            connector: { id: 'connector-1', provider: 'sportadmin' }
+          }
         }
       ];
 
@@ -862,19 +959,23 @@ describe('connectorService', () => {
         ...mockAttendanceData,
         {
           id: 'att-unmatched',
-          player_id: null, // Unmatched
-          player_name: 'Unmatched Player',
           year: 2025,
           month: 1,
           day_of_month: 7,
           total_practices: 1,
           total_attendance: 1,
-          connector: { id: 'connector-1', provider: 'sportadmin' }
+          connected_player: {
+            player_id: null,
+            player_name: 'Unmatched Player',
+            connector: { id: 'connector-1', provider: 'sportadmin' }
+          }
         }
       ];
 
       // Filter out null player_ids (simulating .not('player_id', 'is', null))
-      const filteredAttendance = mixedAttendance.filter(a => a.player_id !== null);
+      const filteredAttendance = mixedAttendance.filter(
+        (record) => record.connected_player?.player_id !== null
+      );
       setupSupabase({ attendanceData: filteredAttendance });
 
       const result = await getAttendanceStats(teamId);

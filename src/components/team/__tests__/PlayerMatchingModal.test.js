@@ -1,10 +1,10 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PlayerMatchingModal } from '../PlayerMatchingModal';
-import { matchPlayerToAttendance } from '../../../services/connectorService';
+import { matchPlayerToConnectedPlayer } from '../../../services/connectorService';
 
 jest.mock('../../../services/connectorService', () => ({
-  matchPlayerToAttendance: jest.fn()
+  matchPlayerToConnectedPlayer: jest.fn()
 }));
 
 const rosterPlayer = {
@@ -15,13 +15,12 @@ const rosterPlayer = {
   jersey_number: '10'
 };
 
-const unmatchedAttendance = [
+const unmatchedExternalPlayers = [
   {
-    attendanceId: 'attendance-1',
+    externalPlayerId: 'connected-player-1',
     providerName: 'SportAdmin',
     providerId: 'sportadmin',
     playerNameInProvider: 'A. Morgan',
-    lastSynced: '2024-01-01T00:00:00Z',
     connectorStatus: 'connected',
     connectorId: 'connector-1'
   }
@@ -36,7 +35,7 @@ describe('PlayerMatchingModal', () => {
     const { container } = render(
       <PlayerMatchingModal
         rosterPlayer={rosterPlayer}
-        unmatchedAttendance={unmatchedAttendance}
+        unmatchedExternalPlayers={unmatchedExternalPlayers}
         onClose={jest.fn()}
         onMatched={jest.fn()}
       />
@@ -48,18 +47,18 @@ describe('PlayerMatchingModal', () => {
       fireEvent.submit(form);
     });
     expect(await screen.findByText(/Please select a player from the provider/i)).toBeInTheDocument();
-    expect(matchPlayerToAttendance).not.toHaveBeenCalled();
+    expect(matchPlayerToConnectedPlayer).not.toHaveBeenCalled();
   });
 
   it('matches player and notifies callbacks', async () => {
     const onClose = jest.fn();
-   const onMatched = jest.fn();
-    matchPlayerToAttendance.mockResolvedValue(undefined);
+    const onMatched = jest.fn();
+    matchPlayerToConnectedPlayer.mockResolvedValue(undefined);
 
     render(
       <PlayerMatchingModal
         rosterPlayer={rosterPlayer}
-        unmatchedAttendance={unmatchedAttendance}
+        unmatchedExternalPlayers={unmatchedExternalPlayers}
         onClose={onClose}
         onMatched={onMatched}
       />
@@ -67,31 +66,31 @@ describe('PlayerMatchingModal', () => {
 
     const select = screen.getByRole('combobox');
     await act(async () => {
-      await userEvent.selectOptions(select, 'attendance-1');
+      await userEvent.selectOptions(select, 'connected-player-1');
     });
     await act(async () => {
       await userEvent.click(screen.getByRole('button', { name: /match player/i }));
     });
 
-    expect(matchPlayerToAttendance).toHaveBeenCalledWith('attendance-1', 'player-1');
-    expect(onMatched).toHaveBeenCalledWith(unmatchedAttendance[0], rosterPlayer);
+    expect(matchPlayerToConnectedPlayer).toHaveBeenCalledWith('connected-player-1', 'player-1');
+    expect(onMatched).toHaveBeenCalledWith(unmatchedExternalPlayers[0], rosterPlayer);
     expect(onClose).toHaveBeenCalled();
   });
 
   it('surfaces matching errors in the UI', async () => {
-    matchPlayerToAttendance.mockRejectedValue(new Error('Unable to match'));
+    matchPlayerToConnectedPlayer.mockRejectedValue(new Error('Unable to match'));
 
     render(
       <PlayerMatchingModal
         rosterPlayer={rosterPlayer}
-        unmatchedAttendance={unmatchedAttendance}
+        unmatchedExternalPlayers={unmatchedExternalPlayers}
         onClose={jest.fn()}
         onMatched={jest.fn()}
       />
     );
 
     await act(async () => {
-      await userEvent.selectOptions(screen.getByRole('combobox'), 'attendance-1');
+      await userEvent.selectOptions(screen.getByRole('combobox'), 'connected-player-1');
     });
     await act(async () => {
       await userEvent.click(screen.getByRole('button', { name: /match player/i }));

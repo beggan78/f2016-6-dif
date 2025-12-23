@@ -99,6 +99,14 @@ jest.mock('../../../hooks/useFormationVotes', () => ({
   })
 }));
 
+jest.mock('../../../services/connectorService', () => ({
+  getPlayerConnectionDetails: jest.fn(() => Promise.resolve({
+    matchedConnections: new Map(),
+    unmatchedExternalPlayers: [],
+    hasConnectedProvider: false
+  }))
+}));
+
 const mockUseOpponentNameSuggestions = jest.fn();
 
 jest.mock('../../../hooks/useOpponentNameSuggestions', () => ({
@@ -107,6 +115,21 @@ jest.mock('../../../hooks/useOpponentNameSuggestions', () => ({
 
 jest.mock('../../team/TeamManagement', () => ({
   TeamManagement: () => null
+}));
+
+jest.mock('../../team/RosterConnectorOnboarding', () => ({
+  RosterConnectorOnboarding: () => null
+}));
+
+jest.mock('../../team/UnmappedPlayersBanner', () => ({
+  UnmappedPlayersBanner: ({ firstProviderName, onNavigateToRoster }) => (
+    <div data-testid="unmapped-players-banner">
+      <span data-testid="provider-name">{firstProviderName}</span>
+      <button data-testid="navigate-to-roster-button" onClick={onNavigateToRoster}>
+        Go to Roster Management
+      </button>
+    </div>
+  )
 }));
 
 jest.mock('../../../utils/DataSyncManager', () => ({
@@ -1157,5 +1180,318 @@ describe('ConfigurationScreen formation visibility', () => {
 
     expect(proceedButton).toBeDefined();
     expect(proceedButton).toBeDisabled();
+  });
+});
+
+describe('ConfigurationScreen unmapped players banner', () => {
+  const { getPlayerConnectionDetails } = require('../../../services/connectorService');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Reset default mock
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [],
+      hasConnectedProvider: false
+    });
+
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+  });
+
+  it('shows banner when < 4 roster players and unmapped players exist', async () => {
+    // Setup: 3 roster players (< 4)
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [
+        { id: 'p1', display_name: 'Player 1', on_roster: true },
+        { id: 'p2', display_name: 'Player 2', on_roster: true },
+        { id: 'p3', display_name: 'Player 3', on_roster: true }
+      ],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+
+    // Setup: unmapped players from connected provider
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [
+        {
+          externalPlayerId: 'cp1',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 1',
+          connectorStatus: 'connected'
+        },
+        {
+          externalPlayerId: 'cp2',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 2',
+          connectorStatus: 'connected'
+        }
+      ],
+      hasConnectedProvider: true
+    });
+
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
+    });
+
+    // Verify provider name is displayed
+    expect(screen.getByTestId('provider-name')).toHaveTextContent('SportAdmin');
+  });
+
+  it('hides banner when >= 4 roster players even with unmapped players', async () => {
+    // Setup: 4 roster players (>= 4)
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [
+        { id: 'p1', display_name: 'Player 1', on_roster: true },
+        { id: 'p2', display_name: 'Player 2', on_roster: true },
+        { id: 'p3', display_name: 'Player 3', on_roster: true },
+        { id: 'p4', display_name: 'Player 4', on_roster: true }
+      ],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+
+    // Setup: unmapped players exist but should be ignored
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [
+        {
+          externalPlayerId: 'cp1',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 1',
+          connectorStatus: 'connected'
+        }
+      ],
+      hasConnectedProvider: true
+    });
+
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(getPlayerConnectionDetails).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByTestId('unmapped-players-banner')).not.toBeInTheDocument();
+  });
+
+  it('hides banner when no unmapped players exist', async () => {
+    // Setup: 3 roster players but no unmapped players
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [
+        { id: 'p1', display_name: 'Player 1', on_roster: true },
+        { id: 'p2', display_name: 'Player 2', on_roster: true },
+        { id: 'p3', display_name: 'Player 3', on_roster: true }
+      ],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+
+    // No unmapped players
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [],
+      hasConnectedProvider: true
+    });
+
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(getPlayerConnectionDetails).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByTestId('unmapped-players-banner')).not.toBeInTheDocument();
+  });
+
+  it('hides banner when unmapped players only from non-connected connectors', async () => {
+    // Setup: 3 roster players
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [
+        { id: 'p1', display_name: 'Player 1', on_roster: true },
+        { id: 'p2', display_name: 'Player 2', on_roster: true },
+        { id: 'p3', display_name: 'Player 3', on_roster: true }
+      ],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+
+    // Setup: unmapped players but from disconnected/error connectors
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [
+        {
+          externalPlayerId: 'cp1',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 1',
+          connectorStatus: 'error'
+        },
+        {
+          externalPlayerId: 'cp2',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 2',
+          connectorStatus: 'disconnected'
+        }
+      ],
+      hasConnectedProvider: true
+    });
+
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(getPlayerConnectionDetails).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByTestId('unmapped-players-banner')).not.toBeInTheDocument();
+  });
+
+  it('shows first provider name when multiple providers have unmapped players', async () => {
+    // Setup: 3 roster players
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [
+        { id: 'p1', display_name: 'Player 1', on_roster: true },
+        { id: 'p2', display_name: 'Player 2', on_roster: true },
+        { id: 'p3', display_name: 'Player 3', on_roster: true }
+      ],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+
+    // Setup: unmapped players from multiple providers
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [
+        {
+          externalPlayerId: 'cp1',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 1',
+          connectorStatus: 'connected'
+        },
+        {
+          externalPlayerId: 'cp2',
+          providerName: 'MyClub',
+          playerNameInProvider: 'Ghost Player 2',
+          connectorStatus: 'connected'
+        }
+      ],
+      hasConnectedProvider: true
+    });
+
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
+    });
+
+    // Should show first provider name
+    expect(screen.getByTestId('provider-name')).toHaveTextContent('SportAdmin');
+  });
+
+  it('navigates to roster tab when banner button is clicked', async () => {
+    // Setup: 3 roster players and unmapped players
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [
+        { id: 'p1', display_name: 'Player 1', on_roster: true },
+        { id: 'p2', display_name: 'Player 2', on_roster: true },
+        { id: 'p3', display_name: 'Player 3', on_roster: true }
+      ],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [
+        {
+          externalPlayerId: 'cp1',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 1',
+          connectorStatus: 'connected'
+        }
+      ],
+      hasConnectedProvider: true
+    });
+
+    const setViewMock = jest.fn();
+    const props = buildProps({ setView: setViewMock });
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
+    });
+
+    // Click the navigate button
+    const navigateButton = screen.getByTestId('navigate-to-roster-button');
+    fireEvent.click(navigateButton);
+
+    // Verify navigation was called
+    expect(setViewMock).toHaveBeenCalled();
+  });
+
+  it('shows banner when team has no players AND unmapped players exist', async () => {
+    // Setup: no team players (empty state)
+    mockUseTeam.mockReturnValue({
+      currentTeam: { id: 'team-1' },
+      teamPlayers: [],
+      hasTeams: true,
+      hasClubs: true,
+      loading: false,
+      loadTeamPreferences: jest.fn(() => Promise.resolve({}))
+    });
+
+    // Setup: unmapped players exist
+    getPlayerConnectionDetails.mockResolvedValue({
+      matchedConnections: new Map(),
+      unmatchedExternalPlayers: [
+        {
+          externalPlayerId: 'cp1',
+          providerName: 'SportAdmin',
+          playerNameInProvider: 'Ghost Player 1',
+          connectorStatus: 'connected'
+        }
+      ],
+      hasConnectedProvider: true
+    });
+
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
+    });
+
+    // Verify provider name is displayed
+    expect(screen.getByTestId('provider-name')).toHaveTextContent('SportAdmin');
   });
 });

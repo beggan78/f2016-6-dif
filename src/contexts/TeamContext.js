@@ -334,6 +334,15 @@ export const TeamProvider = ({ children }) => {
     }
   }, []);
 
+  const refreshTeamPlayers = useCallback(async (teamId) => {
+    const effectiveTeamId = teamId || currentTeam?.id;
+    if (!effectiveTeamId) return [];
+
+    const players = await getTeamPlayers(effectiveTeamId);
+    setTeamPlayers(players);
+    return players;
+  }, [currentTeam?.id, getTeamPlayers]);
+
   // Create a new player for current team
   const createPlayer = useCallback(async (playerData) => {
     if (!currentTeam) {
@@ -2040,6 +2049,7 @@ export const TeamProvider = ({ children }) => {
     addRosterPlayer,
     updateRosterPlayer,
     removeRosterPlayer,
+    refreshTeamPlayers,
     checkPlayerGameHistory,
     getAvailableJerseyNumbers,
 

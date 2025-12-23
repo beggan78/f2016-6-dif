@@ -16,7 +16,9 @@ import {
   EyeOff,
   Rows4,
   Link,
-  Unlink
+  Unlink,
+  Ghost,
+  Loader
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Tooltip } from '../shared';
@@ -29,11 +31,13 @@ import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { PlayerMatchingModal } from './PlayerMatchingModal';
+import { RosterConnectorOnboarding } from './RosterConnectorOnboarding';
 import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
-import { getPlayerConnectionDetails } from '../../services/connectorService';
+import { getPlayerConnectionDetails, acceptGhostPlayer } from '../../services/connectorService';
+import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { DEFAULT_PREFERENCES } from '../../types/preferences';
@@ -310,7 +314,7 @@ export function TeamManagement({ onNavigateBack, openToTab, onShowSuccessMessage
           onShowRoleModal={handleShowRoleModal}
         />;
       case TAB_VIEWS.ROSTER:
-        return <RosterManagement team={currentTeam} onRefresh={loadTeamData} />;
+        return <RosterManagement team={currentTeam} onRefresh={loadTeamData} onNavigateToConnectors={() => setActiveTab('connectors')} activeTab={activeTab} />;
       case TAB_VIEWS.CONNECTORS:
         return <TeamConnectors team={currentTeam} onRefresh={loadTeamData} />;
       case TAB_VIEWS.PREFERENCES:
@@ -618,12 +622,13 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
 }
 
 // Roster Management Component
-function RosterManagement({ team, onRefresh }) {
+function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }) {
   const { 
     getTeamRoster, 
     addRosterPlayer, 
     updateRosterPlayer, 
     removeRosterPlayer, 
+    refreshTeamPlayers,
     checkPlayerGameHistory,
     getAvailableJerseyNumbers 
   } = useTeam();
@@ -640,9 +645,10 @@ function RosterManagement({ team, onRefresh }) {
   const [matchingPlayer, setMatchingPlayer] = useState(null); // For player matching modal
   const [connectionDetails, setConnectionDetails] = useState({
     matchedConnections: new Map(),
-    unmatchedAttendance: [],
+    unmatchedExternalPlayers: [],
     hasConnectedProvider: false
   });
+  const [acceptingGhostPlayerId, setAcceptingGhostPlayerId] = useState(null);
 
   // Load roster data
   const loadRoster = useCallback(async () => {
@@ -684,6 +690,14 @@ function RosterManagement({ team, onRefresh }) {
     loadPlayerConnections();
   }, [loadPlayerConnections]);
 
+  // Reload connection details when switching to Roster tab
+  // This ensures banner visibility reflects recent connector changes
+  useEffect(() => {
+    if (activeTab === TAB_VIEWS.ROSTER) {
+      loadPlayerConnections();
+    }
+  }, [activeTab, loadPlayerConnections]);
+
   // Auto-clear success message after timeout
   useEffect(() => {
     if (successMessage) {
@@ -695,14 +709,47 @@ function RosterManagement({ team, onRefresh }) {
   }, [successMessage]);
 
   // Filter roster based on visibility settings, then sort by display_name
-  const filteredRoster = roster.filter(player => {
-    // Show active players by default, include former players when toggle is enabled
-    return player.on_roster || showInactive;
-  }).sort((a, b) => {
-    const aName = a.display_name || '';
-    const bName = b.display_name || '';
-    return aName.localeCompare(bName);
-  });
+  // Also append ghost players (unmatched connected_player records) when provider is connected
+  const filteredRoster = useMemo(() => {
+    // Filter and sort roster players
+    const rosterPlayers = roster.filter(player => {
+      // Show active players by default, include former players when toggle is enabled
+      return player.on_roster || showInactive;
+    }).sort((a, b) => {
+      const aName = a.display_name || '';
+      const bName = b.display_name || '';
+      return aName.localeCompare(bName);
+    });
+
+    // Only show ghost players if provider is connected
+    if (!connectionDetails.hasConnectedProvider) {
+      return rosterPlayers;
+    }
+
+    // Filter ghost players: only show if connector status is 'connected'
+    const ghostPlayers = (connectionDetails.unmatchedExternalPlayers || [])
+      .filter(ghost => ghost.connectorStatus === 'connected')
+      .map(ghost => ({
+        id: `ghost-${ghost.externalPlayerId}`,
+        isGhost: true,
+        externalPlayerId: ghost.externalPlayerId,
+        display_name: ghost.playerNameInProvider,
+        playerNameInProvider: ghost.playerNameInProvider,
+        providerName: ghost.providerName,
+        connectorId: ghost.connectorId,
+        // No first_name, last_name, jersey_number, on_roster
+      }))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+    // Roster players first, then ghost players
+    return [...rosterPlayers, ...ghostPlayers];
+  }, [roster, showInactive, connectionDetails]);
+
+  // Calculate if we should show the connector onboarding banner
+  const shouldShowOnboarding = shouldShowRosterConnectorOnboarding(
+    roster,
+    connectionDetails.hasConnectedProvider
+  );
 
   // Handle player matched successfully
   const handlePlayerMatched = async (matchedAttendance, rosterPlayer) => {
@@ -717,27 +764,60 @@ function RosterManagement({ team, onRefresh }) {
           providerName: matchedAttendance.providerName,
           providerId: matchedAttendance.providerId,
           playerNameInProvider: matchedAttendance.playerNameInProvider,
-          lastSynced: matchedAttendance.lastSynced,
           connectorStatus: matchedAttendance.connectorStatus,
           connectorId: matchedAttendance.connectorId
         };
 
         updatedMatched.set(rosterPlayer.id, [...existingMatches, normalizedRecord]);
 
-        const updatedUnmatched = prev.unmatchedAttendance.filter(
+        const updatedUnmatched = prev.unmatchedExternalPlayers.filter(
           record => record.attendanceId !== matchedAttendance.attendanceId
         );
 
         return {
           ...prev,
           matchedConnections: updatedMatched,
-          unmatchedAttendance: updatedUnmatched
+          unmatchedExternalPlayers: updatedUnmatched
         };
       });
     }
 
     await loadPlayerConnections(); // Reload connection data for consistency
     setSuccessMessage('Player successfully matched to attendance data');
+  };
+
+  // Handle accept ghost player (add external player to roster)
+  const handleAcceptGhostPlayer = async (ghostPlayer) => {
+    let needsTeamRefresh = false;
+
+    try {
+      setAcceptingGhostPlayerId(ghostPlayer.externalPlayerId);
+      setError(null);
+
+      // Create and match player
+      await acceptGhostPlayer(ghostPlayer.externalPlayerId, team.id, addRosterPlayer);
+
+      // Reload roster and connections
+      await loadRoster();
+      await loadPlayerConnections();
+
+      // Show success message
+      setSuccessMessage(`${ghostPlayer.playerNameInProvider} added to roster`);
+    } catch (error) {
+      console.error('Error accepting ghost player:', error);
+      setError(error.message || 'Failed to add player to roster');
+      needsTeamRefresh = true;
+    } finally {
+      setAcceptingGhostPlayerId(null);
+
+      if (needsTeamRefresh) {
+        try {
+          await refreshTeamPlayers(team.id);
+        } catch (refreshError) {
+          console.error('Error refreshing team players after ghost accept failure:', refreshError);
+        }
+      }
+    }
   };
 
   // Handle add player
@@ -885,11 +965,21 @@ function RosterManagement({ team, onRefresh }) {
                     Add First Player
                   </Button>
                 </div>
+                {shouldShowOnboarding && (
+                  <div className="mt-4 px-4">
+                    <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />
+                  </div>
+                )}
               </>
             ) : (
               <>
-                <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No active players found.</p>
+                <Users className="w-8 h-8 mx-auto mb-2 text-sky-200 opacity-50" />
+                <p className="text-sm text-sky-200">No active players found.</p>
+                {shouldShowOnboarding && (
+                  <div className="mt-4 px-4">
+                    <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -914,6 +1004,55 @@ function RosterManagement({ team, onRefresh }) {
               </thead>
               <tbody className="divide-y divide-slate-600">
                 {filteredRoster.map((player) => {
+                  // Check if this is a ghost player (unmatched external player)
+                  if (player.isGhost) {
+                    return (
+                      <tr key={player.id} className="bg-slate-800/30 border-l-2 border-slate-600">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-slate-600">
+                              <Ghost className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-slate-400 italic">
+                                {player.display_name}
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                From {player.providerName}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-2 py-3 text-center">
+                          {/* No connection icon for ghost players */}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-slate-500 text-sm">-</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleAcceptGhostPlayer(player)}
+                            disabled={acceptingGhostPlayerId === player.externalPlayerId}
+                            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors flex items-center justify-end space-x-1 ml-auto"
+                          >
+                            {acceptingGhostPlayerId === player.externalPlayerId ? (
+                              <>
+                                <Loader className="w-4 h-4 animate-spin" />
+                                <span>Adding...</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="w-4 h-4" />
+                                <span>Accept</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  // Regular player row
                   // Build full name from first_name and last_name for display in roster
                   const fullName = player.last_name
                     ? `${player.first_name} ${player.last_name}`
@@ -967,11 +1106,6 @@ function RosterManagement({ team, onRefresh }) {
                                     <div className="pl-5 text-slate-300">
                                       Matched as: <span className="font-medium">{conn.playerNameInProvider}</span>
                                     </div>
-                                    {conn.lastSynced && (
-                                      <div className="pl-5 text-slate-400 text-xs">
-                                        Last synced: {new Date(conn.lastSynced).toLocaleDateString()}
-                                      </div>
-                                    )}
                                   </div>
                                 ))}
                               </>
@@ -981,7 +1115,7 @@ function RosterManagement({ team, onRefresh }) {
                                 <div className="text-slate-300">
                                   This player is not matched to any provider data yet.
                                 </div>
-                                {connectionDetails.unmatchedAttendance.length > 0 && (
+                                {connectionDetails.unmatchedExternalPlayers.length > 0 && (
                                   <button
                                     className="mt-2 w-full px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-medium transition-colors"
                                     onClick={(e) => {
@@ -1041,6 +1175,13 @@ function RosterManagement({ team, onRefresh }) {
         )}
       </div>
 
+      {/* Connector Onboarding - shown below table when 0-3 active players */}
+      {shouldShowOnboarding && filteredRoster.length > 0 && (
+        <div className="mt-4">
+          <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />
+        </div>
+      )}
+
       {/* Add Player Modal */}
       {showAddModal && (
         <AddRosterPlayerModal
@@ -1073,10 +1214,10 @@ function RosterManagement({ team, onRefresh }) {
       )}
 
       {/* Player Matching Modal */}
-      {matchingPlayer && connectionDetails.unmatchedAttendance.length > 0 && (
+      {matchingPlayer && connectionDetails.unmatchedExternalPlayers.length > 0 && (
         <PlayerMatchingModal
           rosterPlayer={matchingPlayer}
-          unmatchedAttendance={connectionDetails.unmatchedAttendance}
+          unmatchedExternalPlayers={connectionDetails.unmatchedExternalPlayers}
           onClose={() => setMatchingPlayer(null)}
           onMatched={handlePlayerMatched}
         />
