@@ -352,9 +352,10 @@ export async function getPlayerConnectorMappings(teamId) {
  * Get comprehensive connection details for all players in a team
  * Includes both matched and unmatched connected_player records
  * @param {string} teamId - Team UUID
+ * @param {boolean} includeFormerPlayers - If true, include dismissed ghost players (default: false)
  * @returns {Promise<Object>} Object with matched and unmatched connection details
  */
-export async function getPlayerConnectionDetails(teamId) {
+export async function getPlayerConnectionDetails(teamId, includeFormerPlayers = false) {
   if (!teamId) {
     throw new Error('Team ID is required');
   }
@@ -363,7 +364,7 @@ export async function getPlayerConnectionDetails(teamId) {
   const connectors = await getTeamConnectors(teamId);
 
   // Get all connected_player records with connector info
-  const { data: connectedPlayerData, error } = await supabase
+  let query = supabase
     .from('connected_player')
     .select(`
       id,
@@ -377,6 +378,13 @@ export async function getPlayerConnectionDetails(teamId) {
       )
     `)
     .eq('connector.team_id', teamId);
+
+  // Only filter out dismissed players when NOT showing former players
+  if (!includeFormerPlayers) {
+    query = query.eq('is_dismissed', false);
+  }
+
+  const { data: connectedPlayerData, error } = await query;
 
   if (error) {
     console.error('Error fetching player connection details:', error);
@@ -576,6 +584,57 @@ export async function acceptGhostPlayer(externalPlayerId, teamId, addRosterPlaye
   }
 
   return newPlayer;
+}
+
+/**
+ * Dismiss a ghost player
+ * Marks a connected_player record as dismissed so it won't appear in the UI
+ * @param {string} externalPlayerId - connected_player record UUID
+ * @returns {Promise<Object>} The updated connected_player object
+ */
+export async function dismissGhostPlayer(externalPlayerId) {
+  if (!externalPlayerId) {
+    throw new Error('External player ID is required');
+  }
+
+  // Get current user profile for audit trail
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) {
+    console.error('Error getting current user:', userError);
+  }
+
+  // Fetch corresponding user_profile.id (user_profile.id has FK to auth.users.id)
+  let dismissedBy = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('user_profile')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+    dismissedBy = profile?.id || null;
+  }
+
+  const { data, error } = await supabase
+    .from('connected_player')
+    .update({
+      is_dismissed: true,
+      dismissed_at: new Date().toISOString(),
+      dismissed_by: dismissedBy
+    })
+    .eq('id', externalPlayerId)
+    .is('player_id', null)
+    .select();
+
+  if (error) {
+    console.error('Error dismissing ghost player:', error);
+    throw new Error('Failed to dismiss player');
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Player has already been matched or dismissed');
+  }
+
+  return data[0];
 }
 
 /**

@@ -18,7 +18,8 @@ import {
   Link,
   Unlink,
   Ghost,
-  Loader
+  Loader,
+  X
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Tooltip } from '../shared';
@@ -36,7 +37,7 @@ import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
-import { getPlayerConnectionDetails, acceptGhostPlayer } from '../../services/connectorService';
+import { getPlayerConnectionDetails, acceptGhostPlayer, dismissGhostPlayer } from '../../services/connectorService';
 import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -649,6 +650,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
     hasConnectedProvider: false
   });
   const [acceptingGhostPlayerId, setAcceptingGhostPlayerId] = useState(null);
+  const [dismissingGhostPlayerId, setDismissingGhostPlayerId] = useState(null);
 
   // Load roster data
   const loadRoster = useCallback(async () => {
@@ -672,13 +674,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
     if (!team?.id) return;
 
     try {
-      const details = await getPlayerConnectionDetails(team.id);
+      const details = await getPlayerConnectionDetails(team.id, showInactive);
       setConnectionDetails(details);
     } catch (err) {
       console.error('Error loading player connections:', err);
       // Non-critical error - just log it, don't show to user
     }
-  }, [team?.id]);
+  }, [team?.id, showInactive]);
 
   // Load roster on component mount and team change
   useEffect(() => {
@@ -817,6 +819,29 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
           console.error('Error refreshing team players after ghost accept failure:', refreshError);
         }
       }
+    }
+  };
+
+  // Handle dismiss ghost player (mark as dismissed so it won't appear)
+  const handleDismissGhostPlayer = async (ghostPlayer) => {
+    try {
+      setDismissingGhostPlayerId(ghostPlayer.externalPlayerId);
+      setError(null);
+
+      // Dismiss the ghost player
+      await dismissGhostPlayer(ghostPlayer.externalPlayerId);
+
+      // Reload roster and connections to remove the dismissed player from the list
+      await loadRoster();
+      await loadPlayerConnections();
+
+      // Show success message
+      setSuccessMessage(`${ghostPlayer.playerNameInProvider} dismissed`);
+    } catch (error) {
+      console.error('Error dismissing ghost player:', error);
+      setError(error.message || 'Failed to dismiss player');
+    } finally {
+      setDismissingGhostPlayerId(null);
     }
   };
 
@@ -1030,23 +1055,42 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
                           <span className="text-slate-500 text-sm">-</span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => handleAcceptGhostPlayer(player)}
-                            disabled={acceptingGhostPlayerId === player.externalPlayerId}
-                            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors flex items-center justify-end space-x-1 ml-auto"
-                          >
-                            {acceptingGhostPlayerId === player.externalPlayerId ? (
-                              <>
-                                <Loader className="w-4 h-4 animate-spin" />
-                                <span>Adding...</span>
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus className="w-4 h-4" />
-                                <span>Accept</span>
-                              </>
-                            )}
-                          </button>
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleAcceptGhostPlayer(player)}
+                              disabled={acceptingGhostPlayerId === player.externalPlayerId || dismissingGhostPlayerId === player.externalPlayerId}
+                              className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors flex items-center space-x-1"
+                            >
+                              {acceptingGhostPlayerId === player.externalPlayerId ? (
+                                <>
+                                  <Loader className="w-4 h-4 animate-spin" />
+                                  <span>Adding...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <UserPlus className="w-4 h-4" />
+                                  <span>Accept</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDismissGhostPlayer(player)}
+                              disabled={acceptingGhostPlayerId === player.externalPlayerId || dismissingGhostPlayerId === player.externalPlayerId}
+                              className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors flex items-center space-x-1"
+                            >
+                              {dismissingGhostPlayerId === player.externalPlayerId ? (
+                                <>
+                                  <Loader className="w-4 h-4 animate-spin" />
+                                  <span>Dismissing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <X className="w-4 h-4" />
+                                  <span>Dismiss</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

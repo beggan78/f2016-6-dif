@@ -12,7 +12,8 @@ import {
   matchPlayerToConnectedPlayer,
   retryConnector,
   getPlayerConnectionDetails,
-  getAttendanceStats
+  getAttendanceStats,
+  dismissGhostPlayer
 } from '../connectorService';
 import { supabase } from '../../lib/supabase';
 
@@ -20,6 +21,9 @@ jest.mock('../../lib/supabase', () => ({
   supabase: {
     from: jest.fn(),
     rpc: jest.fn(),
+    auth: {
+      getUser: jest.fn()
+    },
     functions: {
       invoke: jest.fn()
     }
@@ -27,6 +31,14 @@ jest.mock('../../lib/supabase', () => ({
 }));
 
 const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+const buildUserProfileMock = (profileData, profileError = null) => {
+  const single = jest.fn().mockResolvedValue({ data: profileData, error: profileError });
+  const eq = jest.fn(() => ({ single }));
+  const select = jest.fn(() => ({ eq }));
+
+  return { select, eq, single };
+};
 
 describe('connectorService', () => {
   beforeEach(() => {
@@ -295,10 +307,11 @@ describe('connectorService', () => {
         }
       ];
 
-      const connectedPlayerEq = jest.fn().mockResolvedValue({
+      const connectedPlayerEqSecond = jest.fn().mockResolvedValue({
         data: connectedPlayerRecords,
         error: null
       });
+      const connectedPlayerEq = jest.fn(() => ({ eq: connectedPlayerEqSecond }));
       const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
       supabase.from.mockImplementation(table => {
@@ -351,10 +364,11 @@ describe('connectorService', () => {
         }
       ];
 
-      const connectedPlayerEq = jest.fn().mockResolvedValue({
+      const connectedPlayerEqSecond = jest.fn().mockResolvedValue({
         data: connectedPlayerRecords,
         error: null
       });
+      const connectedPlayerEq = jest.fn(() => ({ eq: connectedPlayerEqSecond }));
       const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
       supabase.from.mockImplementation(table => {
@@ -399,7 +413,8 @@ describe('connectorService', () => {
         const connectorEq = jest.fn(() => ({ order: connectorOrder }));
         const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
 
-        const connectedPlayerEq = jest.fn().mockResolvedValue({ data: [], error: null });
+        const connectedPlayerEqSecond = jest.fn().mockResolvedValue({ data: [], error: null });
+        const connectedPlayerEq = jest.fn(() => ({ eq: connectedPlayerEqSecond }));
         const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
         supabase.from.mockImplementation(table => {
@@ -473,6 +488,147 @@ describe('connectorService', () => {
 
         const result = await getPlayerConnectionDetails('team-1');
         expect(result.hasConnectedProvider).toBe(false);
+      });
+    });
+
+    describe('includeFormerPlayers parameter', () => {
+      const teamId = 'team-1';
+      const connector = {
+        id: 'conn-1',
+        provider: 'sportadmin',
+        status: 'connected',
+        team_id: teamId
+      };
+
+      const setupMockData = (connectedPlayerData, connectorData = [connector]) => {
+        const connectorOrder = jest.fn().mockResolvedValue({ data: connectorData, error: null });
+        const connectorEq = jest.fn(() => ({ order: connectorOrder }));
+        const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
+
+        // Create a mock that works for both one .eq() and two .eq() calls
+        const resolvedData = { data: connectedPlayerData, error: null };
+        const connectedPlayerEqSecond = jest.fn().mockResolvedValue(resolvedData);
+        // Make the first .eq() return an object that has both the resolved value AND another .eq()
+        const connectedPlayerEq = jest.fn(() =>
+          Object.assign(Promise.resolve(resolvedData), { eq: connectedPlayerEqSecond })
+        );
+        const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
+
+        supabase.from.mockImplementation(table => {
+          if (table === 'connector') {
+            return { select: connectorSelect };
+          }
+          if (table === 'connected_player') {
+            return { select: connectedPlayerSelect };
+          }
+          return { select: jest.fn() };
+        });
+      };
+
+      it('excludes dismissed ghost players by default', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'active-1',
+            player_id: null,
+            player_name: 'Active Ghost',
+            connector
+          },
+          {
+            id: 'dismissed-1',
+            player_id: null,
+            player_name: 'Dismissed Ghost',
+            connector
+          }
+        ];
+
+        // Filter to simulate the database query filtering out dismissed players
+        const filteredData = connectedPlayerData.filter((_, index) => index === 0);
+        setupMockData(filteredData);
+
+        const result = await getPlayerConnectionDetails(teamId);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(1);
+        expect(result.unmatchedExternalPlayers[0].externalPlayerId).toBe('active-1');
+        expect(
+          result.unmatchedExternalPlayers.find(p => p.externalPlayerId === 'dismissed-1')
+        ).toBeUndefined();
+      });
+
+      it('excludes dismissed ghost players when includeFormerPlayers is explicitly false', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'active-1',
+            player_id: null,
+            player_name: 'Active Ghost',
+            connector
+          }
+        ];
+
+        setupMockData(connectedPlayerData);
+
+        const result = await getPlayerConnectionDetails(teamId, false);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(1);
+        expect(result.unmatchedExternalPlayers[0].externalPlayerId).toBe('active-1');
+      });
+
+      it('includes dismissed ghost players when includeFormerPlayers is true', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'active-1',
+            player_id: null,
+            player_name: 'Active Ghost',
+            connector
+          },
+          {
+            id: 'dismissed-1',
+            player_id: null,
+            player_name: 'Dismissed Ghost',
+            connector
+          }
+        ];
+
+        // When includeFormerPlayers is true, return all players
+        setupMockData(connectedPlayerData);
+
+        const result = await getPlayerConnectionDetails(teamId, true);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(2);
+        expect(
+          result.unmatchedExternalPlayers.find(p => p.externalPlayerId === 'active-1')
+        ).toBeDefined();
+        expect(
+          result.unmatchedExternalPlayers.find(p => p.externalPlayerId === 'dismissed-1')
+        ).toBeDefined();
+      });
+
+      it('returns empty unmatchedExternalPlayers when all ghosts are dismissed and includeFormerPlayers is false', async () => {
+        // All players are dismissed, so query returns empty array
+        setupMockData([]);
+
+        const result = await getPlayerConnectionDetails(teamId);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(0);
+      });
+
+      it('does not include dismissed players that have been matched (player_id set)', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'matched-dismissed-1',
+            player_id: 'player-123',
+            player_name: 'Matched Then Dismissed',
+            connector
+          }
+        ];
+
+        setupMockData(connectedPlayerData);
+
+        const result = await getPlayerConnectionDetails(teamId, true);
+
+        // Matched players should not appear in unmatchedExternalPlayers
+        expect(result.unmatchedExternalPlayers).toHaveLength(0);
+        // They should appear in matchedConnections instead
+        expect(result.matchedConnections.has('player-123')).toBe(true);
       });
     });
   });
@@ -1001,6 +1157,224 @@ describe('connectorService', () => {
       setupSupabase({ matchStatsData: null, matchStatsError: { message: 'match error' } });
 
       await expect(getAttendanceStats(teamId)).rejects.toThrow('Failed to load match statistics');
+    });
+  });
+
+  describe('dismissGhostPlayer', () => {
+    // Phase 1: Critical Tests
+    describe('parameter validation', () => {
+      it('throws when externalPlayerId is null', async () => {
+        await expect(dismissGhostPlayer(null)).rejects.toThrow('External player ID is required');
+      });
+
+      it('throws when externalPlayerId is undefined', async () => {
+        await expect(dismissGhostPlayer(undefined)).rejects.toThrow('External player ID is required');
+      });
+
+      it('throws when externalPlayerId is empty string', async () => {
+        await expect(dismissGhostPlayer('')).rejects.toThrow('External player ID is required');
+      });
+    });
+
+    describe('success scenarios', () => {
+      it('dismisses ghost player with authenticated user audit trail', async () => {
+        const mockUser = { id: 'user-123', email: 'test@example.com' };
+        supabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
+
+        const dismissedPlayer = {
+          id: 'connected-player-1',
+          player_id: null,
+          is_dismissed: true,
+          dismissed_at: '2025-12-25T10:30:00.000Z',
+          dismissed_by: 'user-123'
+        };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
+
+        const result = await dismissGhostPlayer('connected-player-1');
+
+        expect(supabase.auth.getUser).toHaveBeenCalled();
+        expect(supabase.from).toHaveBeenCalledWith('connected_player');
+        expect(mockUpdate).toHaveBeenCalledWith({
+          is_dismissed: true,
+          dismissed_at: expect.any(String),
+          dismissed_by: 'user-123'
+        });
+        expect(mockEq).toHaveBeenCalledWith('id', 'connected-player-1');
+        expect(mockIs).toHaveBeenCalledWith('player_id', null);
+        expect(mockSelect).toHaveBeenCalled();
+        expect(result).toEqual(dismissedPlayer);
+      });
+
+      it('dismisses ghost player without auth user (sets dismissed_by to null)', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+        const dismissedPlayer = {
+          id: 'connected-player-1',
+          player_id: null,
+          is_dismissed: true,
+          dismissed_at: '2025-12-25T10:30:00.000Z',
+          dismissed_by: null
+        };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        const result = await dismissGhostPlayer('connected-player-1');
+
+        expect(mockUpdate).toHaveBeenCalledWith({
+          is_dismissed: true,
+          dismissed_at: expect.any(String),
+          dismissed_by: null
+        });
+        expect(result.dismissed_by).toBeNull();
+      });
+    });
+
+    // Phase 2: Error Handling
+    describe('error handling', () => {
+      it('continues dismissal even when auth.getUser fails', async () => {
+        supabase.auth.getUser.mockResolvedValue({
+          data: { user: null },
+          error: { message: 'Auth error' }
+        });
+
+        const dismissedPlayer = { id: 'connected-player-1', is_dismissed: true, dismissed_by: null };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        const result = await dismissGhostPlayer('connected-player-1');
+
+        expect(mockConsoleError).toHaveBeenCalledWith('Error getting current user:', { message: 'Auth error' });
+        expect(result).toEqual(dismissedPlayer);
+      });
+
+      it('throws when database update fails', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const dbError = { message: 'Database error', code: 'PGRST116' };
+        const mockSelect = jest.fn().mockResolvedValue({ data: null, error: dbError });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
+
+        await expect(dismissGhostPlayer('connected-player-1')).rejects.toThrow('Failed to dismiss player');
+        expect(mockConsoleError).toHaveBeenCalledWith('Error dismissing ghost player:', dbError);
+      });
+
+      it('throws when player has already been matched or dismissed (empty result)', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
+
+        await expect(dismissGhostPlayer('connected-player-1')).rejects.toThrow(
+          'Player has already been matched or dismissed'
+        );
+      });
+    });
+
+    // Phase 3: Edge Cases
+    describe('edge cases', () => {
+      it('sets dismissed_at to valid ISO timestamp', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const dismissedPlayer = {
+          id: 'connected-player-1',
+          dismissed_at: '2025-12-25T10:30:00.000Z'
+        };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
+
+        await dismissGhostPlayer('connected-player-1');
+
+        const updateCall = mockUpdate.mock.calls[0][0];
+        expect(updateCall.dismissed_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        expect(new Date(updateCall.dismissed_at).toISOString()).toBe(updateCall.dismissed_at);
+      });
+
+      it('logs errors to console.error appropriately', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const dbError = { message: 'Connection lost', code: 'ECONNREFUSED' };
+        const mockSelect = jest.fn().mockResolvedValue({ data: null, error: dbError });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
+
+        try {
+          await dismissGhostPlayer('connected-player-1');
+        } catch (error) {
+          // Expected to throw
+        }
+
+        expect(mockConsoleError).toHaveBeenCalledWith('Error dismissing ghost player:', dbError);
+      });
     });
   });
 });
