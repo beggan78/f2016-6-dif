@@ -57,12 +57,14 @@ export function ConnectorsSection({ team }) {
     }
   }, [connectors, getLatestSyncJob]);
 
-  // Clear success message after 5 seconds
+  // Clear success message after timeout (10s for verification, 5s for others)
   useEffect(() => {
     if (successMessage) {
+      // Use longer timeout for verification messages
+      const timeout = successMessage.includes('Verification in progress') ? 10000 : 5000;
       const timer = setTimeout(() => {
         setSuccessMessage('');
-      }, 5000);
+      }, timeout);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
@@ -91,7 +93,7 @@ export function ConnectorsSection({ team }) {
     try {
       await connectProvider(CONNECTOR_PROVIDERS.SPORTADMIN.id, credentials);
       setShowConnectModal(false);
-      setSuccessMessage('SportAdmin connected successfully! Verification in progress...');
+      setSuccessMessage('SportAdmin connected successfully! Verification in progress (takes up to 2 minutes)...');
 
       // Trigger immediate scraper run for verification (non-blocking)
       triggerScraperWorkflow(team.id).then(response => {
