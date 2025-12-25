@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { isValidIpAddress } from '../_shared/ipValidation.ts'
 import { Redis } from 'https://esm.sh/@upstash/redis@1.28.4'
 import { Ratelimit } from 'https://esm.sh/@upstash/ratelimit@1.0.1'
 
@@ -18,20 +19,12 @@ const RATE_LIMIT_MAX_REQUESTS = 5
 
 // Extract client IP from request headers
 function extractClientIP(req: Request): string {
-  const headers = [
-    'x-forwarded-for',
-    'x-real-ip',
-    'cf-connecting-ip',
-    'x-client-ip',
-  ]
-
-  for (const header of headers) {
-    const value = req.headers.get(header)
-    if (value) {
-      const ip = value.split(',')[0].trim()
-      if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip) || /^[0-9a-fA-F:]+$/.test(ip)) {
-        return ip
-      }
+  // Trust only the platform-provided client IP to avoid spoofed proxy headers.
+  const value = req.headers.get('x-real-ip')
+  if (value) {
+    const ip = value.split(',')[0].trim()
+    if (isValidIpAddress(ip)) {
+      return ip
     }
   }
   return 'unknown'
@@ -100,6 +93,9 @@ async function checkRateLimit(
   }
 }
 
+// Initialize once at startup to reuse the Redis connection across requests.
+const ratelimit = createRateLimiter()
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -108,8 +104,6 @@ Deno.serve(async (req) => {
 
   // Rate limiting check (before any processing)
   const clientIP = extractClientIP(req)
-  const ratelimit = createRateLimiter()
-
   const rateLimitResult = await checkRateLimit(ratelimit, `ip:${clientIP}`)
 
   if (!rateLimitResult.allowed) {
