@@ -33,6 +33,7 @@ export function ConnectorsSection({ team }) {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [selectedConnector, setSelectedConnector] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
   const [syncJobs, setSyncJobs] = useState({});
 
   // Load latest sync jobs for each connector
@@ -69,6 +70,15 @@ export function ConnectorsSection({ team }) {
     }
   }, [successMessage]);
 
+  useEffect(() => {
+    if (noticeMessage) {
+      const timer = setTimeout(() => {
+        setNoticeMessage('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [noticeMessage]);
+
   // Only show to team admins
   if (!isTeamAdmin) {
     return null;
@@ -101,9 +111,11 @@ export function ConnectorsSection({ team }) {
           console.log('Scraper workflow triggered for verification');
         } else {
           console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
+          setNoticeMessage('Immediate sync failed, will run on schedule.');
         }
       }).catch(err => {
         console.warn('Error triggering scraper workflow:', err);
+        setNoticeMessage('Immediate sync failed, will run on schedule.');
       });
     } catch (err) {
       // Error will be shown in modal
@@ -123,9 +135,11 @@ export function ConnectorsSection({ team }) {
           console.log('Scraper workflow triggered for manual sync');
         } else {
           console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
+          setNoticeMessage('Immediate sync failed, will run on schedule.');
         }
       }).catch(err => {
         console.warn('Error triggering scraper workflow:', err);
+        setNoticeMessage('Immediate sync failed, will run on schedule.');
       });
     } catch (err) {
       // Error handled by hook
@@ -188,6 +202,13 @@ export function ConnectorsSection({ team }) {
       {successMessage && (
         <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
           <p className="text-emerald-200 text-sm">{successMessage}</p>
+        </div>
+      )}
+
+      {/* Notice Message */}
+      {noticeMessage && (
+        <div className="bg-amber-900/40 border border-amber-500 rounded-lg p-3">
+          <p className="text-amber-100 text-sm">{noticeMessage}</p>
         </div>
       )}
 
