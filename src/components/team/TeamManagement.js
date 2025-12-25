@@ -674,13 +674,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
     if (!team?.id) return;
 
     try {
-      const details = await getPlayerConnectionDetails(team.id);
+      const details = await getPlayerConnectionDetails(team.id, showInactive);
       setConnectionDetails(details);
     } catch (err) {
       console.error('Error loading player connections:', err);
       // Non-critical error - just log it, don't show to user
     }
-  }, [team?.id]);
+  }, [team?.id, showInactive]);
 
   // Load roster on component mount and team change
   useEffect(() => {

@@ -352,9 +352,10 @@ export async function getPlayerConnectorMappings(teamId) {
  * Get comprehensive connection details for all players in a team
  * Includes both matched and unmatched connected_player records
  * @param {string} teamId - Team UUID
+ * @param {boolean} includeFormerPlayers - If true, include dismissed ghost players (default: false)
  * @returns {Promise<Object>} Object with matched and unmatched connection details
  */
-export async function getPlayerConnectionDetails(teamId) {
+export async function getPlayerConnectionDetails(teamId, includeFormerPlayers = false) {
   if (!teamId) {
     throw new Error('Team ID is required');
   }
@@ -363,8 +364,7 @@ export async function getPlayerConnectionDetails(teamId) {
   const connectors = await getTeamConnectors(teamId);
 
   // Get all connected_player records with connector info
-  // Filter out dismissed players
-  const { data: connectedPlayerData, error } = await supabase
+  let query = supabase
     .from('connected_player')
     .select(`
       id,
@@ -377,8 +377,14 @@ export async function getPlayerConnectionDetails(teamId) {
         team_id
       )
     `)
-    .eq('connector.team_id', teamId)
-    .eq('is_dismissed', false);
+    .eq('connector.team_id', teamId);
+
+  // Only filter out dismissed players when NOT showing former players
+  if (!includeFormerPlayers) {
+    query = query.eq('is_dismissed', false);
+  }
+
+  const { data: connectedPlayerData, error } = await query;
 
   if (error) {
     console.error('Error fetching player connection details:', error);

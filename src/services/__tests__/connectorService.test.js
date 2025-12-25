@@ -482,6 +482,147 @@ describe('connectorService', () => {
         expect(result.hasConnectedProvider).toBe(false);
       });
     });
+
+    describe('includeFormerPlayers parameter', () => {
+      const teamId = 'team-1';
+      const connector = {
+        id: 'conn-1',
+        provider: 'sportadmin',
+        status: 'connected',
+        team_id: teamId
+      };
+
+      const setupMockData = (connectedPlayerData, connectorData = [connector]) => {
+        const connectorOrder = jest.fn().mockResolvedValue({ data: connectorData, error: null });
+        const connectorEq = jest.fn(() => ({ order: connectorOrder }));
+        const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
+
+        // Create a mock that works for both one .eq() and two .eq() calls
+        const resolvedData = { data: connectedPlayerData, error: null };
+        const connectedPlayerEqSecond = jest.fn().mockResolvedValue(resolvedData);
+        // Make the first .eq() return an object that has both the resolved value AND another .eq()
+        const connectedPlayerEq = jest.fn(() =>
+          Object.assign(Promise.resolve(resolvedData), { eq: connectedPlayerEqSecond })
+        );
+        const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
+
+        supabase.from.mockImplementation(table => {
+          if (table === 'connector') {
+            return { select: connectorSelect };
+          }
+          if (table === 'connected_player') {
+            return { select: connectedPlayerSelect };
+          }
+          return { select: jest.fn() };
+        });
+      };
+
+      it('excludes dismissed ghost players by default', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'active-1',
+            player_id: null,
+            player_name: 'Active Ghost',
+            connector
+          },
+          {
+            id: 'dismissed-1',
+            player_id: null,
+            player_name: 'Dismissed Ghost',
+            connector
+          }
+        ];
+
+        // Filter to simulate the database query filtering out dismissed players
+        const filteredData = connectedPlayerData.filter((_, index) => index === 0);
+        setupMockData(filteredData);
+
+        const result = await getPlayerConnectionDetails(teamId);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(1);
+        expect(result.unmatchedExternalPlayers[0].externalPlayerId).toBe('active-1');
+        expect(
+          result.unmatchedExternalPlayers.find(p => p.externalPlayerId === 'dismissed-1')
+        ).toBeUndefined();
+      });
+
+      it('excludes dismissed ghost players when includeFormerPlayers is explicitly false', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'active-1',
+            player_id: null,
+            player_name: 'Active Ghost',
+            connector
+          }
+        ];
+
+        setupMockData(connectedPlayerData);
+
+        const result = await getPlayerConnectionDetails(teamId, false);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(1);
+        expect(result.unmatchedExternalPlayers[0].externalPlayerId).toBe('active-1');
+      });
+
+      it('includes dismissed ghost players when includeFormerPlayers is true', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'active-1',
+            player_id: null,
+            player_name: 'Active Ghost',
+            connector
+          },
+          {
+            id: 'dismissed-1',
+            player_id: null,
+            player_name: 'Dismissed Ghost',
+            connector
+          }
+        ];
+
+        // When includeFormerPlayers is true, return all players
+        setupMockData(connectedPlayerData);
+
+        const result = await getPlayerConnectionDetails(teamId, true);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(2);
+        expect(
+          result.unmatchedExternalPlayers.find(p => p.externalPlayerId === 'active-1')
+        ).toBeDefined();
+        expect(
+          result.unmatchedExternalPlayers.find(p => p.externalPlayerId === 'dismissed-1')
+        ).toBeDefined();
+      });
+
+      it('returns empty unmatchedExternalPlayers when all ghosts are dismissed and includeFormerPlayers is false', async () => {
+        // All players are dismissed, so query returns empty array
+        setupMockData([]);
+
+        const result = await getPlayerConnectionDetails(teamId);
+
+        expect(result.unmatchedExternalPlayers).toHaveLength(0);
+      });
+
+      it('does not include dismissed players that have been matched (player_id set)', async () => {
+        const connectedPlayerData = [
+          {
+            id: 'matched-dismissed-1',
+            player_id: 'player-123',
+            player_name: 'Matched Then Dismissed',
+            connector
+          }
+        ];
+
+        setupMockData(connectedPlayerData);
+
+        const result = await getPlayerConnectionDetails(teamId, true);
+
+        // Matched players should not appear in unmatchedExternalPlayers
+        expect(result.unmatchedExternalPlayers).toHaveLength(0);
+        // They should appear in matchedConnections instead
+        expect(result.matchedConnections.has('player-123')).toBe(true);
+      });
+    });
   });
 
   describe('getRecentSyncJobs', () => {
