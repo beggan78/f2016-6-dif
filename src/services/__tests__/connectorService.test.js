@@ -299,10 +299,11 @@ describe('connectorService', () => {
         }
       ];
 
-      const connectedPlayerEq = jest.fn().mockResolvedValue({
+      const connectedPlayerEqSecond = jest.fn().mockResolvedValue({
         data: connectedPlayerRecords,
         error: null
       });
+      const connectedPlayerEq = jest.fn(() => ({ eq: connectedPlayerEqSecond }));
       const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
       supabase.from.mockImplementation(table => {
@@ -355,10 +356,11 @@ describe('connectorService', () => {
         }
       ];
 
-      const connectedPlayerEq = jest.fn().mockResolvedValue({
+      const connectedPlayerEqSecond = jest.fn().mockResolvedValue({
         data: connectedPlayerRecords,
         error: null
       });
+      const connectedPlayerEq = jest.fn(() => ({ eq: connectedPlayerEqSecond }));
       const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
       supabase.from.mockImplementation(table => {
@@ -403,7 +405,8 @@ describe('connectorService', () => {
         const connectorEq = jest.fn(() => ({ order: connectorOrder }));
         const connectorSelect = jest.fn(() => ({ eq: connectorEq }));
 
-        const connectedPlayerEq = jest.fn().mockResolvedValue({ data: [], error: null });
+        const connectedPlayerEqSecond = jest.fn().mockResolvedValue({ data: [], error: null });
+        const connectedPlayerEq = jest.fn(() => ({ eq: connectedPlayerEqSecond }));
         const connectedPlayerSelect = jest.fn(() => ({ eq: connectedPlayerEq }));
 
         supabase.from.mockImplementation(table => {
