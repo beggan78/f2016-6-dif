@@ -1,6 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { isValidIpAddress } from '../_shared/ipValidation.ts'
+import { extractClientIP } from '../_shared/ipExtraction.ts'
 import { Redis } from 'https://esm.sh/@upstash/redis@1.28.4'
 import { Ratelimit } from 'https://esm.sh/@upstash/ratelimit@1.0.1'
 
@@ -16,19 +16,6 @@ const MATCH_LOG_EVENT_COLUMNS =
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 60 seconds
 const RATE_LIMIT_MAX_REQUESTS = 5
-
-// Extract client IP from request headers
-function extractClientIP(req: Request): string {
-  // Trust only the platform-provided client IP to avoid spoofed proxy headers.
-  const value = req.headers.get('x-real-ip')
-  if (value) {
-    const ip = value.split(',')[0].trim()
-    if (isValidIpAddress(ip)) {
-      return ip
-    }
-  }
-  return 'unknown'
-}
 
 // Initialize Upstash Redis rate limiter
 function createRateLimiter(): Ratelimit | null {

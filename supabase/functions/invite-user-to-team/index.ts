@@ -1,6 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { isValidIpAddress } from '../_shared/ipValidation.ts'
+import { extractClientIP } from '../_shared/ipExtraction.ts'
 
 // **SECURITY**: Enhanced security headers to prevent common attacks combined with CORS
 const combinedHeaders = {
@@ -117,31 +117,6 @@ function checkRateLimit(identifier: string, config: RateLimitConfig): { allowed:
 
   rateLimitStore.set(key, entry);
   return { allowed: true };
-}
-
-// **SECURITY**: Enhanced IP extraction with validation
-function extractClientIP(req: Request): string {
-  const headers = [
-    'x-forwarded-for',
-    'x-real-ip',
-    'cf-connecting-ip',
-    'x-client-ip',
-    'x-cluster-client-ip'
-  ];
-
-  for (const header of headers) {
-    const value = req.headers.get(header);
-    if (value) {
-      // Handle comma-separated IPs (take first one)
-      const ip = value.split(',')[0].trim();
-      // Basic IP validation
-      if (isValidIpAddress(ip)) {
-        return ip;
-      }
-    }
-  }
-
-  return 'unknown';
 }
 
 // **SECURITY**: Advanced bot detection with scoring
