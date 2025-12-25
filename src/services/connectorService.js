@@ -597,10 +597,21 @@ export async function dismissGhostPlayer(externalPlayerId) {
     throw new Error('External player ID is required');
   }
 
-  // Get current user for audit trail
+  // Get current user profile for audit trail
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) {
     console.error('Error getting current user:', userError);
+  }
+
+  // Fetch corresponding user_profile.id (user_profile.id has FK to auth.users.id)
+  let dismissedBy = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('user_profile')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+    dismissedBy = profile?.id || null;
   }
 
   const { data, error } = await supabase
@@ -608,7 +619,7 @@ export async function dismissGhostPlayer(externalPlayerId) {
     .update({
       is_dismissed: true,
       dismissed_at: new Date().toISOString(),
-      dismissed_by: user?.id || null
+      dismissed_by: dismissedBy
     })
     .eq('id', externalPlayerId)
     .is('player_id', null)

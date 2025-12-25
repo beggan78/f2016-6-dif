@@ -6,7 +6,7 @@
 ALTER TABLE public.connected_player
   ADD COLUMN is_dismissed boolean NOT NULL DEFAULT false,
   ADD COLUMN dismissed_at timestamptz,
-  ADD COLUMN dismissed_by uuid REFERENCES auth.users(id);
+  ADD COLUMN dismissed_by uuid REFERENCES public.user_profile(id);
 
 -- Create index for efficient filtering of non-dismissed players
 CREATE INDEX idx_connected_player_not_dismissed
@@ -19,4 +19,4 @@ COMMENT ON COLUMN public.connected_player.is_dismissed IS
 COMMENT ON COLUMN public.connected_player.dismissed_at IS
   'Timestamp when the player was dismissed';
 COMMENT ON COLUMN public.connected_player.dismissed_by IS
-  'User ID who dismissed the player (references auth.users for audit trail)';
+  'User profile ID who dismissed the player (references user_profile for business logic)';
