@@ -32,6 +32,14 @@ jest.mock('../../lib/supabase', () => ({
 
 const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
 
+const buildUserProfileMock = (profileData, profileError = null) => {
+  const single = jest.fn().mockResolvedValue({ data: profileData, error: profileError });
+  const eq = jest.fn(() => ({ single }));
+  const select = jest.fn(() => ({ eq }));
+
+  return { select, eq, single };
+};
+
 describe('connectorService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -1185,7 +1193,16 @@ describe('connectorService', () => {
         const mockIs = jest.fn(() => ({ select: mockSelect }));
         const mockEq = jest.fn(() => ({ is: mockIs }));
         const mockUpdate = jest.fn(() => ({ eq: mockEq }));
-        supabase.from.mockReturnValue({ update: mockUpdate });
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
 
         const result = await dismissGhostPlayer('connected-player-1');
 
@@ -1260,7 +1277,16 @@ describe('connectorService', () => {
         const mockIs = jest.fn(() => ({ select: mockSelect }));
         const mockEq = jest.fn(() => ({ is: mockIs }));
         const mockUpdate = jest.fn(() => ({ eq: mockEq }));
-        supabase.from.mockReturnValue({ update: mockUpdate });
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
 
         await expect(dismissGhostPlayer('connected-player-1')).rejects.toThrow('Failed to dismiss player');
         expect(mockConsoleError).toHaveBeenCalledWith('Error dismissing ghost player:', dbError);
@@ -1273,7 +1299,16 @@ describe('connectorService', () => {
         const mockIs = jest.fn(() => ({ select: mockSelect }));
         const mockEq = jest.fn(() => ({ is: mockIs }));
         const mockUpdate = jest.fn(() => ({ eq: mockEq }));
-        supabase.from.mockReturnValue({ update: mockUpdate });
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
 
         await expect(dismissGhostPlayer('connected-player-1')).rejects.toThrow(
           'Player has already been matched or dismissed'
@@ -1295,7 +1330,16 @@ describe('connectorService', () => {
         const mockIs = jest.fn(() => ({ select: mockSelect }));
         const mockEq = jest.fn(() => ({ is: mockIs }));
         const mockUpdate = jest.fn(() => ({ eq: mockEq }));
-        supabase.from.mockReturnValue({ update: mockUpdate });
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
 
         await dismissGhostPlayer('connected-player-1');
 
@@ -1312,7 +1356,16 @@ describe('connectorService', () => {
         const mockIs = jest.fn(() => ({ select: mockSelect }));
         const mockEq = jest.fn(() => ({ is: mockIs }));
         const mockUpdate = jest.fn(() => ({ eq: mockEq }));
-        supabase.from.mockReturnValue({ update: mockUpdate });
+        const profileMock = buildUserProfileMock({ id: 'user-123' });
+        supabase.from.mockImplementation((table) => {
+          if (table === 'user_profile') {
+            return { select: profileMock.select };
+          }
+          if (table === 'connected_player') {
+            return { update: mockUpdate };
+          }
+          return {};
+        });
 
         try {
           await dismissGhostPlayer('connected-player-1');
