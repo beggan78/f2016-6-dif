@@ -163,6 +163,43 @@ export async function triggerManualSync(connectorId) {
 }
 
 /**
+ * Triggers the sportadmin-scraper GitHub Actions workflow for a specific team.
+ * This runs the scraper immediately instead of waiting for the scheduled run.
+ * Non-critical operation - scraper will run on schedule anyway if this fails.
+ *
+ * @param {string} teamId - Team UUID
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export async function triggerScraperWorkflow(teamId) {
+  if (!teamId) {
+    throw new Error('Team ID is required');
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('trigger-scraper-workflow', {
+      body: { team_id: teamId }
+    });
+
+    if (error) {
+      console.error('Failed to trigger scraper workflow:', error);
+      // Non-critical error - scraper will run on schedule anyway
+      return { success: false, message: error.message || 'Failed to trigger workflow' };
+    }
+
+    if (!data || data.error) {
+      console.error('Scraper workflow trigger returned error:', data?.error);
+      return { success: false, message: data?.error || 'Failed to trigger workflow' };
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error triggering scraper workflow:', error);
+    // Non-critical error - don't throw, just return failure
+    return { success: false, message: 'Failed to trigger workflow' };
+  }
+}
+
+/**
  * Get recent sync jobs for a connector
  * @param {string} connectorId - Connector UUID
  * @param {number} limit - Maximum number of jobs to return (default: 10)

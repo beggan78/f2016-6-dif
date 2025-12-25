@@ -8,6 +8,7 @@ import { ComingSoonBadge } from '../shared/ComingSoonBadge';
 import { useTeamConnector } from '../../hooks/useTeamConnector';
 import { useTeam } from '../../contexts/TeamContext';
 import { ProviderLogo } from './ProviderLogo';
+import { triggerScraperWorkflow } from '../../services/connectorService';
 import {
   getAllProviders,
   CONNECTOR_PROVIDERS
@@ -91,6 +92,17 @@ export function ConnectorsSection({ team }) {
       await connectProvider(CONNECTOR_PROVIDERS.SPORTADMIN.id, credentials);
       setShowConnectModal(false);
       setSuccessMessage('SportAdmin connected successfully! Verification in progress...');
+
+      // Trigger immediate scraper run for verification (non-blocking)
+      triggerScraperWorkflow(team.id).then(response => {
+        if (response.success) {
+          console.log('Scraper workflow triggered for verification');
+        } else {
+          console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
+        }
+      }).catch(err => {
+        console.warn('Error triggering scraper workflow:', err);
+      });
     } catch (err) {
       // Error will be shown in modal
       throw err;
@@ -102,6 +114,17 @@ export function ConnectorsSection({ team }) {
     try {
       await manualSync(connectorId);
       setSuccessMessage('Sync started successfully!');
+
+      // Trigger immediate scraper run (non-blocking)
+      triggerScraperWorkflow(team.id).then(response => {
+        if (response.success) {
+          console.log('Scraper workflow triggered for manual sync');
+        } else {
+          console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
+        }
+      }).catch(err => {
+        console.warn('Error triggering scraper workflow:', err);
+      });
     } catch (err) {
       // Error handled by hook
       console.error('Manual sync error:', err);
