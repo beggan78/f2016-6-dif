@@ -132,8 +132,12 @@ jest.mock('../../connectors/ConnectorsSection', () => ({
 
 // Mock services
 const mockGetPlayerConnectionDetails = jest.fn();
+const mockAcceptGhostPlayer = jest.fn();
+const mockDismissGhostPlayer = jest.fn();
 jest.mock('../../../services/connectorService', () => ({
-  getPlayerConnectionDetails: (...args) => mockGetPlayerConnectionDetails(...args)
+  getPlayerConnectionDetails: (...args) => mockGetPlayerConnectionDetails(...args),
+  acceptGhostPlayer: (...args) => mockAcceptGhostPlayer(...args),
+  dismissGhostPlayer: (...args) => mockDismissGhostPlayer(...args)
 }));
 
 jest.mock('../../../utils/persistenceManager', () => ({
@@ -1165,6 +1169,280 @@ describe('TeamManagement', () => {
       });
 
       expect(screen.getByText(/Team Preferences/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Ghost Player Dismiss Functionality', () => {
+    beforeEach(() => {
+      // Set up ghost player data
+      mockGetPlayerConnectionDetails.mockResolvedValue({
+        matchedConnections: new Map(),
+        unmatchedExternalPlayers: [
+          {
+            externalPlayerId: 'ghost-1',
+            providerName: 'SportAdmin',
+            playerNameInProvider: 'Ghost Player',
+            connectorStatus: 'connected',
+            connectorId: 'connector-1'
+          }
+        ],
+        hasConnectedProvider: true
+      });
+
+      mockDismissGhostPlayer.mockResolvedValue({
+        id: 'ghost-1',
+        is_dismissed: true,
+        dismissed_at: '2025-12-25T10:30:00.000Z',
+        dismissed_by: 'user-1'
+      });
+    });
+
+    // Phase 1: Critical Tests
+    it('renders dismiss button next to accept button for ghost players', async () => {
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const acceptButton = screen.getByRole('button', { name: /Accept/i });
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+
+      expect(acceptButton).toBeInTheDocument();
+      expect(dismissButton).toBeInTheDocument();
+    });
+
+    it('calls dismissGhostPlayer service when dismiss button is clicked', async () => {
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+      await userEvent.click(dismissButton);
+
+      await waitFor(() => {
+        expect(mockDismissGhostPlayer).toHaveBeenCalledWith('ghost-1');
+      });
+    });
+
+    it('shows loading state during dismiss operation', async () => {
+      let resolveDismiss;
+      mockDismissGhostPlayer.mockReturnValue(
+        new Promise(resolve => { resolveDismiss = resolve; })
+      );
+
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+      await userEvent.click(dismissButton);
+
+      // Check loading state
+      await waitFor(() => {
+        expect(screen.getByText('Dismissing...')).toBeInTheDocument();
+      });
+
+      // Both buttons should be disabled during operation
+      expect(screen.getByRole('button', { name: /Accept/i })).toBeDisabled();
+      expect(dismissButton).toBeDisabled();
+
+      // Resolve
+      resolveDismiss({ id: 'ghost-1', is_dismissed: true });
+    });
+
+    it('displays success message after dismissing ghost player', async () => {
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+      await userEvent.click(dismissButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Ghost Player dismissed/i)).toBeInTheDocument();
+      });
+    });
+
+    it('refreshes roster and connections after successful dismiss', async () => {
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const initialGetRosterCalls = mockTeamContext.getTeamRoster.mock.calls.length;
+      const initialConnectionCalls = mockGetPlayerConnectionDetails.mock.calls.length;
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+      await userEvent.click(dismissButton);
+
+      await waitFor(() => {
+        expect(mockTeamContext.getTeamRoster.mock.calls.length).toBe(initialGetRosterCalls + 1);
+        expect(mockGetPlayerConnectionDetails.mock.calls.length).toBe(initialConnectionCalls + 1);
+      });
+    });
+
+    // Phase 2: Error Handling
+    it('displays error message when dismiss service fails', async () => {
+      mockDismissGhostPlayer.mockRejectedValue(new Error('Database connection lost'));
+
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+      await userEvent.click(dismissButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Database connection lost/i)).toBeInTheDocument();
+      });
+    });
+
+    it('displays error when attempting to dismiss already matched player', async () => {
+      mockDismissGhostPlayer.mockRejectedValue(
+        new Error('Player has already been matched or dismissed')
+      );
+
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+      await userEvent.click(dismissButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/already been matched or dismissed/i)).toBeInTheDocument();
+      });
+    });
+
+    // Phase 3: Edge Cases
+    it('disables dismiss button while accept operation is in progress', async () => {
+      let resolveAccept;
+      mockAcceptGhostPlayer.mockImplementation(() =>
+        new Promise(resolve => { resolveAccept = resolve; })
+      );
+
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const acceptButton = screen.getByRole('button', { name: /Accept/i });
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+
+      // Start accept operation
+      await userEvent.click(acceptButton);
+
+      await waitFor(() => {
+        expect(dismissButton).toBeDisabled();
+      });
+
+      resolveAccept({ id: 'player-new', display_name: 'Ghost Player' });
+    });
+
+    it('prevents multiple dismiss operations on same player simultaneously', async () => {
+      let resolveDismiss;
+      mockDismissGhostPlayer.mockImplementation(() =>
+        new Promise(resolve => { resolveDismiss = resolve; })
+      );
+
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+
+      // Click multiple times rapidly
+      await userEvent.click(dismissButton);
+      await userEvent.click(dismissButton);
+      await userEvent.click(dismissButton);
+
+      // Service should only be called once
+      await waitFor(() => {
+        expect(mockDismissGhostPlayer).toHaveBeenCalledTimes(1);
+      });
+
+      resolveDismiss({ id: 'ghost-1', is_dismissed: true });
+    });
+
+    it('removes dismissed ghost player from UI after successful dismiss', async () => {
+      // Initial state with ghost player
+      mockGetPlayerConnectionDetails.mockResolvedValueOnce({
+        matchedConnections: new Map(),
+        unmatchedExternalPlayers: [
+          {
+            externalPlayerId: 'ghost-1',
+            playerNameInProvider: 'Ghost Player',
+            providerName: 'SportAdmin',
+            connectorStatus: 'connected'
+          }
+        ],
+        hasConnectedProvider: true
+      });
+
+      render(<TeamManagement {...defaultProps} />);
+
+      const rosterTab = screen.getByRole('button', { name: /Roster/i });
+      await userEvent.click(rosterTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ghost Player')).toBeInTheDocument();
+      });
+
+      // After dismiss, return empty list
+      mockGetPlayerConnectionDetails.mockResolvedValueOnce({
+        matchedConnections: new Map(),
+        unmatchedExternalPlayers: [],
+        hasConnectedProvider: true
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+      await userEvent.click(dismissButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Ghost Player')).not.toBeInTheDocument();
+      });
     });
   });
 

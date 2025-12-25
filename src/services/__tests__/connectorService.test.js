@@ -12,7 +12,8 @@ import {
   matchPlayerToConnectedPlayer,
   retryConnector,
   getPlayerConnectionDetails,
-  getAttendanceStats
+  getAttendanceStats,
+  dismissGhostPlayer
 } from '../connectorService';
 import { supabase } from '../../lib/supabase';
 
@@ -20,6 +21,9 @@ jest.mock('../../lib/supabase', () => ({
   supabase: {
     from: jest.fn(),
     rpc: jest.fn(),
+    auth: {
+      getUser: jest.fn()
+    },
     functions: {
       invoke: jest.fn()
     }
@@ -1001,6 +1005,179 @@ describe('connectorService', () => {
       setupSupabase({ matchStatsData: null, matchStatsError: { message: 'match error' } });
 
       await expect(getAttendanceStats(teamId)).rejects.toThrow('Failed to load match statistics');
+    });
+  });
+
+  describe('dismissGhostPlayer', () => {
+    // Phase 1: Critical Tests
+    describe('parameter validation', () => {
+      it('throws when externalPlayerId is null', async () => {
+        await expect(dismissGhostPlayer(null)).rejects.toThrow('External player ID is required');
+      });
+
+      it('throws when externalPlayerId is undefined', async () => {
+        await expect(dismissGhostPlayer(undefined)).rejects.toThrow('External player ID is required');
+      });
+
+      it('throws when externalPlayerId is empty string', async () => {
+        await expect(dismissGhostPlayer('')).rejects.toThrow('External player ID is required');
+      });
+    });
+
+    describe('success scenarios', () => {
+      it('dismisses ghost player with authenticated user audit trail', async () => {
+        const mockUser = { id: 'user-123', email: 'test@example.com' };
+        supabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
+
+        const dismissedPlayer = {
+          id: 'connected-player-1',
+          player_id: null,
+          is_dismissed: true,
+          dismissed_at: '2025-12-25T10:30:00.000Z',
+          dismissed_by: 'user-123'
+        };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        const result = await dismissGhostPlayer('connected-player-1');
+
+        expect(supabase.auth.getUser).toHaveBeenCalled();
+        expect(supabase.from).toHaveBeenCalledWith('connected_player');
+        expect(mockUpdate).toHaveBeenCalledWith({
+          is_dismissed: true,
+          dismissed_at: expect.any(String),
+          dismissed_by: 'user-123'
+        });
+        expect(mockEq).toHaveBeenCalledWith('id', 'connected-player-1');
+        expect(mockIs).toHaveBeenCalledWith('player_id', null);
+        expect(mockSelect).toHaveBeenCalled();
+        expect(result).toEqual(dismissedPlayer);
+      });
+
+      it('dismisses ghost player without auth user (sets dismissed_by to null)', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+        const dismissedPlayer = {
+          id: 'connected-player-1',
+          player_id: null,
+          is_dismissed: true,
+          dismissed_at: '2025-12-25T10:30:00.000Z',
+          dismissed_by: null
+        };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        const result = await dismissGhostPlayer('connected-player-1');
+
+        expect(mockUpdate).toHaveBeenCalledWith({
+          is_dismissed: true,
+          dismissed_at: expect.any(String),
+          dismissed_by: null
+        });
+        expect(result.dismissed_by).toBeNull();
+      });
+    });
+
+    // Phase 2: Error Handling
+    describe('error handling', () => {
+      it('continues dismissal even when auth.getUser fails', async () => {
+        supabase.auth.getUser.mockResolvedValue({
+          data: { user: null },
+          error: { message: 'Auth error' }
+        });
+
+        const dismissedPlayer = { id: 'connected-player-1', is_dismissed: true, dismissed_by: null };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        const result = await dismissGhostPlayer('connected-player-1');
+
+        expect(mockConsoleError).toHaveBeenCalledWith('Error getting current user:', { message: 'Auth error' });
+        expect(result).toEqual(dismissedPlayer);
+      });
+
+      it('throws when database update fails', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const dbError = { message: 'Database error', code: 'PGRST116' };
+        const mockSelect = jest.fn().mockResolvedValue({ data: null, error: dbError });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        await expect(dismissGhostPlayer('connected-player-1')).rejects.toThrow('Failed to dismiss player');
+        expect(mockConsoleError).toHaveBeenCalledWith('Error dismissing ghost player:', dbError);
+      });
+
+      it('throws when player has already been matched or dismissed (empty result)', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        await expect(dismissGhostPlayer('connected-player-1')).rejects.toThrow(
+          'Player has already been matched or dismissed'
+        );
+      });
+    });
+
+    // Phase 3: Edge Cases
+    describe('edge cases', () => {
+      it('sets dismissed_at to valid ISO timestamp', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const dismissedPlayer = {
+          id: 'connected-player-1',
+          dismissed_at: '2025-12-25T10:30:00.000Z'
+        };
+
+        const mockSelect = jest.fn().mockResolvedValue({ data: [dismissedPlayer], error: null });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        await dismissGhostPlayer('connected-player-1');
+
+        const updateCall = mockUpdate.mock.calls[0][0];
+        expect(updateCall.dismissed_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        expect(new Date(updateCall.dismissed_at).toISOString()).toBe(updateCall.dismissed_at);
+      });
+
+      it('logs errors to console.error appropriately', async () => {
+        supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+
+        const dbError = { message: 'Connection lost', code: 'ECONNREFUSED' };
+        const mockSelect = jest.fn().mockResolvedValue({ data: null, error: dbError });
+        const mockIs = jest.fn(() => ({ select: mockSelect }));
+        const mockEq = jest.fn(() => ({ is: mockIs }));
+        const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+        supabase.from.mockReturnValue({ update: mockUpdate });
+
+        try {
+          await dismissGhostPlayer('connected-player-1');
+        } catch (error) {
+          // Expected to throw
+        }
+
+        expect(mockConsoleError).toHaveBeenCalledWith('Error dismissing ghost player:', dbError);
+      });
     });
   });
 });
