@@ -363,6 +363,7 @@ export async function getPlayerConnectionDetails(teamId) {
   const connectors = await getTeamConnectors(teamId);
 
   // Get all connected_player records with connector info
+  // Filter out dismissed players
   const { data: connectedPlayerData, error } = await supabase
     .from('connected_player')
     .select(`
@@ -376,7 +377,8 @@ export async function getPlayerConnectionDetails(teamId) {
         team_id
       )
     `)
-    .eq('connector.team_id', teamId);
+    .eq('connector.team_id', teamId)
+    .eq('is_dismissed', false);
 
   if (error) {
     console.error('Error fetching player connection details:', error);
@@ -576,6 +578,46 @@ export async function acceptGhostPlayer(externalPlayerId, teamId, addRosterPlaye
   }
 
   return newPlayer;
+}
+
+/**
+ * Dismiss a ghost player
+ * Marks a connected_player record as dismissed so it won't appear in the UI
+ * @param {string} externalPlayerId - connected_player record UUID
+ * @returns {Promise<Object>} The updated connected_player object
+ */
+export async function dismissGhostPlayer(externalPlayerId) {
+  if (!externalPlayerId) {
+    throw new Error('External player ID is required');
+  }
+
+  // Get current user for audit trail
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) {
+    console.error('Error getting current user:', userError);
+  }
+
+  const { data, error } = await supabase
+    .from('connected_player')
+    .update({
+      is_dismissed: true,
+      dismissed_at: new Date().toISOString(),
+      dismissed_by: user?.id || null
+    })
+    .eq('id', externalPlayerId)
+    .is('player_id', null)
+    .select();
+
+  if (error) {
+    console.error('Error dismissing ghost player:', error);
+    throw new Error('Failed to dismiss player');
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Player has already been matched or dismissed');
+  }
+
+  return data[0];
 }
 
 /**
