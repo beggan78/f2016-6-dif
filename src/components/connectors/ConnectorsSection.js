@@ -72,7 +72,7 @@ export function ConnectorsSection({ team }) {
 
     if (connectors.length > 0) {
       loadSyncJobs();
-      syncJobsIntervalRef.current = setInterval(loadSyncJobs, 5000);
+      syncJobsIntervalRef.current = setInterval(loadSyncJobs, 30000);
     } else {
       setSyncJobs({});
     }
