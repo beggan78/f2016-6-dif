@@ -98,6 +98,20 @@ export function ConnectorsSection({ team }) {
     }
   };
 
+  const triggerImmediateSync = (successLogMessage) => {
+    triggerScraperWorkflow(team.id).then(response => {
+      if (response.success) {
+        console.log(successLogMessage);
+      } else {
+        console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
+        setNoticeMessage('Immediate sync failed, will run on schedule.');
+      }
+    }).catch(err => {
+      console.warn('Error triggering scraper workflow:', err);
+      setNoticeMessage('Immediate sync failed, will run on schedule.');
+    });
+  };
+
   // Handle connection success
   const handleConnected = async (credentials) => {
     try {
@@ -106,17 +120,7 @@ export function ConnectorsSection({ team }) {
       setSuccessMessage('SportAdmin connected successfully! Verification in progress (takes up to 2 minutes)...');
 
       // Trigger immediate scraper run for verification (non-blocking)
-      triggerScraperWorkflow(team.id).then(response => {
-        if (response.success) {
-          console.log('Scraper workflow triggered for verification');
-        } else {
-          console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
-          setNoticeMessage('Immediate sync failed, will run on schedule.');
-        }
-      }).catch(err => {
-        console.warn('Error triggering scraper workflow:', err);
-        setNoticeMessage('Immediate sync failed, will run on schedule.');
-      });
+      triggerImmediateSync('Scraper workflow triggered for verification');
     } catch (err) {
       // Error will be shown in modal
       throw err;
@@ -130,17 +134,7 @@ export function ConnectorsSection({ team }) {
       setSuccessMessage('Sync started successfully!');
 
       // Trigger immediate scraper run (non-blocking)
-      triggerScraperWorkflow(team.id).then(response => {
-        if (response.success) {
-          console.log('Scraper workflow triggered for manual sync');
-        } else {
-          console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
-          setNoticeMessage('Immediate sync failed, will run on schedule.');
-        }
-      }).catch(err => {
-        console.warn('Error triggering scraper workflow:', err);
-        setNoticeMessage('Immediate sync failed, will run on schedule.');
-      });
+      triggerImmediateSync('Scraper workflow triggered for manual sync');
     } catch (err) {
       // Error handled by hook
       console.error('Manual sync error:', err);
