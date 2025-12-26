@@ -6,13 +6,34 @@ import {
   PBKDF2_ITERATIONS,
   RATE_LIMIT_CONFIGS,
   base64ToUint8Array,
-  checkRateLimit,
   encryptCredentials,
-  getMasterKeyFromVault,
-  resetRateLimitStore
+  extractClientIP,
+  getMasterKeyFromVault
 } from '../../../supabase/functions/connect-provider/index.ts';
+import { checkRateLimitRedis } from '../../../supabase/functions/_shared/redisRateLimit.ts';
 
 const { perIP } = RATE_LIMIT_CONFIGS;
+const createMockRedis = () => {
+  const store = new Map();
+
+  return {
+    hgetall: async (key) => store.get(key) || {},
+    hset: async (key, data) => {
+      const existing = store.get(key) || {};
+      store.set(key, { ...existing, ...data });
+      return 1;
+    },
+    expire: async () => 1
+  };
+};
+
+const createRateLimitHarness = () => {
+  const redis = createMockRedis();
+
+  return {
+    checkRateLimit: (identifier, config, tier) => checkRateLimitRedis(redis, identifier, config, tier)
+  };
+};
 
 if (typeof global.atob === 'undefined') {
   global.atob = (input) => Buffer.from(input, 'base64').toString('binary');
@@ -28,6 +49,18 @@ if (typeof global.TextDecoder === 'undefined') {
 
 describe('connect-provider edge helpers', () => {
   const originalCrypto = global.crypto;
+  const createRequest = (headers = {}) => {
+    const normalized = Object.entries(headers).reduce((acc, [key, value]) => {
+      acc[key.toLowerCase()] = value;
+      return acc;
+    }, {});
+
+    return {
+      headers: {
+        get: (name) => normalized[name.toLowerCase()] ?? null
+      }
+    };
+  };
 
   beforeAll(() => {
     // Ensure Web Crypto is available for PBKDF2 derivation and AES-GCM decrypt
@@ -122,9 +155,46 @@ describe('connect-provider edge helpers', () => {
     });
   });
 
+  describe('extractClientIP', () => {
+    it('uses the first IP in x-forwarded-for when present', () => {
+      const req = createRequest({
+        'x-forwarded-for': '203.0.113.195, 70.41.3.18'
+      });
+
+      expect(extractClientIP(req)).toBe('203.0.113.195');
+    });
+
+    it('falls back to the next header when the first header is invalid', () => {
+      const req = createRequest({
+        'x-forwarded-for': 'not-an-ip, 203.0.113.9',
+        'x-real-ip': '198.51.100.10'
+      });
+
+      expect(extractClientIP(req)).toBe('198.51.100.10');
+    });
+
+    it('supports IPv6 headers', () => {
+      const req = createRequest({
+        'cf-connecting-ip': '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
+      });
+
+      expect(extractClientIP(req)).toBe('2001:0db8:85a3:0000:0000:8a2e:0370:7334');
+    });
+
+    it('returns unknown when no valid headers are provided', () => {
+      const req = createRequest({
+        'x-client-ip': 'unknown'
+      });
+
+      expect(extractClientIP(req)).toBe('unknown');
+    });
+  });
+
   describe('rate limit behaviour under burst load', () => {
+    let checkRateLimit;
+
     beforeEach(() => {
-      resetRateLimitStore();
+      ({ checkRateLimit } = createRateLimitHarness());
       jest.useRealTimers();
       jest.spyOn(Date, 'now').mockImplementation(() => 1_700_000_000_000);
     });
@@ -133,26 +203,103 @@ describe('connect-provider edge helpers', () => {
       jest.restoreAllMocks();
     });
 
-    it('allows up to the configured limit before delaying and blocks after repeated violations', () => {
-      const allowedResponses = Array.from({ length: perIP.maxRequests }, () => {
-        const result = checkRateLimit('ip:127.0.0.1', perIP);
+    it('allows up to the configured limit before delaying and blocks after repeated violations', async () => {
+      const allowedResponses = [];
+
+      for (let i = 0; i < perIP.maxRequests; i += 1) {
+        const result = await checkRateLimit('127.0.0.1', perIP, 'ip');
         expect(result.allowed).toBe(true);
-        return result;
-      });
+        allowedResponses.push(result);
+      }
 
       expect(allowedResponses).toHaveLength(perIP.maxRequests);
 
-      const firstViolation = checkRateLimit('ip:127.0.0.1', perIP);
+      const firstViolation = await checkRateLimit('127.0.0.1', perIP, 'ip');
       expect(firstViolation.allowed).toBe(false);
       expect(firstViolation.delay).toBeGreaterThanOrEqual(BASE_RATE_LIMIT_DELAY_MS);
 
-      const secondViolation = checkRateLimit('ip:127.0.0.1', perIP);
+      const secondViolation = await checkRateLimit('127.0.0.1', perIP, 'ip');
       expect(secondViolation.allowed).toBe(false);
       expect(secondViolation.delay).toBeGreaterThan(firstViolation.delay ?? 0);
 
-      const thirdViolation = checkRateLimit('ip:127.0.0.1', perIP);
+      const thirdViolation = await checkRateLimit('127.0.0.1', perIP, 'ip');
       expect(thirdViolation.allowed).toBe(false);
       expect(thirdViolation.message).toMatch(/Rate limit exceeded/);
+    });
+  });
+
+  describe('rate limit enforcement flow', () => {
+    let checkRateLimit;
+
+    const runRateLimitFlow = async ({ ip, userId }) => {
+      const ipLimit = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.perIP, 'ip');
+      if (!ipLimit.allowed) {
+        return { stage: 'ip', result: ipLimit };
+      }
+
+      const globalLimit = await checkRateLimit('system', RATE_LIMIT_CONFIGS.global, 'global');
+      if (!globalLimit.allowed) {
+        return { stage: 'global', result: globalLimit };
+      }
+
+      const userLimit = await checkRateLimit(userId, RATE_LIMIT_CONFIGS.perUser, 'user');
+      if (!userLimit.allowed) {
+        return { stage: 'user', result: userLimit };
+      }
+
+      return { stage: 'allowed', result: { allowed: true } };
+    };
+
+    beforeEach(() => {
+      ({ checkRateLimit } = createRateLimitHarness());
+      jest.spyOn(Date, 'now').mockImplementation(() => 1_700_000_000_000);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('blocks on the IP tier before evaluating global/user limits', async () => {
+      const ip = '203.0.113.20';
+      const userId = 'user-ip-blocked';
+
+      for (let i = 0; i < RATE_LIMIT_CONFIGS.perIP.maxRequests; i += 1) {
+        const result = await runRateLimitFlow({ ip, userId });
+        expect(result.stage).toBe('allowed');
+      }
+
+      const blocked = await runRateLimitFlow({ ip, userId });
+      expect(blocked.stage).toBe('ip');
+      expect(blocked.result.allowed).toBe(false);
+    });
+
+    it('blocks on the global tier once the circuit breaker is exceeded', async () => {
+      const ip = '198.51.100.5';
+
+      for (let i = 0; i < RATE_LIMIT_CONFIGS.global.maxRequests; i += 1) {
+        const result = await runRateLimitFlow({
+          ip: `198.51.100.${i}`,
+          userId: `user-global-blocked-${i}`
+        });
+        expect(result.stage).toBe('allowed');
+      }
+
+      const blocked = await runRateLimitFlow({ ip, userId: 'user-global-blocked-final' });
+      expect(blocked.stage).toBe('global');
+      expect(blocked.result.allowed).toBe(false);
+    });
+
+    it('blocks on the user tier for authenticated requests', async () => {
+      const userId = 'user-rate-limit';
+
+      for (let i = 0; i < RATE_LIMIT_CONFIGS.perUser.maxRequests; i += 1) {
+        const result = await runRateLimitFlow({ ip: `192.0.2.${i}`, userId });
+        expect(result.stage).toBe('allowed');
+      }
+
+      const blocked = await runRateLimitFlow({ ip: '192.0.2.250', userId });
+      expect(blocked.stage).toBe('user');
+      expect(blocked.result.allowed).toBe(false);
     });
   });
 });

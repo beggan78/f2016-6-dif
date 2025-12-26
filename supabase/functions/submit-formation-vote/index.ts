@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { extractClientIP } from '../_shared/ipExtraction.ts'
 
 interface VoteRequest {
   formation: string;
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
     }
 
     // Rate limiting check (simple implementation)
-    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const clientIP = extractClientIP(req);
     console.log(`🔍 Formation vote request from IP: ${clientIP}, formation: ${formation}, format: ${format}`);
 
     // Get current user (for logging purposes - auth is handled by database function)

@@ -1,5 +1,12 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { Redis } from 'https://esm.sh/@upstash/redis@1.28.4'
 import { corsHeaders } from '../_shared/cors.ts'
+import { extractClientIP as sharedExtractClientIP } from '../_shared/ipExtraction.ts'
+import {
+  checkRateLimitRedis,
+  createRedisClient,
+  type RateLimitResult
+} from '../_shared/redisRateLimit.ts'
 import type { Database } from '../../../src/types/supabase.ts'
 
 // **SECURITY**: Enhanced security headers to prevent common attacks combined with CORS
@@ -71,100 +78,11 @@ export const RATE_LIMIT_CONFIGS = {
   global: { windowMs: ONE_HOUR_MS, maxRequests: 100, violationThreshold: 1, blockDurationMs: TEN_MINUTES_MS } // 10 min
 };
 
-// In-memory rate limiting store (would use Redis in production)
-// NOTE: Supabase Edge Functions reset memory on cold start, so these limits reset per instance.
-// Documented limitation: attackers could bypass limits by waiting for the function to cold start.
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
-// **SECURITY**: Cleanup old rate limit entries
-export function cleanupRateLimitStore(): void {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    // Remove entries older than 2 hours
-    if (now - entry.lastReset > TWO_HOURS_MS) {
-      rateLimitStore.delete(key);
-    }
-  }
-}
-
-// **SECURITY**: Check rate limit with escalating response
-export function checkRateLimit(identifier: string, config: RateLimitConfig): { allowed: boolean; delay?: number; message?: string } {
-  const now = Date.now();
-  const key = `${identifier}`;
-  const entry = rateLimitStore.get(key) || { count: 0, lastReset: now, blocked: false, violations: 0 };
-
-  // Check if currently blocked
-  if (entry.blocked && now - entry.lastReset < config.blockDurationMs) {
-    const remainingMs = config.blockDurationMs - (now - entry.lastReset);
-    return {
-      allowed: false,
-      message: `Rate limit exceeded. Try again in ${Math.ceil(remainingMs / MS_IN_MINUTE)} minutes.`
-    };
-  }
-
-  // Reset window if expired
-  if (now - entry.lastReset >= config.windowMs) {
-    entry.count = 0;
-    entry.lastReset = now;
-    entry.blocked = false;
-  }
-
-  entry.count++;
-
-  // Check if limit exceeded
-  if (entry.count > config.maxRequests) {
-    entry.violations++;
-
-    // Block if too many violations
-    if (entry.violations >= config.violationThreshold) {
-      entry.blocked = true;
-      entry.lastReset = now;
-      console.warn(`🚨 SECURITY: Rate limit violation - blocking ${identifier} for ${config.blockDurationMs / MS_IN_MINUTE} minutes`);
-    }
-
-    // Calculate exponential backoff delay
-    const delay = Math.min(BASE_RATE_LIMIT_DELAY_MS * Math.pow(2, entry.violations), MAX_RATE_LIMIT_DELAY_MS); // Max 30 seconds
-
-    rateLimitStore.set(key, entry);
-    return {
-      allowed: false,
-      delay,
-      message: `Rate limit exceeded. Please wait ${delay / MS_IN_SECOND} seconds before retrying.`
-    };
-  }
-
-  rateLimitStore.set(key, entry);
-  return { allowed: true };
-}
-
-export function resetRateLimitStore(): void {
-  rateLimitStore.clear();
-}
+// Redis-based rate limiting store (persistent across cold starts)
+const redis = createRedisClient();
 
 // **SECURITY**: Enhanced IP extraction with validation
-export function extractClientIP(req: Request): string {
-  const headers = [
-    'x-forwarded-for',
-    'x-real-ip',
-    'cf-connecting-ip',
-    'x-client-ip',
-    'x-cluster-client-ip'
-  ];
-
-  for (const header of headers) {
-    const value = req.headers.get(header);
-    if (value) {
-      // Handle comma-separated IPs (take first one)
-      const ip = value.split(',')[0].trim();
-      // Basic IP validation
-      if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip) || /^[0-9a-fA-F:]+$/.test(ip)) {
-        return ip;
-      }
-    }
-  }
-
-  return 'unknown';
-}
+export const extractClientIP = sharedExtractClientIP;
 
 // **SECURITY**: Advanced bot detection with scoring
 export function calculateBotScore(userAgent: string, req: Request): number {
@@ -583,13 +501,8 @@ Deno.serve(async (req) => {
     const clientIP = extractClientIP(req);
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // Periodic cleanup of rate limit store
-    if (Math.random() < 0.1) { // 10% chance per request
-      cleanupRateLimitStore();
-    }
-
-    // Check IP-based rate limit
-    const ipLimit = checkRateLimit(`ip:${clientIP}`, RATE_LIMIT_CONFIGS.perIP);
+    // Check IP-based rate limit (Redis-persisted)
+    const ipLimit = await checkRateLimitRedis(redis, clientIP, RATE_LIMIT_CONFIGS.perIP, 'ip');
     if (!ipLimit.allowed) {
       console.warn(`🚨 SECURITY: IP rate limit exceeded - ${clientIP}, UA: ${userAgent}`);
       return new Response(
@@ -603,30 +516,28 @@ Deno.serve(async (req) => {
           headers: {
             ...combinedHeaders,
             'Content-Type': 'application/json',
-            'Retry-After': ipLimit.delay
-              ? String(Math.ceil(ipLimit.delay / MS_IN_SECOND))
-              : String(ONE_HOUR_SECONDS)
+            ...ipLimit.headers // Include standard rate limit headers
           }
         }
       );
     }
 
     // Check global rate limit (circuit breaker)
-    const globalLimit = checkRateLimit('global', RATE_LIMIT_CONFIGS.global);
+    const globalLimit = await checkRateLimitRedis(redis, 'system', RATE_LIMIT_CONFIGS.global, 'global');
     if (!globalLimit.allowed) {
       console.error(`🚨 SECURITY: Global rate limit exceeded - system protection activated`);
       return new Response(
         JSON.stringify({
           success: false,
           error: 'System temporarily overloaded. Please try again later.',
-          retryAfter: TEN_MINUTES_SECONDS // 10 minutes
+          retryAfter: globalLimit.delay ? Math.ceil(globalLimit.delay / MS_IN_SECOND) : TEN_MINUTES_SECONDS
         }),
         {
           status: 503,
           headers: {
             ...combinedHeaders,
             'Content-Type': 'application/json',
-            'Retry-After': String(TEN_MINUTES_SECONDS)
+            ...globalLimit.headers // Include standard rate limit headers
           }
         }
       );
@@ -635,7 +546,7 @@ Deno.serve(async (req) => {
     // User-based rate limiting (after authentication)
     const authUser = await supabase.auth.getUser();
     if (authUser.data.user) {
-      const userRateLimit = checkRateLimit(`user:${authUser.data.user.id}`, RATE_LIMIT_CONFIGS.perUser);
+      const userRateLimit = await checkRateLimitRedis(redis, authUser.data.user.id, RATE_LIMIT_CONFIGS.perUser, 'user');
       if (!userRateLimit.allowed) {
         console.warn(`🚨 SECURITY: User rate limit exceeded - ${authUser.data.user.id}`);
         return new Response(
@@ -649,9 +560,7 @@ Deno.serve(async (req) => {
             headers: {
               ...combinedHeaders,
               'Content-Type': 'application/json',
-              'Retry-After': userRateLimit.delay
-                ? String(Math.ceil(userRateLimit.delay / MS_IN_SECOND))
-                : String(THIRTY_MINUTES_SECONDS)
+              ...userRateLimit.headers // Include standard rate limit headers
             }
           }
         );
@@ -668,16 +577,23 @@ Deno.serve(async (req) => {
     if (botScore > 0.7) {
       console.warn(`🚨 SECURITY: High bot probability detected - Score: ${botScore}, IP: ${clientIP}, UA: ${userAgent}`);
       // For high bot scores, apply stricter rate limiting
-      const botLimit = checkRateLimit(`bot:${clientIP}`, {
+      const botLimit = await checkRateLimitRedis(redis, clientIP, {
         windowMs: ONE_HOUR_MS,
         maxRequests: 3,
         violationThreshold: 1,
         blockDurationMs: TWO_HOURS_MS
-      });
+      }, 'bot');
       if (!botLimit.allowed) {
         return new Response(
           JSON.stringify({ success: false, error: 'Suspicious activity detected. Access temporarily restricted.' }),
-          { status: 403, headers: { ...combinedHeaders, 'Content-Type': 'application/json' } }
+          {
+            status: 403,
+            headers: {
+              ...combinedHeaders,
+              'Content-Type': 'application/json',
+              ...botLimit.headers // Include standard rate limit headers
+            }
+          }
         );
       }
     }
