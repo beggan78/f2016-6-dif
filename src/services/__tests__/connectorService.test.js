@@ -6,6 +6,7 @@ import {
   getTeamConnectors,
   connectProvider,
   disconnectProvider,
+  triggerScraperWorkflow,
   triggerManualSync,
   getLatestSyncJob,
   getRecentSyncJobs,
@@ -203,6 +204,45 @@ describe('connectorService', () => {
       supabase.rpc.mockResolvedValue({ data: null, error: { message: 'rpc failed' } });
 
       await expect(triggerManualSync('connector-1')).rejects.toThrow('Failed to trigger manual sync');
+    });
+  });
+
+  describe('triggerScraperWorkflow', () => {
+    it('requires team id', async () => {
+      await expect(triggerScraperWorkflow(null)).rejects.toThrow('Team ID is required');
+    });
+
+    it('returns success response when workflow triggered', async () => {
+      const response = { success: true, message: 'Scraper workflow triggered successfully' };
+      supabase.functions.invoke.mockResolvedValue({ data: response, error: null });
+
+      const result = await triggerScraperWorkflow('team-123');
+
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('trigger-scraper-workflow', {
+        body: { team_id: 'team-123' }
+      });
+      expect(result).toEqual(response);
+    });
+
+    it('returns failure on error without throwing', async () => {
+      supabase.functions.invoke.mockResolvedValue({
+        data: null,
+        error: { message: 'Server error' }
+      });
+
+      const result = await triggerScraperWorkflow('team-123');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Server error');
+    });
+
+    it('catches and returns failure on exception', async () => {
+      supabase.functions.invoke.mockRejectedValue(new Error('Network failure'));
+
+      const result = await triggerScraperWorkflow('team-123');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Failed to trigger workflow');
     });
   });
 

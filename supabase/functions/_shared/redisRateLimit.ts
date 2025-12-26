@@ -38,7 +38,7 @@ const DEFAULT_RATE_LIMIT_ENTRY: RateLimitEntry = {
 };
 
 // Initialize Redis client with fail-open error handling
-export function createRedisClient(): Redis | null {
+export function createRedisClient(serviceName = 'connect-provider'): Redis | null {
   const upstashUrl = Deno.env.get('UPSTASH_REDIS_REST_URL');
   const upstashToken = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
 
@@ -56,7 +56,7 @@ export function createRedisClient(): Redis | null {
       token: upstashToken,
     });
 
-    console.log('✅ Redis rate limiter initialized for connect-provider');
+    console.log(`✅ Redis rate limiter initialized for ${serviceName}`);
     return redis;
   } catch (error) {
     console.error('🚨 CRITICAL: Failed to initialize Redis client for rate limiting:', error);
@@ -146,7 +146,8 @@ export async function checkRateLimitRedis(
   redis: Redis | null,
   identifier: string,
   config: RateLimitConfig,
-  tier: 'ip' | 'user' | 'global' | 'bot'
+  tier: 'ip' | 'user' | 'global' | 'bot' | 'team',
+  namespace = 'connect-provider'
 ): Promise<RateLimitResult> {
   // Fail-open if Redis unavailable
   if (!redis) {
@@ -154,7 +155,7 @@ export async function checkRateLimitRedis(
     return { allowed: true, headers: {} };
   }
 
-  const key = `ratelimit:connect-provider:${tier}:${identifier}`;
+  const key = `ratelimit:${namespace}:${tier}:${identifier}`;
   const now = Date.now();
 
   try {

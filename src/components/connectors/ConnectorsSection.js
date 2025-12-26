@@ -8,6 +8,7 @@ import { ComingSoonBadge } from '../shared/ComingSoonBadge';
 import { useTeamConnector } from '../../hooks/useTeamConnector';
 import { useTeam } from '../../contexts/TeamContext';
 import { ProviderLogo } from './ProviderLogo';
+import { triggerScraperWorkflow } from '../../services/connectorService';
 import {
   getAllProviders,
   CONNECTOR_PROVIDERS
@@ -32,6 +33,7 @@ export function ConnectorsSection({ team }) {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [selectedConnector, setSelectedConnector] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
   const [syncJobs, setSyncJobs] = useState({});
 
   // Load latest sync jobs for each connector
@@ -56,15 +58,26 @@ export function ConnectorsSection({ team }) {
     }
   }, [connectors, getLatestSyncJob]);
 
-  // Clear success message after 5 seconds
+  // Clear success message after timeout (10s for verification, 5s for others)
   useEffect(() => {
     if (successMessage) {
+      // Use longer timeout for verification messages
+      const timeout = successMessage.includes('Verification in progress') ? 10000 : 5000;
       const timer = setTimeout(() => {
         setSuccessMessage('');
-      }, 5000);
+      }, timeout);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  useEffect(() => {
+    if (noticeMessage) {
+      const timer = setTimeout(() => {
+        setNoticeMessage('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [noticeMessage]);
 
   // Only show to team admins
   if (!isTeamAdmin) {
@@ -85,12 +98,29 @@ export function ConnectorsSection({ team }) {
     }
   };
 
+  const triggerImmediateSync = (successLogMessage) => {
+    triggerScraperWorkflow(team.id).then(response => {
+      if (response.success) {
+        console.log(successLogMessage);
+      } else {
+        console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
+        setNoticeMessage('Immediate sync failed, will run on schedule.');
+      }
+    }).catch(err => {
+      console.warn('Error triggering scraper workflow:', err);
+      setNoticeMessage('Immediate sync failed, will run on schedule.');
+    });
+  };
+
   // Handle connection success
   const handleConnected = async (credentials) => {
     try {
       await connectProvider(CONNECTOR_PROVIDERS.SPORTADMIN.id, credentials);
       setShowConnectModal(false);
-      setSuccessMessage('SportAdmin connected successfully! Verification in progress...');
+      setSuccessMessage('SportAdmin connected successfully! Verification in progress (takes up to 2 minutes)...');
+
+      // Trigger immediate scraper run for verification (non-blocking)
+      triggerImmediateSync('Scraper workflow triggered for verification');
     } catch (err) {
       // Error will be shown in modal
       throw err;
@@ -102,6 +132,9 @@ export function ConnectorsSection({ team }) {
     try {
       await manualSync(connectorId);
       setSuccessMessage('Sync started successfully!');
+
+      // Trigger immediate scraper run (non-blocking)
+      triggerImmediateSync('Scraper workflow triggered for manual sync');
     } catch (err) {
       // Error handled by hook
       console.error('Manual sync error:', err);
@@ -163,6 +196,13 @@ export function ConnectorsSection({ team }) {
       {successMessage && (
         <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
           <p className="text-emerald-200 text-sm">{successMessage}</p>
+        </div>
+      )}
+
+      {/* Notice Message */}
+      {noticeMessage && (
+        <div className="bg-amber-900/40 border border-amber-500 rounded-lg p-3">
+          <p className="text-amber-100 text-sm">{noticeMessage}</p>
         </div>
       )}
 
