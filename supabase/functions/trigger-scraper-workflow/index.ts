@@ -1,5 +1,11 @@
-import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import {
+  checkRateLimitRedis,
+  createRedisClient,
+  type RateLimitConfig,
+  MS_IN_HOUR,
+} from '../_shared/redisRateLimit.ts'
 import type { Database } from '../../../src/types/supabase.ts'
 
 // **SECURITY**: Enhanced security headers to prevent common attacks combined with CORS
@@ -33,95 +39,13 @@ const VAULT_GITHUB_TOKEN_NAME = 'github_workflow_token';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Time helpers to avoid magic numbers
-const MS_IN_SECOND = 1000;
-const MS_IN_MINUTE = 60 * MS_IN_SECOND;
-const MS_IN_HOUR = 60 * MS_IN_MINUTE;
 const ONE_HOUR_MS = MS_IN_HOUR;
-const ONE_HOUR_SECONDS = 60 * 60;
 
-const MAX_RATE_LIMIT_DELAY_MS = 30 * MS_IN_SECOND;
-const BASE_RATE_LIMIT_DELAY_MS = MS_IN_SECOND;
-
-// **SECURITY**: Rate limiting system (in-memory, resets on cold start)
-interface RateLimitEntry {
-  count: number;
-  lastReset: number;
-  blocked: boolean;
-  violations: number;
-}
-
-interface RateLimitConfig {
-  windowMs: number;
-  maxRequests: number;
-  violationThreshold: number;
-  blockDurationMs: number;
-}
-
-const RATE_LIMIT_CONFIGS = {
+const RATE_LIMIT_CONFIGS: { perTeam: RateLimitConfig } = {
   perTeam: { windowMs: ONE_HOUR_MS, maxRequests: 10, violationThreshold: 1, blockDurationMs: ONE_HOUR_MS }
 };
 
-// In-memory rate limiting store (use Redis in production)
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
-function cleanupRateLimitStore(): void {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    // Remove entries older than 2 hours
-    if (now - entry.lastReset > 2 * ONE_HOUR_MS) {
-      rateLimitStore.delete(key);
-    }
-  }
-}
-
-function checkRateLimit(
-  identifier: string,
-  config: RateLimitConfig
-): { allowed: boolean; delay?: number; message?: string } {
-  const now = Date.now();
-  const entry = rateLimitStore.get(identifier) || { count: 0, lastReset: now, blocked: false, violations: 0 };
-
-  // Check if currently blocked
-  if (entry.blocked && now - entry.lastReset < config.blockDurationMs) {
-    const remainingMs = config.blockDurationMs - (now - entry.lastReset);
-    return {
-      allowed: false,
-      message: `Rate limit exceeded. Try again in ${Math.ceil(remainingMs / MS_IN_MINUTE)} minutes.`
-    };
-  }
-
-  // Reset window if expired
-  if (now - entry.lastReset >= config.windowMs) {
-    entry.count = 0;
-    entry.lastReset = now;
-    entry.blocked = false;
-  }
-
-  entry.count++;
-
-  // Check if limit exceeded
-  if (entry.count > config.maxRequests) {
-    entry.violations++;
-
-    if (entry.violations >= config.violationThreshold) {
-      entry.blocked = true;
-      entry.lastReset = now;
-      console.warn(`🚨 SECURITY: Rate limit violation - blocking ${identifier} for ${config.blockDurationMs / MS_IN_MINUTE} minutes`);
-    }
-
-    const delay = Math.min(BASE_RATE_LIMIT_DELAY_MS * Math.pow(2, entry.violations), MAX_RATE_LIMIT_DELAY_MS);
-
-    rateLimitStore.set(identifier, entry);
-    return {
-      allowed: false,
-      delay,
-      message: `Rate limit exceeded. Please wait ${delay / MS_IN_SECOND} seconds before retrying.`
-    };
-  }
-
-  rateLimitStore.set(identifier, entry);
-  return { allowed: true };
-}
+const redis = createRedisClient('trigger-scraper-workflow');
 
 /**
  * Validates that a string is a valid UUID format
@@ -210,12 +134,15 @@ Deno.serve(async (req) => {
 
     console.log(`User has ${teamAccess.role} role on team ${team_id}`);
 
-    // **SECURITY**: Per-team rate limiting to protect GitHub API quota
-    if (Math.random() < 0.1) {
-      cleanupRateLimitStore();
-    }
+    // **SECURITY**: Per-team rate limiting to protect GitHub API quota (Redis-backed)
+    const teamLimit = await checkRateLimitRedis(
+      redis,
+      team_id,
+      RATE_LIMIT_CONFIGS.perTeam,
+      'team',
+      'trigger-scraper-workflow'
+    );
 
-    const teamLimit = checkRateLimit(`team:${team_id}`, RATE_LIMIT_CONFIGS.perTeam);
     if (!teamLimit.allowed) {
       console.warn(`🚨 SECURITY: Team rate limit exceeded - ${team_id}`);
       return new Response(
@@ -225,9 +152,7 @@ Deno.serve(async (req) => {
           headers: {
             ...combinedHeaders,
             'Content-Type': 'application/json',
-            'Retry-After': teamLimit.delay
-              ? String(Math.ceil(teamLimit.delay / MS_IN_SECOND))
-              : String(ONE_HOUR_SECONDS)
+            ...teamLimit.headers
           }
         }
       );
