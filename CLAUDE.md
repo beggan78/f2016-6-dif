@@ -82,10 +82,14 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 - AES-256-GCM with PBKDF2 key derivation (310,000 iterations)
 - Master key stored in Supabase Vault, accessed via `supabase.rpc('get_vault_secret')` (service_role only)
 
-**Rate Limiting Limitations**:
-- Current implementation stores counters in-memory inside the Edge Function instance.
-- Memory resets on cold start, so rate limits effectively reset after idle periods.
-- Treat limits as best-effort throttling until a persistent store (e.g., Redis) is added.
+**Rate Limiting** (Edge Function: `supabase/functions/connect-provider/index.ts`):
+- **Redis-based persistent storage**: Rate limits persist across Edge Function cold starts (security gap closed)
+- **Multi-tier approach**: IP-based (10/hour), User-based (50/hour), Global circuit breaker (100/hour), Bot detection (3/hour)
+- **Advanced features**: Violation tracking, exponential backoff (1-30s), escalating block durations (10min-2hrs)
+- **Fail-open mode**: Allows requests when Redis unavailable (logs warnings for monitoring)
+- **Standard headers**: Returns X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After
+- **Implementation**: Shared module at `supabase/functions/_shared/redisRateLimit.ts` using `@upstash/redis`
+- **Environment**: Requires `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in Edge Function secrets
 
 **Admin-Only Operations**:
 - All connector CRUD operations require `team_user.role = 'admin'`

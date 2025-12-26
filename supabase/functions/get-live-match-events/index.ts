@@ -1,5 +1,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { extractClientIP } from '../_shared/ipExtraction.ts'
+import { Redis } from 'https://esm.sh/@upstash/redis@1.28.4'
+import { Ratelimit } from 'https://esm.sh/@upstash/ratelimit@1.0.1'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -10,10 +13,115 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const MATCH_LOG_EVENT_COLUMNS =
   'id, match_id, event_type, period, occurred_at_seconds, ordinal, data, created_at, correlation_id, player_id'
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 60 seconds
+const RATE_LIMIT_MAX_REQUESTS = 5
+
+// Initialize Upstash Redis rate limiter
+function createRateLimiter(): Ratelimit | null {
+  const upstashUrl = Deno.env.get('UPSTASH_REDIS_REST_URL')
+  const upstashToken = Deno.env.get('UPSTASH_REDIS_REST_TOKEN')
+
+  if (!upstashUrl || !upstashToken) {
+    console.error('🚨 CRITICAL: Upstash Redis credentials not configured')
+    console.error('UPSTASH_REDIS_REST_URL:', upstashUrl ? '✅ Set' : '❌ Missing')
+    console.error('UPSTASH_REDIS_REST_TOKEN:', upstashToken ? '✅ Set' : '❌ Missing')
+    return null
+  }
+
+  try {
+    const redis = new Redis({
+      url: upstashUrl,
+      token: upstashToken,
+    })
+
+    const ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(RATE_LIMIT_MAX_REQUESTS, `${RATE_LIMIT_WINDOW_MS} ms`),
+      analytics: true,
+      prefix: 'ratelimit:live-match-events',
+    })
+
+    console.log('✅ Rate limiter initialized: 5 requests per 60 seconds (sliding window)')
+    return ratelimit
+  } catch (error) {
+    console.error('🚨 CRITICAL: Failed to initialize rate limiter:', error)
+    return null
+  }
+}
+
+// Check rate limit for IP address
+async function checkRateLimit(
+  ratelimit: Ratelimit | null,
+  identifier: string
+): Promise<{ allowed: boolean; limit?: number; remaining?: number; reset?: number; error?: string }> {
+  if (!ratelimit) {
+    console.warn('⚠️ Rate limiter unavailable - allowing request (FAIL-OPEN mode)')
+    return { allowed: true }
+  }
+
+  try {
+    const result = await ratelimit.limit(identifier)
+
+    if (!result.success) {
+      console.warn(`🚨 SECURITY: Rate limit exceeded for IP: ${identifier}`)
+      console.warn(`Rate limit details: ${result.remaining}/${result.limit} remaining, resets in ${Math.ceil((result.reset - Date.now()) / 1000)}s`)
+    }
+
+    return {
+      allowed: result.success,
+      limit: result.limit,
+      remaining: result.remaining,
+      reset: result.reset,
+    }
+  } catch (error) {
+    console.error('🚨 CRITICAL: Rate limit check failed:', error)
+    return { allowed: true, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+// Initialize once at startup to reuse the Redis connection across requests.
+const ratelimit = createRateLimiter()
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // Rate limiting check (before any processing)
+  const clientIP = extractClientIP(req)
+  const rateLimitResult = await checkRateLimit(ratelimit, `ip:${clientIP}`)
+
+  if (!rateLimitResult.allowed) {
+    const resetInSeconds = rateLimitResult.reset
+      ? Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
+      : 60
+
+    return new Response(
+      JSON.stringify({
+        error: 'Rate limit exceeded',
+        message: `Too many requests. Please wait ${resetInSeconds} seconds before trying again.`,
+        retry_after_seconds: resetInSeconds,
+        limit: rateLimitResult.limit,
+        remaining: rateLimitResult.remaining,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Retry-After': String(resetInSeconds),
+          'X-RateLimit-Limit': String(rateLimitResult.limit || RATE_LIMIT_MAX_REQUESTS),
+          'X-RateLimit-Remaining': String(rateLimitResult.remaining || 0),
+          'X-RateLimit-Reset': String(rateLimitResult.reset || Date.now() + RATE_LIMIT_WINDOW_MS),
+        }
+      }
+    )
+  }
+
+  if (rateLimitResult.error) {
+    console.error('🚨 CRITICAL: Rate limiter degraded - request allowed but monitoring required')
   }
 
   try {
