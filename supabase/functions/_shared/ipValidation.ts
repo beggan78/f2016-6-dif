@@ -1,54 +1,49 @@
-const IPV4_REGEX =
-  /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-const IPV6_SEGMENT_REGEX = /^[0-9a-fA-F]{1,4}$/;
+import { isIPv4, isIPv6 } from 'node:net';
 
-export const isValidIPv4 = (ip: string): boolean => IPV4_REGEX.test(ip);
-
-export const isValidIPv6 = (ip: string): boolean => {
-  if (!ip) {
-    return false;
-  }
-
-  const hasDoubleColon = ip.includes('::');
-  if (hasDoubleColon && ip.indexOf('::') !== ip.lastIndexOf('::')) {
-    return false;
-  }
-
-  const [left, right] = ip.split('::');
-  const leftSegments = left ? left.split(':') : [];
-  const rightSegments = right ? right.split(':') : [];
-
-  if (leftSegments.some(segment => segment.length === 0)) {
-    return false;
-  }
-
-  if (rightSegments.some(segment => segment.length === 0)) {
-    return false;
-  }
-
-  let ipv4Segment: string | null = null;
-  if (rightSegments.length > 0 && rightSegments[rightSegments.length - 1].includes('.')) {
-    ipv4Segment = rightSegments.pop() ?? null;
-  } else if (!right && leftSegments.length > 0 && leftSegments[leftSegments.length - 1].includes('.')) {
-    ipv4Segment = leftSegments.pop() ?? null;
-  }
-
-  if (ipv4Segment && !isValidIPv4(ipv4Segment)) {
-    return false;
-  }
-
-  const allSegments = [...leftSegments, ...rightSegments];
-  if (allSegments.some(segment => !IPV6_SEGMENT_REGEX.test(segment))) {
-    return false;
-  }
-
-  const segmentCount = allSegments.length + (ipv4Segment ? 2 : 0);
-
-  if (hasDoubleColon) {
-    return segmentCount <= 7;
-  }
-
-  return segmentCount === 8;
+/**
+ * Validates if a string is a valid IPv4 address.
+ * Uses Node.js built-in net.isIPv4() for reliable validation.
+ *
+ * @param ip - The IP address string to validate
+ * @returns true if valid IPv4, false otherwise
+ *
+ * @example
+ * isValidIPv4('192.168.1.1') // true
+ * isValidIPv4('256.1.1.1') // false
+ */
+export const isValidIPv4 = (ip: string): boolean => {
+  if (!ip) return false;
+  return isIPv4(ip);
 };
 
+/**
+ * Validates if a string is a valid IPv6 address.
+ * Uses Node.js built-in net.isIPv6() for reliable validation.
+ * Correctly handles compressed notation (::).
+ *
+ * @param ip - The IP address string to validate
+ * @returns true if valid IPv6, false otherwise
+ *
+ * @example
+ * isValidIPv6('2001:db8::1') // true
+ * isValidIPv6('::1') // true (IPv6 localhost)
+ * isValidIPv6('::') // true (all zeros)
+ * isValidIPv6('::ffff:192.0.2.1') // true (IPv4-mapped)
+ */
+export const isValidIPv6 = (ip: string): boolean => {
+  if (!ip) return false;
+  return isIPv6(ip);
+};
+
+/**
+ * Validates if a string is a valid IP address (IPv4 or IPv6).
+ *
+ * @param ip - The IP address string to validate
+ * @returns true if valid IPv4 or IPv6, false otherwise
+ *
+ * @example
+ * isValidIpAddress('192.168.1.1') // true
+ * isValidIpAddress('2001:db8::1') // true
+ * isValidIpAddress('invalid') // false
+ */
 export const isValidIpAddress = (ip: string): boolean => isValidIPv4(ip) || isValidIPv6(ip);
