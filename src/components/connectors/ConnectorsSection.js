@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../shared/UI';
 import { Link, Info, Plus } from 'lucide-react';
 import { ConnectorCard } from './ConnectorCard';
@@ -35,10 +35,19 @@ export function ConnectorsSection({ team }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [noticeMessage, setNoticeMessage] = useState('');
   const [syncJobs, setSyncJobs] = useState({});
+  const syncJobsIntervalRef = useRef(null);
 
   // Load latest sync jobs for each connector
   useEffect(() => {
+    let isActive = true;
     const loadSyncJobs = async () => {
+      if (connectors.length === 0) {
+        if (isActive) {
+          setSyncJobs({});
+        }
+        return;
+      }
+
       const jobs = {};
       for (const connector of connectors) {
         try {
@@ -50,12 +59,31 @@ export function ConnectorsSection({ team }) {
           console.error('Error loading sync job for connector:', connector.id, err);
         }
       }
-      setSyncJobs(jobs);
+
+      if (isActive) {
+        setSyncJobs(jobs);
+      }
     };
+
+    if (syncJobsIntervalRef.current) {
+      clearInterval(syncJobsIntervalRef.current);
+      syncJobsIntervalRef.current = null;
+    }
 
     if (connectors.length > 0) {
       loadSyncJobs();
+      syncJobsIntervalRef.current = setInterval(loadSyncJobs, 5000);
+    } else {
+      setSyncJobs({});
     }
+
+    return () => {
+      isActive = false;
+      if (syncJobsIntervalRef.current) {
+        clearInterval(syncJobsIntervalRef.current);
+        syncJobsIntervalRef.current = null;
+      }
+    };
   }, [connectors, getLatestSyncJob]);
 
   // Clear success message after timeout (10s for verification, 5s for others)
