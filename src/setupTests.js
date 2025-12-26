@@ -9,3 +9,11 @@ Object.defineProperty(window, 'scrollTo', {
   value: jest.fn(),
   writable: true
 });
+
+if (typeof globalThis.Deno === 'undefined') {
+  globalThis.Deno = {
+    env: {
+      get: () => undefined
+    }
+  };
+}
