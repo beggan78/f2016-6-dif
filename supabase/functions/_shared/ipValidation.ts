@@ -1,8 +1,8 @@
-import { isIPv4, isIPv6 } from 'https://deno.land/std@0.192.0/node/net.ts';
+import { isIPv4, isIPv6 } from 'jsr:@std/node@1/net';
 
 /**
  * Validates if a string is a valid IPv4 address.
- * Uses Node.js built-in net.isIPv4() for reliable validation.
+ * Uses Deno std's Node compatibility net.isIPv4() for reliable validation.
  *
  * @param ip - The IP address string to validate
  * @returns true if valid IPv4, false otherwise
@@ -18,7 +18,7 @@ export const isValidIPv4 = (ip: string): boolean => {
 
 /**
  * Validates if a string is a valid IPv6 address.
- * Uses Node.js built-in net.isIPv6() for reliable validation.
+ * Uses Deno std's Node compatibility net.isIPv6() for reliable validation.
  * Correctly handles compressed notation (::).
  *
  * @param ip - The IP address string to validate
