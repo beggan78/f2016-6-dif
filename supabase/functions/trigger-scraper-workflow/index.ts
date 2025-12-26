@@ -42,7 +42,12 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const ONE_HOUR_MS = MS_IN_HOUR;
 
 const RATE_LIMIT_CONFIGS: { perTeam: RateLimitConfig } = {
-  perTeam: { windowMs: ONE_HOUR_MS, maxRequests: 10, violationThreshold: 1, blockDurationMs: ONE_HOUR_MS }
+  perTeam: {
+    windowMs: ONE_HOUR_MS,
+    maxRequests: 5,
+    violationThreshold: Number.MAX_SAFE_INTEGER,
+    blockDurationMs: 0
+  }
 };
 
 const redis = createRedisClient('trigger-scraper-workflow');
