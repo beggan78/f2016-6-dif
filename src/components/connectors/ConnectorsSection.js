@@ -145,7 +145,7 @@ export function ConnectorsSection({ team }) {
     try {
       await connectProvider(CONNECTOR_PROVIDERS.SPORTADMIN.id, credentials);
       setShowConnectModal(false);
-      setSuccessMessage('SportAdmin connected successfully! Verification in progress (takes up to 2 minutes)...');
+      setSuccessMessage('SportAdmin connected successfully! Verification in progress (takes up to 5 minutes)...');
 
       // Trigger immediate scraper run for verification (non-blocking)
       triggerImmediateSync('Scraper workflow triggered for verification');
