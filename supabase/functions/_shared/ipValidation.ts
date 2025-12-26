@@ -1,4 +1,4 @@
-import { isIPv4, isIPv6 } from 'jsr:@std/node@1/net';
+import { isIPv4, isIPv6 } from 'node:net';
 
 /**
  * Validates if a string is a valid IPv4 address.
