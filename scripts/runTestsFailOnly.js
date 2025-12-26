@@ -11,7 +11,8 @@ require.cache[createJestConfigPath].exports = (...args) => {
   config.moduleNameMapper = {
     ...(config.moduleNameMapper || {}),
     '^jsr:@supabase/supabase-js@2$': '@supabase/supabase-js',
-    '^https://esm\\.sh/@upstash/redis@1\\.28\\.4$': '<rootDir>/src/__mocks__/upstashRedis.js'
+    '^https://esm\\.sh/@upstash/redis@1\\.28\\.4$': '<rootDir>/src/__mocks__/upstashRedis.js',
+    '^https://deno\\.land/std@0\\.192\\.0/node/net\\.ts$': '<rootDir>/src/__mocks__/denoNet.js'
   };
   return config;
 };

@@ -1,4 +1,4 @@
-import { isIPv4, isIPv6 } from 'node:net';
+import { isIPv4, isIPv6 } from 'https://deno.land/std@0.192.0/node/net.ts';
 
 /**
  * Validates if a string is a valid IPv4 address.
