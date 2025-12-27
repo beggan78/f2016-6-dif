@@ -101,19 +101,34 @@ jest.mock('../../../services/matchStateManager', () => ({
   getPlayerStats: jest.fn()
 }));
 
+jest.mock('../../../hooks/usePlayerRecommendationData', () => ({
+  usePlayerRecommendationData: jest.fn()
+}));
+
 describe('PeriodSetupScreen', () => {
   let mockProps;
   let mockPlayers;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-
     const { getOutfieldPositions, getModeDefinition } = require('../../../constants/gameModes');
     const { useTeam } = require('../../../contexts/TeamContext');
     const { getPlayerStats } = require('../../../services/matchStateManager');
+    const { usePlayerRecommendationData } = require('../../../hooks/usePlayerRecommendationData');
 
-    useTeam.mockReturnValue({ currentTeam: { id: 'team-123' } });
+    jest.clearAllMocks();
+
+    useTeam.mockReturnValue({
+      currentTeam: { id: 'team-123' },
+      loadTeamPreferences: jest.fn(() => Promise.resolve({ alternateRoles: true }))
+    });
     getPlayerStats.mockImplementation(() => new Promise(() => {}));
+
+    // Mock the custom hook to return no data by default (Period 1 only behavior)
+    usePlayerRecommendationData.mockReturnValue({
+      playerStats: null,
+      loading: false,
+      error: null
+    });
 
     const buildFieldPositions = (teamConfig) => {
       if (!teamConfig) return [];
@@ -275,10 +290,11 @@ describe('PeriodSetupScreen', () => {
 
   describe('Substitute Recommendations', () => {
     it('recommends players with the lowest started-as-sub percentages for period 1', async () => {
-      const { getPlayerStats } = require('../../../services/matchStateManager');
-      getPlayerStats.mockResolvedValue({
-        success: true,
-        players: [
+      const { usePlayerRecommendationData } = require('../../../hooks/usePlayerRecommendationData');
+
+      // Mock the custom hook to return player stats BEFORE rendering
+      usePlayerRecommendationData.mockImplementation(() => ({
+        playerStats: [
           { id: '1', percentStartedAsSubstitute: 40 },
           { id: '2', percentStartedAsSubstitute: 15 },
           { id: '3', percentStartedAsSubstitute: 5 },
@@ -286,15 +302,23 @@ describe('PeriodSetupScreen', () => {
           { id: '5', percentStartedAsSubstitute: 0 },
           { id: '6', percentStartedAsSubstitute: 55 },
           { id: '7', percentStartedAsSubstitute: 0 }
-        ]
-      });
+        ],
+        loading: false,
+        error: null
+      }));
 
       render(<PeriodSetupScreen {...mockProps} />);
+
+      // Wait for the async effect to complete and update recommendations
+      await waitFor(async () => {
+        const list = await screen.findByTestId('substitute-recommendations-list');
+        const items = within(list).getAllByRole('listitem');
+        expect(items).toHaveLength(2);
+      });
 
       const list = await screen.findByTestId('substitute-recommendations-list');
       const items = within(list).getAllByRole('listitem');
 
-      expect(items).toHaveLength(2);
       expect(items[0]).toHaveTextContent('Player 5');
       expect(items[0]).toHaveTextContent('0.0%');
       expect(items[1]).toHaveTextContent('Player 3');
@@ -318,18 +342,21 @@ describe('PeriodSetupScreen', () => {
     });
 
     it('suggests only open substitute slots and preserves filled slots', async () => {
-      const { getPlayerStats } = require('../../../services/matchStateManager');
-      getPlayerStats.mockResolvedValue({
-        success: true,
-        players: [
+      const { usePlayerRecommendationData } = require('../../../hooks/usePlayerRecommendationData');
+
+      // Mock the custom hook to return player stats BEFORE rendering
+      usePlayerRecommendationData.mockImplementation(() => ({
+        playerStats: [
           { id: '1', percentStartedAsSubstitute: 40 },
           { id: '2', percentStartedAsSubstitute: 15 },
           { id: '3', percentStartedAsSubstitute: 5 },
           { id: '4', percentStartedAsSubstitute: 25 },
           { id: '5', percentStartedAsSubstitute: 0 },
           { id: '6', percentStartedAsSubstitute: 55 }
-        ]
-      });
+        ],
+        loading: false,
+        error: null
+      }));
 
       const props = {
         ...mockProps,
@@ -363,18 +390,21 @@ describe('PeriodSetupScreen', () => {
     });
 
     it('populates substitutes and hides recommendations when accepted', async () => {
-      const { getPlayerStats } = require('../../../services/matchStateManager');
-      getPlayerStats.mockResolvedValue({
-        success: true,
-        players: [
+      const { usePlayerRecommendationData } = require('../../../hooks/usePlayerRecommendationData');
+
+      // Mock the custom hook to return player stats BEFORE rendering
+      usePlayerRecommendationData.mockImplementation(() => ({
+        playerStats: [
           { id: '1', percentStartedAsSubstitute: 40 },
           { id: '2', percentStartedAsSubstitute: 15 },
           { id: '3', percentStartedAsSubstitute: 5 },
           { id: '4', percentStartedAsSubstitute: 25 },
           { id: '5', percentStartedAsSubstitute: 0 },
           { id: '6', percentStartedAsSubstitute: 55 }
-        ]
-      });
+        ],
+        loading: false,
+        error: null
+      }));
 
       render(<PeriodSetupScreen {...mockProps} />);
 
@@ -406,14 +436,17 @@ describe('PeriodSetupScreen', () => {
     });
 
     it('dismisses recommendations without changing formation', async () => {
-      const { getPlayerStats } = require('../../../services/matchStateManager');
-      getPlayerStats.mockResolvedValue({
-        success: true,
-        players: [
+      const { usePlayerRecommendationData } = require('../../../hooks/usePlayerRecommendationData');
+
+      // Mock the custom hook to return player stats BEFORE rendering
+      usePlayerRecommendationData.mockImplementation(() => ({
+        playerStats: [
           { id: '1', percentStartedAsSubstitute: 40 },
           { id: '2', percentStartedAsSubstitute: 15 }
-        ]
-      });
+        ],
+        loading: false,
+        error: null
+      }));
 
       render(<PeriodSetupScreen {...mockProps} />);
 
@@ -426,11 +459,14 @@ describe('PeriodSetupScreen', () => {
     });
 
     it('shows an error message when recommendation loading fails', async () => {
-      const { getPlayerStats } = require('../../../services/matchStateManager');
-      getPlayerStats.mockResolvedValue({
-        success: false,
+      const { usePlayerRecommendationData } = require('../../../hooks/usePlayerRecommendationData');
+
+      // Mock the custom hook to return an error BEFORE rendering
+      usePlayerRecommendationData.mockImplementation(() => ({
+        playerStats: null,
+        loading: false,
         error: 'Network error'
-      });
+      }));
 
       render(<PeriodSetupScreen {...mockProps} />);
 
