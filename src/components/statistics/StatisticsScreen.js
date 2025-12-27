@@ -48,7 +48,7 @@ const getInitialTimeRange = (timeRangePersistence) => {
   };
 };
 
-export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
+export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onNavigateTo }) {
   const tabPersistence = useMemo(
     () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
     []
@@ -208,7 +208,13 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp }) {
       case STATS_TABS.PLAYER:
         return <PlayerStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
       case STATS_TABS.ATTENDANCE:
-        return <AttendanceStatsView startDate={timeRangeStart} endDate={timeRangeEnd} />;
+        return (
+          <AttendanceStatsView
+            startDate={timeRangeStart}
+            endDate={timeRangeEnd}
+            onNavigateTo={onNavigateTo}
+          />
+        );
       case STATS_TABS.HISTORY:
         return (
           <MatchHistoryView

@@ -3,13 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { AttendanceStatsView } from '../AttendanceStatsView';
 import { useTeam } from '../../../contexts/TeamContext';
 import { getAttendanceStats, getTeamConnectors } from '../../../services/connectorService';
-import { useNavigationHistory } from '../../../hooks/useNavigationHistory';
 import { VIEWS } from '../../../constants/viewConstants';
 
 // Mock dependencies
 jest.mock('../../../contexts/TeamContext');
 jest.mock('../../../services/connectorService');
-jest.mock('../../../hooks/useNavigationHistory');
 jest.mock('../../../hooks/useTableSort');
 jest.mock('../../../hooks/useColumnOrderPersistence');
 
@@ -18,7 +16,7 @@ const mockUseTableSort = require('../../../hooks/useTableSort');
 const mockUseColumnOrderPersistence = require('../../../hooks/useColumnOrderPersistence');
 
 describe('AttendanceStatsView', () => {
-  const mockNavigateTo = jest.fn();
+  const mockOnNavigateTo = jest.fn();
   const mockHandleSort = jest.fn();
   const mockRenderSortIndicator = jest.fn(() => null);
 
@@ -67,11 +65,6 @@ describe('AttendanceStatsView', () => {
     // Mock useTeam
     useTeam.mockReturnValue({
       currentTeam: { id: 'team-123', name: 'Test Team' }
-    });
-
-    // Mock useNavigationHistory
-    useNavigationHistory.mockReturnValue({
-      navigateTo: mockNavigateTo
     });
 
     // Mock useTableSort
@@ -178,7 +171,7 @@ describe('AttendanceStatsView', () => {
         expect(screen.getByText('No attendance data available')).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/Set up a Connector in Team Preferences/i)).toBeInTheDocument();
+      expect(screen.getByText(/Set up a Connector in the Team Management Connectors tab/i)).toBeInTheDocument();
       expect(screen.getByText('SportAdmin')).toBeInTheDocument();
       expect(screen.getByText('Svenska Lag')).toBeInTheDocument();
       expect(screen.getByText('MyClub')).toBeInTheDocument();
@@ -194,15 +187,21 @@ describe('AttendanceStatsView', () => {
       });
     });
 
-    it('should navigate to team preferences when Connect Now is clicked', async () => {
+    it('should navigate to team connectors when Connect Now is clicked', async () => {
       getTeamConnectors.mockResolvedValue([]);
 
-      render(<AttendanceStatsView startDate={null} endDate={null} />);
+      render(
+        <AttendanceStatsView
+          startDate={null}
+          endDate={null}
+          onNavigateTo={mockOnNavigateTo}
+        />
+      );
 
       const connectButton = await screen.findByText('Connect Now');
       connectButton.click();
 
-      expect(mockNavigateTo).toHaveBeenCalledWith(VIEWS.TEAM_MANAGEMENT, { openToTab: 'preferences' });
+      expect(mockOnNavigateTo).toHaveBeenCalledWith(VIEWS.TEAM_MANAGEMENT);
     });
 
     it('should show empty state when no attendance data for date range', async () => {
