@@ -57,7 +57,7 @@ jobs:
 
       - name: Push to public repo
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           PERSONAL_TOKEN: ${{ secrets.PAT }}
           external_repository: beggan78/sportwizard
