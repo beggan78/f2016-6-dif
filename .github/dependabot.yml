@@ -1,0 +1,36 @@
+version: 2
+updates:
+  # NPM dependency updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@testing-library/*"
+          - "eslint*"
+          - "prettier*"
+          - "tailwindcss"
+          - "postcss"
+          - "autoprefixer"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions workflow updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "github-actions"
