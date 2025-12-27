@@ -28,9 +28,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Use a Personal Access Token (PAT) for access to the other repo.
-          # The GITHUB_TOKEN has permissions only for the current repo.
-          token: ${{ secrets.PAT }}
+          # Prefer PAT when available; fall back to GITHUB_TOKEN for PRs (e.g., dependabot).
+          token: ${{ secrets.PAT || github.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
