@@ -38,6 +38,15 @@ jest.mock('../utils/authValidation', () => ({
 
 describe('Invitation Flow Integration Tests', () => {
   let mockUseAuth, mockUseTeam, mockSupabase, mockAuthValidation;
+  let originalHref;
+
+  const setTestLocation = ({ search = '', hash = '' }) => {
+    const baseUrl = window.location?.origin || 'http://localhost';
+    const url = new URL(baseUrl);
+    url.search = search;
+    url.hash = hash;
+    window.history.pushState({}, '', url.toString());
+  };
 
   beforeEach(() => {
     // Reset all mocks
@@ -86,23 +95,25 @@ describe('Invitation Flow Integration Tests', () => {
     mockAuthValidation = authValidation;
     mockAuthValidation.validatePassword.mockReturnValue({ isValid: true });
     mockAuthValidation.getPasswordRequirementsText.mockReturnValue('Password must be at least 8 characters');
+
+    if (global.window) {
+      originalHref = window.location.href;
+    }
   });
 
   afterEach(() => {
+    if (global.window && originalHref) {
+      window.history.pushState({}, '', originalHref);
+    }
     jest.restoreAllMocks();
   });
 
   describe('Invitation utilities integration', () => {
     it('should correctly process URL parameters through utility functions', () => {
-      // Mock window for URL parsing
-      Object.defineProperty(global, 'window', {
-        value: {
-          location: {
-            search: '?invitation=true&team=team-123&role=player&invitation_id=inv-123',
-            hash: ''
-          }
-        },
-        writable: true
+      // Update URL for parsing without replacing the window object
+      setTestLocation({
+        search: '?invitation=true&team=team-123&role=player&invitation_id=inv-123',
+        hash: ''
       });
 
       const params = invitationUtils.detectInvitationParams();
@@ -116,15 +127,10 @@ describe('Invitation Flow Integration Tests', () => {
     });
 
     it('should correctly process Supabase auth tokens', () => {
-      // Mock window with Supabase tokens
-      Object.defineProperty(global, 'window', {
-        value: {
-          location: {
-            search: '?team=team-456&role=coach&invitation_id=inv-456',
-            hash: '#access_token=token123&token_type=bearer&expires_in=3600'
-          }
-        },
-        writable: true
+      // Update URL with Supabase tokens
+      setTestLocation({
+        search: '?team=team-456&role=coach&invitation_id=inv-456',
+        hash: '#access_token=token123&token_type=bearer&expires_in=3600'
       });
 
       const params = invitationUtils.detectInvitationParams();
@@ -176,15 +182,10 @@ describe('Invitation Flow Integration Tests', () => {
 
   describe('Invitation utilities workflow integration', () => {
     it('should coordinate between detection and status functions', () => {
-      // Mock window with valid invitation
-      Object.defineProperty(global, 'window', {
-        value: {
-          location: {
-            search: '?invitation=true&team=team-123&role=player&invitation_id=inv-123',
-            hash: ''
-          }
-        },
-        writable: true
+      // Update URL with valid invitation
+      setTestLocation({
+        search: '?invitation=true&team=team-123&role=player&invitation_id=inv-123',
+        hash: ''
       });
 
       // Detect invitation parameters
@@ -207,15 +208,10 @@ describe('Invitation Flow Integration Tests', () => {
     });
 
     it('should handle complete Supabase invitation workflow', () => {
-      // Mock window with Supabase tokens
-      Object.defineProperty(global, 'window', {
-        value: {
-          location: {
-            search: '?team=team-456&role=coach&invitation_id=inv-456',
-            hash: '#access_token=token123&token_type=bearer&expires_in=3600'
-          }
-        },
-        writable: true
+      // Update URL with Supabase tokens
+      setTestLocation({
+        search: '?team=team-456&role=coach&invitation_id=inv-456',
+        hash: '#access_token=token123&token_type=bearer&expires_in=3600'
       });
 
       // Detect Supabase invitation
@@ -257,15 +253,10 @@ describe('Invitation Flow Integration Tests', () => {
 
   describe('Error handling integration', () => {
     it('should handle invalid invitation parameters gracefully', () => {
-      // Mock window with invalid parameters
-      Object.defineProperty(global, 'window', {
-        value: {
-          location: {
-            search: '?invitation=invalid&team=&role=',
-            hash: ''
-          }
-        },
-        writable: true
+      // Update URL with invalid parameters
+      setTestLocation({
+        search: '?invitation=invalid&team=&role=',
+        hash: ''
       });
 
       const params = invitationUtils.detectInvitationParams();
