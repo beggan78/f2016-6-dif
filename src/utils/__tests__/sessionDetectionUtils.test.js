@@ -36,13 +36,6 @@ const mockDocument = {
   visibilityState: 'visible'
 };
 
-const mockWindow = {
-  location: { 
-    origin: 'http://localhost:3000',
-    href: 'http://localhost:3000/test'
-  }
-};
-
 const mockNavigator = {
   userAgent: 'Mozilla/5.0 (test)'
 };
@@ -63,7 +56,6 @@ describe('sessionDetectionUtils', () => {
     // Setup global mocks
     global.performance = mockPerformance;
     global.document = mockDocument;
-    global.window = mockWindow;
     global.navigator = mockNavigator;
     global.sessionStorage = mockSessionStorage;
     

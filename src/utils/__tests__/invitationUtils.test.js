@@ -19,18 +19,23 @@ import {
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 describe('invitationUtils', () => {
-  let originalLocation;
-  let originalWindow;
+  let originalHref;
+  let originalLocalStorage;
+  let replaceStateSpy;
   let mockLocalStorage;
+
+  const setTestLocation = ({ pathname = '/', search = '', hash = '' } = {}) => {
+    const url = new URL(window.location.href);
+    url.pathname = pathname;
+    url.search = search;
+    url.hash = hash;
+    window.history.pushState({}, '', url.toString());
+  };
 
   beforeEach(() => {
     // Mock console methods for clean test output
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    // Save original window and mock
-    originalWindow = global.window;
-    originalLocation = global.window?.location;
 
     // Mock localStorage
     mockLocalStorage = {
@@ -39,27 +44,18 @@ describe('invitationUtils', () => {
       removeItem: jest.fn()
     };
 
-    // Mock window and location with proper URL structure
-    Object.defineProperty(global, 'window', {
-      value: {
-        location: {
-          href: 'http://localhost:3000',
-          search: '',
-          hash: '',
-          pathname: '/',
-          hostname: 'localhost',
-          port: '3000',
-          protocol: 'http:',
-          toString: () => 'http://localhost:3000'
-        },
-        history: {
-          replaceState: jest.fn()
-        },
-        localStorage: mockLocalStorage
-      },
-      writable: true,
-      configurable: true
-    });
+    if (global.window) {
+      originalHref = window.location.href;
+      originalLocalStorage = window.localStorage;
+      replaceStateSpy = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+      setTestLocation();
+
+      Object.defineProperty(window, 'localStorage', {
+        value: mockLocalStorage,
+        writable: true,
+        configurable: true
+      });
+    }
 
     // Also mock global localStorage for direct access
     Object.defineProperty(global, 'localStorage', {
@@ -70,13 +66,20 @@ describe('invitationUtils', () => {
   });
 
   afterEach(() => {
-    // Restore original window
-    if (originalWindow) {
-      Object.defineProperty(global, 'window', {
-        value: originalWindow,
-        writable: true,
-        configurable: true
-      });
+    if (global.window) {
+      if (originalHref) {
+        window.history.pushState({}, '', originalHref);
+      }
+      if (replaceStateSpy) {
+        replaceStateSpy.mockRestore();
+      }
+      if (originalLocalStorage) {
+        Object.defineProperty(window, 'localStorage', {
+          value: originalLocalStorage,
+          writable: true,
+          configurable: true
+        });
+      }
     }
 
     // Clear global localStorage mock
@@ -91,26 +94,20 @@ describe('invitationUtils', () => {
     it('should return no invitation when window is undefined', () => {
       // Temporarily remove window
       const tempWindow = global.window;
-      Object.defineProperty(global, 'window', {
-        value: undefined,
-        writable: true,
-        configurable: true
-      });
+      delete global.window;
 
       const result = detectInvitationParams();
 
       expect(result).toEqual({ hasInvitation: false });
 
       // Restore window
-      Object.defineProperty(global, 'window', {
-        value: tempWindow,
-        writable: true,
-        configurable: true
-      });
+      global.window = tempWindow;
     });
 
     it('should detect custom invitation parameters', () => {
-      global.window.location.search = '?invitation=true&team=team-123&role=player&invitation_id=inv-456';
+      setTestLocation({
+        search: '?invitation=true&team=team-123&role=player&invitation_id=inv-456'
+      });
 
       const result = detectInvitationParams();
 
@@ -139,7 +136,9 @@ describe('invitationUtils', () => {
     });
 
     it('should detect Supabase invitation parameters', () => {
-      global.window.location.hash = '#access_token=abc123&token_type=bearer&expires_in=3600&refresh_token=def456';
+      setTestLocation({
+        hash: '#access_token=abc123&token_type=bearer&expires_in=3600&refresh_token=def456'
+      });
 
       const result = detectInvitationParams();
 
@@ -168,8 +167,10 @@ describe('invitationUtils', () => {
     });
 
     it('should detect mixed invitation parameters', () => {
-      global.window.location.search = '?team=team-789&role=coach&invitation_id=inv-789';
-      global.window.location.hash = '#access_token=xyz789&token_type=bearer';
+      setTestLocation({
+        search: '?team=team-789&role=coach&invitation_id=inv-789',
+        hash: '#access_token=xyz789&token_type=bearer'
+      });
 
       const result = detectInvitationParams();
 
@@ -181,7 +182,9 @@ describe('invitationUtils', () => {
     });
 
     it('should not detect custom invitation without invitation=true', () => {
-      global.window.location.search = '?team=team-123&role=player';
+      setTestLocation({
+        search: '?team=team-123&role=player'
+      });
 
       const result = detectInvitationParams();
 
@@ -191,7 +194,9 @@ describe('invitationUtils', () => {
     });
 
     it('should not detect custom invitation with incomplete parameters', () => {
-      global.window.location.search = '?invitation=true&team=team-123';
+      setTestLocation({
+        search: '?invitation=true&team=team-123'
+      });
       // Missing role
 
       const result = detectInvitationParams();
@@ -201,7 +206,9 @@ describe('invitationUtils', () => {
     });
 
     it('should not detect Supabase invitation without bearer token', () => {
-      global.window.location.hash = '#access_token=abc123&token_type=basic';
+      setTestLocation({
+        hash: '#access_token=abc123&token_type=basic'
+      });
 
       const result = detectInvitationParams();
 
@@ -210,8 +217,7 @@ describe('invitationUtils', () => {
     });
 
     it('should handle empty URL parameters', () => {
-      global.window.location.search = '';
-      global.window.location.hash = '';
+      setTestLocation();
 
       const result = detectInvitationParams();
 
@@ -223,14 +229,10 @@ describe('invitationUtils', () => {
 
   describe('clearInvitationParamsFromUrl', () => {
     it('should clear invitation parameters from URL with query params', () => {
-      // Mock location with full URL string for proper URL constructor
-      global.window.location = {
-        ...global.window.location,
-        href: 'http://localhost:3000/app?invitation=true&team=team-123&role=player&other=keep',
-        search: '?invitation=true&team=team-123&role=player&other=keep',
+      setTestLocation({
         pathname: '/app',
-        toString: () => 'http://localhost:3000/app?invitation=true&team=team-123&role=player&other=keep'
-      };
+        search: '?invitation=true&team=team-123&role=player&other=keep'
+      });
 
       clearInvitationParamsFromUrl();
 
@@ -238,13 +240,10 @@ describe('invitationUtils', () => {
     });
 
     it('should clear URL to pathname only when no remaining params', () => {
-      global.window.location = {
-        ...global.window.location,
-        href: 'http://localhost:3000/dashboard?invitation=true&team=team-123',
-        search: '?invitation=true&team=team-123',
+      setTestLocation({
         pathname: '/dashboard',
-        toString: () => 'http://localhost:3000/dashboard?invitation=true&team=team-123'
-      };
+        search: '?invitation=true&team=team-123'
+      });
 
       clearInvitationParamsFromUrl();
 
@@ -252,13 +251,9 @@ describe('invitationUtils', () => {
     });
 
     it('should handle URL with no query parameters', () => {
-      global.window.location = {
-        ...global.window.location,
-        href: 'http://localhost:3000/home',
-        search: '',
-        pathname: '/home',
-        toString: () => 'http://localhost:3000/home'
-      };
+      setTestLocation({
+        pathname: '/home'
+      });
 
       clearInvitationParamsFromUrl();
 
@@ -267,19 +262,11 @@ describe('invitationUtils', () => {
 
     it('should not do anything when window is undefined', () => {
       const tempWindow = global.window;
-      Object.defineProperty(global, 'window', {
-        value: undefined,
-        writable: true,
-        configurable: true
-      });
+      delete global.window;
 
       expect(() => clearInvitationParamsFromUrl()).not.toThrow();
 
-      Object.defineProperty(global, 'window', {
-        value: tempWindow,
-        writable: true,
-        configurable: true
-      });
+      global.window = tempWindow;
     });
   });
 
@@ -638,19 +625,11 @@ describe('invitationUtils', () => {
 
       it('should not do anything when window is undefined', () => {
         const tempWindow = global.window;
-        Object.defineProperty(global, 'window', {
-          value: undefined,
-          writable: true,
-          configurable: true
-        });
+        delete global.window;
 
         expect(() => storePendingInvitation({ invitationId: 'inv-123' })).not.toThrow();
 
-        Object.defineProperty(global, 'window', {
-          value: tempWindow,
-          writable: true,
-          configurable: true
-        });
+        global.window = tempWindow;
       });
     });
 
@@ -705,21 +684,13 @@ describe('invitationUtils', () => {
 
       it('should return null when window is undefined', () => {
         const tempWindow = global.window;
-        Object.defineProperty(global, 'window', {
-          value: undefined,
-          writable: true,
-          configurable: true
-        });
+        delete global.window;
 
         const result = retrievePendingInvitation();
 
         expect(result).toBeNull();
 
-        Object.defineProperty(global, 'window', {
-          value: tempWindow,
-          writable: true,
-          configurable: true
-        });
+        global.window = tempWindow;
       });
     });
 
@@ -748,26 +719,20 @@ describe('invitationUtils', () => {
 
       it('should return false when window is undefined', () => {
         const tempWindow = global.window;
-        Object.defineProperty(global, 'window', {
-          value: undefined,
-          writable: true,
-          configurable: true
-        });
+        delete global.window;
 
         expect(hasPendingInvitation()).toBe(false);
 
-        Object.defineProperty(global, 'window', {
-          value: tempWindow,
-          writable: true,
-          configurable: true
-        });
+        global.window = tempWindow;
       });
     });
   });
 
   describe('edge cases and error handling', () => {
     it('should handle malformed URL parameters gracefully', () => {
-      global.window.location.search = '?invitation=true&team=&role=player';
+      setTestLocation({
+        search: '?invitation=true&team=&role=player'
+      });
 
       const result = detectInvitationParams();
 
@@ -776,7 +741,7 @@ describe('invitationUtils', () => {
     });
 
     it('should handle URL with no hash symbol', () => {
-      global.window.location.hash = '';
+      setTestLocation();
 
       const result = detectInvitationParams();
 
@@ -785,8 +750,10 @@ describe('invitationUtils', () => {
     });
 
     it('should handle complex URL scenarios', () => {
-      global.window.location.search = '?invitation=true&team=team-123&role=player&invitation_id=inv-123&extra=value';
-      global.window.location.hash = '#access_token=token&token_type=bearer&other=param';
+      setTestLocation({
+        search: '?invitation=true&team=team-123&role=player&invitation_id=inv-123&extra=value',
+        hash: '#access_token=token&token_type=bearer&other=param'
+      });
 
       const result = detectInvitationParams();
 

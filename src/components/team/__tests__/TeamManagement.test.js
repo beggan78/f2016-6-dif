@@ -161,6 +161,7 @@ describe('TeamManagement', () => {
   let mockTeamContext;
   let mockAuthContext;
   let mockNavigateBack;
+  let user;
 
   const mockTeam = {
     id: 'team-123',
@@ -258,13 +259,10 @@ describe('TeamManagement', () => {
 
     mockUseAuth.mockReturnValue(mockAuthContext);
     mockUseTeam.mockReturnValue(mockTeamContext);
-
-    // Mock timers for success message auto-clear
-    jest.useFakeTimers();
+    user = userEvent.setup();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
     jest.useRealTimers();
   });
 
@@ -477,7 +475,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText(/Roster Management/i)).toBeInTheDocument();
@@ -488,7 +486,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const accessTab = screen.getByRole('button', { name: /Access Management/i });
-      await userEvent.click(accessTab);
+      await user.click(accessTab);
 
       await waitFor(() => {
         const accessElements = screen.getAllByText(/Access Management/i);
@@ -500,7 +498,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const connectorsTab = screen.getByRole('button', { name: /Connectors/i });
-      await userEvent.click(connectorsTab);
+      await user.click(connectorsTab);
 
       await waitFor(() => {
         expect(screen.getByTestId('connectors-section')).toBeInTheDocument();
@@ -511,7 +509,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const preferencesTab = screen.getByRole('button', { name: /Preferences/i });
-      await userEvent.click(preferencesTab);
+      await user.click(preferencesTab);
 
       await waitFor(() => {
         expect(screen.getByText(/Team Preferences/i)).toBeInTheDocument();
@@ -549,7 +547,7 @@ describe('TeamManagement', () => {
         render(<TeamManagement {...defaultProps} />);
 
         const accessTab = screen.getByRole('button', { name: /Access Management/i });
-        await userEvent.click(accessTab);
+        await user.click(accessTab);
 
         await waitFor(() => {
           expect(screen.getByText(/pending access request/i)).toBeInTheDocument();
@@ -560,7 +558,7 @@ describe('TeamManagement', () => {
         render(<TeamManagement {...defaultProps} />);
 
         const connectorsTab = screen.getByRole('button', { name: /Connectors/i });
-        await userEvent.click(connectorsTab);
+        await user.click(connectorsTab);
 
         await waitFor(() => {
           expect(screen.getByTestId('connectors-section')).toBeInTheDocument();
@@ -621,6 +619,8 @@ describe('TeamManagement', () => {
 
   describe('Success Messages', () => {
     it('should display success message after team creation', async () => {
+      jest.useFakeTimers();
+      user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const mockGetTeamMembersAfterCreate = jest.fn(() => Promise.resolve(mockMembers));
 
       mockUseTeam.mockReturnValue({
@@ -634,7 +634,7 @@ describe('TeamManagement', () => {
       const { rerender } = render(<TeamManagement {...defaultProps} />);
 
       const completeButton = screen.getByText('Complete');
-      await userEvent.click(completeButton);
+      await user.click(completeButton);
 
       // Simulate team being created - rerender with team context
       mockUseTeam.mockReturnValue({
@@ -651,6 +651,8 @@ describe('TeamManagement', () => {
     });
 
     it('should auto-clear success messages after 3 seconds', async () => {
+      jest.useFakeTimers();
+      user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const mockGetTeamMembersAfterCreate = jest.fn(() => Promise.resolve(mockMembers));
 
       mockUseTeam.mockReturnValue({
@@ -664,7 +666,7 @@ describe('TeamManagement', () => {
       const { rerender } = render(<TeamManagement {...defaultProps} />);
 
       const completeButton = screen.getByText('Complete');
-      await userEvent.click(completeButton);
+      await user.click(completeButton);
 
       // Simulate team being created - rerender with team context
       mockUseTeam.mockReturnValue({
@@ -791,7 +793,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const connectorsTab = screen.getByRole('button', { name: /Connectors/i });
-      await userEvent.click(connectorsTab);
+      await user.click(connectorsTab);
 
       await waitFor(() => {
         expect(screen.getByTestId('connectors-section')).toBeInTheDocument();
@@ -863,7 +865,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const createButton = screen.getByText('Create New Team');
-      await userEvent.click(createButton);
+      await user.click(createButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('team-creation-wizard')).toBeInTheDocument();
@@ -881,14 +883,14 @@ describe('TeamManagement', () => {
 
       // Open wizard from selector
       const createButton = screen.getByText('Create New Team');
-      await userEvent.click(createButton);
+      await user.click(createButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('team-creation-wizard')).toBeInTheDocument();
       });
 
       const cancelButton = screen.getByText('Cancel');
-      await userEvent.click(cancelButton);
+      await user.click(cancelButton);
 
       // After cancel, wizard closes and selector reappears
       await waitFor(() => {
@@ -908,7 +910,7 @@ describe('TeamManagement', () => {
       const { rerender } = render(<TeamManagement {...defaultProps} />);
 
       const completeButton = screen.getByText('Complete');
-      await userEvent.click(completeButton);
+      await user.click(completeButton);
 
       // Simulate team context update after creation
       mockUseTeam.mockReturnValue({
@@ -927,12 +929,10 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const accessTab = screen.getByRole('button', { name: /Access Management/i });
-      await userEvent.click(accessTab);
+      await user.click(accessTab);
 
-      await waitFor(() => {
-        const manageButton = screen.getByRole('button', { name: /Manage Access/i });
-        userEvent.click(manageButton);
-      });
+      const manageButton = await screen.findByRole('button', { name: /Manage Access/i });
+      await user.click(manageButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('team-access-request-modal')).toBeInTheDocument();
@@ -943,12 +943,10 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const accessTab = screen.getByRole('button', { name: /Access Management/i });
-      await userEvent.click(accessTab);
+      await user.click(accessTab);
 
-      await waitFor(() => {
-        const inviteButton = screen.getAllByRole('button', { name: /Invitations/i })[0];
-        userEvent.click(inviteButton);
-      });
+      const inviteButton = (await screen.findAllByRole('button', { name: /Invitations/i }))[0];
+      await user.click(inviteButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('team-invite-modal')).toBeInTheDocument();
@@ -959,12 +957,10 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const accessTab = screen.getByRole('button', { name: /Access Management/i });
-      await userEvent.click(accessTab);
+      await user.click(accessTab);
 
-      await waitFor(() => {
-        const rolesButton = screen.getByRole('button', { name: /Manage Roles/i });
-        userEvent.click(rolesButton);
-      });
+      const rolesButton = await screen.findByRole('button', { name: /Manage Roles/i });
+      await user.click(rolesButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('team-role-management-modal')).toBeInTheDocument();
@@ -984,7 +980,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const accessTab = screen.getByRole('button', { name: /Access Management/i });
-      await userEvent.click(accessTab);
+      await user.click(accessTab);
 
       await waitFor(() => {
         expect(screen.getByText(/1 pending access request/i)).toBeInTheDocument();
@@ -1002,7 +998,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const accessTab = screen.getByRole('button', { name: /Access Management/i });
-      await userEvent.click(accessTab);
+      await user.click(accessTab);
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Review Requests/i })).toBeInTheDocument();
@@ -1013,7 +1009,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const accessTab = screen.getByRole('button', { name: /Access Management/i });
-      await userEvent.click(accessTab);
+      await user.click(accessTab);
 
       await waitFor(() => {
         expect(screen.getByText(/Send invitations to new team members/i)).toBeInTheDocument();
@@ -1027,7 +1023,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         // 1 active player (player-1 has on_roster: true)
@@ -1039,7 +1035,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Add Player/i })).toBeInTheDocument();
@@ -1050,7 +1046,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Player One')).toBeInTheDocument();
@@ -1061,7 +1057,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText(/Show Former Players/i)).toBeInTheDocument();
@@ -1072,7 +1068,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         // Wait for roster to load
@@ -1086,7 +1082,7 @@ describe('TeamManagement', () => {
       const toggleElements = screen.queryAllByText(/Former/i);
       if (toggleElements.length > 0) {
         const toggleButton = toggleElements[0];
-        await userEvent.click(toggleButton);
+        await user.click(toggleButton);
 
         await waitFor(() => {
           // Now former player should be visible
@@ -1099,12 +1095,10 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
-      await waitFor(() => {
-        const addButton = screen.getByRole('button', { name: /Add Player/i });
-        userEvent.click(addButton);
-      });
+      const addButton = await screen.findByRole('button', { name: /Add Player/i });
+      await user.click(addButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('add-roster-player-modal')).toBeInTheDocument();
@@ -1117,7 +1111,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const preferencesTab = screen.getByRole('button', { name: /Preferences/i });
-      await userEvent.click(preferencesTab);
+      await user.click(preferencesTab);
 
       await waitFor(() => {
         expect(mockTeamContext.loadTeamPreferences).toHaveBeenCalledWith(mockTeam.id);
@@ -1128,7 +1122,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const preferencesTab = screen.getByRole('button', { name: /Preferences/i });
-      await userEvent.click(preferencesTab);
+      await user.click(preferencesTab);
 
       await waitFor(() => {
         expect(screen.getByText(/Match Format/i)).toBeInTheDocument();
@@ -1139,7 +1133,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const preferencesTab = screen.getByRole('button', { name: /Preferences/i });
-      await userEvent.click(preferencesTab);
+      await user.click(preferencesTab);
 
       await waitFor(() => {
         expect(screen.getByText(/Formation/i)).toBeInTheDocument();
@@ -1150,7 +1144,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const preferencesTab = screen.getByRole('button', { name: /Preferences/i });
-      await userEvent.click(preferencesTab);
+      await user.click(preferencesTab);
 
       const selects = await screen.findAllByRole('combobox');
       const matchFormatSelect = selects.find((select) =>
@@ -1159,7 +1153,7 @@ describe('TeamManagement', () => {
 
       expect(matchFormatSelect).toBeDefined();
 
-      await userEvent.selectOptions(matchFormatSelect, '7v7');
+      await user.selectOptions(matchFormatSelect, '7v7');
 
       await waitFor(() => {
         expect(mockTeamContext.saveTeamPreferences).toHaveBeenCalledWith(
@@ -1202,7 +1196,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
@@ -1219,14 +1213,14 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
       });
 
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
 
       await waitFor(() => {
         expect(mockDismissGhostPlayer).toHaveBeenCalledWith('ghost-1');
@@ -1242,14 +1236,14 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
       });
 
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
 
       // Check loading state
       await waitFor(() => {
@@ -1268,14 +1262,14 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
       });
 
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
 
       await waitFor(() => {
         expect(screen.getByText(/Ghost Player dismissed/i)).toBeInTheDocument();
@@ -1286,7 +1280,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
@@ -1296,7 +1290,7 @@ describe('TeamManagement', () => {
       const initialConnectionCalls = mockGetPlayerConnectionDetails.mock.calls.length;
 
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
 
       await waitFor(() => {
         expect(mockTeamContext.getTeamRoster.mock.calls.length).toBe(initialGetRosterCalls + 1);
@@ -1311,14 +1305,14 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
       });
 
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
 
       await waitFor(() => {
         expect(screen.getByText(/Database connection lost/i)).toBeInTheDocument();
@@ -1333,14 +1327,14 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
       });
 
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
 
       await waitFor(() => {
         expect(screen.getByText(/already been matched or dismissed/i)).toBeInTheDocument();
@@ -1357,7 +1351,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
@@ -1367,7 +1361,7 @@ describe('TeamManagement', () => {
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
 
       // Start accept operation
-      await userEvent.click(acceptButton);
+      await user.click(acceptButton);
 
       await waitFor(() => {
         expect(dismissButton).toBeDisabled();
@@ -1385,7 +1379,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
@@ -1394,9 +1388,9 @@ describe('TeamManagement', () => {
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
 
       // Click multiple times rapidly
-      await userEvent.click(dismissButton);
-      await userEvent.click(dismissButton);
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
+      await user.click(dismissButton);
+      await user.click(dismissButton);
 
       // Service should only be called once
       await waitFor(() => {
@@ -1424,7 +1418,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const rosterTab = screen.getByRole('button', { name: /Roster/i });
-      await userEvent.click(rosterTab);
+      await user.click(rosterTab);
 
       await waitFor(() => {
         expect(screen.getByText('Ghost Player')).toBeInTheDocument();
@@ -1438,7 +1432,7 @@ describe('TeamManagement', () => {
       });
 
       const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
-      await userEvent.click(dismissButton);
+      await user.click(dismissButton);
 
       await waitFor(() => {
         expect(screen.queryByText('Ghost Player')).not.toBeInTheDocument();
@@ -1451,7 +1445,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       const backButton = screen.getByRole('button', { name: /Back/i });
-      await userEvent.click(backButton);
+      await user.click(backButton);
 
       expect(mockNavigateBack).toHaveBeenCalledTimes(1);
     });
