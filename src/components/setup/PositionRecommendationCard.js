@@ -1,0 +1,124 @@
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Button } from '../shared/UI';
+
+// Position configuration map (duplicated from PeriodSetupScreen for consistency)
+const POSITION_CONFIG = {
+  // 2-2 Formation positions
+  leftDefender: { title: 'Left Defender', position: 'leftDefender' },
+  rightDefender: { title: 'Right Defender', position: 'rightDefender' },
+  leftAttacker: { title: 'Left Attacker', position: 'leftAttacker' },
+  rightAttacker: { title: 'Right Attacker', position: 'rightAttacker' },
+
+  // 1-2-1 Formation positions
+  defender: { title: 'Defender', position: 'defender' },
+  left: { title: 'Left Mid', position: 'left' },
+  right: { title: 'Right Mid', position: 'right' },
+  attacker: { title: 'Attacker', position: 'attacker' },
+
+  // 7v7 Formation positions
+  leftMidfielder: { title: 'Left Midfielder', position: 'leftMidfielder' },
+  rightMidfielder: { title: 'Right Midfielder', position: 'rightMidfielder' },
+  centerMidfielder: { title: 'Center Midfielder', position: 'centerMidfielder' }
+};
+
+const humanizePositionKey = (positionKey) => {
+  return positionKey
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^./, (char) => char.toUpperCase());
+};
+
+const getPositionConfig = (positionKey) => {
+  const presetConfig = POSITION_CONFIG[positionKey];
+  if (presetConfig) {
+    return presetConfig;
+  }
+
+  return { title: humanizePositionKey(positionKey), position: positionKey };
+};
+
+export function PositionRecommendationCard({
+  recommendations,
+  onAccept,
+  onDismiss,
+  allPlayers,
+  loading,
+  error
+}) {
+  const hasRecommendations = recommendations?.recommendations &&
+                             Object.keys(recommendations.recommendations).length > 0;
+
+  return (
+    <div
+      data-testid="position-recommendations"
+      className="p-2 bg-slate-700 rounded-lg space-y-2"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-sky-200">Recommended Starting Positions</h3>
+        <span className="text-xs text-slate-300">Last 6 months</span>
+      </div>
+
+      {loading ? (
+        <p className="text-xs text-slate-300">Calculating position recommendations...</p>
+      ) : error ? (
+        <p className="text-xs text-rose-300">Unable to calculate position recommendations.</p>
+      ) : hasRecommendations ? (
+        <>
+          <p className="text-xs text-slate-300">
+            Fair position assignments based on recent role distribution.
+          </p>
+          <ul className="space-y-1" data-testid="position-recommendations-list">
+            {Object.entries(recommendations.recommendations).map(([position, data]) => {
+              const player = allPlayers.find(p => p.id === data.playerId);
+              const positionConfig = getPositionConfig(position);
+
+              return (
+                <li
+                  key={position}
+                  className="flex items-center justify-between rounded-md bg-slate-800/60 px-2 py-1 text-sm text-slate-100"
+                >
+                  <span>{positionConfig.title}: {player?.displayName || 'Unknown'}</span>
+                  <span className="text-xs text-slate-300">{data.reason}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <p className="text-xs text-slate-300">No position recommendations available.</p>
+      )}
+
+      <div className="flex items-center justify-end space-x-2 pt-1">
+        <Button
+          variant="secondary"
+          onClick={onDismiss}
+        >
+          Dismiss
+        </Button>
+        <Button
+          variant="accent"
+          onClick={onAccept}
+          disabled={loading || !hasRecommendations}
+        >
+          Accept All
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+PositionRecommendationCard.propTypes = {
+  recommendations: PropTypes.object,
+  onAccept: PropTypes.func.isRequired,
+  onDismiss: PropTypes.func.isRequired,
+  allPlayers: PropTypes.array.isRequired,
+  loading: PropTypes.bool,
+  error: PropTypes.string
+};
+
+PositionRecommendationCard.defaultProps = {
+  recommendations: null,
+  loading: false,
+  error: null
+};
