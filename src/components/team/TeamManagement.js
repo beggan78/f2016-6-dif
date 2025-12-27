@@ -1666,6 +1666,28 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
             />
           </div>
         </div>
+
+        {/* Alternate Roles Checkbox */}
+        <div className="space-y-3">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={preferences.alternateRoles}
+              onChange={(e) => setPreferences(prev => ({ ...prev, alternateRoles: e.target.checked }))}
+              className="sr-only"
+            />
+            <div className={`w-4 h-4 rounded border-2 mr-3 flex items-center justify-center ${
+              preferences.alternateRoles
+                ? 'bg-sky-600 border-sky-600'
+                : 'border-slate-400'
+            }`}>
+              {preferences.alternateRoles && (
+                <CheckCircle className="w-3 h-3 text-white" />
+              )}
+            </div>
+            <span className="text-slate-300">Alternate Roles over Time</span>
+          </label>
+        </div>
       </div>
 
       {/* Game Features */}

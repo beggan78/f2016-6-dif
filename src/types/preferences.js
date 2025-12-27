@@ -5,6 +5,7 @@ export const PREFERENCE_KEYS = {
   PERIOD_LENGTH: 'periodLength',
   NUM_PERIODS: 'numPeriods',
   SUBSTITUTION_LOGIC: 'substitutionLogic',
+  ALTERNATE_ROLES: 'alternateRoles',
   TRACK_GOAL_SCORER: 'trackGoalScorer',
   FAIR_PLAY_AWARD: 'fairPlayAward',
   TEAM_CAPTAIN: 'teamCaptain',
@@ -33,6 +34,7 @@ export const DEFAULT_PREFERENCES = {
   [PREFERENCE_KEYS.PERIOD_LENGTH]: 20,
   [PREFERENCE_KEYS.NUM_PERIODS]: 2,
   [PREFERENCE_KEYS.SUBSTITUTION_LOGIC]: 'equal_time',
+  [PREFERENCE_KEYS.ALTERNATE_ROLES]: false,
   [PREFERENCE_KEYS.TRACK_GOAL_SCORER]: true,
   [PREFERENCE_KEYS.FAIR_PLAY_AWARD]: 'none',
   [PREFERENCE_KEYS.TEAM_CAPTAIN]: 'none',
@@ -45,6 +47,7 @@ export const parsePreferenceValue = (key, value) => {
     case PREFERENCE_KEYS.NUM_PERIODS:
       return parseInt(value, 10);
     case PREFERENCE_KEYS.TRACK_GOAL_SCORER:
+    case PREFERENCE_KEYS.ALTERNATE_ROLES:
       return value === 'true';
     default:
       return value;

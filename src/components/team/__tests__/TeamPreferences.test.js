@@ -98,3 +98,74 @@ describe('TeamPreferences - Team Captain', () => {
     );
   });
 });
+
+describe('TeamPreferences - Alternate Roles', () => {
+  const loadTeamPreferences = jest.fn();
+  const saveTeamPreferences = jest.fn();
+  const getTeamRoster = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    loadTeamPreferences.mockResolvedValue({});
+    saveTeamPreferences.mockResolvedValue(true);
+    getTeamRoster.mockResolvedValue(buildRoster());
+
+    useTeam.mockReturnValue({
+      loadTeamPreferences,
+      saveTeamPreferences,
+      getTeamRoster
+    });
+  });
+
+  it('renders the alternate roles checkbox in substitution settings', async () => {
+    render(<TeamPreferences team={mockTeam} />);
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /alternate roles over time/i
+    });
+    expect(checkbox).toBeInTheDocument();
+  });
+
+  it('defaults to unchecked when loading with no saved preference', async () => {
+    loadTeamPreferences.mockResolvedValue({});
+    render(<TeamPreferences team={mockTeam} />);
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /alternate roles over time/i
+    });
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('persists checkbox state to database on toggle', async () => {
+    render(<TeamPreferences team={mockTeam} />);
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /alternate roles over time/i
+    });
+    await userEvent.click(checkbox);
+
+    await waitFor(() => {
+      expect(saveTeamPreferences).toHaveBeenCalledWith(
+        mockTeam.id,
+        expect.objectContaining({ alternateRoles: true })
+      );
+    });
+  });
+
+  it('loads saved preference on component mount', async () => {
+    loadTeamPreferences.mockResolvedValue({ alternateRoles: true });
+    render(<TeamPreferences team={mockTeam} />);
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /alternate roles over time/i
+    });
+    expect(checkbox).toBeChecked();
+  });
+
+  it('toggles checkbox visual state on click', async () => {
+    render(<TeamPreferences team={mockTeam} />);
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /alternate roles over time/i
+    });
+    expect(checkbox).not.toBeChecked();
+
+    await userEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+  });
+});
