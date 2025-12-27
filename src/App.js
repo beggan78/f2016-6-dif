@@ -1191,6 +1191,7 @@ function AppContent() {
           <StatisticsScreen
             onNavigateBack={navigateBack}
             authModal={authModal}
+            onNavigateTo={navigateToView}
           />
         );
       default:

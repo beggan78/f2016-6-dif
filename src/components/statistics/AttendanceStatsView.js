@@ -3,8 +3,8 @@ import { User, Calendar, TrendingUp, Users as UsersIcon, Award } from 'lucide-re
 import { useTeam } from '../../contexts/TeamContext';
 import { getAttendanceStats, getTeamConnectors } from '../../services/connectorService';
 import { Button } from '../shared/UI';
+import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
-import { useNavigationHistory } from '../../hooks/useNavigationHistory';
 import { VIEWS } from '../../constants/viewConstants';
 import { useTableSort } from '../../hooks/useTableSort';
 import { useColumnOrderPersistence } from '../../hooks/useColumnOrderPersistence';
@@ -22,9 +22,13 @@ const SORT_COLUMNS = {
   MATCHES: 'matchesPlayed'
 };
 
-export function AttendanceStatsView({ startDate, endDate }) {
+const teamManagementTabCacheManager = createPersistenceManager(
+  STORAGE_KEYS.TEAM_MANAGEMENT_ACTIVE_TAB,
+  { tab: 'overview' }
+);
+
+export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
   const { currentTeam } = useTeam();
-  const { navigateTo } = useNavigationHistory();
   const [attendanceData, setAttendanceData] = useState([]);
   const [connectors, setConnectors] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -195,7 +199,10 @@ export function AttendanceStatsView({ startDate, endDate }) {
   }, [attendanceData]);
 
   const handleConnectNow = () => {
-    navigateTo(VIEWS.TEAM_MANAGEMENT, { openToTab: 'preferences' });
+    teamManagementTabCacheManager.saveState({ tab: 'connectors' });
+    if (typeof onNavigateTo === 'function') {
+      onNavigateTo(VIEWS.TEAM_MANAGEMENT);
+    }
   };
 
   // Show loading state
@@ -220,7 +227,7 @@ export function AttendanceStatsView({ startDate, endDate }) {
         message={
           <>
             <p className="text-slate-400 text-sm mb-4">
-              Set up a Connector in Team Preferences to collect attendance data from:
+              Set up a Connector in the Team Management Connectors tab to collect attendance data from:
             </p>
             <ul className="text-slate-400 text-sm mb-6 space-y-1">
               <li>SportAdmin</li>

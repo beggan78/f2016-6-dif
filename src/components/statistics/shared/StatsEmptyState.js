@@ -25,7 +25,7 @@ export function StatsEmptyState({ icon: Icon, title, message, actions }) {
             <div className="mt-2">{message}</div>
           )
         )}
-        {actions && <div className="mt-4">{actions}</div>}
+        {actions && <div className="mt-4 flex justify-center">{actions}</div>}
       </div>
     </div>
   );
