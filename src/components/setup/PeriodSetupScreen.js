@@ -7,38 +7,11 @@ import { getPlayerDisplayName as getPlayerDisplayNameUtil, getPlayerDisplayNameB
 import { randomizeFormationPositions } from '../../utils/debugUtils';
 import { getOutfieldPositions, getModeDefinition } from '../../constants/gameModes';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
+import { POSITION_CONFIG } from '../../constants/positionConfig';
 import { useTeam } from '../../contexts/TeamContext';
 import { getPlayerStats } from '../../services/matchStateManager';
 import { calculatePositionRecommendations } from '../../game/logic/positionRecommendations';
 import { PositionRecommendationCard } from './PositionRecommendationCard';
-
-
-// Position configuration map for individual modes
-const POSITION_CONFIG = {
-  // 2-2 Formation positions
-  leftDefender: { title: 'Left Defender', position: 'leftDefender' },
-  rightDefender: { title: 'Right Defender', position: 'rightDefender' },
-  leftAttacker: { title: 'Left Attacker', position: 'leftAttacker' },
-  rightAttacker: { title: 'Right Attacker', position: 'rightAttacker' },
-  
-  // 1-2-1 Formation positions
-  defender: { title: 'Defender', position: 'defender' },
-  left: { title: 'Left Mid', position: 'left' },
-  right: { title: 'Right Mid', position: 'right' },
-  attacker: { title: 'Attacker', position: 'attacker' },
-
-  // 7v7 Formation positions
-  leftMidfielder: { title: 'Left Midfielder', position: 'leftMidfielder' },
-  rightMidfielder: { title: 'Right Midfielder', position: 'rightMidfielder' },
-  centerMidfielder: { title: 'Center Midfielder', position: 'centerMidfielder' },
-  
-  // Substitute positions
-  substitute_1: { title: 'Substitute', position: 'substitute_1' },
-  substitute_2: { title: 'Substitute', position: 'substitute_2' },
-  substitute_3: { title: 'Substitute', position: 'substitute_3' },
-  substitute_4: { title: 'Substitute', position: 'substitute_4' },
-  substitute_5: { title: 'Substitute', position: 'substitute_5' }
-};
 
 const humanizePositionKey = (positionKey) => {
   return positionKey

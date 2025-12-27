@@ -1,26 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Button } from '../shared/UI';
-
-// Position configuration map (duplicated from PeriodSetupScreen for consistency)
-const POSITION_CONFIG = {
-  // 2-2 Formation positions
-  leftDefender: { title: 'Left Defender', position: 'leftDefender' },
-  rightDefender: { title: 'Right Defender', position: 'rightDefender' },
-  leftAttacker: { title: 'Left Attacker', position: 'leftAttacker' },
-  rightAttacker: { title: 'Right Attacker', position: 'rightAttacker' },
-
-  // 1-2-1 Formation positions
-  defender: { title: 'Defender', position: 'defender' },
-  left: { title: 'Left Mid', position: 'left' },
-  right: { title: 'Right Mid', position: 'right' },
-  attacker: { title: 'Attacker', position: 'attacker' },
-
-  // 7v7 Formation positions
-  leftMidfielder: { title: 'Left Midfielder', position: 'leftMidfielder' },
-  rightMidfielder: { title: 'Right Midfielder', position: 'rightMidfielder' },
-  centerMidfielder: { title: 'Center Midfielder', position: 'centerMidfielder' }
-};
+import { POSITION_CONFIG } from '../../constants/positionConfig';
 
 const humanizePositionKey = (positionKey) => {
   return positionKey
