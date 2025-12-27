@@ -19,7 +19,8 @@ import {
   Unlink,
   Ghost,
   Loader,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Tooltip } from '../shared';
@@ -1651,23 +1652,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
           Substitution Settings
         </h4>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Substitution Logic
-            </label>
-            <Select
-              value={preferences.substitutionLogic}
-              onChange={(value) => setPreferences(prev => ({ ...prev, substitutionLogic: value }))}
-              options={[
-                { value: 'equal_time', label: 'Equal Time in Each Role' },
-                { value: 'same_role', label: 'Keep Same Role' }
-              ]}
-            />
-          </div>
-        </div>
-
-        {/* Alternate Roles Checkbox */}
+        {/* Alternate Roles Checkbox - MOVED HERE (BEFORE Substitution Logic) */}
         <div className="space-y-3">
           <label className="flex items-center cursor-pointer">
             <input
@@ -1685,8 +1670,40 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 <CheckCircle className="w-3 h-3 text-white" />
               )}
             </div>
-            <span className="text-slate-300">Alternate Roles over Time</span>
+            <span className="text-slate-300">Alternate roles fairly over time</span>
+            <Tooltip
+              content={
+                <div className="text-xs">
+                  <div className="font-semibold text-slate-100 mb-2">Fair Role Rotation</div>
+                  <div className="text-slate-300">
+                    When enabled, the app will suggest substitutions that ensure all players
+                    experience similar time in each role (defender, midfielder, attacker) over
+                    the course of the season.
+                  </div>
+                </div>
+              }
+              position="right"
+            >
+              <HelpCircle className="w-4 h-4 ml-2 text-slate-400 hover:text-slate-300 transition-colors cursor-pointer" />
+            </Tooltip>
           </label>
+        </div>
+
+        {/* Substitution Logic dropdown - NOW APPEARS AFTER checkbox */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Substitution Logic
+            </label>
+            <Select
+              value={preferences.substitutionLogic}
+              onChange={(value) => setPreferences(prev => ({ ...prev, substitutionLogic: value }))}
+              options={[
+                { value: 'equal_time', label: 'Equal Time in Each Role' },
+                { value: 'same_role', label: 'Keep Same Role' }
+              ]}
+            />
+          </div>
         </div>
       </div>
 
