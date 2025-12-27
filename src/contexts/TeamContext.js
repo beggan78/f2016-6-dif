@@ -1874,7 +1874,7 @@ export const TeamProvider = ({ children }) => {
   const getCategoryForKey = useCallback((key) => {
     if (['matchFormat', 'formation'].includes(key)) return PREFERENCE_CATEGORIES.MATCH;
     if (['periodLength', 'numPeriods'].includes(key)) return PREFERENCE_CATEGORIES.TIME;
-    if (['substitutionLogic'].includes(key)) return PREFERENCE_CATEGORIES.SUBSTITUTION;
+    if (['substitutionLogic', 'alternateRoles'].includes(key)) return PREFERENCE_CATEGORIES.SUBSTITUTION;
     if (['trackGoalScorer', 'fairPlayAward', 'teamCaptain'].includes(key)) return PREFERENCE_CATEGORIES.FEATURES;
     return null;
   }, []);
