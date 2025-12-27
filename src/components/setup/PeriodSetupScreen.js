@@ -210,12 +210,6 @@ export function PeriodSetupScreen({
                        conditions.hasRecommendations &&
                        conditions.formationIncomplete;
 
-    console.log('[POS_REC_DEBUG] shouldShowPositionRecommendations:', {
-      ...conditions,
-      shouldShow,
-      positionRecommendationsValue: positionRecommendations
-    });
-
     return shouldShow;
   }, [
     currentPeriodNumber,
@@ -260,15 +254,6 @@ export function PeriodSetupScreen({
   });
 
   useEffect(() => {
-    console.log('[POS_REC_DEBUG] useEffect triggered');
-    console.log('[POS_REC_DEBUG] State:', {
-      currentPeriodNumber,
-      recommendationHandled,
-      positionRecommendationHandled,
-      openSubstituteSlotCount,
-      teamId: currentTeam?.id
-    });
-
     let isActive = true;
 
     const teamId = currentTeam?.id || '';
@@ -288,13 +273,7 @@ export function PeriodSetupScreen({
     const openSlotCountChanged =
       recommendationDependenciesRef.current.openSlotCount !== openSubstituteSlotCount;
 
-    console.log('[POS_REC_DEBUG] Dependency checks:', {
-      depsChanged,
-      openSlotCountChanged
-    });
-
     if (depsChanged || openSlotCountChanged) {
-      console.log('[POS_REC_DEBUG] Dependencies changed, resetting state');
       recommendationDependenciesRef.current = {
         teamId,
         period,
@@ -302,13 +281,11 @@ export function PeriodSetupScreen({
         openSlotCount: openSubstituteSlotCount
       };
       if (openSubstituteSlotCount > 0 && recommendationHandled) {
-        console.log('[POS_REC_DEBUG] Resetting recommendationHandled');
         setRecommendationHandled(false);
       }
 
       // Reset position recommendations when formation/squad changes
       if (positionRecommendationHandled) {
-        console.log('[POS_REC_DEBUG] Resetting positionRecommendationHandled');
         setPositionRecommendationHandled(false);
         setPositionRecommendations(null);
       }
@@ -320,7 +297,6 @@ export function PeriodSetupScreen({
       !Array.isArray(selectedSquadPlayers) ||
       selectedSquadPlayers.length === 0
     ) {
-      console.log('[POS_REC_DEBUG] Early exit: not period 1 or no squad');
       setSubRecommendationPercentages({});
       setSubRecommendationError(null);
       setSubRecommendationLoading(false);
@@ -330,7 +306,6 @@ export function PeriodSetupScreen({
     }
 
     if (openSubstituteSlotCount === 0 && !recommendationHandled) {
-      console.log('[POS_REC_DEBUG] Early exit: no open substitute slots and no recommendations handled yet');
       setSubRecommendationPercentages({});
       setSubRecommendationError(null);
       setSubRecommendationLoading(false);
@@ -340,16 +315,12 @@ export function PeriodSetupScreen({
     }
 
     if (!depsChanged && recommendationHandled && positionRecommendationHandled) {
-      console.log('[POS_REC_DEBUG] Early exit: all recommendations handled');
       return () => {
         isActive = false;
       };
     }
 
-    console.log('[POS_REC_DEBUG] Proceeding to loadSubstituteRecommendations');
-
     const loadSubstituteRecommendations = async () => {
-      console.log('[POS_REC_DEBUG] loadSubstituteRecommendations called');
       setSubRecommendationLoading(true);
       setSubRecommendationError(null);
 
@@ -358,22 +329,17 @@ export function PeriodSetupScreen({
         const startDate = new Date(endDate);
         startDate.setMonth(startDate.getMonth() - 6);
 
-        console.log('[POS_REC_DEBUG] Fetching player stats...');
         const response = await getPlayerStats(teamId, startDate, endDate);
 
         if (!isActive) {
-          console.log('[POS_REC_DEBUG] Component unmounted, aborting');
           return;
         }
 
         if (!response?.success) {
-          console.log('[POS_REC_DEBUG] Player stats fetch failed:', response?.error);
           setSubRecommendationPercentages({});
           setSubRecommendationError(response?.error || 'Failed to load substitute recommendations');
           return;
         }
-
-        console.log('[POS_REC_DEBUG] Player stats loaded, count:', response.players?.length);
 
         const percentageMap = {};
         (response.players || []).forEach(playerStat => {
@@ -390,7 +356,6 @@ export function PeriodSetupScreen({
 
         setSubRecommendationPercentages(percentageMap);
         setSubRecommendationError(null);
-        console.log('[POS_REC_DEBUG] Substitute recommendations set');
 
         // Position recommendations are now handled by a separate useEffect (see below)
       } catch (error) {
@@ -427,14 +392,6 @@ export function PeriodSetupScreen({
 
   // Separate useEffect for position recommendations (independent of substitute slots)
   useEffect(() => {
-    console.log('[POS_REC_SEPARATE] Dedicated position recommendation useEffect triggered');
-    console.log('[POS_REC_SEPARATE] State:', {
-      currentPeriodNumber,
-      recommendationHandled,
-      positionRecommendationHandled,
-      teamId: currentTeam?.id
-    });
-
     // Only run in Period 1 when substitute recommendations have been handled
     // and position recommendations haven't been handled yet
     if (
@@ -443,11 +400,8 @@ export function PeriodSetupScreen({
       positionRecommendationHandled ||
       !currentTeam?.id
     ) {
-      console.log('[POS_REC_SEPARATE] Conditions not met, skipping');
       return;
     }
-
-    console.log('[POS_REC_SEPARATE] Starting position recommendation calculation...');
 
     let isActive = true;
 
@@ -457,26 +411,18 @@ export function PeriodSetupScreen({
         const teamId = currentTeam.id;
 
         // Load team preferences to check alternateRoles
-        console.log('[POS_REC_SEPARATE] Loading team preferences...');
         const teamPreferences = await loadTeamPreferences(teamId);
 
         if (!isActive) {
-          console.log('[POS_REC_SEPARATE] Component unmounted during preference load');
           return;
         }
 
-        console.log('[POS_REC_SEPARATE] Team preferences loaded:', {
-          alternateRoles: teamPreferences?.alternateRoles
-        });
-
         if (teamPreferences?.alternateRoles === false) {
-          console.log('[POS_REC_SEPARATE] alternateRoles disabled, skipping recommendations');
           setPositionRecommendationLoading(false);
           return;
         }
 
         // Fetch player stats (6 months)
-        console.log('[POS_REC_SEPARATE] Fetching player stats...');
         const endDate = new Date();
         const startDate = new Date(endDate);
         startDate.setMonth(startDate.getMonth() - 6);
@@ -484,18 +430,14 @@ export function PeriodSetupScreen({
         const response = await getPlayerStats(teamId, startDate, endDate);
 
         if (!isActive) {
-          console.log('[POS_REC_SEPARATE] Component unmounted after stats fetch');
           return;
         }
 
         if (!response?.success) {
-          console.log('[POS_REC_SEPARATE] Player stats fetch failed:', response?.error);
           setPositionRecommendationError(response?.error || 'Failed to load player stats');
           setPositionRecommendationLoading(false);
           return;
         }
-
-        console.log('[POS_REC_SEPARATE] Player stats loaded, count:', response.players?.length);
 
         // Filter to only selected squad players
         const squadPlayerIds = new Set(
@@ -505,19 +447,10 @@ export function PeriodSetupScreen({
         );
         const squadPlayerStats = response.players.filter(p => squadPlayerIds.has(p.id));
 
-        console.log('[POS_REC_SEPARATE] Filtered to squad players, count:', squadPlayerStats.length);
-
         // Get currently assigned substitute IDs
         const assignedSubstituteIds = modeDefinition?.substitutePositions
           ?.map(pos => formation?.[pos])
           ?.filter(Boolean) || [];
-
-        console.log('[POS_REC_SEPARATE] Calculating position recommendations with:', {
-          squadPlayerCount: squadPlayerStats.length,
-          goalieId: formation?.goalie,
-          substituteCount: assignedSubstituteIds.length,
-          teamConfig
-        });
 
         // Calculate recommendations
         const result = calculatePositionRecommendations(
@@ -528,28 +461,22 @@ export function PeriodSetupScreen({
           assignedSubstituteIds
         );
 
-        console.log('[POS_REC_SEPARATE] Position recommendations calculated:', result);
-
         if (!isActive) {
-          console.log('[POS_REC_SEPARATE] Component unmounted after calculation');
           return;
         }
 
         setPositionRecommendations(result);
         setPositionRecommendationError(null);
-        console.log('[POS_REC_SEPARATE] Position recommendations state set successfully');
       } catch (error) {
         if (!isActive) {
           return;
         }
 
-        console.error('[POS_REC_SEPARATE] Failed to calculate position recommendations:', error);
         setPositionRecommendationError(error.message);
         setPositionRecommendations(null);
       } finally {
         if (isActive) {
           setPositionRecommendationLoading(false);
-          console.log('[POS_REC_SEPARATE] Position recommendation loading complete');
         }
       }
     };
