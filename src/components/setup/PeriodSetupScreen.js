@@ -108,7 +108,7 @@ export function PeriodSetupScreen({
   });
 
   // Use custom hook for data fetching (eliminates duplicate getPlayerStats calls)
-  const { playerStats, loading: statsLoading } = usePlayerRecommendationData(
+  const { playerStats, loading: statsLoading, error: statsError } = usePlayerRecommendationData(
     currentTeam?.id,
     currentPeriodNumber,
     selectedSquadPlayers
@@ -235,12 +235,16 @@ export function PeriodSetupScreen({
     signature: null,
     openSlotCount: null
   });
+  const recommendationInputsRef = useRef({
+    statsSignature: null,
+    formationSignature: null
+  });
 
   // Unified recommendation calculation effect
   // Uses playerStats from custom hook (eliminating duplicate API calls)
   useEffect(() => {
-    // Only run for Period 1 with valid data
-    if (currentPeriodNumber !== 1 || !playerStats || !currentTeam?.id) {
+    // Only run for Period 1 with a valid team
+    if (currentPeriodNumber !== 1 || !currentTeam?.id) {
       return;
     }
 
@@ -265,6 +269,10 @@ export function PeriodSetupScreen({
         period: currentPeriodNumber,
         signature
       };
+      recommendationInputsRef.current = {
+        statsSignature: null,
+        formationSignature: null
+      };
 
       // Reset both recommendation states when dependencies change
       setRecommendationState({
@@ -276,6 +284,47 @@ export function PeriodSetupScreen({
         positionError: null
       });
     }
+
+    if (statsError) {
+      setRecommendationState(prev => ({
+        ...prev,
+        subPercentages: {},
+        subError: statsError,
+        positionData: null,
+        positionError: statsError
+      }));
+      return;
+    }
+
+    if (!playerStats) {
+      return;
+    }
+
+    const statsSignature = Array.isArray(playerStats)
+      ? [...playerStats]
+          .filter(playerStat => playerStat?.id)
+          .map(playerStat => `${playerStat.id}:${Number.isFinite(playerStat.percentStartedAsSubstitute) ? playerStat.percentStartedAsSubstitute : 0}`)
+          .sort()
+          .join('|')
+      : '';
+    const formationSignature = formation
+      ? Object.keys(formation)
+          .sort()
+          .map(key => `${key}:${formation[key] || ''}`)
+          .join('|')
+      : '';
+    const inputsChanged =
+      recommendationInputsRef.current.statsSignature !== statsSignature ||
+      recommendationInputsRef.current.formationSignature !== formationSignature;
+
+    if (!inputsChanged) {
+      return;
+    }
+
+    recommendationInputsRef.current = {
+      statsSignature,
+      formationSignature
+    };
 
     let isActive = true;
 
@@ -293,6 +342,12 @@ export function PeriodSetupScreen({
         });
 
         if (!isActive) return;
+
+        setRecommendationState(prev => ({
+          ...prev,
+          subPercentages: subPercentageMap,
+          subError: null
+        }));
 
         // 2. Calculate position recommendations (if alternateRoles enabled)
         const teamPreferences = await loadTeamPreferences(currentTeam.id);
@@ -354,6 +409,7 @@ export function PeriodSetupScreen({
   }, [
     currentPeriodNumber,
     playerStats,
+    statsError,
     currentTeam?.id,
     selectedSquadPlayers,
     formation,
