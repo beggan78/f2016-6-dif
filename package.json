@@ -4,7 +4,7 @@
   "private": true,
   "homepage": "https://sportwizard.se",
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.31",
+    "@anthropic-ai/claude-code": "^2.0.31",
     "@supabase/supabase-js": "^2.51.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
