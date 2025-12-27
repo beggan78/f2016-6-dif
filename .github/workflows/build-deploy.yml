@@ -26,7 +26,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Use a Personal Access Token (PAT) for access to the other repo.
           # The GITHUB_TOKEN has permissions only for the current repo.
