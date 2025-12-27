@@ -573,7 +573,7 @@ export async function acceptGhostPlayer(externalPlayerId, teamId, addRosterPlaye
   const playerData = {
     first_name: parsedName.first_name,
     last_name: parsedName.last_name,
-    display_name: parsedName.display_name,
+    display_name: parsedName.first_name,
     on_roster: true,
     jersey_number: null // No jersey number assigned initially
   };
