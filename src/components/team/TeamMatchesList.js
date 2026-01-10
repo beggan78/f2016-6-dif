@@ -182,16 +182,16 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, setLiveMatchId, 
             key={match.id}
             className="bg-slate-700 rounded-lg border border-slate-600 p-4 hover:bg-slate-600 transition-colors"
           >
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-2 flex-wrap">
-                  <h3 className="text-lg font-semibold text-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-start gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-100">
                     vs {match.opponent}
                   </h3>
                   {getStateBadge(match.state)}
                 </div>
 
-                <div className="flex items-center space-x-4 text-sm text-slate-400 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
                   <div className="flex items-center space-x-1">
                     <Clock className="w-3.5 h-3.5" />
                     <span>{formatTimestamp(match.createdAt)}</span>
@@ -209,12 +209,13 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, setLiveMatchId, 
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <Button
                   onClick={() => handleOpenLive(match.id)}
                   variant="primary"
                   size="sm"
                   Icon={Eye}
+                  className="w-full sm:w-auto"
                 >
                   Open Live
                 </Button>
@@ -224,6 +225,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, setLiveMatchId, 
                   size="sm"
                   Icon={Share2}
                   disabled={copyingMatchId === match.id}
+                  className="w-full sm:w-auto"
                 >
                   {copyingMatchId === match.id ? 'Copying...' : 'Copy Link'}
                 </Button>
