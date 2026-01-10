@@ -720,6 +720,61 @@ export async function checkForRunningMatch(teamId) {
 }
 
 /**
+ * Get active matches (pending/running) for a team
+ * Used by Team Matches List to show matches coaches can access
+ * @param {string} teamId - Team ID
+ * @returns {Promise<{success: boolean, matches?: Array, error?: string}>}
+ */
+export async function getActiveMatches(teamId) {
+  try {
+    if (!teamId) {
+      return {
+        success: false,
+        error: 'Team ID is required'
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('match')
+      .select('id, opponent, state, created_at, started_at, type, venue_type')
+      .eq('team_id', teamId)
+      .in('state', ['pending', 'running'])
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to get active matches:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    // Transform to UI format
+    const matches = (data || []).map(match => ({
+      id: match.id,
+      opponent: match.opponent || 'Internal Match',
+      state: match.state,
+      createdAt: match.created_at,
+      startedAt: match.started_at,
+      type: match.type,
+      venueType: match.venue_type
+    }));
+
+    return {
+      success: true,
+      matches
+    };
+  } catch (error) {
+    console.error('Exception while getting active matches:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
  * Get finished matches for a team (match history)
  * @param {string} teamId - Team ID
  * @param {Date} startDate - Optional start date filter

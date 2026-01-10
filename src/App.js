@@ -22,6 +22,7 @@ import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { LiveMatchScreen } from './components/live/LiveMatchScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
+import { TeamMatchesList } from './components/team/TeamMatchesList';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -1157,6 +1158,17 @@ function AppContent() {
             removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
             onShowSuccessMessage={showSuccessMessage}
+          />
+        );
+      case VIEWS.TEAM_MATCHES:
+        return (
+          <TeamMatchesList
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            setLiveMatchId={setLiveMatchId}
+            setLiveMatchEntryPoint={setLiveMatchEntryPoint}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       case VIEWS.LIVE_MATCH:
