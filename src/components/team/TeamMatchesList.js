@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Share2, AlertCircle, Eye } from 'lucide-react';
 import { Button, NotificationModal } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
@@ -11,7 +11,7 @@ import { VIEWS } from '../../constants/viewConstants';
  * Shows all active (pending/running) matches for the current team
  * Allows coaches to copy live match links or navigate to LiveMatchScreen
  */
-export function TeamMatchesList({ onNavigateBack, onNavigateTo, setLiveMatchId, setLiveMatchEntryPoint }) {
+export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const { currentTeam } = useTeam();
   const { matches, loading, error, refetch } = useRealtimeTeamMatches(currentTeam?.id);
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
@@ -49,15 +49,27 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, setLiveMatchId, 
   };
 
   const handleOpenLive = (matchId) => {
-    // Set the live match ID
-    setLiveMatchId(matchId);
-
-    // Remember we came from Team Matches (for back button)
-    setLiveMatchEntryPoint(VIEWS.TEAM_MATCHES);
-
-    // Navigate to live match view
-    onNavigateTo(VIEWS.LIVE_MATCH);
+    // Navigate with data instead of imperative setters
+    onNavigateTo(VIEWS.LIVE_MATCH, {
+      matchId,
+      entryPoint: VIEWS.TEAM_MATCHES
+    });
   };
+
+  // Register browser back handler
+  useEffect(() => {
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        onNavigateBack();
+      });
+    }
+
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, onNavigateBack]);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'No date';

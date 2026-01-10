@@ -86,8 +86,8 @@ describe('TeamMatchesList', () => {
     defaultProps = {
       onNavigateBack: jest.fn(),
       onNavigateTo: jest.fn(),
-      setLiveMatchId: jest.fn(),
-      setLiveMatchEntryPoint: jest.fn()
+      pushNavigationState: jest.fn(),
+      removeFromNavigationStack: jest.fn()
     };
 
     // Mock console methods for clean test output
@@ -406,7 +406,7 @@ describe('TeamMatchesList', () => {
       expect(defaultProps.onNavigateBack).toHaveBeenCalled();
     });
 
-    it('should call onNavigateTo with VIEWS.LIVE_MATCH when "Open Live" is clicked', () => {
+    it('should call onNavigateTo with VIEWS.LIVE_MATCH and navigation data when "Open Live" is clicked', () => {
       mockUseRealtimeTeamMatches.mockReturnValue({
         matches: [mockMatches[0]],
         loading: false,
@@ -419,39 +419,10 @@ describe('TeamMatchesList', () => {
       const openLiveButton = screen.getByText('Open Live');
       fireEvent.click(openLiveButton);
 
-      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.LIVE_MATCH);
-    });
-
-    it('should set liveMatchId when opening live match', () => {
-      mockUseRealtimeTeamMatches.mockReturnValue({
-        matches: [mockMatches[0]],
-        loading: false,
-        error: null,
-        refetch: jest.fn()
+      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.LIVE_MATCH, {
+        matchId: 'match-1',
+        entryPoint: VIEWS.TEAM_MATCHES
       });
-
-      render(<TeamMatchesList {...defaultProps} />);
-
-      const openLiveButton = screen.getByText('Open Live');
-      fireEvent.click(openLiveButton);
-
-      expect(defaultProps.setLiveMatchId).toHaveBeenCalledWith('match-1');
-    });
-
-    it('should set liveMatchEntryPoint to TEAM_MATCHES when opening live match', () => {
-      mockUseRealtimeTeamMatches.mockReturnValue({
-        matches: [mockMatches[0]],
-        loading: false,
-        error: null,
-        refetch: jest.fn()
-      });
-
-      render(<TeamMatchesList {...defaultProps} />);
-
-      const openLiveButton = screen.getByText('Open Live');
-      fireEvent.click(openLiveButton);
-
-      expect(defaultProps.setLiveMatchEntryPoint).toHaveBeenCalledWith(VIEWS.TEAM_MATCHES);
     });
   });
 

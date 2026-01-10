@@ -17,9 +17,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 
 // Mock the getActiveMatches service BEFORE importing the hook
-const mockGetActiveMatches = jest.fn();
 jest.mock('../../services/matchStateManager', () => ({
-  getActiveMatches: mockGetActiveMatches
+  getActiveMatches: jest.fn()
 }));
 
 // Mock Supabase client BEFORE importing the hook
@@ -35,6 +34,10 @@ jest.mock('../../lib/supabase', () => ({
 
 // Import the hook AFTER mocking dependencies
 import { useRealtimeTeamMatches } from '../useRealtimeTeamMatches';
+import { getActiveMatches } from '../../services/matchStateManager';
+
+// Get the mocked function
+const mockGetActiveMatches = getActiveMatches;
 
 describe('useRealtimeTeamMatches', () => {
   let mockMatches;

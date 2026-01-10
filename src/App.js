@@ -110,7 +110,14 @@ function AppContent() {
   
   // Enhanced navigation functions that track history
   const navigateToView = useCallback((view, data = null) => {
-    return navigationHistory.navigateTo(view, data);
+    const success = navigationHistory.navigateTo(view, data);
+
+    // Store navigation data for components to access
+    if (success && data) {
+      setNavigationData(data);
+    }
+
+    return success;
   }, [navigationHistory]);
   
   const navigateBack = useCallback((fallback = null) => {
@@ -1165,16 +1172,20 @@ function AppContent() {
           <TeamMatchesList
             onNavigateBack={navigateBack}
             onNavigateTo={navigateToView}
-            setLiveMatchId={setLiveMatchId}
-            setLiveMatchEntryPoint={setLiveMatchEntryPoint}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       case VIEWS.LIVE_MATCH:
-        const showLiveMatchBackButton = Boolean(user) && liveMatchEntryPoint === VIEWS.STATS;
+        // Extract match data from navigation (with fallbacks to state)
+        const matchId = navigationData?.matchId || liveMatchId;
+        const entryPoint = navigationData?.entryPoint || liveMatchEntryPoint;
 
-        return liveMatchId ? (
+        const showLiveMatchBackButton = Boolean(user) && entryPoint === VIEWS.STATS;
+
+        return matchId ? (
           <LiveMatchScreen
-            matchId={liveMatchId}
+            matchId={matchId}
             showBackButton={showLiveMatchBackButton}
             onNavigateBack={showLiveMatchBackButton ? handleLiveMatchNavigateBack : undefined}
           />
