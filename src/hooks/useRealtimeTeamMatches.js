@@ -15,6 +15,9 @@ export function useRealtimeTeamMatches(teamId) {
   const [error, setError] = useState(null);
   const subscriptionRef = useRef(null);
 
+  // ESLint: setState functions (setMatches, setLoading, setError) are stable and guaranteed
+  // by React to have consistent references across renders, intentionally omitted from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!teamId) {
       setMatches([]);

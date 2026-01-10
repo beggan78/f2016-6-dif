@@ -1167,8 +1167,6 @@ function AppContent() {
             onNavigateTo={navigateToView}
             setLiveMatchId={setLiveMatchId}
             setLiveMatchEntryPoint={setLiveMatchEntryPoint}
-            pushNavigationState={pushNavigationState}
-            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       case VIEWS.LIVE_MATCH:
