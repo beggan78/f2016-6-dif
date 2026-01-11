@@ -656,7 +656,13 @@ export function ConfigurationScreen({
     } finally {
       setPendingMatchLoading(false);
     }
-  }, [handleResumeMatchModalClose, setCurrentMatchId, setMatchCreated]);
+  }, [
+    handleResumeMatchModalClose,
+    setCurrentMatchId,
+    setMatchCreated,
+    setPendingMatchLoading,
+    setResumeData
+  ]);
 
   const resolvePendingMatchById = React.useCallback(async (matchId) => {
     if (!matchId) {
