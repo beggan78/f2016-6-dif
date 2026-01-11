@@ -117,6 +117,13 @@ function AppContent() {
       setNavigationData(data);
     }
 
+    if (success && view === VIEWS.LIVE_MATCH) {
+      if (data?.matchId) {
+        setLiveMatchId(data.matchId);
+      }
+      setLiveMatchEntryPoint(data?.entryPoint ?? null);
+    }
+
     return success;
   }, [navigationHistory]);
   

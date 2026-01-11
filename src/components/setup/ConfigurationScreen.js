@@ -138,6 +138,7 @@ export function ConfigurationScreen({
   const lastConfigSessionIdRef = useRef(configurationSessionId);
   const pendingMatchCheckQueuedRef = useRef(false);
   const resumeMatchRequestRef = useRef(null);
+  const queuedResumeMatchIdRef = useRef(null);
   const pendingCheckAfterLoadingRef = useRef(false);
   const opponentPrefillAttemptedTeamRef = useRef(null);
   // Consolidated preference application state to avoid scattered refs
@@ -656,6 +657,52 @@ export function ConfigurationScreen({
       setPendingMatchLoading(false);
     }
   }, [handleResumeMatchModalClose, setCurrentMatchId, setMatchCreated]);
+
+  const resolvePendingMatchById = React.useCallback(async (matchId) => {
+    if (!matchId) {
+      return null;
+    }
+
+    const existingMatch = pendingMatches.find(match => match.id === matchId);
+    if (existingMatch?.initial_config) {
+      return existingMatch;
+    }
+
+    if (!currentTeam?.id) {
+      return null;
+    }
+
+    const result = await checkForPendingMatches(currentTeam.id);
+    return result.pendingMatches.find(match => match.id === matchId) || null;
+  }, [pendingMatches, currentTeam?.id]);
+
+  const resumePendingMatchById = React.useCallback(async (matchId, options = {}) => {
+    const { trackRequest = false } = options;
+
+    if (!matchId || (trackRequest && resumeMatchRequestRef.current === matchId)) {
+      return;
+    }
+
+    try {
+      const matchToResume = await resolvePendingMatchById(matchId);
+
+      if (!matchToResume?.initial_config) {
+        console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
+        return;
+      }
+
+      await applyPendingMatchResume(matchToResume);
+    } catch (error) {
+      console.error('❌ Error resuming pending match:', error);
+    } finally {
+      if (trackRequest) {
+        resumeMatchRequestRef.current = matchId;
+      }
+      if (queuedResumeMatchIdRef.current === matchId) {
+        queuedResumeMatchIdRef.current = null;
+      }
+    }
+  }, [applyPendingMatchResume, resolvePendingMatchById]);
 
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
@@ -1457,14 +1504,8 @@ export function ConfigurationScreen({
 
   // Direct pending match modal handlers (no navigation complexity)
   const handleResumePendingMatch = React.useCallback(async (matchId) => {
-    const selectedMatch = pendingMatches.find(match => match.id === matchId);
-    
-    if (!selectedMatch?.initial_config) {
-      console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
-      return;
-    }
-    await applyPendingMatchResume(selectedMatch);
-  }, [pendingMatches, applyPendingMatchResume]);
+    await resumePendingMatchById(matchId);
+  }, [resumePendingMatchById]);
 
   const handleDiscardPendingMatch = React.useCallback(async (matchId) => {
     if (!matchId) return;
@@ -1489,7 +1530,13 @@ export function ConfigurationScreen({
   }, [pendingMatches, handleClosePendingMatchModal]);
 
   React.useEffect(() => {
-    if (!resumeMatchId || resumeMatchRequestRef.current === resumeMatchId) {
+    if (resumeMatchId && resumeMatchRequestRef.current !== resumeMatchId) {
+      queuedResumeMatchIdRef.current = resumeMatchId;
+    }
+
+    const matchIdToResume = queuedResumeMatchIdRef.current;
+
+    if (!matchIdToResume || resumeMatchRequestRef.current === matchIdToResume) {
       return;
     }
 
@@ -1497,53 +1544,8 @@ export function ConfigurationScreen({
       return;
     }
 
-    const existingMatch = pendingMatches.find(match => match.id === resumeMatchId);
-
-    if (existingMatch?.initial_config) {
-      resumeMatchRequestRef.current = resumeMatchId;
-      applyPendingMatchResume(existingMatch);
-      return;
-    }
-
-    let isCancelled = false;
-
-    const fetchAndResume = async () => {
-      try {
-        const result = await checkForPendingMatches(currentTeam.id);
-
-        if (isCancelled) {
-          return;
-        }
-
-        const matchToResume = result.pendingMatches.find(match => match.id === resumeMatchId);
-
-        if (!matchToResume?.initial_config) {
-          console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
-          resumeMatchRequestRef.current = resumeMatchId;
-          return;
-        }
-
-        resumeMatchRequestRef.current = resumeMatchId;
-        await applyPendingMatchResume(matchToResume);
-      } catch (error) {
-        console.error('❌ Error resuming pending match from navigation:', error);
-        resumeMatchRequestRef.current = resumeMatchId;
-      }
-    };
-
-    fetchAndResume();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [
-    resumeMatchId,
-    currentTeam?.id,
-    teamLoading,
-    pendingMatchLoading,
-    pendingMatches,
-    applyPendingMatchResume
-  ]);
+    resumePendingMatchById(matchIdToResume, { trackRequest: true });
+  }, [resumeMatchId, currentTeam?.id, teamLoading, pendingMatchLoading, resumePendingMatchById]);
 
   const handleSaveConfigClick = async () => {
     if (!handleSaveConfiguration) {
