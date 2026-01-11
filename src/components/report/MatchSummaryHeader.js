@@ -16,6 +16,7 @@ import { TEAM_CONFIG } from '../../constants/teamConstants';
  * @param {string|null} props.matchDurationDisplay - Optional override text for match duration
  * @param {number} props.totalPeriods - Total number of periods played
  * @param {number} props.periodDurationMinutes - Duration of each period in minutes
+ * @param {boolean} props.matchHasFinished - Whether the match has ended (controls outcome display)
  */
 export function MatchSummaryHeader({
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
@@ -28,7 +29,8 @@ export function MatchSummaryHeader({
   matchDurationDisplay = null,
   totalPeriods = 0,
   periodDurationMinutes = 12,
-  matchHasStarted = true
+  matchHasStarted = true,
+  matchHasFinished = matchHasStarted
 }) {
   
   // Format match start time
@@ -123,8 +125,8 @@ export function MatchSummaryHeader({
           </div>
         </div>
 
-        {/* Result indicator - only show when match has started */}
-        {matchHasStarted && (
+        {/* Result indicator - only show when match has finished */}
+        {matchHasFinished && (
           <div className="flex items-center justify-center space-x-2 text-sm">
             <Trophy className="h-4 w-4 text-yellow-400" />
             <span className="text-slate-300">

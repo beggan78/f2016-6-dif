@@ -182,6 +182,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
   }, [onNavigateBack, showBackButton]);
 
   const matchMetadata = useMemo(() => extractMatchMetadata(events), [events]);
+  const matchHasFinished = Boolean(matchMetadata?.matchHasStarted && !matchMetadata?.isLive);
 
   useEffect(() => {
     const isLive = Boolean(matchMetadata?.isLive);
@@ -561,6 +562,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
               matchDuration={matchMetadata.isLive ? matchMetadata.matchDurationSeconds || 0 : effectiveMatchDurationSeconds}
               matchDurationDisplay={liveMatchMinuteDisplay}
               matchHasStarted={matchMetadata.matchHasStarted}
+              matchHasFinished={matchHasFinished}
             />
           </ReportSection>
 
