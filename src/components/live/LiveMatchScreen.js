@@ -186,10 +186,9 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
 
   useEffect(() => {
     const isLive = Boolean(matchMetadata?.isLive);
-    const hasEnded = matchHasFinished;
-    const nextIntervalMs = isLive ? 30000 : (hasEnded ? 300000 : 60000);
+    const nextIntervalMs = isLive ? 30000 : (matchHasFinished ? 300000 : 60000);
     const nextConfig = {
-      enabled: isLive || hasEnded,
+      enabled: isLive || matchHasFinished,
       intervalMs: nextIntervalMs
     };
 
