@@ -378,7 +378,7 @@ describe('TeamMatchesList', () => {
 
       render(<TeamMatchesList {...defaultProps} />);
 
-      expect(screen.getByText(/Jan 1, 2026/)).toBeInTheDocument();
+      expect(screen.getByText('2026-01-01')).toBeInTheDocument();
     });
 
     it('should render multiple matches correctly', () => {

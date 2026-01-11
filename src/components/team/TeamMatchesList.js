@@ -71,6 +71,13 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     };
   }, [pushNavigationState, removeFromNavigationStack, onNavigateBack]);
 
+  const formatIsoDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'No date';
 
@@ -84,9 +91,9 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
       return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
     } else if (date >= yesterday) {
       return `Yesterday at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
+
+    return formatIsoDate(date);
   };
 
   const getStateBadge = (state) => {
