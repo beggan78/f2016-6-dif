@@ -1,6 +1,7 @@
 import { PLAYER_ROLES, PLAYER_STATUS } from './playerConstants.js';
 import { GAME_CONSTANTS, FORMAT_CONFIGS, FORMATS, FORMATIONS } from './teamConfiguration.js';
 import { normalizeRole, validateRoleInDev } from './roleConstants.js';
+import { orderFieldPositionsForDisplay } from '../utils/positionDisplayOrder.js';
 
 /**
  * Game Modes and Formation System
@@ -18,37 +19,6 @@ import { normalizeRole, validateRoleInDev } from './roleConstants.js';
  * - Middleware role support for 1-2-1 formation
  * - Validation and recommendation algorithms
  */
-
-const FIELD_ROLE_DISPLAY_ORDER = [
-  PLAYER_ROLES.ATTACKER,
-  PLAYER_ROLES.MIDFIELDER,
-  PLAYER_ROLES.DEFENDER
-];
-
-const orderFieldPositionsForDisplay = (positions = [], positionDefinitions = {}) => {
-  if (!Array.isArray(positions)) {
-    return [];
-  }
-
-  const ordered = [];
-
-  FIELD_ROLE_DISPLAY_ORDER.forEach(role => {
-    positions.forEach(positionKey => {
-      if (positionDefinitions[positionKey]?.role === role) {
-        ordered.push(positionKey);
-      }
-    });
-  });
-
-  const orderedSet = new Set(ordered);
-  positions.forEach(positionKey => {
-    if (!orderedSet.has(positionKey)) {
-      ordered.push(positionKey);
-    }
-  });
-
-  return ordered;
-};
 
 /**
  * Formation-specific position layouts
@@ -331,10 +301,7 @@ export function getFormationPositionsWithGoalie(teamConfig) {
     return [];
   }
 
-  const orderedFieldPositions = orderFieldPositionsForDisplay(
-    definition.fieldPositions,
-    definition.positions
-  );
+  const orderedFieldPositions = orderFieldPositionsForDisplay(definition.fieldPositions);
 
   return [...orderedFieldPositions, 'goalie', ...definition.substitutePositions];
 }
