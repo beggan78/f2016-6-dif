@@ -12,5 +12,6 @@ export const VIEWS = {
   PROFILE: 'profile',
   TACTICAL_BOARD: 'tacticalBoard',
   TEAM_MANAGEMENT: 'teamManagement',
+  TEAM_MATCHES: 'teamMatches',
   LIVE_MATCH: 'liveMatch'
 };

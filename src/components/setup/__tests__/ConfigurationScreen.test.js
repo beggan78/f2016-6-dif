@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
@@ -735,6 +735,10 @@ const buildProps = (overrides = {}) => ({
   setHasActiveConfiguration: jest.fn(),
   clearStoredState: jest.fn(),
   configurationSessionId: 0,
+  onNavigateBack: jest.fn(),
+  onNavigateTo: jest.fn(),
+  pushNavigationState: jest.fn(),
+  removeFromNavigationStack: jest.fn(),
   ...overrides
 });
 
@@ -1493,5 +1497,39 @@ describe('ConfigurationScreen unmapped players banner', () => {
 
     // Verify provider name is displayed
     expect(screen.getByTestId('provider-name')).toHaveTextContent('SportAdmin');
+  });
+});
+
+describe('Browser Back Integration', () => {
+  it('should register browser back handler on mount', () => {
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    expect(props.pushNavigationState).toHaveBeenCalledTimes(1);
+    expect(typeof props.pushNavigationState.mock.calls[0][0]).toBe('function');
+  });
+
+  it('should cleanup navigation handler on unmount', () => {
+    const props = buildProps();
+    const { unmount } = render(<ConfigurationScreen {...props} />);
+
+    unmount();
+
+    expect(props.removeFromNavigationStack).toHaveBeenCalledTimes(1);
+  });
+
+  it('should close modals and navigate back when browser back is pressed', () => {
+    const props = buildProps();
+    render(<ConfigurationScreen {...props} />);
+
+    // Get the browser back handler
+    const backHandler = props.pushNavigationState.mock.calls[0][0];
+
+    // Simulate browser back
+    act(() => {
+      backHandler();
+    });
+
+    expect(props.onNavigateBack).toHaveBeenCalledTimes(1);
   });
 });

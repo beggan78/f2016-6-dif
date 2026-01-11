@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { PeriodSetupScreen } from '../PeriodSetupScreen';
 import { TEAM_CONFIGS } from '../../../game/testUtils';
 import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
@@ -201,6 +201,10 @@ describe('PeriodSetupScreen', () => {
       teamConfig: TEAM_CONFIGS.INDIVIDUAL_7,
       selectedFormation: '2-2',
       setView: jest.fn(),
+      onNavigateBack: jest.fn(),
+      onNavigateTo: jest.fn(),
+      pushNavigationState: jest.fn(),
+      removeFromNavigationStack: jest.fn(),
       ownScore: 0,
       opponentScore: 0,
       opponentTeam: 'Test Team',
@@ -285,6 +289,37 @@ describe('PeriodSetupScreen', () => {
 
       expect(screen.getAllByText('Substitute')).toHaveLength(substitutePositions.length);
       expect(screen.getAllByTestId('select')).toHaveLength(1 + fieldPositions.length + substitutePositions.length);
+    });
+  });
+
+  describe('Browser Back Integration', () => {
+    it('should register browser back handler on mount', () => {
+      render(<PeriodSetupScreen {...mockProps} />);
+
+      expect(mockProps.pushNavigationState).toHaveBeenCalledTimes(1);
+      expect(typeof mockProps.pushNavigationState.mock.calls[0][0]).toBe('function');
+    });
+
+    it('should cleanup navigation handler on unmount', () => {
+      const { unmount } = render(<PeriodSetupScreen {...mockProps} />);
+
+      unmount();
+
+      expect(mockProps.removeFromNavigationStack).toHaveBeenCalledTimes(1);
+    });
+
+    it('should close confirmation modal and navigate back when browser back is pressed', () => {
+      render(<PeriodSetupScreen {...mockProps} />);
+
+      // Get the browser back handler
+      const backHandler = mockProps.pushNavigationState.mock.calls[0][0];
+
+      // Simulate browser back
+      act(() => {
+        backHandler();
+      });
+
+      expect(mockProps.onNavigateBack).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -525,6 +560,33 @@ describe('PeriodSetupScreen', () => {
       // Start button should be enabled
       const startButton = screen.getByText('Enter Game');
       expect(startButton).not.toBeDisabled();
+    });
+  });
+
+  describe('Navigation Buttons', () => {
+    it('should call onNavigateBack when back button is clicked in period 1', () => {
+      const props = {
+        ...mockProps,
+        currentPeriodNumber: 1
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      const backButton = screen.getByText('Back to Configuration');
+      fireEvent.click(backButton);
+
+      expect(mockProps.onNavigateBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not show back button in period 2+', () => {
+      const props = {
+        ...mockProps,
+        currentPeriodNumber: 2
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      expect(screen.queryByText('Back to Configuration')).not.toBeInTheDocument();
     });
   });
 

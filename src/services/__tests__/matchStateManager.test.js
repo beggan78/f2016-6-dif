@@ -19,7 +19,8 @@ import {
   countPlayerGoals,
   mapFormationPositionToRole,
   mapStartingRoleToDBRole,
-  deleteFinishedMatch
+  deleteFinishedMatch,
+  getActiveMatches
 } from '../matchStateManager';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { supabase } from '../../lib/supabase';
@@ -766,6 +767,358 @@ describe('matchStateManager', () => {
     it('should handle null/undefined roles', () => {
       expect(mapStartingRoleToDBRole(null)).toBe('unknown');
       expect(mapStartingRoleToDBRole(undefined)).toBe('unknown');
+    });
+  });
+
+  describe('getActiveMatches', () => {
+    const { getActiveMatches } = require('../matchStateManager');
+
+    const createQueryChain = ({ data = [], error = null }) => {
+      const order = jest.fn().mockResolvedValue({ data, error });
+      const is = jest.fn(() => ({ order }));
+      const inFn = jest.fn(() => ({ is }));
+      const eq = jest.fn(() => ({ in: inFn }));
+      const select = jest.fn(() => ({ eq }));
+      return { select, eq, in: inFn, is, order };
+    };
+
+    describe('Successful Queries', () => {
+      it('should fetch active matches for given teamId', async () => {
+        const mockData = [
+          {
+            id: 'match-1',
+            opponent: 'Team A',
+            state: 'running',
+            created_at: '2026-01-10T10:00:00Z',
+            started_at: '2026-01-10T10:05:00Z',
+            type: 'league',
+            venue_type: 'home'
+          },
+          {
+            id: 'match-2',
+            opponent: 'Team B',
+            state: 'pending',
+            created_at: '2026-01-09T15:00:00Z',
+            started_at: null,
+            type: 'friendly',
+            venue_type: 'away'
+          }
+        ];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(true);
+        expect(result.matches).toHaveLength(2);
+        expect(supabase.from).toHaveBeenCalledWith('match');
+        expect(chain.select).toHaveBeenCalledWith('id, opponent, state, created_at, started_at, type, venue_type');
+        expect(chain.eq).toHaveBeenCalledWith('team_id', 'team-123');
+        expect(chain.in).toHaveBeenCalledWith('state', ['pending', 'running']);
+        expect(chain.is).toHaveBeenCalledWith('deleted_at', null);
+        expect(chain.order).toHaveBeenCalledWith('created_at', { ascending: false });
+      });
+
+      it('should transform database format to UI format', async () => {
+        const mockData = [
+          {
+            id: 'match-1',
+            opponent: 'Test Team',
+            state: 'running',
+            created_at: '2026-01-10T10:00:00Z',
+            started_at: '2026-01-10T10:05:00Z',
+            type: 'league',
+            venue_type: 'home'
+          }
+        ];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(true);
+        expect(result.matches[0]).toEqual({
+          id: 'match-1',
+          opponent: 'Test Team',
+          state: 'running',
+          createdAt: '2026-01-10T10:00:00Z',
+          startedAt: '2026-01-10T10:05:00Z',
+          type: 'league',
+          venueType: 'home'
+        });
+      });
+
+      it('should default opponent to "Internal Match" when null', async () => {
+        const mockData = [
+          {
+            id: 'match-1',
+            opponent: null,
+            state: 'pending',
+            created_at: '2026-01-10T10:00:00Z',
+            started_at: null,
+            type: 'friendly',
+            venue_type: 'neutral'
+          }
+        ];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(true);
+        expect(result.matches[0].opponent).toBe('Internal Match');
+      });
+
+      it('should return empty array when no matches found', async () => {
+        const chain = createQueryChain({ data: [] });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(true);
+        expect(result.matches).toEqual([]);
+      });
+
+      it('should filter by pending and running states only', async () => {
+        const chain = createQueryChain({ data: [] });
+        supabase.from.mockReturnValue(chain);
+
+        await getActiveMatches('team-123');
+
+        expect(chain.in).toHaveBeenCalledWith('state', ['pending', 'running']);
+      });
+
+      it('should exclude deleted matches', async () => {
+        const chain = createQueryChain({ data: [] });
+        supabase.from.mockReturnValue(chain);
+
+        await getActiveMatches('team-123');
+
+        expect(chain.is).toHaveBeenCalledWith('deleted_at', null);
+      });
+
+      it('should order by created_at descending', async () => {
+        const chain = createQueryChain({ data: [] });
+        supabase.from.mockReturnValue(chain);
+
+        await getActiveMatches('team-123');
+
+        expect(chain.order).toHaveBeenCalledWith('created_at', { ascending: false });
+      });
+    });
+
+    describe('Error Handling', () => {
+      it('should return error when teamId is missing', async () => {
+        const result = await getActiveMatches(null);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Team ID is required');
+        expect(supabase.from).not.toHaveBeenCalled();
+      });
+
+      it('should return error when teamId is undefined', async () => {
+        const result = await getActiveMatches(undefined);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Team ID is required');
+      });
+
+      it('should return error when teamId is empty string', async () => {
+        const result = await getActiveMatches('');
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Team ID is required');
+      });
+
+      it('should handle database query errors', async () => {
+        const chain = createQueryChain({
+          data: null,
+          error: { message: 'Database connection failed' }
+        });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Database error: Database connection failed');
+        expect(console.error).toHaveBeenCalledWith(
+          'Failed to get active matches:',
+          expect.objectContaining({ message: 'Database connection failed' })
+        );
+      });
+
+      it('should handle unexpected exceptions', async () => {
+        supabase.from.mockImplementation(() => {
+          throw new Error('Unexpected error');
+        });
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Unexpected error: Unexpected error');
+        expect(console.error).toHaveBeenCalledWith(
+          'Exception while getting active matches:',
+          expect.any(Error)
+        );
+      });
+    });
+
+    describe('Data Transformation', () => {
+      it('should map created_at to createdAt', async () => {
+        const mockData = [{
+          id: 'match-1',
+          opponent: 'Team A',
+          state: 'running',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: null,
+          type: 'league',
+          venue_type: 'home'
+        }];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.matches[0].createdAt).toBe('2026-01-10T10:00:00Z');
+        expect(result.matches[0].created_at).toBeUndefined();
+      });
+
+      it('should map started_at to startedAt', async () => {
+        const mockData = [{
+          id: 'match-1',
+          opponent: 'Team A',
+          state: 'running',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: '2026-01-10T10:05:00Z',
+          type: 'league',
+          venue_type: 'home'
+        }];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.matches[0].startedAt).toBe('2026-01-10T10:05:00Z');
+        expect(result.matches[0].started_at).toBeUndefined();
+      });
+
+      it('should map venue_type to venueType', async () => {
+        const mockData = [{
+          id: 'match-1',
+          opponent: 'Team A',
+          state: 'running',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: null,
+          type: 'league',
+          venue_type: 'away'
+        }];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.matches[0].venueType).toBe('away');
+        expect(result.matches[0].venue_type).toBeUndefined();
+      });
+
+      it('should preserve id, state, and type fields', async () => {
+        const mockData = [{
+          id: 'match-1',
+          opponent: 'Team A',
+          state: 'pending',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: null,
+          type: 'friendly',
+          venue_type: 'home'
+        }];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.matches[0].id).toBe('match-1');
+        expect(result.matches[0].state).toBe('pending');
+        expect(result.matches[0].type).toBe('friendly');
+      });
+
+      it('should handle null startedAt for pending matches', async () => {
+        const mockData = [{
+          id: 'match-1',
+          opponent: 'Team A',
+          state: 'pending',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: null,
+          type: 'league',
+          venue_type: 'home'
+        }];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.matches[0].startedAt).toBeNull();
+      });
+    });
+
+    describe('Edge Cases', () => {
+      it('should handle null data from Supabase', async () => {
+        const chain = createQueryChain({ data: null });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(true);
+        expect(result.matches).toEqual([]);
+      });
+
+      it('should handle matches with missing optional fields', async () => {
+        const mockData = [{
+          id: 'match-1',
+          opponent: 'Team A',
+          state: 'running',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: null,
+          type: null,
+          venue_type: null
+        }];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(true);
+        expect(result.matches[0].type).toBeNull();
+        expect(result.matches[0].venueType).toBeNull();
+      });
+
+      it('should handle large result sets', async () => {
+        const mockData = Array.from({ length: 100 }, (_, i) => ({
+          id: `match-${i}`,
+          opponent: `Team ${i}`,
+          state: i % 2 === 0 ? 'running' : 'pending',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: i % 2 === 0 ? '2026-01-10T10:05:00Z' : null,
+          type: 'league',
+          venue_type: 'home'
+        }));
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.success).toBe(true);
+        expect(result.matches).toHaveLength(100);
+      });
     });
   });
 });

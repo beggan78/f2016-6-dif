@@ -137,7 +137,10 @@ describe('StatisticsScreen', () => {
 
     defaultProps = {
       onNavigateBack: mockOnNavigateBack,
-      authModal: mockAuthModal
+      authModal: mockAuthModal,
+      onNavigateTo: jest.fn(),
+      pushNavigationState: jest.fn(),
+      removeFromNavigationStack: jest.fn()
     };
 
     mockUseAuth.mockReturnValue({
@@ -623,6 +626,47 @@ describe('StatisticsScreen', () => {
       render(<StatisticsScreen {...defaultProps} />);
 
       expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('Browser Back Integration', () => {
+    test('should register browser back handler on mount', () => {
+      render(<StatisticsScreen {...defaultProps} />);
+
+      expect(defaultProps.pushNavigationState).toHaveBeenCalled();
+      expect(defaultProps.pushNavigationState).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    test('should call onNavigateBack when browser back handler is invoked', () => {
+      render(<StatisticsScreen {...defaultProps} />);
+
+      // Get the callback that was registered
+      const backHandler = defaultProps.pushNavigationState.mock.calls[0][0];
+
+      // Invoke it
+      backHandler();
+
+      expect(defaultProps.onNavigateBack).toHaveBeenCalled();
+    });
+
+    test('should cleanup browser back handler on unmount', () => {
+      const { unmount } = render(<StatisticsScreen {...defaultProps} />);
+
+      unmount();
+
+      expect(defaultProps.removeFromNavigationStack).toHaveBeenCalled();
+    });
+
+    test('should not crash if pushNavigationState is not provided', () => {
+      const propsWithoutBrowserBack = {
+        ...defaultProps,
+        pushNavigationState: undefined,
+        removeFromNavigationStack: undefined
+      };
+
+      expect(() => {
+        render(<StatisticsScreen {...propsWithoutBrowserBack} />);
+      }).not.toThrow();
     });
   });
 

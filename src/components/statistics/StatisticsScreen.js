@@ -48,7 +48,7 @@ const getInitialTimeRange = (timeRangePersistence) => {
   };
 };
 
-export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onNavigateTo }) {
+export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const tabPersistence = useMemo(
     () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
     []
@@ -88,6 +88,21 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
     teamPlayers
   } = useTeam();
   const authModal = useAuthModalIntegration(authModalProp);
+
+  // Register browser back handler
+  useEffect(() => {
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        onNavigateBack();
+      });
+    }
+
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, onNavigateBack]);
 
   useEffect(() => {
     tabPersistence.saveState({ tab: activeTab });

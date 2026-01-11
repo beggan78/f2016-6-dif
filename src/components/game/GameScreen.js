@@ -4,7 +4,6 @@ import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreMana
 import GoalScorerModal from '../shared/GoalScorerModal';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../../constants/playerConstants';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
-import { VIEWS } from '../../constants/viewConstants';
 import { findPlayerById, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { calculateCurrentStintDuration } from '../../game/time/timeCalculator';
 import { getCurrentTimestamp } from '../../utils/timeUtils';
@@ -68,6 +67,8 @@ export function GameScreen({
   alertMinutes,
   pushNavigationState,
   removeFromNavigationStack,
+  onNavigateBack,
+  onNavigateTo,
   ownScore,
   opponentScore,
   opponentTeam,
@@ -85,7 +86,6 @@ export function GameScreen({
   periodDurationMinutes,
   trackGoalScorer = true,
   getPlayerName,
-  setView,
   setShowNewGameModal,
   ownTeamName
 }) {
@@ -417,8 +417,8 @@ export function GameScreen({
 
   // Handle back navigation to setup screen - useCallback to prevent re-registration on timer re-renders
   const handleBackToSetup = React.useCallback(() => {
-    setView(VIEWS.PERIOD_SETUP);
-  }, [setView]);
+    onNavigateBack();
+  }, [onNavigateBack]);
 
   // Handle back navigation during running match - show match abandonment warning
   const handleMatchAbandonmentWarning = React.useCallback(() => {

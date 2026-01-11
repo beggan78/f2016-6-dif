@@ -81,6 +81,10 @@ export function PeriodSetupScreen({
   teamConfig,
   selectedFormation,
   setView,
+  onNavigateBack,
+  onNavigateTo,
+  pushNavigationState,
+  removeFromNavigationStack,
   ownScore,
   opponentScore,
   opponentTeam,
@@ -235,6 +239,34 @@ export function PeriodSetupScreen({
   useEffect(() => {
     scrollToTopSmooth();
   }, []);
+
+  // Browser back integration
+  useEffect(() => {
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        // Close any open confirmation modals
+        setConfirmationModal({
+          isOpen: false,
+          type: 'direct',
+          playerName: '',
+          playerId: '',
+          position: '',
+          role: '',
+          originalValue: '',
+          swapDetails: null
+        });
+
+        // Navigate back
+        onNavigateBack();
+      });
+    }
+
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, onNavigateBack]);
 
   const recommendationDependenciesRef = useRef({
     teamId: null,
@@ -1173,7 +1205,7 @@ export function PeriodSetupScreen({
       )}
       
       {currentPeriodNumber === 1 && (
-        <Button onClick={() => setView('config')} Icon={ArrowLeft}>
+        <Button onClick={onNavigateBack} Icon={ArrowLeft}>
           Back to Configuration
         </Button>
       )}

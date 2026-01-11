@@ -12,6 +12,7 @@ import { PlayerStatsTable } from '../report/PlayerStatsTable';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 import { FAIR_PLAY_AWARD_OPTIONS } from '../../types/preferences';
 import { MATCH_TYPES } from '../../constants/matchTypes';
+import { VIEWS } from '../../constants/viewConstants';
 
 export function GameFinishedScreen({
   allPlayers,
@@ -29,7 +30,10 @@ export function GameFinishedScreen({
   opponentTeam,
   resetScore,
   setOpponentTeam,
-  navigateToMatchReport,
+  onNavigateTo,
+  onNavigateBack,
+  pushNavigationState,
+  removeFromNavigationStack,
   // Additional props for match data persistence
   matchEvents = [],
   gameLog = [],
@@ -55,6 +59,21 @@ export function GameFinishedScreen({
   const { isAuthenticated } = useAuth();
   const { currentTeam, loadTeamPreferences } = useTeam();
   const saveRequestIdRef = useRef(0);
+
+  // Register browser back handler
+  useEffect(() => {
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        onNavigateBack();
+      });
+    }
+
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, onNavigateBack]);
 
   useEffect(() => {
     scrollToTopSmooth();
@@ -315,6 +334,17 @@ export function GameFinishedScreen({
       });
   }, [fairPlayAwardCounts, squadForStats]);
 
+  const handleViewLiveMatch = () => {
+    if (!currentMatchId) {
+      console.warn('No match ID available for live match navigation');
+      return;
+    }
+    onNavigateTo(VIEWS.LIVE_MATCH, {
+      matchId: currentMatchId,
+      entryPoint: VIEWS.STATS
+    });
+  };
+
   const handleNewGame = async () => {
     console.log('📊 New Game from Stats Screen - calling checkForActiveMatch()');
     await checkForActiveMatch(() => {
@@ -411,7 +441,7 @@ export function GameFinishedScreen({
         goalScorers={goalScorers}
       />
 
-      <Button onClick={navigateToMatchReport} Icon={FileText} variant="primary">
+      <Button onClick={handleViewLiveMatch} Icon={FileText} variant="primary">
         View Match Report
       </Button>
 
