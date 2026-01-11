@@ -1001,6 +1001,7 @@ function AppContent() {
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
             clearStoredState={gameState.clearStoredState}
             configurationSessionId={configSessionToken}
+            resumeMatchId={navigationData?.resumeMatchId}
             onNavigateBack={navigateBack}
             onNavigateTo={navigateToView}
             pushNavigationState={pushNavigationState}
