@@ -602,17 +602,6 @@ function AppContent() {
     return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie);
   }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie]);
 
-  const handleNavigateToLiveMatchReport = useCallback(() => {
-    if (!gameState.currentMatchId) {
-      console.warn('No match ID available for live match navigation');
-      return;
-    }
-
-    setLiveMatchId(gameState.currentMatchId);
-    setLiveMatchEntryPoint(VIEWS.STATS);
-    navigateToView(VIEWS.LIVE_MATCH);
-  }, [gameState.currentMatchId, navigateToView]);
-
   const handleLiveMatchNavigateBack = useCallback(() => {
     setLiveMatchEntryPoint(null);
     const targetView = navigateBack(VIEWS.STATS);
@@ -1109,6 +1098,9 @@ function AppContent() {
             allPlayers={gameState.allPlayers?.length ? gameState.allPlayers : gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
             setView={navigateToView}
             onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             setAllPlayers={gameState.setAllPlayers}
             setSelectedSquadIds={gameState.setSelectedSquadIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
@@ -1122,7 +1114,6 @@ function AppContent() {
             opponentTeam={gameState.opponentTeam}
             resetScore={gameState.resetScore}
             setOpponentTeam={gameState.setOpponentTeam}
-            navigateToMatchReport={handleNavigateToLiveMatchReport}
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}

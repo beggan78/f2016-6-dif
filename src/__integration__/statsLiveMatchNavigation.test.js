@@ -92,29 +92,31 @@ const statsProps = {
 
 function NavigationHarness() {
   const [view, setView] = useState(VIEWS.STATS);
-  const [entryPoint, setEntryPoint] = useState(null);
-  const [liveMatchId, setLiveMatchId] = useState(null);
+  const [navigationData, setNavigationData] = useState(null);
   const navigation = useScreenNavigation(setView, { enableBrowserBack: false, fallbackView: VIEWS.CONFIG });
 
   if (view === VIEWS.STATS) {
     return (
       <GameFinishedScreen
         {...statsProps}
-        navigateToMatchReport={() => {
-          setLiveMatchId('match-123');
-          setEntryPoint(VIEWS.STATS);
-          navigation.navigateTo(VIEWS.LIVE_MATCH);
+        onNavigateTo={(targetView, data) => {
+          setNavigationData(data);
+          navigation.navigateTo(targetView);
         }}
+        onNavigateBack={() => navigation.navigateBack(VIEWS.STATS)}
       />
     );
   }
 
+  const matchId = navigationData?.matchId || null;
+  const entryPoint = navigationData?.entryPoint || null;
+
   return (
     <LiveMatchScreen
-      matchId={liveMatchId}
+      matchId={matchId}
       showBackButton={entryPoint === VIEWS.STATS}
       onNavigateBack={() => {
-        setEntryPoint(null);
+        setNavigationData(null);
         navigation.navigateBack(VIEWS.STATS);
       }}
     />
