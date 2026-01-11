@@ -53,6 +53,8 @@ export const createMockGameScreenProps = (overrides = {}) => {
     alertMinutes: 2,
     pushNavigationState: jest.fn(),
     removeFromNavigationStack: jest.fn(),
+    onNavigateBack: jest.fn(),
+    onNavigateTo: jest.fn(),
     ownScore: 0,
     opponentScore: 0,
     opponentTeam: 'Test Opponent',

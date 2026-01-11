@@ -19,6 +19,7 @@ import { GameFinishedScreen } from '../GameFinishedScreen';
 import { PLAYER_ROLES } from '../../../constants/playerConstants';
 import { MATCH_TYPES } from '../../../constants/matchTypes';
 import { FAIR_PLAY_AWARD_OPTIONS } from '../../../types/preferences';
+import { VIEWS } from '../../../constants/viewConstants';
 import {
   createMockPlayers,
 } from '../../__tests__/componentTestUtils';
@@ -146,7 +147,10 @@ describe('GameFinishedScreen', () => {
       clearTimerState: jest.fn(),
       resetScore: jest.fn(),
       setOpponentTeam: jest.fn(),
-      navigateToMatchReport: jest.fn(),
+      onNavigateTo: jest.fn(),
+      onNavigateBack: jest.fn(),
+      pushNavigationState: jest.fn(),
+      removeFromNavigationStack: jest.fn(),
       handleRestartMatch: jest.fn()
     };
 
@@ -564,6 +568,63 @@ describe('GameFinishedScreen', () => {
       // The old individual state setters should NOT be called from handleNewGame
       // (they may be called from other parts of the component like Fair Play Award)
       // We're just verifying that handleRestartMatch is the primary reset mechanism
+    });
+  });
+
+  describe('Browser Back Integration', () => {
+    it('should register browser back handler on mount', () => {
+      render(<GameFinishedScreen {...defaultProps} />);
+
+      expect(defaultProps.pushNavigationState).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('should cleanup browser back handler on unmount', () => {
+      const { unmount } = render(<GameFinishedScreen {...defaultProps} />);
+
+      unmount();
+
+      expect(defaultProps.removeFromNavigationStack).toHaveBeenCalled();
+    });
+
+    it('should call onNavigateBack when browser back handler is triggered', () => {
+      render(<GameFinishedScreen {...defaultProps} />);
+
+      // Get the callback passed to pushNavigationState
+      const backHandler = defaultProps.pushNavigationState.mock.calls[0][0];
+
+      // Trigger it
+      backHandler();
+
+      expect(defaultProps.onNavigateBack).toHaveBeenCalled();
+    });
+  });
+
+  describe('View Match Report Navigation', () => {
+    it('should navigate to live match when View Match Report button clicked', async () => {
+      render(<GameFinishedScreen {...defaultProps} />);
+
+      const button = screen.getByRole('button', { name: /View Match Report/i });
+      await userEvent.click(button);
+
+      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.LIVE_MATCH, {
+        matchId: defaultProps.currentMatchId,
+        entryPoint: VIEWS.STATS
+      });
+    });
+
+    it('should warn if no match ID when View Match Report clicked', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const propsWithoutMatchId = { ...defaultProps, currentMatchId: null };
+
+      render(<GameFinishedScreen {...propsWithoutMatchId} />);
+
+      const button = screen.getByRole('button', { name: /View Match Report/i });
+      await userEvent.click(button);
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith('No match ID available for live match navigation');
+      expect(defaultProps.onNavigateTo).not.toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
     });
   });
 });

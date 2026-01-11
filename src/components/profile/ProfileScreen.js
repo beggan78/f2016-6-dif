@@ -9,7 +9,7 @@ import { sanitizeNameInput, isValidNameInput } from '../../utils/inputSanitizati
 // Constants
 const SUCCESS_MESSAGE_DURATION = 3000; // 3 seconds
 
-export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
+export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
   const { currentTeam, userTeams, loading: teamLoading } = useTeam();
   const [isEditing, setIsEditing] = useState(false);
@@ -20,6 +20,21 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo }) {
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const nameInputRef = useRef(null);
   const successTimeoutRef = useRef(null);
+
+  // Register browser back handler
+  useEffect(() => {
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        onNavigateBack();
+      });
+    }
+
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, onNavigateBack]);
 
   // Clear messages when user starts editing
   useEffect(() => {

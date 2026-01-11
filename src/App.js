@@ -22,6 +22,7 @@ import { TacticalBoardScreen } from './components/tactical/TacticalBoardScreen';
 import { LiveMatchScreen } from './components/live/LiveMatchScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
+import { TeamMatchesList } from './components/team/TeamMatchesList';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -109,7 +110,14 @@ function AppContent() {
   
   // Enhanced navigation functions that track history
   const navigateToView = useCallback((view, data = null) => {
-    return navigationHistory.navigateTo(view, data);
+    const success = navigationHistory.navigateTo(view, data);
+
+    // Store navigation data for components to access
+    if (success && data) {
+      setNavigationData(data);
+    }
+
+    return success;
   }, [navigationHistory]);
   
   const navigateBack = useCallback((fallback = null) => {
@@ -594,17 +602,6 @@ function AppContent() {
     return getOutfieldPlayers(gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie);
   }, [gameState.allPlayers, gameState.selectedSquadIds, gameState.formation.goalie]);
 
-  const handleNavigateToLiveMatchReport = useCallback(() => {
-    if (!gameState.currentMatchId) {
-      console.warn('No match ID available for live match navigation');
-      return;
-    }
-
-    setLiveMatchId(gameState.currentMatchId);
-    setLiveMatchEntryPoint(VIEWS.STATS);
-    navigateToView(VIEWS.LIVE_MATCH);
-  }, [gameState.currentMatchId, navigateToView]);
-
   const handleLiveMatchNavigateBack = useCallback(() => {
     setLiveMatchEntryPoint(null);
     const targetView = navigateBack(VIEWS.STATS);
@@ -1004,6 +1001,10 @@ function AppContent() {
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
             clearStoredState={gameState.clearStoredState}
             configurationSessionId={configSessionToken}
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       case VIEWS.PERIOD_SETUP:
@@ -1024,6 +1025,10 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
             setView={navigateToView}
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             ownScore={gameState.ownScore}
             opponentScore={gameState.opponentScore}
             opponentTeam={gameState.opponentTeam}
@@ -1074,6 +1079,8 @@ function AppContent() {
             getOutfieldPlayers={gameState.getOutfieldPlayers}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
             ownScore={gameState.ownScore}
             opponentScore={gameState.opponentScore}
             opponentTeam={gameState.opponentTeam}
@@ -1092,7 +1099,6 @@ function AppContent() {
               const player = gameState.allPlayers.find(p => p.id === playerId);
               return player ? formatPlayerName(player) : 'Unknown Player';
             }}
-            setView={gameState.setView}
           />
         );
       case VIEWS.STATS:
@@ -1101,6 +1107,9 @@ function AppContent() {
             allPlayers={gameState.allPlayers?.length ? gameState.allPlayers : gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
             setView={navigateToView}
             onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             setAllPlayers={gameState.setAllPlayers}
             setSelectedSquadIds={gameState.setSelectedSquadIds}
             setPeriodGoalieIds={gameState.setPeriodGoalieIds}
@@ -1114,7 +1123,6 @@ function AppContent() {
             opponentTeam={gameState.opponentTeam}
             resetScore={gameState.resetScore}
             setOpponentTeam={gameState.setOpponentTeam}
-            navigateToMatchReport={handleNavigateToLiveMatchReport}
             currentMatchId={gameState.currentMatchId}
             matchEvents={gameState.matchEvents || []}
             goalScorers={gameState.goalScorers || {}}
@@ -1159,12 +1167,25 @@ function AppContent() {
             onShowSuccessMessage={showSuccessMessage}
           />
         );
+      case VIEWS.TEAM_MATCHES:
+        return (
+          <TeamMatchesList
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
+          />
+        );
       case VIEWS.LIVE_MATCH:
-        const showLiveMatchBackButton = Boolean(user) && liveMatchEntryPoint === VIEWS.STATS;
+        // Extract match data from navigation (with fallbacks to state)
+        const matchId = navigationData?.matchId || liveMatchId;
+        const entryPoint = navigationData?.entryPoint || liveMatchEntryPoint;
 
-        return liveMatchId ? (
+        const showLiveMatchBackButton = Boolean(user) && entryPoint === VIEWS.STATS;
+
+        return matchId ? (
           <LiveMatchScreen
-            matchId={liveMatchId}
+            matchId={matchId}
             showBackButton={showLiveMatchBackButton}
             onNavigateBack={showLiveMatchBackButton ? handleLiveMatchNavigateBack : undefined}
           />
@@ -1192,6 +1213,8 @@ function AppContent() {
             onNavigateBack={navigateBack}
             authModal={authModal}
             onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       default:

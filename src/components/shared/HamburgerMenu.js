@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, UserPen, Dice5, Settings, Share2 } from 'lucide-react';
+import { Users, UserPen, Dice5, Settings, Share2, Calendar } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
@@ -61,6 +61,13 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     setIsOpen(false);
     if (setView) {
       setView(VIEWS.TEAM_MANAGEMENT);
+    }
+  };
+
+  const handleTeamMatches = () => {
+    setIsOpen(false);
+    if (setView) {
+      setView(VIEWS.TEAM_MATCHES);
     }
   };
 
@@ -242,6 +249,19 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                         <span>Create Team</span>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Team Matches - Protected Feature */}
+                  {hasTeams && (
+                    <button
+                      onClick={handleTeamMatches}
+                      className="block w-full text-left px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 hover:text-sky-400 transition-colors duration-200"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>Team Matches</span>
                       </div>
                     </button>
                   )}

@@ -236,7 +236,7 @@ describe('GameScreen Navigation Integration Tests', () => {
         // Mock browser navigation functions
         const mockPushNavigationState = jest.fn();
         const mockRemoveFromNavigationStack = jest.fn();
-        const mockSetView = jest.fn();
+        const mockOnNavigateBack = jest.fn();
         const mockSetShowNewGameModal = jest.fn();
 
         // Create props for a running match with active data
@@ -247,7 +247,8 @@ describe('GameScreen Navigation Integration Tests', () => {
           subTimerSeconds: 90,     // Active substitution timer
           ownScore: 2,             // Goals scored
           opponentScore: 1,        // Match in progress
-          setView: mockSetView,
+          onNavigateBack: mockOnNavigateBack,
+          onNavigateTo: jest.fn(),
           setShowNewGameModal: mockSetShowNewGameModal,
           pushNavigationState: mockPushNavigationState,
           removeFromNavigationStack: mockRemoveFromNavigationStack,
@@ -267,7 +268,7 @@ describe('GameScreen Navigation Integration Tests', () => {
 
         // Step 2: Should show abandonment warning modal
         expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
-        expect(mockSetView).not.toHaveBeenCalled(); // Should NOT navigate yet
+        expect(mockOnNavigateBack).not.toHaveBeenCalled(); // Should NOT navigate yet
 
         // Step 3: Modal registers close handler
         expect(mockPushNavigationState).toHaveBeenCalledTimes(2);
@@ -284,7 +285,7 @@ describe('GameScreen Navigation Integration Tests', () => {
 
         // Step 5: Modal should be closed, match continues
         expect(mockSetShowNewGameModal).toHaveBeenCalledWith(false);
-        expect(mockSetView).not.toHaveBeenCalled(); // Still no navigation
+        expect(mockOnNavigateBack).not.toHaveBeenCalled(); // Still no navigation
 
         // Step 6: Game should continue normally
         expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
@@ -297,14 +298,15 @@ describe('GameScreen Navigation Integration Tests', () => {
 
       it('should handle multiple cancellation cycles correctly', async () => {
         const mockPushNavigationState = jest.fn();
-        const mockSetView = jest.fn();
+        const mockOnNavigateBack = jest.fn();
         const mockSetShowNewGameModal = jest.fn();
 
         const props = {
           ...createMockGameScreenProps(),
           matchState: 'running',
           matchTimerSeconds: 900,
-          setView: mockSetView,
+          onNavigateBack: mockOnNavigateBack,
+          onNavigateTo: jest.fn(),
           setShowNewGameModal: mockSetShowNewGameModal,
           pushNavigationState: mockPushNavigationState,
           removeFromNavigationStack: jest.fn()
@@ -334,7 +336,7 @@ describe('GameScreen Navigation Integration Tests', () => {
         expect(mockSetShowNewGameModal).toHaveBeenCalledWith(false);
 
         // Should never navigate
-        expect(mockSetView).not.toHaveBeenCalled();
+        expect(mockOnNavigateBack).not.toHaveBeenCalled();
       });
     });
 
@@ -344,7 +346,7 @@ describe('GameScreen Navigation Integration Tests', () => {
         // Note: The actual abandonment is handled by App.js modal, but we test the trigger
 
         const mockPushNavigationState = jest.fn();
-        const mockSetView = jest.fn();
+        const mockOnNavigateBack = jest.fn();
         const mockSetShowNewGameModal = jest.fn();
 
         const props = {
@@ -352,7 +354,8 @@ describe('GameScreen Navigation Integration Tests', () => {
           matchState: 'running',
           matchTimerSeconds: 300,
           ownScore: 1,
-          setView: mockSetView,
+          onNavigateBack: mockOnNavigateBack,
+          onNavigateTo: jest.fn(),
           setShowNewGameModal: mockSetShowNewGameModal,
           pushNavigationState: mockPushNavigationState,
           removeFromNavigationStack: jest.fn()
@@ -368,7 +371,7 @@ describe('GameScreen Navigation Integration Tests', () => {
 
         // Step 2: Should trigger abandonment modal
         expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
-        expect(mockSetView).not.toHaveBeenCalled();
+        expect(mockOnNavigateBack).not.toHaveBeenCalled();
 
         // Step 3: Verify modal hierarchy is set up for further back button handling
         expect(mockPushNavigationState).toHaveBeenCalledTimes(2);
@@ -386,7 +389,7 @@ describe('GameScreen Navigation Integration Tests', () => {
     describe('User in pending match → presses back → directly returns to setup', () => {
       it('should allow safe direct navigation for pending matches', async () => {
         const mockPushNavigationState = jest.fn();
-        const mockSetView = jest.fn();
+        const mockOnNavigateBack = jest.fn();
         const mockSetShowNewGameModal = jest.fn();
 
         const props = {
@@ -395,7 +398,8 @@ describe('GameScreen Navigation Integration Tests', () => {
           matchTimerSeconds: 0,   // No time elapsed
           ownScore: 0,
           opponentScore: 0,
-          setView: mockSetView,
+          onNavigateBack: mockOnNavigateBack,
+          onNavigateTo: jest.fn(),
           setShowNewGameModal: mockSetShowNewGameModal,
           pushNavigationState: mockPushNavigationState,
           removeFromNavigationStack: jest.fn()
@@ -410,7 +414,7 @@ describe('GameScreen Navigation Integration Tests', () => {
         });
 
         // Step 2: Should navigate directly to setup (no modal)
-        expect(mockSetView).toHaveBeenCalledWith(VIEWS.PERIOD_SETUP);
+        expect(mockOnNavigateBack).toHaveBeenCalled();
         expect(mockSetShowNewGameModal).not.toHaveBeenCalled();
 
         // Step 3: Should not set up modal close handlers
@@ -423,14 +427,15 @@ describe('GameScreen Navigation Integration Tests', () => {
 
       it('should transition correctly from pending to running state navigation', async () => {
         const mockPushNavigationState = jest.fn();
-        const mockSetView = jest.fn();
+        const mockOnNavigateBack = jest.fn();
         const mockSetShowNewGameModal = jest.fn();
         const mockRemoveFromNavigationStack = jest.fn();
 
         const props = {
           ...createMockGameScreenProps(),
           matchState: 'pending',
-          setView: mockSetView,
+          onNavigateBack: mockOnNavigateBack,
+          onNavigateTo: jest.fn(),
           setShowNewGameModal: mockSetShowNewGameModal,
           pushNavigationState: mockPushNavigationState,
           removeFromNavigationStack: mockRemoveFromNavigationStack
@@ -441,10 +446,10 @@ describe('GameScreen Navigation Integration Tests', () => {
         // Test pending state navigation
         let backHandler = mockPushNavigationState.mock.calls[0][0];
         act(() => { backHandler(); });
-        expect(mockSetView).toHaveBeenCalledWith(VIEWS.PERIOD_SETUP);
+        expect(mockOnNavigateBack).toHaveBeenCalled();
 
         // Reset mocks
-        mockSetView.mockClear();
+        mockOnNavigateBack.mockClear();
         mockSetShowNewGameModal.mockClear();
         mockPushNavigationState.mockClear();
 
@@ -454,7 +459,7 @@ describe('GameScreen Navigation Integration Tests', () => {
         // Test running state navigation
         backHandler = mockPushNavigationState.mock.calls[0][0];
         act(() => { backHandler(); });
-        expect(mockSetView).not.toHaveBeenCalled(); // Should not navigate directly
+        expect(mockOnNavigateBack).not.toHaveBeenCalled(); // Should not navigate directly
         expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true); // Should show modal
 
         // Cleanup should have been called during transition
@@ -465,13 +470,14 @@ describe('GameScreen Navigation Integration Tests', () => {
     describe('Modal hierarchy: back closes modal → back again shows modal', () => {
       it('should handle modal hierarchy correctly with browser back button', async () => {
         const mockPushNavigationState = jest.fn();
-        const mockSetView = jest.fn();
+        const mockOnNavigateBack = jest.fn();
         const mockSetShowNewGameModal = jest.fn();
 
         const props = {
           ...createMockGameScreenProps(),
           matchState: 'running',
-          setView: mockSetView,
+          onNavigateBack: mockOnNavigateBack,
+          onNavigateTo: jest.fn(),
           setShowNewGameModal: mockSetShowNewGameModal,
           pushNavigationState: mockPushNavigationState,
           removeFromNavigationStack: jest.fn()
@@ -497,7 +503,7 @@ describe('GameScreen Navigation Integration Tests', () => {
         expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
 
         // Should never navigate directly
-        expect(mockSetView).not.toHaveBeenCalled();
+        expect(mockOnNavigateBack).not.toHaveBeenCalled();
       });
     });
   });
@@ -572,7 +578,8 @@ describe('GameScreen Navigation Integration Tests', () => {
         // Missing pushNavigationState and other optional props
         pushNavigationState: null,
         removeFromNavigationStack: null,
-        setView: null,
+        onNavigateBack: null,
+        onNavigateTo: null,
         setShowNewGameModal: null
       };
 
@@ -609,7 +616,7 @@ describe('GameScreen Navigation Integration Tests', () => {
 
     it('should maintain data integrity during match state changes', async () => {
       const mockPushNavigationState = jest.fn();
-      const mockSetView = jest.fn();
+      const mockOnNavigateBack = jest.fn();
       const mockSetShowNewGameModal = jest.fn();
 
       const initialProps = {
@@ -618,7 +625,8 @@ describe('GameScreen Navigation Integration Tests', () => {
         matchTimerSeconds: 0,
         ownScore: 0,
         pushNavigationState: mockPushNavigationState,
-        setView: mockSetView,
+        onNavigateBack: mockOnNavigateBack,
+        onNavigateTo: jest.fn(),
         setShowNewGameModal: mockSetShowNewGameModal,
         removeFromNavigationStack: jest.fn()
       };
@@ -628,10 +636,10 @@ describe('GameScreen Navigation Integration Tests', () => {
       // Start with pending - should allow direct navigation
       let backHandler = mockPushNavigationState.mock.calls[0][0];
       act(() => { backHandler(); });
-      expect(mockSetView).toHaveBeenCalledWith(VIEWS.PERIOD_SETUP);
+      expect(mockOnNavigateBack).toHaveBeenCalled();
 
       // Reset mocks
-      mockSetView.mockClear();
+      mockOnNavigateBack.mockClear();
       mockPushNavigationState.mockClear();
 
       // Update to running state with active data
@@ -647,7 +655,7 @@ describe('GameScreen Navigation Integration Tests', () => {
       // Now should require confirmation
       backHandler = mockPushNavigationState.mock.calls[0][0];
       act(() => { backHandler(); });
-      expect(mockSetView).not.toHaveBeenCalled();
+      expect(mockOnNavigateBack).not.toHaveBeenCalled();
       expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
     });
 
