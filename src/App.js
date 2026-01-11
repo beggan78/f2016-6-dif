@@ -1021,6 +1021,10 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
             setView={navigateToView}
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
             ownScore={gameState.ownScore}
             opponentScore={gameState.opponentScore}
             opponentTeam={gameState.opponentTeam}
