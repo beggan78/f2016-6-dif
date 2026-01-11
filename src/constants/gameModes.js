@@ -19,6 +19,37 @@ import { normalizeRole, validateRoleInDev } from './roleConstants.js';
  * - Validation and recommendation algorithms
  */
 
+const FIELD_ROLE_DISPLAY_ORDER = [
+  PLAYER_ROLES.ATTACKER,
+  PLAYER_ROLES.MIDFIELDER,
+  PLAYER_ROLES.DEFENDER
+];
+
+const orderFieldPositionsForDisplay = (positions = [], positionDefinitions = {}) => {
+  if (!Array.isArray(positions)) {
+    return [];
+  }
+
+  const ordered = [];
+
+  FIELD_ROLE_DISPLAY_ORDER.forEach(role => {
+    positions.forEach(positionKey => {
+      if (positionDefinitions[positionKey]?.role === role) {
+        ordered.push(positionKey);
+      }
+    });
+  });
+
+  const orderedSet = new Set(ordered);
+  positions.forEach(positionKey => {
+    if (!orderedSet.has(positionKey)) {
+      ordered.push(positionKey);
+    }
+  });
+
+  return ordered;
+};
+
 /**
  * Formation-specific position layouts
  * Defines the tactical arrangement and role mappings for each formation
@@ -296,7 +327,16 @@ export function getFormationPositions(teamConfig) {
  */
 export function getFormationPositionsWithGoalie(teamConfig) {
   const definition = getModeDefinition(teamConfig);
-  return definition ? ['goalie', ...definition.fieldPositions, ...definition.substitutePositions] : [];
+  if (!definition) {
+    return [];
+  }
+
+  const orderedFieldPositions = orderFieldPositionsForDisplay(
+    definition.fieldPositions,
+    definition.positions
+  );
+
+  return [...orderedFieldPositions, 'goalie', ...definition.substitutePositions];
 }
 
 /**
