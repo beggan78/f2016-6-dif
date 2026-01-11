@@ -182,13 +182,13 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
   }, [onNavigateBack, showBackButton]);
 
   const matchMetadata = useMemo(() => extractMatchMetadata(events), [events]);
+  const matchHasFinished = Boolean(matchMetadata?.matchHasStarted && !matchMetadata?.isLive);
 
   useEffect(() => {
     const isLive = Boolean(matchMetadata?.isLive);
-    const hasEnded = Boolean(matchMetadata?.matchHasStarted && !matchMetadata?.isLive);
-    const nextIntervalMs = isLive ? 30000 : (hasEnded ? 300000 : 60000);
+    const nextIntervalMs = isLive ? 30000 : (matchHasFinished ? 300000 : 60000);
     const nextConfig = {
-      enabled: isLive || hasEnded,
+      enabled: isLive || matchHasFinished,
       intervalMs: nextIntervalMs
     };
 
@@ -198,7 +198,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
       }
       return nextConfig;
     });
-  }, [matchMetadata?.isLive, matchMetadata?.matchHasStarted]);
+  }, [matchMetadata?.isLive, matchHasFinished]);
 
   useEffect(() => {
     liveTimelinePrefsManager.saveState({
@@ -561,6 +561,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
               matchDuration={matchMetadata.isLive ? matchMetadata.matchDurationSeconds || 0 : effectiveMatchDurationSeconds}
               matchDurationDisplay={liveMatchMinuteDisplay}
               matchHasStarted={matchMetadata.matchHasStarted}
+              matchHasFinished={matchHasFinished}
             />
           </ReportSection>
 
