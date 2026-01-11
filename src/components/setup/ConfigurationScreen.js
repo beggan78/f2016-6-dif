@@ -1553,6 +1553,12 @@ export function ConfigurationScreen({
     resumePendingMatchById(matchIdToResume, { trackRequest: true });
   }, [resumeMatchId, currentTeam?.id, teamLoading, pendingMatchLoading, resumePendingMatchById]);
 
+  React.useEffect(() => {
+    return () => {
+      queuedResumeMatchIdRef.current = null;
+    };
+  }, []);
+
   const handleSaveConfigClick = async () => {
     if (!handleSaveConfiguration) {
       console.warn('handleSaveConfiguration is not provided');
