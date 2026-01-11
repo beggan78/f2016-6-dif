@@ -1213,6 +1213,8 @@ function AppContent() {
             onNavigateBack={navigateBack}
             authModal={authModal}
             onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       default:
