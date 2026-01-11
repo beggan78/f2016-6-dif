@@ -1079,6 +1079,8 @@ function AppContent() {
             getOutfieldPlayers={gameState.getOutfieldPlayers}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
             ownScore={gameState.ownScore}
             opponentScore={gameState.opponentScore}
             opponentTeam={gameState.opponentTeam}
@@ -1097,7 +1099,6 @@ function AppContent() {
               const player = gameState.allPlayers.find(p => p.id === playerId);
               return player ? formatPlayerName(player) : 'Unknown Player';
             }}
-            setView={gameState.setView}
           />
         );
       case VIEWS.STATS:

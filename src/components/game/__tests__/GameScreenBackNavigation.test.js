@@ -64,7 +64,6 @@ describe('GameScreen Back Navigation Tests', () => {
   let defaultProps;
   let mockPushNavigationState;
   let mockRemoveFromNavigationStack;
-  let mockSetView;
   let mockSetShowNewGameModal;
 
   beforeEach(() => {
@@ -74,13 +73,13 @@ describe('GameScreen Back Navigation Tests', () => {
     // Create mock functions
     mockPushNavigationState = jest.fn();
     mockRemoveFromNavigationStack = jest.fn();
-    mockSetView = jest.fn();
     mockSetShowNewGameModal = jest.fn();
     
     // Create default props with our mocked functions
     defaultProps = {
       ...createMockGameScreenProps(),
-      setView: mockSetView,
+      onNavigateBack: jest.fn(),
+      onNavigateTo: jest.fn(),
       setShowNewGameModal: mockSetShowNewGameModal,
       pushNavigationState: mockPushNavigationState,
       removeFromNavigationStack: mockRemoveFromNavigationStack
@@ -252,9 +251,9 @@ describe('GameScreen Back Navigation Tests', () => {
       act(() => {
         backHandler();
       });
-      
-      // Should navigate to PERIOD_SETUP
-      expect(mockSetView).toHaveBeenCalledWith(VIEWS.PERIOD_SETUP);
+
+      // Should navigate back
+      expect(props.onNavigateBack).toHaveBeenCalledTimes(1);
       expect(mockSetShowNewGameModal).not.toHaveBeenCalled();
     });
 
@@ -338,10 +337,10 @@ describe('GameScreen Back Navigation Tests', () => {
       act(() => {
         backHandler();
       });
-      
+
       // Should show the new game modal
       expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
-      expect(mockSetView).not.toHaveBeenCalled();
+      expect(props.onNavigateBack).not.toHaveBeenCalled();
     });
 
     it('should register modal close handler when showing abandonment warning', () => {
@@ -405,9 +404,9 @@ describe('GameScreen Back Navigation Tests', () => {
       act(() => {
         backHandler();
       });
-      
+
       // Should NOT navigate immediately
-      expect(mockSetView).not.toHaveBeenCalled();
+      expect(props.onNavigateBack).not.toHaveBeenCalled();
       // Should show warning modal instead
       expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
     });
@@ -560,9 +559,9 @@ describe('GameScreen Back Navigation Tests', () => {
         backHandler();
         backHandler();
       });
-      
-      // Should NEVER call setView directly for running matches
-      expect(mockSetView).not.toHaveBeenCalled();
+
+      // Should NEVER call onNavigateBack directly for running matches
+      expect(props.onNavigateBack).not.toHaveBeenCalled();
       // Should always show warning modal
       expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
     });
@@ -614,19 +613,19 @@ describe('GameScreen Back Navigation Tests', () => {
       act(() => {
         backHandler();
       });
-      expect(mockSetView).toHaveBeenCalledWith(VIEWS.PERIOD_SETUP);
-      
+      expect(pendingProps.onNavigateBack).toHaveBeenCalled();
+
       // Reset mocks
-      mockSetView.mockClear();
+      pendingProps.onNavigateBack.mockClear();
       mockSetShowNewGameModal.mockClear();
-      
+
       // Running: Should show warning
       rerender(<GameScreen {...runningProps} />);
       backHandler = mockPushNavigationState.mock.calls[mockPushNavigationState.mock.calls.length - 1][0];
       act(() => {
         backHandler();
       });
-      expect(mockSetView).not.toHaveBeenCalled();
+      expect(runningProps.onNavigateBack).not.toHaveBeenCalled();
       expect(mockSetShowNewGameModal).toHaveBeenCalledWith(true);
     });
   });

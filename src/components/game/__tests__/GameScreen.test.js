@@ -861,12 +861,13 @@ describe('GameScreen', () => {
 
     it('should support different match states for back navigation', () => {
       const mockPushNavigationState = jest.fn();
-      const mockSetView = jest.fn();
-      
+      const mockOnNavigateBack = jest.fn();
+
       const pendingProps = {
         ...defaultProps,
         pushNavigationState: mockPushNavigationState,
-        setView: mockSetView,
+        onNavigateBack: mockOnNavigateBack,
+        onNavigateTo: jest.fn(),
         matchState: 'pending'
       };
       
