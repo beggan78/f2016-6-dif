@@ -1,6 +1,7 @@
 import { PLAYER_ROLES, PLAYER_STATUS } from './playerConstants.js';
 import { GAME_CONSTANTS, FORMAT_CONFIGS, FORMATS, FORMATIONS } from './teamConfiguration.js';
 import { normalizeRole, validateRoleInDev } from './roleConstants.js';
+import { orderFieldPositionsForDisplay } from '../utils/positionDisplayOrder.js';
 
 /**
  * Game Modes and Formation System
@@ -296,7 +297,13 @@ export function getFormationPositions(teamConfig) {
  */
 export function getFormationPositionsWithGoalie(teamConfig) {
   const definition = getModeDefinition(teamConfig);
-  return definition ? ['goalie', ...definition.fieldPositions, ...definition.substitutePositions] : [];
+  if (!definition) {
+    return [];
+  }
+
+  const orderedFieldPositions = orderFieldPositionsForDisplay(definition.fieldPositions);
+
+  return [...orderedFieldPositions, 'goalie', ...definition.substitutePositions];
 }
 
 /**
