@@ -155,6 +155,8 @@ jest.mock('../../../utils/persistenceManager', () => ({
 
 const mockUseTeam = useTeam;
 const mockUseAuth = useAuth;
+const setupUserEvent = (options = undefined) =>
+  (typeof userEvent.setup === 'function' ? userEvent.setup(options) : userEvent);
 
 describe('TeamManagement', () => {
   let defaultProps;
@@ -259,7 +261,7 @@ describe('TeamManagement', () => {
 
     mockUseAuth.mockReturnValue(mockAuthContext);
     mockUseTeam.mockReturnValue(mockTeamContext);
-    user = userEvent.setup();
+    user = setupUserEvent();
   });
 
   afterEach(() => {
@@ -620,7 +622,7 @@ describe('TeamManagement', () => {
   describe('Success Messages', () => {
     it('should display success message after team creation', async () => {
       jest.useFakeTimers();
-      user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      user = setupUserEvent({ advanceTimers: jest.advanceTimersByTime });
       const mockGetTeamMembersAfterCreate = jest.fn(() => Promise.resolve(mockMembers));
 
       mockUseTeam.mockReturnValue({
@@ -652,7 +654,7 @@ describe('TeamManagement', () => {
 
     it('should auto-clear success messages after 3 seconds', async () => {
       jest.useFakeTimers();
-      user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      user = setupUserEvent({ advanceTimers: jest.advanceTimersByTime });
       const mockGetTeamMembersAfterCreate = jest.fn(() => Promise.resolve(mockMembers));
 
       mockUseTeam.mockReturnValue({

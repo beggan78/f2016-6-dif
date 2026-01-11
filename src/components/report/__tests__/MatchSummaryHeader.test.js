@@ -282,6 +282,19 @@ describe('MatchSummaryHeader', () => {
   });
 
   describe('Score Display and Winner Determination', () => {
+    it('hides the result indicator when the match is not finished', () => {
+      render(
+        <MatchSummaryHeader
+          {...defaultProps}
+          matchHasFinished={false}
+        />
+      );
+
+      expect(screen.queryByText('Own Team wins')).not.toBeInTheDocument();
+      expect(screen.queryByText('Hammarby wins')).not.toBeInTheDocument();
+      expect(screen.queryByText('Match tied')).not.toBeInTheDocument();
+    });
+
     it('displays own team win correctly', () => {
       render(
         <MatchSummaryHeader 
