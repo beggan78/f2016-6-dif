@@ -1001,6 +1001,10 @@ function AppContent() {
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
             clearStoredState={gameState.clearStoredState}
             configurationSessionId={configSessionToken}
+            onNavigateBack={navigateBack}
+            onNavigateTo={navigateToView}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
           />
         );
       case VIEWS.PERIOD_SETUP:

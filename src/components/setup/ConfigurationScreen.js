@@ -80,7 +80,11 @@ export function ConfigurationScreen({
   hasActiveConfiguration,
   setHasActiveConfiguration,
   clearStoredState,
-  configurationSessionId = 0
+  configurationSessionId = 0,
+  onNavigateBack,
+  onNavigateTo,
+  pushNavigationState,
+  removeFromNavigationStack
 }) {
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
@@ -233,6 +237,26 @@ export function ConfigurationScreen({
       setPendingMatchModalClosed(false);
     }
   }, [user?.id]);
+
+  // Browser back integration
+  React.useEffect(() => {
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        // Close any open modals
+        setShowPendingMatchModal(false);
+        setIsVoteModalOpen(false);
+
+        // Navigate back
+        onNavigateBack();
+      });
+    }
+
+    return () => {
+      if (removeFromNavigationStack) {
+        removeFromNavigationStack();
+      }
+    };
+  }, [pushNavigationState, removeFromNavigationStack, onNavigateBack]);
 
   // Load captain history for dropdown context (last 6 months)
   React.useEffect(() => {
