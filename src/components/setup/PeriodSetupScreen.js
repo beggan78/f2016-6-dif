@@ -12,6 +12,7 @@ import { useTeam } from '../../contexts/TeamContext';
 import { calculatePositionRecommendations } from '../../game/logic/positionRecommendations';
 import { PositionRecommendationCard } from './PositionRecommendationCard';
 import { usePlayerRecommendationData } from '../../hooks/usePlayerRecommendationData';
+import { orderFieldPositionsForDisplay } from '../../utils/positionDisplayOrder';
 
 const humanizePositionKey = (positionKey) => {
   return positionKey
@@ -34,14 +35,14 @@ const getPositionConfig = (positionKey) => {
 };
 
 // Dynamic component for rendering individual position cards
-function IndividualPositionCards({ teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
+function IndividualPositionCards({ positions = null, teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
   const modeDefinition = getModeDefinition(teamConfig);
   if (!modeDefinition) {
     return null;
   }
 
   const { fieldPositions, substitutePositions } = modeDefinition;
-  const allPositions = [...fieldPositions, ...substitutePositions];
+  const allPositions = positions || [...fieldPositions, ...substitutePositions];
 
   return (
     <>
@@ -202,6 +203,12 @@ export function PeriodSetupScreen({
     formation,
     teamConfig
   ]);
+
+  const orderedFieldPositions = useMemo(() => {
+    return orderFieldPositionsForDisplay(modeDefinition?.fieldPositions || []);
+  }, [modeDefinition]);
+
+  const substitutePositions = modeDefinition?.substitutePositions || [];
   
   // Flag to track when we're replacing an inactive goalie (vs active goalie)
   const [isReplacingInactiveGoalie, setIsReplacingInactiveGoalie] = useState(false);
@@ -1087,11 +1094,22 @@ export function PeriodSetupScreen({
         </div>
       )}
 
+      {formation.goalie && (
+        <IndividualPositionCards
+          positions={orderedFieldPositions}
+          teamConfig={teamConfig}
+          formation={formation}
+          onPlayerAssign={handleIndividualPlayerAssignment}
+          getAvailableOptions={getAvailableForIndividualSelect}
+          currentPeriodNumber={currentPeriodNumber}
+        />
+      )}
+
       {/* Enhanced goalie section with inactive player detection */}
       {(() => {
         const isGoalieInactive = formation.goalie && isPlayerInactive(formation.goalie);
-        const sectionBgColor = isGoalieInactive ? 'bg-amber-700 border border-amber-500' : 'bg-slate-700';
-        const headerColor = isGoalieInactive ? 'text-amber-200' : 'text-sky-200';
+        const sectionBgColor = isGoalieInactive ? 'bg-amber-700 border border-amber-500' : 'bg-emerald-700';
+        const headerColor = isGoalieInactive ? 'text-amber-200' : 'text-emerald-100';
         const warningText = isGoalieInactive ? ' (Inactive - needs activation)' : '';
         
         return (
@@ -1117,6 +1135,7 @@ export function PeriodSetupScreen({
 
       {formation.goalie && (
         <IndividualPositionCards
+          positions={substitutePositions}
           teamConfig={teamConfig}
           formation={formation}
           onPlayerAssign={handleIndividualPlayerAssignment}

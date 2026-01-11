@@ -91,26 +91,26 @@
  * POSITION INDEX MAPPING SYSTEM
  * ============================================================================
  * 
- * Individual 6-Player Mode Visual Layout:
+ * Individual 6-Player Mode Visual Layout (top → bottom):
  * ┌─────────────────┐ Index 0
- * │ Goalie          │
- * ├─────────────────┤ Index 1  
- * │ Left Defender   │
- * ├─────────────────┤ Index 2
- * │ Right Defender  │
- * ├─────────────────┤ Index 3
  * │ Left Attacker   │
- * ├─────────────────┤ Index 4
+ * ├─────────────────┤ Index 1
  * │ Right Attacker  │ 
+ * ├─────────────────┤ Index 2  
+ * │ Left Defender   │
+ * ├─────────────────┤ Index 3
+ * │ Right Defender  │
+ * ├─────────────────┤ Index 4
+ * │ Goalie          │
  * ├─────────────────┤ Index 5
  * │ Substitute      │
  * └─────────────────┘
  * 
  * Distance Calculation Example:
- * Player moving from leftDefender(1) to substitute(5):
- * - Index difference: 5 - 1 = 4 positions
- * - Distance: 4 × 104px = 416px downward
- * - CSS: transform: translateY(416px)
+ * Player moving from leftDefender(2) to substitute(5):
+ * - Index difference: 5 - 2 = 3 positions
+ * - Distance: 3 × 104px = 312px downward
+ * - CSS: transform: translateY(312px)
  * 
  * ============================================================================
  * CSS ANIMATION COORDINATION
@@ -155,8 +155,9 @@
  */
 // No longer using findPlayerById in this file
 import { POSITION_KEYS } from '../../constants/positionConstants';
-import { getFormationPositionsWithGoalie, getModeDefinition } from '../../constants/gameModes';
+import { getModeDefinition } from '../../constants/gameModes';
 import { getFieldPositions, getSubstitutePositions } from '../logic/positionUtils';
+import { orderFieldPositionsForDisplay } from '../../utils/positionDisplayOrder';
 
 // Animation timing constants
 export const ANIMATION_DURATION = 1000; // 1 second for position transitions
@@ -243,13 +244,23 @@ const crossesFieldSubstituteBoundary = (fromPosition, toPosition, teamConfig) =>
  * 
  * @example
  * // Individual 6-player mode position order in 1-2-1 formation:
- * // goalie(0) → defender(1) → left(2) → right(3) → attacker(4) → substitute(5)
- * getPositionIndex('defender', teamConfig, '1-2-1'); // Returns 1
+ * // attacker(0) → left(1) → right(2) → defender(3) → goalie(4) → substitute(5)
+ * getPositionIndex('defender', teamConfig, '1-2-1'); // Returns 3
  * getPositionIndex('substitute', teamConfig, '1-2-1');   // Returns 5
  */
 const getPositionIndex = (position, teamConfig, selectedFormation = null) => {
   try {
-    const positions = getFormationPositionsWithGoalie(teamConfig);
+    const modeDefinition = getModeDefinition(teamConfig);
+    if (!modeDefinition) {
+      return -1;
+    }
+
+    const orderedFieldPositions = orderFieldPositionsForDisplay(modeDefinition.fieldPositions || []);
+    const positions = [
+      ...orderedFieldPositions,
+      POSITION_KEYS.GOALIE,
+      ...modeDefinition.substitutePositions
+    ];
     const index = positions.indexOf(position);
     
     return index;
@@ -274,13 +285,13 @@ const getPositionIndex = (position, teamConfig, selectedFormation = null) => {
  * @returns {number} Signed pixel distance (+ = down, - = up, 0 = no movement)
  *
  * @example
- * // Player moving from leftDefender(1) to substitute(5) in Individual 6-player
- * calculateDistance(1, 5, teamConfig, 'leftDefender', 'substitute_1');
- * // Returns +416px (4 positions) + 72px (SUB NOW button gap) = +488px
+ * // Player moving from leftDefender(2) to substitute(5) in Individual 6-player
+ * calculateDistance(2, 5, teamConfig, 'leftDefender', 'substitute_1');
+ * // Returns +312px (3 positions) + 72px (SUB NOW button gap) = +384px
  *
- * // Player moving from substitute(5) to leftDefender(1)
- * calculateDistance(5, 1, teamConfig, 'substitute_1', 'leftDefender');
- * // Returns -416px (4 positions) - 72px (SUB NOW button gap) = -488px
+ * // Player moving from substitute(5) to leftDefender(2)
+ * calculateDistance(5, 2, teamConfig, 'substitute_1', 'leftDefender');
+ * // Returns -312px (3 positions) - 72px (SUB NOW button gap) = -384px
  */
 const calculateDistance = (fromIndex, toIndex, teamConfig, fromPosition = null, toPosition = null) => {
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return 0;

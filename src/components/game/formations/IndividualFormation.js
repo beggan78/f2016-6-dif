@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { findPlayerById } from '../../../utils/playerUtils';
 import { getFieldPositions, getSubstitutePositions, getPositionRole } from '../../../game/logic/positionUtils';
-import { getAllPositions, supportsInactiveUsers } from '../../../constants/gameModes';
+import { supportsInactiveUsers } from '../../../constants/gameModes';
 import {
   getPositionIcon,
   getPositionDisplayName,
@@ -14,6 +14,7 @@ import { getPlayerStyling } from '../../../game/ui/playerStyling';
 import { getPlayerAnimation } from '../../../game/ui/playerAnimation';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
 import { FORMATION_STYLES, ICON_STYLES } from './constants';
+import { orderFieldPositionsForDisplay } from '../../../utils/positionDisplayOrder';
 
 const EMPTY_FORMATION = {};
 
@@ -50,7 +51,9 @@ export function IndividualFormation({
   // Get formation-specific position lists from formation definitions
   const fieldPositions = getFieldPositions(formationAwareTeamConfig);
   const substitutePositions = getSubstitutePositions(formationAwareTeamConfig);
-  const allPositions = getAllPositions(formationAwareTeamConfig); // Include goalie in formation rendering
+  const orderedFieldPositions = React.useMemo(() => {
+    return orderFieldPositionsForDisplay(fieldPositions);
+  }, [fieldPositions]);
 
   // Mode capabilities
   const modeSupportsInactive = supportsInactiveUsers(formationAwareTeamConfig);
@@ -102,13 +105,13 @@ export function IndividualFormation({
   let positionsToRender;
   if (renderSection === 'field') {
     // Render goalie and field positions only
-    positionsToRender = ['goalie', ...fieldPositions];
+    positionsToRender = [...orderedFieldPositions, 'goalie'];
   } else if (renderSection === 'substitutes') {
     // Render substitute positions only
     positionsToRender = substitutePositions;
   } else {
     // Render all positions (default behavior)
-    positionsToRender = allPositions;
+    positionsToRender = [...orderedFieldPositions, 'goalie', ...substitutePositions];
   }
 
   const renderIndividualPosition = (position, renderIndex) => {
