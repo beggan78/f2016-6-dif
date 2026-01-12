@@ -10,8 +10,8 @@ import { discardPendingMatch } from '../../services/matchStateManager';
 
 /**
  * Team Matches List Screen
- * Shows all active (pending/running) matches for the current team
- * Allows coaches to copy live match links or navigate to LiveMatchScreen
+ * Shows active matches (pending/running) and upcoming matches from connected providers
+ * Allows coaches to copy live match links, resume setup, or navigate to LiveMatchScreen
  */
 export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const { currentTeam } = useTeam();
