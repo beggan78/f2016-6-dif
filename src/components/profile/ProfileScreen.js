@@ -11,7 +11,7 @@ const SUCCESS_MESSAGE_DURATION = 3000; // 3 seconds
 
 export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
-  const { currentTeam, userTeams, userClubs, loading: teamLoading, leaveClub, error: teamError } = useTeam();
+  const { currentTeam, userTeams, userClubs, loading: teamLoading, leaveClub, leaveTeam, error: teamError } = useTeam();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.name || '');
   const [errors, setErrors] = useState({});
@@ -20,6 +20,8 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const [leavingClubId, setLeavingClubId] = useState(null);
   const [leaveClubConfirmation, setLeaveClubConfirmation] = useState(null);
+  const [leavingTeamId, setLeavingTeamId] = useState(null);
+  const [leaveTeamConfirmation, setLeaveTeamConfirmation] = useState(null);
   const nameInputRef = useRef(null);
   const successTimeoutRef = useRef(null);
 
@@ -178,12 +180,25 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     return membership?.club?.long_name || membership?.club?.name || 'Unknown club';
   };
 
+  const formatTeamName = (team) => {
+    if (!team) return 'Unknown team';
+    return team.club?.long_name ? `${team.club.long_name} ${team.name}` : team.name;
+  };
+
   const handleLeaveClub = (membership) => {
     if (!membership?.id) {
       return;
     }
 
     setLeaveClubConfirmation(membership);
+  };
+
+  const handleLeaveTeam = (team) => {
+    if (!team?.id) {
+      return;
+    }
+
+    setLeaveTeamConfirmation(team);
   };
 
   const confirmLeaveClub = async () => {
@@ -198,6 +213,21 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     } finally {
       setLeavingClubId(null);
       setLeaveClubConfirmation(null);
+    }
+  };
+
+  const confirmLeaveTeam = async () => {
+    if (!leaveTeamConfirmation?.id || !leaveTeam) {
+      setLeaveTeamConfirmation(null);
+      return;
+    }
+
+    setLeavingTeamId(leaveTeamConfirmation.id);
+    try {
+      await leaveTeam(leaveTeamConfirmation);
+    } finally {
+      setLeavingTeamId(null);
+      setLeaveTeamConfirmation(null);
     }
   };
 
@@ -472,7 +502,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex-1 text-left">
                             <p className="font-semibold text-slate-100">
-                              Club: {formatClubName(membership)}
+                              {formatClubName(membership)}
                             </p>
                             <p className="text-slate-400 text-sm">
                               {membership.role || 'Member'}
@@ -536,17 +566,27 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                                 {team.active === false && ' • Inactive'}
                               </p>
                             </div>
-                            {currentTeam && team.id !== currentTeam.id && (
-                              <button
-                                onClick={() => {
-                                  // TODO: Implement team switching
-                                  console.log('Switch to team:', team.id);
-                                }}
-                                className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
+                            <div className="flex items-center gap-2">
+                              {currentTeam && team.id !== currentTeam.id && (
+                                <button
+                                  onClick={() => {
+                                    // TODO: Implement team switching
+                                    console.log('Switch to team:', team.id);
+                                  }}
+                                  className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
+                                >
+                                  Switch
+                                </button>
+                              )}
+                              <Button
+                                onClick={() => handleLeaveTeam(team)}
+                                variant="danger"
+                                size="sm"
+                                disabled={leavingTeamId === team.id}
                               >
-                                Switch
-                              </button>
-                            )}
+                                {leavingTeamId === team.id ? 'Leaving...' : 'Leave'}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -596,6 +636,21 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
             : ''
         }
         confirmText="Leave club"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(leaveTeamConfirmation)}
+        onConfirm={confirmLeaveTeam}
+        onCancel={() => setLeaveTeamConfirmation(null)}
+        title="Leave team"
+        message={
+          leaveTeamConfirmation
+            ? `Are you sure you want to leave ${formatTeamName(leaveTeamConfirmation)}?`
+            : ''
+        }
+        confirmText="Leave team"
         cancelText="Cancel"
         variant="danger"
       />

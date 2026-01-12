@@ -94,7 +94,8 @@ describe('ProfileScreen', () => {
         }
       ],
       loading: false,
-      leaveClub: jest.fn()
+      leaveClub: jest.fn(),
+      leaveTeam: jest.fn()
     });
 
     jest.clearAllMocks();
