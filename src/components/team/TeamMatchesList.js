@@ -290,7 +290,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-start gap-2 flex-wrap">
                       <h3 className="text-base sm:text-lg font-semibold text-slate-100">
-                        vs {match.opponent}
+                        {match.opponent}
                       </h3>
                       {getStateBadge(match.state)}
                     </div>
@@ -382,7 +382,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-start gap-2 flex-wrap">
                     <h3 className="text-base sm:text-lg font-semibold text-slate-100">
-                      vs {match.opponent}
+                      {match.opponent}
                     </h3>
                     {getStateBadge('upcoming')}
                   </div>

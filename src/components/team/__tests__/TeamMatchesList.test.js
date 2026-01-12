@@ -259,8 +259,8 @@ describe('TeamMatchesList', () => {
 
       render(<TeamMatchesList {...defaultProps} />);
 
-      expect(screen.getByText('vs Opponent Team A')).toBeInTheDocument();
-      expect(screen.getByText('vs Internal Match')).toBeInTheDocument(); // null opponent
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
+      expect(screen.getByText('Internal Match')).toBeInTheDocument(); // null opponent
     });
 
     it('should display match opponent names', () => {
@@ -273,7 +273,7 @@ describe('TeamMatchesList', () => {
 
       render(<TeamMatchesList {...defaultProps} />);
 
-      expect(screen.getByText('vs Opponent Team A')).toBeInTheDocument();
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
     });
 
     it('should display "Internal Match" for internal matches', () => {
@@ -286,7 +286,7 @@ describe('TeamMatchesList', () => {
 
       render(<TeamMatchesList {...defaultProps} />);
 
-      expect(screen.getByText('vs Internal Match')).toBeInTheDocument();
+      expect(screen.getByText('Internal Match')).toBeInTheDocument();
     });
 
     it('should show Running badge for running matches', () => {
@@ -456,8 +456,8 @@ describe('TeamMatchesList', () => {
 
       render(<TeamMatchesList {...defaultProps} />);
 
-      expect(screen.getByText('vs Opponent Team A')).toBeInTheDocument();
-      expect(screen.getByText('vs Internal Match')).toBeInTheDocument();
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
+      expect(screen.getByText('Internal Match')).toBeInTheDocument();
     });
   });
 
@@ -479,7 +479,7 @@ describe('TeamMatchesList', () => {
       render(<TeamMatchesList {...defaultProps} />);
 
       expect(screen.getByText('Upcoming Matches')).toBeInTheDocument();
-      expect(screen.getByText('vs Future FC')).toBeInTheDocument();
+      expect(screen.getByText('Future FC')).toBeInTheDocument();
       expect(screen.getByText('Upcoming')).toBeInTheDocument();
       expect(screen.getByText('Not planned yet')).toBeInTheDocument();
       expect(screen.getByText('2030-05-01 18:00')).toBeInTheDocument();
@@ -753,7 +753,7 @@ describe('TeamMatchesList', () => {
       render(<TeamMatchesList {...defaultProps} />);
 
       // Should render without crashing, type badge should not appear
-      expect(screen.getByText('vs Opponent Team A')).toBeInTheDocument();
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
     });
 
     it('should handle matches without venue type', () => {
@@ -772,7 +772,7 @@ describe('TeamMatchesList', () => {
       render(<TeamMatchesList {...defaultProps} />);
 
       // Should render without crashing
-      expect(screen.getByText('vs Opponent Team A')).toBeInTheDocument();
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
     });
 
     it('should handle invalid timestamp gracefully', () => {
@@ -813,7 +813,7 @@ describe('TeamMatchesList', () => {
       });
 
       // Component should still be functional
-      expect(screen.getByText('vs Opponent Team A')).toBeInTheDocument();
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
     });
 
     it('should handle empty matches array', () => {
