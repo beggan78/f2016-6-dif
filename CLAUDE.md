@@ -110,6 +110,14 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 - **No direct state mutation**: Never use direct view state mutation - always use the navigation callbacks provided
 - **View constants**: All view references use constants from `VIEWS` (e.g., `VIEWS.CONFIG`, `VIEWS.GAME`, `VIEWS.PROFILE`)
 
+### Modal Components
+**Base modals** (`src/components/shared/UI.js`):
+- `ConfirmationModal` - Two-option confirmation dialogs
+- `ThreeOptionModal` - Three-option selection dialogs
+- Game-specific modals managed via `useGameModals` hook
+
+**Style requirements**: All specialized modals must follow the same visual style (dark theme: `bg-slate-800`, `border-slate-600`, `text-sky-300/400` headers, `z-50` overlay) and browser back integration pattern.
+
 ### Key Architecture Patterns
 1. **Pure Functions**: All game state transitions are pure functions (input → output, no side effects)
 2. **Animation System**: Unified animation system in `/src/game/animation/animationSupport.js`

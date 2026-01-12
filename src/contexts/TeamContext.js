@@ -784,6 +784,59 @@ export const TeamProvider = ({ children }) => {
     }
   }, [user, clearError, getClubMemberships]);
 
+  // Leave a club (remove club and team memberships)
+  const leaveClub = useCallback(async (membership) => {
+    const clubId = typeof membership === 'string'
+      ? membership
+      : membership?.club?.id || membership?.club_id || null;
+
+    if (!clubId) {
+      setError('Club membership not found');
+      return null;
+    }
+
+    if (!user) {
+      setError('Must be logged in to leave club');
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase.rpc('leave_club', {
+        p_club_id: clubId
+      });
+
+      if (error) {
+        console.error('Error leaving club:', error);
+        setError('Failed to leave club');
+        return null;
+      }
+
+      if (!data?.success) {
+        const teams = Array.isArray(data?.teams) ? data.teams.join(', ') : null;
+        const message = data?.error === 'last_team_member' && teams
+          ? `You are the last member of ${teams}. Add another member before leaving this club.`
+          : data?.message || data?.error || 'Failed to leave club';
+        setError(message);
+        return null;
+      }
+
+      await getUserTeams();
+      const updatedClubs = await getClubMemberships();
+      setUserClubs(updatedClubs);
+
+      return data;
+    } catch (err) {
+      console.error('Exception in leaveClub:', err);
+      setError('Failed to leave club');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError, getClubMemberships, getUserTeams]);
+
 
   // Get pending club membership requests (for club admins)
   const getPendingClubRequests = useCallback(async () => {
@@ -2016,6 +2069,7 @@ export const TeamProvider = ({ children }) => {
     
     // Club membership actions
     joinClub,
+    leaveClub,
     getClubMemberships,
     getPendingClubRequests,
     approveClubMembership,
