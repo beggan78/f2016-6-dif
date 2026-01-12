@@ -160,6 +160,49 @@ describe('TeamMatchesList', () => {
     });
   });
 
+  describe('Component Rendering - Mixed Loading States', () => {
+    it('should render upcoming matches when active matches are loading', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: true,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: mockUpcomingMatches,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Upcoming Matches')).toBeInTheDocument();
+      expect(screen.getByText('Future FC')).toBeInTheDocument();
+      expect(screen.queryByText('Loading matches...')).not.toBeInTheDocument();
+    });
+
+    it('should render active matches when upcoming matches are loading', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [mockMatches[0]],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: [],
+        loading: true,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
+      expect(screen.queryByText('Loading matches...')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Component Rendering - Error State', () => {
     it('should render error state with error message', () => {
       mockUseRealtimeTeamMatches.mockReturnValue({
@@ -214,6 +257,48 @@ describe('TeamMatchesList', () => {
 
       expect(mockRefetch).toHaveBeenCalled();
       expect(mockUpcomingRefetch).toHaveBeenCalled();
+    });
+  });
+
+  describe('Component Rendering - Mixed Error States', () => {
+    it('should render upcoming matches when active matches error', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: 'Active matches failed',
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: mockUpcomingMatches,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Upcoming Matches')).toBeInTheDocument();
+      expect(screen.queryByText('Failed to load matches')).not.toBeInTheDocument();
+    });
+
+    it('should render active matches when upcoming matches error', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [mockMatches[0]],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: 'Upcoming matches failed',
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Opponent Team A')).toBeInTheDocument();
+      expect(screen.queryByText('Failed to load matches')).not.toBeInTheDocument();
     });
   });
 
@@ -484,6 +569,145 @@ describe('TeamMatchesList', () => {
       expect(screen.getByText('Not planned yet')).toBeInTheDocument();
       expect(screen.getByText('2030-05-01 18:00')).toBeInTheDocument();
       expect(screen.getByText('Plan')).toBeInTheDocument();
+    });
+
+    it('should render date only when matchTime is null or undefined', () => {
+      const upcomingWithMissingTimes = [
+        {
+          id: 'upcoming-null-time',
+          opponent: 'Null Time FC',
+          matchDate: '2030-06-10',
+          matchTime: null,
+          venue: 'Field 1'
+        },
+        {
+          id: 'upcoming-undefined-time',
+          opponent: 'Undefined Time FC',
+          matchDate: '2030-06-11',
+          venue: 'Field 2'
+        }
+      ];
+
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: upcomingWithMissingTimes,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('2030-06-10')).toBeInTheDocument();
+      expect(screen.getByText('2030-06-11')).toBeInTheDocument();
+    });
+
+    it('should format time range by showing the start time', () => {
+      const upcomingWithRange = [
+        {
+          id: 'upcoming-range-time',
+          opponent: 'Range FC',
+          matchDate: '2030-07-01',
+          matchTime: '09:45 - 11:30',
+          venue: 'Field 3'
+        }
+      ];
+
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: upcomingWithRange,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('2030-07-01 09:45')).toBeInTheDocument();
+      expect(screen.queryByText(/11:30/)).not.toBeInTheDocument();
+    });
+
+    it('should render Date TBD when matchDate is missing', () => {
+      const upcomingWithNoDate = [
+        {
+          id: 'upcoming-no-date',
+          opponent: 'Date TBD FC',
+          matchDate: null,
+          matchTime: '10:00:00',
+          venue: 'Field 4'
+        }
+      ];
+
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: upcomingWithNoDate,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Date TBD')).toBeInTheDocument();
+      expect(screen.queryByText(/10:00/)).not.toBeInTheDocument();
+    });
+
+    it('should display venue for upcoming matches', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: mockUpcomingMatches,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Main Field')).toBeInTheDocument();
+    });
+  });
+
+  describe('User Interactions - Upcoming Matches', () => {
+    it('should not navigate when Plan button is clicked', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: mockUpcomingMatches,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      const planButton = screen.getByText('Plan');
+      fireEvent.click(planButton);
+
+      expect(defaultProps.onNavigateTo).not.toHaveBeenCalled();
     });
   });
 
