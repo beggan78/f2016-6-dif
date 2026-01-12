@@ -150,25 +150,28 @@ Each team configuration definition includes:
 ### 1. Screen Component Pattern
 ```javascript
 // Standard screen component structure
-export function ScreenName({ 
+export function ScreenName({
   // State from useGameState or parent
   gameState,
   setGameState,
-  
-  // Navigation and flow control
-  setView,
-  
+
+  // Navigation props (standard across all screens)
+  onNavigateTo,
+  onNavigateBack,
+  pushNavigationState,
+  removeFromNavigationStack,
+
   // Specific functionality props
   onSpecificAction
 }) {
   // Local state for screen-specific UI
   const [localState, setLocalState] = useState();
-  
+
   // Event handlers
   const handleAction = () => {
     // Business logic
     // State updates
-    // Navigation if needed
+    // Navigation if needed (use onNavigateTo)
   };
 
   return (

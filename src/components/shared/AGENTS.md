@@ -29,7 +29,7 @@ This directory contains reusable UI components shared across the application. Al
 - **`GoalScorerModal`**: Three modes - `new` (select scorer), `correct` (update existing), `view` (read-only). Shows position icons (Sword/Shield/ArrowDownUp/Hand) with role-specific colors. Supports "No specific scorer" option for new goals.
 - **`FeatureVoteModal`**: Feature voting UI with loading/success/error states. Shows auth prompt for unauthenticated users.
 - **`PreferencesModal`**: User preferences with audio alert settings (enable/disable, sound selection, volume slider, test preview). Uses `PreferencesContext` and `audioAlertService`. Preloads sounds on open.
-- **`HamburgerMenu`**: Main navigation menu with authentication state, profile, team management, statistics, tactical board, add player, and match management actions. Shows pending requests badge for team managers.
+- **`HamburgerMenu`**: Main navigation menu with authentication state, profile, team management, statistics, tactical board, add player, and match management actions. Uses `onNavigateTo` for view navigation. Shows pending requests badge for team managers.
 
 ## Key Patterns
 

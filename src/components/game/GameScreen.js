@@ -68,7 +68,6 @@ export function GameScreen({
   pushNavigationState,
   removeFromNavigationStack,
   onNavigateBack,
-  onNavigateTo,
   ownScore,
   opponentScore,
   opponentTeam,
