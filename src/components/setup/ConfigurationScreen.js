@@ -1555,6 +1555,7 @@ export function ConfigurationScreen({
   React.useEffect(() => {
     return () => {
       queuedResumeMatchIdRef.current = null;
+      resumeMatchRequestRef.current = null;
     };
   }, []);
 
