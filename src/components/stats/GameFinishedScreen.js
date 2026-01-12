@@ -16,7 +16,7 @@ import { VIEWS } from '../../constants/viewConstants';
 
 export function GameFinishedScreen({
   allPlayers,
-  setView,
+  onNavigateTo,
   setAllPlayers,
   setSelectedSquadIds,
   setPeriodGoalieIds,
@@ -30,7 +30,6 @@ export function GameFinishedScreen({
   opponentTeam,
   resetScore,
   setOpponentTeam,
-  onNavigateTo,
   onNavigateBack,
   pushNavigationState,
   removeFromNavigationStack,

@@ -144,7 +144,7 @@ Dynamic team name abbreviation based on screen width.
 Statistics screen filter state management.
 
 ### useStatisticsRouting.js
-Statistics tab routing and navigation.
+Statistics tab routing and navigation. Works with URL detection for `/stats` path and integrates with the standard `onNavigateTo` navigation pattern.
 
 ## Critical Rules for AI Agents
 
@@ -156,3 +156,4 @@ Statistics tab routing and navigation.
 6. **Database Operations**: Use service layer functions (matchStateManager, matchConfigurationService)
 7. **Null Safety**: Guard against undefined data with optional chaining and default values
 8. **Separation of Concerns**: Keep game logic in `/src/game/`, hooks manage state and side effects only
+9. **Navigation Pattern**: All components use `onNavigateTo` for forward navigation and `onNavigateBack` for back navigation - never mutate view state directly

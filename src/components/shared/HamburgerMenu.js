@@ -6,7 +6,7 @@ import { VIEWS } from '../../constants/viewConstants';
 import { NotificationModal } from './UI';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 
-export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, setView, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
+export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, onNavigateTo, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
   const [isOpen, setIsOpen] = useState(false);
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const { isAuthenticated, user, userProfile } = useAuth();
@@ -52,29 +52,29 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const handleProfile = () => {
     setIsOpen(false);
-    if (setView) {
-      setView(VIEWS.PROFILE);
+    if (onNavigateTo) {
+      onNavigateTo(VIEWS.PROFILE);
     }
   };
 
   const handleTeamManagement = () => {
     setIsOpen(false);
-    if (setView) {
-      setView(VIEWS.TEAM_MANAGEMENT);
+    if (onNavigateTo) {
+      onNavigateTo(VIEWS.TEAM_MANAGEMENT);
     }
   };
 
   const handleTeamMatches = () => {
     setIsOpen(false);
-    if (setView) {
-      setView(VIEWS.TEAM_MATCHES);
+    if (onNavigateTo) {
+      onNavigateTo(VIEWS.TEAM_MATCHES);
     }
   };
 
   const handleMatchHistory = () => {
     setIsOpen(false);
-    if (setView && canViewStatistics) {
-      setView(VIEWS.STATISTICS);
+    if (onNavigateTo && canViewStatistics) {
+      onNavigateTo(VIEWS.STATISTICS);
     }
   };
 
