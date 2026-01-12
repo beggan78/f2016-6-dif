@@ -3,6 +3,7 @@ import { Calendar, Clock, Share2, AlertCircle, Eye, Play, Trash2 } from 'lucide-
 import { Button, NotificationModal } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useRealtimeTeamMatches } from '../../hooks/useRealtimeTeamMatches';
+import { useUpcomingTeamMatches } from '../../hooks/useUpcomingTeamMatches';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 import { VIEWS } from '../../constants/viewConstants';
 import { discardPendingMatch } from '../../services/matchStateManager';
@@ -14,7 +15,18 @@ import { discardPendingMatch } from '../../services/matchStateManager';
  */
 export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const { currentTeam } = useTeam();
-  const { matches, loading, error, refetch } = useRealtimeTeamMatches(currentTeam?.id);
+  const {
+    matches: activeMatches,
+    loading: activeMatchesLoading,
+    error: activeMatchesError,
+    refetch: refetchActiveMatches
+  } = useRealtimeTeamMatches(currentTeam?.id);
+  const {
+    matches: upcomingMatches,
+    loading: upcomingMatchesLoading,
+    error: upcomingMatchesError,
+    refetch: refetchUpcomingMatches
+  } = useUpcomingTeamMatches(currentTeam?.id);
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const [copyingMatchId, setCopyingMatchId] = useState(null);
   const [deletingMatchId, setDeletingMatchId] = useState(null);
@@ -78,7 +90,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
           title: 'Match Deleted',
           message: 'Pending match deleted.'
         });
-        await refetch();
+        await refetchActiveMatches();
       } else {
         setNotification({
           isOpen: true,
@@ -96,6 +108,10 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     } finally {
       setDeletingMatchId(null);
     }
+  };
+
+  const handleRetry = async () => {
+    await Promise.all([refetchActiveMatches(), refetchUpcomingMatches()]);
   };
 
   // Register browser back handler
@@ -138,6 +154,17 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     return formatIsoDate(date);
   };
 
+  const formatUpcomingMatchTime = (matchTime) => {
+    if (!matchTime) return null;
+    return matchTime.slice(0, 5);
+  };
+
+  const formatUpcomingSchedule = (matchDate, matchTime) => {
+    if (!matchDate) return 'Date TBD';
+    const trimmedTime = formatUpcomingMatchTime(matchTime);
+    return trimmedTime ? `${matchDate} ${trimmedTime}` : matchDate;
+  };
+
   const getStateBadge = (state) => {
     if (state === 'running') {
       return (
@@ -151,12 +178,23 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
           Pending
         </span>
       );
+    } else if (state === 'upcoming') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium bg-amber-600 text-amber-100 rounded-full">
+          Upcoming
+        </span>
+      );
     }
     return null;
   };
 
+  const hasActiveMatches = activeMatches.length > 0;
+  const hasUpcomingMatches = upcomingMatches.length > 0;
+  const isLoading = (activeMatchesLoading || upcomingMatchesLoading) && !hasActiveMatches && !hasUpcomingMatches;
+  const errorMessage = activeMatchesError || upcomingMatchesError;
+
   // Loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -177,7 +215,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   }
 
   // Error state
-  if (error) {
+  if (errorMessage && !hasActiveMatches && !hasUpcomingMatches) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -192,8 +230,8 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
             <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-rose-200 font-medium">Failed to load matches</p>
-              <p className="text-rose-300 text-sm mt-1">{error}</p>
-              <Button onClick={refetch} variant="secondary" size="sm" className="mt-3">
+              <p className="text-rose-300 text-sm mt-1">{errorMessage}</p>
+              <Button onClick={handleRetry} variant="secondary" size="sm" className="mt-3">
                 Try Again
               </Button>
             </div>
@@ -204,7 +242,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   }
 
   // Empty state
-  if (matches.length === 0) {
+  if (!hasActiveMatches && !hasUpcomingMatches) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -237,15 +275,108 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
         </Button>
       </div>
 
-      <div className="space-y-3">
-        {matches.map((match) => {
-          const isPending = match.state === 'pending';
-          const isDeleting = deletingMatchId === match.id;
+      {hasActiveMatches && (
+        <div className="space-y-3">
+          {activeMatches.map((match) => {
+            const isPending = match.state === 'pending';
+            const isDeleting = deletingMatchId === match.id;
 
-          return (
+            return (
+              <div
+                key={match.id}
+                className="bg-slate-700 rounded-lg border border-slate-600 p-4 hover:bg-slate-600 transition-colors"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-start gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-100">
+                        vs {match.opponent}
+                      </h3>
+                      {getStateBadge(match.state)}
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formatTimestamp(match.createdAt)}</span>
+                      </div>
+                      {match.type && (
+                        <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
+                          {match.type.charAt(0).toUpperCase() + match.type.slice(1)}
+                        </span>
+                      )}
+                      {match.venueType && (
+                        <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
+                          {match.venueType.charAt(0).toUpperCase() + match.venueType.slice(1)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    {isPending && (
+                      <Button
+                        onClick={() => handleResumeSetup(match.id)}
+                        variant="accent"
+                        size="sm"
+                        Icon={Play}
+                        className="w-full sm:w-auto"
+                        disabled={isDeleting}
+                      >
+                        Resume Setup
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => handleOpenLive(match.id)}
+                      variant="primary"
+                      size="sm"
+                      Icon={Eye}
+                      className="w-full sm:w-auto"
+                    >
+                      Open Live
+                    </Button>
+                    <Button
+                      onClick={() => handleCopyLink(match.id)}
+                      variant="secondary"
+                      size="sm"
+                      Icon={Share2}
+                      disabled={copyingMatchId === match.id}
+                      className="w-full sm:w-auto"
+                    >
+                      {copyingMatchId === match.id ? 'Copying...' : 'Copy Link'}
+                    </Button>
+                    {isPending && (
+                      <Button
+                        onClick={() => handleDeletePendingMatch(match.id)}
+                        variant="danger"
+                        size="sm"
+                        Icon={isDeleting ? undefined : Trash2}
+                        disabled={isDeleting}
+                        className="w-full sm:w-auto"
+                      >
+                        {isDeleting ? 'Deleting...' : 'Delete'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {hasUpcomingMatches && (
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold text-slate-200">Upcoming Matches</h2>
+            <p className="text-xs text-slate-400">
+              Future matches from connected schedules. Not planned yet.
+            </p>
+          </div>
+          {upcomingMatches.map((match) => (
             <div
               key={match.id}
-              className="bg-slate-700 rounded-lg border border-slate-600 p-4 hover:bg-slate-600 transition-colors"
+              className="bg-slate-700 rounded-lg border border-amber-500/40 p-4 hover:bg-slate-600 transition-colors"
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex-1 min-w-0 space-y-2">
@@ -253,77 +384,32 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                     <h3 className="text-base sm:text-lg font-semibold text-slate-100">
                       vs {match.opponent}
                     </h3>
-                    {getStateBadge(match.state)}
+                    {getStateBadge('upcoming')}
                   </div>
-
+                  <p className="text-xs text-amber-200">Not planned yet</p>
                   <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
                     <div className="flex items-center space-x-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{formatTimestamp(match.createdAt)}</span>
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{formatUpcomingSchedule(match.matchDate, match.matchTime)}</span>
                     </div>
-                    {match.type && (
+                    {match.venue && (
                       <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
-                        {match.type.charAt(0).toUpperCase() + match.type.slice(1)}
-                      </span>
-                    )}
-                    {match.venueType && (
-                      <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
-                        {match.venueType.charAt(0).toUpperCase() + match.venueType.slice(1)}
+                        {match.venue}
                       </span>
                     )}
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                  {isPending && (
-                    <Button
-                      onClick={() => handleResumeSetup(match.id)}
-                      variant="accent"
-                      size="sm"
-                      Icon={Play}
-                      className="w-full sm:w-auto"
-                      disabled={isDeleting}
-                    >
-                      Resume Setup
-                    </Button>
-                  )}
-                  <Button
-                    onClick={() => handleOpenLive(match.id)}
-                    variant="primary"
-                    size="sm"
-                    Icon={Eye}
-                    className="w-full sm:w-auto"
-                  >
-                    Open Live
+                  <Button variant="accent" size="sm" className="w-full sm:w-auto">
+                    Plan
                   </Button>
-                  <Button
-                    onClick={() => handleCopyLink(match.id)}
-                    variant="secondary"
-                    size="sm"
-                    Icon={Share2}
-                    disabled={copyingMatchId === match.id}
-                    className="w-full sm:w-auto"
-                  >
-                    {copyingMatchId === match.id ? 'Copying...' : 'Copy Link'}
-                  </Button>
-                  {isPending && (
-                    <Button
-                      onClick={() => handleDeletePendingMatch(match.id)}
-                      variant="danger"
-                      size="sm"
-                      Icon={isDeleting ? undefined : Trash2}
-                      disabled={isDeleting}
-                      className="w-full sm:w-auto"
-                    >
-                      {isDeleting ? 'Deleting...' : 'Delete'}
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       <NotificationModal
         isOpen={notification.isOpen}

@@ -25,6 +25,10 @@ jest.mock('../../../hooks/useRealtimeTeamMatches', () => ({
   useRealtimeTeamMatches: jest.fn()
 }));
 
+jest.mock('../../../hooks/useUpcomingTeamMatches', () => ({
+  useUpcomingTeamMatches: jest.fn()
+}));
+
 jest.mock('../../../utils/liveMatchLinkUtils', () => ({
   copyLiveMatchUrlToClipboard: jest.fn()
 }));
@@ -37,6 +41,7 @@ describe('TeamMatchesList', () => {
   let defaultProps;
   let mockUseTeam;
   let mockUseRealtimeTeamMatches;
+  let mockUseUpcomingTeamMatches;
   let mockCopyLiveMatchUrlToClipboard;
   let mockDiscardPendingMatch;
 
@@ -66,18 +71,35 @@ describe('TeamMatchesList', () => {
     }
   ];
 
+  const mockUpcomingMatches = [
+    {
+      id: 'upcoming-1',
+      opponent: 'Future FC',
+      matchDate: '2030-05-01',
+      matchTime: '18:00:00',
+      venue: 'Main Field'
+    }
+  ];
+
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Setup mocks
     mockUseTeam = require('../../../contexts/TeamContext').useTeam;
     mockUseRealtimeTeamMatches = require('../../../hooks/useRealtimeTeamMatches').useRealtimeTeamMatches;
+    mockUseUpcomingTeamMatches = require('../../../hooks/useUpcomingTeamMatches').useUpcomingTeamMatches;
     mockCopyLiveMatchUrlToClipboard = require('../../../utils/liveMatchLinkUtils').copyLiveMatchUrlToClipboard;
     mockDiscardPendingMatch = require('../../../services/matchStateManager').discardPendingMatch;
 
     // Default mock returns
     mockUseTeam.mockReturnValue({ currentTeam: mockTeam });
     mockUseRealtimeTeamMatches.mockReturnValue({
+      matches: [],
+      loading: false,
+      error: null,
+      refetch: jest.fn()
+    });
+    mockUseUpcomingTeamMatches.mockReturnValue({
       matches: [],
       loading: false,
       error: null,
@@ -171,11 +193,18 @@ describe('TeamMatchesList', () => {
 
     it('should call refetch when Try Again button is clicked', () => {
       const mockRefetch = jest.fn();
+      const mockUpcomingRefetch = jest.fn();
       mockUseRealtimeTeamMatches.mockReturnValue({
         matches: [],
         loading: false,
         error: 'Network error',
         refetch: mockRefetch
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: mockUpcomingRefetch
       });
 
       render(<TeamMatchesList {...defaultProps} />);
@@ -184,6 +213,7 @@ describe('TeamMatchesList', () => {
       fireEvent.click(tryAgainButton);
 
       expect(mockRefetch).toHaveBeenCalled();
+      expect(mockUpcomingRefetch).toHaveBeenCalled();
     });
   });
 
@@ -428,6 +458,32 @@ describe('TeamMatchesList', () => {
 
       expect(screen.getByText('vs Opponent Team A')).toBeInTheDocument();
       expect(screen.getByText('vs Internal Match')).toBeInTheDocument();
+    });
+  });
+
+  describe('Component Rendering - Upcoming Matches', () => {
+    it('should render upcoming matches with plan button', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: mockUpcomingMatches,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Upcoming Matches')).toBeInTheDocument();
+      expect(screen.getByText('vs Future FC')).toBeInTheDocument();
+      expect(screen.getByText('Upcoming')).toBeInTheDocument();
+      expect(screen.getByText('Not planned yet')).toBeInTheDocument();
+      expect(screen.getByText('2030-05-01 18:00')).toBeInTheDocument();
+      expect(screen.getByText('Plan')).toBeInTheDocument();
     });
   });
 
