@@ -102,11 +102,20 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 - **Utils**: `/src/utils/` - Cross-screen utilities
 - **Services**: `/src/services/` - Data persistence and external APIs (see `/src/services/README.md`)
 
+### Navigation Pattern
+**IMPORTANT: Use consistent navigation props across all components**:
+- **Forward navigation**: All components receive and use `onNavigateTo` prop for navigating to other views
+- **Back navigation**: All components receive and use `onNavigateBack` prop for returning to previous view
+- **Browser integration**: Modals and dropdowns use `pushNavigationState` and `removeFromNavigationStack` for browser back button handling
+- **No direct state mutation**: Never use direct view state mutation - always use the navigation callbacks provided
+- **View constants**: All view references use constants from `VIEWS` (e.g., `VIEWS.CONFIG`, `VIEWS.GAME`, `VIEWS.PROFILE`)
+
 ### Key Architecture Patterns
 1. **Pure Functions**: All game state transitions are pure functions (input → output, no side effects)
 2. **Animation System**: Unified animation system in `/src/game/animation/animationSupport.js`
 3. **Time Management**: Stint-based time tracking in `/src/game/time/`
 4. **Queue Management**: Player rotation queues in `/src/game/queue/`
+5. **Navigation**: Context-based navigation system with `NavigationHistoryContext` managing view history and browser integration
 
 ### CRITICAL: State Immutability
 **Never mutate state directly** - always return new objects/arrays:

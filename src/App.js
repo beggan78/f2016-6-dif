@@ -1000,7 +1000,6 @@ function AppContent() {
             setCaptain={gameState.setCaptain}
             debugMode={debugMode}
             authModal={authModal}
-            setView={navigateToView}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
             setCurrentMatchId={gameState.setCurrentMatchId}
             setMatchCreated={gameState.setMatchCreated}
@@ -1032,9 +1031,7 @@ function AppContent() {
             numPeriods={gameState.numPeriods}
             teamConfig={gameState.teamConfig}
             selectedFormation={gameState.selectedFormation}
-            setView={navigateToView}
             onNavigateBack={navigateBack}
-            onNavigateTo={navigateToView}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             ownScore={gameState.ownScore}
@@ -1088,7 +1085,6 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             onNavigateBack={navigateBack}
-            onNavigateTo={navigateToView}
             ownScore={gameState.ownScore}
             opponentScore={gameState.opponentScore}
             opponentTeam={gameState.opponentTeam}
@@ -1113,9 +1109,8 @@ function AppContent() {
         return (
           <GameFinishedScreen
             allPlayers={gameState.allPlayers?.length ? gameState.allPlayers : gameState.gameLog[gameState.gameLog.length-1]?.finalStatsSnapshotForAllPlayers || selectedSquadPlayers}
-            setView={navigateToView}
-            onNavigateBack={navigateBack}
             onNavigateTo={navigateToView}
+            onNavigateBack={navigateBack}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             setAllPlayers={gameState.setAllPlayers}
@@ -1243,7 +1238,7 @@ function AppContent() {
             teamConfig={gameState.teamConfig}
             allPlayers={gameState.allPlayers}
             selectedSquadIds={gameState.selectedSquadIds}
-            setView={navigateToView}
+            onNavigateTo={navigateToView}
             authModal={authModal}
             onOpenTeamAdminModal={handleOpenTeamAdminModal}
             onOpenPreferencesModal={handleOpenPreferencesModal}

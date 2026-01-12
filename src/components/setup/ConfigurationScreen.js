@@ -73,7 +73,6 @@ export function ConfigurationScreen({
   setCaptain,
   debugMode = false,
   authModal,
-  setView,
   syncPlayersFromTeamRoster,
   setCurrentMatchId,
   setMatchCreated,
@@ -1340,13 +1339,13 @@ export function ConfigurationScreen({
   // Navigate to Team Management Connectors tab
   const handleNavigateToConnectors = () => {
     teamManagementTabCacheManager.saveState({ tab: 'connectors' });
-    setView(VIEWS.TEAM_MANAGEMENT);
+    onNavigateTo(VIEWS.TEAM_MANAGEMENT);
   };
 
   // Navigate to Team Management Roster tab
   const handleNavigateToRoster = () => {
     teamManagementTabCacheManager.saveState({ tab: 'roster' });
-    setView(VIEWS.TEAM_MANAGEMENT);
+    onNavigateTo(VIEWS.TEAM_MANAGEMENT);
   };
 
   const handleFormatChange = React.useCallback((newFormat) => {
@@ -1668,7 +1667,7 @@ export function ConfigurationScreen({
   if (isAuthenticated && (!hasClubs || (hasClubs && !hasTeams) || !currentTeam)) {
     return (
       <div className="space-y-4">
-        <TeamManagement setView={setView} />
+        <TeamManagement />
       </div>
     );
   }
@@ -1838,7 +1837,7 @@ export function ConfigurationScreen({
                 </p>
                 <div className="flex justify-center">
                   <Button
-                    onClick={() => setView(VIEWS.TEAM_MANAGEMENT)}
+                    onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
                     variant="primary"
                     Icon={UserPlus}
                   >
