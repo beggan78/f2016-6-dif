@@ -80,6 +80,7 @@ export function ConfigurationScreen({
   setHasActiveConfiguration,
   clearStoredState,
   configurationSessionId = 0,
+  resumeMatchId,
   onNavigateBack,
   onNavigateTo,
   pushNavigationState,
@@ -135,6 +136,8 @@ export function ConfigurationScreen({
   const processingTimeoutRef = useRef(null);
   const lastConfigSessionIdRef = useRef(configurationSessionId);
   const pendingMatchCheckQueuedRef = useRef(false);
+  const resumeMatchRequestRef = useRef(null);
+  const queuedResumeMatchIdRef = useRef(null);
   const pendingCheckAfterLoadingRef = useRef(false);
   const opponentPrefillAttemptedTeamRef = useRef(null);
   // Consolidated preference application state to avoid scattered refs
@@ -620,6 +623,91 @@ export function ConfigurationScreen({
     sessionStorage.setItem('sport-wizard-pending-modal-closed', 'true');
     // NOTE: No clearStoredState() call - preserve resumed match ID and state
   }, []);
+
+  const applyPendingMatchResume = React.useCallback(async (pendingMatch) => {
+    if (!pendingMatch?.initial_config) {
+      console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
+      return;
+    }
+
+    setPendingMatchLoading(true);
+    try {
+      const resumeDataForConfig = createResumeDataForConfiguration(pendingMatch.initial_config);
+
+      if (resumeDataForConfig) {
+        // Use resume-specific closure to avoid clearing stored state
+        handleResumeMatchModalClose();
+
+        // Set resume data directly - no navigation needed
+        setResumeData(resumeDataForConfig);
+
+        // CRITICAL: Set currentMatchId to the resumed match
+        setCurrentMatchId(pendingMatch.id);
+        setMatchCreated(true);
+        console.log('✅ Resume match: Set currentMatchId to', pendingMatch.id, 'and matchCreated to true');
+      } else {
+        console.error('❌ Failed to create resume data from pending match');
+        handleResumeMatchModalClose();
+      }
+    } catch (error) {
+      console.error('❌ Error resuming pending match:', error);
+      handleResumeMatchModalClose();
+    } finally {
+      setPendingMatchLoading(false);
+    }
+  }, [
+    handleResumeMatchModalClose,
+    setCurrentMatchId,
+    setMatchCreated,
+    setPendingMatchLoading,
+    setResumeData
+  ]);
+
+  const resolvePendingMatchById = React.useCallback(async (matchId) => {
+    if (!matchId) {
+      return null;
+    }
+
+    const existingMatch = pendingMatches.find(match => match.id === matchId);
+    if (existingMatch?.initial_config) {
+      return existingMatch;
+    }
+
+    if (!currentTeam?.id) {
+      return null;
+    }
+
+    const result = await checkForPendingMatches(currentTeam.id);
+    return result.pendingMatches.find(match => match.id === matchId) || null;
+  }, [pendingMatches, currentTeam?.id]);
+
+  const resumePendingMatchById = React.useCallback(async (matchId, options = {}) => {
+    const { trackRequest = false } = options;
+
+    if (!matchId || (trackRequest && resumeMatchRequestRef.current === matchId)) {
+      return;
+    }
+
+    try {
+      const matchToResume = await resolvePendingMatchById(matchId);
+
+      if (!matchToResume?.initial_config) {
+        console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
+        return;
+      }
+
+      await applyPendingMatchResume(matchToResume);
+    } catch (error) {
+      console.error('❌ Error resuming pending match:', error);
+    } finally {
+      if (trackRequest) {
+        resumeMatchRequestRef.current = matchId;
+      }
+      if (queuedResumeMatchIdRef.current === matchId) {
+        queuedResumeMatchIdRef.current = null;
+      }
+    }
+  }, [applyPendingMatchResume, resolvePendingMatchById]);
 
   const [syncStatus, setSyncStatus] = useState({ loading: false, message: '', error: null });
   const [showMigration, setShowMigration] = useState(false);
@@ -1421,40 +1509,8 @@ export function ConfigurationScreen({
 
   // Direct pending match modal handlers (no navigation complexity)
   const handleResumePendingMatch = React.useCallback(async (matchId) => {
-    const selectedMatch = pendingMatches.find(match => match.id === matchId);
-    
-    if (!selectedMatch?.initial_config) {
-      console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
-      return;
-    }
-
-    setPendingMatchLoading(true);
-    try {
-      // Create resume data for direct processing
-      const resumeDataForConfig = createResumeDataForConfiguration(selectedMatch.initial_config);
-      
-      if (resumeDataForConfig) {
-        // Use resume-specific closure to avoid clearing stored state
-        handleResumeMatchModalClose();
-        
-        // Set resume data directly - no navigation needed
-        setResumeData(resumeDataForConfig);
-        
-        // CRITICAL: Set currentMatchId to the resumed match
-        setCurrentMatchId(matchId);
-        setMatchCreated(true);
-        console.log('✅ Resume match: Set currentMatchId to', matchId, 'and matchCreated to true');
-      } else {
-        console.error('❌ Failed to create resume data from pending match');
-        handleResumeMatchModalClose();
-      }
-    } catch (error) {
-      console.error('❌ Error resuming pending match:', error);
-      handleResumeMatchModalClose();
-    } finally {
-      setPendingMatchLoading(false);
-    }
-  }, [pendingMatches, handleResumeMatchModalClose, setCurrentMatchId, setMatchCreated]);
+    await resumePendingMatchById(matchId);
+  }, [resumePendingMatchById]);
 
   const handleDiscardPendingMatch = React.useCallback(async (matchId) => {
     if (!matchId) return;
@@ -1477,6 +1533,31 @@ export function ConfigurationScreen({
       setPendingMatchLoading(false);
     }
   }, [pendingMatches, handleClosePendingMatchModal]);
+
+  React.useEffect(() => {
+    if (resumeMatchId && resumeMatchRequestRef.current !== resumeMatchId) {
+      queuedResumeMatchIdRef.current = resumeMatchId;
+    }
+
+    const matchIdToResume = queuedResumeMatchIdRef.current;
+
+    if (!matchIdToResume || resumeMatchRequestRef.current === matchIdToResume) {
+      return;
+    }
+
+    if (!currentTeam?.id || teamLoading || pendingMatchLoading) {
+      return;
+    }
+
+    resumePendingMatchById(matchIdToResume, { trackRequest: true });
+  }, [resumeMatchId, currentTeam?.id, teamLoading, pendingMatchLoading, resumePendingMatchById]);
+
+  React.useEffect(() => {
+    return () => {
+      queuedResumeMatchIdRef.current = null;
+      resumeMatchRequestRef.current = null;
+    };
+  }, []);
 
   const handleSaveConfigClick = async () => {
     if (!handleSaveConfiguration) {

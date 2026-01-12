@@ -29,11 +29,16 @@ jest.mock('../../../utils/liveMatchLinkUtils', () => ({
   copyLiveMatchUrlToClipboard: jest.fn()
 }));
 
+jest.mock('../../../services/matchStateManager', () => ({
+  discardPendingMatch: jest.fn()
+}));
+
 describe('TeamMatchesList', () => {
   let defaultProps;
   let mockUseTeam;
   let mockUseRealtimeTeamMatches;
   let mockCopyLiveMatchUrlToClipboard;
+  let mockDiscardPendingMatch;
 
   const mockTeam = {
     id: 'team-123',
@@ -68,6 +73,7 @@ describe('TeamMatchesList', () => {
     mockUseTeam = require('../../../contexts/TeamContext').useTeam;
     mockUseRealtimeTeamMatches = require('../../../hooks/useRealtimeTeamMatches').useRealtimeTeamMatches;
     mockCopyLiveMatchUrlToClipboard = require('../../../utils/liveMatchLinkUtils').copyLiveMatchUrlToClipboard;
+    mockDiscardPendingMatch = require('../../../services/matchStateManager').discardPendingMatch;
 
     // Default mock returns
     mockUseTeam.mockReturnValue({ currentTeam: mockTeam });
@@ -81,6 +87,7 @@ describe('TeamMatchesList', () => {
       success: true,
       url: 'https://example.com/live/match-123'
     });
+    mockDiscardPendingMatch.mockResolvedValue({ success: true });
 
     // Default props
     defaultProps = {
@@ -282,6 +289,34 @@ describe('TeamMatchesList', () => {
       expect(pendingBadge).toHaveClass('bg-sky-600');
     });
 
+    it('should show Resume Setup and Delete buttons for pending matches', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [mockMatches[1]],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('Resume Setup')).toBeInTheDocument();
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    it('should not show Resume Setup or Delete buttons for running matches', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [mockMatches[0]],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.queryByText('Resume Setup')).not.toBeInTheDocument();
+      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    });
+
     it('should display match type badge when present', () => {
       mockUseRealtimeTeamMatches.mockReturnValue({
         matches: [mockMatches[0]],
@@ -422,6 +457,24 @@ describe('TeamMatchesList', () => {
       expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.LIVE_MATCH, {
         matchId: 'match-1',
         entryPoint: VIEWS.TEAM_MATCHES
+      });
+    });
+
+    it('should call onNavigateTo with VIEWS.CONFIG and resumeMatchId when "Resume Setup" is clicked', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [mockMatches[1]],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      const resumeButton = screen.getByText('Resume Setup');
+      fireEvent.click(resumeButton);
+
+      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.CONFIG, {
+        resumeMatchId: 'match-2'
       });
     });
   });
@@ -589,6 +642,31 @@ describe('TeamMatchesList', () => {
       await waitFor(() => {
         const button = screen.getByText('Copying...').closest('button');
         expect(button).toBeDisabled();
+      });
+    });
+  });
+
+  describe('User Interactions - Pending Match Actions', () => {
+    it('should call discardPendingMatch and refetch when "Delete" is clicked', async () => {
+      const mockRefetch = jest.fn();
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [mockMatches[1]],
+        loading: false,
+        error: null,
+        refetch: mockRefetch
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      const deleteButton = screen.getByText('Delete');
+      fireEvent.click(deleteButton);
+
+      await waitFor(() => {
+        expect(mockDiscardPendingMatch).toHaveBeenCalledWith('match-2');
+      });
+
+      await waitFor(() => {
+        expect(mockRefetch).toHaveBeenCalled();
       });
     });
   });

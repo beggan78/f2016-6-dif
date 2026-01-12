@@ -117,6 +117,13 @@ function AppContent() {
       setNavigationData(data);
     }
 
+    if (success && view === VIEWS.LIVE_MATCH) {
+      if (data?.matchId) {
+        setLiveMatchId(data.matchId);
+      }
+      setLiveMatchEntryPoint(data?.entryPoint ?? null);
+    }
+
     return success;
   }, [navigationHistory]);
   
@@ -1000,6 +1007,7 @@ function AppContent() {
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
             clearStoredState={gameState.clearStoredState}
             configurationSessionId={configSessionToken}
+            resumeMatchId={navigationData?.resumeMatchId}
             onNavigateBack={navigateBack}
             onNavigateTo={navigateToView}
             pushNavigationState={pushNavigationState}

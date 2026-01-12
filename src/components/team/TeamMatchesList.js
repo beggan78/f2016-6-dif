@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Share2, AlertCircle, Eye } from 'lucide-react';
+import { Calendar, Clock, Share2, AlertCircle, Eye, Play, Trash2 } from 'lucide-react';
 import { Button, NotificationModal } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useRealtimeTeamMatches } from '../../hooks/useRealtimeTeamMatches';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 import { VIEWS } from '../../constants/viewConstants';
+import { discardPendingMatch } from '../../services/matchStateManager';
 
 /**
  * Team Matches List Screen
@@ -16,6 +17,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   const { matches, loading, error, refetch } = useRealtimeTeamMatches(currentTeam?.id);
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const [copyingMatchId, setCopyingMatchId] = useState(null);
+  const [deletingMatchId, setDeletingMatchId] = useState(null);
 
   const handleCopyLink = async (matchId) => {
     setCopyingMatchId(matchId);
@@ -54,6 +56,46 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
       matchId,
       entryPoint: VIEWS.TEAM_MATCHES
     });
+  };
+
+  const handleResumeSetup = (matchId) => {
+    onNavigateTo(VIEWS.CONFIG, {
+      resumeMatchId: matchId
+    });
+  };
+
+  const handleDeletePendingMatch = async (matchId) => {
+    if (deletingMatchId) return;
+
+    setDeletingMatchId(matchId);
+
+    try {
+      const result = await discardPendingMatch(matchId);
+
+      if (result.success) {
+        setNotification({
+          isOpen: true,
+          title: 'Match Deleted',
+          message: 'Pending match deleted.'
+        });
+        await refetch();
+      } else {
+        setNotification({
+          isOpen: true,
+          title: 'Error',
+          message: result.error || 'Failed to delete pending match'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to delete pending match:', err);
+      setNotification({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to delete pending match'
+      });
+    } finally {
+      setDeletingMatchId(null);
+    }
   };
 
   // Register browser back handler
@@ -196,62 +238,91 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
       </div>
 
       <div className="space-y-3">
-        {matches.map((match) => (
-          <div
-            key={match.id}
-            className="bg-slate-700 rounded-lg border border-slate-600 p-4 hover:bg-slate-600 transition-colors"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-start gap-2 flex-wrap">
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-100">
-                    vs {match.opponent}
-                  </h3>
-                  {getStateBadge(match.state)}
-                </div>
+        {matches.map((match) => {
+          const isPending = match.state === 'pending';
+          const isDeleting = deletingMatchId === match.id;
 
-                <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{formatTimestamp(match.createdAt)}</span>
+          return (
+            <div
+              key={match.id}
+              className="bg-slate-700 rounded-lg border border-slate-600 p-4 hover:bg-slate-600 transition-colors"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-start gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-100">
+                      vs {match.opponent}
+                    </h3>
+                    {getStateBadge(match.state)}
                   </div>
-                  {match.type && (
-                    <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
-                      {match.type.charAt(0).toUpperCase() + match.type.slice(1)}
-                    </span>
+
+                  <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{formatTimestamp(match.createdAt)}</span>
+                    </div>
+                    {match.type && (
+                      <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
+                        {match.type.charAt(0).toUpperCase() + match.type.slice(1)}
+                      </span>
+                    )}
+                    {match.venueType && (
+                      <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
+                        {match.venueType.charAt(0).toUpperCase() + match.venueType.slice(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                  {isPending && (
+                    <Button
+                      onClick={() => handleResumeSetup(match.id)}
+                      variant="accent"
+                      size="sm"
+                      Icon={Play}
+                      className="w-full sm:w-auto"
+                      disabled={isDeleting}
+                    >
+                      Resume Setup
+                    </Button>
                   )}
-                  {match.venueType && (
-                    <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
-                      {match.venueType.charAt(0).toUpperCase() + match.venueType.slice(1)}
-                    </span>
+                  <Button
+                    onClick={() => handleOpenLive(match.id)}
+                    variant="primary"
+                    size="sm"
+                    Icon={Eye}
+                    className="w-full sm:w-auto"
+                  >
+                    Open Live
+                  </Button>
+                  <Button
+                    onClick={() => handleCopyLink(match.id)}
+                    variant="secondary"
+                    size="sm"
+                    Icon={Share2}
+                    disabled={copyingMatchId === match.id}
+                    className="w-full sm:w-auto"
+                  >
+                    {copyingMatchId === match.id ? 'Copying...' : 'Copy Link'}
+                  </Button>
+                  {isPending && (
+                    <Button
+                      onClick={() => handleDeletePendingMatch(match.id)}
+                      variant="danger"
+                      size="sm"
+                      Icon={isDeleting ? undefined : Trash2}
+                      disabled={isDeleting}
+                      className="w-full sm:w-auto"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </Button>
                   )}
                 </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                <Button
-                  onClick={() => handleOpenLive(match.id)}
-                  variant="primary"
-                  size="sm"
-                  Icon={Eye}
-                  className="w-full sm:w-auto"
-                >
-                  Open Live
-                </Button>
-                <Button
-                  onClick={() => handleCopyLink(match.id)}
-                  variant="secondary"
-                  size="sm"
-                  Icon={Share2}
-                  disabled={copyingMatchId === match.id}
-                  className="w-full sm:w-auto"
-                >
-                  {copyingMatchId === match.id ? 'Copying...' : 'Copy Link'}
-                </Button>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <NotificationModal
