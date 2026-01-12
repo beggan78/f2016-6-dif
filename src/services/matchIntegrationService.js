@@ -59,3 +59,66 @@ export async function findUpcomingMatchByOpponent(teamId, opponentName) {
     return null;
   }
 }
+
+/**
+ * Get upcoming matches for a team from connected providers.
+ *
+ * @param {string} teamId - Team ID
+ * @returns {Promise<{success: boolean, matches?: Array, error?: string}>}
+ */
+export async function getUpcomingMatchesForTeam(teamId) {
+  try {
+    if (!teamId) {
+      return {
+        success: false,
+        error: 'Team ID is required'
+      };
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('upcoming_match')
+      .select(`
+        id,
+        opponent,
+        match_date,
+        match_time,
+        venue,
+        connector!inner (
+          team_id
+        )
+      `)
+      .eq('connector.team_id', teamId)
+      .gte('match_date', today)
+      .order('match_date', { ascending: true })
+      .order('match_time', { ascending: true });
+
+    if (error) {
+      console.error('Failed to get upcoming matches:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    const matches = (data || []).map(match => ({
+      id: match.id,
+      opponent: match.opponent,
+      matchDate: match.match_date,
+      matchTime: match.match_time,
+      venue: match.venue
+    }));
+
+    return {
+      success: true,
+      matches
+    };
+  } catch (error) {
+    console.error('Exception while getting upcoming matches:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
