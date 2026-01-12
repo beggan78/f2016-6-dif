@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
+import { VIEWS } from '../../../constants/viewConstants';
 import { STORAGE_KEYS } from '../../../constants/storageKeys';
 import { checkForPendingMatches } from '../../../services/pendingMatchService';
 import { getPlayerStats } from '../../../services/matchStateManager';
@@ -1447,8 +1448,8 @@ describe('ConfigurationScreen unmapped players banner', () => {
       hasConnectedProvider: true
     });
 
-    const setViewMock = jest.fn();
-    const props = buildProps({ setView: setViewMock });
+    const onNavigateToMock = jest.fn();
+    const props = buildProps({ onNavigateTo: onNavigateToMock });
     render(<ConfigurationScreen {...props} />);
 
     await waitFor(() => {
@@ -1460,7 +1461,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     fireEvent.click(navigateButton);
 
     // Verify navigation was called
-    expect(setViewMock).toHaveBeenCalled();
+    expect(onNavigateToMock).toHaveBeenCalledWith(VIEWS.TEAM_MANAGEMENT);
   });
 
   it('shows banner when team has no players AND unmapped players exist', async () => {
