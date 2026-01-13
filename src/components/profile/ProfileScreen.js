@@ -8,10 +8,21 @@ import { sanitizeNameInput, isValidNameInput } from '../../utils/inputSanitizati
 
 // Constants
 const SUCCESS_MESSAGE_DURATION = 3000; // 3 seconds
+const LEAVE_TEAM_BLOCKING_ERRORS = ['last_team_member', 'last_team_admin'];
 
 export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
-  const { currentTeam, userTeams, userClubs, loading: teamLoading, leaveClub, leaveTeam, error: teamError } = useTeam();
+  const {
+    currentTeam,
+    userTeams,
+    userClubs,
+    loading: teamLoading,
+    leaveClub,
+    leaveTeam,
+    deleteTeam,
+    error: teamError,
+    clearError: clearTeamError
+  } = useTeam();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.name || '');
   const [errors, setErrors] = useState({});
@@ -20,8 +31,12 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const [leavingClubId, setLeavingClubId] = useState(null);
   const [leaveClubConfirmation, setLeaveClubConfirmation] = useState(null);
+  const [leaveClubBlocked, setLeaveClubBlocked] = useState(null);
   const [leavingTeamId, setLeavingTeamId] = useState(null);
   const [leaveTeamConfirmation, setLeaveTeamConfirmation] = useState(null);
+  const [leaveTeamBlocked, setLeaveTeamBlocked] = useState(null);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+  const [isDeletingClubTeam, setIsDeletingClubTeam] = useState(false);
   const nameInputRef = useRef(null);
   const successTimeoutRef = useRef(null);
 
@@ -78,6 +93,12 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
       }
     };
   }, [successMessage]);
+
+  useEffect(() => {
+    if (teamError === 'Team not found' && clearTeamError) {
+      clearTeamError();
+    }
+  }, [teamError, clearTeamError]);
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -140,7 +161,8 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
     if (authError) return authError;
-    if (teamError) return teamError;
+    if (teamError === 'Team not found') return null;
+    if (teamError && !leaveTeamBlocked && !leaveClubBlocked) return teamError;
     return null;
   };
 
@@ -185,6 +207,40 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     return team.club?.long_name ? `${team.club.long_name} ${team.name}` : team.name;
   };
 
+  const getLeaveTeamBlockedMessage = () => {
+    if (!leaveTeamBlocked?.team) return '';
+    const teamName = formatTeamName(leaveTeamBlocked.team);
+    if (leaveTeamBlocked.reason === 'last_team_member') {
+      return `You're the last member of ${teamName}. Delete the team instead?`;
+    }
+    return `You're the last admin of ${teamName}. Delete the team instead?`;
+  };
+
+  const getLeaveClubBlockedTeams = () => {
+    if (!leaveClubBlocked?.teams?.length) return [];
+    const blockedTeamNames = new Set(leaveClubBlocked.teams);
+    return teams.filter(team => blockedTeamNames.has(team.name) && (
+      !leaveClubBlocked.clubId || team.club?.id === leaveClubBlocked.clubId
+    ));
+  };
+
+  const getLeaveClubBlockedMessage = () => {
+    if (!leaveClubBlocked) return '';
+    const blockedTeams = getLeaveClubBlockedTeams();
+    if (blockedTeams.length > 0) {
+      const teamName = formatTeamName(blockedTeams[0]);
+      return `You're the last member of ${teamName}. Delete the team instead?`;
+    }
+
+    const fallbackTeams = Array.isArray(leaveClubBlocked.teams) ? leaveClubBlocked.teams : [];
+    if (fallbackTeams.length > 0) {
+      const clubPrefix = leaveClubBlocked.club?.long_name || leaveClubBlocked.club?.name;
+      const fallbackName = clubPrefix ? `${clubPrefix} ${fallbackTeams[0]}` : fallbackTeams[0];
+      return `You're the last member of ${fallbackName}. Delete the team instead?`;
+    }
+    return "You're the last member of this team. Delete the team instead?";
+  };
+
   const handleLeaveClub = (membership) => {
     if (!membership?.id) {
       return;
@@ -209,7 +265,20 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
 
     setLeavingClubId(leaveClubConfirmation.id);
     try {
-      await leaveClub(leaveClubConfirmation);
+      const result = await leaveClub(leaveClubConfirmation);
+      if (result?.error === 'last_team_member') {
+        setLeaveClubBlocked({
+          club: leaveClubConfirmation?.club || null,
+          clubId: leaveClubConfirmation?.club?.id || leaveClubConfirmation?.club_id || null,
+          membership: leaveClubConfirmation,
+          teams: Array.isArray(result?.teams) ? result.teams : []
+        });
+        if (clearTeamError) {
+          clearTeamError();
+        }
+      } else {
+        setLeaveClubBlocked(null);
+      }
     } finally {
       setLeavingClubId(null);
       setLeaveClubConfirmation(null);
@@ -224,10 +293,84 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
 
     setLeavingTeamId(leaveTeamConfirmation.id);
     try {
-      await leaveTeam(leaveTeamConfirmation);
+      const result = await leaveTeam(leaveTeamConfirmation);
+      if (result?.error && LEAVE_TEAM_BLOCKING_ERRORS.includes(result.error)) {
+        setLeaveTeamBlocked({
+          team: leaveTeamConfirmation,
+          reason: result.error
+        });
+        if (clearTeamError) {
+          clearTeamError();
+        }
+      } else {
+        setLeaveTeamBlocked(null);
+      }
     } finally {
       setLeavingTeamId(null);
       setLeaveTeamConfirmation(null);
+    }
+  };
+
+  const confirmDeleteTeam = async () => {
+    if (!leaveTeamBlocked?.team?.id || !deleteTeam || isDeletingTeam) {
+      return;
+    }
+
+    setIsDeletingTeam(true);
+    try {
+      await deleteTeam(leaveTeamBlocked.team);
+    } finally {
+      setIsDeletingTeam(false);
+      setLeaveTeamBlocked(null);
+    }
+  };
+
+  const confirmDeleteClubTeam = async () => {
+    const blockedTeams = getLeaveClubBlockedTeams();
+    const teamToDelete = blockedTeams[0];
+    if (!teamToDelete?.id || !deleteTeam || isDeletingClubTeam) {
+      return;
+    }
+
+    setIsDeletingClubTeam(true);
+    try {
+      const deleteResult = await deleteTeam(teamToDelete);
+      if (!deleteResult) {
+        setLeaveClubBlocked(null);
+        return;
+      }
+      if (leaveClub && leaveClubBlocked?.membership) {
+        const result = await leaveClub(leaveClubBlocked.membership);
+        if (result?.error === 'last_team_member') {
+          setLeaveClubBlocked({
+            club: leaveClubBlocked.club || null,
+            clubId: leaveClubBlocked.clubId || null,
+            membership: leaveClubBlocked.membership,
+            teams: Array.isArray(result?.teams) ? result.teams : []
+          });
+          if (clearTeamError) {
+            clearTeamError();
+          }
+          return;
+        }
+      }
+      setLeaveClubBlocked(null);
+    } finally {
+      setIsDeletingClubTeam(false);
+    }
+  };
+
+  const handleLeaveTeamBlockedCancel = () => {
+    setLeaveTeamBlocked(null);
+    if (clearTeamError) {
+      clearTeamError();
+    }
+  };
+
+  const handleLeaveClubBlockedCancel = () => {
+    setLeaveClubBlocked(null);
+    if (clearTeamError) {
+      clearTeamError();
     }
   };
 
@@ -651,6 +794,28 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
             : ''
         }
         confirmText="Leave team"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(leaveClubBlocked)}
+        onConfirm={confirmDeleteClubTeam}
+        onCancel={handleLeaveClubBlockedCancel}
+        title="Can't leave club"
+        message={getLeaveClubBlockedMessage()}
+        confirmText={isDeletingClubTeam ? 'Deleting...' : 'Delete Team'}
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(leaveTeamBlocked)}
+        onConfirm={confirmDeleteTeam}
+        onCancel={handleLeaveTeamBlockedCancel}
+        title="Can't leave team"
+        message={getLeaveTeamBlockedMessage()}
+        confirmText={isDeletingTeam ? 'Deleting...' : 'Delete Team'}
         cancelText="Cancel"
         variant="danger"
       />

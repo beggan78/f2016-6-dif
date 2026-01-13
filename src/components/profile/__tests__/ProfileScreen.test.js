@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProfileScreen } from '../ProfileScreen';
 import { VIEWS } from '../../../constants/viewConstants';
 
@@ -31,6 +31,7 @@ jest.mock('../../auth/ChangePassword', () => ({
 
 describe('ProfileScreen', () => {
   let defaultProps;
+  let defaultTeamContext;
   let mockOnNavigateBack;
   let mockOnNavigateTo;
   let mockPushNavigationState;
@@ -69,7 +70,7 @@ describe('ProfileScreen', () => {
       markProfileCompleted: jest.fn()
     });
 
-    mockUseTeam.mockReturnValue({
+    defaultTeamContext = {
       currentTeam: {
         id: 'team-1',
         name: 'Test Team',
@@ -95,8 +96,13 @@ describe('ProfileScreen', () => {
       ],
       loading: false,
       leaveClub: jest.fn(),
-      leaveTeam: jest.fn()
-    });
+      leaveTeam: jest.fn(),
+      deleteTeam: jest.fn(),
+      error: null,
+      clearError: jest.fn()
+    };
+
+    mockUseTeam.mockReturnValue(defaultTeamContext);
 
     jest.clearAllMocks();
   });
@@ -292,6 +298,40 @@ describe('ProfileScreen', () => {
 
       expect(screen.getByText('Account Created')).toBeInTheDocument();
       expect(screen.getByText('User ID')).toBeInTheDocument();
+    });
+  });
+
+  describe('Leave Team Errors', () => {
+    test('should show delete team modal when last admin error occurs', async () => {
+      const leaveTeam = jest.fn().mockResolvedValue({
+        success: false,
+        error: 'last_team_admin',
+        message: 'You are the last admin of this team. Assign another admin before leaving.'
+      });
+      const deleteTeam = jest.fn().mockResolvedValue({ id: 'team-1' });
+
+      mockUseTeam.mockReturnValue({
+        ...defaultTeamContext,
+        leaveTeam,
+        deleteTeam,
+        error: 'You are the last admin of this team. Assign another admin before leaving.'
+      });
+
+      render(<ProfileScreen {...defaultProps} />);
+
+      const leaveButtons = screen.getAllByRole('button', { name: /^leave$/i });
+      fireEvent.click(leaveButtons[1]);
+
+      const confirmLeave = screen.getByRole('button', { name: /leave team/i });
+      fireEvent.click(confirmLeave);
+
+      await waitFor(() => {
+        expect(screen.getByText("Can't leave team")).toBeInTheDocument();
+      });
+
+      expect(leaveTeam).toHaveBeenCalledWith(expect.objectContaining({ id: 'team-1' }));
+      expect(screen.getByText(/last admin of Test Team/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /delete team/i })).toBeInTheDocument();
     });
   });
 

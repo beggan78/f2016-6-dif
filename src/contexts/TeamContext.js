@@ -137,16 +137,28 @@ export const TeamProvider = ({ children }) => {
         return [];
       }
 
-      const teams = data?.map(item => ({
-        ...item.team,
-        userRole: item.role,
-        club: item.team.club
-      })) || [];
+      const teams = (data || [])
+        .filter(item => item?.team)
+        .map(item => ({
+          ...item.team,
+          userRole: item.role,
+          club: item.team?.club || null
+        }));
 
       setUserTeams(teams);
       
       // Cache the results
       cacheTeamData({ userTeams: teams });
+
+      if (currentTeam && !teams.some(team => team.id === currentTeam.id)) {
+        setCurrentTeam(null);
+        setTeamPlayers([]);
+        teamIdPersistence.clearState();
+        cacheTeamData({
+          currentTeam: null,
+          teamPlayers: []
+        });
+      }
       
       return teams;
     } catch (err) {
@@ -156,7 +168,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, currentTeam, teamIdPersistence]);
 
   // Search clubs for autocomplete
   const searchClubs = useCallback(async (query) => {
@@ -815,12 +827,13 @@ export const TeamProvider = ({ children }) => {
       }
 
       if (!data?.success) {
-        const teams = Array.isArray(data?.teams) ? data.teams.join(', ') : null;
-        const message = data?.error === 'last_team_member' && teams
-          ? `You are the last member of ${teams}. Add another member before leaving this club.`
-          : data?.message || data?.error || 'Failed to leave club';
+        if (data?.error === 'last_team_member') {
+          return data;
+        }
+
+        const message = data?.message || data?.error || 'Failed to leave club';
         setError(message);
-        return null;
+        return data;
       }
 
       await getUserTeams();
@@ -869,7 +882,7 @@ export const TeamProvider = ({ children }) => {
 
       if (!data?.success) {
         setError(data?.message || data?.error || 'Failed to leave team');
-        return null;
+        return data;
       }
 
       await getUserTeams();
@@ -888,6 +901,63 @@ export const TeamProvider = ({ children }) => {
     } catch (err) {
       console.error('Exception in leaveTeam:', err);
       setError('Failed to leave team');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError, getUserTeams, currentTeam, teamIdPersistence]);
+
+  // Delete (deactivate) a team
+  const deleteTeam = useCallback(async (team) => {
+    const teamId = typeof team === 'string'
+      ? team
+      : team?.id || team?.team_id || null;
+
+    if (!teamId) {
+      setError('Team not found');
+      return null;
+    }
+
+    if (!user) {
+      setError('Must be logged in to delete team');
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase.rpc('delete_team', {
+        p_team_id: teamId
+      });
+
+      if (error) {
+        console.error('Error deleting team:', error);
+        setError('Failed to delete team');
+        return null;
+      }
+
+      if (!data?.success) {
+        setError(data?.message || data?.error || 'Failed to delete team');
+        return null;
+      }
+
+      await getUserTeams();
+
+      if (currentTeam?.id === teamId) {
+        setCurrentTeam(null);
+        setTeamPlayers([]);
+        teamIdPersistence.clearState();
+        cacheTeamData({
+          currentTeam: null,
+          teamPlayers: []
+        });
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in deleteTeam:', err);
+      setError('Failed to delete team');
       return null;
     } finally {
       setLoading(false);
@@ -2128,6 +2198,7 @@ export const TeamProvider = ({ children }) => {
     joinClub,
     leaveClub,
     leaveTeam,
+    deleteTeam,
     getClubMemberships,
     getPendingClubRequests,
     approveClubMembership,
