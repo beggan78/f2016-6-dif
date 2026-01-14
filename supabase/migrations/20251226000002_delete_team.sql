@@ -78,7 +78,8 @@ BEGIN
       END IF;
 
       DELETE FROM public.team_user
-      WHERE team_id = p_team_id;
+      WHERE team_id = p_team_id
+        AND user_id = v_user_id;
 
       RETURN json_build_object(
         'success', true,
