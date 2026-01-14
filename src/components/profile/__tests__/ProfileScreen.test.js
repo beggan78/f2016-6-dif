@@ -99,7 +99,6 @@ describe('ProfileScreen', () => {
       leaveTeam: jest.fn(),
       deleteTeam: jest.fn(),
       error: null,
-      errorMessage: null,
       clearError: jest.fn()
     };
 
@@ -317,7 +316,7 @@ describe('ProfileScreen', () => {
         ...defaultTeamContext,
         leaveTeam,
         deleteTeam,
-        errorMessage: 'You are the last admin of this team. Assign another admin before leaving.'
+        error: 'You are the last admin of this team. Assign another admin before leaving.'
       });
 
       render(<ProfileScreen {...defaultProps} />);

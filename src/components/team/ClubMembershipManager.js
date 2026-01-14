@@ -12,7 +12,7 @@ export function ClubMembershipManager() {
     approveClubMembership,
     rejectClubMembership,
     loading,
-    errorMessage
+    error
   } = useTeam();
 
   const [activeTab, setActiveTab] = useState('my-clubs');
@@ -291,9 +291,9 @@ export function ClubMembershipManager() {
         </p>
       </div>
 
-      {errorMessage && (
+      {error && (
         <Card className="p-4 bg-rose-50 border-rose-200">
-          <p className="text-rose-800 text-sm">{errorMessage}</p>
+          <p className="text-rose-800 text-sm">{error}</p>
         </Card>
       )}
 

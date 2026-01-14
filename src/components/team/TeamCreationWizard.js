@@ -27,7 +27,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     hasClubs,
     userClubs,
     loading, 
-    errorMessage, 
+    error, 
     clearError 
   } = useTeam();
 
@@ -525,9 +525,9 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
   return (
     <>
       <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
-        {errorMessage && (
+        {error && (
           <div className="mb-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
-            <p className="text-rose-200 text-sm">{errorMessage}</p>
+            <p className="text-rose-200 text-sm">{error}</p>
           </div>
         )}
         

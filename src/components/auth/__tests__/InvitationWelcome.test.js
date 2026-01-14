@@ -76,7 +76,7 @@ describe('InvitationWelcome', () => {
     useTeam.mockReturnValue({
       acceptTeamInvitation: mockAcceptTeamInvitation,
       loading: false,
-      errorMessage: null
+      error: null
     });
 
     // Mock invitation utils
@@ -385,7 +385,7 @@ describe('InvitationWelcome', () => {
       useTeam.mockReturnValue({
         acceptTeamInvitation: mockAcceptTeamInvitation,
         loading: false,
-        errorMessage: 'Failed to load team information'
+        error: 'Failed to load team information'
       });
 
       render(<InvitationWelcome {...defaultProps} />);

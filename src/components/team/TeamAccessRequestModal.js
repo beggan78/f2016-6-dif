@@ -22,7 +22,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
     getTeamMembers,
     removeTeamMember,
     loading,
-    errorMessage,
+    error,
     isCoach,
     isTeamAdmin,
     canManageTeam
@@ -468,11 +468,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
             </button>
           </div>
 
-          {errorMessage && (
+          {error && (
             <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-rose-600" />
-                <p className="text-rose-800 text-sm">{errorMessage}</p>
+                <p className="text-rose-800 text-sm">{error}</p>
               </div>
             </div>
           )}

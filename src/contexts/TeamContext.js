@@ -126,7 +126,7 @@ export const TeamProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const errorDetails = useMemo(() => normalizeTeamError(error), [error]);
-  const errorMessage = useMemo(() => {
+  const displayError = useMemo(() => {
     if (!errorDetails || errorDetails.isTransient) {
       return null;
     }
@@ -2272,8 +2272,8 @@ export const TeamProvider = ({ children }) => {
     teamPlayers,
     pendingRequests,
     loading,
-    error: errorDetails?.code || null,
-    errorMessage,
+    // `error` is a user-facing message string; transient errors are auto-cleared and not surfaced.
+    error: displayError,
     
     // Actions
     getUserTeams,

@@ -22,7 +22,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     refreshInvitation,
     deleteInvitation,
     loading,
-    errorMessage
+    error
   } = useTeam();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -266,7 +266,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
 
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
-    if (errorMessage) return errorMessage;
+    if (error) return error;
     return null;
   };
 

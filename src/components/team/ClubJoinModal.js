@@ -13,7 +13,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
   const {
     joinClub,
     loading,
-    errorMessage
+    error
   } = useTeam();
 
   const [joinRequested, setJoinRequested] = useState(false);
@@ -75,11 +75,11 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
             </button>
           </div>
 
-          {errorMessage && (
+          {error && (
             <div className="mt-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <p className="text-rose-200 text-sm">{errorMessage}</p>
+                <p className="text-rose-200 text-sm">{error}</p>
               </div>
             </div>
           )}

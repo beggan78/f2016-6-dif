@@ -20,7 +20,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     leaveClub,
     leaveTeam,
     deleteTeam,
-    errorMessage: teamErrorMessage,
+    error: teamError,
     clearError: clearTeamError
   } = useTeam();
   const [isEditing, setIsEditing] = useState(false);
@@ -155,7 +155,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
     if (authError) return authError;
-    if (teamErrorMessage && !leaveTeamBlocked && !leaveClubBlocked) return teamErrorMessage;
+    if (teamError && !leaveTeamBlocked && !leaveClubBlocked) return teamError;
     return null;
   };
 
