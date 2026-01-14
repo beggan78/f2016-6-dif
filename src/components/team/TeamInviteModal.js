@@ -16,7 +16,14 @@ import {
 } from 'lucide-react';
 
 export function TeamInviteModal({ isOpen, onClose, team }) {
-  const { inviteUserToTeam, getTeamInvitations, refreshInvitation, deleteInvitation, loading, error } = useTeam();
+  const {
+    inviteUserToTeam,
+    getTeamInvitations,
+    refreshInvitation,
+    deleteInvitation,
+    loading,
+    errorMessage
+  } = useTeam();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -259,7 +266,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
 
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
-    if (error) return error;
+    if (errorMessage) return errorMessage;
     return null;
   };
 

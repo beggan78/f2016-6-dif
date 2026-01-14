@@ -17,6 +17,79 @@ const TeamContext = createContext({});
 
 const REFRESH_REVALIDATION_DELAY_MS = 0;
 const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const TRANSIENT_TEAM_ERROR_CLEAR_DELAY_MS = 0;
+
+const TEAM_ERROR_CODES = {
+  AUTH_REQUIRED: 'auth_required',
+  CLUB_MEMBERSHIP_NOT_FOUND: 'club_membership_not_found',
+  DUPLICATE_CLUB_MEMBERSHIP: 'duplicate_club_membership',
+  DUPLICATE_TEAM_NAME: 'duplicate_team_name',
+  GENERIC: 'generic_error',
+  TEAM_MEMBERSHIP_NOT_FOUND: 'team_membership_not_found',
+  TEAM_NOT_FOUND: 'team_not_found'
+};
+
+const TEAM_ERROR_MESSAGES = {
+  [TEAM_ERROR_CODES.AUTH_REQUIRED]: 'Must be logged in to continue',
+  [TEAM_ERROR_CODES.CLUB_MEMBERSHIP_NOT_FOUND]: 'Club membership not found',
+  [TEAM_ERROR_CODES.DUPLICATE_CLUB_MEMBERSHIP]: 'You are already a member of this club',
+  [TEAM_ERROR_CODES.DUPLICATE_TEAM_NAME]:
+    'A team with this name already exists in this club. Please request to join the existing team.',
+  [TEAM_ERROR_CODES.GENERIC]: 'An unexpected error occurred',
+  [TEAM_ERROR_CODES.TEAM_MEMBERSHIP_NOT_FOUND]: 'Team membership not found',
+  [TEAM_ERROR_CODES.TEAM_NOT_FOUND]: 'Team not found'
+};
+
+const TEAM_ERROR_MESSAGE_TO_CODE = {
+  'A team with this name already exists in this club. Please request to join the existing team.':
+    TEAM_ERROR_CODES.DUPLICATE_TEAM_NAME,
+  'Club membership not found': TEAM_ERROR_CODES.CLUB_MEMBERSHIP_NOT_FOUND,
+  'Must be logged in to create club': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Must be logged in to delete team': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Must be logged in to leave club': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Must be logged in to leave team': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Team membership not found': TEAM_ERROR_CODES.TEAM_MEMBERSHIP_NOT_FOUND,
+  'Team not found': TEAM_ERROR_CODES.TEAM_NOT_FOUND,
+  'User must be authenticated to create a team': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'You are already a member of this club': TEAM_ERROR_CODES.DUPLICATE_CLUB_MEMBERSHIP
+};
+
+const isTeamErrorCode = (value) => Object.values(TEAM_ERROR_CODES).includes(value);
+
+const normalizeTeamError = (errorValue) => {
+  if (!errorValue) {
+    return null;
+  }
+
+  if (typeof errorValue === 'string') {
+    if (isTeamErrorCode(errorValue)) {
+      return {
+        code: errorValue,
+        message: TEAM_ERROR_MESSAGES[errorValue] || TEAM_ERROR_MESSAGES[TEAM_ERROR_CODES.GENERIC],
+        isTransient: errorValue === TEAM_ERROR_CODES.TEAM_NOT_FOUND
+      };
+    }
+
+    const code = TEAM_ERROR_MESSAGE_TO_CODE[errorValue] || TEAM_ERROR_CODES.GENERIC;
+    return {
+      code,
+      message: errorValue,
+      isTransient: code === TEAM_ERROR_CODES.TEAM_NOT_FOUND
+    };
+  }
+
+  const code = isTeamErrorCode(errorValue.code)
+    ? errorValue.code
+    : TEAM_ERROR_CODES.GENERIC;
+  const message = errorValue.message || TEAM_ERROR_MESSAGES[code] || TEAM_ERROR_MESSAGES[TEAM_ERROR_CODES.GENERIC];
+
+  return {
+    ...errorValue,
+    code,
+    message,
+    isTransient: Boolean(errorValue.isTransient || code === TEAM_ERROR_CODES.TEAM_NOT_FOUND)
+  };
+};
 
 export const useTeam = () => {
   const context = useContext(TeamContext);
@@ -52,6 +125,13 @@ export const TeamProvider = ({ children }) => {
   const isMatchRunning = matchActivityStatus.isRunning;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const errorDetails = useMemo(() => normalizeTeamError(error), [error]);
+  const errorMessage = useMemo(() => {
+    if (!errorDetails || errorDetails.isTransient) {
+      return null;
+    }
+    return errorDetails.message;
+  }, [errorDetails]);
   const deferredRefreshTimeoutRef = useRef(null);
 
   // Flag to prevent redundant initialization
@@ -61,6 +141,18 @@ export const TeamProvider = ({ children }) => {
   const clearError = useCallback(() => {
     setError(null);
   }, []);
+
+  useEffect(() => {
+    if (!errorDetails?.isTransient) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setError(null);
+    }, TRANSIENT_TEAM_ERROR_CLEAR_DELAY_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [errorDetails?.code, errorDetails?.isTransient]);
 
   const readCachedTeamPreferences = useCallback((teamId) => {
     if (!teamId) {
@@ -2180,7 +2272,8 @@ export const TeamProvider = ({ children }) => {
     teamPlayers,
     pendingRequests,
     loading,
-    error,
+    error: errorDetails?.code || null,
+    errorMessage,
     
     // Actions
     getUserTeams,

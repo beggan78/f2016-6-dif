@@ -27,7 +27,7 @@ import {
  */
 export function InvitationWelcome({ invitationParams, onInvitationProcessed, onRequestSignIn }) {
   const { user, signOut, enableProfileFetchSkip, disableProfileFetchSkip } = useAuth();
-  const { acceptTeamInvitation, loading, error } = useTeam();
+  const { acceptTeamInvitation, loading, errorMessage } = useTeam();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -333,11 +333,11 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
               </div>
             </div>
 
-            {error && (
+            {errorMessage && (
               <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
                 <div className="flex items-start space-x-2">
                   <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-rose-200 text-sm">{error}</p>
+                  <p className="text-rose-200 text-sm">{errorMessage}</p>
                 </div>
               </div>
             )}

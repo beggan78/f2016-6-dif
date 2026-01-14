@@ -9,7 +9,7 @@ export function TeamSelector({ onCreateNew }) {
     userTeams, 
     switchCurrentTeam,
     loading,
-    error 
+    errorMessage
   } = useTeam();
 
   if (loading) {
@@ -23,11 +23,11 @@ export function TeamSelector({ onCreateNew }) {
     );
   }
 
-  if (error) {
+  if (errorMessage) {
     return (
       <div className="p-6 bg-rose-900/20 border border-rose-600 rounded-lg">
         <div className="flex items-center space-x-2 text-rose-300">
-          <span className="text-sm">{error}</span>
+          <span className="text-sm">{errorMessage}</span>
         </div>
       </div>
     );

@@ -20,7 +20,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     leaveClub,
     leaveTeam,
     deleteTeam,
-    error: teamError,
+    errorMessage: teamErrorMessage,
     clearError: clearTeamError
   } = useTeam();
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +39,6 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const [isDeletingClubTeam, setIsDeletingClubTeam] = useState(false);
   const nameInputRef = useRef(null);
   const successTimeoutRef = useRef(null);
-  const hasClearedTeamNotFoundRef = useRef(false);
 
   // Register browser back handler
   useEffect(() => {
@@ -94,18 +93,6 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
       }
     };
   }, [successMessage]);
-
-  useEffect(() => {
-    if (teamError === 'Team not found' && clearTeamError && !hasClearedTeamNotFoundRef.current) {
-      hasClearedTeamNotFoundRef.current = true;
-      clearTeamError();
-      return;
-    }
-
-    if (teamError !== 'Team not found') {
-      hasClearedTeamNotFoundRef.current = false;
-    }
-  }, [teamError, clearTeamError]);
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -168,8 +155,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
     if (authError) return authError;
-    if (teamError === 'Team not found') return null;
-    if (teamError && !leaveTeamBlocked && !leaveClubBlocked) return teamError;
+    if (teamErrorMessage && !leaveTeamBlocked && !leaveClubBlocked) return teamErrorMessage;
     return null;
   };
 
