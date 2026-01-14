@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ProfileScreen } from '../ProfileScreen';
 import { VIEWS } from '../../../constants/viewConstants';
 
@@ -31,6 +31,7 @@ jest.mock('../../auth/ChangePassword', () => ({
 
 describe('ProfileScreen', () => {
   let defaultProps;
+  let defaultTeamContext;
   let mockOnNavigateBack;
   let mockOnNavigateTo;
   let mockPushNavigationState;
@@ -69,7 +70,7 @@ describe('ProfileScreen', () => {
       markProfileCompleted: jest.fn()
     });
 
-    mockUseTeam.mockReturnValue({
+    defaultTeamContext = {
       currentTeam: {
         id: 'team-1',
         name: 'Test Team',
@@ -82,8 +83,26 @@ describe('ProfileScreen', () => {
           userRole: 'admin'
         }
       ],
-      loading: false
-    });
+      userClubs: [
+        {
+          id: 'club-user-1',
+          role: 'member',
+          club: {
+            id: 'club-1',
+            name: 'Arsenal',
+            long_name: 'Arsenal'
+          }
+        }
+      ],
+      loading: false,
+      leaveClub: jest.fn(),
+      leaveTeam: jest.fn(),
+      deleteTeam: jest.fn(),
+      error: null,
+      clearError: jest.fn()
+    };
+
+    mockUseTeam.mockReturnValue(defaultTeamContext);
 
     jest.clearAllMocks();
   });
@@ -148,17 +167,19 @@ describe('ProfileScreen', () => {
       expect(mockOnNavigateTo).toHaveBeenCalledWith(VIEWS.TEAM_MANAGEMENT);
     });
 
-    test('should navigate to team management when user has no teams', () => {
+    test('should navigate to team management when user has no clubs', () => {
       mockUseTeam.mockReturnValue({
         currentTeam: null,
         userTeams: [],
-        loading: false
+        userClubs: [],
+        loading: false,
+        leaveClub: jest.fn()
       });
 
       render(<ProfileScreen {...defaultProps} />);
 
-      const createTeamButton = screen.getByRole('button', { name: /create or join a team/i });
-      fireEvent.click(createTeamButton);
+      const createClubButton = screen.getByRole('button', { name: /create or join a club/i });
+      fireEvent.click(createClubButton);
 
       expect(mockOnNavigateTo).toHaveBeenCalledWith(VIEWS.TEAM_MANAGEMENT);
     });
@@ -182,19 +203,50 @@ describe('ProfileScreen', () => {
     test('should display user teams when available', () => {
       render(<ProfileScreen {...defaultProps} />);
 
+      const clubsSection = screen.getByText(/Your Clubs/i).closest('div');
+      expect(within(clubsSection).getByText('Arsenal')).toBeInTheDocument();
       expect(screen.getByText('Your Teams (1)')).toBeInTheDocument();
       expect(screen.getAllByText('Test Team').length).toBeGreaterThan(0);
     });
 
-    test('should show no teams message when user has no teams', () => {
+    test('should show no clubs message when user has no clubs', () => {
       mockUseTeam.mockReturnValue({
         currentTeam: null,
         userTeams: [],
-        loading: false
+        userClubs: [],
+        loading: false,
+        leaveClub: jest.fn()
       });
 
       render(<ProfileScreen {...defaultProps} />);
 
+      expect(screen.getByText('No clubs yet')).toBeInTheDocument();
+      expect(screen.getByText(/You haven't joined any clubs yet/i)).toBeInTheDocument();
+    });
+
+    test('should show no teams message when user has clubs but no teams', () => {
+      mockUseTeam.mockReturnValue({
+        currentTeam: null,
+        userTeams: [],
+        userClubs: [
+          {
+            id: 'club-user-1',
+            role: 'member',
+            club: {
+              id: 'club-1',
+              name: 'Arsenal',
+              long_name: 'Arsenal'
+            }
+          }
+        ],
+        loading: false,
+        leaveClub: jest.fn()
+      });
+
+      render(<ProfileScreen {...defaultProps} />);
+
+      const clubsSection = screen.getByText(/Your Clubs/i).closest('div');
+      expect(within(clubsSection).getByText('Arsenal')).toBeInTheDocument();
       expect(screen.getByText('No Teams Yet')).toBeInTheDocument();
       expect(screen.getByText(/You haven't joined any teams yet/i)).toBeInTheDocument();
     });
@@ -203,12 +255,14 @@ describe('ProfileScreen', () => {
       mockUseTeam.mockReturnValue({
         currentTeam: null,
         userTeams: null,
-        loading: true
+        userClubs: null,
+        loading: true,
+        leaveClub: jest.fn()
       });
 
       render(<ProfileScreen {...defaultProps} />);
 
-      expect(screen.getByText('Loading your teams...')).toBeInTheDocument();
+      expect(screen.getByText('Loading your clubs and teams...')).toBeInTheDocument();
     });
   });
 
@@ -246,6 +300,130 @@ describe('ProfileScreen', () => {
 
       expect(screen.getByText('Account Created')).toBeInTheDocument();
       expect(screen.getByText('User ID')).toBeInTheDocument();
+    });
+  });
+
+  describe('Leave Team Errors', () => {
+    test('should show delete team modal when last admin error occurs', async () => {
+      const leaveTeam = jest.fn().mockResolvedValue({
+        success: false,
+        error: 'last_team_admin',
+        message: 'You are the last admin of this team. Assign another admin before leaving.'
+      });
+      const deleteTeam = jest.fn().mockResolvedValue({ id: 'team-1' });
+
+      mockUseTeam.mockReturnValue({
+        ...defaultTeamContext,
+        leaveTeam,
+        deleteTeam,
+        error: 'You are the last admin of this team. Assign another admin before leaving.'
+      });
+
+      render(<ProfileScreen {...defaultProps} />);
+
+      const leaveButtons = screen.getAllByRole('button', { name: /^leave$/i });
+      fireEvent.click(leaveButtons[1]);
+
+      const confirmLeave = screen.getByRole('button', { name: /leave team/i });
+      fireEvent.click(confirmLeave);
+
+      await waitFor(() => {
+        expect(screen.getByText("Can't leave team")).toBeInTheDocument();
+      });
+
+      expect(leaveTeam).toHaveBeenCalledWith(expect.objectContaining({ id: 'team-1' }));
+      expect(screen.getByText(/last admin of Test Team/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /delete team/i })).toBeInTheDocument();
+    });
+
+    test('should show delete team modal when last member error occurs', async () => {
+      const leaveTeam = jest.fn().mockResolvedValue({
+        success: false,
+        error: 'last_team_member',
+        message: 'You are the last member of this team. Add another member before leaving.'
+      });
+      const deleteTeam = jest.fn().mockResolvedValue({ id: 'team-1' });
+
+      mockUseTeam.mockReturnValue({
+        ...defaultTeamContext,
+        leaveTeam,
+        deleteTeam
+      });
+
+      render(<ProfileScreen {...defaultProps} />);
+
+      const leaveButtons = screen.getAllByRole('button', { name: /^leave$/i });
+      fireEvent.click(leaveButtons[1]);
+
+      const confirmLeave = screen.getByRole('button', { name: /leave team/i });
+      fireEvent.click(confirmLeave);
+
+      await waitFor(() => {
+        expect(screen.getByText("Can't leave team")).toBeInTheDocument();
+      });
+
+      expect(leaveTeam).toHaveBeenCalledWith(expect.objectContaining({ id: 'team-1' }));
+      expect(screen.getByText(/last member of Test Team/i)).toBeInTheDocument();
+
+      const deleteTeamButton = screen.getByRole('button', { name: /delete team/i });
+      fireEvent.click(deleteTeamButton);
+
+      await waitFor(() => {
+        expect(deleteTeam).toHaveBeenCalledWith(expect.objectContaining({ id: 'team-1' }));
+      });
+    });
+  });
+
+  describe('Leave Club', () => {
+    test('should confirm and call leave club', async () => {
+      const leaveClub = jest.fn().mockResolvedValue({ success: true });
+
+      mockUseTeam.mockReturnValue({
+        ...defaultTeamContext,
+        leaveClub
+      });
+
+      render(<ProfileScreen {...defaultProps} />);
+
+      const clubsSection = screen.getByText(/Your Clubs/i).closest('div');
+      const leaveButton = within(clubsSection).getByRole('button', { name: /^leave$/i });
+      fireEvent.click(leaveButton);
+
+      const confirmLeave = screen.getByRole('button', { name: /leave club/i });
+      fireEvent.click(confirmLeave);
+
+      await waitFor(() => {
+        expect(leaveClub).toHaveBeenCalledWith(expect.objectContaining({ id: 'club-user-1' }));
+      });
+    });
+
+    test('should show blocked modal when club has last team member', async () => {
+      const leaveClub = jest.fn().mockResolvedValue({
+        success: false,
+        error: 'last_team_member',
+        teams: ['Test Team']
+      });
+
+      mockUseTeam.mockReturnValue({
+        ...defaultTeamContext,
+        leaveClub
+      });
+
+      render(<ProfileScreen {...defaultProps} />);
+
+      const clubsSection = screen.getByText(/Your Clubs/i).closest('div');
+      const leaveButton = within(clubsSection).getByRole('button', { name: /^leave$/i });
+      fireEvent.click(leaveButton);
+
+      const confirmLeave = screen.getByRole('button', { name: /leave club/i });
+      fireEvent.click(confirmLeave);
+
+      await waitFor(() => {
+        expect(screen.getByText("Can't leave club")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/last member of Arsenal Test Team/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /delete team/i })).toBeInTheDocument();
     });
   });
 

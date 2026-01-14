@@ -80,8 +80,9 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
 
   const handleCreateTeam = () => {
     setIsOpen(false);
-    // TODO: Open create team modal
-    console.log('Create team clicked');
+    if (onNavigateTo) {
+      onNavigateTo(VIEWS.TEAM_MANAGEMENT);
+    }
   };
 
   const handlePreferences = () => {

@@ -17,6 +17,79 @@ const TeamContext = createContext({});
 
 const REFRESH_REVALIDATION_DELAY_MS = 0;
 const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const TRANSIENT_TEAM_ERROR_CLEAR_DELAY_MS = 0;
+
+const TEAM_ERROR_CODES = {
+  AUTH_REQUIRED: 'auth_required',
+  CLUB_MEMBERSHIP_NOT_FOUND: 'club_membership_not_found',
+  DUPLICATE_CLUB_MEMBERSHIP: 'duplicate_club_membership',
+  DUPLICATE_TEAM_NAME: 'duplicate_team_name',
+  GENERIC: 'generic_error',
+  TEAM_MEMBERSHIP_NOT_FOUND: 'team_membership_not_found',
+  TEAM_NOT_FOUND: 'team_not_found'
+};
+
+const TEAM_ERROR_MESSAGES = {
+  [TEAM_ERROR_CODES.AUTH_REQUIRED]: 'Must be logged in to continue',
+  [TEAM_ERROR_CODES.CLUB_MEMBERSHIP_NOT_FOUND]: 'Club membership not found',
+  [TEAM_ERROR_CODES.DUPLICATE_CLUB_MEMBERSHIP]: 'You are already a member of this club',
+  [TEAM_ERROR_CODES.DUPLICATE_TEAM_NAME]:
+    'A team with this name already exists in this club. Please request to join the existing team.',
+  [TEAM_ERROR_CODES.GENERIC]: 'An unexpected error occurred',
+  [TEAM_ERROR_CODES.TEAM_MEMBERSHIP_NOT_FOUND]: 'Team membership not found',
+  [TEAM_ERROR_CODES.TEAM_NOT_FOUND]: 'Team not found'
+};
+
+const TEAM_ERROR_MESSAGE_TO_CODE = {
+  'A team with this name already exists in this club. Please request to join the existing team.':
+    TEAM_ERROR_CODES.DUPLICATE_TEAM_NAME,
+  'Club membership not found': TEAM_ERROR_CODES.CLUB_MEMBERSHIP_NOT_FOUND,
+  'Must be logged in to create club': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Must be logged in to delete team': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Must be logged in to leave club': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Must be logged in to leave team': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'Team membership not found': TEAM_ERROR_CODES.TEAM_MEMBERSHIP_NOT_FOUND,
+  'Team not found': TEAM_ERROR_CODES.TEAM_NOT_FOUND,
+  'User must be authenticated to create a team': TEAM_ERROR_CODES.AUTH_REQUIRED,
+  'You are already a member of this club': TEAM_ERROR_CODES.DUPLICATE_CLUB_MEMBERSHIP
+};
+
+const isTeamErrorCode = (value) => Object.values(TEAM_ERROR_CODES).includes(value);
+
+const normalizeTeamError = (errorValue) => {
+  if (!errorValue) {
+    return null;
+  }
+
+  if (typeof errorValue === 'string') {
+    if (isTeamErrorCode(errorValue)) {
+      return {
+        code: errorValue,
+        message: TEAM_ERROR_MESSAGES[errorValue] || TEAM_ERROR_MESSAGES[TEAM_ERROR_CODES.GENERIC],
+        isTransient: errorValue === TEAM_ERROR_CODES.TEAM_NOT_FOUND
+      };
+    }
+
+    const code = TEAM_ERROR_MESSAGE_TO_CODE[errorValue] || TEAM_ERROR_CODES.GENERIC;
+    return {
+      code,
+      message: errorValue,
+      isTransient: code === TEAM_ERROR_CODES.TEAM_NOT_FOUND
+    };
+  }
+
+  const code = isTeamErrorCode(errorValue.code)
+    ? errorValue.code
+    : TEAM_ERROR_CODES.GENERIC;
+  const message = errorValue.message || TEAM_ERROR_MESSAGES[code] || TEAM_ERROR_MESSAGES[TEAM_ERROR_CODES.GENERIC];
+
+  return {
+    ...errorValue,
+    code,
+    message,
+    isTransient: Boolean(errorValue.isTransient || code === TEAM_ERROR_CODES.TEAM_NOT_FOUND)
+  };
+};
 
 export const useTeam = () => {
   const context = useContext(TeamContext);
@@ -52,6 +125,13 @@ export const TeamProvider = ({ children }) => {
   const isMatchRunning = matchActivityStatus.isRunning;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const errorDetails = useMemo(() => normalizeTeamError(error), [error]);
+  const displayError = useMemo(() => {
+    if (!errorDetails || errorDetails.isTransient) {
+      return null;
+    }
+    return errorDetails.message;
+  }, [errorDetails]);
   const deferredRefreshTimeoutRef = useRef(null);
 
   // Flag to prevent redundant initialization
@@ -61,6 +141,18 @@ export const TeamProvider = ({ children }) => {
   const clearError = useCallback(() => {
     setError(null);
   }, []);
+
+  useEffect(() => {
+    if (!errorDetails?.isTransient) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setError(null);
+    }, TRANSIENT_TEAM_ERROR_CLEAR_DELAY_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [errorDetails?.code, errorDetails?.isTransient]);
 
   const readCachedTeamPreferences = useCallback((teamId) => {
     if (!teamId) {
@@ -137,16 +229,28 @@ export const TeamProvider = ({ children }) => {
         return [];
       }
 
-      const teams = data?.map(item => ({
-        ...item.team,
-        userRole: item.role,
-        club: item.team.club
-      })) || [];
+      const teams = (data || [])
+        .filter(item => item?.team)
+        .map(item => ({
+          ...item.team,
+          userRole: item.role,
+          club: item.team?.club || null
+        }));
 
       setUserTeams(teams);
       
       // Cache the results
       cacheTeamData({ userTeams: teams });
+
+      if (currentTeam && !teams.some(team => team.id === currentTeam.id)) {
+        setCurrentTeam(null);
+        setTeamPlayers([]);
+        teamIdPersistence.clearState();
+        cacheTeamData({
+          currentTeam: null,
+          teamPlayers: []
+        });
+      }
       
       return teams;
     } catch (err) {
@@ -156,7 +260,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, currentTeam, teamIdPersistence]);
 
   // Search clubs for autocomplete
   const searchClubs = useCallback(async (query) => {
@@ -191,6 +295,39 @@ export const TeamProvider = ({ children }) => {
       return [];
     }
   }, []);
+
+  // Get user's club memberships
+  const getClubMemberships = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('club_user')
+        .select(`
+          id, role, status, joined_at,
+          club:club_id (id, name, short_name, long_name)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('joined_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching club memberships:', error);
+        return [];
+      }
+
+      const clubs = data || [];
+      
+      // Update the userClubs state
+      setUserClubs(clubs);
+      
+      // Cache the results
+      cacheTeamData({ userClubs: clubs });
+      
+      return clubs;
+    } catch (err) {
+      console.error('Exception in getClubMemberships:', err);
+      return [];
+    }
+  }, [user]);
 
   // Create a new club using atomic function
   const createClub = useCallback(async (clubData) => {
@@ -235,8 +372,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, clearError]); // getClubMemberships omitted to avoid hoisting error - it's called directly, not captured
+  }, [user, clearError, getClubMemberships]);
 
   // Get teams for a specific club
   const getTeamsByClub = useCallback(async (clubId) => {
@@ -431,39 +567,6 @@ export const TeamProvider = ({ children }) => {
     // Store in localStorage for persistence via PersistenceManager
     teamIdPersistence.saveState({ teamId });
   }, [userTeams, getTeamPlayers, teamIdPersistence]);
-
-  // Get user's club memberships
-  const getClubMemberships = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('club_user')
-        .select(`
-          id, role, status, joined_at,
-          club:club_id (id, name, short_name, long_name)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('joined_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching club memberships:', error);
-        return [];
-      }
-
-      const clubs = data || [];
-      
-      // Update the userClubs state
-      setUserClubs(clubs);
-      
-      // Cache the results
-      cacheTeamData({ userClubs: clubs });
-      
-      return clubs;
-    } catch (err) {
-      console.error('Exception in getClubMemberships:', err);
-      return [];
-    }
-  }, [user]);
 
   // Initialize team and club data when user is authenticated
   useEffect(() => {
@@ -783,6 +886,174 @@ export const TeamProvider = ({ children }) => {
       setLoading(false);
     }
   }, [user, clearError, getClubMemberships]);
+
+  // Leave a club (remove club and team memberships)
+  const leaveClub = useCallback(async (membership) => {
+    const clubId = typeof membership === 'string'
+      ? membership
+      : membership?.club?.id || membership?.club_id || null;
+
+    if (!clubId) {
+      setError('Club membership not found');
+      return null;
+    }
+
+    if (!user) {
+      setError('Must be logged in to leave club');
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase.rpc('leave_club', {
+        p_club_id: clubId
+      });
+
+      if (error) {
+        console.error('Error leaving club:', error);
+        setError('Failed to leave club');
+        return null;
+      }
+
+      if (!data?.success) {
+        if (data?.error === 'last_team_member') {
+          return data;
+        }
+
+        const message = data?.message || data?.error || 'Failed to leave club';
+        setError(message);
+        return data;
+      }
+
+      await getUserTeams();
+      const updatedClubs = await getClubMemberships();
+      setUserClubs(updatedClubs);
+
+      return data;
+    } catch (err) {
+      console.error('Exception in leaveClub:', err);
+      setError('Failed to leave club');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError, getClubMemberships, getUserTeams]);
+
+  // Leave a team (remove team membership only)
+  const leaveTeam = useCallback(async (team) => {
+    const teamId = typeof team === 'string'
+      ? team
+      : team?.id || team?.team_id || null;
+
+    if (!teamId) {
+      setError('Team membership not found');
+      return null;
+    }
+
+    if (!user) {
+      setError('Must be logged in to leave team');
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase.rpc('leave_team', {
+        p_team_id: teamId
+      });
+
+      if (error) {
+        console.error('Error leaving team:', error);
+        setError('Failed to leave team');
+        return null;
+      }
+
+      if (!data?.success) {
+        setError(data?.message || data?.error || 'Failed to leave team');
+        return data;
+      }
+
+      await getUserTeams();
+
+      if (currentTeam?.id === teamId) {
+        setCurrentTeam(null);
+        setTeamPlayers([]);
+        teamIdPersistence.clearState();
+        cacheTeamData({
+          currentTeam: null,
+          teamPlayers: []
+        });
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in leaveTeam:', err);
+      setError('Failed to leave team');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError, getUserTeams, currentTeam, teamIdPersistence]);
+
+  // Delete (deactivate) a team
+  const deleteTeam = useCallback(async (team) => {
+    const teamId = typeof team === 'string'
+      ? team
+      : team?.id || team?.team_id || null;
+
+    if (!teamId) {
+      setError('Team not found');
+      return null;
+    }
+
+    if (!user) {
+      setError('Must be logged in to delete team');
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      clearError();
+
+      const { data, error } = await supabase.rpc('delete_team', {
+        p_team_id: teamId
+      });
+
+      if (error) {
+        console.error('Error deleting team:', error);
+        setError('Failed to delete team');
+        return null;
+      }
+
+      if (!data?.success) {
+        setError(data?.message || data?.error || 'Failed to delete team');
+        return null;
+      }
+
+      await getUserTeams();
+
+      if (currentTeam?.id === teamId) {
+        setCurrentTeam(null);
+        setTeamPlayers([]);
+        teamIdPersistence.clearState();
+        cacheTeamData({
+          currentTeam: null,
+          teamPlayers: []
+        });
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Exception in deleteTeam:', err);
+      setError('Failed to delete team');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearError, getUserTeams, currentTeam, teamIdPersistence]);
 
 
   // Get pending club membership requests (for club admins)
@@ -2001,7 +2272,8 @@ export const TeamProvider = ({ children }) => {
     teamPlayers,
     pendingRequests,
     loading,
-    error,
+    // `error` is a user-facing message string; transient errors are auto-cleared and not surfaced.
+    error: displayError,
     
     // Actions
     getUserTeams,
@@ -2016,6 +2288,9 @@ export const TeamProvider = ({ children }) => {
     
     // Club membership actions
     joinClub,
+    leaveClub,
+    leaveTeam,
+    deleteTeam,
     getClubMemberships,
     getPendingClubRequests,
     approveClubMembership,

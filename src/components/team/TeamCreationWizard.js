@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Users, Building, UserPlus, Check, Plus } from 'lucide-react';
+import { ArrowRight, Users, Building, UserPlus, Check, Plus } from 'lucide-react';
 import { Button, Input } from '../shared/UI';
 import { ClubAutocomplete } from './ClubAutocomplete';
 import { ClubJoinModal } from './ClubJoinModal';
@@ -332,14 +332,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         <p className="text-slate-500 text-xs mt-1">Used for abbreviations and quick identification</p>
       </div>
 
-      <div className="flex justify-between">
-        <Button 
-          onClick={() => setCurrentStep(STEPS.CLUB_SELECTION)} 
-          variant="secondary"
-          Icon={ArrowLeft}
-        >
-          Back
-        </Button>
+      <div className="flex justify-end">
         <Button 
           onClick={handleClubCreation}
           disabled={loading}
@@ -389,15 +382,6 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         </Button>
       </div>
 
-      <div className="flex justify-start">
-        <Button 
-          onClick={() => setCurrentStep(STEPS.CLUB_SELECTION)} 
-          variant="secondary"
-          Icon={ArrowLeft}
-        >
-          Back
-        </Button>
-      </div>
     </div>
   );
 
@@ -428,14 +412,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         <p className="text-slate-500 text-xs mt-1">e.g., "F16-6", "U16 Boys", "Junior Team"</p>
       </div>
 
-      <div className="flex justify-between">
-        <Button 
-          onClick={() => setCurrentStep(clubTeams.length > 0 ? STEPS.TEAM_SELECTION : STEPS.CLUB_SELECTION)} 
-          variant="secondary"
-          Icon={ArrowLeft}
-        >
-          Back
-        </Button>
+      <div className="flex justify-end">
         <Button 
           onClick={handleTeamCreation}
           disabled={loading}
@@ -502,14 +479,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         </p>
       </div>
 
-      <div className="flex justify-between">
-        <Button 
-          onClick={() => setCurrentStep(STEPS.TEAM_CREATION)} 
-          variant="secondary"
-          Icon={ArrowLeft}
-        >
-          Back
-        </Button>
+      <div className="flex justify-end">
         <Button 
           onClick={handleComplete}
           variant="accent"

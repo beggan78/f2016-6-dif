@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Input } from '../shared/UI';
+import { Button, ConfirmationModal, Input } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
@@ -8,16 +8,35 @@ import { sanitizeNameInput, isValidNameInput } from '../../utils/inputSanitizati
 
 // Constants
 const SUCCESS_MESSAGE_DURATION = 3000; // 3 seconds
+const LEAVE_TEAM_BLOCKING_ERRORS = ['last_team_member', 'last_team_admin'];
 
 export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
-  const { currentTeam, userTeams, loading: teamLoading } = useTeam();
+  const {
+    currentTeam,
+    userTeams,
+    userClubs,
+    loading: teamLoading,
+    leaveClub,
+    leaveTeam,
+    deleteTeam,
+    error: teamError,
+    clearError: clearTeamError
+  } = useTeam();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.name || '');
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccountInfo, setShowAccountInfo] = useState(false);
+  const [leavingClubId, setLeavingClubId] = useState(null);
+  const [leaveClubConfirmation, setLeaveClubConfirmation] = useState(null);
+  const [leaveClubBlocked, setLeaveClubBlocked] = useState(null);
+  const [leavingTeamId, setLeavingTeamId] = useState(null);
+  const [leaveTeamConfirmation, setLeaveTeamConfirmation] = useState(null);
+  const [leaveTeamBlocked, setLeaveTeamBlocked] = useState(null);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+  const [isDeletingClubTeam, setIsDeletingClubTeam] = useState(false);
   const nameInputRef = useRef(null);
   const successTimeoutRef = useRef(null);
 
@@ -136,6 +155,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
     if (authError) return authError;
+    if (teamError && !leaveTeamBlocked && !leaveClubBlocked) return teamError;
     return null;
   };
 
@@ -170,6 +190,187 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     }
     return displayName.slice(0, 2).toUpperCase();
   };
+
+  const formatClubName = (membership) => {
+    return membership?.club?.long_name || membership?.club?.name || 'Unknown club';
+  };
+
+  const formatTeamName = (team) => {
+    if (!team) return 'Unknown team';
+    return team.club?.long_name ? `${team.club.long_name} ${team.name}` : team.name;
+  };
+
+  const getLeaveTeamBlockedMessage = () => {
+    if (!leaveTeamBlocked?.team) return '';
+    const teamName = formatTeamName(leaveTeamBlocked.team);
+    if (leaveTeamBlocked.reason === 'last_team_member') {
+      return `You're the last member of ${teamName}. Delete the team instead?`;
+    }
+    return `You're the last admin of ${teamName}. Delete the team instead?`;
+  };
+
+  const getLeaveClubBlockedTeams = () => {
+    if (!leaveClubBlocked?.teams?.length) return [];
+    const blockedTeamNames = new Set(leaveClubBlocked.teams);
+    return teams.filter(team => blockedTeamNames.has(team.name) && (
+      !leaveClubBlocked.clubId || team.club?.id === leaveClubBlocked.clubId
+    ));
+  };
+
+  const getLeaveClubBlockedMessage = () => {
+    if (!leaveClubBlocked) return '';
+    const blockedTeams = getLeaveClubBlockedTeams();
+    if (blockedTeams.length > 0) {
+      const teamName = formatTeamName(blockedTeams[0]);
+      return `You're the last member of ${teamName}. Delete the team instead?`;
+    }
+
+    const fallbackTeams = Array.isArray(leaveClubBlocked.teams) ? leaveClubBlocked.teams : [];
+    if (fallbackTeams.length > 0) {
+      const clubPrefix = leaveClubBlocked.club?.long_name || leaveClubBlocked.club?.name;
+      const fallbackName = clubPrefix ? `${clubPrefix} ${fallbackTeams[0]}` : fallbackTeams[0];
+      return `You're the last member of ${fallbackName}. Delete the team instead?`;
+    }
+    return "You're the last member of this team. Delete the team instead?";
+  };
+
+  const handleLeaveClub = (membership) => {
+    if (!membership?.id) {
+      return;
+    }
+
+    setLeaveClubConfirmation(membership);
+  };
+
+  const handleLeaveTeam = (team) => {
+    if (!team?.id) {
+      return;
+    }
+
+    setLeaveTeamConfirmation(team);
+  };
+
+  const confirmLeaveClub = async () => {
+    if (!leaveClubConfirmation?.id || !leaveClub) {
+      setLeaveClubConfirmation(null);
+      return;
+    }
+
+    setLeavingClubId(leaveClubConfirmation.id);
+    try {
+      const result = await leaveClub(leaveClubConfirmation);
+      if (result?.error === 'last_team_member') {
+        setLeaveClubBlocked({
+          club: leaveClubConfirmation?.club || null,
+          clubId: leaveClubConfirmation?.club?.id || leaveClubConfirmation?.club_id || null,
+          membership: leaveClubConfirmation,
+          teams: Array.isArray(result?.teams) ? result.teams : []
+        });
+        if (clearTeamError) {
+          clearTeamError();
+        }
+      } else {
+        setLeaveClubBlocked(null);
+      }
+    } finally {
+      setLeavingClubId(null);
+      setLeaveClubConfirmation(null);
+    }
+  };
+
+  const confirmLeaveTeam = async () => {
+    if (!leaveTeamConfirmation?.id || !leaveTeam) {
+      setLeaveTeamConfirmation(null);
+      return;
+    }
+
+    setLeavingTeamId(leaveTeamConfirmation.id);
+    try {
+      const result = await leaveTeam(leaveTeamConfirmation);
+      if (result?.error && LEAVE_TEAM_BLOCKING_ERRORS.includes(result.error)) {
+        setLeaveTeamBlocked({
+          team: leaveTeamConfirmation,
+          reason: result.error
+        });
+        if (clearTeamError) {
+          clearTeamError();
+        }
+      } else {
+        setLeaveTeamBlocked(null);
+      }
+    } finally {
+      setLeavingTeamId(null);
+      setLeaveTeamConfirmation(null);
+    }
+  };
+
+  const confirmDeleteTeam = async () => {
+    if (!leaveTeamBlocked?.team?.id || !deleteTeam || isDeletingTeam) {
+      return;
+    }
+
+    setIsDeletingTeam(true);
+    try {
+      await deleteTeam(leaveTeamBlocked.team);
+    } finally {
+      setIsDeletingTeam(false);
+      setLeaveTeamBlocked(null);
+    }
+  };
+
+  const confirmDeleteClubTeam = async () => {
+    const blockedTeams = getLeaveClubBlockedTeams();
+    const teamToDelete = blockedTeams[0];
+    if (!teamToDelete?.id || !deleteTeam || isDeletingClubTeam) {
+      return;
+    }
+
+    setIsDeletingClubTeam(true);
+    try {
+      const deleteResult = await deleteTeam(teamToDelete);
+      if (!deleteResult) {
+        setLeaveClubBlocked(null);
+        return;
+      }
+      if (leaveClub && leaveClubBlocked?.membership) {
+        const result = await leaveClub(leaveClubBlocked.membership);
+        if (result?.error === 'last_team_member') {
+          setLeaveClubBlocked({
+            club: leaveClubBlocked.club || null,
+            clubId: leaveClubBlocked.clubId || null,
+            membership: leaveClubBlocked.membership,
+            teams: Array.isArray(result?.teams) ? result.teams : []
+          });
+          if (clearTeamError) {
+            clearTeamError();
+          }
+          return;
+        }
+      }
+      setLeaveClubBlocked(null);
+    } finally {
+      setIsDeletingClubTeam(false);
+    }
+  };
+
+  const handleLeaveTeamBlockedCancel = () => {
+    setLeaveTeamBlocked(null);
+    if (clearTeamError) {
+      clearTeamError();
+    }
+  };
+
+  const handleLeaveClubBlockedCancel = () => {
+    setLeaveClubBlocked(null);
+    if (clearTeamError) {
+      clearTeamError();
+    }
+  };
+
+  const clubMemberships = userClubs || [];
+  const teams = userTeams || [];
+  const hasClubs = clubMemberships.length > 0;
+  const hasTeams = teams.length > 0;
 
   return (
     <div className="space-y-6">
@@ -401,10 +602,62 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
             
             {teamLoading ? (
               <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
-                <p className="text-slate-400 text-sm text-center">Loading your teams...</p>
+                <p className="text-slate-400 text-sm text-center">Loading your clubs and teams...</p>
               </div>
-            ) : userTeams && userTeams.length > 0 ? (
+            ) : !hasClubs ? (
+              <div className="bg-slate-800 rounded-lg p-6 border border-slate-600 text-center">
+                <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h4 className="font-medium text-slate-200 mb-2">No clubs yet</h4>
+                <p className="text-slate-400 text-sm mb-4">
+                  You haven't joined any clubs yet. Create a club or join an existing club.
+                </p>
+                <Button
+                  onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
+                  variant="primary"
+                  size="sm"
+                  className="mx-auto"
+                >
+                  Create or join a club
+                </Button>
+              </div>
+            ) : (
               <div className="space-y-4">
+                {/* Clubs */}
+                <div>
+                  <h4 className="font-medium text-slate-300 mb-3">Your Clubs ({clubMemberships.length})</h4>
+                  <div className="space-y-2">
+                    {clubMemberships.map((membership) => (
+                      <div
+                        key={membership.id}
+                        className="bg-slate-800 border border-slate-600 rounded-lg p-4"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1 text-left">
+                            <p className="font-semibold text-slate-100">
+                              {formatClubName(membership)}
+                            </p>
+                            <p className="text-slate-400 text-sm">
+                              {membership.role || 'Member'}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => handleLeaveClub(membership)}
+                            variant="danger"
+                            size="sm"
+                            disabled={leavingClubId === membership.id}
+                          >
+                            {leavingClubId === membership.id ? 'Leaving...' : 'Leave'}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Current Active Team */}
                 {currentTeam && (
                   <button
@@ -426,66 +679,76 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                   </button>
                 )}
 
-                {/* All Teams */}
-                <div>
-                  <h4 className="font-medium text-slate-300 mb-3">Your Teams ({userTeams.length})</h4>
-                  <div className="space-y-2">
-                    {userTeams.map((team) => (
-                      <div
-                        key={team.id}
-                        className={`p-3 rounded-lg border transition-colors ${
-                          currentTeam && team.id === currentTeam.id
-                            ? 'bg-sky-900/20 border-sky-600'
-                            : 'bg-slate-800 border-slate-600 hover:bg-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-slate-100">
-                              {team.club?.long_name ? `${team.club.long_name} ${team.name}` : team.name}
-                            </p>
-                            <p className="text-slate-400 text-sm">
-                              {team.userRole || 'Member'}
-                              {team.active === false && ' • Inactive'}
-                            </p>
+                {hasTeams ? (
+                  <div>
+                    <h4 className="font-medium text-slate-300 mb-3">Your Teams ({teams.length})</h4>
+                    <div className="space-y-2">
+                      {teams.map((team) => (
+                        <div
+                          key={team.id}
+                          className={`p-3 rounded-lg border transition-colors ${
+                            currentTeam && team.id === currentTeam.id
+                              ? 'bg-sky-900/20 border-sky-600'
+                              : 'bg-slate-800 border-slate-600 hover:bg-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-medium text-slate-100">
+                                {team.club?.long_name ? `${team.club.long_name} ${team.name}` : team.name}
+                              </p>
+                              <p className="text-slate-400 text-sm">
+                                {team.userRole || 'Member'}
+                                {team.active === false && ' • Inactive'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {currentTeam && team.id !== currentTeam.id && (
+                                <button
+                                  onClick={() => {
+                                    // TODO: Implement team switching
+                                    console.log('Switch to team:', team.id);
+                                  }}
+                                  className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
+                                >
+                                  Switch
+                                </button>
+                              )}
+                              <Button
+                                onClick={() => handleLeaveTeam(team)}
+                                variant="danger"
+                                size="sm"
+                                disabled={leavingTeamId === team.id}
+                              >
+                                {leavingTeamId === team.id ? 'Leaving...' : 'Leave'}
+                              </Button>
+                            </div>
                           </div>
-                          {currentTeam && team.id !== currentTeam.id && (
-                            <button
-                              onClick={() => {
-                                // TODO: Implement team switching
-                                console.log('Switch to team:', team.id);
-                              }}
-                              className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
-                            >
-                              Switch
-                            </button>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-              </div>
-            ) : (
-              <div className="bg-slate-800 rounded-lg p-6 border border-slate-600 text-center">
-                <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <h4 className="font-medium text-slate-200 mb-2">No Teams Yet</h4>
-                <p className="text-slate-400 text-sm mb-4">
-                  You haven't joined any teams yet. Create your first team or ask a coach to invite you.
-                </p>
-                <Button
-                  onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
-                  variant="primary"
-                  size="sm"
-                  className="mx-auto"
-                >
-                  Create or Join a Team
-                </Button>
+                ) : (
+                  <div className="bg-slate-800 rounded-lg p-6 border border-slate-600 text-center">
+                    <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <h4 className="font-medium text-slate-200 mb-2">No Teams Yet</h4>
+                    <p className="text-slate-400 text-sm mb-4">
+                      You haven't joined any teams yet. Create your first team or ask a coach to invite you.
+                    </p>
+                    <Button
+                      onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
+                      variant="primary"
+                      size="sm"
+                      className="mx-auto"
+                    >
+                      Create or Join a Team
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -496,6 +759,58 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
       <ChangePassword
         isOpen={showChangePassword}
         onClose={() => setShowChangePassword(false)}
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(leaveClubConfirmation)}
+        onConfirm={confirmLeaveClub}
+        onCancel={() => setLeaveClubConfirmation(null)}
+        title="Leave club"
+        message={
+          leaveClubConfirmation
+            ? `Are you sure you want to leave ${formatClubName(leaveClubConfirmation)}?`
+            : ''
+        }
+        confirmText="Leave club"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(leaveTeamConfirmation)}
+        onConfirm={confirmLeaveTeam}
+        onCancel={() => setLeaveTeamConfirmation(null)}
+        title="Leave team"
+        message={
+          leaveTeamConfirmation
+            ? `Are you sure you want to leave ${formatTeamName(leaveTeamConfirmation)}?`
+            : ''
+        }
+        confirmText="Leave team"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(leaveClubBlocked)}
+        onConfirm={confirmDeleteClubTeam}
+        onCancel={handleLeaveClubBlockedCancel}
+        title="Can't leave club"
+        message={getLeaveClubBlockedMessage()}
+        confirmText={isDeletingClubTeam ? 'Deleting...' : 'Delete Team'}
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(leaveTeamBlocked)}
+        onConfirm={confirmDeleteTeam}
+        onCancel={handleLeaveTeamBlockedCancel}
+        title="Can't leave team"
+        message={getLeaveTeamBlockedMessage()}
+        confirmText={isDeletingTeam ? 'Deleting...' : 'Delete Team'}
+        cancelText="Cancel"
+        variant="danger"
       />
     </div>
   );

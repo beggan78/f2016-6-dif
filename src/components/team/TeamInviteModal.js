@@ -16,7 +16,14 @@ import {
 } from 'lucide-react';
 
 export function TeamInviteModal({ isOpen, onClose, team }) {
-  const { inviteUserToTeam, getTeamInvitations, refreshInvitation, deleteInvitation, loading, error } = useTeam();
+  const {
+    inviteUserToTeam,
+    getTeamInvitations,
+    refreshInvitation,
+    deleteInvitation,
+    loading,
+    error
+  } = useTeam();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',

@@ -9,7 +9,7 @@ export function TeamSelector({ onCreateNew }) {
     userTeams, 
     switchCurrentTeam,
     loading,
-    error 
+    error
   } = useTeam();
 
   if (loading) {
