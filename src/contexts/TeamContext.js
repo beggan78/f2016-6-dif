@@ -204,6 +204,39 @@ export const TeamProvider = ({ children }) => {
     }
   }, []);
 
+  // Get user's club memberships
+  const getClubMemberships = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('club_user')
+        .select(`
+          id, role, status, joined_at,
+          club:club_id (id, name, short_name, long_name)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('joined_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching club memberships:', error);
+        return [];
+      }
+
+      const clubs = data || [];
+      
+      // Update the userClubs state
+      setUserClubs(clubs);
+      
+      // Cache the results
+      cacheTeamData({ userClubs: clubs });
+      
+      return clubs;
+    } catch (err) {
+      console.error('Exception in getClubMemberships:', err);
+      return [];
+    }
+  }, [user]);
+
   // Create a new club using atomic function
   const createClub = useCallback(async (clubData) => {
     if (!user) {
@@ -247,8 +280,7 @@ export const TeamProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, clearError]); // getClubMemberships omitted to avoid hoisting error - it's called directly, not captured
+  }, [user, clearError, getClubMemberships]);
 
   // Get teams for a specific club
   const getTeamsByClub = useCallback(async (clubId) => {
@@ -443,39 +475,6 @@ export const TeamProvider = ({ children }) => {
     // Store in localStorage for persistence via PersistenceManager
     teamIdPersistence.saveState({ teamId });
   }, [userTeams, getTeamPlayers, teamIdPersistence]);
-
-  // Get user's club memberships
-  const getClubMemberships = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('club_user')
-        .select(`
-          id, role, status, joined_at,
-          club:club_id (id, name, short_name, long_name)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('joined_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching club memberships:', error);
-        return [];
-      }
-
-      const clubs = data || [];
-      
-      // Update the userClubs state
-      setUserClubs(clubs);
-      
-      // Cache the results
-      cacheTeamData({ userClubs: clubs });
-      
-      return clubs;
-    } catch (err) {
-      console.error('Exception in getClubMemberships:', err);
-      return [];
-    }
-  }, [user]);
 
   // Initialize team and club data when user is authenticated
   useEffect(() => {
