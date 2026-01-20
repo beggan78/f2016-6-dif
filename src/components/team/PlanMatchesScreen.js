@@ -633,7 +633,7 @@ export function PlanMatchesScreen({
                     <span>Roster</span>
                     <span>{rosterPlayers.length}</span>
                   </div>
-                  <div className="space-y-1 max-h-[360px] overflow-y-auto pr-1">
+                  <div className="space-y-1 pr-1">
                     {sortedRoster.map((player) => {
                       const isUnavailable = unavailableSet.has(player.id);
                       const isSelected = selectedSet.has(player.id);
@@ -721,7 +721,7 @@ export function PlanMatchesScreen({
                     <span>Selected</span>
                     <span>{selectedIds.length}</span>
                   </div>
-                  <div className="space-y-1 max-h-[360px] overflow-y-auto pr-1">
+                  <div className="space-y-1 pr-1">
                     {selectedIds.map((playerId) => {
                       const player = rosterById.get(playerId);
                       if (!player) return null;
