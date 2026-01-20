@@ -23,6 +23,7 @@ import { LiveMatchScreen } from './components/live/LiveMatchScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { TeamManagement } from './components/team/TeamManagement';
 import { TeamMatchesList } from './components/team/TeamMatchesList';
+import { PlanMatchesScreen } from './components/team/PlanMatchesScreen';
 import { AbandonMatchModal } from './components/modals/AbandonMatchModal';
 import { ConfirmationModal, ThreeOptionModal } from './components/shared/UI';
 import { HamburgerMenu } from './components/shared/HamburgerMenu';
@@ -1177,6 +1178,15 @@ function AppContent() {
             onNavigateTo={navigateToView}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
+          />
+        );
+      case VIEWS.PLAN_MATCHES:
+        return (
+          <PlanMatchesScreen
+            onNavigateBack={navigateBack}
+            pushNavigationState={pushNavigationState}
+            removeFromNavigationStack={removeFromNavigationStack}
+            matchesToPlan={navigationData?.matchesToPlan}
           />
         );
       case VIEWS.LIVE_MATCH:

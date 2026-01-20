@@ -964,6 +964,7 @@ export type Database = {
           match_date: string
           match_time: string | null
           opponent: string
+ı          planned_match_id: string | null
           synced_at: string
           updated_at: string
           venue: string | null
@@ -975,6 +976,7 @@ export type Database = {
           match_date: string
           match_time?: string | null
           opponent: string
+          planned_match_id?: string | null
           synced_at?: string
           updated_at?: string
           venue?: string | null
@@ -986,6 +988,7 @@ export type Database = {
           match_date?: string
           match_time?: string | null
           opponent?: string
+          planned_match_id?: string | null
           synced_at?: string
           updated_at?: string
           venue?: string | null
@@ -996,6 +999,13 @@ export type Database = {
             columns: ["connector_id"]
             isOneToOne: false
             referencedRelation: "connector"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upcoming_match_planned_match_id_fkey"
+            columns: ["planned_match_id"]
+            isOneToOne: false
+            referencedRelation: "match"
             referencedColumns: ["id"]
           },
         ]
