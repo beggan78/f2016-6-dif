@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Ban, CheckCircle, Percent, Sparkles, TrendingUp, Users } from 'lucide-react';
+import { Ban, Percent, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { Button, Input, NotificationModal } from '../shared/UI';
+import { Tooltip } from '../shared';
 import { useTeam } from '../../contexts/TeamContext';
 import { getAttendanceStats } from '../../services/connectorService';
 import { createPersistenceManager } from '../../utils/persistenceManager';
@@ -12,6 +13,7 @@ const AUTO_SELECT_STRATEGY = {
   PRACTICES: 'practices',
   ATTENDANCE: 'attendance'
 };
+const PRACTICES_TOOLTIP = 'Practices per match';
 
 export function PlanMatchesScreen({
   onNavigateBack,
@@ -573,6 +575,10 @@ export function PlanMatchesScreen({
           const isPlanning = plannedState === 'loading';
           const isPlanned = plannedState === 'done';
           const target = targetCounts[match.id] || 0;
+          const displayRoster = [
+            ...sortedRoster.filter((player) => !unavailableSet.has(player.id)),
+            ...sortedRoster.filter((player) => unavailableSet.has(player.id))
+          ];
 
           return (
             <div
@@ -634,7 +640,7 @@ export function PlanMatchesScreen({
                     <span>{rosterPlayers.length}</span>
                   </div>
                   <div className="space-y-1 pr-1">
-                    {sortedRoster.map((player) => {
+                    {displayRoster.map((player) => {
                       const isUnavailable = unavailableSet.has(player.id);
                       const isSelected = selectedSet.has(player.id);
                       const otherMatches = matches
@@ -665,7 +671,6 @@ export function PlanMatchesScreen({
                           }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
-                            {isSelected && <CheckCircle className="h-3.5 w-3.5 text-emerald-300" />}
                             {isUnavailable && <Ban className="h-3.5 w-3.5 text-rose-300" />}
                             <span className="truncate">{player.displayName}</span>
                             {player.jerseyNumber && (
@@ -686,7 +691,9 @@ export function PlanMatchesScreen({
                           </div>
 
                           <div className="flex items-center gap-2 text-[10px] font-mono text-slate-300">
-                            <span>P/M {player.practicesPerMatch.toFixed(2)}</span>
+                            <Tooltip content={PRACTICES_TOOLTIP} position="top" trigger="hover" className="inline-flex">
+                              <span>{player.practicesPerMatch.toFixed(2)}</span>
+                            </Tooltip>
                             <span>{player.attendanceRate.toFixed(1)}%</span>
                             <button
                               type="button"
@@ -740,14 +747,15 @@ export function PlanMatchesScreen({
                           className="flex items-center justify-between gap-2 rounded border border-emerald-500/60 bg-emerald-900/20 px-2 py-1 text-xs text-emerald-100 cursor-pointer"
                         >
                           <div className="flex items-center gap-2 min-w-0">
-                            <CheckCircle className="h-3.5 w-3.5 text-emerald-200" />
                             <span className="truncate">{player.displayName}</span>
                             {player.jerseyNumber && (
                               <span className="text-[10px] text-emerald-200/70">#{player.jerseyNumber}</span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-100/80">
-                            <span>P/M {player.practicesPerMatch.toFixed(2)}</span>
+                            <Tooltip content={PRACTICES_TOOLTIP} position="top" trigger="hover" className="inline-flex">
+                              <span>{player.practicesPerMatch.toFixed(2)}</span>
+                            </Tooltip>
                             <span>{player.attendanceRate.toFixed(1)}%</span>
                           </div>
                         </div>
