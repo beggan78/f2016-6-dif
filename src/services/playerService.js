@@ -1,12 +1,25 @@
 import { supabase } from '../lib/supabase';
 
+const MAX_NAME_LENGTH = 100;
+
 const buildNameParts = (displayName) => {
   const trimmedName = displayName.trim();
-  const nameParts = trimmedName.split(' ').filter(Boolean);
+
+  if (trimmedName.length > MAX_NAME_LENGTH) {
+    throw new Error('Player name too long');
+  }
+
+  const sanitizedName = trimmedName.replace(/[<>]/g, '').trim();
+
+  if (!sanitizedName) {
+    throw new Error('Player name is required');
+  }
+
+  const nameParts = sanitizedName.split(' ').filter(Boolean);
 
   return {
-    displayName: trimmedName,
-    firstName: nameParts[0] || trimmedName,
+    displayName: sanitizedName,
+    firstName: nameParts[0] || sanitizedName,
     lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : null
   };
 };
