@@ -43,20 +43,13 @@ import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { DEFAULT_PREFERENCES } from '../../types/preferences';
+import { TAB_VIEWS } from '../../constants/teamManagementTabs';
 import {
   FORMATS,
   FORMATION_DEFINITIONS,
   FORMAT_CONFIGS,
   getValidFormations
 } from '../../constants/teamConfiguration';
-
-const TAB_VIEWS = {
-  OVERVIEW: 'overview',
-  ACCESS: 'access',
-  ROSTER: 'roster',
-  PREFERENCES: 'preferences',
-  CONNECTORS: 'connectors'
-};
 
 export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerModal, onShowSuccessMessage }) {
   const { user } = useAuth();

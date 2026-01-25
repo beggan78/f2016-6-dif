@@ -26,6 +26,7 @@ import FeatureVoteModal from '../shared/FeatureVoteModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
+import { TAB_VIEWS } from '../../constants/teamManagementTabs';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch, getPlayerStats } from '../../services/matchStateManager';
@@ -38,7 +39,10 @@ import { STORAGE_KEYS } from '../../constants/storageKeys';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
 const teamPreferencesCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_PREFERENCES_CACHE, { teamId: null, fetchedAt: 0, preferences: {} });
-const teamManagementTabCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_MANAGEMENT_ACTIVE_TAB, { tab: 'overview' });
+const teamManagementTabCacheManager = createPersistenceManager(
+  STORAGE_KEYS.TEAM_MANAGEMENT_ACTIVE_TAB,
+  { tab: TAB_VIEWS.OVERVIEW }
+);
 const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function ConfigurationScreen({ 
@@ -1346,7 +1350,7 @@ export function ConfigurationScreen({
     handleCloseAddPlayerOptionsModal();
     if (onNavigateTo) {
       onNavigateTo(VIEWS.TEAM_MANAGEMENT, {
-        openToTab: 'roster',
+        openToTab: TAB_VIEWS.ROSTER,
         openAddRosterPlayerModal: true
       });
     }
@@ -1445,13 +1449,13 @@ export function ConfigurationScreen({
 
   // Navigate to Team Management Connectors tab
   const handleNavigateToConnectors = () => {
-    teamManagementTabCacheManager.saveState({ tab: 'connectors' });
+    teamManagementTabCacheManager.saveState({ tab: TAB_VIEWS.CONNECTORS });
     onNavigateTo(VIEWS.TEAM_MANAGEMENT);
   };
 
   // Navigate to Team Management Roster tab
   const handleNavigateToRoster = () => {
-    teamManagementTabCacheManager.saveState({ tab: 'roster' });
+    teamManagementTabCacheManager.saveState({ tab: TAB_VIEWS.ROSTER });
     onNavigateTo(VIEWS.TEAM_MANAGEMENT);
   };
 
