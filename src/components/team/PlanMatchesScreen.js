@@ -47,14 +47,6 @@ export function PlanMatchesScreen({
     }
   }, [matchesToPlan]);
 
-  const matchIndexById = useMemo(() => {
-    const map = new Map();
-    matches.forEach((match, index) => {
-      map.set(match.id, index + 1);
-    });
-    return map;
-  }, [matches]);
-
   const autoSelectMatches = useMemo(() => {
     if (matches.length > 1) {
       return matches;
@@ -626,9 +618,6 @@ export function PlanMatchesScreen({
                 </div>
 
                 <div className="flex items-center justify-end gap-3 min-w-0 text-right">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-xs text-slate-200">
-                    {matchIndexById.get(match.id)}
-                  </span>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-slate-100">{match.opponent}</div>
                     <div className="text-xs text-slate-400">{formatSchedule(match.matchDate, match.matchTime)}</div>
@@ -646,11 +635,11 @@ export function PlanMatchesScreen({
                     {displayRoster.map((player) => {
                       const isUnavailable = unavailableSet.has(player.id);
                       const isSelected = selectedSet.has(player.id);
-                      const otherMatches = matches
-                        .filter(other => other.id !== match.id)
-                        .filter(other => (selectedPlayersByMatch[other.id] || []).includes(player.id))
-                        .map(other => matchIndexById.get(other.id))
-                        .filter(Boolean);
+                      const isSelectedInOtherMatch = matches.some(
+                        other =>
+                          other.id !== match.id &&
+                          (selectedPlayersByMatch[other.id] || []).includes(player.id)
+                      );
 
                       return (
                         <div
@@ -668,7 +657,7 @@ export function PlanMatchesScreen({
                               ? 'border-rose-500/40 bg-rose-900/20 text-rose-200 opacity-70 cursor-not-allowed'
                               : isSelected
                                 ? 'border-emerald-500/60 bg-emerald-900/20 text-emerald-100 cursor-pointer'
-                                : otherMatches.length > 0
+                                : isSelectedInOtherMatch
                                   ? 'border-amber-500/40 bg-amber-900/10 text-amber-100 cursor-pointer'
                                   : 'border-slate-700 bg-slate-900/30 text-slate-200 hover:border-slate-500 cursor-pointer'
                           }`}
@@ -678,18 +667,6 @@ export function PlanMatchesScreen({
                             <span className="truncate">{player.displayName}</span>
                             {player.jerseyNumber && (
                               <span className="text-[10px] text-slate-400">#{player.jerseyNumber}</span>
-                            )}
-                            {otherMatches.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                {otherMatches.map((badge) => (
-                                  <span
-                                    key={`${player.id}-m-${badge}`}
-                                    className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/30 text-[10px] text-amber-100"
-                                  >
-                                    {badge}
-                                  </span>
-                                ))}
-                              </div>
                             )}
                           </div>
 
@@ -799,9 +776,7 @@ export function PlanMatchesScreen({
                   {autoSelectMatches.map((match) => (
                     <div key={match.id} className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="truncate text-sm text-slate-100">
-                          {matchIndexById.get(match.id)}. {match.opponent}
-                        </div>
+                        <div className="truncate text-sm text-slate-100">{match.opponent}</div>
                         <div className="text-xs text-slate-400">{formatSchedule(match.matchDate, match.matchTime)}</div>
                       </div>
                       <div className="w-20">
