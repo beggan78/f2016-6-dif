@@ -172,6 +172,10 @@ jest.mock('../../../services/matchStateManager', () => ({
   getPlayerStats: jest.fn(() => Promise.resolve({ success: true, players: [] }))
 }));
 
+jest.mock('../../../services/playerService', () => ({
+  getTemporaryPlayersForMatch: jest.fn(() => Promise.resolve({ success: true, players: [] }))
+}));
+
 jest.mock('../../match/PendingMatchResumeModal', () => ({
   PendingMatchResumeModal: () => null
 }));
@@ -731,6 +735,7 @@ const buildProps = (overrides = {}) => ({
   setView: jest.fn(),
   syncPlayersFromTeamRoster: jest.fn(),
   setCurrentMatchId: jest.fn(),
+  currentMatchId: null,
   setMatchCreated: jest.fn(),
   hasActiveConfiguration: false,
   setHasActiveConfiguration: jest.fn(),

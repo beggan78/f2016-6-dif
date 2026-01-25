@@ -1093,7 +1093,8 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
           id,
           display_name,
           first_name,
-          team_id
+          team_id,
+          match_id
         )
       `);
 
@@ -1149,6 +1150,7 @@ export async function getPlayerStats(teamId, startDate = null, endDate = null, f
       if (stat.match.team_id !== teamId) return false;
       if (stat.match.state !== 'finished') return false;
       if (stat.match.deleted_at !== null) return false;
+      if (stat.player.match_id !== null && stat.player.match_id !== undefined) return false;
 
       // Apply date filters if provided
       if (normalizedStartDate || normalizedEndDate) {

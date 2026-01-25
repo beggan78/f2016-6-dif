@@ -11,6 +11,7 @@ import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { scrollToTopSmooth } from '../../utils/scrollUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
+import { convertTeamPlayerToGamePlayer } from '../../utils/playerSyncUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useFormationVotes } from '../../hooks/useFormationVotes';
@@ -29,6 +30,7 @@ import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch, getPlayerStats } from '../../services/matchStateManager';
 import { getPlayerConnectionDetails } from '../../services/connectorService';
+import { getTemporaryPlayersForMatch } from '../../services/playerService';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
 import { suggestUpcomingOpponent } from '../../services/opponentPrefillService';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -75,6 +77,7 @@ export function ConfigurationScreen({
   authModal,
   syncPlayersFromTeamRoster,
   setCurrentMatchId,
+  currentMatchId,
   setMatchCreated,
   hasActiveConfiguration,
   setHasActiveConfiguration,
@@ -624,6 +627,29 @@ export function ConfigurationScreen({
     // NOTE: No clearStoredState() call - preserve resumed match ID and state
   }, []);
 
+  const loadTemporaryPlayersForMatch = React.useCallback(async (matchId) => {
+    if (!matchId) {
+      return;
+    }
+
+    const result = await getTemporaryPlayersForMatch(matchId);
+    if (!result.success || result.players.length === 0) {
+      return;
+    }
+
+    const gamePlayers = result.players.map(player => ({
+      ...convertTeamPlayerToGamePlayer(player),
+      isTemporary: true,
+      matchId: player.match_id
+    }));
+
+    setAllPlayers(prev => {
+      const existingIds = new Set(prev.map(player => player.id));
+      const newPlayers = gamePlayers.filter(player => !existingIds.has(player.id));
+      return newPlayers.length > 0 ? [...prev, ...newPlayers] : prev;
+    });
+  }, [setAllPlayers]);
+
   const applyPendingMatchResume = React.useCallback(async (pendingMatch) => {
     if (!pendingMatch?.initial_config) {
       console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
@@ -645,6 +671,7 @@ export function ConfigurationScreen({
         setCurrentMatchId(pendingMatch.id);
         setMatchCreated(true);
         console.log('✅ Resume match: Set currentMatchId to', pendingMatch.id, 'and matchCreated to true');
+        await loadTemporaryPlayersForMatch(pendingMatch.id);
       } else {
         console.error('❌ Failed to create resume data from pending match');
         handleResumeMatchModalClose();
@@ -659,6 +686,7 @@ export function ConfigurationScreen({
     handleResumeMatchModalClose,
     setCurrentMatchId,
     setMatchCreated,
+    loadTemporaryPlayersForMatch,
     setPendingMatchLoading,
     setResumeData
   ]);
@@ -732,7 +760,8 @@ export function ConfigurationScreen({
     
     // Check sync requirements with descriptive variables
     const hasCurrentTeam = !!currentTeam;
-    const hasTeamPlayers = teamPlayers && teamPlayers.length > 0;
+    const rosterPlayers = (teamPlayers || []).filter(player => player.on_roster !== false);
+    const hasTeamPlayers = rosterPlayers.length > 0;
     const hasSyncFunction = !!syncPlayersFromTeamRoster;
     
     
@@ -747,7 +776,7 @@ export function ConfigurationScreen({
       teamSyncCompletedRef.current = false;
       
       try {
-        const result = syncPlayersFromTeamRoster(teamPlayers);
+        const result = syncPlayersFromTeamRoster(rosterPlayers);
         
         if (result.success) {
           setPlayerSyncStatus({ 
@@ -861,15 +890,40 @@ export function ConfigurationScreen({
   }, [currentTeam?.id, isAuthenticated]);
 
   // Determine which players to show and if team has no players
-  const hasNoTeamPlayers = isAuthenticated && currentTeam && teamPlayers.length === 0;
-  const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0
-    ? teamPlayers.map(player => ({
-        id: player.id,
-        displayName: player.display_name,
-        firstName: player.first_name,
-        lastName: player.last_name,
-        jerseyNumber: player.jersey_number
-      }))
+  const rosterPlayers = (teamPlayers || []).filter(player => player.on_roster !== false);
+  const hasNoTeamPlayers = isAuthenticated && currentTeam && rosterPlayers.length === 0;
+  const temporaryPlayersForMatch = React.useMemo(() => {
+    if (!currentMatchId) {
+      return [];
+    }
+
+    return allPlayers.filter(player => player.isTemporary && player.matchId === currentMatchId);
+  }, [allPlayers, currentMatchId]);
+
+  const rosterPlayersForList = rosterPlayers.map(player => ({
+    id: player.id,
+    displayName: player.display_name,
+    firstName: player.first_name,
+    lastName: player.last_name,
+    jerseyNumber: player.jersey_number,
+    isTemporary: false
+  }));
+
+  const temporaryPlayersForList = temporaryPlayersForMatch.map(player => ({
+    id: player.id,
+    displayName: player.displayName,
+    firstName: player.firstName,
+    lastName: player.lastName,
+    jerseyNumber: player.jerseyNumber,
+    isTemporary: true
+  }));
+
+  const rosterIds = new Set(rosterPlayersForList.map(player => player.id));
+  const playersToShow = isAuthenticated && currentTeam
+    ? [
+        ...rosterPlayersForList,
+        ...temporaryPlayersForList.filter(player => !rosterIds.has(player.id))
+      ]
     : allPlayers;
   const selectedIdsSet = React.useMemo(() => new Set(selectedSquadIds), [selectedSquadIds]);
   const areAllEligibleSelected = playersToShow.length > 0 &&
@@ -884,7 +938,7 @@ export function ConfigurationScreen({
   );
 
   // Determine if unmapped players banner should be shown
-  const activeRosterCount = teamPlayers.filter(p => p.on_roster === true).length;
+  const activeRosterCount = rosterPlayers.length;
   const unmappedFromConnected = (connectionDetails?.unmatchedExternalPlayers || [])
     .filter(record => record.connectorStatus === 'connected');
   const hasUnmappedPlayers = unmappedFromConnected.length > 0;
@@ -970,36 +1024,48 @@ export function ConfigurationScreen({
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
   React.useEffect(() => {
-    if (isAuthenticated && currentTeam && teamPlayers.length > 0) {
-      const transformedTeamPlayers = teamPlayers.map(player => ({
-        id: player.id,
-        displayName: player.display_name,
-        firstName: player.first_name,
-        lastName: player.last_name,
-        jerseyNumber: player.jersey_number,
-        // Initialize player stats if not present (required for game logic)
-        stats: {
-          timeOnFieldSeconds: 0,
-          timeAsAttackerSeconds: 0,
-          timeAsDefenderSeconds: 0,
-          timeAsGoalieSeconds: 0,
-          timeAsMidfielderSeconds: 0,
-          currentStatus: 'substitute',
-          currentPosition: null,
-          currentRole: null,
-          isInactive: false,
-          lastStintStartTimeEpoch: null
-        }
-      }));
-
-      // Only update allPlayers if the data has actually changed
-      const currentNames = allPlayers.map(p => ({ id: p.id, name: p.displayName }));
-      const newNames = transformedTeamPlayers.map(p => ({ id: p.id, name: p.displayName }));
-      if (JSON.stringify(currentNames) !== JSON.stringify(newNames)) {
-        setAllPlayers(transformedTeamPlayers);
-      }
+    if (!isAuthenticated || !currentTeam) {
+      return;
     }
-  }, [isAuthenticated, currentTeam, teamPlayers, allPlayers, setAllPlayers]);
+
+    if (rosterPlayers.length === 0 && temporaryPlayersForMatch.length === 0) {
+      return;
+    }
+
+    const transformedTeamPlayers = rosterPlayers.map(player => ({
+      id: player.id,
+      displayName: player.display_name,
+      firstName: player.first_name,
+      lastName: player.last_name,
+      jerseyNumber: player.jersey_number,
+      // Initialize player stats if not present (required for game logic)
+      stats: {
+        timeOnFieldSeconds: 0,
+        timeAsAttackerSeconds: 0,
+        timeAsDefenderSeconds: 0,
+        timeAsGoalieSeconds: 0,
+        timeAsMidfielderSeconds: 0,
+        currentStatus: 'substitute',
+        currentPosition: null,
+        currentRole: null,
+        isInactive: false,
+        lastStintStartTimeEpoch: null
+      }
+    }));
+
+    const rosterIds = new Set(transformedTeamPlayers.map(player => player.id));
+    const mergedPlayers = [
+      ...transformedTeamPlayers,
+      ...temporaryPlayersForMatch.filter(player => !rosterIds.has(player.id))
+    ];
+
+    // Only update allPlayers if the data has actually changed
+    const currentNames = allPlayers.map(player => ({ id: player.id, name: player.displayName }));
+    const newNames = mergedPlayers.map(player => ({ id: player.id, name: player.displayName }));
+    if (JSON.stringify(currentNames) !== JSON.stringify(newNames)) {
+      setAllPlayers(mergedPlayers);
+    }
+  }, [isAuthenticated, currentTeam, rosterPlayers, temporaryPlayersForMatch, allPlayers, setAllPlayers]);
 
   // Handle resume data from pending match
   React.useEffect(() => {
@@ -1880,6 +1946,9 @@ export function ConfigurationScreen({
                     className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
                   />
                   <span>{formatPlayerName(player)}</span>
+                  {player.isTemporary && (
+                    <span className="text-xs text-slate-300">(Temporary)</span>
+                  )}
                 </label>
               ))}
             </div>
