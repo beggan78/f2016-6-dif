@@ -23,7 +23,10 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4 border border-slate-600">
-        <h2 className="text-xl font-bold text-sky-400 mb-4">Add Temporary Player</h2>
+        <h2 className="text-xl font-bold text-sky-400 mb-2">Add Temporary Player</h2>
+        <p className="text-sm text-slate-400 mb-4">
+          This player will only appear in the current match and won't be added to the team roster.
+        </p>
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
