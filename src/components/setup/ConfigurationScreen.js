@@ -918,13 +918,17 @@ export function ConfigurationScreen({
     isTemporary: true
   }));
 
-  const rosterIds = new Set(rosterPlayersForList.map(player => player.id));
-  const playersToShow = isAuthenticated && currentTeam
-    ? [
-        ...rosterPlayersForList,
-        ...temporaryPlayersForList.filter(player => !rosterIds.has(player.id))
-      ]
-    : allPlayers;
+  const playersToShow = React.useMemo(() => {
+    if (!isAuthenticated || !currentTeam) {
+      return allPlayers;
+    }
+
+    const rosterIds = new Set(rosterPlayersForList.map(player => player.id));
+    return [
+      ...rosterPlayersForList,
+      ...temporaryPlayersForList.filter(player => !rosterIds.has(player.id))
+    ];
+  }, [isAuthenticated, currentTeam, allPlayers, rosterPlayersForList, temporaryPlayersForList]);
   const selectedIdsSet = React.useMemo(() => new Set(selectedSquadIds), [selectedSquadIds]);
   const areAllEligibleSelected = playersToShow.length > 0 &&
     playersToShow.every(player => selectedIdsSet.has(player.id)) &&
