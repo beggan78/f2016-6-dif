@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Ban, Percent, Sparkles, TrendingUp, Users } from 'lucide-react';
+import { Ban, Percent, Sparkles, TrendingUp } from 'lucide-react';
 import { Button, Input, NotificationModal } from '../shared/UI';
 import { Tooltip } from '../shared';
 import { useTeam } from '../../contexts/TeamContext';
@@ -38,6 +38,7 @@ export function PlanMatchesScreen({
     ensureCoverage: false,
     metric: AUTO_SELECT_STRATEGY.PRACTICES
   });
+  const [autoSelectMatchId, setAutoSelectMatchId] = useState(null);
   const [matches, setMatches] = useState(() => (Array.isArray(matchesToPlan) ? matchesToPlan : []));
 
   useEffect(() => {
@@ -53,6 +54,16 @@ export function PlanMatchesScreen({
     });
     return map;
   }, [matches]);
+
+  const autoSelectMatches = useMemo(() => {
+    if (matches.length > 1) {
+      return matches;
+    }
+    if (autoSelectMatchId) {
+      return matches.filter(match => match.id === autoSelectMatchId);
+    }
+    return matches;
+  }, [autoSelectMatchId, matches]);
 
   const endDate = useMemo(() => new Date(), []);
   const startDate = useMemo(() => {
@@ -400,19 +411,17 @@ export function PlanMatchesScreen({
   }, [buildSortedRoster, getUnavailableSet, matches, targetCounts]);
 
   const handleAutoSelect = (matchId) => {
+    setAutoSelectMatchId(matchId);
     if (matches.length > 1) {
       setAutoSelectSettings({
         ensureCoverage: false,
         metric: AUTO_SELECT_STRATEGY.PRACTICES
       });
-      setShowAutoSelectModal(true);
-      if (pushNavigationState) {
-        pushNavigationState(() => setShowAutoSelectModal(false), 'PlanMatches-AutoSelect');
-      }
-      return;
     }
-
-    autoSelectSingleMatch(matchId, sortMetric);
+    setShowAutoSelectModal(true);
+    if (pushNavigationState) {
+      pushNavigationState(() => setShowAutoSelectModal(false), 'PlanMatches-AutoSelect');
+    }
   };
 
   const handleAutoSelectConfirm = () => {
@@ -420,7 +429,17 @@ export function PlanMatchesScreen({
     if (removeFromNavigationStack) {
       removeFromNavigationStack();
     }
-    autoSelectMultipleMatches(autoSelectSettings.metric, autoSelectSettings.ensureCoverage);
+    if (matches.length > 1) {
+      autoSelectMultipleMatches(autoSelectSettings.metric, autoSelectSettings.ensureCoverage);
+      setAutoSelectMatchId(null);
+      return;
+    }
+
+    const matchId = autoSelectMatchId || matches[0]?.id;
+    if (matchId) {
+      autoSelectSingleMatch(matchId, sortMetric);
+    }
+    setAutoSelectMatchId(null);
   };
 
   const handleAutoSelectCancel = () => {
@@ -428,6 +447,7 @@ export function PlanMatchesScreen({
     if (removeFromNavigationStack) {
       removeFromNavigationStack();
     }
+    setAutoSelectMatchId(null);
   };
 
   const handlePlanMatch = async (match) => {
@@ -574,7 +594,6 @@ export function PlanMatchesScreen({
           const plannedState = planningStatus[match.id];
           const isPlanning = plannedState === 'loading';
           const isPlanned = plannedState === 'done';
-          const target = targetCounts[match.id] || 0;
           const displayRoster = [
             ...sortedRoster.filter((player) => !unavailableSet.has(player.id)),
             ...sortedRoster.filter((player) => unavailableSet.has(player.id))
@@ -585,32 +604,8 @@ export function PlanMatchesScreen({
               key={match.id}
               className="bg-slate-800/70 border border-slate-700 rounded-lg p-3 space-y-3"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-xs text-slate-200">
-                    {matchIndexById.get(match.id)}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-100">{match.opponent}</div>
-                    <div className="text-xs text-slate-400">{formatSchedule(match.matchDate, match.matchTime)}</div>
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-2 gap-2 items-start">
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 text-xs text-slate-300">
-                    <Users className="h-3.5 w-3.5" />
-                    <span>{selectedIds.length}/{target}</span>
-                  </div>
-                  <div className="w-16">
-                    <Input
-                      type="number"
-                      min="0"
-                      max={rosterPlayers.length}
-                      value={targetCounts[match.id] ?? ''}
-                      onChange={(event) => updateTargetCount(match.id, event.target.value)}
-                      className="text-xs py-1 px-2"
-                    />
-                  </div>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -630,6 +625,16 @@ export function PlanMatchesScreen({
                   >
                     {isPlanning ? 'Planning...' : isPlanned ? 'Planned' : 'Plan'}
                   </Button>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 min-w-0 text-right">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-xs text-slate-200">
+                    {matchIndexById.get(match.id)}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-slate-100">{match.opponent}</div>
+                    <div className="text-xs text-slate-400">{formatSchedule(match.matchDate, match.matchTime)}</div>
+                  </div>
                 </div>
               </div>
 
@@ -744,15 +749,15 @@ export function PlanMatchesScreen({
                               togglePlayerSelection(match.id, player.id);
                             }
                           }}
-                          className="flex items-center justify-between gap-2 rounded border border-emerald-500/60 bg-emerald-900/20 px-2 py-1 text-xs text-emerald-100 cursor-pointer"
+                          className="flex items-center justify-between gap-2 rounded border border-sky-500/60 bg-sky-900/20 px-2 py-1 text-xs text-sky-100 cursor-pointer"
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="truncate">{player.displayName}</span>
                             {player.jerseyNumber && (
-                              <span className="text-[10px] text-emerald-200/70">#{player.jerseyNumber}</span>
+                              <span className="text-[10px] text-sky-200/70">#{player.jerseyNumber}</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-100/80">
+                          <div className="flex items-center gap-2 text-[10px] font-mono text-sky-100/80">
                             <Tooltip content={PRACTICES_TOOLTIP} position="top" trigger="hover" className="inline-flex">
                               <span>{player.practicesPerMatch.toFixed(2)}</span>
                             </Tooltip>
@@ -788,46 +793,77 @@ export function PlanMatchesScreen({
               </h3>
             </div>
             <div className="p-4 space-y-4">
-              <label className="flex items-center gap-2 text-sm text-slate-200">
-                <input
-                  type="checkbox"
-                  checked={autoSelectSettings.ensureCoverage}
-                  onChange={(event) => setAutoSelectSettings((prev) => ({
-                    ...prev,
-                    ensureCoverage: event.target.checked
-                  }))}
-                  className="h-4 w-4 rounded border-slate-500 text-sky-500 focus:ring-sky-500"
-                />
-                Each player plays at least one match?
-              </label>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input
-                    type="radio"
-                    name="auto-select-strategy"
-                    checked={autoSelectSettings.metric === AUTO_SELECT_STRATEGY.PRACTICES}
-                    onChange={() => setAutoSelectSettings((prev) => ({
-                      ...prev,
-                      metric: AUTO_SELECT_STRATEGY.PRACTICES
-                    }))}
-                    className="h-4 w-4 border-slate-500 text-sky-500 focus:ring-sky-500"
-                  />
-                  Prioritize practices/match score
-                </label>
-                <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input
-                    type="radio"
-                    name="auto-select-strategy"
-                    checked={autoSelectSettings.metric === AUTO_SELECT_STRATEGY.ATTENDANCE}
-                    onChange={() => setAutoSelectSettings((prev) => ({
-                      ...prev,
-                      metric: AUTO_SELECT_STRATEGY.ATTENDANCE
-                    }))}
-                    className="h-4 w-4 border-slate-500 text-sky-500 focus:ring-sky-500"
-                  />
-                  Prioritize attendance %
-                </label>
+                <div className="text-sm font-semibold text-slate-200">
+                  {matches.length > 1 ? 'Squad size per match' : 'Squad size for this match'}
+                </div>
+                <div className="space-y-2">
+                  {autoSelectMatches.map((match) => (
+                    <div key={match.id} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm text-slate-100">
+                          {matchIndexById.get(match.id)}. {match.opponent}
+                        </div>
+                        <div className="text-xs text-slate-400">{formatSchedule(match.matchDate, match.matchTime)}</div>
+                      </div>
+                      <div className="w-20">
+                        <Input
+                          type="number"
+                          min="0"
+                          max={rosterPlayers.length}
+                          value={targetCounts[match.id] ?? ''}
+                          onChange={(event) => updateTargetCount(match.id, event.target.value)}
+                          className="text-xs py-1 px-2"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
+              {matches.length > 1 && (
+                <label className="flex items-center gap-2 text-sm text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={autoSelectSettings.ensureCoverage}
+                    onChange={(event) => setAutoSelectSettings((prev) => ({
+                      ...prev,
+                      ensureCoverage: event.target.checked
+                    }))}
+                    className="h-4 w-4 rounded border-slate-500 text-sky-500 focus:ring-sky-500"
+                  />
+                  Each player plays at least one match?
+                </label>
+              )}
+              {matches.length > 1 && (
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-slate-200">
+                    <input
+                      type="radio"
+                      name="auto-select-strategy"
+                      checked={autoSelectSettings.metric === AUTO_SELECT_STRATEGY.PRACTICES}
+                      onChange={() => setAutoSelectSettings((prev) => ({
+                        ...prev,
+                        metric: AUTO_SELECT_STRATEGY.PRACTICES
+                      }))}
+                      className="h-4 w-4 border-slate-500 text-sky-500 focus:ring-sky-500"
+                    />
+                    Prioritize practices/match score
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-200">
+                    <input
+                      type="radio"
+                      name="auto-select-strategy"
+                      checked={autoSelectSettings.metric === AUTO_SELECT_STRATEGY.ATTENDANCE}
+                      onChange={() => setAutoSelectSettings((prev) => ({
+                        ...prev,
+                        metric: AUTO_SELECT_STRATEGY.ATTENDANCE
+                      }))}
+                      className="h-4 w-4 border-slate-500 text-sky-500 focus:ring-sky-500"
+                    />
+                    Prioritize attendance %
+                  </label>
+                </div>
+              )}
             </div>
             <div className="p-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
               <Button variant="secondary" onClick={handleAutoSelectCancel}>
