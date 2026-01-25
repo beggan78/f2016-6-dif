@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { initializePlayers, resetPlayerMatchStartState, findPlayerById } from '../utils/playerUtils';
 import { initialRoster } from '../constants/defaultData';
-import { syncTeamRosterToGameState, analyzePlayerSync } from '../utils/playerSyncUtils';
+import { syncTeamRosterToGameState, analyzePlayerSync, convertTeamPlayerToGamePlayer } from '../utils/playerSyncUtils';
 import { initializePlayerRoleAndStatus } from '../constants/gameModes';
 import { calculatePlayerToggleInactive } from '../game/logic/gameStateLogic';
+import { createTemporaryPlayer } from '../services/playerService';
 
 /**
  * Hook for managing player state and squad management
@@ -148,16 +149,43 @@ export function usePlayerState(initialState = {}) {
   }, []);
 
   // Add temporary player to squad
-  const addTemporaryPlayer = useCallback((playerName) => {
-    const newPlayerId = `temp_${Date.now()}`;
-    const [template] = initializePlayers([playerName]);
-    const newPlayer = {
-      ...template,
-      id: newPlayerId
+  const addTemporaryPlayer = useCallback(async (playerName, options = {}) => {
+    const { teamId, matchId } = options;
+
+    if (!teamId || !matchId) {
+      const newPlayerId = `temp_${Date.now()}`;
+      const [template] = initializePlayers([playerName]);
+      const newPlayer = {
+        ...template,
+        id: newPlayerId,
+        isTemporary: true
+      };
+
+      setAllPlayers(prev => [...prev, newPlayer]);
+      setSelectedSquadIds(prev => [...prev, newPlayerId]);
+      return { success: true, player: newPlayer };
+    }
+
+    const result = await createTemporaryPlayer({
+      teamId,
+      matchId,
+      displayName: playerName
+    });
+
+    if (!result.success) {
+      return result;
+    }
+
+    const gamePlayer = {
+      ...convertTeamPlayerToGamePlayer(result.player),
+      isTemporary: true,
+      matchId: result.player.match_id || matchId
     };
 
-    setAllPlayers(prev => [...prev, newPlayer]);
-    setSelectedSquadIds(prev => [...prev, newPlayerId]);
+    setAllPlayers(prev => [...prev, gamePlayer]);
+    setSelectedSquadIds(prev => [...prev, result.player.id]);
+
+    return { success: true, player: gamePlayer };
   }, [setAllPlayers, setSelectedSquadIds]);
 
   // Captain management

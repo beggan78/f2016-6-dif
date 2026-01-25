@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
-import { Select, Button, NotificationModal } from '../shared/UI';
+import { Select, Button, NotificationModal, ThreeOptionModal } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
@@ -11,6 +11,7 @@ import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { scrollToTopSmooth } from '../../utils/scrollUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
+import { convertTeamPlayerToGamePlayer } from '../../utils/playerSyncUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useFormationVotes } from '../../hooks/useFormationVotes';
@@ -25,10 +26,12 @@ import FeatureVoteModal from '../shared/FeatureVoteModal';
 import { VIEWS } from '../../constants/viewConstants';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
+import { TAB_VIEWS } from '../../constants/teamManagementTabs';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
 import { discardPendingMatch, getPlayerStats } from '../../services/matchStateManager';
 import { getPlayerConnectionDetails } from '../../services/connectorService';
+import { getTemporaryPlayersForMatch } from '../../services/playerService';
 import { PendingMatchResumeModal } from '../match/PendingMatchResumeModal';
 import { suggestUpcomingOpponent } from '../../services/opponentPrefillService';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -36,7 +39,10 @@ import { STORAGE_KEYS } from '../../constants/storageKeys';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
 const teamPreferencesCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_PREFERENCES_CACHE, { teamId: null, fetchedAt: 0, preferences: {} });
-const teamManagementTabCacheManager = createPersistenceManager(STORAGE_KEYS.TEAM_MANAGEMENT_ACTIVE_TAB, { tab: 'overview' });
+const teamManagementTabCacheManager = createPersistenceManager(
+  STORAGE_KEYS.TEAM_MANAGEMENT_ACTIVE_TAB,
+  { tab: TAB_VIEWS.OVERVIEW }
+);
 const TEAM_PREFERENCES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function ConfigurationScreen({ 
@@ -75,6 +81,7 @@ export function ConfigurationScreen({
   authModal,
   syncPlayersFromTeamRoster,
   setCurrentMatchId,
+  currentMatchId,
   setMatchCreated,
   hasActiveConfiguration,
   setHasActiveConfiguration,
@@ -83,6 +90,7 @@ export function ConfigurationScreen({
   resumeMatchId,
   onNavigateBack,
   onNavigateTo,
+  onOpenTemporaryPlayerModal,
   pushNavigationState,
   removeFromNavigationStack
 }) {
@@ -91,6 +99,7 @@ export function ConfigurationScreen({
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
   const [saveConfigStatus, setSaveConfigStatus] = React.useState({ loading: false, message: '', error: null });
   const [shareLinkNotification, setShareLinkNotification] = React.useState({ isOpen: false, title: '', message: '' });
+  const [showAddPlayerOptionsModal, setShowAddPlayerOptionsModal] = useState(false);
   
   // Direct pending match state (no navigation complexity)
   const [pendingMatches, setPendingMatches] = useState([]);
@@ -624,6 +633,29 @@ export function ConfigurationScreen({
     // NOTE: No clearStoredState() call - preserve resumed match ID and state
   }, []);
 
+  const loadTemporaryPlayersForMatch = React.useCallback(async (matchId) => {
+    if (!matchId) {
+      return;
+    }
+
+    const result = await getTemporaryPlayersForMatch(matchId);
+    if (!result.success || result.players.length === 0) {
+      return;
+    }
+
+    const gamePlayers = result.players.map(player => ({
+      ...convertTeamPlayerToGamePlayer(player),
+      isTemporary: true,
+      matchId: player.match_id
+    }));
+
+    setAllPlayers(prev => {
+      const existingIds = new Set(prev.map(player => player.id));
+      const newPlayers = gamePlayers.filter(player => !existingIds.has(player.id));
+      return newPlayers.length > 0 ? [...prev, ...newPlayers] : prev;
+    });
+  }, [setAllPlayers]);
+
   const applyPendingMatchResume = React.useCallback(async (pendingMatch) => {
     if (!pendingMatch?.initial_config) {
       console.error('❌ MATCH SELECTION ERROR: No match found or missing initial_config');
@@ -645,6 +677,7 @@ export function ConfigurationScreen({
         setCurrentMatchId(pendingMatch.id);
         setMatchCreated(true);
         console.log('✅ Resume match: Set currentMatchId to', pendingMatch.id, 'and matchCreated to true');
+        await loadTemporaryPlayersForMatch(pendingMatch.id);
       } else {
         console.error('❌ Failed to create resume data from pending match');
         handleResumeMatchModalClose();
@@ -659,6 +692,7 @@ export function ConfigurationScreen({
     handleResumeMatchModalClose,
     setCurrentMatchId,
     setMatchCreated,
+    loadTemporaryPlayersForMatch,
     setPendingMatchLoading,
     setResumeData
   ]);
@@ -732,7 +766,8 @@ export function ConfigurationScreen({
     
     // Check sync requirements with descriptive variables
     const hasCurrentTeam = !!currentTeam;
-    const hasTeamPlayers = teamPlayers && teamPlayers.length > 0;
+    const rosterPlayers = (teamPlayers || []).filter(player => player.on_roster !== false);
+    const hasTeamPlayers = rosterPlayers.length > 0;
     const hasSyncFunction = !!syncPlayersFromTeamRoster;
     
     
@@ -747,7 +782,7 @@ export function ConfigurationScreen({
       teamSyncCompletedRef.current = false;
       
       try {
-        const result = syncPlayersFromTeamRoster(teamPlayers);
+        const result = syncPlayersFromTeamRoster(rosterPlayers);
         
         if (result.success) {
           setPlayerSyncStatus({ 
@@ -861,16 +896,45 @@ export function ConfigurationScreen({
   }, [currentTeam?.id, isAuthenticated]);
 
   // Determine which players to show and if team has no players
-  const hasNoTeamPlayers = isAuthenticated && currentTeam && teamPlayers.length === 0;
-  const playersToShow = isAuthenticated && currentTeam && teamPlayers.length > 0
-    ? teamPlayers.map(player => ({
-        id: player.id,
-        displayName: player.display_name,
-        firstName: player.first_name,
-        lastName: player.last_name,
-        jerseyNumber: player.jersey_number
-      }))
-    : allPlayers;
+  const rosterPlayers = (teamPlayers || []).filter(player => player.on_roster !== false);
+  const hasNoTeamPlayers = isAuthenticated && currentTeam && rosterPlayers.length === 0;
+  const temporaryPlayersForMatch = React.useMemo(() => {
+    if (!currentMatchId) {
+      return [];
+    }
+
+    return allPlayers.filter(player => player.isTemporary && player.matchId === currentMatchId);
+  }, [allPlayers, currentMatchId]);
+
+  const rosterPlayersForList = rosterPlayers.map(player => ({
+    id: player.id,
+    displayName: player.display_name,
+    firstName: player.first_name,
+    lastName: player.last_name,
+    jerseyNumber: player.jersey_number,
+    isTemporary: false
+  }));
+
+  const temporaryPlayersForList = temporaryPlayersForMatch.map(player => ({
+    id: player.id,
+    displayName: player.displayName,
+    firstName: player.firstName,
+    lastName: player.lastName,
+    jerseyNumber: player.jerseyNumber,
+    isTemporary: true
+  }));
+
+  const playersToShow = React.useMemo(() => {
+    if (!isAuthenticated || !currentTeam) {
+      return allPlayers;
+    }
+
+    const rosterIds = new Set(rosterPlayersForList.map(player => player.id));
+    return [
+      ...rosterPlayersForList,
+      ...temporaryPlayersForList.filter(player => !rosterIds.has(player.id))
+    ];
+  }, [isAuthenticated, currentTeam, allPlayers, rosterPlayersForList, temporaryPlayersForList]);
   const selectedIdsSet = React.useMemo(() => new Set(selectedSquadIds), [selectedSquadIds]);
   const areAllEligibleSelected = playersToShow.length > 0 &&
     playersToShow.every(player => selectedIdsSet.has(player.id)) &&
@@ -884,7 +948,7 @@ export function ConfigurationScreen({
   );
 
   // Determine if unmapped players banner should be shown
-  const activeRosterCount = teamPlayers.filter(p => p.on_roster === true).length;
+  const activeRosterCount = rosterPlayers.length;
   const unmappedFromConnected = (connectionDetails?.unmatchedExternalPlayers || [])
     .filter(record => record.connectorStatus === 'connected');
   const hasUnmappedPlayers = unmappedFromConnected.length > 0;
@@ -970,36 +1034,48 @@ export function ConfigurationScreen({
   // Ensure allPlayers is updated with team data when authenticated
   // This is necessary for selectedSquadPlayers to work correctly with team data
   React.useEffect(() => {
-    if (isAuthenticated && currentTeam && teamPlayers.length > 0) {
-      const transformedTeamPlayers = teamPlayers.map(player => ({
-        id: player.id,
-        displayName: player.display_name,
-        firstName: player.first_name,
-        lastName: player.last_name,
-        jerseyNumber: player.jersey_number,
-        // Initialize player stats if not present (required for game logic)
-        stats: {
-          timeOnFieldSeconds: 0,
-          timeAsAttackerSeconds: 0,
-          timeAsDefenderSeconds: 0,
-          timeAsGoalieSeconds: 0,
-          timeAsMidfielderSeconds: 0,
-          currentStatus: 'substitute',
-          currentPosition: null,
-          currentRole: null,
-          isInactive: false,
-          lastStintStartTimeEpoch: null
-        }
-      }));
-
-      // Only update allPlayers if the data has actually changed
-      const currentNames = allPlayers.map(p => ({ id: p.id, name: p.displayName }));
-      const newNames = transformedTeamPlayers.map(p => ({ id: p.id, name: p.displayName }));
-      if (JSON.stringify(currentNames) !== JSON.stringify(newNames)) {
-        setAllPlayers(transformedTeamPlayers);
-      }
+    if (!isAuthenticated || !currentTeam) {
+      return;
     }
-  }, [isAuthenticated, currentTeam, teamPlayers, allPlayers, setAllPlayers]);
+
+    if (rosterPlayers.length === 0 && temporaryPlayersForMatch.length === 0) {
+      return;
+    }
+
+    const transformedTeamPlayers = rosterPlayers.map(player => ({
+      id: player.id,
+      displayName: player.display_name,
+      firstName: player.first_name,
+      lastName: player.last_name,
+      jerseyNumber: player.jersey_number,
+      // Initialize player stats if not present (required for game logic)
+      stats: {
+        timeOnFieldSeconds: 0,
+        timeAsAttackerSeconds: 0,
+        timeAsDefenderSeconds: 0,
+        timeAsGoalieSeconds: 0,
+        timeAsMidfielderSeconds: 0,
+        currentStatus: 'substitute',
+        currentPosition: null,
+        currentRole: null,
+        isInactive: false,
+        lastStintStartTimeEpoch: null
+      }
+    }));
+
+    const rosterIds = new Set(transformedTeamPlayers.map(player => player.id));
+    const mergedPlayers = [
+      ...transformedTeamPlayers,
+      ...temporaryPlayersForMatch.filter(player => !rosterIds.has(player.id))
+    ];
+
+    // Only update allPlayers if the data has actually changed
+    const currentNames = allPlayers.map(player => ({ id: player.id, name: player.displayName }));
+    const newNames = mergedPlayers.map(player => ({ id: player.id, name: player.displayName }));
+    if (JSON.stringify(currentNames) !== JSON.stringify(newNames)) {
+      setAllPlayers(mergedPlayers);
+    }
+  }, [isAuthenticated, currentTeam, rosterPlayers, temporaryPlayersForMatch, allPlayers, setAllPlayers]);
 
   // Handle resume data from pending match
   React.useEffect(() => {
@@ -1252,6 +1328,41 @@ export function ConfigurationScreen({
     applySquadSelection(rosterIds);
   }, [areAllEligibleSelected, playersToShow, applySquadSelection]);
 
+  const handleOpenAddPlayerOptionsModal = React.useCallback(() => {
+    setShowAddPlayerOptionsModal(true);
+
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        setShowAddPlayerOptionsModal(false);
+      }, 'add-player-options');
+    }
+  }, [pushNavigationState]);
+
+  const handleCloseAddPlayerOptionsModal = React.useCallback(() => {
+    setShowAddPlayerOptionsModal(false);
+
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
+    }
+  }, [removeFromNavigationStack]);
+
+  const handleAddPlayerToTeam = React.useCallback(() => {
+    handleCloseAddPlayerOptionsModal();
+    if (onNavigateTo) {
+      onNavigateTo(VIEWS.TEAM_MANAGEMENT, {
+        openToTab: TAB_VIEWS.ROSTER,
+        openAddRosterPlayerModal: true
+      });
+    }
+  }, [handleCloseAddPlayerOptionsModal, onNavigateTo]);
+
+  const handleAddTemporaryPlayer = React.useCallback(() => {
+    handleCloseAddPlayerOptionsModal();
+    if (onOpenTemporaryPlayerModal) {
+      onOpenTemporaryPlayerModal();
+    }
+  }, [handleCloseAddPlayerOptionsModal, onOpenTemporaryPlayerModal]);
+
   const handleGoalieChange = (period, playerId) => {
     // Mark as active configuration when goalie assignments change
     setHasActiveConfiguration(true);
@@ -1338,13 +1449,13 @@ export function ConfigurationScreen({
 
   // Navigate to Team Management Connectors tab
   const handleNavigateToConnectors = () => {
-    teamManagementTabCacheManager.saveState({ tab: 'connectors' });
+    teamManagementTabCacheManager.saveState({ tab: TAB_VIEWS.CONNECTORS });
     onNavigateTo(VIEWS.TEAM_MANAGEMENT);
   };
 
   // Navigate to Team Management Roster tab
   const handleNavigateToRoster = () => {
-    teamManagementTabCacheManager.saveState({ tab: 'roster' });
+    teamManagementTabCacheManager.saveState({ tab: TAB_VIEWS.ROSTER });
     onNavigateTo(VIEWS.TEAM_MANAGEMENT);
   };
 
@@ -1815,8 +1926,8 @@ export function ConfigurationScreen({
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
         <h3 className="text-base font-medium text-sky-200 mb-2">
-          {hasNoTeamPlayers 
-            ? "Add Players to Your Team" 
+          {hasNoTeamPlayers
+            ? "Add Players to Your Team"
             : `Select Squad (5-15 Players) - Selected: ${selectedSquadIds.length}`
           }
         </h3>
@@ -1838,11 +1949,11 @@ export function ConfigurationScreen({
                 </p>
                 <div className="flex justify-center">
                   <Button
-                    onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
+                    onClick={handleOpenAddPlayerOptionsModal}
                     variant="primary"
                     Icon={UserPlus}
                   >
-                    Add Players
+                    Add Player
                   </Button>
                 </div>
               </>
@@ -1880,8 +1991,21 @@ export function ConfigurationScreen({
                     className="form-checkbox h-5 w-5 text-sky-500 bg-slate-800 border-slate-500 rounded focus:ring-sky-400"
                   />
                   <span>{formatPlayerName(player)}</span>
+                  {player.isTemporary && (
+                    <span className="text-xs text-slate-300">(Temporary)</span>
+                  )}
                 </label>
               ))}
+            </div>
+            <div className="flex justify-center mt-3">
+              <Button
+                onClick={handleOpenAddPlayerOptionsModal}
+                variant="secondary"
+                size="sm"
+                Icon={UserPlus}
+              >
+                Add Player
+              </Button>
             </div>
             {exceedsFormatMaximum && (
               <p className="mt-2 text-xs text-amber-300">
@@ -2112,6 +2236,21 @@ export function ConfigurationScreen({
       >
         <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
       </FeatureVoteModal>
+
+      <ThreeOptionModal
+        isOpen={showAddPlayerOptionsModal}
+        onPrimary={handleAddPlayerToTeam}
+        onSecondary={handleAddTemporaryPlayer}
+        onTertiary={handleCloseAddPlayerOptionsModal}
+        title="Add Player"
+        message="Choose how you'd like to add a player."
+        primaryText="Add Player to Team"
+        secondaryText="Add Temporary Player"
+        tertiaryText="Cancel"
+        primaryVariant="primary"
+        secondaryVariant="secondary"
+        tertiaryVariant="secondary"
+      />
 
       {/* Direct Pending Match Resume Modal (no navigation complexity) */}
       <PendingMatchResumeModal

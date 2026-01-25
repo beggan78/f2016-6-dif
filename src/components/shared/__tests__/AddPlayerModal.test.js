@@ -75,6 +75,7 @@ describe('AddPlayerModal', () => {
       render(<AddPlayerModal {...defaultProps} />);
       
       expect(screen.getByText('Add Temporary Player')).toBeInTheDocument();
+      expect(screen.getByText(/only appear in the current match/i)).toBeInTheDocument();
       expect(screen.getByLabelText('Player Name')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Enter player name')).toBeInTheDocument();
     });

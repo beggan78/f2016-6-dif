@@ -81,6 +81,7 @@ jest.mock('../utils/gameEventLogger', () => ({
 // Mock match services
 jest.mock('../services/matchStateManager', () => ({
   createMatch: jest.fn(),
+  formatMatchDataFromGameState: jest.fn(() => ({})),
   updateMatch: jest.fn(),
   getMatch: jest.fn(),
   clearStoredState: jest.fn()

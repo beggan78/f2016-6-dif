@@ -77,6 +77,17 @@ jest.mock('../../shared/UI', () => {
         </div>
       ) : null
     ),
+    ThreeOptionModal: ({ isOpen, title, message, onPrimary, onSecondary, onTertiary, primaryText, secondaryText, tertiaryText }) => (
+      isOpen ? (
+        <div data-testid="three-option-modal">
+          <div>{title}</div>
+          <div>{message}</div>
+          <button onClick={onPrimary}>{primaryText || 'Primary'}</button>
+          <button onClick={onSecondary}>{secondaryText || 'Secondary'}</button>
+          <button onClick={onTertiary}>{tertiaryText || 'Tertiary'}</button>
+        </div>
+      ) : null
+    ),
     Input: mockReact.forwardRef(({ value = '', onChange, ...props }, ref) => (
       <input data-testid="mock-input" value={value} onChange={onChange} ref={ref} {...props} />
     ))
@@ -170,6 +181,10 @@ jest.mock('../../../services/opponentPrefillService', () => ({
 jest.mock('../../../services/matchStateManager', () => ({
   discardPendingMatch: jest.fn(() => Promise.resolve()),
   getPlayerStats: jest.fn(() => Promise.resolve({ success: true, players: [] }))
+}));
+
+jest.mock('../../../services/playerService', () => ({
+  getTemporaryPlayersForMatch: jest.fn(() => Promise.resolve({ success: true, players: [] }))
 }));
 
 jest.mock('../../match/PendingMatchResumeModal', () => ({
@@ -731,6 +746,7 @@ const buildProps = (overrides = {}) => ({
   setView: jest.fn(),
   syncPlayersFromTeamRoster: jest.fn(),
   setCurrentMatchId: jest.fn(),
+  currentMatchId: null,
   setMatchCreated: jest.fn(),
   hasActiveConfiguration: false,
   setHasActiveConfiguration: jest.fn(),

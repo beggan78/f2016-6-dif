@@ -447,16 +447,21 @@ export const TeamProvider = ({ children }) => {
   }, [user, clearError, getUserTeams]);
 
   // Get players for current team
-  const getTeamPlayers = useCallback(async (teamId) => {
+  const getTeamPlayers = useCallback(async (teamId, includeTemporary = false) => {
     if (!teamId) return [];
 
     try {
-      const { data, error} = await supabase
+      let query = supabase
         .from('player')
         .select('id, first_name, last_name, display_name, jersey_number, on_roster')
         .eq('team_id', teamId)
-        .eq('on_roster', true)
         .order('display_name');
+
+      if (!includeTemporary) {
+        query = query.eq('on_roster', true);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching team players:', error);

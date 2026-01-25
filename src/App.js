@@ -49,6 +49,7 @@ import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { useLiveMatchRouting } from './hooks/useLiveMatchRouting';
 import { initializeEventPersistence } from './services/initializeServices';
+import { createMatch, formatMatchDataFromGameState } from './services/matchStateManager';
 import { createPersistenceManager } from './utils/persistenceManager';
 import { STORAGE_KEYS, migrateStorageKeys } from './constants/storageKeys';
 
@@ -847,10 +848,54 @@ function AppContent() {
     });
   };
 
-  const handleAddPlayerConfirm = (playerName) => {
+  const handleAddPlayerConfirm = async (playerName) => {
     setShowAddPlayerModal(false);
     removeFromNavigationStack();
-    gameState.addTemporaryPlayer(playerName);
+
+    if (currentTeam?.id) {
+      let matchId = gameState.currentMatchId;
+
+      if (!matchId) {
+        const matchData = formatMatchDataFromGameState({
+          teamConfig: gameState.teamConfig,
+          selectedFormation: gameState.selectedFormation,
+          periods: gameState.numPeriods,
+          periodDurationMinutes: gameState.periodDurationMinutes,
+          opponentTeam: gameState.opponentTeam,
+          captainId: gameState.captainId,
+          matchType: gameState.matchType,
+          venueType: gameState.venueType
+        }, currentTeam.id);
+
+        const selectedPlayers = gameState.selectedSquadIds.length > 0
+          ? gameState.allPlayers
+          : [];
+
+        const matchResult = await createMatch(matchData, selectedPlayers, gameState.selectedSquadIds);
+
+        if (!matchResult.success) {
+          console.error('Failed to create match for temporary player:', matchResult.error);
+          return;
+        }
+
+        matchId = matchResult.matchId;
+        gameState.setCurrentMatchId(matchId);
+        gameState.setMatchCreated(true);
+      }
+
+      const tempResult = await gameState.addTemporaryPlayer(playerName, {
+        teamId: currentTeam.id,
+        matchId
+      });
+
+      if (!tempResult?.success) {
+        console.error('Failed to create temporary player:', tempResult?.error);
+      }
+
+      return;
+    }
+
+    await gameState.addTemporaryPlayer(playerName);
   };
 
   const handleAddPlayerCancel = () => {
@@ -1003,6 +1048,7 @@ function AppContent() {
             authModal={authModal}
             syncPlayersFromTeamRoster={gameState.syncPlayersFromTeamRoster}
             setCurrentMatchId={gameState.setCurrentMatchId}
+            currentMatchId={gameState.currentMatchId}
             setMatchCreated={gameState.setMatchCreated}
             hasActiveConfiguration={gameState.hasActiveConfiguration}
             setHasActiveConfiguration={gameState.setHasActiveConfiguration}
@@ -1011,6 +1057,7 @@ function AppContent() {
             resumeMatchId={navigationData?.resumeMatchId}
             onNavigateBack={navigateBack}
             onNavigateTo={navigateToView}
+            onOpenTemporaryPlayerModal={handleAddPlayer}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
           />
@@ -1168,6 +1215,7 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
+            openAddRosterPlayerModal={navigationData?.openAddRosterPlayerModal}
             onShowSuccessMessage={showSuccessMessage}
           />
         );
