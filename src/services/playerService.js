@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 
 const MAX_NAME_LENGTH = 100;
 
-const buildNameParts = (displayName) => {
+export const buildNameParts = (displayName) => {
   const trimmedName = displayName.trim();
 
   if (trimmedName.length > MAX_NAME_LENGTH) {
