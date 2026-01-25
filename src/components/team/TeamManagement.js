@@ -58,7 +58,7 @@ const TAB_VIEWS = {
   CONNECTORS: 'connectors'
 };
 
-export function TeamManagement({ onNavigateBack, openToTab, onShowSuccessMessage }) {
+export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerModal, onShowSuccessMessage }) {
   const { user } = useAuth();
   const { 
     hasTeams, 
@@ -316,7 +316,15 @@ export function TeamManagement({ onNavigateBack, openToTab, onShowSuccessMessage
           onShowRoleModal={handleShowRoleModal}
         />;
       case TAB_VIEWS.ROSTER:
-        return <RosterManagement team={currentTeam} onRefresh={loadTeamData} onNavigateToConnectors={() => setActiveTab('connectors')} activeTab={activeTab} />;
+        return (
+          <RosterManagement
+            team={currentTeam}
+            onRefresh={loadTeamData}
+            onNavigateToConnectors={() => setActiveTab('connectors')}
+            activeTab={activeTab}
+            openAddPlayerModal={openAddRosterPlayerModal}
+          />
+        );
       case TAB_VIEWS.CONNECTORS:
         return <TeamConnectors team={currentTeam} onRefresh={loadTeamData} />;
       case TAB_VIEWS.PREFERENCES:
@@ -624,7 +632,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
 }
 
 // Roster Management Component
-function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }) {
+function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, openAddPlayerModal }) {
   const { 
     getTeamRoster, 
     addRosterPlayer, 
@@ -652,6 +660,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
   });
   const [acceptingGhostPlayerId, setAcceptingGhostPlayerId] = useState(null);
   const [dismissingGhostPlayerId, setDismissingGhostPlayerId] = useState(null);
+  const hasOpenedAddModalRef = useRef(false);
 
   // Load roster data
   const loadRoster = useCallback(async () => {
@@ -700,6 +709,17 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab }
       loadPlayerConnections();
     }
   }, [activeTab, loadPlayerConnections]);
+
+  useEffect(() => {
+    if (!openAddPlayerModal || hasOpenedAddModalRef.current) {
+      return;
+    }
+
+    if (activeTab === TAB_VIEWS.ROSTER) {
+      setShowAddModal(true);
+      hasOpenedAddModalRef.current = true;
+    }
+  }, [openAddPlayerModal, activeTab]);
 
   // Auto-clear success message after timeout
   useEffect(() => {

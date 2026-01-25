@@ -77,6 +77,17 @@ jest.mock('../../shared/UI', () => {
         </div>
       ) : null
     ),
+    ThreeOptionModal: ({ isOpen, title, message, onPrimary, onSecondary, onTertiary, primaryText, secondaryText, tertiaryText }) => (
+      isOpen ? (
+        <div data-testid="three-option-modal">
+          <div>{title}</div>
+          <div>{message}</div>
+          <button onClick={onPrimary}>{primaryText || 'Primary'}</button>
+          <button onClick={onSecondary}>{secondaryText || 'Secondary'}</button>
+          <button onClick={onTertiary}>{tertiaryText || 'Tertiary'}</button>
+        </div>
+      ) : null
+    ),
     Input: mockReact.forwardRef(({ value = '', onChange, ...props }, ref) => (
       <input data-testid="mock-input" value={value} onChange={onChange} ref={ref} {...props} />
     ))

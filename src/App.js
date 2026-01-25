@@ -1056,6 +1056,7 @@ function AppContent() {
             resumeMatchId={navigationData?.resumeMatchId}
             onNavigateBack={navigateBack}
             onNavigateTo={navigateToView}
+            onOpenTemporaryPlayerModal={handleAddPlayer}
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
           />
@@ -1213,6 +1214,7 @@ function AppContent() {
             pushNavigationState={pushNavigationState}
             removeFromNavigationStack={removeFromNavigationStack}
             openToTab={navigationData?.openToTab}
+            openAddRosterPlayerModal={navigationData?.openAddRosterPlayerModal}
             onShowSuccessMessage={showSuccessMessage}
           />
         );

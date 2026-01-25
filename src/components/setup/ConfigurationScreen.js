@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
-import { Select, Button, NotificationModal } from '../shared/UI';
+import { Select, Button, NotificationModal, ThreeOptionModal } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
@@ -86,6 +86,7 @@ export function ConfigurationScreen({
   resumeMatchId,
   onNavigateBack,
   onNavigateTo,
+  onOpenTemporaryPlayerModal,
   pushNavigationState,
   removeFromNavigationStack
 }) {
@@ -94,6 +95,7 @@ export function ConfigurationScreen({
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
   const [saveConfigStatus, setSaveConfigStatus] = React.useState({ loading: false, message: '', error: null });
   const [shareLinkNotification, setShareLinkNotification] = React.useState({ isOpen: false, title: '', message: '' });
+  const [showAddPlayerOptionsModal, setShowAddPlayerOptionsModal] = useState(false);
   
   // Direct pending match state (no navigation complexity)
   const [pendingMatches, setPendingMatches] = useState([]);
@@ -1322,6 +1324,41 @@ export function ConfigurationScreen({
     applySquadSelection(rosterIds);
   }, [areAllEligibleSelected, playersToShow, applySquadSelection]);
 
+  const handleOpenAddPlayerOptionsModal = React.useCallback(() => {
+    setShowAddPlayerOptionsModal(true);
+
+    if (pushNavigationState) {
+      pushNavigationState(() => {
+        setShowAddPlayerOptionsModal(false);
+      }, 'add-player-options');
+    }
+  }, [pushNavigationState]);
+
+  const handleCloseAddPlayerOptionsModal = React.useCallback(() => {
+    setShowAddPlayerOptionsModal(false);
+
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
+    }
+  }, [removeFromNavigationStack]);
+
+  const handleAddPlayerToTeam = React.useCallback(() => {
+    handleCloseAddPlayerOptionsModal();
+    if (onNavigateTo) {
+      onNavigateTo(VIEWS.TEAM_MANAGEMENT, {
+        openToTab: 'roster',
+        openAddRosterPlayerModal: true
+      });
+    }
+  }, [handleCloseAddPlayerOptionsModal, onNavigateTo]);
+
+  const handleAddTemporaryPlayer = React.useCallback(() => {
+    handleCloseAddPlayerOptionsModal();
+    if (onOpenTemporaryPlayerModal) {
+      onOpenTemporaryPlayerModal();
+    }
+  }, [handleCloseAddPlayerOptionsModal, onOpenTemporaryPlayerModal]);
+
   const handleGoalieChange = (period, playerId) => {
     // Mark as active configuration when goalie assignments change
     setHasActiveConfiguration(true);
@@ -1885,8 +1922,8 @@ export function ConfigurationScreen({
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
         <h3 className="text-base font-medium text-sky-200 mb-2">
-          {hasNoTeamPlayers 
-            ? "Add Players to Your Team" 
+          {hasNoTeamPlayers
+            ? "Add Players to Your Team"
             : `Select Squad (5-15 Players) - Selected: ${selectedSquadIds.length}`
           }
         </h3>
@@ -1908,11 +1945,11 @@ export function ConfigurationScreen({
                 </p>
                 <div className="flex justify-center">
                   <Button
-                    onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
+                    onClick={handleOpenAddPlayerOptionsModal}
                     variant="primary"
                     Icon={UserPlus}
                   >
-                    Add Players
+                    Add Player
                   </Button>
                 </div>
               </>
@@ -1955,6 +1992,16 @@ export function ConfigurationScreen({
                   )}
                 </label>
               ))}
+            </div>
+            <div className="flex justify-center mt-3">
+              <Button
+                onClick={handleOpenAddPlayerOptionsModal}
+                variant="secondary"
+                size="sm"
+                Icon={UserPlus}
+              >
+                Add Player
+              </Button>
             </div>
             {exceedsFormatMaximum && (
               <p className="mt-2 text-xs text-amber-300">
@@ -2185,6 +2232,21 @@ export function ConfigurationScreen({
       >
         <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
       </FeatureVoteModal>
+
+      <ThreeOptionModal
+        isOpen={showAddPlayerOptionsModal}
+        onPrimary={handleAddPlayerToTeam}
+        onSecondary={handleAddTemporaryPlayer}
+        onTertiary={handleCloseAddPlayerOptionsModal}
+        title="Add Player"
+        message="Choose how you'd like to add a player."
+        primaryText="Add Player to Team"
+        secondaryText="Add Temporary Player"
+        tertiaryText="Cancel"
+        primaryVariant="primary"
+        secondaryVariant="secondary"
+        tertiaryVariant="secondary"
+      />
 
       {/* Direct Pending Match Resume Modal (no navigation complexity) */}
       <PendingMatchResumeModal
