@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Ban, Percent, Sparkles, TrendingUp } from 'lucide-react';
+import { Ban, Sparkles } from 'lucide-react';
 import { Button, Input, NotificationModal } from '../shared/UI';
 import { Tooltip } from '../shared';
 import { useTeam } from '../../contexts/TeamContext';
@@ -558,7 +558,6 @@ export function PlanMatchesScreen({
             }`}
             title="Sort by practices per match"
           >
-            <TrendingUp className="h-3.5 w-3.5" />
             P/M
           </button>
           <button
@@ -571,7 +570,6 @@ export function PlanMatchesScreen({
             }`}
             title="Sort by attendance percentage"
           >
-            <Percent className="h-3.5 w-3.5" />
             %
           </button>
         </div>
