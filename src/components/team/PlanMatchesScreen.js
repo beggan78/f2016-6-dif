@@ -402,6 +402,13 @@ export function PlanMatchesScreen({
     }));
   }, [buildSortedRoster, getUnavailableSet, matches, targetCounts]);
 
+  const isPlayerInMultipleMatches = useCallback((playerId) => {
+    const matchesWithPlayer = matches.filter(match =>
+      (selectedPlayersByMatch[match.id] || []).includes(playerId)
+    );
+    return matchesWithPlayer.length > 1;
+  }, [matches, selectedPlayersByMatch]);
+
   const handleAutoSelect = (matchId) => {
     setAutoSelectMatchId(matchId);
     if (matches.length > 1) {
@@ -724,7 +731,11 @@ export function PlanMatchesScreen({
                               togglePlayerSelection(match.id, player.id);
                             }
                           }}
-                          className="flex items-center justify-between gap-2 rounded border border-sky-500/60 bg-sky-900/20 px-2 py-1 text-xs text-sky-100 cursor-pointer"
+                          className={`flex items-center justify-between gap-2 rounded px-2 py-1 text-xs cursor-pointer ${
+                            isPlayerInMultipleMatches(player.id)
+                              ? 'border-2 border-sky-400 bg-sky-900/20 text-sky-100 shadow-lg shadow-sky-500/60'
+                              : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'
+                          }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="truncate">{player.displayName}</span>
