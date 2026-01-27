@@ -663,7 +663,7 @@ export function PlanMatchesScreen({
                             isUnavailable
                               ? 'border-rose-500/40 bg-rose-900/20 text-rose-200 opacity-70 cursor-not-allowed'
                               : isSelected
-                                ? 'border-emerald-500/60 bg-emerald-900/20 text-emerald-100 cursor-pointer'
+                                ? 'border-emerald-400 bg-emerald-500/20 text-emerald-50 cursor-pointer'
                                 : isSelectedInOtherMatch
                                   ? 'border-indigo-400/60 bg-indigo-900/20 text-indigo-100 cursor-pointer'
                                   : 'border-slate-700 bg-slate-900/30 text-slate-200 hover:border-slate-500 cursor-pointer'
