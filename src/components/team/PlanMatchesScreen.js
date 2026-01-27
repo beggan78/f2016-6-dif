@@ -665,7 +665,7 @@ export function PlanMatchesScreen({
                               : isSelected
                                 ? 'border-emerald-500/60 bg-emerald-900/20 text-emerald-100 cursor-pointer'
                                 : isSelectedInOtherMatch
-                                  ? 'border-amber-500/40 bg-amber-900/10 text-amber-100 cursor-pointer'
+                                  ? 'border-indigo-400/60 bg-indigo-900/20 text-indigo-100 cursor-pointer'
                                   : 'border-slate-700 bg-slate-900/30 text-slate-200 hover:border-slate-500 cursor-pointer'
                           }`}
                         >
