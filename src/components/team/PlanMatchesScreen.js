@@ -611,7 +611,7 @@ export function PlanMatchesScreen({
                     className="px-2"
                     Icon={Sparkles}
                   >
-                    Auto
+                    Recommend
                   </Button>
                   <Button
                     size="sm"
@@ -620,7 +620,7 @@ export function PlanMatchesScreen({
                     disabled={isPlanning || isPlanned || !defaults}
                     className="px-2"
                   >
-                    {isPlanning ? 'Planning...' : isPlanned ? 'Planned' : 'Plan'}
+                    {isPlanning ? 'Saving...' : isPlanned ? 'Saved' : 'Save'}
                   </Button>
                 </div>
 
