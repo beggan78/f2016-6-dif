@@ -4,10 +4,16 @@ import { Button, Input, NotificationModal } from '../shared/UI';
 import { Tooltip } from '../shared';
 import { useTeam } from '../../contexts/TeamContext';
 import { getAttendanceStats } from '../../services/connectorService';
-import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { getMinimumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getMostRecentFinishedMatch, planUpcomingMatch, resolveMatchPlanningDefaults } from '../../services/matchPlanningService';
+import { usePersistentState } from '../../hooks/usePersistentState';
+import {
+  areIdListsEqual,
+  areMatchListsEqual,
+  areSelectionMapsEqual,
+  areStatusMapsEqual
+} from '../../utils/comparisonUtils';
 
 const AUTO_SELECT_STRATEGY = {
   PRACTICES: 'practices',
@@ -15,50 +21,24 @@ const AUTO_SELECT_STRATEGY = {
 };
 const PRACTICES_TOOLTIP = 'Practices per match';
 
-const areMatchListsEqual = (left, right) => {
-  if (left === right) return true;
-  if (!Array.isArray(left) || !Array.isArray(right)) return false;
-  if (left.length !== right.length) return false;
-  for (let index = 0; index < left.length; index += 1) {
-    const leftMatch = left[index];
-    const rightMatch = right[index];
-    if (!leftMatch || !rightMatch) return false;
-    if (String(leftMatch.id) !== String(rightMatch.id)) return false;
-    if (leftMatch.opponent !== rightMatch.opponent) return false;
-    if (leftMatch.matchDate !== rightMatch.matchDate) return false;
-    if (leftMatch.matchTime !== rightMatch.matchTime) return false;
-  }
-  return true;
+const UNAVAILABLE_DEFAULT_STATE = {
+  teamId: null,
+  matches: {}
 };
-
-const areSelectionMapsEqual = (left, right) => {
-  if (left === right) return true;
-  const leftKeys = Object.keys(left || {});
-  const rightKeys = Object.keys(right || {});
-  if (leftKeys.length !== rightKeys.length) return false;
-  for (const key of leftKeys) {
-    if (!Object.prototype.hasOwnProperty.call(right || {}, key)) return false;
-    const leftValues = Array.isArray(left[key]) ? left[key] : [];
-    const rightValues = Array.isArray(right[key]) ? right[key] : [];
-    if (leftValues.length !== rightValues.length) return false;
-    for (let index = 0; index < leftValues.length; index += 1) {
-      if (String(leftValues[index]) !== String(rightValues[index])) return false;
-    }
-  }
-  return true;
+const AUTO_SELECT_DEFAULT_STATE = {
+  teamId: null,
+  ensureCoverage: true,
+  metric: AUTO_SELECT_STRATEGY.PRACTICES,
+  targetCounts: {}
 };
-
-const areStatusMapsEqual = (left, right) => {
-  if (left === right) return true;
-  const leftKeys = Object.keys(left || {});
-  const rightKeys = Object.keys(right || {});
-  if (leftKeys.length !== rightKeys.length) return false;
-  for (const key of leftKeys) {
-    if (!Object.prototype.hasOwnProperty.call(right || {}, key)) return false;
-    if (left[key] !== right[key]) return false;
-  }
-  return true;
+const PLAN_PROGRESS_DEFAULT_STATE = {
+  teamId: null,
+  matches: [],
+  selectedPlayersByMatch: {},
+  sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
+  plannedMatchIds: []
 };
+const DEBUG_ENABLED = process.env.NODE_ENV !== 'production';
 
 export function PlanMatchesScreen({
   onNavigateBack,
@@ -72,21 +52,66 @@ export function PlanMatchesScreen({
   const [statsError, setStatsError] = useState(null);
   const [defaults, setDefaults] = useState(null);
   const [defaultsError, setDefaultsError] = useState(null);
-  const [sortMetric, setSortMetric] = useState(AUTO_SELECT_STRATEGY.PRACTICES);
-  const [selectedPlayersByMatch, setSelectedPlayersByMatch] = useState({});
-  const [unavailablePlayersByMatch, setUnavailablePlayersByMatch] = useState({});
-  const [targetCounts, setTargetCounts] = useState({});
   const [planningStatus, setPlanningStatus] = useState({});
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const [showAutoSelectModal, setShowAutoSelectModal] = useState(false);
-  const [autoSelectSettings, setAutoSelectSettings] = useState({
-    ensureCoverage: true,
-    metric: AUTO_SELECT_STRATEGY.PRACTICES
-  });
   const [autoSelectMatchId, setAutoSelectMatchId] = useState(null);
-  const [matches, setMatches] = useState(() => (Array.isArray(matchesToPlan) ? matchesToPlan : []));
-  const debugEnabled = process.env.NODE_ENV !== 'production';
 
+  const [unavailableState, setUnavailableState] = usePersistentState(
+    STORAGE_KEYS.PLAN_MATCH_UNAVAILABLE_PLAYERS,
+    UNAVAILABLE_DEFAULT_STATE,
+    currentTeam?.id
+  );
+  const unavailablePlayersByMatch = useMemo(() => {
+    if (unavailableState?.matches && typeof unavailableState.matches === 'object') {
+      return unavailableState.matches;
+    }
+    return {};
+  }, [unavailableState?.matches]);
+
+  const [autoSelectPreferences, setAutoSelectPreferences] = usePersistentState(
+    STORAGE_KEYS.PLAN_MATCH_AUTO_SELECT_SETTINGS,
+    AUTO_SELECT_DEFAULT_STATE,
+    currentTeam?.id
+  );
+  const autoSelectSettings = useMemo(() => {
+    const ensureCoverage = typeof autoSelectPreferences?.ensureCoverage === 'boolean'
+      ? autoSelectPreferences.ensureCoverage
+      : true;
+    const metric = Object.values(AUTO_SELECT_STRATEGY).includes(autoSelectPreferences?.metric)
+      ? autoSelectPreferences.metric
+      : AUTO_SELECT_STRATEGY.PRACTICES;
+    return { ensureCoverage, metric };
+  }, [autoSelectPreferences?.ensureCoverage, autoSelectPreferences?.metric]);
+  const targetCounts = useMemo(() => {
+    if (autoSelectPreferences?.targetCounts && typeof autoSelectPreferences.targetCounts === 'object') {
+      return autoSelectPreferences.targetCounts;
+    }
+    return {};
+  }, [autoSelectPreferences?.targetCounts]);
+
+  const [planProgress, setPlanProgress] = usePersistentState(
+    STORAGE_KEYS.PLAN_MATCH_PROGRESS,
+    PLAN_PROGRESS_DEFAULT_STATE,
+    currentTeam?.id
+  );
+  const matches = useMemo(() => {
+    if (Array.isArray(planProgress?.matches) && planProgress.matches.length > 0) {
+      return planProgress.matches;
+    }
+    return Array.isArray(matchesToPlan) ? matchesToPlan : [];
+  }, [planProgress?.matches, matchesToPlan]);
+  const selectedPlayersByMatch = useMemo(() => {
+    if (planProgress?.selectedPlayersByMatch && typeof planProgress.selectedPlayersByMatch === 'object') {
+      return planProgress.selectedPlayersByMatch;
+    }
+    return {};
+  }, [planProgress?.selectedPlayersByMatch]);
+  const sortMetric = useMemo(() => {
+    return Object.values(AUTO_SELECT_STRATEGY).includes(planProgress?.sortMetric)
+      ? planProgress.sortMetric
+      : AUTO_SELECT_STRATEGY.PRACTICES;
+  }, [planProgress?.sortMetric]);
   const autoSelectMatches = useMemo(() => {
     if (matches.length > 1) {
       return matches;
@@ -104,28 +129,144 @@ export function PlanMatchesScreen({
     return date;
   }, []);
 
-  const unavailableManager = useMemo(() => createPersistenceManager(
-    STORAGE_KEYS.PLAN_MATCH_UNAVAILABLE_PLAYERS,
-    { teamId: null, matches: {} }
-  ), []);
-  const autoSelectPreferencesManager = useMemo(() => createPersistenceManager(
-    STORAGE_KEYS.PLAN_MATCH_AUTO_SELECT_SETTINGS,
-    { teamId: null, ensureCoverage: true, metric: AUTO_SELECT_STRATEGY.PRACTICES, targetCounts: {} }
-  ), []);
-  const planProgressManager = useMemo(() => createPersistenceManager(
-    STORAGE_KEYS.PLAN_MATCH_PROGRESS,
-    {
-      teamId: null,
-      matches: [],
-      selectedPlayersByMatch: {},
-      sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
-      plannedMatchIds: []
-    }
-  ), []);
-  const unavailableLoadedTeamIdRef = useRef(null);
-  const autoSelectLoadedTeamIdRef = useRef(null);
-  const planProgressLoadedTeamIdRef = useRef(null);
   const lastMatchesToPlanRef = useRef(null);
+
+  const setUnavailablePlayersByMatch = useCallback((updater) => {
+    setUnavailableState((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : UNAVAILABLE_DEFAULT_STATE;
+      const prevMatches = base.matches && typeof base.matches === 'object' ? base.matches : {};
+      const nextMatches = typeof updater === 'function' ? updater(prevMatches) : updater;
+      if (areSelectionMapsEqual(prevMatches, nextMatches)) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: currentTeam?.id ?? null,
+        matches: nextMatches
+      };
+    });
+  }, [currentTeam?.id, setUnavailableState]);
+
+  const setAutoSelectSettings = useCallback((updater) => {
+    setAutoSelectPreferences((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : AUTO_SELECT_DEFAULT_STATE;
+      const prevCoverage = typeof base.ensureCoverage === 'boolean' ? base.ensureCoverage : true;
+      const prevMetric = Object.values(AUTO_SELECT_STRATEGY).includes(base.metric)
+        ? base.metric
+        : AUTO_SELECT_STRATEGY.PRACTICES;
+      const nextSettings = typeof updater === 'function'
+        ? updater({ ensureCoverage: prevCoverage, metric: prevMetric })
+        : updater;
+      const nextCoverage = typeof nextSettings?.ensureCoverage === 'boolean'
+        ? nextSettings.ensureCoverage
+        : prevCoverage;
+      const nextMetric = Object.values(AUTO_SELECT_STRATEGY).includes(nextSettings?.metric)
+        ? nextSettings.metric
+        : prevMetric;
+      if (nextCoverage === prevCoverage && nextMetric === prevMetric) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: currentTeam?.id ?? null,
+        ensureCoverage: nextCoverage,
+        metric: nextMetric,
+        targetCounts: base.targetCounts || {}
+      };
+    });
+  }, [currentTeam?.id, setAutoSelectPreferences]);
+
+  const setTargetCounts = useCallback((updater) => {
+    setAutoSelectPreferences((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : AUTO_SELECT_DEFAULT_STATE;
+      const prevTargets = base.targetCounts && typeof base.targetCounts === 'object' ? base.targetCounts : {};
+      const nextTargets = typeof updater === 'function' ? updater(prevTargets) : updater;
+      if (areStatusMapsEqual(prevTargets, nextTargets)) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: currentTeam?.id ?? null,
+        ensureCoverage: typeof base.ensureCoverage === 'boolean' ? base.ensureCoverage : true,
+        metric: Object.values(AUTO_SELECT_STRATEGY).includes(base.metric)
+          ? base.metric
+          : AUTO_SELECT_STRATEGY.PRACTICES,
+        targetCounts: nextTargets
+      };
+    });
+  }, [currentTeam?.id, setAutoSelectPreferences]);
+
+  const setMatches = useCallback((updater) => {
+    setPlanProgress((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : PLAN_PROGRESS_DEFAULT_STATE;
+      const prevMatches = Array.isArray(base.matches) ? base.matches : [];
+      const nextMatches = typeof updater === 'function' ? updater(prevMatches) : updater;
+      if (areMatchListsEqual(prevMatches, nextMatches)) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: currentTeam?.id ?? null,
+        matches: nextMatches
+      };
+    });
+  }, [currentTeam?.id, setPlanProgress]);
+
+  const setSelectedPlayersByMatch = useCallback((updater) => {
+    setPlanProgress((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : PLAN_PROGRESS_DEFAULT_STATE;
+      const prevSelections = base.selectedPlayersByMatch && typeof base.selectedPlayersByMatch === 'object'
+        ? base.selectedPlayersByMatch
+        : {};
+      const nextSelections = typeof updater === 'function' ? updater(prevSelections) : updater;
+      if (areSelectionMapsEqual(prevSelections, nextSelections)) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: currentTeam?.id ?? null,
+        selectedPlayersByMatch: nextSelections
+      };
+    });
+  }, [currentTeam?.id, setPlanProgress]);
+
+  const setSortMetric = useCallback((updater) => {
+    setPlanProgress((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : PLAN_PROGRESS_DEFAULT_STATE;
+      const prevMetric = Object.values(AUTO_SELECT_STRATEGY).includes(base.sortMetric)
+        ? base.sortMetric
+        : AUTO_SELECT_STRATEGY.PRACTICES;
+      const nextMetric = typeof updater === 'function' ? updater(prevMetric) : updater;
+      if (nextMetric === prevMetric) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: currentTeam?.id ?? null,
+        sortMetric: nextMetric
+      };
+    });
+  }, [currentTeam?.id, setPlanProgress]);
+
+  const setPlannedMatchIds = useCallback((updater) => {
+    setPlanProgress((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : PLAN_PROGRESS_DEFAULT_STATE;
+      const prevIds = Array.isArray(base.plannedMatchIds) ? base.plannedMatchIds : [];
+      const nextIds = typeof updater === 'function' ? updater(prevIds) : updater;
+      if (areIdListsEqual(prevIds, nextIds)) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: currentTeam?.id ?? null,
+        plannedMatchIds: nextIds
+      };
+    });
+  }, [currentTeam?.id, setPlanProgress]);
+
+  useEffect(() => {
+    lastMatchesToPlanRef.current = null;
+  }, [currentTeam?.id, planProgress?.teamId]);
 
   useEffect(() => {
     if (pushNavigationState) {
@@ -143,127 +284,14 @@ export function PlanMatchesScreen({
 
   useEffect(() => {
     if (!currentTeam?.id) {
-      setUnavailablePlayersByMatch({});
-      unavailableLoadedTeamIdRef.current = null;
-      if (debugEnabled) {
-        console.debug('[PlanMatchesScreen] unavailable load: no team');
-      }
-      return;
-    }
-
-    const stored = unavailableManager.loadState();
-    if (debugEnabled) {
-      console.debug('[PlanMatchesScreen] unavailable load', {
-        teamId: currentTeam.id,
-        hasStored: stored?.teamId === currentTeam.id,
-        storedCount: Object.keys(stored?.matches || {}).length
-      });
-    }
-    if (stored?.teamId === currentTeam.id) {
-      setUnavailablePlayersByMatch(stored.matches || {});
-    } else {
-      setUnavailablePlayersByMatch({});
-    }
-    unavailableLoadedTeamIdRef.current = currentTeam.id;
-  }, [currentTeam?.id, unavailableManager, debugEnabled]);
-
-  useEffect(() => {
-    if (!currentTeam?.id || unavailableLoadedTeamIdRef.current !== currentTeam.id) return;
-    if (debugEnabled) {
-      console.debug('[PlanMatchesScreen] unavailable save', {
-        teamId: currentTeam.id,
-        matchCount: Object.keys(unavailablePlayersByMatch || {}).length
-      });
-    }
-    unavailableManager.saveState({
-      teamId: currentTeam.id,
-      matches: unavailablePlayersByMatch
-    });
-  }, [currentTeam?.id, unavailableManager, unavailablePlayersByMatch, debugEnabled]);
-
-  useEffect(() => {
-    if (!currentTeam?.id) {
-      setAutoSelectSettings((prev) => ({
-        ...prev,
-        ensureCoverage: true,
-        metric: AUTO_SELECT_STRATEGY.PRACTICES
-      }));
-      setTargetCounts({});
-      autoSelectLoadedTeamIdRef.current = null;
-      if (debugEnabled) {
-        console.debug('[PlanMatchesScreen] auto-select prefs load: no team');
-      }
-      return;
-    }
-
-    const stored = autoSelectPreferencesManager.loadState();
-    if (debugEnabled) {
-      console.debug('[PlanMatchesScreen] auto-select prefs load', {
-        teamId: currentTeam.id,
-        hasStored: stored?.teamId === currentTeam.id,
-        storedCoverage: stored?.ensureCoverage,
-        storedMetric: stored?.metric,
-        storedTargetCount: Object.keys(stored?.targetCounts || {}).length
-      });
-    }
-    if (stored?.teamId === currentTeam.id) {
-      const storedCoverage = typeof stored.ensureCoverage === 'boolean' ? stored.ensureCoverage : true;
-      const storedMetric = Object.values(AUTO_SELECT_STRATEGY).includes(stored.metric)
-        ? stored.metric
-        : AUTO_SELECT_STRATEGY.PRACTICES;
-      const storedTargets = stored.targetCounts && typeof stored.targetCounts === 'object' ? stored.targetCounts : {};
-      setAutoSelectSettings((prev) => ({
-        ...prev,
-        ensureCoverage: storedCoverage,
-        metric: storedMetric
-      }));
-      setTargetCounts((prev) => ({ ...prev, ...storedTargets }));
-    } else {
-      setAutoSelectSettings((prev) => ({
-        ...prev,
-        ensureCoverage: true,
-        metric: AUTO_SELECT_STRATEGY.PRACTICES
-      }));
-      setTargetCounts({});
-    }
-    autoSelectLoadedTeamIdRef.current = currentTeam.id;
-  }, [currentTeam?.id, autoSelectPreferencesManager, debugEnabled]);
-
-  useEffect(() => {
-    if (!currentTeam?.id || autoSelectLoadedTeamIdRef.current !== currentTeam.id) return;
-    if (debugEnabled) {
-      console.debug('[PlanMatchesScreen] auto-select prefs save', {
-        teamId: currentTeam.id,
-        ensureCoverage: autoSelectSettings.ensureCoverage,
-        metric: autoSelectSettings.metric,
-        targetCount: Object.keys(targetCounts || {}).length
-      });
-    }
-    autoSelectPreferencesManager.saveState({
-      teamId: currentTeam.id,
-      ensureCoverage: autoSelectSettings.ensureCoverage,
-      metric: autoSelectSettings.metric,
-      targetCounts
-    });
-  }, [
-    currentTeam?.id,
-    autoSelectPreferencesManager,
-    autoSelectSettings.ensureCoverage,
-    autoSelectSettings.metric,
-    targetCounts,
-    debugEnabled
-  ]);
-
-  useEffect(() => {
-    if (!currentTeam?.id) {
       const fallbackMatches = Array.isArray(matchesToPlan) ? matchesToPlan : [];
       setMatches((prev) => (areMatchListsEqual(prev, fallbackMatches) ? prev : fallbackMatches));
       setSelectedPlayersByMatch((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       setPlanningStatus((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       setSortMetric((prev) => (prev === AUTO_SELECT_STRATEGY.PRACTICES ? prev : AUTO_SELECT_STRATEGY.PRACTICES));
-      planProgressLoadedTeamIdRef.current = null;
+      setPlannedMatchIds((prev) => (prev.length === 0 ? prev : []));
       lastMatchesToPlanRef.current = null;
-      if (debugEnabled) {
+      if (DEBUG_ENABLED) {
         console.debug('[PlanMatchesScreen] plan progress load: no team', {
           matchesToPlanCount: Array.isArray(matchesToPlan) ? matchesToPlan.length : 0
         });
@@ -271,22 +299,16 @@ export function PlanMatchesScreen({
       return;
     }
 
-    // Reset ref if team changed (to ensure we load for new team)
-    if (planProgressLoadedTeamIdRef.current !== currentTeam.id) {
-      lastMatchesToPlanRef.current = null;
-    }
-
     // Bail out early if matchesToPlan content hasn't actually changed
     if (areMatchListsEqual(lastMatchesToPlanRef.current, matchesToPlan)) {
-      if (debugEnabled) {
+      if (DEBUG_ENABLED) {
         console.debug('[PlanMatchesScreen] plan progress load: matchesToPlan unchanged, skipping');
       }
       return;
     }
     lastMatchesToPlanRef.current = matchesToPlan;
 
-    const stored = planProgressManager.loadState();
-    const storedForTeam = stored?.teamId === currentTeam.id ? stored : null;
+    const storedForTeam = planProgress?.teamId === currentTeam.id ? planProgress : null;
     const storedMatches = storedForTeam && Array.isArray(storedForTeam.matches) ? storedForTeam.matches : [];
     const incomingMatches = Array.isArray(matchesToPlan) && matchesToPlan.length > 0 ? matchesToPlan : null;
     const nextMatches = incomingMatches || storedMatches;
@@ -306,7 +328,7 @@ export function PlanMatchesScreen({
       [...nextMatchIds].every(id => storedMatchIds.has(id));
     const shouldApplyStored = storedForTeam && (!incomingMatches || storedMatchesAlign);
 
-    if (debugEnabled) {
+    if (DEBUG_ENABLED) {
       console.debug('[PlanMatchesScreen] plan progress load', {
         teamId: currentTeam.id,
         incomingCount: incomingMatches ? incomingMatches.length : 0,
@@ -339,8 +361,12 @@ export function PlanMatchesScreen({
       const storedPlannedIds = Array.isArray(storedForTeam.plannedMatchIds)
         ? storedForTeam.plannedMatchIds
         : [];
-      if (storedPlannedIds.length > 0) {
-        const plannedStatus = storedPlannedIds.reduce((acc, matchId) => {
+      const filteredPlannedIds = storedPlannedIds.filter((matchId) => nextMatchIds.has(String(matchId)));
+      setPlannedMatchIds((prev) => (
+        areIdListsEqual(prev, filteredPlannedIds) ? prev : filteredPlannedIds
+      ));
+      if (filteredPlannedIds.length > 0) {
+        const plannedStatus = filteredPlannedIds.reduce((acc, matchId) => {
           if (nextMatchIds.has(String(matchId))) {
             acc[matchId] = 'done';
           }
@@ -354,33 +380,17 @@ export function PlanMatchesScreen({
       setSelectedPlayersByMatch((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       setPlanningStatus((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       setSortMetric((prev) => (prev === AUTO_SELECT_STRATEGY.PRACTICES ? prev : AUTO_SELECT_STRATEGY.PRACTICES));
+      setPlannedMatchIds((prev) => (prev.length === 0 ? prev : []));
     }
-
-    planProgressLoadedTeamIdRef.current = currentTeam.id;
-  }, [currentTeam?.id, matchesToPlan, planProgressManager, debugEnabled]);
-
-  useEffect(() => {
-    if (!currentTeam?.id || planProgressLoadedTeamIdRef.current !== currentTeam.id) return;
-    const plannedMatchIds = Object.keys(planningStatus || {})
-      .filter(matchId => planningStatus[matchId] === 'done');
-
-    if (debugEnabled) {
-      console.debug('[PlanMatchesScreen] plan progress save', {
-        teamId: currentTeam.id,
-        matchesCount: matches.length,
-        selectedMatchCount: Object.keys(selectedPlayersByMatch || {}).length,
-        plannedMatchIdsCount: plannedMatchIds.length,
-        sortMetric
-      });
-    }
-    planProgressManager.saveState({
-      teamId: currentTeam.id,
-      matches,
-      selectedPlayersByMatch,
-      sortMetric,
-      plannedMatchIds
-    });
-  }, [currentTeam?.id, matches, selectedPlayersByMatch, sortMetric, planningStatus, planProgressManager, debugEnabled]);
+  }, [
+    currentTeam?.id,
+    matchesToPlan,
+    planProgress,
+    setMatches,
+    setSelectedPlayersByMatch,
+    setSortMetric,
+    setPlannedMatchIds
+  ]);
 
   useEffect(() => {
     if (!currentTeam?.id) {
@@ -453,7 +463,7 @@ export function PlanMatchesScreen({
   useEffect(() => {
     if (matches.length === 0) return;
 
-    if (debugEnabled) {
+    if (DEBUG_ENABLED) {
       console.debug('[PlanMatchesScreen] ensure selectedPlayersByMatch', {
         matchesCount: matches.length
       });
@@ -470,7 +480,7 @@ export function PlanMatchesScreen({
       });
       return didChange ? next : prev;
     });
-  }, [matches, debugEnabled]);
+  }, [matches, setSelectedPlayersByMatch]);
 
   const rosterPlayers = useMemo(() => {
     return (teamPlayers || [])
@@ -491,7 +501,7 @@ export function PlanMatchesScreen({
     const rosterCount = rosterPlayers.length;
     const defaultTarget = rosterCount > 0 ? Math.min(rosterCount, minimumPlayers) : 0;
 
-    if (debugEnabled) {
+    if (DEBUG_ENABLED) {
       console.debug('[PlanMatchesScreen] ensure targetCounts', {
         matchesCount: matches.length,
         rosterCount,
@@ -510,7 +520,7 @@ export function PlanMatchesScreen({
       });
       return didChange ? next : prev;
     });
-  }, [defaults, matches, rosterPlayers.length, debugEnabled]);
+  }, [defaults, matches, rosterPlayers.length, setTargetCounts]);
 
   const statsByPlayerId = useMemo(() => {
     const map = new Map();
@@ -578,7 +588,7 @@ export function PlanMatchesScreen({
         [matchId]: Array.from(current)
       };
     });
-  }, [getUnavailableSet]);
+  }, [getUnavailableSet, setSelectedPlayersByMatch]);
 
   const togglePlayerUnavailable = useCallback((matchId, playerId) => {
     const wasUnavailable = (unavailablePlayersByMatch[matchId] || []).includes(playerId);
@@ -609,7 +619,7 @@ export function PlanMatchesScreen({
         return prev;
       });
     }
-  }, [unavailablePlayersByMatch]);
+  }, [setSelectedPlayersByMatch, setUnavailablePlayersByMatch, unavailablePlayersByMatch]);
 
   const updateTargetCount = (matchId, value) => {
     const parsed = Number(value);
@@ -646,7 +656,7 @@ export function PlanMatchesScreen({
       ...prev,
       [matchId]: selected
     }));
-  }, [buildSortedRoster, getUnavailableSet, targetCounts]);
+  }, [buildSortedRoster, getUnavailableSet, setSelectedPlayersByMatch, targetCounts]);
 
   const autoSelectMultipleMatches = useCallback((metric, ensureCoverage) => {
     const sorted = buildSortedRoster(metric);
@@ -695,7 +705,7 @@ export function PlanMatchesScreen({
       ...prev,
       ...nextSelections
     }));
-  }, [buildSortedRoster, getUnavailableSet, matches, targetCounts]);
+  }, [buildSortedRoster, getUnavailableSet, matches, setSelectedPlayersByMatch, targetCounts]);
 
   const isPlayerInMultipleMatches = useCallback((playerId) => {
     const matchesWithPlayer = matches.filter(match =>
@@ -772,6 +782,13 @@ export function PlanMatchesScreen({
         ...prev,
         [match.id]: 'done'
       }));
+      setPlannedMatchIds((prev) => {
+        const matchId = String(match.id);
+        if (prev.some((id) => String(id) === matchId)) {
+          return prev;
+        }
+        return [...prev, matchId];
+      });
       setNotification({
         isOpen: true,
         title: 'Match planned',
