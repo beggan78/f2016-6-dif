@@ -409,8 +409,8 @@ export function PlanMatchesScreen({
     return matchesWithPlayer.length > 1;
   }, [matches, selectedPlayersByMatch]);
 
-  const handleAutoSelect = (matchId) => {
-    setAutoSelectMatchId(matchId);
+  const handleAutoSelect = () => {
+    setAutoSelectMatchId(null);
     if (matches.length > 1) {
       setAutoSelectSettings({
         ensureCoverage: false,
@@ -534,7 +534,7 @@ export function PlanMatchesScreen({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 lg:space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-sky-300">Plan Matches</h1>
@@ -545,7 +545,7 @@ export function PlanMatchesScreen({
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:relative">
         <div className="inline-flex items-center gap-1 rounded-md border border-slate-600 bg-slate-800/80 p-1">
           <button
             type="button"
@@ -581,6 +581,17 @@ export function PlanMatchesScreen({
         {defaultsError && (
           <span className="text-xs text-rose-300">{defaultsError}</span>
         )}
+        <div className="w-full flex justify-center lg:w-auto lg:absolute lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2">
+          <Button
+            size="md"
+            variant="primary"
+            onClick={handleAutoSelect}
+            className="px-4 shadow-lg shadow-sky-500/40 ring-1 ring-sky-400/60 bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-500 hover:from-sky-400 hover:via-sky-300 hover:to-cyan-400"
+            Icon={Sparkles}
+          >
+            Recommend
+          </Button>
+        </div>
       </div>
 
       <div className={`grid gap-4 ${matches.length > 1 ? 'lg:grid-cols-2' : ''}`}>
@@ -603,16 +614,6 @@ export function PlanMatchesScreen({
             >
               <div className="grid grid-cols-2 gap-2 items-start">
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleAutoSelect(match.id)}
-                    disabled={isPlanning}
-                    className="px-2"
-                    Icon={Sparkles}
-                  >
-                    Recommend
-                  </Button>
                   <Button
                     size="sm"
                     variant={isPlanned ? 'secondary' : 'accent'}
