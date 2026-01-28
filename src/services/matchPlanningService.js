@@ -144,17 +144,21 @@ export async function planUpcomingMatch({
       console.warn('Failed to log match_created event:', error);
     });
 
-    const { error: linkError } = await supabase
-      .from('upcoming_match')
-      .update({ planned_match_id: matchId })
-      .eq('id', upcomingMatch.id);
+    const { data: linkData, error: linkError } = await supabase
+      .rpc('link_upcoming_match_to_planned_match', {
+        p_upcoming_match_id: upcomingMatch.id,
+        p_planned_match_id: matchId
+      });
 
-    if (linkError) {
-      console.error('Failed to link upcoming match to planned match:', linkError);
+    if (linkError || !linkData?.success) {
+      const linkMessage = linkData?.message || linkData?.error || linkError?.message;
+      console.error('Failed to link upcoming match to planned match:', linkError || linkData);
       return {
         success: true,
         matchId,
-        warning: 'Planned match created, but upcoming match was not linked.'
+        warning: linkMessage
+          ? `Planned match created, but upcoming match was not linked: ${linkMessage}`
+          : 'Planned match created, but upcoming match was not linked.'
       };
     }
 
