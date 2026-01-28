@@ -30,6 +30,8 @@ export const STORAGE_KEYS = {
   TEAM_MANAGEMENT_ACTIVE_TAB: 'sport-wizard-team-management-active-tab',
   DISMISSED_MODALS: 'sport-wizard-dismissed-modals',
   PLAN_MATCH_UNAVAILABLE_PLAYERS: 'sport-wizard-plan-match-unavailable-players',
+  PLAN_MATCH_AUTO_SELECT_SETTINGS: 'sport-wizard-plan-match-auto-select-settings',
+  PLAN_MATCH_PROGRESS: 'sport-wizard-plan-match-progress',
 
   // Authentication
   AUTH_SESSION: 'sport-wizard-session',
