@@ -30,6 +30,8 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const [copyingMatchId, setCopyingMatchId] = useState(null);
   const [deletingMatchId, setDeletingMatchId] = useState(null);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [planSelectionIds, setPlanSelectionIds] = useState([]);
 
   const handleCopyLink = async (matchId) => {
     setCopyingMatchId(matchId);
@@ -112,6 +114,53 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
 
   const handleRetry = async () => {
     await Promise.all([refetchActiveMatches(), refetchUpcomingMatches()]);
+  };
+
+  const openPlanModal = (matchId) => {
+    setPlanSelectionIds([matchId]);
+    setShowPlanModal(true);
+    if (pushNavigationState) {
+      pushNavigationState(() => setShowPlanModal(false), 'TeamMatchesList-PlanModal');
+    }
+  };
+
+  const closePlanModal = () => {
+    setShowPlanModal(false);
+    if (removeFromNavigationStack) {
+      removeFromNavigationStack();
+    }
+  };
+
+  const handlePlanMatch = (match) => {
+    if (upcomingMatches.length <= 1) {
+      onNavigateTo(VIEWS.PLAN_MATCHES, {
+        matchesToPlan: [match]
+      });
+      return;
+    }
+
+    openPlanModal(match.id);
+  };
+
+  const togglePlannedMatchSelection = (matchId) => {
+    setPlanSelectionIds((prev) => {
+      if (prev.includes(matchId)) {
+        return prev.filter(id => id !== matchId);
+      }
+      return [...prev, matchId];
+    });
+  };
+
+  const confirmPlanSelection = () => {
+    const selectedMatches = upcomingMatches.filter(match => planSelectionIds.includes(match.id));
+    if (selectedMatches.length === 0) {
+      return;
+    }
+
+    closePlanModal();
+    onNavigateTo(VIEWS.PLAN_MATCHES, {
+      matchesToPlan: selectedMatches
+    });
   };
 
   // Register browser back handler
@@ -401,13 +450,78 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                  <Button variant="accent" size="sm" className="w-full sm:w-auto">
+                  <Button
+                    variant="accent"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    onClick={() => handlePlanMatch(match)}
+                  >
                     Plan
                   </Button>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showPlanModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div
+            className="bg-slate-800 rounded-lg shadow-xl max-w-lg w-full border border-slate-600"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="plan-matches-title"
+          >
+            <div className="p-4 border-b border-slate-600">
+              <h3 id="plan-matches-title" className="text-lg font-semibold text-sky-300">
+                Plan Matches
+              </h3>
+            </div>
+            <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+              {upcomingMatches.map((match) => {
+                const isSelected = planSelectionIds.includes(match.id);
+                return (
+                  <label
+                    key={match.id}
+                    className={`flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'border-sky-500 bg-sky-900/30 text-sky-100'
+                        : 'border-slate-600 bg-slate-700/40 text-slate-200 hover:border-slate-500'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => togglePlannedMatchSelection(match.id)}
+                        className="h-4 w-4 rounded border-slate-500 text-sky-500 focus:ring-sky-500"
+                        aria-label={`Select ${match.opponent}`}
+                      />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{match.opponent}</div>
+                        <div className="text-xs text-slate-400">
+                          {formatUpcomingSchedule(match.matchDate, match.matchTime)}
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="p-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
+              <Button variant="secondary" onClick={closePlanModal}>
+                Cancel
+              </Button>
+              <Button
+                variant="accent"
+                onClick={confirmPlanSelection}
+                disabled={planSelectionIds.length === 0}
+              >
+                Plan Selected
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
