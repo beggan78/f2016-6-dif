@@ -85,12 +85,14 @@ export async function getUpcomingMatchesForTeam(teamId) {
         match_date,
         match_time,
         venue,
+        planned_match_id,
         connector!inner (
           team_id
         )
       `)
       .eq('connector.team_id', teamId)
       .gte('match_date', today)
+      .is('planned_match_id', null)
       .order('match_date', { ascending: true })
       .order('match_time', { ascending: true });
 
@@ -107,7 +109,8 @@ export async function getUpcomingMatchesForTeam(teamId) {
       opponent: match.opponent,
       matchDate: match.match_date,
       matchTime: match.match_time,
-      venue: match.venue
+      venue: match.venue,
+      plannedMatchId: match.planned_match_id || null
     }));
 
     return {

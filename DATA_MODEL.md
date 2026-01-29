@@ -61,7 +61,12 @@ This document describes the database schema for the Sport Wizard application, a 
      │   ▼
      │ ┌───────────────┐
      │ │ Upcoming Match│
-     │ └───────────────┘
+     │ └──────┬────────┘
+     │        │ 1:N
+     │        ▼
+     │  ┌──────────────────────┐
+     │  │ Upcoming Match Player│
+     │  └──────────────────────┘
      │
      │ 1:N
      ▼
@@ -103,6 +108,20 @@ This document describes the database schema for the Sport Wizard application, a 
 - `completed` - Job finished successfully
 - `failed` - Job ended with an error
 - `cancelled` - Job was cancelled before completion
+
+### upcoming_match_player_availability
+- `unknown` - Availability has not been set
+- `available` - Player is available
+- `unavailable` - Player is unavailable
+
+### upcoming_match_player_invite_status
+- `not_invited` - Player has not been invited/selected yet
+- `invited` - Player has been invited/selected
+
+### upcoming_match_player_response
+- `no_response` - No response recorded
+- `accepted` - Player accepted the invite
+- `declined` - Player declined the invite
 
 ### match_event_type
 - `goal_scored` - Goal scored by team
@@ -494,6 +513,7 @@ Upcoming fixtures synchronized from external providers.
 **Columns:**
 - `id` (uuid, PK) - Unique identifier (default `uuid_generate_v4()`)
 - `connector_id` (uuid, NOT NULL) - References `connector(id)`; cascade on delete
+- `planned_match_id` (uuid, nullable) - References `match(id)`; set NULL on match delete
 - `match_date` (date, NOT NULL) - Match date from provider schedule
 - `match_time` (varchar(50), nullable) - Provider-formatted time window (e.g., "09:45 - 11:30")
 - `opponent` (varchar(200), NOT NULL) - Opponent team name
@@ -506,16 +526,54 @@ Upcoming fixtures synchronized from external providers.
 - Primary key on `id`
 - Unique constraint on `(connector_id, match_date, opponent)` deduplicates fixtures
 - Foreign key to `connector(id)` with ON DELETE CASCADE
+- Foreign key to `match(id)` with ON DELETE SET NULL (planned match link)
 
 **Indexes:**
 - `idx_upcoming_match_connector` on `connector_id`
 - `idx_upcoming_match_date` on `match_date`
+- `idx_upcoming_match_planned_match_id` on `planned_match_id`
+- `idx_upcoming_match_unplanned` on `(connector_id, match_date)` where `planned_match_id` is NULL
 
 **Relationships:**
 - Many-to-one with `connector`
+- Optional many-to-one with `match` (planned match link)
+- One-to-many with `upcoming_match_player`
 
 **Row Level Security:**
 - Enabled. Team members can view upcoming matches; inserts, updates, and deletes are limited to the service role that performs syncs.
+
+---
+
+### upcoming_match_player
+
+Per-player availability, invite status, and response tracking for upcoming fixtures.
+
+**Columns:**
+- `id` (uuid, PK) - Unique identifier (default `uuid_generate_v4()`)
+- `upcoming_match_id` (uuid, NOT NULL) - References `upcoming_match(id)`; cascade on delete
+- `connected_player_id` (uuid, NOT NULL) - References `connected_player(id)`; cascade on delete
+- `availability` (upcoming_match_player_availability, NOT NULL) - Default: `unknown`
+- `invite_status` (upcoming_match_player_invite_status, NOT NULL) - Default: `not_invited`
+- `response` (upcoming_match_player_response, NOT NULL) - Default: `no_response`
+- `created_at` (timestamptz, NOT NULL) - Creation timestamp (default: now())
+- `updated_at` (timestamptz, NOT NULL) - Last update timestamp (default: now())
+
+**Constraints:**
+- Primary key on `id`
+- Unique constraint on `(upcoming_match_id, connected_player_id)`
+- Foreign key to `upcoming_match(id)` with ON DELETE CASCADE
+- Foreign key to `connected_player(id)` with ON DELETE CASCADE
+
+**Indexes:**
+- `idx_upcoming_match_player_match` on `upcoming_match_id`
+- `idx_upcoming_match_player_connected_player` on `connected_player_id`
+
+**Relationships:**
+- Many-to-one with `upcoming_match`
+- Many-to-one with `connected_player`
+
+**Row Level Security:**
+- Enabled. Team members can view records via their team; inserts, updates, and deletes are restricted to the service role.
 
 ---
 
@@ -531,6 +589,7 @@ Player entity belonging to a team.
 - `display_name` (text, NOT NULL) - Preferred display name (2-50 characters)
 - `jersey_number` (integer, nullable) - Jersey number (1-99)
 - `on_roster` (boolean, NOT NULL) - Roster status (default: true)
+- `match_id` (uuid, nullable) - References `match(id)` when the player is temporary for a specific match
 - `created_at` (timestamptz, NOT NULL) - Creation timestamp
 - `updated_at` (timestamptz, NOT NULL) - Last update timestamp
 - `created_by` (uuid, nullable) - References `auth.users(id)`
@@ -541,11 +600,13 @@ Player entity belonging to a team.
 - Unique constraint on `(team_id, jersey_number)`
 - Foreign key to `team(id)`
 - Foreign keys to `auth.users(id)` for audit fields
+- Check: `match_id` is NULL or `on_roster = false` (temporary match-scoped players are not on the roster)
 - Check: `jersey_number` between 1 and 99 when provided
 - Check: `char_length(first_name)` between 2 and 50
 - Check: `last_name` NULL or `char_length(last_name)` between 1 and 50
 - Check: `char_length(display_name)` between 2 and 50
 - Index on `display_name` for quick lookup (`idx_player_display_name`)
+- Index on `match_id` for match-scoped players (`idx_player_match_id`)
 
 **Relationships:**
 - Many-to-one with `team`
@@ -553,6 +614,7 @@ Player entity belonging to a team.
 - One-to-many with `season_stats`
 - Referenced by `match.captain`
 - Referenced by `match.fair_play_award`
+- Optional many-to-one with `match` (temporary players scoped to a single match)
 
 ---
 
@@ -845,6 +907,39 @@ Security-definer helper that enqueues a manual sync job for a connector after va
 **Notes:**
 - Ensures the caller is a team admin via `team_user.role = 'admin'`.
 - Inserts the job with `job_type = 'manual'` and `created_by = auth.uid()`.
+- Execution rights are granted to the `authenticated` role.
+
+### public.link_upcoming_match_to_planned_match(p_upcoming_match_id uuid, p_planned_match_id uuid)
+
+Security-definer function that links an upcoming match to a planned match after validating team ownership and manager access.
+
+**Parameters:**
+- `p_upcoming_match_id` (uuid) - Upcoming match to link
+- `p_planned_match_id` (uuid) - Planned match to associate
+
+**Returns:**
+- `json` - `{ success: boolean, error?: text, message?: text }`
+
+**Notes:**
+- Validates authentication, match existence, and that the planned match belongs to the same team.
+- Requires the caller to be a team manager (`is_team_manager`).
+- Prevents overwriting an existing link to a different planned match.
+- Execution rights are granted to the `authenticated` role.
+
+### public.delete_team(p_team_id uuid)
+
+Security-definer function that deletes a team when possible, or deactivates it if foreign key constraints prevent deletion.
+
+**Parameters:**
+- `p_team_id` (uuid) - Team to delete or deactivate
+
+**Returns:**
+- `json` - `{ success: boolean, deleted?: boolean, deactivated?: boolean, error?: text }`
+
+**Notes:**
+- Requires the caller to be a team admin.
+- Attempts `DELETE FROM team`; on `foreign_key_violation`, falls back to setting `team.active = false`.
+- Removes the requesting admin from `team_user` when the team is deactivated.
 - Execution rights are granted to the `authenticated` role.
 
 ### public.get_vault_secret_by_name(secret_name text)

@@ -688,7 +688,7 @@ describe('TeamMatchesList', () => {
   });
 
   describe('User Interactions - Upcoming Matches', () => {
-    it('should not navigate when Plan button is clicked', () => {
+    it('should navigate to plan matches when only one upcoming match exists', () => {
       mockUseRealtimeTeamMatches.mockReturnValue({
         matches: [],
         loading: false,
@@ -707,7 +707,47 @@ describe('TeamMatchesList', () => {
       const planButton = screen.getByText('Plan');
       fireEvent.click(planButton);
 
+      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.PLAN_MATCHES, {
+        matchesToPlan: [mockUpcomingMatches[0]]
+      });
+    });
+
+    it('should open multi-match modal when multiple upcoming matches exist', () => {
+      const multipleUpcoming = [
+        mockUpcomingMatches[0],
+        {
+          id: 'upcoming-2',
+          opponent: 'Weekend United',
+          matchDate: '2030-05-02',
+          matchTime: '12:30:00',
+          venue: 'Side Field'
+        }
+      ];
+
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: multipleUpcoming,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      fireEvent.click(screen.getAllByText('Plan')[0]);
+
+      expect(screen.getByText('Plan Matches')).toBeInTheDocument();
       expect(defaultProps.onNavigateTo).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByText('Plan Selected'));
+      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.PLAN_MATCHES, {
+        matchesToPlan: [multipleUpcoming[0]]
+      });
     });
   });
 

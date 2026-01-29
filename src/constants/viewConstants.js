@@ -13,5 +13,6 @@ export const VIEWS = {
   TACTICAL_BOARD: 'tacticalBoard',
   TEAM_MANAGEMENT: 'teamManagement',
   TEAM_MATCHES: 'teamMatches',
+  PLAN_MATCHES: 'planMatches',
   LIVE_MATCH: 'liveMatch'
 };

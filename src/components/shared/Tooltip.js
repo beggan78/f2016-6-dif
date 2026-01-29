@@ -8,6 +8,7 @@ import React, { useState, useRef, useEffect } from 'react';
  * @param {React.ReactNode} props.children - Trigger element (e.g., icon button)
  * @param {React.ReactNode} props.content - Tooltip content to display
  * @param {string} props.position - Position of tooltip: 'top' | 'bottom' | 'left' | 'right'
+ * @param {string} props.trigger - Trigger mode: 'click' | 'hover'
  * @param {string} props.className - Additional classes for the trigger container
  * @param {string} props.contentClassName - Additional classes for the tooltip content container
  */
@@ -15,11 +16,13 @@ export function Tooltip({
   children,
   content,
   position = 'bottom',
+  trigger = 'click',
   className = '',
   contentClassName = ''
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const isHoverTrigger = trigger === 'hover';
 
   // Close tooltip when clicking outside
   useEffect(() => {
@@ -54,6 +57,9 @@ export function Tooltip({
     setIsOpen(!isOpen);
   };
 
+  const openTooltip = () => setIsOpen(true);
+  const closeTooltip = () => setIsOpen(false);
+
   // Position classes for tooltip
   const getPositionClasses = () => {
     switch (position) {
@@ -74,9 +80,16 @@ export function Tooltip({
     <div
       ref={containerRef}
       className={`relative inline-block ${className}`}
+      onMouseEnter={isHoverTrigger ? openTooltip : undefined}
+      onMouseLeave={isHoverTrigger ? closeTooltip : undefined}
     >
       {/* Trigger element */}
-      <div onClick={toggleTooltip} className="cursor-pointer">
+      <div
+        onClick={isHoverTrigger ? undefined : toggleTooltip}
+        onFocus={isHoverTrigger ? openTooltip : undefined}
+        onBlur={isHoverTrigger ? closeTooltip : undefined}
+        className="cursor-pointer"
+      >
         {children}
       </div>
 
