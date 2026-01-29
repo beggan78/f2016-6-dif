@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PlanMatchesScreen } from '../PlanMatchesScreen';
 
 jest.mock('../../../contexts/TeamContext', () => ({
@@ -136,7 +136,12 @@ describe('PlanMatchesScreen', () => {
   it('should prevent selecting unavailable players', () => {
     render(<PlanMatchesScreen {...defaultProps} />);
 
-    const unavailableButton = screen.getByLabelText('Mark unavailable');
+    const alexRow = screen.getByText('Alex Player').closest('[role="button"]');
+    if (!alexRow) {
+      throw new Error('Expected Alex Player row to be present.');
+    }
+
+    const unavailableButton = within(alexRow).getByLabelText('Mark unavailable');
     fireEvent.click(unavailableButton);
 
     fireEvent.click(screen.getByText('Alex Player'));
