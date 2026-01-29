@@ -15,7 +15,7 @@ const attachTeamId = (state, teamId) => {
  * State is only loaded/saved when a teamId is available.
  *
  * @param {string} storageKey - localStorage key for persistence
- * @param {Object} defaultState - default state object
+ * @param {Object} defaultState - default state object (must be memoized/stable; avoid inline object literals)
  * @param {string|null|undefined} teamId - current team id
  * @returns {[Object, Function]} State and setter
  */
