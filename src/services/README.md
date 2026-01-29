@@ -403,3 +403,27 @@ if (!validatePendingMatchConfig(initialConfig)) {
 - **Validation First**: Always validate before processing configuration data
 - **Explicit Boolean Logic**: Use `!!()` to ensure boolean returns
 - **Error Isolation**: Service failures don't break user workflow
+
+---
+
+## Player Loan Tracking (`playerLoanService.js`)
+
+The player loan service tracks when roster players appear for external teams and provides utilities for weighting loan matches in statistics.
+
+### Core Functions
+- `recordPlayerLoan(playerId, { teamId, receivingTeamName, loanDate })` - Create a loan record.
+- `updatePlayerLoan(loanId, updates)` - Edit receiving team or date.
+- `deletePlayerLoan(loanId)` - Remove a loan record.
+- `getPlayerLoans(playerId, options)` - Fetch loans for a player (supports date range filters).
+- `getTeamLoans(teamId, options)` - Fetch all loans for a team with player metadata.
+
+### Loan Match Weight Preference
+- `getTeamLoanMatchWeight(teamId)` - Read `loanMatchWeight` from `team_preference` (defaults to 0.5).
+- `updateTeamLoanMatchWeight(teamId, weight)` - Update the preference via upsert.
+
+### Statistics Helper
+- `calculateWeightedMatches(regularMatches, loanMatches, loanWeight)` - Returns weighted totals used for display.
+
+### Key Notes
+- Loan dates are stored as `date` and displayed as ISO `YYYY-MM-DD`.
+- Weighting is applied at query/display time to keep match stats immutable.

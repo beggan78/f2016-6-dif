@@ -2152,6 +2152,7 @@ export const TeamProvider = ({ children }) => {
     if (['periodLength', 'numPeriods'].includes(key)) return PREFERENCE_CATEGORIES.TIME;
     if (['substitutionLogic', 'alternateRoles'].includes(key)) return PREFERENCE_CATEGORIES.SUBSTITUTION;
     if (['trackGoalScorer', 'fairPlayAward', 'teamCaptain'].includes(key)) return PREFERENCE_CATEGORIES.FEATURES;
+    if (['loanMatchWeight'].includes(key)) return PREFERENCE_CATEGORIES.STATISTICS;
     return null;
   }, []);
 

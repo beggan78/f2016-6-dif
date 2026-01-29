@@ -20,7 +20,9 @@ import {
   Ghost,
   Loader,
   X,
-  HelpCircle
+  HelpCircle,
+  Repeat,
+  BarChart3
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Tooltip } from '../shared';
@@ -33,12 +35,14 @@ import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { PlayerMatchingModal } from './PlayerMatchingModal';
+import { PlayerLoanModal } from './PlayerLoanModal';
 import { RosterConnectorOnboarding } from './RosterConnectorOnboarding';
 import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { getPlayerConnectionDetails, acceptGhostPlayer, dismissGhostPlayer } from '../../services/connectorService';
+import { recordPlayerLoan } from '../../services/playerLoanService';
 import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -646,6 +650,8 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
   const [deletingPlayer, setDeletingPlayer] = useState(null);
   const [deletingPlayerHasGameHistory, setDeletingPlayerHasGameHistory] = useState(false);
   const [matchingPlayer, setMatchingPlayer] = useState(null); // For player matching modal
+  const [loanModalPlayer, setLoanModalPlayer] = useState(null);
+  const [loanModalOpen, setLoanModalOpen] = useState(false);
   const [connectionDetails, setConnectionDetails] = useState({
     matchedConnections: new Map(),
     unmatchedExternalPlayers: [],
@@ -654,6 +660,15 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
   const [acceptingGhostPlayerId, setAcceptingGhostPlayerId] = useState(null);
   const [dismissingGhostPlayerId, setDismissingGhostPlayerId] = useState(null);
   const hasOpenedAddModalRef = useRef(false);
+
+  const formatRosterName = useCallback((player) => {
+    if (!player) return 'Unknown Player';
+    if (player.display_name) return player.display_name;
+    if (player.first_name || player.last_name) {
+      return `${player.first_name || ''}${player.last_name ? ` ${player.last_name}` : ''}`.trim();
+    }
+    return 'Unknown Player';
+  }, []);
 
   // Load roster data
   const loadRoster = useCallback(async () => {
@@ -930,6 +945,35 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
       console.error('Error in handlePlayerDeleted:', error);
       setError(error.message || 'Failed to remove player');
     }
+  };
+
+  const handleOpenLoanModal = (player) => {
+    setLoanModalPlayer(player);
+    setLoanModalOpen(true);
+  };
+
+  const handleCloseLoanModal = () => {
+    setLoanModalOpen(false);
+    setLoanModalPlayer(null);
+  };
+
+  const handleSaveLoan = async ({ playerId, receivingTeamName, loanDate }) => {
+    if (!team?.id) {
+      throw new Error('Team ID is required');
+    }
+
+    const result = await recordPlayerLoan(playerId, {
+      teamId: team.id,
+      receivingTeamName,
+      loanDate
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to record loan match');
+    }
+
+    const playerName = formatRosterName(roster.find(player => player.id === playerId) || loanModalPlayer);
+    setSuccessMessage(`${playerName} loan match recorded.`);
   };
 
 
@@ -1216,6 +1260,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => handleOpenLoanModal(player)}
+                          className="p-1 text-slate-400 hover:text-emerald-400 transition-colors"
+                          title="Record loan match"
+                        >
+                          <Repeat className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeletePlayer(player)}
                           className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
                           title="Remove player"
@@ -1278,6 +1329,16 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
           unmatchedExternalPlayers={connectionDetails.unmatchedExternalPlayers}
           onClose={() => setMatchingPlayer(null)}
           onMatched={handlePlayerMatched}
+        />
+      )}
+
+      {loanModalOpen && (
+        <PlayerLoanModal
+          isOpen={loanModalOpen}
+          onClose={handleCloseLoanModal}
+          onSave={handleSaveLoan}
+          players={roster}
+          defaultPlayerId={loanModalPlayer?.id || ''}
         />
       )}
     </div>
@@ -1797,6 +1858,34 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Statistics Settings */}
+      <div className="space-y-4">
+        <h4 className="text-md font-medium text-slate-300 flex items-center">
+          <BarChart3 className="w-4 h-4 mr-2" />
+          Statistics
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Loan Match Weight
+            </label>
+            <Select
+              value={String(preferences.loanMatchWeight)}
+              onChange={(value) => setPreferences(prev => ({ ...prev, loanMatchWeight: parseFloat(value) }))}
+              options={[
+                { value: '1.0', label: 'Full Match (1.0)' },
+                { value: '0.5', label: 'Half Match (0.5)' },
+                { value: '0.0', label: 'No Credit (0.0)' }
+              ]}
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Controls how loan matches count toward season statistics.
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -732,6 +732,42 @@ Formation voting system for user preferences.
 
 ---
 
+### player_loan
+
+Tracks player loan appearances for external teams.
+
+**Columns:**
+- `id` (uuid, PK) - Unique identifier
+- `player_id` (uuid, NOT NULL) - References `player(id)` with CASCADE delete
+- `team_id` (uuid, NOT NULL) - References `team(id)` with CASCADE delete
+- `receiving_team_name` (varchar(200), NOT NULL) - External team name
+- `loan_date` (date, NOT NULL) - Loan match date (YYYY-MM-DD)
+- `created_at` (timestamptz, NOT NULL) - Creation timestamp
+- `updated_at` (timestamptz, NOT NULL) - Last update timestamp
+- `created_by` (uuid, nullable) - References `auth.users(id)` for audit
+- `last_updated_by` (uuid, nullable) - References `auth.users(id)` for audit
+
+**Constraints:**
+- Primary key on `id`
+- Foreign key to `player(id)` with CASCADE delete
+- Foreign key to `team(id)` with CASCADE delete
+- Foreign keys to `auth.users(id)` with SET NULL for audit fields
+
+**RLS Policies:**
+- Team members can SELECT
+- Team admins and coaches can INSERT/UPDATE/DELETE
+
+**Indexes:**
+- `idx_player_loan_player_id` on `player_id`
+- `idx_player_loan_team_id` on `team_id`
+- `idx_player_loan_date` on `loan_date` (DESC)
+
+**Relationships:**
+- Many-to-one with `player`
+- Many-to-one with `team`
+
+---
+
 ### team_preference
 
 Team-wide preferences for match configuration and gameplay settings.
@@ -772,6 +808,7 @@ Team-wide preferences for match configuration and gameplay settings.
 - `trackGoalScorer`: 'true', 'false'
 - `fairPlayAward`: 'true', 'false'
 - `teamCaptain`: 'none', 'assign_each_match', or player UUID when a permanent captain is selected
+- `loanMatchWeight`: '0.0', '0.5', '1.0'
 
 **Relationships:**
 - Many-to-one with `team`
