@@ -412,8 +412,10 @@ The player loan service tracks when roster players appear for external teams and
 
 ### Core Functions
 - `recordPlayerLoan(playerId, { teamId, receivingTeamName, loanDate })` - Create a loan record.
+- `recordPlayerLoans(playerIds, { teamId, receivingTeamName, loanDate })` - Create a loan match for multiple players.
 - `updatePlayerLoan(loanId, updates)` - Edit receiving team or date.
 - `deletePlayerLoan(loanId)` - Remove a loan record.
+- `deleteMatchLoans({ teamId, receivingTeamName, loanDate })` - Remove all players from a loan match.
 - `getPlayerLoans(playerId, options)` - Fetch loans for a player (supports date range filters).
 - `getTeamLoans(teamId, options)` - Fetch all loans for a team with player metadata.
 

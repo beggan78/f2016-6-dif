@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Repeat, X } from 'lucide-react';
-import { Button, Input, Select } from '../shared/UI';
+import { Button, Input, MultiSelect } from '../shared/UI';
 
 const formatRosterName = (player) => {
   if (!player) return 'Unknown Player';
@@ -19,10 +19,10 @@ export function PlayerLoanModal({
   loan = null,
   defaultPlayerId = ''
 }) {
-  const isEditMode = Boolean(loan?.id);
+  const isEditMode = Boolean(loan);
 
   const [formState, setFormState] = useState({
-    playerId: defaultPlayerId || '',
+    playerIds: defaultPlayerId ? [defaultPlayerId] : [],
     receivingTeamName: '',
     loanDate: ''
   });
@@ -32,10 +32,18 @@ export function PlayerLoanModal({
   useEffect(() => {
     if (!isOpen) return;
 
+    const initialPlayerIds = Array.isArray(loan?.playerIds)
+      ? loan.playerIds
+      : loan?.player_id
+      ? [loan.player_id]
+      : defaultPlayerId
+      ? [defaultPlayerId]
+      : [];
+
     setFormState({
-      playerId: loan?.player_id || defaultPlayerId || '',
-      receivingTeamName: loan?.receiving_team_name || '',
-      loanDate: loan?.loan_date || ''
+      playerIds: initialPlayerIds,
+      receivingTeamName: loan?.receivingTeamName || loan?.receiving_team_name || '',
+      loanDate: loan?.loanDate || loan?.loan_date || ''
     });
     setErrors({});
     setLoading(false);
@@ -51,8 +59,8 @@ export function PlayerLoanModal({
   const validate = () => {
     const nextErrors = {};
 
-    if (!formState.playerId) {
-      nextErrors.playerId = 'Select a player';
+    if (!formState.playerIds || formState.playerIds.length === 0) {
+      nextErrors.playerIds = 'Select at least one player';
     }
     if (!formState.receivingTeamName.trim()) {
       nextErrors.receivingTeamName = 'Receiving team is required';
@@ -82,7 +90,7 @@ export function PlayerLoanModal({
     setLoading(true);
     try {
       await onSave({
-        playerId: formState.playerId,
+        playerIds: formState.playerIds,
         receivingTeamName: formState.receivingTeamName.trim(),
         loanDate: formState.loanDate
       });
@@ -134,17 +142,17 @@ export function PlayerLoanModal({
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Player
+              Player(s)
             </label>
-            <Select
-              value={formState.playerId}
-              onChange={(value) => handleChange('playerId', value)}
+            <MultiSelect
+              value={formState.playerIds}
+              onChange={(value) => handleChange('playerIds', value)}
               options={playerOptions}
-              placeholder="Select player"
-              disabled={loading || isEditMode}
+              placeholder="Select one or more players"
+              disabled={loading}
             />
-            {errors.playerId && (
-              <p className="mt-1 text-sm text-rose-400">{errors.playerId}</p>
+            {errors.playerIds && (
+              <p className="mt-1 text-sm text-rose-400">{errors.playerIds}</p>
             )}
           </div>
 

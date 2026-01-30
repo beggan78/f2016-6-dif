@@ -30,6 +30,59 @@ const normalizeTeamName = (value) => {
 
 export const getDefaultLoanMatchWeight = () => DEFAULT_LOAN_MATCH_WEIGHT;
 
+export async function recordPlayerLoans(playerIds, { teamId, receivingTeamName, loanDate }) {
+  try {
+    if (!Array.isArray(playerIds) || playerIds.length === 0) {
+      return { success: false, error: 'At least one player is required' };
+    }
+    if (!teamId) {
+      return { success: false, error: 'Team ID is required' };
+    }
+
+    const normalizedTeamName = normalizeTeamName(receivingTeamName);
+    if (!normalizedTeamName) {
+      return { success: false, error: 'Receiving team name is required' };
+    }
+    if (normalizedTeamName.length > 200) {
+      return { success: false, error: 'Receiving team name must be 200 characters or less' };
+    }
+
+    const normalizedLoanDate = normalizeDateValue(loanDate);
+    if (!normalizedLoanDate) {
+      return { success: false, error: 'Loan date is required' };
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    const loanRecords = playerIds.map(playerId => ({
+      player_id: playerId,
+      team_id: teamId,
+      receiving_team_name: normalizedTeamName,
+      loan_date: normalizedLoanDate,
+      created_by: userData.user.id,
+      last_updated_by: userData.user.id
+    }));
+
+    const { data, error } = await supabase
+      .from('player_loan')
+      .insert(loanRecords)
+      .select();
+
+    if (error) {
+      console.error('Error recording player loans:', error);
+      return { success: false, error: error.message || 'Failed to record player loans' };
+    }
+
+    return { success: true, loans: data || [] };
+  } catch (error) {
+    console.error('Exception recording player loans:', error);
+    return { success: false, error: error.message || 'Failed to record player loans' };
+  }
+}
+
 export async function recordPlayerLoan(playerId, { teamId, receivingTeamName, loanDate }) {
   try {
     if (!playerId || !teamId) {
@@ -121,6 +174,65 @@ export async function updatePlayerLoan(loanId, updates = {}) {
   }
 }
 
+export async function updateMatchLoans(matchKey = {}, updates = {}) {
+  try {
+    const normalizedTeamNameKey = normalizeTeamName(matchKey.receivingTeamName);
+    const normalizedLoanDateKey = normalizeDateValue(matchKey.loanDate);
+
+    if (!matchKey.teamId) {
+      return { success: false, error: 'Team ID is required' };
+    }
+    if (!normalizedTeamNameKey) {
+      return { success: false, error: 'Receiving team name is required' };
+    }
+    if (!normalizedLoanDateKey) {
+      return { success: false, error: 'Loan date is required' };
+    }
+
+    const payload = {};
+    if (updates.receivingTeamName !== undefined) {
+      const normalizedTeamName = normalizeTeamName(updates.receivingTeamName);
+      if (!normalizedTeamName) {
+        return { success: false, error: 'Receiving team name is required' };
+      }
+      if (normalizedTeamName.length > 200) {
+        return { success: false, error: 'Receiving team name must be 200 characters or less' };
+      }
+      payload.receiving_team_name = normalizedTeamName;
+    }
+
+    if (updates.loanDate !== undefined) {
+      const normalizedLoanDate = normalizeDateValue(updates.loanDate);
+      if (!normalizedLoanDate) {
+        return { success: false, error: 'Loan date is required' };
+      }
+      payload.loan_date = normalizedLoanDate;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      return { success: false, error: 'No updates provided' };
+    }
+
+    const { data, error } = await supabase
+      .from('player_loan')
+      .update(payload)
+      .eq('team_id', matchKey.teamId)
+      .eq('receiving_team_name', normalizedTeamNameKey)
+      .eq('loan_date', normalizedLoanDateKey)
+      .select();
+
+    if (error) {
+      console.error('Error updating match loans:', error);
+      return { success: false, error: error.message || 'Failed to update match loans' };
+    }
+
+    return { success: true, loans: data || [], updatedCount: data?.length || 0 };
+  } catch (error) {
+    console.error('Exception updating match loans:', error);
+    return { success: false, error: error.message || 'Failed to update match loans' };
+  }
+}
+
 export async function deletePlayerLoan(loanId) {
   try {
     if (!loanId) {
@@ -141,6 +253,42 @@ export async function deletePlayerLoan(loanId) {
   } catch (error) {
     console.error('Exception deleting player loan:', error);
     return { success: false, error: error.message || 'Failed to delete player loan' };
+  }
+}
+
+export async function deleteMatchLoans({ teamId, receivingTeamName, loanDate } = {}) {
+  try {
+    if (!teamId) {
+      return { success: false, error: 'Team ID is required' };
+    }
+
+    const normalizedTeamName = normalizeTeamName(receivingTeamName);
+    if (!normalizedTeamName) {
+      return { success: false, error: 'Receiving team name is required' };
+    }
+
+    const normalizedLoanDate = normalizeDateValue(loanDate);
+    if (!normalizedLoanDate) {
+      return { success: false, error: 'Loan date is required' };
+    }
+
+    const { data, error } = await supabase
+      .from('player_loan')
+      .delete()
+      .eq('team_id', teamId)
+      .eq('receiving_team_name', normalizedTeamName)
+      .eq('loan_date', normalizedLoanDate)
+      .select();
+
+    if (error) {
+      console.error('Error deleting match loans:', error);
+      return { success: false, error: error.message || 'Failed to delete match loans' };
+    }
+
+    return { success: true, deletedCount: data?.length || 0 };
+  } catch (error) {
+    console.error('Exception deleting match loans:', error);
+    return { success: false, error: error.message || 'Failed to delete match loans' };
   }
 }
 
@@ -204,7 +352,8 @@ export async function getTeamLoans(teamId, options = {}) {
           id,
           display_name,
           first_name,
-          last_name
+          last_name,
+          jersey_number
         )
       `)
       .eq('team_id', teamId)

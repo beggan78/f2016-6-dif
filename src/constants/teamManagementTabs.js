@@ -3,8 +3,9 @@
  */
 export const TAB_VIEWS = {
   OVERVIEW: 'overview',
-  ACCESS: 'access',
   ROSTER: 'roster',
-  PREFERENCES: 'preferences',
-  CONNECTORS: 'connectors'
+  LOANS: 'loans',
+  ACCESS: 'access',
+  CONNECTORS: 'connectors',
+  PREFERENCES: 'preferences'
 };

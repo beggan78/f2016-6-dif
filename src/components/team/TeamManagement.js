@@ -36,13 +36,14 @@ import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { PlayerMatchingModal } from './PlayerMatchingModal';
 import { PlayerLoanModal } from './PlayerLoanModal';
+import PlayerLoansView from './PlayerLoansView';
 import { RosterConnectorOnboarding } from './RosterConnectorOnboarding';
 import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { getPlayerConnectionDetails, acceptGhostPlayer, dismissGhostPlayer } from '../../services/connectorService';
-import { recordPlayerLoan } from '../../services/playerLoanService';
+import { recordPlayerLoans } from '../../services/playerLoanService';
 import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -114,6 +115,12 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
         label: 'Roster', 
         icon: Rows4,
         description: 'Manage team players'
+      } : null,
+      canManageTeam ? {
+        id: TAB_VIEWS.LOANS,
+        label: 'Loans',
+        icon: Repeat,
+        description: 'Track player loan matches'
       } : null,
       isTeamAdmin ? {
         id: TAB_VIEWS.ACCESS,
@@ -320,6 +327,13 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
             onNavigateToConnectors={() => setActiveTab('connectors')}
             activeTab={activeTab}
             openAddPlayerModal={openAddRosterPlayerModal}
+          />
+        );
+      case TAB_VIEWS.LOANS:
+        return (
+          <PlayerLoansView
+            currentTeam={currentTeam}
+            canManageTeam={canManageTeam}
           />
         );
       case TAB_VIEWS.CONNECTORS:
@@ -957,12 +971,12 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     setLoanModalPlayer(null);
   };
 
-  const handleSaveLoan = async ({ playerId, receivingTeamName, loanDate }) => {
+  const handleSaveLoan = async ({ playerIds, receivingTeamName, loanDate }) => {
     if (!team?.id) {
       throw new Error('Team ID is required');
     }
 
-    const result = await recordPlayerLoan(playerId, {
+    const result = await recordPlayerLoans(playerIds, {
       teamId: team.id,
       receivingTeamName,
       loanDate
@@ -972,8 +986,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
       throw new Error(result.error || 'Failed to record loan match');
     }
 
-    const playerName = formatRosterName(roster.find(player => player.id === playerId) || loanModalPlayer);
-    setSuccessMessage(`${playerName} loan match recorded.`);
+    if (playerIds.length === 1) {
+      const playerName = formatRosterName(roster.find(player => player.id === playerIds[0]) || loanModalPlayer);
+      setSuccessMessage(`${playerName} loan match recorded.`);
+      return;
+    }
+
+    setSuccessMessage(`${playerIds.length} players loan match recorded.`);
   };
 
 
