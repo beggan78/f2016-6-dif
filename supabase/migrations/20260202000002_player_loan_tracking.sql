@@ -29,6 +29,20 @@ CREATE TABLE public.player_loan (
 );
 
 ---------------------------------------------------------------------------
+-- FUNCTIONS
+---------------------------------------------------------------------------
+
+-- Trigger function to set audit fields on insert
+CREATE OR REPLACE FUNCTION public.handle_created_by()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.created_by = auth.uid();
+  NEW.last_updated_by = auth.uid();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+---------------------------------------------------------------------------
 -- INDEXES
 ---------------------------------------------------------------------------
 
@@ -40,6 +54,13 @@ CREATE INDEX idx_player_loan_date ON public.player_loan(loan_date DESC);
 -- TRIGGERS
 ---------------------------------------------------------------------------
 
+-- Set audit fields on insert
+CREATE TRIGGER insert_player_loan_audit
+  BEFORE INSERT ON public.player_loan
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_created_by();
+
+-- Update audit fields on update
 CREATE TRIGGER update_player_loan_timestamp
   BEFORE UPDATE ON public.player_loan
   FOR EACH ROW
