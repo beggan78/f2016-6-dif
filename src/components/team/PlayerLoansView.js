@@ -1,10 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, Edit3, Filter, PlusCircle, Repeat, Trash2, User } from 'lucide-react';
-import { Button, ConfirmationModal, Input, MultiSelect, Select } from '../shared/UI';
+import { Button, ConfirmationModal, MultiSelect, Select } from '../shared/UI';
 import { PlayerLoanModal } from './PlayerLoanModal';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { useTeam } from '../../contexts/TeamContext';
 import { deleteMatchLoans, getTeamLoans, recordPlayerLoans } from '../../services/playerLoanService';
+import { TimeFilter } from '../statistics/TimeFilter';
+import { createPersistenceManager } from '../../utils/persistenceManager';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
+import { TIME_PRESETS } from '../../constants/timePresets';
 
 const formatRosterName = (player) => {
   if (!player) return 'Unknown Player';
@@ -32,6 +36,33 @@ const isFutureLoan = (loanDate) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return parsedLoanDate > today;
+};
+
+const getInitialTimeRange = (timeRangePersistence) => {
+  const stored = timeRangePersistence.loadState();
+  const presetId = stored?.presetId || 'all-time';
+
+  if (presetId === 'custom') {
+    const parseDate = (value) => {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+    return {
+      start: parseDate(stored?.customStartDate),
+      end: parseDate(stored?.customEndDate),
+      presetId: 'custom'
+    };
+  }
+
+  const preset = TIME_PRESETS.find(p => p.id === presetId);
+  const range = preset ? preset.getValue() : { start: null, end: null };
+
+  return {
+    start: range.start,
+    end: range.end,
+    presetId: preset ? presetId : 'all-time'
+  };
 };
 
 const groupLoansByMatch = (loans, rosterLookup) => {
@@ -92,11 +123,30 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
   const [playerFilter, setPlayerFilter] = useState([]);
   const [receivingTeamFilter, setReceivingTeamFilter] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [editingMatch, setEditingMatch] = useState(null);
   const [deletingMatch, setDeletingMatch] = useState(null);
+
+  // Create persistence manager
+  const timeRangePersistence = useMemo(
+    () => createPersistenceManager(STORAGE_KEYS.PLAYER_LOANS_TIME_RANGE, {
+      presetId: 'all-time',
+      customStartDate: null,
+      customEndDate: null
+    }),
+    []
+  );
+
+  // Initialize time range from persisted state
+  const initialTimeRangeRef = useRef(null);
+  if (!initialTimeRangeRef.current) {
+    initialTimeRangeRef.current = getInitialTimeRange(timeRangePersistence);
+  }
+  const initialTimeRange = initialTimeRangeRef.current;
+
+  const [timeRangeStart, setTimeRangeStart] = useState(initialTimeRange.start);
+  const [timeRangeEnd, setTimeRangeEnd] = useState(initialTimeRange.end);
+  const [selectedPresetId, setSelectedPresetId] = useState(initialTimeRange.presetId);
 
   const rosterLookup = useMemo(() => {
     return new Map(roster.map(player => [player.id, player]));
@@ -111,9 +161,18 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     setLoading(true);
     setError(null);
 
+    // Convert Date objects to ISO date strings (YYYY-MM-DD)
+    const formatDateForBackend = (date) => {
+      if (!date) return null;
+      return date.toISOString().slice(0, 10);
+    };
+
     const result = await getTeamLoans(currentTeam.id, {
-      startDate: startDate || null,
-      endDate: endDate || null
+      startDate: formatDateForBackend(timeRangeStart),
+      // CRITICAL: Only apply endDate for custom preset (future loans always visible otherwise)
+      endDate: (selectedPresetId === 'custom' && timeRangeEnd)
+        ? formatDateForBackend(timeRangeEnd)
+        : null
     });
 
     if (result.success) {
@@ -124,7 +183,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     }
 
     setLoading(false);
-  }, [currentTeam?.id, startDate, endDate]);
+  }, [currentTeam?.id, timeRangeStart, timeRangeEnd, selectedPresetId]);
 
   const fetchRoster = useCallback(async () => {
     if (!currentTeam?.id) {
@@ -139,6 +198,34 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       console.error('Failed to load roster for loans:', err);
     }
   }, [currentTeam?.id, getTeamRoster]);
+
+  const handleTimeRangeChange = (startDate, endDate, presetId = 'all-time') => {
+    const normalizeDate = (value) => {
+      if (!value) return null;
+      const parsed = value instanceof Date ? value : new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    setTimeRangeStart(normalizeDate(startDate));
+    setTimeRangeEnd(normalizeDate(endDate));
+    setSelectedPresetId(presetId);
+  };
+
+  useEffect(() => {
+    if (selectedPresetId === 'custom') {
+      timeRangePersistence.saveState({
+        presetId: 'custom',
+        customStartDate: timeRangeStart ? timeRangeStart.toISOString() : null,
+        customEndDate: timeRangeEnd ? timeRangeEnd.toISOString() : null
+      });
+    } else {
+      timeRangePersistence.saveState({
+        presetId: selectedPresetId,
+        customStartDate: null,
+        customEndDate: null
+      });
+    }
+  }, [timeRangeStart, timeRangeEnd, selectedPresetId, timeRangePersistence]);
 
   useEffect(() => {
     fetchLoans();
@@ -183,10 +270,11 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       playerFilter.length > 0 ||
       receivingTeamFilter.length > 0 ||
       statusFilter !== 'all' ||
-      Boolean(startDate) ||
-      Boolean(endDate)
+      selectedPresetId !== 'all-time' ||
+      Boolean(timeRangeStart) ||
+      Boolean(timeRangeEnd)
     );
-  }, [playerFilter, receivingTeamFilter, statusFilter, startDate, endDate]);
+  }, [playerFilter, receivingTeamFilter, statusFilter, selectedPresetId, timeRangeStart, timeRangeEnd]);
 
   const filteredLoans = useMemo(() => {
     return loans.filter((loan) => {
@@ -244,8 +332,9 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     setPlayerFilter([]);
     setReceivingTeamFilter([]);
     setStatusFilter('all');
-    setStartDate('');
-    setEndDate('');
+    setTimeRangeStart(null);
+    setTimeRangeEnd(null);
+    setSelectedPresetId('all-time');
   };
 
   const handleOpenLoanModal = () => {
@@ -364,7 +453,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-2">
               Players
@@ -403,22 +492,14 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-2">
-              Start Date
+              Time Period
             </label>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">
-              End Date
-            </label>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
+            <TimeFilter
+              startDate={timeRangeStart}
+              endDate={timeRangeEnd}
+              selectedPresetId={selectedPresetId}
+              onTimeRangeChange={handleTimeRangeChange}
+              className="w-full"
             />
           </div>
         </div>
@@ -457,15 +538,11 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                       <div className="text-slate-200 font-semibold truncate">
                         {match.receivingTeamName}
                       </div>
-                      <span
-                        className={
-                          isFutureLoan(match.loanDate)
-                            ? 'bg-sky-900/50 border-sky-600 text-sky-200 px-2 py-1 rounded text-xs border'
-                            : 'bg-slate-700 border-slate-600 text-slate-300 px-2 py-1 rounded text-xs border'
-                        }
-                      >
-                        {isFutureLoan(match.loanDate) ? 'Upcoming' : 'Past'}
-                      </span>
+                      {isFutureLoan(match.loanDate) && (
+                        <span className="bg-sky-900/50 border-sky-600 text-sky-200 px-2 py-1 rounded text-xs border">
+                          Upcoming
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500">
                       <Calendar className="w-3 h-3" />
