@@ -218,10 +218,15 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
 
   const modalPlayers = useMemo(() => {
     if (!editingMatch) {
-      return roster;
+      // Filter out temporary players (match_id IS NOT NULL)
+      return roster.filter(player => !player.match_id);
     }
 
-    const existingPlayers = new Map(roster.map(player => [player.id, player]));
+    // When editing, include standard roster players plus any players
+    // from the existing loan that might have been deleted
+    const standardRoster = roster.filter(player => !player.match_id);
+
+    const existingPlayers = new Map(standardRoster.map(player => [player.id, player]));
     editingMatch.players.forEach(player => {
       if (!existingPlayers.has(player.id)) {
         existingPlayers.set(player.id, {
@@ -336,9 +341,9 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
           <h3 className="text-lg font-semibold text-sky-300">Player Loans</h3>
         </div>
         {canManageTeam && (
-          <Button onClick={handleOpenLoanModal} Icon={PlusCircle} size="sm">
-            Record Loan Match
-          </Button>
+        <Button onClick={handleOpenLoanModal} Icon={PlusCircle} size="sm">
+          New Loan
+        </Button>
         )}
       </div>
 
@@ -359,7 +364,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-2">
               Players
@@ -372,9 +377,9 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">
-              Receiving Teams
-            </label>
+          <label className="block text-xs font-medium text-slate-400 mb-2">
+            Teams
+          </label>
             <MultiSelect
               value={receivingTeamFilter}
               onChange={setReceivingTeamFilter}
@@ -396,27 +401,25 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
               ]}
             />
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-2">
-                Start Date
-              </label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-2">
-                End Date
-              </label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2">
+              Start Date
+            </label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2">
+              End Date
+            </label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+            />
           </div>
         </div>
       </div>
@@ -442,11 +445,6 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
         </div>
       ) : (
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          {loans.length > 0 && (
-            <p className="text-slate-400 text-sm mb-4">
-              {groupedMatches.length} loan match{groupedMatches.length !== 1 ? 'es' : ''} found.
-            </p>
-          )}
           <div className="space-y-3">
             {groupedMatches.map((match) => (
               <div
@@ -457,7 +455,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="text-slate-200 font-semibold truncate">
-                        vs {match.receivingTeamName}
+                        {match.receivingTeamName}
                       </div>
                       <span
                         className={
@@ -583,7 +581,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
         title="Delete loan match"
         message={
           deletingMatch
-            ? `Remove ${deletingMatch.players.length} player(s) from the loan match vs ${deletingMatch.receivingTeamName} on ${deletingMatch.loanDate}?`
+            ? `Remove ${deletingMatch.players.length} player(s) from the loan match ${deletingMatch.receivingTeamName} on ${deletingMatch.loanDate}?`
             : ''
         }
         confirmText="Delete Match"

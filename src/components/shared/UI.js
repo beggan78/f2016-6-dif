@@ -17,7 +17,7 @@ export const Input = React.forwardRef(({ value, onChange, placeholder, id, disab
       onKeyDown={onKeyDown}
       disabled={disabled}
       placeholder={placeholder}
-      className={`w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-500 transition-colors ${className}`}
+      className={`w-full px-3 py-1.5 bg-slate-600 border border-slate-500 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-500 transition-colors leading-tight h-[38px] ${className}`}
       {...props}
     />
   );
@@ -33,7 +33,7 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full appearance-none bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+        className="w-full appearance-none bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors h-[38px]"
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map(opt => (
@@ -138,7 +138,7 @@ export function MultiSelect({
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`w-full bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors transition-shadow flex items-center justify-between gap-2 ${
+        className={`w-full bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors transition-shadow flex items-center justify-between gap-2 h-[38px] ${
           disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
         } ${hasSelection ? 'border-sky-300 shadow-[0_0_14px_rgba(125,211,252,0.65),0_0_28px_rgba(56,189,248,0.45)] ring-2 ring-sky-300/80 ring-offset-2 ring-offset-slate-800' : ''}`}
       >
