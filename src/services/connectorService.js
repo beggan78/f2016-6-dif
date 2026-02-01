@@ -916,6 +916,49 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
       playerNameMap.set(player.id, player.display_name || player.first_name || 'Unknown Player');
     });
 
+    // Fetch team's loan match weight preference
+    const { data: weightPref, error: weightError } = await supabase
+      .from('team_preference')
+      .select('value')
+      .eq('team_id', teamId)
+      .eq('key', 'loanMatchWeight')
+      .maybeSingle();
+
+    if (weightError) {
+      console.error('Error loading loan match weight:', weightError);
+    }
+
+    const loanWeight = weightPref?.value ? parseFloat(weightPref.value) : 0.5;
+    const finalWeight = Number.isNaN(loanWeight) ? 0.5 : loanWeight;
+
+    // Fetch loan matches for players in date range
+    let loanQuery = supabase
+      .from('player_loan')
+      .select('player_id, loan_date')
+      .in('player_id', playerIds)
+      .eq('team_id', teamId);
+
+    if (startDate) {
+      loanQuery = loanQuery.gte('loan_date', startDate.toISOString().slice(0, 10));
+    }
+    if (endDate) {
+      loanQuery = loanQuery.lte('loan_date', endDate.toISOString().slice(0, 10));
+    }
+
+    const { data: loanData, error: loanError } = await loanQuery;
+
+    if (loanError) {
+      console.error('Error fetching loan matches:', loanError);
+      throw new Error('Failed to load loan match data');
+    }
+
+    // Count loans per player
+    const loanCountMap = new Map();
+    (loanData || []).forEach(loan => {
+      const playerId = loan.player_id;
+      loanCountMap.set(playerId, (loanCountMap.get(playerId) || 0) + 1);
+    });
+
     // Fetch match stats to get matches played
     // We use the same date filter as for attendance
     let matchStatsQuery = supabase
@@ -961,12 +1004,18 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
     // Combine all data
     const result = Array.from(playerAttendanceMap.entries()).map(([playerId, attendanceData]) => {
       const playerName = playerNameMap.get(playerId) || 'Unknown Player';
-      const matchesPlayed = matchesPlayedMap.get(playerId) || 0;
+      const regularMatches = matchesPlayedMap.get(playerId) || 0;
+      const loanMatches = loanCountMap.get(playerId) || 0;
+
+      // Calculate weighted matches
+      const weightedLoanMatches = loanMatches * finalWeight;
+      const weightedMatches = regularMatches + weightedLoanMatches;
+
       const attendanceRate = totalPracticesForPeriod > 0
         ? (attendanceData.totalAttendance / totalPracticesForPeriod) * 100
         : 0;
-      const practicesPerMatch = matchesPlayed > 0
-        ? attendanceData.totalAttendance / matchesPlayed
+      const practicesPerMatch = weightedMatches > 0
+        ? attendanceData.totalAttendance / weightedMatches
         : 0;
 
       return {
@@ -975,7 +1024,9 @@ export async function getAttendanceStats(teamId, startDate = null, endDate = nul
         totalPractices: totalPracticesForPeriod,
         totalAttendance: attendanceData.totalAttendance,
         attendanceRate: Math.round(attendanceRate * 10) / 10, // 1 decimal place
-        matchesPlayed,
+        matchesPlayed: regularMatches,
+        loanMatches,
+        weightedMatches: Math.round(weightedMatches * 100) / 100,
         practicesPerMatch: Math.round(practicesPerMatch * 100) / 100, // 2 decimal places
         attendanceRecords: attendanceData.attendanceRecords
       };

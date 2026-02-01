@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Calendar, Edit3, Filter, PlusCircle, Repeat, Trash2, User } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, Edit3, Filter, PlusCircle, Repeat, Trash2, User } from 'lucide-react';
 import { Button, ConfirmationModal, MultiSelect, Select } from '../shared/UI';
 import { PlayerLoanModal } from './PlayerLoanModal';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
@@ -127,6 +127,14 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
   const [editingMatch, setEditingMatch] = useState(null);
   const [deletingMatch, setDeletingMatch] = useState(null);
 
+  // Screen size detection and filter collapse state
+  const [needsCollapse, setNeedsCollapse] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
+  });
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 1024;
+  });
+
   // Create persistence manager
   const timeRangePersistence = useMemo(
     () => createPersistenceManager(STORAGE_KEYS.PLAYER_LOANS_TIME_RANGE, {
@@ -241,6 +249,32 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     const timer = setTimeout(() => setSuccessMessage(''), 4000);
     return () => clearTimeout(timer);
   }, [successMessage]);
+
+  // Detect screen size that requires filter collapsing
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const shouldCollapse = window.innerWidth < 1024; // lg breakpoint
+
+      setNeedsCollapse(prevNeedsCollapse => {
+        if (prevNeedsCollapse !== shouldCollapse) {
+          setIsFilterCollapsed(prevIsCollapsed => {
+            // Auto-collapse when transitioning from wide to narrow
+            if (shouldCollapse && !prevNeedsCollapse) {
+              return true;
+            } else if (!shouldCollapse) {
+              return false;
+            }
+            return prevIsCollapsed;
+          });
+        }
+        return shouldCollapse;
+      });
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   const playerOptions = useMemo(() => {
     return roster.map(player => ({
@@ -438,9 +472,25 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
 
       <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-slate-200">
+          <div
+            className={`flex items-center gap-2 text-slate-200 ${needsCollapse ? 'cursor-pointer' : ''}`}
+            onClick={() => needsCollapse && setIsFilterCollapsed(!isFilterCollapsed)}
+          >
             <Filter className="h-4 w-4 text-sky-400" />
             <span className="text-sm font-semibold">Filters</span>
+            {needsCollapse && (
+              <button
+                type="button"
+                className="text-sky-400 hover:text-sky-300 transition-colors"
+                aria-label={isFilterCollapsed ? "Expand filters" : "Collapse filters"}
+              >
+                {isFilterCollapsed ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronUp className="h-4 w-4" />
+                )}
+              </button>
+            )}
           </div>
           {hasActiveFilters && (
             <button
@@ -453,54 +503,61 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
+        {/* Filter content - collapsible when screen is narrow */}
+        <div className={`${
+          needsCollapse
+            ? (isFilterCollapsed ? 'hidden' : 'block')
+            : ''
+        }`}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">
+                Players
+              </label>
+              <MultiSelect
+                value={playerFilter}
+                onChange={setPlayerFilter}
+                options={playerOptions}
+                placeholder="All players"
+              />
+            </div>
+            <div>
             <label className="block text-xs font-medium text-slate-400 mb-2">
-              Players
+              Teams
             </label>
-            <MultiSelect
-              value={playerFilter}
-              onChange={setPlayerFilter}
-              options={playerOptions}
-              placeholder="All players"
-            />
-          </div>
-          <div>
-          <label className="block text-xs font-medium text-slate-400 mb-2">
-            Teams
-          </label>
-            <MultiSelect
-              value={receivingTeamFilter}
-              onChange={setReceivingTeamFilter}
-              options={receivingTeamOptions}
-              placeholder="All teams"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">
-              Status
-            </label>
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[
-                { value: 'all', label: 'All' },
-                { value: 'future', label: 'Upcoming' },
-                { value: 'past', label: 'Past' }
-              ]}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">
-              Time Period
-            </label>
-            <TimeFilter
-              startDate={timeRangeStart}
-              endDate={timeRangeEnd}
-              selectedPresetId={selectedPresetId}
-              onTimeRangeChange={handleTimeRangeChange}
-              className="w-full"
-            />
+              <MultiSelect
+                value={receivingTeamFilter}
+                onChange={setReceivingTeamFilter}
+                options={receivingTeamOptions}
+                placeholder="All teams"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">
+                Status
+              </label>
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'future', label: 'Upcoming' },
+                  { value: 'past', label: 'Past' }
+                ]}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">
+                Time Period
+              </label>
+              <TimeFilter
+                startDate={timeRangeStart}
+                endDate={timeRangeEnd}
+                selectedPresetId={selectedPresetId}
+                onTimeRangeChange={handleTimeRangeChange}
+                className="w-full"
+              />
+            </div>
           </div>
         </div>
       </div>
