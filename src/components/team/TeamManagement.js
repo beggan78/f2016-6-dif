@@ -983,7 +983,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     });
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to record loan match');
+      throw new Error(result.error || 'Failed to record loan');
     }
 
     if (playerIds.length === 1) {
@@ -1281,7 +1281,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                         <button
                           onClick={() => handleOpenLoanModal(player)}
                           className="p-1 text-slate-400 hover:text-emerald-400 transition-colors"
-                          title="Record loan match"
+                          title="Record Loan"
                         >
                           <Repeat className="w-4 h-4" />
                         </button>

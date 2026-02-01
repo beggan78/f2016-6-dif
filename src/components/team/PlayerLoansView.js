@@ -421,7 +421,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     });
 
     if (!createResult.success) {
-      throw new Error(createResult.error || 'Failed to record loan match');
+      throw new Error(createResult.error || 'Failed to record loan');
     }
 
     const successSuffix = playerIds.length === 1 ? 'player' : 'players';

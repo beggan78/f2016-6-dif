@@ -6,20 +6,37 @@ import { TEAM_CONFIG } from '../../constants/teamConstants';
 
 export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
-    <input
-      ref={ref}
-      type={type}
-      id={id}
-      value={value}
-      onChange={onChange}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      onKeyDown={onKeyDown}
-      disabled={disabled}
-      placeholder={placeholder}
-      className={`w-full px-3 py-1.5 bg-slate-600 border border-slate-500 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-500 transition-colors leading-tight h-[38px] ${className}`}
-      {...props}
-    />
+    <>
+      <input
+        ref={ref}
+        type={type}
+        id={id}
+        value={value}
+        onChange={onChange}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        onKeyDown={onKeyDown}
+        disabled={disabled}
+        placeholder={placeholder}
+        className={`w-full px-3 py-1.5 bg-slate-600 border border-slate-500 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-500 transition-colors leading-tight h-[38px] ${className}`}
+        {...props}
+      />
+      {type === 'date' && (
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            input[type="date"]::-webkit-datetime-edit-text,
+            input[type="date"]::-webkit-datetime-edit-month-field,
+            input[type="date"]::-webkit-datetime-edit-day-field,
+            input[type="date"]::-webkit-datetime-edit-year-field {
+              color: #94a3b8;
+            }
+            input[type="date"]::-webkit-calendar-picker-indicator {
+              filter: invert(0.6);
+            }
+          `
+        }} />
+      )}
+    </>
   );
 });
 
@@ -142,7 +159,7 @@ export function MultiSelect({
           disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
         } ${hasSelection ? 'border-sky-300 shadow-[0_0_14px_rgba(125,211,252,0.65),0_0_28px_rgba(56,189,248,0.45)] ring-2 ring-sky-300/80 ring-offset-2 ring-offset-slate-800' : ''}`}
       >
-        <span className={`truncate text-left flex-1 ${hasSelection ? 'text-sky-300' : ''}`}>{displayLabel}</span>
+        <span className={`truncate text-left flex-1 ${hasSelection ? 'text-sky-300' : 'text-slate-400'}`}>{displayLabel}</span>
         <ChevronDown size={18} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -176,8 +193,9 @@ export function MultiSelect({
             </ul>
           )}
 
-          {(value || []).length > 0 && (
-            <div className="border-t border-slate-600 px-3 py-2">
+          {/* Footer section with Clear and Done buttons */}
+          <div className="border-t border-slate-600 px-3 py-2 flex justify-between items-center gap-2 bg-slate-700 sticky bottom-0">
+            {(value || []).length > 0 && (
               <button
                 type="button"
                 onClick={handleClear}
@@ -185,8 +203,15 @@ export function MultiSelect({
               >
                 Clear selection
               </button>
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="ml-auto text-sm px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded transition-colors"
+            >
+              Done
+            </button>
+          </div>
         </div>
       )}
     </div>

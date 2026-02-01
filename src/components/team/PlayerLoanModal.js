@@ -50,11 +50,22 @@ export function PlayerLoanModal({
   }, [isOpen, loan, defaultPlayerId]);
 
   const playerOptions = useMemo(() => {
-    return players.map(player => ({
+    const options = players.map(player => ({
       value: player.id,
       label: formatRosterName(player)
     }));
-  }, [players]);
+
+    // Sort: selected players first, then alphabetically within each group
+    return options.sort((a, b) => {
+      const aSelected = formState.playerIds.includes(a.value);
+      const bSelected = formState.playerIds.includes(b.value);
+
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+
+      return a.label.localeCompare(b.label);
+    });
+  }, [players, formState.playerIds]);
 
   const validate = () => {
     const nextErrors = {};
@@ -117,7 +128,7 @@ export function PlayerLoanModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-100">
-                {isEditMode ? 'Edit Loan Match' : 'Record Loan Match'}
+                {isEditMode ? 'Edit Loan' : 'Record Loan'}
               </h2>
               <p className="text-sm text-slate-400">
                 {isEditMode ? 'Update loan appearance details' : 'Track a player appearance for another team'}
