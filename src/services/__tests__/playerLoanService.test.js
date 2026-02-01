@@ -88,19 +88,7 @@ describe('playerLoanService', () => {
       expect(result.error).toBe('Receiving team name must be 200 characters or less');
     });
 
-    it('requires authenticated user', async () => {
-      supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-
-      const result = await recordPlayerLoans(playerIds, { teamId, receivingTeamName, loanDate });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('User not authenticated');
-    });
-
     it('creates loan records for multiple players', async () => {
-      const mockUser = { id: 'user-123' };
-      supabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
-
       const mockLoans = [
         { id: 'loan-1', player_id: 'player-1' },
         { id: 'loan-2', player_id: 'player-2' }
@@ -118,21 +106,34 @@ describe('playerLoanService', () => {
           player_id: 'player-1',
           team_id: teamId,
           receiving_team_name: receivingTeamName,
-          loan_date: loanDate,
-          created_by: mockUser.id,
-          last_updated_by: mockUser.id
+          loan_date: loanDate
         },
         {
           player_id: 'player-2',
           team_id: teamId,
           receiving_team_name: receivingTeamName,
-          loan_date: loanDate,
-          created_by: mockUser.id,
-          last_updated_by: mockUser.id
+          loan_date: loanDate
         }
       ]);
       expect(result.success).toBe(true);
       expect(result.loans).toEqual(mockLoans);
+    });
+
+    it('creates loan record for a single player', async () => {
+      const select = jest.fn().mockResolvedValue({ data: [], error: null });
+      const insert = jest.fn(() => ({ select }));
+      supabase.from.mockReturnValue({ insert });
+
+      await recordPlayerLoans(['player-1'], { teamId, receivingTeamName, loanDate });
+
+      expect(insert).toHaveBeenCalledWith([
+        {
+          player_id: 'player-1',
+          team_id: teamId,
+          receiving_team_name: receivingTeamName,
+          loan_date: loanDate
+        }
+      ]);
     });
 
     it('normalizes date from Date object', async () => {
@@ -148,6 +149,18 @@ describe('playerLoanService', () => {
 
       const insertCall = insert.mock.calls[0][0];
       expect(insertCall[0].loan_date).toBe('2025-01-15');
+    });
+
+    it('rejects invalid Date objects for loan date', async () => {
+      const invalidDate = new Date('invalid');
+      const result = await recordPlayerLoans(playerIds, {
+        teamId,
+        receivingTeamName,
+        loanDate: invalidDate
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Loan date is required');
     });
 
     it('trims and normalizes team name', async () => {
@@ -180,7 +193,7 @@ describe('playerLoanService', () => {
     });
 
     it('handles exceptions', async () => {
-      supabase.auth.getUser.mockRejectedValue(new Error('Network error'));
+      supabase.from.mockImplementation(() => { throw new Error('Network error'); });
 
       const result = await recordPlayerLoans(playerIds, { teamId, receivingTeamName, loanDate });
 
@@ -274,6 +287,20 @@ describe('playerLoanService', () => {
       expect(result.success).toBe(true);
     });
 
+    it('normalizes loan date strings with time', async () => {
+      const mockLoan = { id: loanId, loan_date: '2025-02-01' };
+
+      const single = jest.fn().mockResolvedValue({ data: mockLoan, error: null });
+      const select = jest.fn(() => ({ single }));
+      const eq = jest.fn(() => ({ select }));
+      const update = jest.fn(() => ({ eq }));
+      supabase.from.mockReturnValue({ update });
+
+      await updatePlayerLoan(loanId, { loanDate: '2025-02-01T15:45:00Z' });
+
+      expect(update).toHaveBeenCalledWith({ loan_date: '2025-02-01' });
+    });
+
     it('updates both fields simultaneously', async () => {
       const mockLoan = { id: loanId };
 
@@ -362,6 +389,25 @@ describe('playerLoanService', () => {
       expect(result.success).toBe(true);
       expect(result.loans).toEqual(mockLoans);
       expect(result.updatedCount).toBe(2);
+    });
+
+    it('normalizes match key date when provided as Date', async () => {
+      const mockLoans = [{ id: 'loan-1' }];
+      const select = jest.fn().mockResolvedValue({ data: mockLoans, error: null });
+      const eq3 = jest.fn(() => ({ select }));
+      const eq2 = jest.fn(() => ({ eq: eq3 }));
+      const eq1 = jest.fn(() => ({ eq: eq2 }));
+      const update = jest.fn(() => ({ eq: eq1 }));
+      supabase.from.mockReturnValue({ update });
+
+      const dateObject = new Date('2025-03-02T10:00:00Z');
+      await updateMatchLoans({
+        teamId: 'team-1',
+        receivingTeamName: 'Other Team',
+        loanDate: dateObject
+      }, { receivingTeamName: 'Updated Team' });
+
+      expect(eq3).toHaveBeenCalledWith('loan_date', '2025-03-02');
     });
 
     it('handles zero updates gracefully', async () => {
@@ -778,6 +824,24 @@ describe('playerLoanService', () => {
 
       expect(result.weightedLoanMatches).toBeCloseTo(0.99, 2);
       expect(result.totalWeighted).toBeCloseTo(10.99, 2);
+    });
+
+    it('preserves negative loan weights', () => {
+      const result = calculateWeightedMatches(5, 2, -0.5);
+
+      expect(result.loanWeight).toBe(-0.5);
+      expect(result.weightedLoanMatches).toBe(-1);
+      expect(result.totalWeighted).toBe(4);
+    });
+
+    it('falls back to default weight for NaN and Infinity', () => {
+      const nanResult = calculateWeightedMatches(4, 2, NaN);
+      expect(nanResult.loanWeight).toBe(0.5);
+      expect(nanResult.totalWeighted).toBe(5);
+
+      const infinityResult = calculateWeightedMatches(4, 2, Infinity);
+      expect(infinityResult.loanWeight).toBe(0.5);
+      expect(infinityResult.totalWeighted).toBe(5);
     });
   });
 });

@@ -249,6 +249,15 @@ describe('PlayerLoansView', () => {
       });
     });
 
+    it('groups players into single match card by team and date', async () => {
+      render(<PlayerLoansView {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Players (2):')).toBeInTheDocument();
+        expect(screen.getByText('Players (1):')).toBeInTheDocument();
+      });
+    });
+
     it('displays future loan badge for upcoming matches', async () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 7);
@@ -408,6 +417,7 @@ describe('PlayerLoansView', () => {
     });
 
     it('collapses filters on narrow screens', async () => {
+      const originalInnerWidth = global.innerWidth;
       // Simulate narrow screen
       global.innerWidth = 800;
       global.dispatchEvent(new Event('resize'));
@@ -417,6 +427,36 @@ describe('PlayerLoansView', () => {
       await waitFor(() => {
         expect(screen.getByText('Filters')).toBeInTheDocument();
       });
+
+      global.innerWidth = originalInnerWidth;
+    });
+
+    it('toggles filter collapse on narrow screens', async () => {
+      const originalInnerWidth = global.innerWidth;
+      global.innerWidth = 800;
+      global.dispatchEvent(new Event('resize'));
+
+      const { container } = render(<PlayerLoansView {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Expand filters')).toBeInTheDocument();
+      });
+
+      const hiddenContainer = container.querySelector('div.hidden');
+      expect(hiddenContainer).toContainElement(screen.getByText('Players'));
+
+      fireEvent.click(screen.getByLabelText('Expand filters'));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Collapse filters')).toBeInTheDocument();
+      });
+
+      const expandedContainer = container.querySelector('div.hidden');
+      if (expandedContainer) {
+        expect(expandedContainer).not.toContainElement(screen.getByText('Players'));
+      }
+
+      global.innerWidth = originalInnerWidth;
     });
 
     it('shows receiving team options from existing loans', async () => {
@@ -468,6 +508,47 @@ describe('PlayerLoansView', () => {
 
       await waitFor(() => {
         expect(Storage.prototype.setItem).toHaveBeenCalled();
+      });
+    });
+
+    it('stores custom time range values in persistence', async () => {
+      render(<PlayerLoansView {...defaultProps} />);
+
+      await waitFor(() => {
+        const setRangeButton = screen.getByText('Set Custom Range');
+        fireEvent.click(setRangeButton);
+      });
+
+      await waitFor(() => {
+        const calls = Storage.prototype.setItem.mock.calls;
+        const lastCall = calls[calls.length - 1];
+        const persisted = JSON.parse(lastCall[1]);
+        expect(persisted.presetId).toBe('custom');
+        expect(persisted.customStartDate).toContain('2025-01-01');
+        expect(persisted.customEndDate).toContain('2025-01-31');
+      });
+    });
+
+    it('clears persisted custom range when filters are reset', async () => {
+      render(<PlayerLoansView {...defaultProps} />);
+
+      await waitFor(() => {
+        const setRangeButton = screen.getByText('Set Custom Range');
+        fireEvent.click(setRangeButton);
+      });
+
+      await waitFor(() => {
+        const clearButton = screen.getByText('Clear filters');
+        fireEvent.click(clearButton);
+      });
+
+      await waitFor(() => {
+        const calls = Storage.prototype.setItem.mock.calls;
+        const lastCall = calls[calls.length - 1];
+        const persisted = JSON.parse(lastCall[1]);
+        expect(persisted.presetId).toBe('all-time');
+        expect(persisted.customStartDate).toBeNull();
+        expect(persisted.customEndDate).toBeNull();
       });
     });
 
@@ -576,6 +657,41 @@ describe('PlayerLoansView', () => {
       await waitFor(() => {
         // Modal should show players count including deleted
         expect(screen.getByText(/Players: \d+/)).toBeInTheDocument();
+      });
+    });
+
+    it('updates existing match by deleting and re-recording loans', async () => {
+      playerLoanService.recordPlayerLoans.mockResolvedValue({
+        success: true,
+        loans: [{ id: 'updated-loan' }]
+      });
+
+      render(<PlayerLoansView {...defaultProps} />);
+
+      await waitFor(() => {
+        const editButton = screen.getAllByLabelText('Edit match')[0];
+        fireEvent.click(editButton);
+      });
+
+      await waitFor(() => {
+        const saveButton = screen.getByText('Save');
+        fireEvent.click(saveButton);
+      });
+
+      await waitFor(() => {
+        expect(playerLoanService.deleteMatchLoans).toHaveBeenCalledWith({
+          teamId: 'team-1',
+          receivingTeamName: 'Other Team B',
+          loanDate: '2025-02-01'
+        });
+        expect(playerLoanService.recordPlayerLoans).toHaveBeenCalledWith(
+          ['p1'],
+          {
+            teamId: 'team-1',
+            receivingTeamName: 'Team',
+            loanDate: '2025-01-15'
+          }
+        );
       });
     });
   });

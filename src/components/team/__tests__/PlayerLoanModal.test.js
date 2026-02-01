@@ -208,6 +208,34 @@ describe('PlayerLoanModal', () => {
       expect(screen.getByText('OnlyFirst')).toBeInTheDocument();
       expect(screen.getByText('Unknown Player')).toBeInTheDocument();
     });
+
+    it('submits selected players from the multi-select', async () => {
+      render(<PlayerLoanModal {...defaultProps} />);
+
+      const multiselect = screen.getByRole('button', { name: 'Select one or more players' });
+      fireEvent.click(multiselect);
+
+      fireEvent.click(screen.getByLabelText('Alice Johnson'));
+      fireEvent.click(screen.getByLabelText('Bob Smith'));
+      fireEvent.click(screen.getByText('Done'));
+
+      const teamInput = screen.getByPlaceholderText('Enter receiving team name');
+      fireEvent.change(teamInput, { target: { value: 'Other Team' } });
+
+      const dateInput = document.querySelector('input[type="date"]');
+      fireEvent.change(dateInput, { target: { value: '2025-01-15' } });
+
+      const submitButton = screen.getByRole('button', { name: 'Record Loan' });
+      fireEvent.click(submitButton);
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith({
+          playerIds: ['player-1', 'player-2'],
+          receivingTeamName: 'Other Team',
+          loanDate: '2025-01-15'
+        });
+      });
+    });
   });
 
   describe('Form Validation', () => {
