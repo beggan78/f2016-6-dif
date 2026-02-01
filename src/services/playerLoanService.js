@@ -52,18 +52,11 @@ export async function recordPlayerLoans(playerIds, { teamId, receivingTeamName, 
       return { success: false, error: 'Loan date is required' };
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user) {
-      return { success: false, error: 'User not authenticated' };
-    }
-
     const loanRecords = playerIds.map(playerId => ({
       player_id: playerId,
       team_id: teamId,
       receiving_team_name: normalizedTeamName,
-      loan_date: normalizedLoanDate,
-      created_by: userData.user.id,
-      last_updated_by: userData.user.id
+      loan_date: normalizedLoanDate
     }));
 
     const { data, error } = await supabase
